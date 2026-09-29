@@ -1,11 +1,13 @@
 // test/unit/accountChip-dom.test.js
 //
-// Phase 67 (ACCT-01/02, PGS-02), Plan 07 Task 1 — recordingDom tests of the
-// account chip and sheet renderers (renderAccountChip, renderAccountSheet)
-// against views built by the REAL src/browser/account.js view model for each
-// status, so the renderer is proven against the live contract rather than a
-// hand-copied shape. Mirrors boardsPanel-dom.test.js's comment-stripped
-// source-pin approach (stripJs from tools/ident-sweep.mjs).
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1), Plan 03 Task 2 — recordingDom
+// tests of the account renderers (renderAccountChip, renderAccountSheet,
+// renderMenuFace, renderAccountMenu) against views built by the REAL
+// src/browser/account.js view model, mirroring boardsPanel-dom.test.js's
+// comment-stripped source-pin approach (stripJs from tools/ident-sweep.mjs).
+// Replaces every test of the retired sign-on flow (the SIGN IN/STOP
+// COMPETING action row, its own accessible labels and its D-04/D-11 rail
+// cards) with the reroll/erase row pair for our own board.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -17,13 +19,14 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import {
   ACCOUNT_CLASSES,
+  ERASE_ARM_MS,
   renderAccountChip,
   renderAccountSheet,
   renderMenuFace,
   renderAccountMenu,
 } from "../../src/browser/accountChip.js";
 import { accountChipView, accountSheetView, accountMenuView } from "../../src/browser/account.js";
-import { HUD_MENU_GLYPH } from "../../src/browser/hudMenu.js";
+import { HUD_MENU_GLYPH, ABANDON_ARM_MS } from "../../src/browser/hudMenu.js";
 import { ACCOUNT_COPY } from "../../content/account.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -32,12 +35,12 @@ const MODULE_PATH = path.join(REPO_ROOT, "src", "browser", "accountChip.js");
 const MODULE_SRC = fs.readFileSync(MODULE_PATH, "utf8").replace(/\r\n/g, "\n");
 const STRIPPED = stripJs(MODULE_SRC);
 
-const PLAYER = Object.freeze({ id: "p-1", displayName: "Hilda Ferrow" });
+const HANDLE = "@lanternjaw";
 const STATES = Object.freeze({
-  signedIn: { compete: true, status: "signedIn", player: PLAYER },
-  signedOut: { compete: true, status: "signedOut" },
-  pending: { compete: true, status: "pending" },
-  off: { compete: false, status: "off" },
+  pending: { compete: true, handle: null },
+  onIdle: { compete: true, handle: HANDLE, erase: "idle" },
+  onArmed: { compete: true, handle: HANDLE, erase: "armed" },
+  off: { compete: false, handle: HANDLE },
 });
 
 function spy() {
@@ -74,11 +77,22 @@ function hasClass(el, cls) {
   return (el.className || "").split(/\s+/).includes(cls);
 }
 
+/** byAction(root, action) — the .mw-acct-action button with data-action === action (recordingDom has no attribute-selector support). */
+function byAction(root, action) {
+  return root.querySelectorAll(".mw-acct-action").find((b) => b.dataset.action === action);
+}
+
+// ─── ERASE_ARM_MS ──────────────────────────────────────────────────────────
+
+test("ERASE_ARM_MS equals hudMenu.js's ABANDON_ARM_MS", () => {
+  assert.equal(ERASE_ARM_MS, ABANDON_ARM_MS);
+});
+
 // ─── the chip ────────────────────────────────────────────────────────────
 
 test("chip, avatar (hand-built view): one .mw-acct-face with data-state avatar, aria-hidden, inline background and the initials; aria-label set", () => {
   const { button } = freshButton();
-  const view = { face: "avatar", initials: "HF", bg: "#5c4a6b", glyph: "", label: "Play Games account: Hilda Ferrow" };
+  const view = { face: "avatar", initials: "LJ", bg: "#5c4a6b", glyph: "", label: "Account: @lanternjaw" };
   renderAccountChip(button, view);
   const fs1 = faces(button);
   assert.equal(fs1.length, 1);
@@ -88,46 +102,36 @@ test("chip, avatar (hand-built view): one .mw-acct-face with data-state avatar, 
   assert.equal(face.style.background, "#5c4a6b");
   assert.equal(face.children.length, 1);
   assert.ok(hasClass(face.children[0], "mw-acct-initials"));
-  assert.equal(face.children[0].textContent, "HF");
-  assert.equal(button.getAttribute("aria-label"), "Play Games account: Hilda Ferrow");
+  assert.equal(face.children[0].textContent, "LJ");
+  assert.equal(button.getAttribute("aria-label"), "Account: @lanternjaw");
 });
 
-test("chip: rendering nobody after avatar keeps the same face element, clears the background and shows the ? glyph", () => {
+test("chip: rendering pending after avatar keeps the same face element, clears the background and shows the ? glyph", () => {
   const { button } = freshButton();
-  renderAccountChip(button, accountChipView(STATES.signedIn));
+  renderAccountChip(button, accountChipView(STATES.onIdle));
   const face = faces(button)[0];
-  renderAccountChip(button, accountChipView(STATES.signedOut));
+  renderAccountChip(button, accountChipView(STATES.pending));
   assert.equal(faces(button).length, 1);
   assert.strictEqual(faces(button)[0], face, "face element identity is preserved across renders");
-  assert.equal(face.dataset.state, "nobody");
+  assert.equal(face.dataset.state, "pending");
   assert.equal(face.style.background, "");
   assert.equal(face.children.length, 1);
   assert.ok(hasClass(face.children[0], "mw-acct-glyph"));
   assert.equal(face.children[0].textContent, "?");
-  assert.equal(button.getAttribute("aria-label"), ACCOUNT_COPY.chipLabel.signedOut);
 });
 
-test("chip: pending gives data-state pending with the glyph; Compete OFF gives nobody with its own label", () => {
+test("chip: Compete OFF gives the nobody face with its own label; the real avatar view paints the initials and hashed colour", () => {
   const { button } = freshButton();
-  renderAccountChip(button, accountChipView(STATES.pending));
-  const face = faces(button)[0];
-  assert.equal(face.dataset.state, "pending");
-  assert.equal(face.querySelector(".mw-acct-glyph").textContent, "?");
-  assert.equal(button.getAttribute("aria-label"), ACCOUNT_COPY.chipLabel.pending);
-
   renderAccountChip(button, accountChipView(STATES.off));
+  const face = faces(button)[0];
   assert.equal(face.dataset.state, "nobody");
   assert.equal(button.getAttribute("aria-label"), ACCOUNT_COPY.chipLabel.off);
-});
 
-test("chip: the real signed-in view paints the initials and the hashed colour", () => {
-  const { button } = freshButton();
-  const view = accountChipView(STATES.signedIn);
+  const view = accountChipView(STATES.onIdle);
   renderAccountChip(button, view);
-  const face = faces(button)[0];
-  assert.equal(face.querySelector(".mw-acct-initials").textContent, view.initials);
-  assert.equal(face.style.background, view.bg);
-  assert.ok(view.bg, "the real view carries a colour");
+  assert.equal(faces(button)[0].querySelector(".mw-acct-initials").textContent, view.initials);
+  assert.equal(faces(button)[0].style.background, view.bg);
+  assert.ok(view.bg);
   assert.equal(button.getAttribute("aria-label"), view.label);
 });
 
@@ -135,14 +139,14 @@ test("chip: a button whose static markup already holds a .mw-acct-face is reused
   const { document, button } = freshButton();
   const staticFace = document.createElement("span");
   staticFace.className = "mw-acct-face";
-  staticFace.dataset.state = "nobody";
+  staticFace.dataset.state = "pending";
   const glyph = document.createElement("span");
   glyph.className = "mw-acct-glyph";
   glyph.textContent = "?";
   staticFace.appendChild(glyph);
   button.appendChild(staticFace);
 
-  renderAccountChip(button, accountChipView(STATES.signedIn));
+  renderAccountChip(button, accountChipView(STATES.onIdle));
   assert.equal(faces(button).length, 1);
   assert.strictEqual(faces(button)[0], staticFace);
   assert.equal(staticFace.dataset.state, "avatar");
@@ -150,52 +154,41 @@ test("chip: a button whose static markup already holds a .mw-acct-face is reused
 });
 
 test("chip: a null button is a no-op", () => {
-  assert.doesNotThrow(() => renderAccountChip(null, accountChipView(STATES.signedOut)));
-  assert.doesNotThrow(() => renderAccountChip(undefined, accountChipView(STATES.signedOut)));
+  assert.doesNotThrow(() => renderAccountChip(null, accountChipView(STATES.off)));
+  assert.doesNotThrow(() => renderAccountChip(undefined, accountChipView(STATES.off)));
 });
 
 // ─── the sheet ───────────────────────────────────────────────────────────
 
-test("sheet, signed out: title, then identity, a signIn action, no help, the Compete row (ON active) and Settings, in order", () => {
+test("sheet, no handle yet: identity, the Compete row, the on-help line, reroll and erase both disabled, then Settings, in order", () => {
   const { rows, title } = freshSheet();
-  const view = accountSheetView(STATES.signedOut);
+  const view = accountSheetView(STATES.pending);
   renderAccountSheet({ rows, title }, view, {});
   assert.equal(title.textContent, view.title);
 
   const kids = rows.children;
-  assert.equal(kids.length, 4);
-  const [id, action, row, settings] = kids;
+  assert.deepEqual(kids.map((c) => c.className.split(/\s+/)[0]), ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action", "mw-acct-settings"]);
+  const [id, row, help, reroll, erase, settings] = kids;
 
   assert.ok(hasClass(id, "mw-acct-id"));
-  assert.ok(hasClass(id.children[0], "mw-acct-face"));
-  assert.equal(id.children[0].dataset.state, "nobody");
+  assert.equal(id.children[0].dataset.state, "pending");
   assert.equal(id.children[0].getAttribute("aria-hidden"), "true");
-  assert.ok(hasClass(id.children[1], "mw-acct-id-text"));
   assert.equal(id.children[1].querySelector(".mw-acct-name").textContent, view.identity.name);
   assert.equal(id.children[1].querySelector(".mw-acct-status").textContent, view.identity.status);
 
-  assert.ok(hasClass(action, "mw-acct-action"));
-  assert.equal(action.tagName, "button");
-  assert.equal(action.type, "button");
-  assert.equal(action.dataset.action, "signIn");
-  assert.equal(action.textContent, ACCOUNT_COPY.sheet.signIn);
-  assert.equal(action.disabled, false);
-
-  assert.equal(rows.querySelector(".mw-acct-help"), null);
-
   assert.ok(hasClass(row, "mw-acct-row"));
-  assert.equal(row.querySelector(".mw-acct-label").textContent, view.compete.label);
-  const opts = row.querySelector(".mw-acct-options").querySelectorAll(".mw-acct-opt");
-  assert.equal(opts.length, 2);
-  assert.equal(opts[0].dataset.value, "true");
-  assert.equal(opts[1].dataset.value, "false");
-  assert.equal(opts[0].type, "button");
-  assert.equal(opts[0].textContent, ACCOUNT_COPY.sheet.on);
-  assert.equal(opts[1].textContent, ACCOUNT_COPY.sheet.off);
-  assert.ok(hasClass(opts[0], "active"));
-  assert.equal(opts[0].getAttribute("aria-pressed"), "true");
-  assert.ok(!hasClass(opts[1], "active"));
-  assert.equal(opts[1].getAttribute("aria-pressed"), "false");
+  assert.equal(help.textContent, view.help);
+
+  assert.equal(reroll.tagName, "button");
+  assert.equal(reroll.type, "button");
+  assert.equal(reroll.dataset.action, "reroll");
+  assert.equal(reroll.textContent, ACCOUNT_COPY.sheet.reroll);
+  assert.equal(reroll.disabled, true);
+
+  assert.equal(erase.dataset.action, "erase");
+  assert.equal(erase.dataset.armed, "0");
+  assert.equal(erase.disabled, true);
+  assert.equal(erase.textContent, ACCOUNT_COPY.sheet.erase);
 
   assert.ok(hasClass(settings, "mw-acct-settings"));
   assert.equal(settings.tagName, "button");
@@ -203,100 +196,84 @@ test("sheet, signed out: title, then identity, a signIn action, no help, the Com
   assert.equal(settings.textContent, view.settings.label);
 });
 
-test("sheet, signed in: the avatar identity, a stopCompeting action and the helper line", () => {
+test("sheet, a handle with Compete ON, erase idle: the avatar identity, reroll and erase both enabled, armed=0", () => {
   const { rows, title } = freshSheet();
-  const view = accountSheetView(STATES.signedIn);
+  const view = accountSheetView(STATES.onIdle);
   renderAccountSheet({ rows, title }, view, {});
+  const reroll = byAction(rows, "reroll");
+  const erase = byAction(rows, "erase");
+  assert.equal(reroll.disabled, false);
+  assert.equal(erase.disabled, false);
+  assert.equal(erase.dataset.armed, "0");
+  assert.equal(erase.textContent, ACCOUNT_COPY.sheet.erase);
   const id = rows.querySelector(".mw-acct-id");
   const face = id.querySelector(".mw-acct-face");
   assert.equal(face.dataset.state, "avatar");
   assert.equal(face.style.background, view.identity.bg);
   assert.equal(face.querySelector(".mw-acct-initials").textContent, view.identity.initials);
-  assert.equal(id.querySelector(".mw-acct-name").textContent, "Hilda Ferrow");
-  const action = rows.querySelector(".mw-acct-action");
-  assert.equal(action.dataset.action, "stopCompeting");
-  assert.equal(action.textContent, ACCOUNT_COPY.sheet.stopCompeting);
-  const help = rows.querySelector(".mw-acct-help");
-  assert.ok(help);
-  assert.equal(help.textContent, ACCOUNT_COPY.sheet.stopHelp);
-  // order: id, action, help, row, settings
-  assert.deepEqual(
-    rows.children.map((c) => c.className.split(/\s+/)[0]),
-    ["mw-acct-id", "mw-acct-action", "mw-acct-help", "mw-acct-row", "mw-acct-settings"],
-  );
+  assert.equal(id.querySelector(".mw-acct-name").textContent, HANDLE);
+  assert.equal(id.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.on);
 });
 
-test("sheet, pending: a disabled SIGNING IN action with data-action pending and the pending face", () => {
+test("sheet, erase armed: the erase button reads TAP AGAIN TO ERASE with armed=1, still enabled", () => {
   const { rows, title } = freshSheet();
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.pending), {});
-  const action = rows.querySelector(".mw-acct-action");
-  assert.equal(action.dataset.action, "pending");
-  assert.equal(action.disabled, true);
-  assert.equal(action.textContent, ACCOUNT_COPY.sheet.signingIn);
-  assert.equal(rows.querySelector(".mw-acct-face").dataset.state, "pending");
-  assert.equal(rows.querySelector(".mw-acct-help"), null);
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.onArmed), {});
+  const erase = byAction(rows, "erase");
+  assert.equal(erase.textContent, ACCOUNT_COPY.sheet.eraseArmed);
+  assert.equal(erase.dataset.armed, "1");
+  assert.equal(erase.disabled, false);
 });
 
-test("sheet, Compete OFF: no action row, the off help, and the OFF option active", () => {
+test("sheet, Compete OFF: the handle's avatar still shows, erase disabled, the off-help line, OFF active", () => {
   const { rows, title } = freshSheet();
   renderAccountSheet({ rows, title }, accountSheetView(STATES.off), {});
-  assert.equal(rows.querySelector(".mw-acct-action"), null);
-  assert.equal(rows.querySelector(".mw-acct-help").textContent, ACCOUNT_COPY.sheet.offHelp);
+  const id = rows.querySelector(".mw-acct-id");
+  assert.equal(id.querySelector(".mw-acct-face").dataset.state, "avatar");
+  assert.equal(id.querySelector(".mw-acct-name").textContent, HANDLE);
+  assert.equal(id.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.off);
   const opts = rows.querySelectorAll(".mw-acct-opt");
   assert.ok(!hasClass(opts[0], "active"));
-  assert.equal(opts[0].getAttribute("aria-pressed"), "false");
   assert.ok(hasClass(opts[1], "active"));
   assert.equal(opts[1].getAttribute("aria-pressed"), "true");
-  assert.equal(rows.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.off);
+  assert.equal(byAction(rows, "erase").disabled, true);
+  assert.equal(byAction(rows, "reroll").disabled, false, "re-roll stays available with Compete off");
+  assert.equal(rows.querySelector(".mw-acct-help").textContent, ACCOUNT_COPY.sheet.offHelp);
 });
 
-test("sheet handlers: signIn → onSignIn, stopCompeting → onStopCompeting, options → onCompete(value), settings → onSettings", () => {
-  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy(), onSettings: spy() };
+test("sheet handlers: the click event is handed to each handler as the trailing argument", () => {
+  const h = { onCompete: spy(), onReroll: spy(), onErase: spy(), onSettings: spy() };
   const { rows, title } = freshSheet();
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.onIdle), h);
 
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedOut), h);
-  rows.querySelector(".mw-acct-action").onclick();
-  assert.equal(h.onSignIn.calls.length, 1);
-  assert.equal(h.onStopCompeting.calls.length, 0);
+  byAction(rows, "reroll").onclick({ tag: "reroll-evt" });
+  assert.deepEqual(h.onReroll.calls, [[{ tag: "reroll-evt" }]]);
+
+  byAction(rows, "erase").onclick({ tag: "erase-evt" });
+  assert.deepEqual(h.onErase.calls, [[{ tag: "erase-evt" }]]);
+
   const opts = rows.querySelectorAll(".mw-acct-opt");
-  opts[0].onclick();
-  opts[1].onclick();
-  assert.deepEqual(h.onCompete.calls, [[true], [false]]);
-  rows.querySelector(".mw-acct-settings").onclick();
-  assert.equal(h.onSettings.calls.length, 1);
+  opts[0].onclick({ tag: "on-evt" });
+  opts[1].onclick({ tag: "off-evt" });
+  assert.deepEqual(h.onCompete.calls, [[true, { tag: "on-evt" }], [false, { tag: "off-evt" }]]);
 
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedIn), h);
-  rows.querySelector(".mw-acct-action").onclick();
-  assert.equal(h.onStopCompeting.calls.length, 1);
-  assert.equal(h.onSignIn.calls.length, 1);
+  rows.querySelector(".mw-acct-settings").onclick({ tag: "settings-evt" });
+  assert.deepEqual(h.onSettings.calls, [[{ tag: "settings-evt" }]]);
 });
 
-test("sheet handlers: a pending or disabled action calls nothing", () => {
-  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy(), onSettings: spy() };
+test("sheet handlers: a disabled reroll/erase button calls nothing; missing handlers never throw", () => {
+  const h = { onReroll: spy(), onErase: spy() };
   const { rows, title } = freshSheet();
   renderAccountSheet({ rows, title }, accountSheetView(STATES.pending), h);
-  const action = rows.querySelector(".mw-acct-action");
-  if (typeof action.onclick === "function") action.onclick();
-  // a hand-built disabled signIn action is also inert
-  const view = { ...accountSheetView(STATES.signedOut), action: { id: "signIn", label: "SIGN IN", disabled: true } };
-  renderAccountSheet({ rows, title }, view, h);
-  const disabled = rows.querySelector(".mw-acct-action");
-  assert.equal(disabled.disabled, true);
-  if (typeof disabled.onclick === "function") disabled.onclick();
-  assert.equal(h.onSignIn.calls.length, 0);
-  assert.equal(h.onStopCompeting.calls.length, 0);
-});
+  byAction(rows, "reroll").onclick();
+  byAction(rows, "erase").onclick();
+  assert.equal(h.onReroll.calls.length, 0);
+  assert.equal(h.onErase.calls.length, 0);
 
-test("sheet handlers: missing handlers never throw (no handlers argument at all, or an empty object)", () => {
   for (const status of Object.keys(STATES)) {
-    const { rows, title } = freshSheet();
+    const { rows: r2, title: t2 } = freshSheet();
     const view = accountSheetView(STATES[status]);
-    renderAccountSheet({ rows, title }, view);
-    for (const btn of [
-      rows.querySelector(".mw-acct-action"),
-      ...rows.querySelectorAll(".mw-acct-opt"),
-      rows.querySelector(".mw-acct-settings"),
-    ]) {
+    renderAccountSheet({ rows: r2, title: t2 }, view);
+    for (const btn of [...r2.querySelectorAll(".mw-acct-action"), ...r2.querySelectorAll(".mw-acct-opt"), r2.querySelector(".mw-acct-settings")]) {
       if (btn && typeof btn.onclick === "function") assert.doesNotThrow(() => btn.onclick());
     }
   }
@@ -304,23 +281,22 @@ test("sheet handlers: missing handlers never throw (no handlers argument at all,
 
 test("sheet: a missing title element is tolerated", () => {
   const { rows } = freshSheet();
-  assert.doesNotThrow(() => renderAccountSheet({ rows, title: null }, accountSheetView(STATES.signedOut), {}));
-  assert.equal(rows.children.length, 4);
+  assert.doesNotThrow(() => renderAccountSheet({ rows, title: null }, accountSheetView(STATES.onIdle), {}));
+  assert.equal(rows.children.length, 6);
 });
 
 test("sheet: a re-render replaces the rows, never duplicating them", () => {
   const { rows, title } = freshSheet();
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedIn), {});
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedIn), {});
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedOut), {});
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.onIdle), {});
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.onIdle), {});
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.pending), {});
   assert.equal(rows.querySelectorAll(".mw-acct-id").length, 1);
-  assert.equal(rows.querySelectorAll(".mw-acct-action").length, 1);
+  assert.equal(rows.querySelectorAll(".mw-acct-action").length, 2);
   assert.equal(rows.querySelectorAll(".mw-acct-row").length, 1);
   assert.equal(rows.querySelectorAll(".mw-acct-settings").length, 1);
-  assert.equal(rows.querySelectorAll(".mw-acct-help").length, 0);
 });
 
-// ─── the ☰ face (Phase 70 D-03) ──────────────────────────────────────────
+// ─── the ☰ face (unchanged contract) ──────────────────────────────────────
 
 /** A ☰ button shaped like the shell's static markup: one .mw-hud-menu-face holding the glyph. */
 function freshMenuButton() {
@@ -336,9 +312,9 @@ function freshMenuButton() {
   return { document, button, face };
 }
 
-test("menu face (D-03): the signed-in view reuses .mw-hud-menu-face and paints one initials child on the hashed colour", () => {
+test("menu face: the avatar view reuses .mw-hud-menu-face and paints one initials child on the hashed colour", () => {
   const { button, face } = freshMenuButton();
-  const view = accountMenuView(STATES.signedIn);
+  const view = accountMenuView(STATES.onIdle);
   renderMenuFace(button, view);
   assert.equal(button.children.length, 1, "no face is added");
   assert.strictEqual(button.children[0], face);
@@ -349,13 +325,13 @@ test("menu face (D-03): the signed-in view reuses .mw-hud-menu-face and paints o
   assert.equal(face.children[0].textContent, view.initials);
   assert.equal(face.style.background, view.bg);
   assert.ok(view.bg);
-  assert.equal(button.getAttribute("aria-label"), "Menu — signed in as Hilda Ferrow");
+  assert.equal(button.getAttribute("aria-label"), view.label);
 });
 
-test("menu face (D-03): the plain view on the same element shows only the ☰ text, clears the background and labels Menu", () => {
+test("menu face: no handle or Compete OFF shows only the ☰ text, clears the background, labels Menu", () => {
   const { button, face } = freshMenuButton();
-  renderMenuFace(button, accountMenuView(STATES.signedIn));
-  for (const status of ["signedOut", "pending", "off"]) {
+  renderMenuFace(button, accountMenuView(STATES.onIdle));
+  for (const status of ["pending", "off"]) {
     renderMenuFace(button, accountMenuView(STATES[status]));
     assert.strictEqual(button.querySelector(".mw-hud-menu-face"), face);
     assert.equal(face.dataset.state, "menu");
@@ -364,28 +340,27 @@ test("menu face (D-03): the plain view on the same element shows only the ☰ te
     assert.equal(face.textContent, HUD_MENU_GLYPH);
     assert.equal(face.style.background, "");
     assert.equal(button.getAttribute("aria-label"), "Menu");
-    // and back to the avatar again
-    renderMenuFace(button, accountMenuView(STATES.signedIn));
+    renderMenuFace(button, accountMenuView(STATES.onIdle));
     assert.equal(face.dataset.state, "avatar");
     assert.equal(face.querySelectorAll(".mw-acct-initials").length, 1);
   }
 });
 
 test("menu face: a null button, a null view or a button with no .mw-hud-menu-face is a no-op that creates nothing", () => {
-  assert.doesNotThrow(() => renderMenuFace(null, accountMenuView(STATES.signedIn)));
-  assert.doesNotThrow(() => renderMenuFace(undefined, accountMenuView(STATES.signedIn)));
+  assert.doesNotThrow(() => renderMenuFace(null, accountMenuView(STATES.onIdle)));
+  assert.doesNotThrow(() => renderMenuFace(undefined, accountMenuView(STATES.onIdle)));
   const { button, face } = freshMenuButton();
   assert.doesNotThrow(() => renderMenuFace(button, null));
   assert.equal(face.dataset.state, undefined);
   assert.equal(button.getAttribute("aria-label"), "Menu");
   const bare = freshButton().button;
   bare.setAttribute("aria-label", "Menu");
-  assert.doesNotThrow(() => renderMenuFace(bare, accountMenuView(STATES.signedIn)));
+  assert.doesNotThrow(() => renderMenuFace(bare, accountMenuView(STATES.onIdle)));
   assert.equal(bare.children.length, 0, "nothing is created");
   assert.equal(bare.getAttribute("aria-label"), "Menu", "the label is left alone");
 });
 
-// ─── the ACCOUNT block in the ☰ dropdown (Phase 70 D-04) ─────────────────
+// ─── the ACCOUNT block in the ☰ dropdown ──────────────────────────────────
 
 function freshHost() {
   const { document } = createRecordingDocument();
@@ -394,12 +369,12 @@ function freshHost() {
 
 const firstClass = (c) => (c.className || "").split(/\s+/)[0];
 
-test("account menu (D-04): each status draws identity, the action when present, help when present, then Compete — no title, no Settings", () => {
+test("account menu: each status draws identity, Compete, the help line, then reroll and erase — no title, no Settings", () => {
   const expected = {
-    signedIn: ["mw-acct-id", "mw-acct-action", "mw-acct-help", "mw-acct-row"],
-    signedOut: ["mw-acct-id", "mw-acct-action", "mw-acct-row"],
-    pending: ["mw-acct-id", "mw-acct-action", "mw-acct-row"],
-    off: ["mw-acct-id", "mw-acct-help", "mw-acct-row"],
+    pending: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
+    onIdle: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
+    onArmed: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
+    off: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
   };
   for (const [status, order] of Object.entries(expected)) {
     const { host } = freshHost();
@@ -413,59 +388,49 @@ test("account menu (D-04): each status draws identity, the action when present, 
   }
 });
 
-test("account menu (D-04): signIn → onSignIn, stopCompeting → onStopCompeting, options → onCompete(value)", () => {
-  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy(), onSettings: spy() };
+test("account menu: onCompete/onReroll/onErase receive the event; missing handlers never throw", () => {
+  const h = { onCompete: spy(), onReroll: spy(), onErase: spy() };
   const { host } = freshHost();
-  renderAccountMenu(host, accountSheetView(STATES.signedOut), h);
-  host.querySelector(".mw-acct-action").onclick();
-  assert.equal(h.onSignIn.calls.length, 1);
+  renderAccountMenu(host, accountSheetView(STATES.onIdle), h);
+  byAction(host, "reroll").onclick({ tag: "r" });
+  byAction(host, "erase").onclick({ tag: "e" });
+  assert.deepEqual(h.onReroll.calls, [[{ tag: "r" }]]);
+  assert.deepEqual(h.onErase.calls, [[{ tag: "e" }]]);
   const opts = host.querySelectorAll(".mw-acct-opt");
-  opts[0].onclick();
-  opts[1].onclick();
-  assert.deepEqual(h.onCompete.calls, [[true], [false]]);
-  renderAccountMenu(host, accountSheetView(STATES.signedIn), h);
-  host.querySelector(".mw-acct-action").onclick();
-  assert.equal(h.onStopCompeting.calls.length, 1);
-  assert.equal(h.onSignIn.calls.length, 1);
-  assert.equal(h.onSettings.calls.length, 0);
-});
-
-test("account menu: a pending or disabled action calls nothing; missing handlers never throw", () => {
-  const h = { onSignIn: spy(), onStopCompeting: spy(), onCompete: spy() };
-  const { host } = freshHost();
-  renderAccountMenu(host, accountSheetView(STATES.pending), h);
-  const pending = host.querySelector(".mw-acct-action");
-  assert.equal(pending.disabled, true);
-  if (typeof pending.onclick === "function") pending.onclick();
-  const view = { ...accountSheetView(STATES.signedOut), action: { id: "signIn", label: "SIGN IN", disabled: true } };
-  renderAccountMenu(host, view, h);
-  const disabled = host.querySelector(".mw-acct-action");
-  if (typeof disabled.onclick === "function") disabled.onclick();
-  assert.equal(h.onSignIn.calls.length, 0);
-  assert.equal(h.onStopCompeting.calls.length, 0);
+  opts[0].onclick({ tag: "c" });
+  assert.deepEqual(h.onCompete.calls, [[true, { tag: "c" }]]);
 
   for (const status of Object.keys(STATES)) {
     for (const handlers of [undefined, null, {}]) {
       const { host: bare } = freshHost();
       assert.doesNotThrow(() => renderAccountMenu(bare, accountSheetView(STATES[status]), handlers));
-      for (const btn of [bare.querySelector(".mw-acct-action"), ...bare.querySelectorAll(".mw-acct-opt")]) {
+      for (const btn of [...bare.querySelectorAll(".mw-acct-action"), ...bare.querySelectorAll(".mw-acct-opt")]) {
         if (btn && typeof btn.onclick === "function") assert.doesNotThrow(() => btn.onclick());
       }
     }
   }
 });
 
+test("account menu: a disabled reroll/erase calls nothing", () => {
+  const h = { onReroll: spy(), onErase: spy() };
+  const { host } = freshHost();
+  renderAccountMenu(host, accountSheetView(STATES.pending), h);
+  byAction(host, "reroll").onclick();
+  byAction(host, "erase").onclick();
+  assert.equal(h.onReroll.calls.length, 0);
+  assert.equal(h.onErase.calls.length, 0);
+});
+
 test("account menu: a re-render replaces the rows, never duplicating them; a null host or view is a no-op", () => {
   const { host } = freshHost();
-  renderAccountMenu(host, accountSheetView(STATES.signedIn), {});
-  renderAccountMenu(host, accountSheetView(STATES.signedIn), {});
-  renderAccountMenu(host, accountSheetView(STATES.signedOut), {});
+  renderAccountMenu(host, accountSheetView(STATES.onIdle), {});
+  renderAccountMenu(host, accountSheetView(STATES.onIdle), {});
+  renderAccountMenu(host, accountSheetView(STATES.pending), {});
   assert.equal(host.querySelectorAll(".mw-acct-id").length, 1);
-  assert.equal(host.querySelectorAll(".mw-acct-action").length, 1);
+  assert.equal(host.querySelectorAll(".mw-acct-action").length, 2);
   assert.equal(host.querySelectorAll(".mw-acct-row").length, 1);
-  assert.equal(host.querySelectorAll(".mw-acct-help").length, 0);
-  assert.doesNotThrow(() => renderAccountMenu(null, accountSheetView(STATES.signedIn), {}));
-  assert.doesNotThrow(() => renderAccountMenu(undefined, accountSheetView(STATES.signedIn), {}));
+  assert.doesNotThrow(() => renderAccountMenu(null, accountSheetView(STATES.onIdle), {}));
+  assert.doesNotThrow(() => renderAccountMenu(undefined, accountSheetView(STATES.onIdle), {}));
   const before = host.children.length;
   assert.doesNotThrow(() => renderAccountMenu(host, null, {}));
   assert.equal(host.children.length, before, "a null view leaves the rows alone");
@@ -473,7 +438,7 @@ test("account menu: a re-render replaces the rows, never duplicating them; a nul
 
 // ─── the class contract ──────────────────────────────────────────────────
 
-test("ACCOUNT_CLASSES is the frozen, pinned list (identical to 67-05's account-layout RENDERER_CLASSES)", () => {
+test("ACCOUNT_CLASSES is the frozen, pinned list (unchanged from Phase 67)", () => {
   assert.ok(Object.isFrozen(ACCOUNT_CLASSES));
   assert.deepEqual(
     [...ACCOUNT_CLASSES],
@@ -485,21 +450,18 @@ test("ACCOUNT_CLASSES is the frozen, pinned list (identical to 67-05's account-l
   );
 });
 
-test("ACCOUNT_CLASSES completeness: every class emitted across four sheet states and both chip faces is listed, and every listed class is emitted", () => {
+test("ACCOUNT_CLASSES completeness: every class emitted across every sheet state and both chip faces is listed, and every listed class is emitted", () => {
   const emitted = new Set();
   for (const status of Object.keys(STATES)) {
     const { rows, title } = freshSheet();
     renderAccountSheet({ rows, title }, accountSheetView(STATES[status]), {});
     for (const child of rows.children) classesUnder(child, emitted);
   }
-  for (const status of ["signedIn", "signedOut"]) {
+  for (const status of ["onIdle", "off"]) {
     const { button } = freshButton();
     renderAccountChip(button, accountChipView(STATES[status]));
     for (const child of button.children) classesUnder(child, emitted);
   }
-  // Phase 70 (D-03/D-04): the ☰ ACCOUNT block and the ☰ face's children
-  // emit only listed classes too (the .mw-hud-menu-face itself is the
-  // shell's static markup, not a renderer emission).
   for (const status of Object.keys(STATES)) {
     const { host } = freshHost();
     renderAccountMenu(host, accountSheetView(STATES[status]), {});
@@ -516,7 +478,7 @@ test("ACCOUNT_CLASSES completeness: every class emitted across four sheet states
 
 // ─── source pins ─────────────────────────────────────────────────────────
 
-test("source pins: no document./window./globalThis., no HTML-string assignment, no content/ import, no storage, no network identifier, no plugin name", () => {
+test("source pins: no document./window./globalThis., no HTML-string assignment, no content/ import, no storage, no network identifier, no retired provider/plugin wording", () => {
   assert.doesNotMatch(STRIPPED, /\bdocument\./);
   assert.doesNotMatch(STRIPPED, /\bwindow\./);
   assert.doesNotMatch(STRIPPED, /\bglobalThis\./);
@@ -529,14 +491,19 @@ test("source pins: no document./window./globalThis., no HTML-string assignment, 
   for (const ident of ["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "sendBeacon"]) {
     assert.doesNotMatch(STRIPPED, new RegExp(`\\b${ident}\\b`), `unexpected network identifier: ${ident}`);
   }
-  assert.doesNotMatch(STRIPPED, /capacitor-play-games/);
+  assert.doesNotMatch(MODULE_SRC, /play[ _-]?games/i);
+  assert.doesNotMatch(MODULE_SRC, /provider/i);
+  assert.doesNotMatch(MODULE_SRC, /\bsignIn\b/);
+  assert.doesNotMatch(MODULE_SRC, /\bstopCompeting\b/);
+  assert.doesNotMatch(MODULE_SRC, /capacitor-play-games/);
 });
 
-test("source pins: the renderer exports are present exactly once", () => {
+test("source pins: the renderer exports, ERASE_ARM_MS and the controller export are present exactly once", () => {
   assert.equal((MODULE_SRC.match(/export const ACCOUNT_CLASSES/g) || []).length, 1);
+  assert.equal((MODULE_SRC.match(/export const ERASE_ARM_MS/g) || []).length, 1);
   assert.equal((MODULE_SRC.match(/export function renderAccountChip/g) || []).length, 1);
   assert.equal((MODULE_SRC.match(/export function renderAccountSheet/g) || []).length, 1);
-  // Phase 70 (D-03/D-04): the ☰ face and ACCOUNT-block renderers.
   assert.equal((MODULE_SRC.match(/export function renderMenuFace\b/g) || []).length, 1);
   assert.equal((MODULE_SRC.match(/export function renderAccountMenu\b/g) || []).length, 1);
+  assert.equal((MODULE_SRC.match(/export function createAccountController/g) || []).length, 1);
 });

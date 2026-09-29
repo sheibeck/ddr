@@ -1,47 +1,44 @@
 // src/browser/accountChip.js
 //
-// Phase 67 (ACCT-01/02, PGS-02) — the account chip and its bottom sheet's DOM
-// renderers, and the account controller that runs sign-in.
+// Phase 85 (ACCT-03/05, 85-CONTEXT group 1) — the account chip/sheet/☰-block
+// DOM renderers, and the account controller that drives our own board's
+// handle-and-Compete account.
 //
 // The renderers reach the page only through the host element's own
 // ownerDocument and build DOM only with createElement/className/textContent/
 // setAttribute/dataset/style/disabled/onclick/appendChild/replaceChildren
-// (never an HTML-string assignment). Every word they draw comes from the view
-// (content/account.js through src/browser/account.js); this module imports no
-// copy of its own. Every tap goes to an injected handler.
+// (never an HTML-string assignment). Every word they draw comes from the
+// view (content/account.js through src/browser/account.js); this module
+// imports no copy of its own. Each renderer hands the raw click event to its
+// handler as the trailing argument, so the shell decides whether the ☰
+// closes (85-CONTEXT: the shell keeps it open for COMPETE/re-roll and closes
+// it only on the confirming erase tap).
 //
-// The controller (createAccountController) owns every account transition:
-// the silent launch attempt (D-01), Compete OFF meaning no provider call at
-// all (D-02), Stop competing as Compete OFF with no sign-out (D-03), the
-// once-per-install welcome card (D-04) and the single failed card with no
-// automatic retry (D-11). The Play Games provider is injected (a provider
-// from src/browser/playGames.js), so this module never names the plugin.
-// There is no window/document global, no storage except through the injected
-// settings functions, and no network.
-//
-// Phase 70 (POLISH-02, D-03/D-04): the ☰ menu button wears the account face
-// (renderMenuFace, painting the shell's own .mw-hud-menu-face) and its
-// dropdown carries the ACCOUNT block (renderAccountMenu: the sheet's rows
-// without its title or Settings row, because the ☰ already has SETTINGS).
-// The controller adds menuView(). The title keeps its chip and sheet.
+// The controller (createAccountController) owns every account transition: a
+// handle rolled at boot with no network (the injected identity seam's own
+// ensureHandle()), Compete purging the board queue when it goes off and
+// flushing it when it comes back on, re-rolling through the board seam,
+// the two-tap erase (arm/expire/erase/notify) and the once-ever welcome
+// card. The identity and board seams are both injected (85-02 builds the
+// board side; 85-04 wires them), so this module names neither a plugin nor
+// any game-service seam. There is no window/document global, no storage
+// except through the injected settings functions, and no network.
 
 import {
-  ACCOUNT_STATUS,
   normalizeAccountState,
   accountCard,
-  accountIdentity,
   accountChipView,
   accountSheetView,
   accountMenuView,
 } from "./account.js";
+import { isValidHandle } from "./handles.js";
+import { ABANDON_ARM_MS } from "./hudMenu.js";
 
 /**
- * ACCOUNT_CLASSES — every class name the renderers emit. 67-05's CSS test
- * (test/unit/account-layout.test.js) pins this exact list and asserts each
+ * ACCOUNT_CLASSES — every class name the renderers emit. test/unit/
+ * account-layout.test.js's CSS test pins this exact list and asserts each
  * has a rule. The "active" modifier on .mw-acct-opt is a state, not part of
- * the contract. Phase 70's menu renderers (renderMenuFace, renderAccountMenu)
- * emit only classes already listed here; the .mw-hud-menu-face they paint is
- * the shell's static markup, never created by a renderer.
+ * the contract.
  */
 export const ACCOUNT_CLASSES = Object.freeze([
   "mw-acct-face",
@@ -60,6 +57,9 @@ export const ACCOUNT_CLASSES = Object.freeze([
   "mw-acct-settings",
 ]);
 
+/** ERASE_ARM_MS — how long an armed ERASE MY RUNS row waits for its second tap, matching the ☰ menu's own ABANDON THIS CHARACTER arm (hudMenu.js). */
+export const ERASE_ARM_MS = ABANDON_ARM_MS;
+
 // ─── small DOM builders (module-private) ─────────────────────────────────
 
 function el(doc, tag, className, text) {
@@ -71,8 +71,9 @@ function el(doc, tag, className, text) {
 
 /**
  * paintFace(doc, face, view) — draws a face ({ face, initials, bg, glyph })
- * into an existing .mw-acct-face element (D-07): the initials on an inline
- * background for "avatar", the dim glyph with no background otherwise.
+ * into an existing .mw-acct-face element: the initials on an inline
+ * background for "avatar", the dim glyph with no background otherwise
+ * ("pending" or "nobody").
  */
 function paintFace(doc, faceEl, view) {
   const avatar = view.face === "avatar";
@@ -89,7 +90,7 @@ function paintFace(doc, faceEl, view) {
 }
 
 /**
- * renderAccountChip(button, view) — the chip's face (D-07). Reuses the
+ * renderAccountChip(button, view) — the title chip's face. Reuses the
  * button's existing .mw-acct-face child (the static markup's, or the one a
  * previous render made) so the element survives every re-render, creating
  * it only when missing. Sets the button's aria-label to view.label. A null
@@ -117,19 +118,6 @@ function buildIdentity(doc, identity) {
   return id;
 }
 
-function buildAction(doc, action, handlers) {
-  const btn = el(doc, "button", "mw-acct-action", String(action.label ?? ""));
-  btn.type = "button";
-  btn.dataset.action = String(action.id ?? "");
-  btn.disabled = action.disabled === true;
-  btn.onclick = () => {
-    if (action.disabled === true) return;
-    if (action.id === "signIn") handlers.onSignIn?.();
-    else if (action.id === "stopCompeting") handlers.onStopCompeting?.();
-  };
-  return btn;
-}
-
 function buildCompete(doc, compete, handlers) {
   const row = el(doc, "div", "mw-acct-row");
   row.appendChild(el(doc, "span", "mw-acct-label", String(compete.label ?? "")));
@@ -140,20 +128,46 @@ function buildCompete(doc, compete, handlers) {
     btn.type = "button";
     btn.dataset.value = String(opt.value);
     btn.setAttribute("aria-pressed", active ? "true" : "false");
-    btn.onclick = () => handlers.onCompete?.(opt.value);
+    btn.onclick = (event) => handlers.onCompete?.(opt.value, event);
     options.appendChild(btn);
   }
   row.appendChild(options);
   return row;
 }
 
+function buildReroll(doc, reroll, handlers) {
+  const btn = el(doc, "button", "mw-acct-action", String(reroll.label ?? ""));
+  btn.type = "button";
+  btn.dataset.action = "reroll";
+  btn.disabled = reroll.disabled === true;
+  btn.onclick = (event) => {
+    if (reroll.disabled === true) return;
+    handlers.onReroll?.(event);
+  };
+  return btn;
+}
+
+function buildErase(doc, erase, handlers) {
+  const btn = el(doc, "button", "mw-acct-action", String(erase.label ?? ""));
+  btn.type = "button";
+  btn.dataset.action = "erase";
+  btn.dataset.armed = erase.armed === true ? "1" : "0";
+  btn.disabled = erase.disabled === true;
+  btn.onclick = (event) => {
+    if (erase.disabled === true) return;
+    handlers.onErase?.(event);
+  };
+  return btn;
+}
+
 /**
  * renderAccountSheet({ rows, title }, view, handlers = {}) — the bottom
- * sheet's rows (D-09/D-10), replacing the previous rows on every call: the
- * identity block (face, name, status), then the one action the view allows
- * (Sign in / Stop competing / a disabled SIGNING IN…), the helper line when
- * the view has one, the Compete ON/OFF toggle and the Settings row. Handlers
- * (all optional): onSignIn, onStopCompeting, onCompete(value), onSettings.
+ * sheet's rows: the identity block (face, name, status), the Compete
+ * ON/OFF toggle, the help line, RE-ROLL HANDLE, ERASE MY RUNS and Settings,
+ * replacing the previous rows on every call. Handlers (all optional):
+ * onCompete(value, event), onReroll(event), onErase(event), onSettings
+ * (event) — each receives the raw click event as its trailing argument. A
+ * disabled reroll/erase button never calls its handler.
  */
 export function renderAccountSheet({ rows, title } = {}, view, handlers = {}) {
   if (!view) return;
@@ -163,13 +177,14 @@ export function renderAccountSheet({ rows, title } = {}, view, handlers = {}) {
   const doc = rows.ownerDocument;
 
   const children = [buildIdentity(doc, view.identity || {})];
-  if (view.action) children.push(buildAction(doc, view.action, h));
-  if (typeof view.help === "string" && view.help) children.push(el(doc, "p", "mw-acct-help", view.help));
   children.push(buildCompete(doc, view.compete || {}, h));
+  if (typeof view.help === "string" && view.help) children.push(el(doc, "p", "mw-acct-help", view.help));
+  children.push(buildReroll(doc, view.reroll || {}, h));
+  children.push(buildErase(doc, view.erase || {}, h));
 
   const settings = el(doc, "button", "mw-acct-settings", String(view.settings?.label ?? ""));
   settings.type = "button";
-  settings.onclick = () => h.onSettings?.();
+  settings.onclick = (event) => h.onSettings?.(event);
   children.push(settings);
 
   rows.replaceChildren(...children);
@@ -177,11 +192,11 @@ export function renderAccountSheet({ rows, title } = {}, view, handlers = {}) {
 
 /**
  * renderMenuFace(button, view) — paints the ☰ button's face from an
- * accountMenuView (Phase 70 D-03). Repaints only the button's existing
- * .mw-hud-menu-face (the shell's static markup) and the button's aria-label;
- * a null button, a null view or a button without that face is a no-op that
- * creates nothing. "avatar" gets one .mw-acct-initials child on an inline
- * background; "menu" gets the ☰ glyph as plain text with no background.
+ * accountMenuView. Repaints only the button's existing .mw-hud-menu-face
+ * (the shell's static markup) and the button's aria-label; a null button, a
+ * null view or a button without that face is a no-op that creates nothing.
+ * "avatar" gets one .mw-acct-initials child on an inline background;
+ * "menu" gets the ☰ glyph as plain text with no background.
  */
 export function renderMenuFace(button, view) {
   if (!button || !view) return;
@@ -203,21 +218,21 @@ export function renderMenuFace(button, view) {
 
 /**
  * renderAccountMenu(host, view, handlers = {}) — the ACCOUNT block inside
- * the ☰ dropdown (Phase 70 D-04), from an accountSheetView. Replaces the
- * host's children on every call with the identity block, the one action the
- * view allows, the helper line when present and the Compete ON/OFF toggle.
- * Deliberately no title and no Settings row: the ☰ already has SETTINGS.
- * Handlers (all optional): onSignIn, onStopCompeting, onCompete(value). A
- * null host or view is a no-op.
+ * the ☰ dropdown, from an accountSheetView. Replaces the host's children on
+ * every call with the identity block, the Compete toggle, the help line,
+ * RE-ROLL HANDLE and ERASE MY RUNS. Deliberately no title and no Settings
+ * row: the ☰ already has SETTINGS. Handlers: the same signatures as
+ * renderAccountSheet's. A null host or view is a no-op.
  */
 export function renderAccountMenu(host, view, handlers = {}) {
   if (!host || !view) return;
   const h = handlers || {};
   const doc = host.ownerDocument;
   const children = [buildIdentity(doc, view.identity || {})];
-  if (view.action) children.push(buildAction(doc, view.action, h));
-  if (typeof view.help === "string" && view.help) children.push(el(doc, "p", "mw-acct-help", view.help));
   children.push(buildCompete(doc, view.compete || {}, h));
+  if (typeof view.help === "string" && view.help) children.push(el(doc, "p", "mw-acct-help", view.help));
+  children.push(buildReroll(doc, view.reroll || {}, h));
+  children.push(buildErase(doc, view.erase || {}, h));
   host.replaceChildren(...children);
 }
 
@@ -234,68 +249,73 @@ function field(obj, key) {
 }
 
 /**
- * createAccountController({ provider, settings, notify, timeoutMs, setTimer,
- * clearTimer }) — the one place every account behaviour is decided.
+ * createAccountController({ identity, board, settings, notify, compete,
+ * armMs, setTimer, clearTimer }) — the one place every account behaviour is
+ * decided.
  *
- *   provider  a Play Games provider (src/browser/playGames.js); only its
- *             init() (silent) and signIn() (interactive) are ever called.
+ *   identity  { ensureHandle() -> Promise<string> } — local-only, no network.
+ *   board     { reroll() -> Promise<{handle, previous}>, erase() ->
+ *               Promise<{ok, deleted?, reason?}>, purge() -> Promise,
+ *               flush({force}) -> Promise } — every call is Compete-gated
+ *               by the board seam itself, never by this module reaching
+ *               past the seam.
  *   settings  { read, write }: the shell passes readSettings/writeSetting.
- *             Only the `compete` and `pgsWelcomed` keys are ever written; the
- *             player's id and display name live in memory for the session.
- *   notify    notify(card) receives an accountCard object; the shell hands it
- *             to the rail (never a modal).
- *   timeoutMs the silent attempt's timeout (default 20000). The interactive
- *             attempt has none: the player is looking at Google's prompt.
+ *              Only the `compete` and `boardWelcomed` keys are ever written.
+ *   notify    notify(card) receives an accountCard object; the shell hands
+ *             it to the rail (never a modal).
+ *   compete   the initial Compete value the shell already read (default
+ *             true) — the state before boot() resolves.
+ *   armMs     the erase row's arm window (default ERASE_ARM_MS).
  *
- * Returns a frozen { boot, signIn, setCompete, stopCompeting, state,
- * identity, chipView, sheetView, menuView, subscribe }. No method ever
- * throws or rejects. menuView() (Phase 70 D-03) is the ☰ face's view.
+ * Returns a frozen { boot, setCompete, reroll, eraseTap, disarmErase,
+ * boardAcked, state, chipView, sheetView, menuView, subscribe }. No method
+ * ever throws or rejects.
  *
- * - boot() (D-01/D-02), memoized: reads the settings; with Compete OFF it
- *   shows "off" and touches no provider method at all; with Compete ON it
- *   starts the silent attempt WITHOUT awaiting it, so the shell never waits
- *   on sign-in.
- * - A success signs in; the first ever success also persists pgsWelcomed and
- *   raises the welcome card (D-04). A failure, decline, throw, rejection or
- *   the silent timeout signs out and raises one failed card; nothing is
- *   scheduled after it (D-11): the next automatic attempt is the next launch
- *   and a manual retry comes only from signIn().
- * - One attempt at a time: signIn() runs only from "signedOut" with Compete
- *   ON. Every attempt carries a token; a result arriving after a newer
- *   attempt began, after Compete went OFF or after its own timeout fired is
- *   dropped. Compete OFF always wins.
- * - setCompete(value) is idempotent; false is Stop competing (D-03): it
- *   persists Compete OFF, invalidates any in-flight attempt and shows the
- *   nobody chip. No sign-out is called (the provider has none). Only true
- *   (or the string "true") turns Compete on.
- * - subscribe(fn) hears every state change (the shell re-renders the chips,
- *   the sheet and the Leaderboards panel; Phase 68 purges its queue on
- *   Compete OFF). A throwing listener never breaks the others.
+ * - boot() (memoized): reads the settings (compete unless the player
+ *   already chose via setCompete; welcomed from boardWelcomed === true) and
+ *   sets the handle from identity.ensureHandle(). A throwing/rejecting seam
+ *   leaves the handle null. boot never calls the board.
+ * - setCompete(value): only true (or the string "true") turns it on. false
+ *   emits at once, disarms an armed erase row, persists compete false and
+ *   calls board.purge() once; true emits, persists and calls
+ *   board.flush({force: true}) once. A repeated value is a no-op.
+ * - reroll(): with a handle, calls board.reroll() once; a second call while
+ *   one is in flight is ignored; a valid returned handle replaces the
+ *   state's handle, an invalid or rejected result leaves it unchanged. With
+ *   no handle, does nothing.
+ * - eraseTap(): idle -> armed (one timer of armMs that disarms); armed -> a
+ *   second tap goes busy and calls board.erase() once — ok raises one
+ *   "erased" card naming the handle, a failure or rejection raises one
+ *   "eraseFailed" card, then idle either way; busy ignores taps; with
+ *   Compete off or no handle, does nothing. disarmErase() returns an armed
+ *   row to idle and clears the timer (a no-op otherwise).
+ * - boardAcked(): the first call ever (welcomed false, including a boot
+ *   that already read boardWelcomed true) persists boardWelcomed true and
+ *   raises one "welcome" card naming the handle; every later call raises
+ *   nothing.
+ * - subscribe(fn) hears every state change. A throwing listener never
+ *   breaks the others.
  */
 export function createAccountController({
-  provider,
+  identity,
+  board,
   settings,
   notify,
-  timeoutMs = 20000,
+  compete = true,
+  armMs = ERASE_ARM_MS,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
 } = {}) {
-  let current = normalizeAccountState({ compete: true, status: ACCOUNT_STATUS.PENDING });
-  let seq = 0; // attempt token: bumping it invalidates any in-flight attempt
+  let current = normalizeAccountState({ compete, handle: null, erase: "idle", welcomed: false });
   let booted = null; // boot()'s memoized promise
-  let welcomed = false; // mirrors the persisted pgsWelcomed flag
+  let welcomed = false; // mirrors the persisted boardWelcomed flag
   let userSet = false; // setCompete ran: the player's choice outranks a late settings read
-  let cancelTimeout = () => {}; // clears the in-flight silent attempt's timer
+  let rerolling = false; // one reroll() in flight at a time
+  let eraseTimer = null; // the armed erase row's expiry timer
   const listeners = new Set();
 
   function emit(patch) {
-    current = normalizeAccountState({
-      compete: current.compete,
-      status: current.status,
-      player: current.player,
-      ...patch,
-      welcomed,
-    });
+    current = normalizeAccountState({ ...current, ...patch, welcomed });
     for (const fn of [...listeners]) {
       try {
         fn(current);
@@ -313,136 +333,153 @@ export function createAccountController({
     }
   }
 
-  function raise(kind) {
+  function raise(card) {
+    if (card === null) return;
     try {
-      notify?.(accountCard(kind));
+      notify?.(card);
     } catch {
       // a rail failure never breaks the account flow
     }
   }
 
-  function apply(result) {
-    if (field(result, "signedIn") === true) {
-      const firstTime = !welcomed;
-      welcomed = true;
-      emit({ status: ACCOUNT_STATUS.SIGNED_IN, player: field(result, "player") ?? null });
-      if (firstTime) {
-        persist("pgsWelcomed", true);
-        raise("welcome");
-      }
-      return;
-    }
-    emit({ status: ACCOUNT_STATUS.SIGNED_OUT, player: null });
-    raise("failed");
-  }
-
-  /**
-   * run(kind) — calls the provider once ("silent" → init(), "interactive" →
-   * signIn()) and settles the attempt. The state must already read pending.
-   * Resolves when the attempt settles (applied or dropped); never rejects.
-   */
-  function run(kind) {
-    const token = ++seq;
-    cancelTimeout();
-    let settled = false;
-    let timer = null;
-    let done;
-    const finished = new Promise((resolve) => {
-      done = resolve;
-    });
-
-    const clear = () => {
-      if (timer === null) return;
-      const t = timer;
-      timer = null;
-      try {
-        clearTimer(t);
-      } catch {
-        // a broken timer never breaks the account flow
-      }
-    };
-
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clear();
-      if (token === seq && current.compete) apply(result);
-      done();
-    };
-
-    if (kind === "silent") {
-      try {
-        timer = setTimer(() => {
-          timer = null;
-          finish(null);
-        }, timeoutMs);
-      } catch {
-        timer = null;
-      }
-      cancelTimeout = clear;
-    } else {
-      cancelTimeout = () => {};
-    }
-
-    let call;
+  function clearEraseTimer() {
+    if (eraseTimer === null) return;
+    const t = eraseTimer;
+    eraseTimer = null;
     try {
-      call = kind === "silent" ? provider.init() : provider.signIn();
+      clearTimer(t);
     } catch {
-      call = null;
+      // a broken timer never breaks the account flow
     }
-    Promise.resolve(call).then(finish, () => finish(null));
-    return finished;
-  }
-
-  function attempt(kind) {
-    emit({ status: ACCOUNT_STATUS.PENDING, player: null });
-    return run(kind);
   }
 
   function boot() {
     if (booted) return booted;
-    booted = (async () => {
-      let stored = null;
+    // Both seams are called synchronously, in the same tick as boot() itself
+    // (never sequenced one after the other) — the handle exists offline and
+    // owes nothing to how long the settings read takes.
+    const handlePromise = (async () => {
       try {
-        stored = await settings.read();
+        return await identity.ensureHandle();
       } catch {
-        stored = null;
+        return null;
       }
-      welcomed = welcomed || field(stored, "pgsWelcomed") === true;
-      if (userSet) return; // the player already chose while the settings were loading
-      if (field(stored, "compete") === false) {
-        emit({ compete: false, status: ACCOUNT_STATUS.OFF, player: null });
-        return;
+    })();
+    const settingsPromise = (async () => {
+      try {
+        return await settings.read();
+      } catch {
+        return null;
       }
-      attempt("silent"); // deliberately not awaited (D-01: never blocks boot)
+    })();
+    booted = (async () => {
+      const stored = await settingsPromise;
+      welcomed = welcomed || field(stored, "boardWelcomed") === true;
+      const patch = {};
+      if (!userSet) patch.compete = field(stored, "compete") !== false;
+      patch.handle = await handlePromise;
+      emit(patch);
     })();
     return booted;
-  }
-
-  function signIn() {
-    if (!current.compete || current.status !== ACCOUNT_STATUS.SIGNED_OUT) return Promise.resolve();
-    return attempt("interactive");
   }
 
   function setCompete(on) {
     const value = on === true || on === "true";
     userSet = true;
     if (value === current.compete) return;
-    if (!value) {
-      seq += 1; // invalidates any in-flight attempt: Compete OFF always wins
-      cancelTimeout();
-      cancelTimeout = () => {};
-      emit({ compete: false, status: ACCOUNT_STATUS.OFF, player: null });
-      persist("compete", false);
-      return;
+    clearEraseTimer();
+    const patch = { compete: value };
+    if (current.erase === "armed") patch.erase = "idle";
+    emit(patch);
+    persist("compete", value);
+    if (value) {
+      try {
+        Promise.resolve(board.flush({ force: true })).catch(() => {});
+      } catch {
+        // a board failure never breaks the account flow
+      }
+    } else {
+      try {
+        Promise.resolve(board.purge()).catch(() => {});
+      } catch {
+        // a board failure never breaks the account flow
+      }
     }
-    emit({ compete: true, status: ACCOUNT_STATUS.PENDING, player: null });
-    persist("compete", true);
-    run("silent");
   }
 
-  function stopCompeting() {
-    setCompete(false);
+  function reroll() {
+    if (current.handle === null || rerolling) return;
+    rerolling = true;
+    let call;
+    try {
+      call = board.reroll();
+    } catch {
+      call = Promise.resolve(null);
+    }
+    Promise.resolve(call)
+      .then(
+        (result) => {
+          const h = field(result, "handle");
+          if (isValidHandle(h)) emit({ handle: h });
+        },
+        () => {
+          // a rejected reroll leaves the handle unchanged
+        },
+      )
+      .then(() => {
+        rerolling = false;
+      });
+  }
+
+  function eraseTap() {
+    if (!current.compete || current.handle === null) return;
+    if (current.erase === "busy") return;
+    if (current.erase === "armed") {
+      clearEraseTimer();
+      const handleAtCall = current.handle;
+      emit({ erase: "busy" });
+      let call;
+      try {
+        call = board.erase();
+      } catch {
+        call = Promise.resolve(null);
+      }
+      Promise.resolve(call)
+        .then(
+          (result) => {
+            if (field(result, "ok") === true) raise(accountCard("erased", handleAtCall));
+            else raise(accountCard("eraseFailed"));
+          },
+          () => raise(accountCard("eraseFailed")),
+        )
+        .then(() => {
+          emit({ erase: "idle" });
+        });
+      return;
+    }
+    emit({ erase: "armed" });
+    try {
+      eraseTimer = setTimer(() => {
+        eraseTimer = null;
+        disarmErase();
+      }, armMs);
+    } catch {
+      eraseTimer = null;
+    }
+  }
+
+  function disarmErase() {
+    if (current.erase !== "armed") return;
+    clearEraseTimer();
+    emit({ erase: "idle" });
+  }
+
+  function boardAcked() {
+    if (welcomed) return;
+    welcomed = true;
+    persist("boardWelcomed", true);
+    raise(accountCard("welcome", current.handle));
+    emit({});
   }
 
   function subscribe(fn) {
@@ -455,11 +492,12 @@ export function createAccountController({
 
   return Object.freeze({
     boot,
-    signIn,
     setCompete,
-    stopCompeting,
+    reroll,
+    eraseTap,
+    disarmErase,
+    boardAcked,
     state: () => current,
-    identity: () => accountIdentity(current),
     chipView: () => accountChipView(current),
     sheetView: () => accountSheetView(current),
     menuView: () => accountMenuView(current),
