@@ -183,6 +183,10 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/boards.js", "NEW_BEST_HEAD", "boards", "the new-best card head"),
   bank("content/boards.js", "NEW_BEST_LINES", "boards", "the new-best quip"),
   bank("content/boards.js", "STANDING_LINES", "boards", "the local standing quip"),
+  // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
+  // panel's own copy and the season-name table it shows under the title.
+  bank("content/boards.js", "LEADERBOARD_COPY", "boards", "the Leaderboards panel v3"),
+  bank("content/season.js", "SEASON_NAMES", "boards", "the season's name on the LEADERBOARD view"),
   bank("content/epitaphs.js", "EPITAPHS", "death", "the epitaph on the death screen"),
   bank("content/epitaphs.js", "CAUSE_TEXT", "death", "the cause-of-death line"),
   bank("content/flavor.js", "CLASS_NOTE", "blurbs", "the class blurb (roller and Hero tab)"),

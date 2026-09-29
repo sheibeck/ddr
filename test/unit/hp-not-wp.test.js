@@ -38,7 +38,10 @@ import {
 } from "../../content/index.js";
 // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — walked
 // the same way the other COPY objects in banks (below) are.
-import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES } from "../../content/boards.js";
+import { BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, GLOBAL_STANDING_LINES, LEADERBOARD_COPY } from "../../content/boards.js";
+// Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
+// panel's own copy and the season-name table, walked the same way.
+import { SEASON_NAMES } from "../../content/season.js";
 // Phase 68 (PLACE-01/02): the rank-quip bank, deferred card and season-drop line.
 import { PLACEMENT_LINES, PLACEMENT_CARD, SEASON_DROP_LINES } from "../../content/placement.js";
 // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy, walked the same way.
@@ -169,6 +172,9 @@ test("Presentation COPY objects: every string leaf is free of a standalone wp/WP
     RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
     // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy banks.
     BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES,
+    // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 panel's own
+    // copy bank and the season-name table it shows.
+    LEADERBOARD_COPY, SEASON_NAMES,
     // Phase 67 (ACCT-01/02): the account chip, sheet and rail-card copy.
     ACCOUNT_COPY,
     // Phase 70 (D-06): the ☰ quit-row copy.

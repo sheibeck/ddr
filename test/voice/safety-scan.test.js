@@ -75,7 +75,11 @@ import { EPITAPHS, CAUSE_TEXT } from "../../content/epitaphs.js";
 // Phase 66 (BOARD-02/03/07/08): the Leaderboards panel's own copy — the
 // footnotes, the panel copy bank and the standing-quip bank — join the same
 // walk so they participate in the completeness/load-bearing meta-tests too.
-import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES, GLOBAL_STANDING_LINES } from "../../content/boards.js";
+import { BOARD_COPY, BOARD_FOOTNOTES, BOARDS_PANEL_COPY, STANDING_LINES, NEW_BEST_HEAD, NEW_BEST_LINES, FIRST_DEATH_LINES, GLOBAL_STANDING_LINES, LEADERBOARD_COPY } from "../../content/boards.js";
+// Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 Leaderboards
+// panel's own copy bank and the season-name table it shows, walked the same
+// way BOARDS_PANEL_COPY is.
+import { SEASON_NAMES } from "../../content/season.js";
 // Phase 68 (PLACE-01/02): the DEEPEST rank-quip bank, the deferred rail-card
 // copy and the season-drop Oracle line join the same walk; BOARDS_PANEL_COPY
 // .global rides the existing BOARDS_PANEL_COPY walk.
@@ -434,6 +438,23 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkBoardCopy(v, label);
     }
   })(STANDING_LINES, "STANDING_LINES");
+  // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): LEADERBOARD_COPY and
+  // SEASON_NAMES join the same recursive string-leaf walk used for
+  // BOARDS_PANEL_COPY, so the v3 panel's copy is scanned and counted here too.
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(LEADERBOARD_COPY, "LEADERBOARD_COPY");
+  (function walkBoardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkBoardCopy(v, label);
+    }
+  })(SEASON_NAMES, "SEASON_NAMES");
   // Phase 67 (ACCT-01/02): ACCOUNT_COPY joins the same recursive string-leaf walk.
   (function walkAccountCopy(obj, pathLabel) {
     for (const [k, v] of Object.entries(obj)) {
