@@ -3,7 +3,7 @@
 Phase 83 (SRV-01..SRV-12). Our own leaderboard: no Firebase SDK, plain `fetch`
 against Firestore/Identity Toolkit/Secure Token REST, on the same Spark
 project as the bug reports (`delve-die-repeat-6ba5f`, `.firebaserc`). This is
-the ops runbook — deploys, the rules, indexes, identity, the queue,
+the ops runbook — deploys, the rules, indexes, identity, the queue/backfill,
 live setup and key restrictions, the SEASON bump, Spark quotas, moderation
 with `tools/boards-admin.mjs`, and the kill switch.
 
@@ -67,6 +67,7 @@ tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export)
 | `src/browser/boardClient.js` | `topTen`/`total`/`rankOf`, cached, public | 83-04 |
 | `tools/boards-admin.mjs` | Moderation and balance export (this file) | 83-05 |
 | `src/browser/boardWrites.js`, `src/browser/runQueue.js` | Idempotent submit, handle rewrite, erase, and the submission queue | 83-06 |
+| `src/browser/runBackfill.js` | The once-only backfill of runs from the 2.1.0 release on | 83-12 |
 | `tools/boards-smoke.mjs` | The live end-to-end smoke test | 83-07 |
 
 Board strings (`name`, `handle`, `epitaph`) are player-rolled-or-content-bank
@@ -255,7 +256,7 @@ hatch `firebaseAuth.js` offers).
 live setup, not in client code — it is a Identity Toolkit project-level
 control. Recorded live in section 14 by 83-08.
 
-## 8. The queue
+## 8. The queue and the backfill
 
 **`ddr.runQueue.v1`** (83-06): a durable, pure, DOM-free queue.
 Enqueue on death — non-dev, Compete ON only. Flush on enqueue, on app
@@ -267,11 +268,13 @@ is treated as **acknowledged**, not a failure. 15-second request timeouts.
 Never double-submits the same run. `purge()` empties the queue the moment
 Compete goes OFF.
 
-**No backfill (user, 2026-09-28).** The boards start fresh: runs recorded
-locally before the update are never uploaded. Only runs that finish after it
-(Compete ON, non-dev) reach the board. It is a full fresh start: YOUR DEAD
-and the INTERRED count also begin empty with this version (Phase 84); the
-old local graveyard and bests stay on the device, unread.
+**`ddr.boardBackfill.v1`** (83-12): the boards start from the 2.1.0 release
+(user, 2026-09-28). Once, on the first Compete-ON launch, the player's local
+runs with `when` at or after `BACKFILL_SINCE_MS` (2026-09-28T19:41:01Z, the
+`v2.1.0-play11` tag) are queued, stamped version `"2.1.0 (11)"`. Local
+records carry no version, so the cutoff is the death time. Anything older is
+never uploaded, and YOUR DEAD and the INTERRED count import only the same
+runs (Phase 84). The shell call site is Phase 85's.
 
 ## 9. Live setup and the API key
 

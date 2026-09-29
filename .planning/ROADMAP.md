@@ -124,7 +124,8 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 83-05-PLAN.md — tools/boards-admin.mjs (top/suspicious/delete-run/ban/unban/export) and docs/LEADERBOARDS.md runbook (wave 4)
-- [x] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1); runBackfill.js dropped by the user, boards start fresh (wave 4)
+- [x] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1) (wave 4)
+- [ ] 83-12-PLAN.md — runBackfill.js: runs from the 2.1.0 release on reach the board once, stamped "2.1.0 (11)" (user ruling 2026-09-28; wave 5)
 - [ ] 83-09-PLAN.md — Bug reports on the shared identity: one-commit limited send, rate-limited sheet UX, shell wiring, ten-probe test tool (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -153,7 +154,7 @@ Plans:
   2. The header box switches views (YOURS› with your run count, EVERYONE› with the board's total; a static INTERRED count with Compete OFF), and the RANK BY / RACE / SUB-CLASS bottom sheets show per-option counts and re-rank the list, replacing the old board rail entirely.
   3. Each row shows rank, an initials avatar, the handle (or hero name on YOUR DEAD), a YOU tag on your own runs, and the name/race/sub-class/level/value line; tapping a row expands its cause of death, epitaph and six stat chips, tapping again closes it.
   4. A best run outside the top ten is pinned under a "NOT IN THE TOP TEN" divider with its real rank and standing line, and a filter with no runs shows NOBODY YET with a CLEAR FILTERS button.
-  5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that starts empty with this version (a full fresh start: the old graveyard, `ddr.bests.v1` and lifetime total are not imported or shown).
+  5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`); older runs are not imported or shown.
   6. The LEADERBOARD view names the current season from `content/season.js`: SEASON OF THE ALPHA for season 1, the closed-testing season (user, 2026-09-28).
 
 **Plans**: TBD

@@ -436,7 +436,7 @@ Resume file: None
 
 - 2026-09-28 (v2.2, user): **The first season on our own board is "Season of the Alpha"**, running through closed testing. `SEASON` stays 1 (0 already means an untagged legacy stone in `engine/records.js`); a season-name table in `content/season.js` supplies the label (BOARD-27, Phase 84). **At go-live the boards reset for Season 1:** bump `SEASON` to 2 named "Season 1" together with the rules literal and a rules deploy (runbook §10). Alpha runs stay in Firestore under season 1 for balance export unless deleted with boards-admin.
 
-- 2026-09-28 (v2.2, user): **The boards start fresh — no backfill.** "Let's start these leaderboards fresh. No one time upload of recorded runs before leader boards existed." 83-06 Task 3 (runBackfill.js, ddr.boardBackfill.v1) is dropped; Phase 85 wires no boot-time backfill. **Full fresh start (user, same day):** "We're in testing. Once this version hits, no previous runs will show up. Only new runs with this version." YOUR DEAD's per-run history, the INTERRED count and bests also start empty (BOARD-26 amended, Phase 84); the old graveyard/bests keys stay on the device unread (RETIRE-03).
+- 2026-09-28 (v2.2, user, final after two revisions): **The boards start from the 2.1.0 release.** "Actually, any runs from the current version that we released just today, should show up on the new leaderboard, but nothing prior to that." Local records carry no version, so the cutoff is the death time `when` ≥ 2026-09-28T19:41:01Z (the `v2.1.0-play11` tag). Plan 83-12 (`runBackfill.js`, once, stamped "2.1.0 (11)"); Phase 85 calls it at boot; Phase 84's YOUR DEAD history and INTERRED count import only the same runs (BOARD-26). Older graveyard/bests keys stay on the device unread (RETIRE-03).
 
 - 2026-09-14 (v1.2, Phase 22): **Difficulty target is depth 20, not infinite depth — and reaching 20 is a unicorn run, rare not expected** (too much RNG to define a "competent player"; band = median death depth well below 20 + a small reach-20 rate). Past 20: imminent death expected, but no dial-back and no artificial death — the run wraps up naturally on the existing curve. Governs Phase 27 TUNE-05's target band; the depth-20 matrix slice is the yardstick.
 
@@ -742,7 +742,7 @@ Resume file: None
 - [Phase ?]: firebaseAuth.js splits its single-flight sign-up/refresh promises per module instance and restarts the identity (new sign-up, same handle) on any of six terminal refresh error messages or a uid mismatch, rather than surfacing a retryable failure
 - [Phase ?]: 83-04: fakeBoardServer.js generalizes commit handling to N-write atomic batches (handle re-roll across all runs, multi-id delete) beyond the plan's single-write examples, since CONTEXT's re-roll rule needs it
 - [Phase ?]: 83-05: deleteRunsOf uses the single-document admin DELETE endpoint (waves of <=100 concurrent requests) instead of a :commit batch delete, since fakeBoardServer.js scopes the admin token's :commit bypass to run create only (commit-based delete/handle-update stay owner-gated even for admin) — matches live IAM-bypass behavior identically either way.
-- [Phase ?]: 83-06: Task 3 (runBackfill.js) removed by user direction 2026-09-28 -- leaderboards start fresh, no one-time backfill of pre-board runs
+- [Phase ?]: 83-06: Task 3 (runBackfill.js) removed by user direction 2026-09-28 -- leaderboards start fresh, no one-time backfill of pre-board runs (superseded same day: backfill from the 2.1.0 release on, plan 83-12)
 
 ### Blockers
 
