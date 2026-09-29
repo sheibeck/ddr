@@ -157,7 +157,39 @@ Plans:
   5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that starts with runs from the 2.1.0 release on (versionCode 11, `when` ≥ 2026-09-28T19:41:01Z, `BACKFILL_SINCE_MS` in `src/browser/runBackfill.js`); older runs are not imported or shown.
   6. The LEADERBOARD view names the current season from `content/season.js`: SEASON OF THE ALPHA for season 1, the closed-testing season (user, 2026-09-28).
 
-**Plans**: TBD
+**Plans:** 9 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 84-01-PLAN.md — Run-doc contract: `note` (killer) + `when` (death time) in runDoc.js, both rules files, the fake and the smoke tool; shared `rankKeyOf`; runbook; LIVE transition-rules redeploy + live smoke (wave 1)
+- [ ] 84-02-PLAN.md — LEADERBOARD_COPY (the v3 mock's copy + in-voice states) and SEASON_NAMES ("Season of the Alpha"), registered in the voice corpus, safety and HP-not-WP walks (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 84-03-PLAN.md — Local per-run history `ddr.runs.v1` (cap 500, one-time 2.1.0-cutoff import stamped "2.1.0 (11)", version stamp), adapter wiring, NEW PERSONAL BEST against the history (wave 2)
+- [ ] 84-04-PLAN.md — boardClient.ownRuns + boardFeed.js: one BoardSnapshot per query (top ten, totals, your best with its real rank, stale/unreachable) (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 84-05-PLAN.md — leaderboardView.js: the pure v3 view for LEADERBOARD and YOUR DEAD (rows, sheets, counts, pinned best, standing, states, season line, dock) (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 84-06-PLAN.md — renderLeaderboardPanel (text-only DOM) and the .mw-lb-* CSS with CSS caret and diamond (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 84-07-PLAN.md — createLeaderboardPanel: Compete decides the view, stat memory, filters, sheets, routing, cached-first board loading (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 84-08-PLAN.md — Shell switch: board client (live on device, seeded fake in the browser) + feed + panel, VIEW THE DEAD = runs or Compete, sandbox and shell tests rewritten (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 84-09-PLAN.md — Retire the old panel: delete boardsView/boardsPanel, their tests and CSS, the retired copy banks; trim BOARD_COPY; repoint account.js (wave 7)
+
 **UI hint**: yes
 **Device check**: yes — batched into the milestone-close Pixel 7 checklist.
 
