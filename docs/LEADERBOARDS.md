@@ -437,9 +437,9 @@ waiting to resubmit once the switch lifts. Restore by deploying the normal
 
 ## 14. Live setup record
 
-**Status: IN PROGRESS (83-08).** Deploy, indexes, service APIs and the API
-key restriction are done and verified live. Anonymous sign-in and the
-per-IP sign-up limit are **blocked on a console step** — see below.
+**Status: Task 1 complete (83-08).** Deploy, indexes, service APIs, the API
+key restriction, anonymous sign-in and the per-IP sign-up limit are all done
+and verified live. Board smoke (Task 2) follows below once run.
 
 ### Deploy and configuration (2026-09-29)
 
@@ -479,35 +479,78 @@ per-IP sign-up limit are **blocked on a console step** — see below.
   identitytoolkit.googleapis.com, securetoken.googleapis.com]`, still no
   other restriction fields — confirmed via a second `describe` call.
 
-### Anonymous sign-in — BLOCKED, needs a console step
+### Anonymous sign-in — RESOLVED (console step + live proof, 2026-09-29)
 
 `GET
 https://identitytoolkit.googleapis.com/admin/v2/projects/delve-die-repeat-6ba5f/config`
-returned `404 { "message": "CONFIGURATION_NOT_FOUND", "status": "NOT_FOUND"
-}`. The matching `PATCH ...?updateMask=signIn.anonymous.enabled` (Research
-Open Question 1) returned the **same 404** rather than creating the config
-— this project's Firebase Authentication has never been opened in the
-console, so there is no Auth config document yet for the admin v2 API to
-patch. `identityPlatform:initializeAuth` is **never** called (it would
-upgrade the project to paid Identity Platform, out of scope). Per
-CONTEXT/RESEARCH's documented fallback, this needs one console click:
-Firebase Console → project `delve-die-repeat-6ba5f` → Build → Authentication
-→ **Get started** (first-time only, creates the Auth config) → Sign-in
-method → Add new provider → **Anonymous** → Enable → Save. Once the console
-is opened once, the same admin v2 GET/PATCH is expected to start working
-for future changes (e.g. the per-IP limit below) without another console
-visit.
+initially returned `404 { "message": "CONFIGURATION_NOT_FOUND", "status":
+"NOT_FOUND" }` for both GET and the matching `PATCH
+...?updateMask=signIn.anonymous.enabled` (Research Open Question 1) — this
+project's Firebase Authentication had never been opened in the console, so
+there was no Auth config document yet for the admin v2 API to read or
+patch. Resolved via the documented console fallback (the user completed
+this): Firebase Console → project `delve-die-repeat-6ba5f` → Build →
+Authentication → **Get started** (first-time only, creates the Auth config)
+→ Sign-in method → Add new provider → **Anonymous** → Enable → Save. The
+user explicitly did **not** enable "Automatically delete anonymous
+accounts" — deliberately left off, since the anonymous uid is what owns a
+player's `runs` docs and deleting it out from under a still-playing device
+would orphan their board history; **do not turn this on.**
 
-### Per-IP sign-up limit — not yet attempted (blocked behind the same config)
+After the console step, the same admin v2 `GET` confirmed
+`signIn.anonymous.enabled: true`. Proven live end to end:
+`POST identitytoolkit.googleapis.com/v1/accounts:signUp?key=...` with
+`{"returnSecureToken":true}` returned **200** with a `localId` and
+`idToken` present, then `POST .../accounts:delete` with that `idToken`
+returned **200** and cleanly removed the probe account. No key, token or
+`localId` is printed anywhere in this record.
 
-SRV-10's `quota.signUpQuotaConfig` PATCH targets the same
-`identitytoolkit.googleapis.com/admin/v2/.../config` resource that is
-currently `CONFIGURATION_NOT_FOUND` — attempting it before Authentication is
-initialized would fail the same way. Deferred until the console step above
-is done.
+### Per-IP sign-up limit (SRV-10) — SET, no billing/Identity Platform upgrade required
 
-**Human verification (deferred to end of run):** none yet recorded — this
-plan is not yet complete.
+Default (per Google's own quotas table, fetched live this session — see
+Sources below): **"New account creation: 100 accounts/hour for each IP
+address"** — an instrumentless (Spark, no billing instrument) limit, listed
+alongside a separate, unrelated **"Anonymous user accounts: 100 million"**
+project-wide total-account cap (not a rate limit). The 100/hour figure is
+not broken out by sign-in method in Google's table; `accounts:signUp` with
+no credential (anonymous) hits the same "new account creation" code path as
+every other sign-up method, so it counts against this same per-IP limit.
+
+`quota.signUpQuotaConfig` was PATCHed to override the default down to our
+target:
+```
+PATCH https://identitytoolkit.googleapis.com/admin/v2/projects/delve-die-repeat-6ba5f/config?updateMask=quota.signUpQuotaConfig
+{ "quota": { "signUpQuotaConfig": { "quota": "10", "startTime": "<RFC3339>", "quotaDuration": "<seconds>s" } } }
+```
+This succeeded on the **Spark (no billing instrument) plan** — no "upgrade
+to Identity Platform" or billing prompt was ever returned by any of the
+calls in this section; the admin v2 config API applies to a stock Firebase
+Auth project as-is (resolves Research Open Question 1 for this field too).
+
+`quotaDuration` was probed empirically for a practical ceiling before
+settling: `3600s` (1h), `604800s` (7d), `2592000s` (30d) and `31536000s`
+(365d) were **all accepted with no error** — no documented or observed
+maximum was found. **Final live value:** `quota: 10`,
+`startTime: 2026-09-29T09:57:57Z`, `quotaDuration: 31536000s` (365 days) —
+**expires 2027-09-29T09:57:57Z**. Confirmed via a follow-up `GET` echoing
+exactly these values.
+
+**Renewal command** (run again before the expiry above, or any time the
+value needs changing — `NOW` must be a fresh RFC 3339 UTC timestamp each
+time):
+```bash
+TOKEN=$(gcloud auth print-access-token)
+NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+curl -s -X PATCH "https://identitytoolkit.googleapis.com/admin/v2/projects/delve-die-repeat-6ba5f/config?updateMask=quota.signUpQuotaConfig" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Goog-User-Project: delve-die-repeat-6ba5f" \
+  -H "Content-Type: application/json" \
+  -d "{\"quota\":{\"signUpQuotaConfig\":{\"quota\":\"10\",\"startTime\":\"${NOW}\",\"quotaDuration\":\"31536000s\"}}}"
+```
+
+**Source:** `https://cloud.google.com/identity-platform/quotas` ("Quotas
+and limits", fetched live 2026-09-29 — "Account creation and deletion
+limits" and "Account limits" tables).
 
 ## 15. Troubleshooting
 
