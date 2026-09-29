@@ -4,16 +4,16 @@ milestone: v2.2
 milestone_name: Our Own Leaderboards
 current_phase: 83
 current_phase_name: Leaderboard Server
-status: executing
-stopped_at: Completed 83-10-PLAN.md (bug-report Firestore retention cleanup, SRV-11 code-complete; docs updated)
-last_updated: "2026-09-29T04:06:43.922Z"
+status: verifying
+stopped_at: Completed 83-08-PLAN.md (live Firebase setup + live smoke, SRV-01/02/03/08/10 complete)
+last_updated: "2026-09-29T10:16:07.615Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 83 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 14
-  completed_plans: 12
+  completed_plans: 13
   percent: 20
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-28 — v2.2 Our Own Leaderboards star
 
 Phase: 83 (Leaderboard Server) — EXECUTING
 Plan: 11 of 11
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-28 — Phase 83 execution started
 
 ## Ground Truth (durable facts every session needs)
@@ -258,8 +258,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T04:06:43.887Z
-Stopped at: Completed 83-10-PLAN.md (bug-report Firestore retention cleanup, SRV-11 code-complete; docs updated)
+Last session: 2026-09-29T10:16:07.577Z
+Stopped at: Completed 83-08-PLAN.md (live Firebase setup + live smoke, SRV-01/02/03/08/10 complete)
 
 - (history below is the pre-close record)
 
@@ -436,6 +436,7 @@ Resume file: None
 | Phase 83 P09 | 70min | 3 tasks | 10 files |
 | Phase 83 P07 | 50min | 2 tasks | 2 files |
 | Phase 83 P10 | 120min | 3 tasks | 7 files |
+| Phase 83 P08 | 1h 40min | 2 tasks | 6 files |
 
 ## Decisions
 
@@ -760,6 +761,9 @@ Resume file: None
 - [Phase ?]: Every bugReports DELETE (immediate or swept) re-checks the document's own status field before deleting, defense-in-depth per T-83-44, even though the query already filtered on status
 - [Phase ?]: reportLimits deletions are never logged/reported by uid in any mode -- dry-run/warning lines redact to reportLimits/<redacted>, the CLI summary counts each as the bare word 'limit'
 - [Phase ?]: The stale-filing reconcile path now performs the same oracleTrimmed computation and immediate delete as a fresh filing, keeping both 'becomes filed' code paths consistent
+- [Phase ?]: Deployed transition Firestore rules (firebase.transition.json) instead of the final rules, keeping the shipped 2.1.0 build's unauthenticated bug-report create working until 2.2 ships (user ruling 2026-09-29)
+- [Phase ?]: Per-IP sign-up quota set to 10/hour for 365 days via quota.signUpQuotaConfig; default is 100/hour/IP (cloud.google.com/identity-platform/quotas); no billing/Identity Platform upgrade required
+- [Phase ?]: Live-only fix: runs list rule widened to accept a null request.query.limit (a runAggregationQuery shape) so total()/rankOf() are no longer refused; deny-list-51 still refuses an explicit limit above 50
 
 ### Blockers
 
