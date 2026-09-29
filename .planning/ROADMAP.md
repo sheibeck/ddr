@@ -124,7 +124,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 83-05-PLAN.md — tools/boards-admin.mjs (top/suspicious/delete-run/ban/unban/export) and docs/LEADERBOARDS.md runbook (wave 4)
-- [ ] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1), runBackfill.js (wave 4)
+- [ ] 83-06-PLAN.md — boardWrites.js (idempotent submit, handle rewrite, erase), runQueue.js (ddr.runQueue.v1); runBackfill.js dropped by the user, boards start fresh (wave 4)
 - [ ] 83-09-PLAN.md — Bug reports on the shared identity: one-commit limited send, rate-limited sheet UX, shell wiring, ten-probe test tool (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*

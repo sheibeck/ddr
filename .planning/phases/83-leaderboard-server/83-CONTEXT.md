@@ -39,9 +39,9 @@ Stand up our own leaderboard on Firebase (Spark project `delve-die-repeat-6ba5f`
 - Full replay verification: deferred (REQUIREMENTS Future).
 - The bug-report rules and the catch-all deny must keep working; extend firebase/firestore.rules, don't replace it.
 
-### Queue, backfill & live setup
+### Queue & live setup
 - Queue `ddr.runQueue.v1`: enqueue on death (non-dev, Compete ON); flush on enqueue, on app resume and on `online`; exponential backoff; a rules rejection (400/403 permission/validation) drops that entry with a log line; "already exists" = acknowledged; 15 s timeouts; never double-submits; `purge()` for Compete OFF. Pure, DOM-free, injected fetch/storage/clock (the bugReport.js pattern).
-- Backfill: once, on the first Compete-ON launch after this update, enqueue the player's locally recorded season-1 runs (from `ddr.bests.v1` / the graveyard records that carry a valid hash) so the board is not empty on day one (the user's ghost-town complaint). The module + a `backfillDone` flag live here; the shell call site is wired in Phase 85.
+- ~~Backfill~~ **Dropped (user, 2026-09-28): "Let's start these leaderboards fresh. No one time upload of recorded runs before leader boards existed."** The board starts empty; only runs that finish after the update (Compete ON, non-dev) are submitted. No `runBackfill.js`, no `ddr.boardBackfill.v1`, no `"backfill"` version.
 - Board reads: `topTen(stat, race, sub)`, `total(stat, race, sub)` and `rankOf(stat, key, race, sub)` over REST `runQuery` / `runAggregationQuery` count; cached per (stat, race, sub) for 5 minutes; a stale copy is returned (flagged stale) when a refresh fails. Declared composite indexes (`firestore.indexes.json`) cover season + optional race/sub equality + each rank key.
 - One shared config module (e.g. `src/browser/firebaseConfig.js`) holding the project id + public API key, reused by bug reports (retire the duplicate in bugReportConfig.js or re-export from it).
 - Live setup is done by Claude, not the user: deploy rules + indexes with the logged-in Firebase CLI (`firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f`; add `firestore.indexes` to firebase.json); add the Identity Toolkit API + Token Service API to the existing API key's API restrictions with gcloud (keep Firestore; nothing else); enable the Anonymous sign-in provider via the Identity Toolkit admin API (gcloud access token). Fall back to user console steps only if a call is refused. Then a node smoke test (`tools/boards-smoke.mjs`) against the live project: anonymous sign-up → create a run → read top ten → count/rank → handle update → owner delete, cleaning up after itself.
@@ -72,7 +72,7 @@ Stand up our own leaderboard on Firebase (Spark project `delve-die-repeat-6ba5f`
 - Tests via `node --test`; no network in unit tests (fake fetch).
 
 ### Integration Points
-- Phase 84's panel reads through the board client; Phase 85 wires the queue at death, the ☰ handle/Compete rows, erase, and backfill at boot.
+- Phase 84's panel reads through the board client; Phase 85 wires the queue at death, the ☰ handle/Compete rows and erase (no backfill — boards start fresh).
 
 </code_context>
 

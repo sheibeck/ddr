@@ -3,7 +3,7 @@
 Phase 83 (SRV-01..SRV-12). Our own leaderboard: no Firebase SDK, plain `fetch`
 against Firestore/Identity Toolkit/Secure Token REST, on the same Spark
 project as the bug reports (`delve-die-repeat-6ba5f`, `.firebaserc`). This is
-the ops runbook — deploys, the rules, indexes, identity, the queue/backfill,
+the ops runbook — deploys, the rules, indexes, identity, the queue,
 live setup and key restrictions, the SEASON bump, Spark quotas, moderation
 with `tools/boards-admin.mjs`, and the kill switch.
 
@@ -66,7 +66,7 @@ tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export)
 | `src/browser/fakeBoardServer.js` | The browser dev loop's in-memory REST model of the whole board | 83-04 |
 | `src/browser/boardClient.js` | `topTen`/`total`/`rankOf`, cached, public | 83-04 |
 | `tools/boards-admin.mjs` | Moderation and balance export (this file) | 83-05 |
-| `src/browser/boardWrites.js`, `src/browser/runQueue.js`, `src/browser/runBackfill.js` | The submission queue and the once-only local-history backfill | 83-06 |
+| `src/browser/boardWrites.js`, `src/browser/runQueue.js` | Idempotent submit, handle rewrite, erase, and the submission queue | 83-06 |
 | `tools/boards-smoke.mjs` | The live end-to-end smoke test | 83-07 |
 
 Board strings (`name`, `handle`, `epitaph`) are player-rolled-or-content-bank
@@ -103,7 +103,7 @@ equal by `test/unit/firestore-rules.test.js`.
 | `cause` | string | one of the sixteen death-cause ids (`content/epitaphs.js`) |
 | `epitaph` | string | ≤400 chars |
 | `hash` | string | matches `^[0-9a-f]{8}$` |
-| `version` | string | 1–64 chars, the stamped build string (e.g. `"2.2.0 (12)"`), or the literal `"backfill"` for a run `runBackfill.js` (83-06) submits from local history rather than a live death |
+| `version` | string | 1–64 chars, the stamped build string (e.g. `"2.2.0 (12)"`) |
 | `seed` | safe integer | 0 to `Number.MAX_SAFE_INTEGER` |
 | `acts` | int | 0–1,000,000,000 |
 | `deepKey`, `daysKey`, `killsKey`, `goldKey` | int | each must equal its own formula, below |
@@ -255,7 +255,7 @@ hatch `firebaseAuth.js` offers).
 live setup, not in client code — it is a Identity Toolkit project-level
 control. Recorded live in section 14 by 83-08.
 
-## 8. The queue and the backfill
+## 8. The queue
 
 **`ddr.runQueue.v1`** (83-06): a durable, pure, DOM-free queue.
 Enqueue on death — non-dev, Compete ON only. Flush on enqueue, on app
@@ -267,14 +267,9 @@ is treated as **acknowledged**, not a failure. 15-second request timeouts.
 Never double-submits the same run. `purge()` empties the queue the moment
 Compete goes OFF.
 
-**`ddr.boardBackfill.v1`** (83-06): runs **once**, on the first Compete-ON
-launch after this update, enqueuing the player's already-recorded season-1
-runs — read from the local `ddr.bests.v1` best-run records and the local
-graveyard, filtered to entries carrying a valid `hash` — so the board is not
-an empty ghost town on day one for existing players. A `backfillDone` flag
-(alongside the module) prevents a second pass. The actual shell call site
-(where the app boots and decides to run this) is wired in **Phase 85**, not
-here.
+**No backfill (user, 2026-09-28).** The boards start fresh: runs recorded
+locally before the update are never uploaded. Only runs that finish after it
+(Compete ON, non-dev) reach the board. Local history still ranks on YOUR DEAD.
 
 ## 9. Live setup and the API key
 
