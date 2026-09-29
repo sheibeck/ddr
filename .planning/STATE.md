@@ -21,10 +21,10 @@ current_phase_name: PROMOTED → Phases 56 / 58 / 59
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards code-complete and archived; release to closed testing pending (docs/RELEASING.md); open Pixel 7 UAT batches: v2.2 42 + 8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`); v2.2 release steps and the Pixel 7 batch are the user's
+**Current focus:** Planning the next milestone (`/gsd-new-milestone`); v2.2 is released — the Data safety form, the Play Games console cleanup and the upgrade-path rows are the user's
 
 ## Current Position
 
@@ -37,7 +37,7 @@ Last activity: 2026-09-29 — Milestone v2.2 completed and archived
 
 **App identity:** "Delve, Die, Repeat", appId `com.darktierstudios.delvedierepeat` (PERMANENT — published). Player-facing text uses "Dungeon"/"Game Master". The old working-title string survives only in filenames (`mazeworld.html`, `mazeworld.pdf`), code ids, and storage-key history — do not reintroduce it anywhere player-facing or in docs.
 
-**Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers. Latest build: **1.8.0, versionCode 7 (2026-09-23, tag `v1.8.0-play7`, commit cbba1e2)** — v1.8 Sound, Motion & Set Dressing + fixes 9c1b80f/42f0f8d (previous: 1.5.0 / vc6, `v1.5.0-play6`, 47b99ee — v1.5 + the five 2026-09-18/19 quick tasks (stationary camera, potions/scrolls bag-free, use-activated items + staff-to-bag, two jewelry slots, Cloak of Ether wall-walking) + the Pilfer-torch and sticky-hover fixes; signed AAB at `android/app/build/outputs/bundle/release/app-release.aab`, **user uploads it to the internal-testing track by hand** (CLI upload not set up). **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`).
+**Google Play:** store entry EXISTS; app is on the **internal-testing track** with friends as testers. Latest build: **2.2.0, versionCode 12 (2026-09-29, tags `v2.2.0` / `v2.2.0-play12`, commit 66c4757e)** — v2.2 Our Own Leaderboards; the next `npm run play:release` bumps to vc13; AAB + mapping.txt archived at `C:/Users/Dell/android_releases/2.2.0-vc12/` (older history: 1.5.0 / vc6, `v1.5.0-play6`, 47b99ee — v1.5 + the five 2026-09-18/19 quick tasks (stationary camera, potions/scrolls bag-free, use-activated items + staff-to-bag, two jewelry slots, Cloak of Ether wall-walking) + the Pilfer-torch and sticky-hover fixes; signed AAB at `android/app/build/outputs/bundle/release/app-release.aab`, **user uploads it to the internal-testing track by hand** (CLI upload not set up). **STANDING RULE (user, 2026-09-13): after every update batch, ASK whether to push a Play internal-testing build** (`npm run play:release` → drop the AAB in Play Console; Developer-API upload not set up yet — `docs/RELEASING.md`).
 
 **Build/env:** `npm test` (3200/3200 as of quick task 260918-vvt; 1448 at v1.2 close) · `npm run android:debug` (debug APK) · `npm run play:release` (bump `android/version.properties` → build www → cap sync → pin-jdk → signed `bundleRelease`; keystore creds in git-ignored `android/keystore.properties`, alias `key0`, keystore `C:/Users/Dell/android_store_keys/delvedierepeat.jks`). All JDK paths resolve to `JAVA_HOME` = `C:/Program Files/Microsoft/jdk-21.0.10.7-hotspot/` (gradle.properties pin + Studio's gradleJvm=#JAVA_HOME). `tools/gradle.mjs` runs the wrapper (this machine sets `NoDefaultCurrentDirectoryInExePath=1`). `npx cap sync` wipes `org.gradle.java.home`; pin-jdk re-applies it. AGP 8.13.0 / Gradle 8.14.3 — don't let Studio upgrade.
 

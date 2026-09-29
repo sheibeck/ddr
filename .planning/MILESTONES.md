@@ -1,6 +1,8 @@
 # Milestones
 
-## v2.2 Our Own Leaderboards (Shipped: 2026-09-29)
+## v2.2 Our Own Leaderboards (Shipped: 2026-09-29; Play 2.2.0 / vc12 uploaded to the testing track, tags `v2.2.0` / `v2.2.0-play12`)
+
+**Release (2026-09-29):** final Firestore rules deployed once 2.2 was live on the track; `--probe-rules` ten PASS closed SRV-09 (35/35); transition rules/config/test deleted; GitHub Release v2.2.0 and the darktier-studio site deployed. Tests after the cutover: 8064 pass / 0 fail / 2 skipped.
 
 **Closeout type:** override_closeout (known verification overrides: SRV-09 live proof deferred to the release by user ruling; UAT-v2.2 not yet walked — see STATE.md Deferred Items)
 **Phases:** 5 (82–86) · **Plans:** 34 · **Tasks:** 76

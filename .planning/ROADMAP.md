@@ -14,7 +14,7 @@
 - ✅ **v1.9 The Gear Screen** — Phases 61–64 (code-complete 2026-09-23; override closeout: GSCR-12 device batch partial) → `.planning/milestones/v1.9-ROADMAP.md`
 - ✅ **v2.0 Leaderboards** — Phases 65–71 (shipped 2026-09-24 as Play 2.0.0 / vc10; override closeout: 38/38 requirements, 7/7 phases passed, 142-row Pixel 7 batch `docs/UAT-v2.0.md` spread over the user's play sessions) → `.planning/milestones/v2.0-ROADMAP.md`
 - ✅ **v2.1 Bug Fixes** — Phases 72–81, incl. 75.1–75.3 and 79.1–79.3 (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; override closeout: 68/68 requirements, 16/16 phases passed, audit tech_debt; UAT batch `docs/UAT-v2.1.md`, 80-05 emulator pass deferred) → `.planning/milestones/v2.1-ROADMAP.md`
-- ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (code-complete 2026-09-29; override closeout: 34/35 requirements — SRV-09's live proof is a release step — 5/5 phases passed, 42-row Pixel 7 batch `docs/UAT-v2.2.md` on the 2.2.0 (12) debug APK; release steps in `docs/RELEASING.md`) → `.planning/milestones/v2.2-ROADMAP.md`
+- ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track; override closeout: 35/35 requirements — SRV-09's live proof passed on release day — 5/5 phases passed, Pixel 7 batch `docs/UAT-v2.2.md` passed bar 3 upgrade-path rows) → `.planning/milestones/v2.2-ROADMAP.md`
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases

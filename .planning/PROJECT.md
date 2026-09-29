@@ -96,13 +96,13 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Last Milestone: v2.2 Our Own Leaderboards (code-complete 2026-09-29; release to closed testing pending)
+## Last Milestone: v2.2 Our Own Leaderboards (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track)
 
-Promoted from backlog 999.13 by the user on 2026-09-28 and run by `/gsd-autonomous` across Phases 82–86. 34/35 requirements (SRV-09's live proof is a release step), 5/5 phases passed; the audit is `tech_debt` with zero blockers. Full record: `.planning/milestones/v2.2-ROADMAP.md`, `v2.2-REQUIREMENTS.md`, `v2.2-MILESTONE-AUDIT.md`.
+Promoted from backlog 999.13 by the user on 2026-09-28 and run by `/gsd-autonomous` across Phases 82–86. 35/35 requirements (SRV-09's live proof passed on release day, ten PASS), 5/5 phases passed; the audit is `tech_debt` with zero blockers. Full record: `.planning/milestones/v2.2-ROADMAP.md`, `v2.2-REQUIREMENTS.md`, `v2.2-MILESTONE-AUDIT.md`.
 
 **Goal (met in code):** replace Google Play Games with our own Firebase-hosted leaderboard and the v3 Leaderboards design — everyone's dead or just yours — so the global board stops being a ghost town. Season 1 is "Season of the Alpha"; the board starts from the 2.1.0 release (runs since 2026-09-28T19:41:01Z upload once, only if Compete is on at the first 2.2 launch); runs played with Compete off are never uploaded.
 
-**Pending (release):** agree the DRAFT 2.2.0 patch notes, `npm run android:release`, the Play upload, then the final Firebase rules + ten-probe SRV-09 proof, the website deploy, the Data safety form and the Play Console Play Games cleanup (`docs/RELEASING.md`); the 42-row Pixel 7 batch `docs/UAT-v2.2.md`.
+**Released 2026-09-29:** patch notes agreed, signed AAB built from `66c4757e` and uploaded by the user, tags `v2.2.0` / `v2.2.0-play12`, GitHub Release v2.2.0, darktier-studio deployed (patch notes + privacy/terms pages), final Firestore rules deployed with ten-PASS probes and the transition files deleted. **Still the user's:** the Data safety form and the Play Console Play Games cleanup (`docs/RELEASING.md` steps 8–9); the upgrade-path rows 1.11/2.7/4.3 and the R8 smoke in `docs/UAT-v2.2.md` on the Play update.
 
 ## Last Milestone: v2.1 Bug Fixes (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; device UAT spread over the user's play sessions)
 
@@ -328,9 +328,9 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
-## Current State (2026-09-29, v2.2 Our Own Leaderboards code-complete; release pending; next milestone not yet chosen)
+## Current State (2026-09-29, v2.2 Our Own Leaderboards shipped; next milestone not yet chosen)
 
-**Built and archived, not yet released:** v2.2 is on master at 2.2.0 / versionCode 12 with a debug APK (sha256 6d869088…5e60) for the Pixel 7 batch `docs/UAT-v2.2.md`. The live Firebase project carries the board (transition rules, indexes, anonymous sign-in, per-IP cap) with 2.1.0's bug reports still accepted until the release-day rules swap. Players on Play still run 2.1.0 / vc11 with Play Games until 2.2 ships. Pending todos for a balance milestone: stores stock up to d10 rations; stores can still be bought out at depth 7 (with backlog 999.15/999.16).
+**On Play's testing track:** v2.2 is uploaded as 2.2.0 / versionCode 12 (tags `v2.2.0`, `v2.2.0-play12`; GitHub Release v2.2.0; patch notes at darktierstudios.com/delve-die-repeat/patch-notes). The live Firebase project runs the FINAL rules (ten-PASS probes; 2.1.0's unauthenticated bug reports are now refused) plus 19 indexes, anonymous sign-in and the per-IP cap; the transition files are gone. Tests 8,064 (+2 skipped). The Pixel 7 batch `docs/UAT-v2.2.md` passed except the three upgrade-path rows and the R8 smoke, checked on the Play update; the user still owes the Data safety form and the Play Games console cleanup. The next Play build is versionCode 13. Pending todos for a balance milestone: stores stock up to d10 rations; stores can still be bought out at depth 7 (with backlog 999.15/999.16).
 
 ## Current State (2026-09-28, v2.1 Bug Fixes shipped; next milestone not yet chosen)
 
@@ -374,7 +374,7 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 | DAYS ranks by min(day, 10 × floor) — v2.2 Phase 82 (mechanical verdict) | Floor-1 hoarding out-DAYS'd honest runs (p90 73 vs honest p99 17) | ✓ Good |
 | Season 1 = "Season of the Alpha" for closed testing; reset to "Season 1" (SEASON 2) at go-live — v2.2, 2026-09-28 (user) | Alpha runs stay for balance export | — Pending go-live |
 | The board starts from the 2.1.0 release (cutoff 2026-09-28T19:41:01Z, approved); runs played with Compete off are never uploaded; the backfill is decided at the first 2.2 launch — v2.2 (user) | A fresh start without losing the current release's runs | ✓ Good |
-| Transition Firebase rules keep 2.1.0's REPORT A BUG working until 2.2 ships; the final rules + probes are a release step — v2.2, 2026-09-29 (user) | Testers on 2.1.0 must still be able to report bugs | — Pending release |
+| Transition Firebase rules keep 2.1.0's REPORT A BUG working until 2.2 ships; the final rules + probes are a release step — v2.2, 2026-09-29 (user) | Testers on 2.1.0 must still be able to report bugs | ✓ Good — final rules + ten PASS on release day, transition files deleted |
 | Play Console Play Games boards/config stay up until 2.2 reaches testers; all Play Games code removed from the app now — v2.2, 2026-09-29 (user) | 2.1.0 players still use them | — Pending release |
 | Parallel git worktrees for independent plans (85 wave 1, 86-02/03) — v2.2, 2026-09-29 (user) | Saved ~1.5 h; merges clean with full tests after | ✓ Good |
 | Android / Google Play only; no iOS | Avoid Apple's account/Mac/Xcode/review overhead; author's explicit choice | ✓ Good — shipped to internal testing in 7 days on Windows only |
@@ -471,4 +471,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-29 after the v2.2 Our Own Leaderboards milestone (code-complete; release pending)*
+*Last updated: 2026-09-29 after the v2.2 Our Own Leaderboards release (Play 2.2.0 / vc12)*
