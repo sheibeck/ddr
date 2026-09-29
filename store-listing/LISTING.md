@@ -39,7 +39,7 @@ What happens when you die
 You get an epitaph. It is not kind. Your adventurer joins the graveyard with their floor, their days survived, and the thing that ended them. Then you tap once, roll the next victim, and go again. Runs are built to fit in five to ten minutes, which is roughly how long most adventurers last.
 
 The rules came from a binder
-The game is based on the 1994 tabletop Mazeworld rules, adapted for a phone with a few deliberate changes and none of the erasing. Twenty-plus classes and sub-classes, five races, dozens of monsters with their own abilities, a full spell list, traps, treasure tables, and a random encounter table that includes "nothing" and "something worse." The engine rolls real dice with real odds and tells you what it rolled.
+The game is based on the 1994 tabletop Mazeworld rules, adapted for a phone with a few deliberate changes and none of the erasing. Twenty-plus classes and sub-classes, six races, dozens of monsters with their own abilities, a full spell list, traps, treasure tables, and a random encounter table that includes "nothing" and "something worse." The engine rolls real dice with real odds and tells you what it rolled.
 
 Made for phones, not ported to them
 - Tap or swipe to move; every decision is a large button.
@@ -61,10 +61,12 @@ the one to enter in Play Console.)
 Delete data URL (Play Console's Data safety "Delete data URL" field):
 `https://darktierstudios.com/privacy/delete-data`
 
-Reconciled for 2.0.0 (Leaderboards): effective September 24, 2026;
-darktier-studio commit aaa0f4a (local, not yet deployed; the user deploys the
-site). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and
-`delete-data.astro`; full hash `aaa0f4ad4822ebd43c58de205c0da210580c41df`.
+Reconciled for 2.2.0 (our own leaderboard replaces the retired Google
+leaderboard service): effective September 29, 2026.
+
+darktier-studio commit 82912a923b7579db7f86c877b7116529686c1280 (short `82912a9`), pushed to `origin/main` and not yet deployed (the deploy is `docs/RELEASING.md` step 7). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro`, `delete-data.astro`, `delve-die-repeat/terms.astro` and `delve-die-repeat/index.astro`.
+
+Backend: "We keep one small database on Google Firebase for the public leaderboard and bug reports, nothing else."
 
 ## Data safety
 
@@ -119,11 +121,12 @@ leaves it only on Send. Android Advertising ID: not used. Data is not sold.
   ERASE MY RUNS in the ☰ account block (a two-tap confirm) deletes every one
   of the player's runs on the board, in every season, and deletes the
   anonymous game account; local run history stays on the phone. Without the
-  game (for example after an uninstall), the delete-data URL page's email
-  route works from the player's own @handle. A bug report is deleted the same
-  way, on request, through the delete-data URL page or by contacting the
-  developer, who deletes the Firestore document and the GitHub issue
-  (`docs/BUG-REPORTS.md`).
+  game (for example after an uninstall),
+  `https://darktierstudios.com/privacy/delete-data` (Play Console's "Delete
+  data URL") gives an email route that works from the player's own @handle.
+  A bug report is deleted the same way, on request, through the
+  privacy/delete-data page or by contacting the developer, who deletes the
+  Firestore document and the GitHub issue (`docs/BUG-REPORTS.md`).
 - **Why "optional":** with Compete OFF the game makes zero network calls for
   the board, creates no game ID, and discards any runs still queued. The game
   never uploads runs finished while Compete was off, even once Compete is
@@ -244,10 +247,11 @@ Regenerate after UI changes with `node tools/store-screenshots/capture.js`
 (see `tools/store-screenshots/README.md`).
 
 **Owed (deferred human item):** `08-dead.png` (all three sizes) shows the
-pre-2.0 graveyard and must be regenerated showing the Leaderboards panel on
-DEEPEST at 1080×1920, 1350×2400 and 1620×2880. On 2026-09-24 the capture tool
-could not run: `playwright-core` is not installed anywhere in the repo, and
-installing a package was out of scope for 69-01. Either install
-`playwright-core` per the README and run `capture.js` (its bot predates later
-UI changes and may need label updates), or capture by hand in Chrome device
-mode at 432×768 @2.5, 675×1200 @2 and 810×1440 @2 from the served `www/`.
+pre-2.0 graveyard and must be regenerated showing the v3 Leaderboards panel
+(the LEADERBOARD view) at 1080×1920, 1350×2400 and 1620×2880. On 2026-09-24
+the capture tool could not run: `playwright-core` is not installed anywhere
+in the repo, and installing a package was out of scope for 69-01. Either
+install `playwright-core` per the README and run `capture.js` (its bot
+predates later UI changes and may need label updates), or capture by hand in
+Chrome device mode at 432×768 @2.5, 675×1200 @2 and 810×1440 @2 from the
+served `www/`.

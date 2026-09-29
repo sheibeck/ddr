@@ -1,17 +1,20 @@
 // test/unit/store-listing.test.js
 //
-// Phase 69 (COMPLY-02, D-04): pins store-listing/LISTING.md's Data safety
-// section to the answers the 2.0 build actually needs: User IDs (the Play
-// Games player ID) and App activity (scores plus the score tag's gameplay
-// details) are collected, optional (Compete off), for App functionality,
-// encrypted in transit, not shared and not sold, with both Google sources
-// cited, the delete-data URL named and a dated source-level audit. The
-// pre-2.0 "collects nothing" answer and the claim that the INTERNET
-// permission is unused must stay gone.
+// Phase 86 (COMP-01): pins store-listing/LISTING.md's 2.2.0 Data safety
+// answers for our own Firebase leaderboard: an own "User IDs" row for the
+// anonymous game ID (collected for app functionality, optional, deletable
+// with ERASE MY RUNS), an "Other actions" row covering the rolled @handle
+// and every run-document field, the two bug-report rows kept, encrypted in
+// transit, not shared (Firebase as service provider), not sold, both
+// refreshed source- and build-level audits, and no trace of the retired
+// Google Play Games service anywhere in the listing. Also pins the 2.2.0
+// full description (an optional public leaderboard, six races) and the
+// 2.2.0 privacy record (the darktier-studio commit, the one-small-database
+// line).
 //
-// Phase 79.3 (BUG-02, D-16): also pins the 2.1.0 bug-report answers (Other
-// user-generated content, Diagnostics) and the darktierstudios.com/privacy/apps
-// draft paragraph.
+// Phase 69 (COMPLY-02, D-04) and Phase 79.3 (BUG-02, D-16) established this
+// file against the 2.0/2.1 Play Games answers; those pins are superseded
+// here.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -34,16 +37,21 @@ function section(heading) {
 
 const DATA_SAFETY_REQUIRED = [
   "User IDs",
+  "anonymous game ID",
   "App activity",
+  "Other actions",
   "App functionality",
   "encrypted in transit",
   "optional",
   "not sold",
   "Shared",
-  "developer.android.com/games/pgs/data-collection",
+  "service provider",
   "answer/10787469",
   "privacy/delete-data",
+  "ERASE MY RUNS",
+  "never uploads runs finished while Compete was off",
   "Source-level audit",
+  "Build-level audit",
   "Other user-generated content",
   "Diagnostics",
   "REPORT A BUG",
@@ -51,7 +59,7 @@ const DATA_SAFETY_REQUIRED = [
   "Firestore",
 ];
 
-test("Data safety section carries the 2.0 answers, both sources and the audit", () => {
+test("Data safety section carries the 2.2.0 answers, the source and both audits", () => {
   const ds = section("Data safety");
   for (const needle of DATA_SAFETY_REQUIRED) {
     assert.ok(ds.includes(needle), `Data safety section mentions "${needle}"`);
@@ -65,8 +73,12 @@ test("the pre-2.0 collect answer and the unused-INTERNET claim are gone", () => 
   assert.doesNotMatch(LISTING, /INTERNET[^\n]*\bunused\b/i);
 });
 
-// Phase 69 (D-03, D-05): the privacy record, the re-voiced description and
-// Google's metadata limits.
+test("the whole listing has no trace of the retired Google Play Games service", () => {
+  assert.doesNotMatch(LISTING, /play.games|\bpgs\b/i);
+});
+
+// Phase 69 (D-03, D-05) and Phase 86 (COMP-01): the privacy record, the
+// re-voiced description and Google's metadata limits.
 
 /** The fenced block under "## Full description". */
 function fullDescription() {
@@ -76,10 +88,11 @@ function fullDescription() {
   return m[1];
 }
 
-test("the full description fits Play's 4000-character limit and names the leaderboards", () => {
+test("the full description fits Play's 4000-character limit and names the leaderboard", () => {
   const desc = fullDescription();
   assert.ok(desc.length <= 4000, `full description is ${desc.length} characters`);
-  assert.ok(desc.includes("Optional Google Play Games leaderboards"));
+  assert.ok(desc.includes("An optional public leaderboard, if you want the whole world to see how you died."));
+  assert.ok(desc.includes("six races"));
 });
 
 test("the preferred short description fits Play's 80-character limit", () => {
@@ -107,10 +120,19 @@ test("the Privacy section records both URLs, the effective date and the website 
   assert.match(privacy, /darktier-studio commit [0-9a-f]{7,40}\b/);
 });
 
-test("the Privacy section carries the bug-report privacy-policy draft", () => {
+test("the Privacy section records the one-small-database backend line and drops the 79.3 draft", () => {
   const privacy = section("Privacy policy URL");
-  const required = ["Draft for darktierstudios.com/privacy/apps", "tap Send", "posted publicly", "deleted", "github.com/sheibeck/ddr"];
-  for (const needle of required) {
-    assert.ok(privacy.includes(needle), `Privacy policy URL section mentions "${needle}"`);
-  }
+  assert.ok(
+    privacy.includes(
+      "We keep one small database on Google Firebase for the public leaderboard and bug reports, nothing else.",
+    ),
+  );
+  assert.doesNotMatch(LISTING, /Draft for darktierstudios\.com\/privacy\/apps/);
+});
+
+test("the Data safety section names Firebase as the service provider and never uploads Compete-off runs", () => {
+  const ds = section("Data safety");
+  assert.match(ds, /delve-die-repeat-6ba5f/);
+  assert.ok(ds.includes("service provider"));
+  assert.ok(ds.includes("never uploads runs finished while Compete was off"));
 });
