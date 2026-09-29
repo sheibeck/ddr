@@ -34,8 +34,8 @@
 - [ ] **SRV-01**: Each finished Compete-ON run is stored once as a document in a Firestore run collection in `delve-die-repeat-6ba5f`. It carries the owner id, handle, season, hero name, race, sub-class, class, level, floor, day, steps, kills, gold, sp, cause, epitaph, run hash and app version. Resubmitting the same run never creates a duplicate.
 - [ ] **SRV-02**: The security rules let an anonymous signed-in player create only runs owned by their own id and shaped exactly as the client builds them, within plausibility bounds. A JS mirror is kept equal to the rules by tests. Anyone may read in bounded pages. Nobody may update. Only the owner, or the admin service account, may delete. Everything else is denied.
 - [ ] **SRV-03**: For each of the four stats (DEPTH, DAYS, KILLS, WILMST), filtered by race, sub-class, both or neither, within the current season, the board answers three things: the top ten, the total count, and one run's rank. Ties break as the mock sorts them (DEPTH: fewer squares; DAYS and KILLS: deeper floor), and DAYS follows FARM-02. Declared composite indexes back every query.
-- [ ] **SRV-04**: The game gets an anonymous Firebase identity through the REST API with plain `fetch` (no Firebase SDK), keeps it in durable storage and refreshes its token. With Compete OFF it never creates or refreshes one.
-- [ ] **SRV-05**: Each install rolls an @handle from family-friendly word tables in `content/`, the way heroes are rolled, and the player can re-roll it. Every handle passes `content/safety-wordlist.js` by construction.
+- [x] **SRV-04**: The game gets an anonymous Firebase identity through the REST API with plain `fetch` (no Firebase SDK), keeps it in durable storage and refreshes its token. With Compete OFF it never creates or refreshes one.
+- [x] **SRV-05**: Each install rolls an @handle from family-friendly word tables in `content/`, the way heroes are rolled, and the player can re-roll it. Every handle passes `content/safety-wordlist.js` by construction.
 - [ ] **SRV-06**: A durable submission queue holds every non-dev Compete-ON death until the server acknowledges it. It survives relaunches and offline play, retries with backoff, never double-submits, and is discarded when Compete turns OFF.
 - [ ] **SRV-07**: An admin script lists suspicious runs and deletes one run, or every run of one player. Its service-account key never enters the repo or `www/`. An ops runbook covers the rules and index deploys, the console settings, quotas and moderation.
 - [ ] **SRV-08**: The live project is configured and proven end to end. The rules and indexes are deployed, anonymous sign-in is enabled, and the API key allows only the APIs the game calls. A smoke test creates, reads, ranks and deletes a run against the live project.
@@ -100,8 +100,8 @@
 | SRV-01 | Phase 83 | Pending |
 | SRV-02 | Phase 83 | Pending |
 | SRV-03 | Phase 83 | Pending |
-| SRV-04 | Phase 83 | Pending |
-| SRV-05 | Phase 83 | Pending |
+| SRV-04 | Phase 83 | Complete |
+| SRV-05 | Phase 83 | Complete |
 | SRV-06 | Phase 83 | Pending |
 | SRV-07 | Phase 83 | Pending |
 | SRV-08 | Phase 83 | Pending |

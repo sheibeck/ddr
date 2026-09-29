@@ -105,12 +105,12 @@ Plans:
   5. An admin script lists and deletes suspicious runs (one run or one player's runs, with the service-account key never entering the repo or `www/`), an ops runbook covers rules/index deploys and quotas, and a smoke test against the live project proves create, read, rank and delete end to end with rules and indexes deployed, anonymous sign-in enabled and the API key restricted to only the APIs the game calls.
   6. Bug reports share the quota safely (added by the user 2026-09-28): a report needs the anonymous identity and is limited per player (2-minute cooldown, 5 a day) by rules proven with live 403 probes; the Action deletes filed/failed reports and stale limit documents on the retention schedule, and its 15-minute schedule is proven to fire.
 
-**Plans:** 11 plans
+**Plans:** 1/11 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 83-01-PLAN.md — Shared Firebase config + Firestore REST helpers (encoder moved, decoder, timedFetch) and the rolled @handle (content/handles.js, safety proof) (wave 1)
+- [x] 83-01-PLAN.md — Shared Firebase config + Firestore REST helpers (encoder moved, decoder, timedFetch) and the rolled @handle (content/handles.js, safety proof) (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -139,6 +139,7 @@ Plans:
 **Wave 7** *(blocked on Wave 6 completion)*
 
 - [ ] 83-11-PLAN.md — Live bug-report proof: push, ten 403 probes, report-to-issue-to-deleted cleanup proof, scheduled run proven (wave 7)
+
 **Research**: yes — gsd-phase-researcher (Firestore REST `runQuery`/`runAggregationQuery` count + rank queries, anonymous auth over REST + token refresh, owner-scoped rules and bounded list rules, composite index count, Spark quotas)
 
 ### Phase 84: Leaderboards Panel v3
@@ -211,7 +212,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 82. DAYS Farming Check | 2/2 | Complete    | 2026-09-28 |
-| 83. Leaderboard Server | 0/TBD | Not started | - |
+| 83. Leaderboard Server | 1/11 | In Progress|  |
 | 84. Leaderboards Panel v3 | 0/TBD | Not started | - |
 | 85. Play Games Out, Our Board In | 0/TBD | Not started | - |
 | 86. Compliance & Device Close | 0/TBD | Not started | - |
