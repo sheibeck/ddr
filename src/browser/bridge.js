@@ -314,9 +314,9 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
       "mazeworld.html (classic: renderCombatOver / renderRankLine — draws the DEEPEST rank line on the THAT IS THAT panel, then marks it not fresh)",
-      "mazeworld.html (module: onRunRecorded — resets it for a new death; handlePgsFlush — sets it when the run's rank returns; showTitleScreen and onAccountForPgs — reset it to null)",
+      "mazeworld.html (module: onRunRecorded and showTitleScreen — reset it to null; Phase 85 (85-05) wires boardSync's onPlacement to set it when the run's rank returns)",
     ]),
-    purpose: "Presentation-only parcel { hash, line, fresh } of the just-died run's DEEPEST rank line (Phase 68, PLACE-01); never a field on state.",
+    purpose: "Presentation-only parcel { hash, line, fresh } of the just-died run's DEEPEST rank line (Phase 68, PLACE-01; Phase 85, ACCT-04); never a field on state.",
   }),
   __mzPreferencesOverride: Object.freeze({
     owner: "src/browser/storage.js",

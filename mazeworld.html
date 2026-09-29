@@ -6984,20 +6984,21 @@ window.__mzClassicBoot = async function classicBoot() {
   import { createBoardFeed } from "./src/browser/boardFeed.js";
   import { createFakeBoardFetch } from "./src/browser/fakeBoardServer.js";
   import { devBoardRuns } from "./src/browser/devBoardSeed.js";
-  // Phase 67 (PGS-02, ACCT-01/02, D-12): the Play Games provider seam (the
-  // only module that names the plugin) and the account chip, sheet and
-  // controller.
-  import { createPlayGames, createFakePlayGames } from "./src/browser/playGames.js";
+  // Phase 85 (ACCT-03/05, 85-CONTEXT group 1): the account chip, sheet and
+  // controller, over the @handle-and-Compete account — no third-party
+  // provider seam.
   import { createAccountController, renderAccountChip, renderAccountSheet, renderMenuFace, renderAccountMenu } from "./src/browser/accountChip.js";
-  // Phase 68 (PGS-03..06, PLACE-01/02): the adapter's run-recorded hook, the
-  // durable submission queue, the global-boards controller, the placement
-  // copy views, the leaderboard IDs and the current season — each on its own
-  // line per this file's import convention.
+  // Phase 85 (ACCT-04/05/06, RETIRE-03): the board-side engine room — every
+  // board-side decision (death-time submission, flush with a pending handle
+  // rewrite, re-roll, erase-keeps-handle, the bounded 2.1.0 backfill, the
+  // retired queue-key drop, DEPTH-rank placement reports) lives here; the
+  // shell only wires taps and lifecycle events into it.
+  import { createBoardSync } from "./src/browser/boardSync.js";
+  // Phase 68 (PLACE-01/02): the adapter's run-recorded hook and the
+  // placement copy views — each on its own line per this file's import
+  // convention.
   import { setRunRecordedListener } from "./src/browser/engineAdapter.js";
-  import { createSubmissionQueue } from "./src/browser/pgsQueue.js";
-  import { createGlobalBoards } from "./src/browser/globalBoards.js";
   import { placementLine, deferredPlacementCard, seasonDropLine } from "./src/browser/placement.js";
-  import { leaderboardIdsFor, knownSeasons, scoreOrdersFor } from "./src/browser/boardScores.js";
   import { SEASON } from "./content/season.js";
   import { registerNativeChrome } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
@@ -7333,13 +7334,16 @@ window.__mzClassicBoot = async function classicBoot() {
       return null;
     }
   }
-  // Phase 84 (T-84-10): the board client's ONE Compete gate — reads the
-  // live setting off currentSettings (assigned below, re-applied on every
-  // writeAccountSetting), so every board read reflects the current Compete
-  // value with zero staleness. competeIsOn() is called at read time, never
-  // cached.
+  // Phase 85 (ACCT-06, T-85-05): the ONE Compete gate every board seam
+  // reads — the board client, both identities (sharedIdentity/boardIdentity
+  // below) and boardSync all read this SAME function, so a tap that flips
+  // Compete stops every board network call at the same instant. Before the
+  // account controller exists (module boot) it falls back to the settings
+  // mirror (currentSettings, assigned below); once `account` exists, the
+  // controller's own live state is the source of truth — it flips
+  // synchronously on setCompete, ahead of any settings persist round-trip.
   function competeIsOn() {
-    return currentSettings?.compete === true;
+    return account ? account.state().compete === true : currentSettings?.compete === true;
   }
   // Phase 84 (T-84-11): the board's ONE network seam. On a native platform
   // (Android debug or release) this is the live fetch against the deployed
@@ -7352,26 +7356,29 @@ window.__mzClassicBoot = async function classicBoot() {
     if (window.Capacitor?.isNativePlatform?.()) return globalThis.fetch.bind(globalThis);
     return createFakeBoardFetch({ runs: devBoardRuns() }).fetchFn;
   }
+  // Phase 85 (85-CONTEXT "Claude's discretion"): the browser dev loop's ONE
+  // fake board fetch instance, read once here and shared by the board
+  // client and boardSync below — a second boardFetchFn() call would seed a
+  // second, disconnected in-memory fake board.
+  const boardFetch = boardFetchFn();
   // Phase 67 (D-08): the one account controller, assigned after the
   // settings load (below). Declared here, before the Leaderboards panel
-  // instance, so its identity() arrow can never reach a temporal dead zone;
-  // until the controller exists the strip reads signed out.
+  // instance, so competeIsOn()'s fallback above never reaches a temporal
+  // dead zone.
   let account = null;
-  // Phase 68 (D-01..D-07, D-10..D-12): the submission queue, the global
-  // boards controller, the hash of the run whose THAT IS THAT panel may still
-  // be up, and the parked placement rail card. All assigned after the
-  // account controller (below) and declared here for the same reason as
-  // `account`. Shell presentation state only, never a field on S/state.
-  let globalBoards = null;
-  let pgsQueue = null;
+  // Phase 85 (ACCT-04, 85-CONTEXT group 3): the hash of the run whose THAT
+  // IS THAT panel may still be up (the live death gets the fresh rank line;
+  // every other acknowledged run folds into a parked rail card). Assigned
+  // after the account controller (below) and declared here for the same
+  // reason as `account`. Shell presentation state only, never a field on
+  // S/state.
   let liveDeathHash = null;
-  let pendingPgsCard = null;
   // Phase 84 (BOARD-19, T-84-10/T-84-11): the board client (Phase 83) and
   // the LEADERBOARD data feed (84-04), wired once here and handed to the
   // panel below as its `board` seam. The client's own competeOn gate means
   // every read resolves "off" with zero network calls while Compete is off.
-  const boardClient = createBoardClient({ fetchFn: boardFetchFn(), competeOn: competeIsOn });
-  const boardFeed = createBoardFeed({ client: boardClient, identity: () => sharedIdentity() });
+  const boardClient = createBoardClient({ fetchFn: boardFetch, competeOn: competeIsOn });
+  const boardFeed = createBoardFeed({ client: boardClient, identity: () => boardIdentity() });
   const boardsPanel = createLeaderboardPanel({
     host: document.getElementById("screen-dead"),
     buildView: leaderboardView,
@@ -7427,10 +7434,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // window.__mzFightEnd.
   window.__mzDeathRecord = null;
   // Phase 68 (PLACE-01, D-10/D-11): the just-died run's DEEPEST rank line,
-  // a presentation-only parcel { hash, line, fresh } set by handlePgsFlush
-  // when the rank returns and read by the classic renderCombatOver through
-  // renderRankLine. Null while waiting, on failure, signed out or with
-  // Compete OFF. Never a field on S/state, same rule as __mzDeathRecord.
+  // a presentation-only parcel { hash, line, fresh } — 85-05 wires
+  // boardSync's onPlacement to set it when the rank returns; read by the
+  // classic renderCombatOver through renderRankLine. Null while waiting, on
+  // failure or with Compete OFF. Never a field on S/state, same rule as
+  // __mzDeathRecord.
   window.__mzPlacement = null;
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
@@ -7776,9 +7784,9 @@ window.__mzClassicBoot = async function classicBoot() {
       { rows: document.getElementById("mw-acct-rows"), title: document.getElementById("mw-acct-title") },
       account.sheetView(),
       {
-        onSignIn: () => account.signIn(),
-        onStopCompeting: () => account.stopCompeting(),
         onCompete: (value) => account.setCompete(value),
+        onReroll: () => account.reroll(),
+        onErase: () => account.eraseTap(),
         onSettings: () => {
           closeAccountSheet();
           openSettingsSheet();
@@ -7798,6 +7806,9 @@ window.__mzClassicBoot = async function classicBoot() {
     if (sheet) panelMotion.close(sheet);
     // The settings sheet's pattern: keep the party in view, never recentre.
     window.mzKeepPartyInView?.();
+    // Phase 85 (85-CONTEXT group 1): the title sheet's own ERASE MY RUNS row
+    // shares the same disarm-on-close rule as the ☰ block's.
+    account?.disarmErase();
   }
   document.getElementById("mw-title-acct-chip")?.addEventListener("click", () => openAccountSheet());
   document.getElementById("mw-acct-scrim")?.addEventListener("click", closeAccountSheet);
@@ -7812,21 +7823,43 @@ window.__mzClassicBoot = async function classicBoot() {
   // globalThis.fetch bound — this block never calls fetch itself.
   let reportModel = REPORT_SHEET_INITIAL;
   let reportSentTimer = null;
-  // Phase 83 (SRV-09): one anonymous identity for bug reports now, and for
-  // the board once Phase 85 wires Compete — created lazily so nothing
-  // touches the network until the player's own explicit Send (sendBugReport
-  // always calls getToken({explicit: true})). competeOn stays () => false
-  // here until Phase 85 reads the real Compete setting.
+  // Phase 83 (SRV-09): one anonymous identity for bug reports and, on a
+  // native platform, for the board too (Phase 85 ACCT-03/04/05/06) —
+  // created lazily so nothing touches the network until the player's own
+  // explicit action (a bug report Send always calls getToken({explicit:
+  // true}), forcing a request regardless of Compete; a board write goes
+  // through boardSync/the account controller, both gated on competeIsOn).
   let sharedIdentityInstance = null;
   function sharedIdentity() {
     if (!sharedIdentityInstance) {
       sharedIdentityInstance = createIdentity({
         storage: window.mzStorage,
         fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
-        competeOn: () => false,
+        competeOn: competeIsOn,
       });
     }
     return sharedIdentityInstance;
+  }
+  // Phase 85 (85-CONTEXT "Claude's discretion", T-85-06): the board's own
+  // identity seam. On a native platform this IS sharedIdentity() — the
+  // same account a bug report uses. In the browser dev loop it is a
+  // SEPARATE identity over the shared dev-loop board fetch (boardFetch,
+  // above), whose storage keys are all prefixed "dev." — so dev-loop board
+  // play can never sign up a live account or touch the live bug-report
+  // identity's storage keys or the live project. Created lazily, same
+  // reason as sharedIdentity().
+  let boardIdentityInstance = null;
+  function boardIdentity() {
+    if (window.Capacitor?.isNativePlatform?.()) return sharedIdentity();
+    if (!boardIdentityInstance) {
+      const devStorage = {
+        getItem: (key) => window.mzStorage?.getItem?.(`dev.${key}`),
+        setItem: (key, value) => window.mzStorage?.setItem?.(`dev.${key}`, value),
+        removeItem: (key) => window.mzStorage?.removeItem?.(`dev.${key}`),
+      };
+      boardIdentityInstance = createIdentity({ storage: devStorage, fetchFn: boardFetch, competeOn: competeIsOn });
+    }
+    return boardIdentityInstance;
   }
   function reportSheetOpen() {
     const sheet = document.getElementById("mw-report-sheet");
@@ -8357,24 +8390,12 @@ window.__mzClassicBoot = async function classicBoot() {
        settings read failure must never block boot */
   }
 
-  // Phase 67 (PGS-02, D-01/D-02/D-12): the Play Games account. On a native
-  // build the provider wraps the plugin (reached only through playGames.js,
-  // loaded lazily on the first provider call). The browser dev loop never
-  // loads the plugin: it gets the in-memory fake, seeded signed in only
-  // when the dev setting pgsDevSignedIn is on. The seed is read once, here,
-  // so a flip takes effect next launch; a native build ignores it.
-  const pgsNative = !!window.Capacitor?.isNativePlatform?.();
-  // Phase 68 (PGS-06, D-14): the leaderboard IDs, built once (the dev map is
-  // a new object per call). Native reads content/leaderboards.js (placeholder
-  // IDs until the Play Console setup, so those boards are skipped); the
-  // browser dev loop gets dev IDs, and the fake is told each board's real
-  // score order, so submissions, the rank line, the rail card and the
-  // global views all run without a device.
-  const pgsIds = leaderboardIdsFor({ native: pgsNative });
-  const pgsProvider = pgsNative ? createPlayGames() : createFakePlayGames({ signedIn: currentSettings?.pgsDevSignedIn === true, orders: scoreOrdersFor(pgsIds) });
-  // The controller persists Compete and pgsWelcomed through settings.js;
-  // re-applying keeps the module's settings mirror coherent (Phase 68 reads
-  // Compete from it).
+  // Phase 85 (ACCT-03/04/05/06, RETIRE-03; 85-CONTEXT groups 1 and 3): the
+  // account — our own @handle-and-Compete identity, over boardSync (the
+  // board-side engine room, wired below). The controller persists compete
+  // and boardWelcomed through settings.js; re-applying keeps the module's
+  // settings mirror coherent (competeIsOn()'s fallback reads it before
+  // boot() settles).
   async function writeAccountSetting(key, value) {
     const next = await writeSetting(key, value);
     applySettings(next);
@@ -8398,13 +8419,15 @@ window.__mzClassicBoot = async function classicBoot() {
     pendingAccountCard = card;
     flushAccountCard();
   }
-  // Phase 68 (D-12): the one placement card (pendingPgsCard) shares this
+  // Phase 85 (ACCT-04): the one placement card (pendingPlacementCard; 85-05
+  // wires boardSync's onPlacement into parkPlacementCard) shares this
   // delivery. The rail holds one card and a second push replaces the first,
   // so the account card goes first; a placement card waiting behind it is
   // delivered by a timer after the account card's hold, never on top of it.
   // The placement card also waits while the party is dead: the rail is
   // hidden under THAT IS THAT, so it lands on the next map instead.
-  let pgsCardTimer = null;
+  let pendingPlacementCard = null;
+  let placementCardTimer = null;
   function flushAccountCard() {
     let accountHold = -1;
     if (pendingAccountCard && dungeonVisible()) {
@@ -8413,51 +8436,77 @@ window.__mzClassicBoot = async function classicBoot() {
       window.mzRailLine?.(card.title, card.line, card.tone, card.hold);
       accountHold = Number.isFinite(card.hold) ? card.hold : 0;
     }
-    if (!pendingPgsCard || pgsCardTimer !== null) return;
+    if (!pendingPlacementCard || placementCardTimer !== null) return;
     if (!dungeonVisible() || window.__mzState?.get?.()?.dead === true) return;
     if (accountHold >= 0) {
-      pgsCardTimer = setTimeout(() => {
-        pgsCardTimer = null;
+      placementCardTimer = setTimeout(() => {
+        placementCardTimer = null;
         flushAccountCard();
       }, accountHold + 600);
       return;
     }
-    const card = pendingPgsCard;
-    pendingPgsCard = null;
+    const card = pendingPlacementCard;
+    pendingPlacementCard = null;
     window.mzRailLine?.(card.title, card.line, card.tone, card.hold);
   }
-  function parkPgsCard(card) {
+  function parkPlacementCard(card) {
     if (!card) return;
-    pendingPgsCard = card; // the latest wins
+    pendingPlacementCard = card; // the latest wins
     flushAccountCard();
   }
+  // Phase 85 (ACCT-04/05/06, RETIRE-03): the board-side engine room, wired
+  // to our own identity/client/fetch seams above. 85-05 adds liveHash,
+  // onAcked and onPlacement for the death screen's rank line and the
+  // deferred rail card; this plan's onChange keeps the LEADERBOARD panel in
+  // sync with every acknowledged board write (a reroll's handle rewrite, an
+  // erase).
+  const boardSync = createBoardSync({
+    storage: window.mzStorage,
+    fetchFn: boardFetch,
+    identity: boardIdentity(),
+    client: boardClient,
+    competeOn: competeIsOn,
+    online: () => navigator.onLine !== false,
+    version: () => document.getElementById("mw-app-version")?.textContent || "dev",
+    onChange: () => {
+      boardFeed.clear();
+      boardsPanel.refresh();
+    },
+  });
   account = createAccountController({
-    provider: pgsProvider,
+    identity: boardIdentity(),
+    board: boardSync,
     settings: { read: readSettings, write: writeAccountSetting },
     notify: parkAccountCard,
+    compete: currentSettings?.compete !== false,
   });
   // Phase 70 (POLISH-02, D-03/D-04/D-07): the three account surfaces, all
   // from the controller's views on every account change. The title's corner
   // chip shows the chip view (Phase 67 D-06); the ☰ button wears the menu
-  // view (the initials avatar when signed in, the plain ☰ otherwise); the
-  // ☰ dropdown's ACCOUNT block shows the sheet view's rows. Each ACCOUNT
-  // row closes the menu first (the classic hudMenuEvent("select"), D-07),
-  // then routes through the controller.
+  // view (the handle's initials avatar while Compete is ON, the plain ☰
+  // otherwise); the ☰ dropdown's ACCOUNT block shows the sheet view's rows.
+  // Phase 85 (85-CONTEXT "Claude's discretion"): COMPETE and RE-ROLL keep
+  // the ☰ open (the player sees the new state and can re-roll again — it is
+  // unlimited); only the confirming ERASE tap closes it. Every handler stops
+  // the click event's own propagation first, so the ☰'s own outside-tap
+  // close listener never double-fires.
   function renderAccountSurfaces() {
     renderAccountChip(document.getElementById("mw-title-acct-chip"), account.chipView());
     renderMenuFace(document.getElementById("mw-hud-menu-btn"), account.menuView());
     renderAccountMenu(document.getElementById("mw-hud-menu-acct"), account.sheetView(), {
-      onSignIn: () => {
-        hudMenuEvent("select");
-        account.signIn();
-      },
-      onStopCompeting: () => {
-        hudMenuEvent("select");
-        account.stopCompeting();
-      },
-      onCompete: (value) => {
-        hudMenuEvent("select");
+      onCompete: (value, event) => {
+        event?.stopPropagation?.();
         account.setCompete(value);
+      },
+      onReroll: (event) => {
+        event?.stopPropagation?.();
+        account.reroll();
+      },
+      onErase: (event) => {
+        event?.stopPropagation?.();
+        const wasArmed = account.state().erase === "armed";
+        account.eraseTap();
+        if (wasArmed) hudMenuEvent("select");
       },
     });
   }
@@ -8473,107 +8522,44 @@ window.__mzClassicBoot = async function classicBoot() {
   });
   // The pending faces until boot() settles the first state.
   renderAccountSurfaces();
+  // Phase 85 (85-CONTEXT group 1): an armed ERASE MY RUNS row also disarms
+  // the instant the ☰ closes (its own timer covers the ~3s expiry) — the
+  // ☰'s data-open attribute is the one signal every close path (a row tap,
+  // the scrim, Escape, the Android back mirror) already sets.
+  if (typeof MutationObserver === "function") {
+    const acctMenuObserver = new MutationObserver(() => {
+      const menu = document.getElementById("mw-hud-menu");
+      if (menu && menu.dataset.open !== "1") account?.disarmErase();
+    });
+    const menuEl = document.getElementById("mw-hud-menu");
+    if (menuEl) acctMenuObserver.observe(menuEl, { attributes: true, attributeFilter: ["data-open"] });
+  }
 
-  // Phase 68 (PGS-03/04, D-01/D-02/D-04): every non-dev death reaches the
-  // durable queue (ddr.pgsqueue.v1) through the adapter's run-recorded
-  // listener. The queue refuses while Compete is OFF, stores the entry
-  // before any submission and then tries a flush; a signed-out death waits
-  // for sign-in. It flushes again when sign-in succeeds (onAccountForPgs),
-  // when the device comes back online (forced) and when the app is visible
-  // again (the backoff applies). Nothing here is awaited: boot and offline
-  // play never wait on Play Games.
-  pgsQueue = createSubmissionQueue({
-    storage: window.mzStorage,
-    provider: pgsProvider,
-    ids: pgsIds,
-    season: SEASON,
-    isCompeting: () => account.state().compete === true,
-    isSignedIn: () => account.identity().signedIn === true,
-    onFlushed: handlePgsFlush,
-    onSeasonDrop: notePgsSeasonDrop,
-  });
-  // PGS-05 (D-05..D-07): the panel's ALL/FRIENDS/LINEAGE snapshots, cached
-  // per season, board and scope; zero calls while signed out (Compete OFF
-  // reads signed out). Each finished fetch redraws the open panel.
-  globalBoards = createGlobalBoards({
-    provider: pgsProvider,
-    ids: pgsIds,
-    isActive: () => account.identity().signedIn === true,
-    playerId: () => account.identity().player?.id || "",
-    onChange: () => boardsPanel.refresh(),
-  });
-  pgsQueue.load();
+  // Phase 85 (ACCT-04, 85-CONTEXT group 3): every non-dev, Compete-ON death
+  // reaches the board through boardSync's own durable queue (boardSync.record
+  // itself decides whether Compete/an in-flight erase keeps it). Nothing
+  // here is awaited: boot and offline play never wait on the board. Flushes
+  // happen after enqueue (boardSync.record's own contract), when the app
+  // becomes visible again and when the device comes back online (forced);
+  // boot() (below, near account.boot()) runs the bounded 2.1.0 backfill once
+  // and flushes it.
   setRunRecordedListener(onRunRecorded);
-  account.subscribe(onAccountForPgs);
-  window.addEventListener("online", () => pgsQueue?.flush({ force: true }));
+  window.addEventListener("online", () => boardSync.flush({ force: true }));
+  // Kept the FIRST visibilitychange listener in the file on purpose
+  // (shell-board.test.js requires it; the title-music observer further
+  // below is added after it for the same reason).
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") pgsQueue?.flush();
+    if (document.visibilityState === "visible") boardSync.flush();
   });
 
-  // The previous account status and Compete value, so a transition fires once.
-  let pgsLastStatus = null;
-  let pgsLastCompete = null;
   // A death was recorded (never a dev death: the adapter skips those). It is
   // now the live death whose panel may show the rank line; any earlier rank
-  // line is dropped. The queue decides whether to keep it (D-04).
+  // line is dropped. boardSync.record decides whether to keep it (the
+  // Compete gate, an in-flight erase's refusal).
   function onRunRecorded(summary) {
     liveDeathHash = summary && typeof summary.hash === "string" ? summary.hash : null;
     window.__mzPlacement = null;
-    pgsQueue?.enqueue(summary);
-  }
-  // PLACE-01/02 (D-10..D-12): a flush submitted DEEPEST scores and read the
-  // player's DEEPEST standing. The live death, while its THAT IS THAT panel
-  // is up, gets the rank line; every other submitted run folds into one
-  // parked rail card. A null standing (the read failed) shows nothing.
-  function handlePgsFlush(result) {
-    const submitted = Array.isArray(result?.submitted) ? result.submitted.filter((e) => e && typeof e.hash === "string") : [];
-    // Phase 81 (BOARD-16, R-16b): invalidate before the standing checks
-    // below, so any submission this flush made is never served from a
-    // pre-submission snapshot — even when the standing read itself failed.
-    if (submitted.length > 0) globalBoards?.invalidate();
-    const standing = result?.standing;
-    if (!standing || typeof standing !== "object" || submitted.length === 0) return;
-    const { rank, total } = standing;
-    let rest = submitted;
-    const live = liveDeathHash ? submitted.find((e) => e.hash === liveDeathHash) : null;
-    if (live && window.__mzState?.get?.()?.dead === true) {
-      const line = placementLine({ rank, total, newBest: live.newBest, hash: live.hash });
-      if (line) {
-        window.__mzPlacement = { hash: live.hash, line, fresh: true };
-        renderRankLine(document.getElementById("cb-over"), window.__mzPlacement);
-      }
-      rest = submitted.filter((e) => e !== live);
-    }
-    if (rest.length === 0) return;
-    const newBest = rest.some((e) => e.newBest === true) ? true : rest.every((e) => e.newBest === false) ? false : null;
-    const card = deferredPlacementCard({ count: rest.length, rank, total, newBest, hash: rest[rest.length - 1].hash });
-    if (card) parkPgsCard(card);
-  }
-  // D-03: queued deaths from an older season were dropped, not submitted.
-  // One Oracle line in voice; the copy is pinned free of markup and only a
-  // number is filled in.
-  function notePgsSeasonDrop(count) {
-    const line = seasonDropLine(count);
-    if (!line) return;
-    window.logLine?.(`<span class="beat">${line}</span>`);
-  }
-  // D-02/D-04: Compete OFF purges the queue (after the controller already
-  // reads OFF, so an in-flight flush stops) and drops the cached remote
-  // rows and any rank line; becoming signed in flushes the queue once;
-  // leaving signed in drops the cached remote rows.
-  function onAccountForPgs(state) {
-    const status = state?.status ?? null;
-    const compete = state?.compete === true;
-    const turnedOff = !compete && pgsLastCompete !== false;
-    if (turnedOff) {
-      pgsQueue?.purge();
-      globalBoards?.clear();
-      window.__mzPlacement = null;
-    }
-    if (status === "signedIn" && pgsLastStatus !== "signedIn") pgsQueue?.flush({ force: true });
-    else if (status !== "signedIn" && pgsLastStatus === "signedIn" && !turnedOff) globalBoards?.clear();
-    pgsLastStatus = status;
-    pgsLastCompete = compete;
+    boardSync.record(summary);
   }
 
   // 04-06: bridge the pure controls.js/canvasSizing.js math + icons.js onto
@@ -9870,8 +9856,8 @@ window.__mzClassicBoot = async function classicBoot() {
   //     initTitleScreen stay byte-identical: shell-account.test.js E7 and
   //     shell-boards-panel.test.js E1–E5 run those exact bodies through
   //     new Function with a fixed scope, so they must gain no identifier.
-  // It is added after the pgsQueue visibilitychange listener above on
-  // purpose (shell-pgs.test.js requires that one to be the first).
+  // It is added after boardSync's visibilitychange listener above on
+  // purpose (shell-board.test.js requires that one to be the first).
   if (typeof MutationObserver === "function") {
     const titleMusicObserver = new MutationObserver(syncTitleMusic);
     for (const id of ["mw-title-screen", "mw-roller-screen"]) {
@@ -9907,12 +9893,16 @@ window.__mzClassicBoot = async function classicBoot() {
     if (notesTitleEl) notesTitleObserver.observe(notesTitleEl, { attributes: true, attributeFilter: ["hidden"] });
   }
 
-  // Phase 67 (PGS-02, D-01/D-02): the launch sign-in, deliberately not
-  // awaited. It never blocks boot, the title or play; with Compete OFF the
-  // controller calls no provider method at all, and on native the plugin
-  // is reached only through playGames.js. boot() never rejects; the catch
+  // Phase 67 (D-01/D-02): the launch handle roll, deliberately not awaited.
+  // It never blocks boot, the title or play; the handle rolls locally with
+  // no network (identity.ensureHandle()). boot() never rejects; the catch
   // is defence in depth against an unhandled rejection.
   account.boot().catch(() => {});
+  // Phase 85 (RETIRE-03, ACCT-04): boardSync's own boot — drops the retired
+  // pre-2.2 submission-queue key silently, runs the once-only 2.1.0 backfill
+  // bounded to the local run history's own pre-2.2 imports, then flushes it
+  // while Compete is ON. Also never awaited; never blocks the title.
+  boardSync.boot({ history: getRunHistory() }).catch(() => {});
 
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
   // Button + Lifecycle". Native-only: isNativePlatform() is false in the
@@ -9933,10 +9923,11 @@ window.__mzClassicBoot = async function classicBoot() {
       // app — engineAdapter.js's waitForPending() is awaited alongside
       // storage.flush() (both inside registerNativeChrome's
       // pause/appStateChange handlers) so that write isn't lost.
-      // Phase 68 (D-02): the submission queue's own writes (a death's entry,
-      // each board's ack) are awaited alongside, so a queued death survives
-      // the app being backgrounded.
-      waitForPending: () => Promise.all([waitForPending(), pgsQueue?.waitForPending()]),
+      // Phase 85 (ACCT-04): boardSync's own tracked writes (a queued death's
+      // entry, a pending handle rewrite, the retired-key drop, each board's
+      // ack) are awaited alongside, so nothing this session started is lost
+      // to the app being backgrounded — network itself is never awaited.
+      waitForPending: () => Promise.all([waitForPending(), boardSync.waitForPending()]),
       // Quick task 260924-51h (R-07): background cuts the title theme and
       // every one-shot; foreground restarts the theme only if the title
       // area is still up and Sound is on.
