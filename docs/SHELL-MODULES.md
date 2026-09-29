@@ -4,9 +4,10 @@
 screen render from named `src/browser/` modules — `gearTab.js`, `heroTab.js`
 and `storeScreen.js` (Phase 47), and the character roller mounts from
 `roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
-`gearSheet.js` (Phase 63). The DEAD tab's Leaderboards panel renders from
-`boardsPanel.js` over the pure `boardsView.js` view model (Phase 66). The
-rolled-`@handle` account comes from two modules: `account.js` (the pure
+`gearSheet.js` (Phase 63). The DEAD tab's LEADERBOARD/YOUR DEAD panel
+renders from `leaderboardPanel.js` over the pure `leaderboardView.js` view
+model (Phase 66; rebuilt as the v3 panel in Phase 84). The rolled-`@handle`
+account comes from two modules: `account.js` (the pure
 view model) and `accountChip.js` (the renderers plus
 `createAccountController`). Our own Firebase-backed leaderboard — which
 replaced Phases 67/68's Play Games modules in v2.2 Phase 85
@@ -131,58 +132,78 @@ opener. The scrim tap and the Android back button both close it too.
 `renderGearSheet` before the first `boot()`; the classic script's
 `openGearSheet`/`refreshGearSheet` are its only callers.
 
-### Leaderboards panel (Phase 66; restructured Phase 81, BOARD-11..BOARD-14)
+### The LEADERBOARD/YOUR DEAD panel (Phase 66; rebuilt Phase 84, BOARD-18..27)
 
-`src/browser/boardsView.js` exports `boardsView(input)` — the D-15 pure
-view-model seam. Given `{ bests, graves, total, board, scope, open, entry,
-hasHero, signedIn, recentHash }` it returns everything the panel renders:
-the header (title, scope line, INTERRED count), the identity strip (shown on
-every board, GRAVEYARD included — three scope chips, ME | ALL | FRIENDS, ME
-never dimmed, ALL/FRIENDS dimmed while signed out or Compete OFF), the board
-rail (DEEPEST, LONGEST, BUTCHERY, PURSE, then LINEAGE and GRAVEYARD — the
-ME-only boards, `engine/records.js` `ME_ONLY_BOARDS` — shown only while ME
-is on), the active board's mark/title/rule line, the body (`rows` | `empty` |
-`note`), the standing card and the footnote. It is a pure function of its
-input — no DOM, no storage read — built entirely from `engine/records.js`
-and `content/boards.js`.
+`src/browser/leaderboardView.js#leaderboardView(input)` is the v3 pure
+view-model seam behind both DEAD-tab views: LEADERBOARD (`mode: "board"`,
+Compete ON) and YOUR DEAD (`mode: "mine"`, always forced with Compete OFF).
+Given `{ compete, mode, entry, hasHero, dead, stat, race, sub, open, sheet,
+history, board, now, tzOffsetMinutes, season }` it returns everything the
+panel draws: the header (title, scope line, season line, the ◀ back flag,
+and the YOURS›/EVERYONE› box — YOUR DEAD's box flips to EVERYONE's live
+total once Compete is on, LEADERBOARD's box always reads YOURS against the
+local history count), the RANK BY/RACE/SUB-CLASS pickers, the body (`rows`
+| `empty` — the NOBODY YET note with a CLEAR FILTERS action | a
+loading/unreachable `note`), the pinned "you" row plus the standing card
+(LEADERBOARD only — the real rank, "1,204 others share your best"), the
+stale line (an age phrase once a served `BoardSnapshot` goes stale), the
+bottom RANK BY/RACE/SUB-CLASS sheet (`statSheetOptions`/`raceSheetOptions`/
+`subSheetOptions` — per-option counts on YOUR DEAD only, CONTEXT area 2's
+"No per-option counts on LEADERBOARD") and the dead-hero dock (FINAL SHEET,
+BURY THEM — ported verbatim from the retired `boardsView.js#buildDock`). It
+is a pure function of its input — no DOM, no storage, no clock/random of
+its own (`now`/`tzOffsetMinutes` are supplied) — built entirely from
+`content/boards.js#LEADERBOARD_COPY` and `content/season.js#SEASON`/
+`SEASON_NAMES`. Ranking on both views is `runDoc.js#rankKeyOf(stat, run)`,
+the one shared rank-key function, which already applies the DAYS
+anti-farming cap.
 
-`src/browser/boardsPanel.js` exports `renderBoardsPanel(host, view,
-handlers)` (a persistent-skeleton DOM renderer reusing its `.mw-bd` root and
-six section children across re-renders, so the rail's and body's own scroll
-positions survive a row tap or board switch) and `createBoardsPanel({ host,
-buildView, readData, prefs, reducedMotion, onRoute })` — the stateful
-controller returning `{ openFromTab, openFromTitle, onDeadTab, back,
-isTitleOpen, centreRail, refresh, state }`.
+`src/browser/leaderboardPanel.js` exports `renderLeaderboardPanel(host,
+view, handlers)` (a persistent-skeleton DOM renderer reusing its `.mw-lb`
+root and section children across re-renders, so `.mw-lb-body`'s scroll
+position survives a row toggle; `LEADERBOARD_CLASSES` lists every class it
+emits, and every board-sourced word is written through `textContent`,
+never an HTML string, since a LEADERBOARD row carries another player's
+handle, name, note and epitaph) and `createLeaderboardPanel({ host,
+buildView, history, board, competeOn, prefs, now, tzOffset, season,
+reducedMotion, onRoute })` — the stateful controller, mirroring the retired
+`createBoardsPanel`'s shape and seam names (`{ openFromTab, openFromTitle,
+onDeadTab, back, isTitleOpen, refresh, state }`) so the DEAD tab and the
+Android back mirror kept working unchanged. `competeOn()` decides the
+opening view (ON → LEADERBOARD, OFF → YOUR DEAD) and gates every `board`
+read; only the RANK BY stat is remembered between opens, under the same
+`ddr.boards.last.v1` per-viewer prefs key (`BOARDS_LAST_KEY`) the retired
+panel used, tolerant of an unknown stat — RACE and SUB-CLASS filters reset
+on every open. A load's answer is applied only when it is still the most
+recent request for the currently-open panel and the panel has not been
+routed away since — a stale answer never overwrites a newer view.
 
 Two entry modes:
 
 - **Tab** (`openFromTab`/`onDeadTab`) — the game tab bar stays visible with
-  DEAD active, no chevron, no dock. Opens on the default scope (ALL when
-  signed in with Compete ON, else ME — BOARD-11) and re-evaluates that
-  default on every `refresh()` until a scope chip is tapped (`scopePicked`).
-  Opens on the board last viewed (the `ddr.boards.last.v1` per-viewer
-  convenience key, read/written through the injected `prefs`, always inside
-  try/catch), falling back to DEEPEST, and forced off a ME-only board when
-  the resolved scope is not ME.
+  DEAD active, no chevron, no dock, except the dead-hero FINAL SHEET/BURY
+  THEM dock while a hero has just died.
 - **Title** (`openFromTitle`) — a ◀ back chevron appears in the header, the
   bottom dock shows BACK TO TITLE / ROLL A NEW HERO / BACK TO THE DUNGEON,
   and `body[data-boards-entry="title"]` hides the game tab bar and the rail.
-  Always opens on GRAVEYARD under ME, with the scope fixed for that session
-  even when signed in with Compete ON (the button names a ME-only board).
   `back()`/the dock route through the panel's `onRoute(action, { hasHero })`
   callback ("title" | "dungeon" | "roll").
 
 `window.__mzBoards` is the one bridge — `{ onDeadTab }` — assigned by the
 module script; the classic script's `showTab`'s `name === "dead"` branch is
-its only caller. The panel reads only the adapter's in-memory
-`getBests()`/`getGraveyard()` snapshots (never storage directly), so a death
-that just happened already shows when the DEAD tab opens.
+its only caller. YOUR DEAD reads `src/browser/runHistory.js`'s own per-run
+history (`ddr.runs.v1`, capped at `RUN_HISTORY_CAP` runs, imported from the
+graveyard/bests stores at first launch and appended to on every death) —
+never the retired `getBests()`/`getGraveyard()` read seam — so a death that
+just happened already shows when the DEAD tab opens.
 
-Phases 67 (Play Games sign-in, the account chip) and 68 (global/friends
-boards, submissions) were removed in v2.2 Phase 85, replaced by the account
-and leaderboard modules below.
-LINEAGE never reads a global sample (Phase 81, BOARD-13 — it is ME-only), and
-GRAVEYARD never asks the global controller at all (Phase 81, BOARD-14).
+The v3 rebuild in Phase 84 retired Phase 81's ME-only board rail (LINEAGE,
+GRAVEYARD) and its ALL/FRIENDS scope chips outright: the panel now ranks by
+DEPTH/DAYS/KILLS/WILMST only, and `engine/records.js`'s `ME_ONLY_BOARDS`
+ids are excluded by `src/browser/newBest.js`'s own NEW PERSONAL BEST filter
+rather than shown as a board of their own. Phases 67/68's Play Games
+modules behind the retired panel were removed in v2.2 Phase 85, replaced by
+the account and leaderboard modules below.
 
 ### The account (Phase 83, Phase 85)
 
