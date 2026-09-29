@@ -433,6 +433,8 @@ Resume file: None
 
 ## Decisions
 
+- 2026-09-28 (v2.2, user): **The first season on our own board is "Season of the Alpha"**, running through closed testing. `SEASON` stays 1 (0 already means an untagged legacy stone in `engine/records.js`); a season-name table in `content/season.js` supplies the label (BOARD-27, Phase 84). **At go-live the boards reset for Season 1:** bump `SEASON` to 2 named "Season 1" together with the rules literal and a rules deploy (runbook §10). Alpha runs stay in Firestore under season 1 for balance export unless deleted with boards-admin.
+
 - 2026-09-14 (v1.2, Phase 22): **Difficulty target is depth 20, not infinite depth — and reaching 20 is a unicorn run, rare not expected** (too much RNG to define a "competent player"; band = median death depth well below 20 + a small reach-20 rate). Past 20: imminent death expected, but no dial-back and no artificial death — the run wraps up naturally on the existing curve. Governs Phase 27 TUNE-05's target band; the depth-20 matrix slice is the yardstick.
 
 - [Phase ?]: 17-01: fixtureRoster.js replays fixtures via applyStartCombat/applyAction/runEconomyAction rather than re-deriving startCombat math; foes snapshotted only on the null->non-null state.combat transition (once per script/scenario)

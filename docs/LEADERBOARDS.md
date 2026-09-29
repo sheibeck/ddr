@@ -342,6 +342,16 @@ build will have every run **refused and dropped** by the new rules
 ever shows the current season, so an old-season submission has nowhere
 correct to land.
 
+**Season names (user, 2026-09-28).** Season 1 is **Season of the Alpha**,
+the closed-testing season. The label comes from the season-name table in
+`content/season.js` (added in Phase 84); the integer stays the key
+everywhere else (rules, indexes, `boards-admin --season`). **At go-live the
+boards reset for Season 1:** bump `SEASON` to 2 and the rules literal to
+`d.season == 2`, name season 2 "Season 1" in the table, deploy the rules
+with the release. The alpha runs stay in Firestore under season 1
+(`boards-admin export --season 1` for balance data) and count against the
+1 GiB Spark storage until deleted with `boards-admin`.
+
 ## 11. Spark quotas
 
 The Spark plan (billing off — this project can never be billed) has a daily

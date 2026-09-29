@@ -146,7 +146,7 @@ Plans:
 
 **Goal**: The DEAD tab and VIEW THE DEAD show the v3 mock — everyone's dead or just yours, ranked by DEPTH/DAYS/KILLS/WILMST with RACE and SUB-CLASS filters.
 **Depends on**: Phase 83. Mock files: `design/Mazeworld Leaderboards v3.dc.html` and `design/Mazeworld Boards Panel v3.dc.html` (UX/visual spec only — house rules win: PNG icons, the rail as the one feedback surface, tap-to-move, HP not WP). Rebuilds `src/browser/boardsPanel.js` + `boardsView.js` + `content/boards.js`; `engine/records.js` board lists and the local run store change (per-run records, tolerant load of old graveyard/bests). Zero parity fixtures; engine untouched.
-**Requirements**: BOARD-18, BOARD-19, BOARD-20, BOARD-21, BOARD-22, BOARD-23, BOARD-24, BOARD-25, BOARD-26
+**Requirements**: BOARD-18, BOARD-19, BOARD-20, BOARD-21, BOARD-22, BOARD-23, BOARD-24, BOARD-25, BOARD-26, BOARD-27
 **Success Criteria** (what must be TRUE):
 
   1. The DEAD tab and the title's VIEW THE DEAD open one Leaderboards panel built to the v3 mock, opening on LEADERBOARD when Compete is ON and on YOUR DEAD when Compete is OFF, with back and footer routing matching the mock.
@@ -154,6 +154,7 @@ Plans:
   3. Each row shows rank, an initials avatar, the handle (or hero name on YOUR DEAD), a YOU tag on your own runs, and the name/race/sub-class/level/value line; tapping a row expands its cause of death, epitaph and six stat chips, tapping again closes it.
   4. A best run outside the top ten is pinned under a "NOT IN THE TOP TEN" divider with its real rank and standing line, and a filter with no runs shows NOBODY YET with a CLEAR FILTERS button.
   5. LEADERBOARD shows deliberate in-voice states for loading, offline/unreachable and a stale cached result, while YOUR DEAD never waits on the network and ranks a generous local per-run history that the old graveyard and `ddr.bests.v1` records load into tolerantly.
+  6. The LEADERBOARD view names the current season from `content/season.js`: SEASON OF THE ALPHA for season 1, the closed-testing season (user, 2026-09-28).
 
 **Plans**: TBD
 **UI hint**: yes
