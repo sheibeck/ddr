@@ -1,0 +1,29 @@
+[
+  {
+    "key": "content:STAVES.Poplar Staff.txt",
+    "surface": "items",
+    "trigger": "a staff's item text",
+    "before": "1d20+10 hp to up to 6",
+    "after": "heals you and every Joiner with you d20+10 hp each",
+    "reasons": ["fact"],
+    "why": "Phase 89 ITEM-01 and ITEM-06 (2026-09-30): \"Poplar Staff: engine to text: it heals every party member (hero and Joiner) d20+10 each; the text says 'the whole party' (the party is at most two).\" The old text promised hp \"to up to 6\" (a number of bodies no party can reach) while the engine healed d10+2 to the hero alone. The engine now does what the text promised, and the text states the dice and who it reaches in plain words: you and every Joiner with you, d20+10 hp each."
+  },
+  {
+    "key": "oracle:partyHealed",
+    "surface": "oracle",
+    "trigger": "partyHealed — engine/items.js#useItem (the Poplar Staff heals the hero and every Joiner)",
+    "before": "",
+    "after": "The staff hums over an empty party. Nobody to mend.",
+    "reasons": ["fact"],
+    "why": "Phase 89 ITEM-01 and ITEM-06 (2026-09-30): the Poplar Staff heals every party member, so its use needs its own line. A real use names the staff and every body healed with the hp each actually gained, the hero first as \"you\" (for example \"Poplar Staff: you +21 hp; Grum +12 hp (18 rolled, back to full).\"), and says so plainly when a body was already at full hp. The corpus's synthetic event carries no heals, so the corpus renders only this empty-party fallback; a real use prints the per-body line."
+  },
+  {
+    "key": "rail:partyHealed",
+    "surface": "rail",
+    "trigger": "partyHealed — engine/items.js#useItem",
+    "before": "",
+    "after": "Staff: no one to heal.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle's partyHealed (Phase 89 ITEM-01 and ITEM-06): \"Poplar Staff: you +21, Grum +12 HP.\" for a real use, \"already full\" for a full body. A minor event, never a decision card. The synthetic corpus event carries no heals, so the corpus renders only the empty-party fallback."
+  }
+]

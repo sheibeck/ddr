@@ -632,6 +632,22 @@ test("chooseCombatItem: a wielded dome/heal staff fires below potionThreshold; d
   assert.deepStrictEqual(chooseCombatItem(healReady, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
 });
 
+test("chooseCombatItem: Phase 89 - the Poplar (partyHeal) also fires when a live Joiner in the fight is below potionThreshold, and not when everyone is healthy", () => {
+  const ctx = makeBotContext();
+  const healStaff = { kind: "staff", n: "Poplar Staff", use: "partyHeal", charges: 3 };
+  const muC = (over) => ({ cls: "Magic User", sub: "Sorcerer", wp: 40, maxWP: 40, potions: 0, worn: {}, timers: {}, items: [], weapon: "Poplar Staff", staff: healStaff, ...over });
+  const withAllies = (wp) => ({ ...fight("Beasts", 1, 2), allies: [{ partyIdx: 0, name: "Grum", wp, maxWP: 40 }] });
+
+  const healthy = mkState({ combat: withAllies(40), c: muC({}) });
+  assert.strictEqual(chooseCombatItem(healthy, ctx), null, "hero and Joiner both healthy: no heal");
+
+  const joinerHurt = mkState({ combat: withAllies(10), c: muC({}) });
+  assert.deepStrictEqual(chooseCombatItem(joinerHurt, ctx), { action: { type: "useItem", slot: "weapon" }, reason: "staff" });
+
+  const joinerDown = mkState({ combat: withAllies(0), c: muC({}) });
+  assert.strictEqual(chooseCombatItem(joinerDown, ctx), null, "a downed Joiner (0 hp) is not a reason to heal");
+});
+
 test("chooseCombatItem: a wielded staff resolves via wieldedStaff(c) regardless of the worn-slot model (legacy or c.worn present)", () => {
   const ctx = makeBotContext();
   const staff = { kind: "staff", n: "Birch Staff", use: "freeze", charges: 2 };

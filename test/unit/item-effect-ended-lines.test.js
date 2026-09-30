@@ -124,3 +124,27 @@ test("an item object in the payload reads by its name", () => {
   assert.match(oracle({ item: { n: "Cloak of Speed" }, kind: "haste", why: "off" }), /Cloak of Speed comes off/);
   assert.match(rail({ item: { n: "Cloak of Speed" }, kind: "haste", why: "off" }), /^Cloak of Speed off:/);
 });
+
+// Phase 89 plan 03 (ITEM-06): the Pendant of Fortitude's armed half-damage
+// charge ends through the same helper, kind "half". Its own clause on both
+// surfaces (never the unknown-kind fallback), the Pendant's cooldown as the
+// ready clause, and a member form for a Joiner's own Pendant.
+test("Phase 89: the Pendant's half charge has its own what-stops clause on both surfaces, never the fallback", () => {
+  const e = { item: "Pendant of Fortitude", kind: "half", slot: "jewelry2", why: "off", left: 0, ready: 93 };
+  const o = oracle(e);
+  const r = rail(e);
+  assert.match(o, /Your Pendant of Fortitude comes off/);
+  assert.match(o, /the next blow that lands on you is no longer halved/);
+  assert.match(o, /Ready again in 93 squares/);
+  assert.match(r, /^Pendant of Fortitude off: the next blow is no longer halved \(ready in 93 squares\)\.$/);
+  for (const t of [o, r]) assert.doesNotMatch(t, /its magic stops/);
+});
+
+test("Phase 89: a Joiner's Pendant charge names the Joiner on both surfaces and never says 'you'", () => {
+  const e = { item: "Pendant of Fortitude", kind: "half", slot: "jewelry1", why: "swap", left: 0, ready: 40, member: "Brom" };
+  const o = oracle(e);
+  assert.match(o, /Brom's Pendant of Fortitude is swapped out/);
+  assert.match(o, /the next blow that lands on Brom is no longer halved/);
+  assert.doesNotMatch(o, /\byou(r)?\b/i);
+  assert.match(rail(e), /^Brom's Pendant of Fortitude swapped out: the next blow is no longer halved/);
+});

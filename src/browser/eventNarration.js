@@ -107,6 +107,8 @@ const ENDED_CLAUSE = Object.freeze({
   giant: (e) => `${endedWho(e).name} ${endedWho(e).be} back to ${endedWho(e).own} own size`,
   glow: () => "the light goes out",
   tongue: () => "the fluency goes with it",
+  // Phase 89 (ITEM-06): the Pendant of Fortitude's armed half-damage charge.
+  half: (e) => `the next blow that lands on ${endedWho(e).name} is no longer halved`,
 });
 
 // VOX-05 (Phase 79, plan 79-11): "an Apprentice", never "a Apprentice".
@@ -1267,6 +1269,23 @@ export const EVENT_NARRATION = {
     gainOf(e, e.amount) > 0
       ? `<span class="hit">+${gainOf(e, e.amount)} hp</span>${e.spell ? ` from ${e.spell}` : ""}${cappedNote(gainOf(e, e.amount), e.amount)}.`
       : `<span class="miss">${e.spell ?? "Healing"}: nothing to restore.</span> You were already at full hp.`,
+  // Phase 89 (ITEM-01, ITEM-06): the Poplar Staff heals the whole party. One
+  // line names every body healed, hero first then party order, with the hp each
+  // actually gained (`gained`, after the clamp to its maximum); a body already
+  // at full hp is named and says so, never "+0". A bare payload renders plain.
+  partyHealed: (e) => {
+    const heals = Array.isArray(e?.heals) ? e.heals : [];
+    const item = typeof e?.item === "string" && e.item ? e.item : "The staff";
+    const parts = heals.map((h) => {
+      const who = h?.hero ? "you" : h?.name || "someone";
+      const g = gainOf(h, h?.amount);
+      if (g <= 0) return `${who} ${h?.hero ? "were" : "was"} already at full hp`;
+      return `${who} +${g} hp${cappedNote(g, h?.amount)}`;
+    });
+    return parts.length
+      ? `<span class="hit">${item}: ${parts.join("; ")}.</span> Nobody in the party gets left out of being fine.`
+      : `<span class="miss">${item} hums over an empty party.</span> Nobody to mend.`;
+  },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): the rule refuses at fee + 1 hp or less
   // (engine/magic.js), so the line states the hp it needs.

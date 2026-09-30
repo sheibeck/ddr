@@ -475,6 +475,14 @@ function refuseGear(state, verb, extra, events) {
  * item (the Crystal Staff); `member` is the sheet's name when it is not the
  * hero (`state.c`).
  *
+ * Phase 89 (ITEM-06): the helper also ends a LINKED ARMED CHARGE, the Pendant
+ * of Fortitude's `sheet.halfNext = { slot, n }`, after the timers walk and by
+ * the same rule (slot touched, or the slot no longer holds an item named `n`):
+ * `halfNext` becomes false and one `itemEffectEnded { item, kind: "half", slot,
+ * why, left: 0, ready, member? }` is pushed (`ready` is the Pendant's own
+ * cooldown, read and never touched, so the use stays spent). A sheet with no
+ * `timers` still reaches this pass.
+ *
  * When an ended record was the hero's Cloak of Ether, the entombment rule
  * runs through movement.js#resolveEtherEnd (itemEffectEnded, then entombed,
  * then died); out of rock that is a no-op. `opts.rng` is the caller's main
@@ -490,14 +498,14 @@ function refuseGear(state, verb, extra, events) {
 export function endSourceEffects(state, sheet, events = [], opts = {}) {
   if (!sheet || typeof sheet !== "object") return events;
   const timers = sheet.timers;
-  if (!timers || typeof timers !== "object" || Array.isArray(timers)) return events;
+  const hasTimers = !!timers && typeof timers === "object" && !Array.isArray(timers);
   const o = opts && typeof opts === "object" ? opts : {};
   const slots = Array.isArray(o.slots) ? o.slots : [];
   const why = o.why ?? "gone";
   const quiet = o.quiet === true;
   const hero = !!state && sheet === state.c;
   let etherEnded = false;
-  for (const id of Object.keys(timers)) {
+  for (const id of hasTimers ? Object.keys(timers) : []) {
     if (!id.startsWith("item:")) continue;
     const rec = timers[id];
     if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
@@ -521,6 +529,24 @@ export function endSourceEffects(state, sheet, events = [], opts = {}) {
     if (state && !hero) evt.member = sheet.name;
     events.push(evt);
     if (kind === "ether") etherEnded = true;
+  }
+  // Phase 89 (ITEM-06): the Pendant of Fortitude's ARMED half-damage charge is
+  // linked like a timer record: `sheet.halfNext = { slot, n }`. It disarms by
+  // the same rule (its slot was touched, or no longer holds the Pendant). Only
+  // the armed charge goes: the Pendant's 100-square cooldown record is never
+  // touched, so the use stays spent and taking it off never readies it sooner.
+  const armedHalf = sheet.halfNext;
+  if (armedHalf && typeof armedHalf === "object" && !Array.isArray(armedHalf) && SOURCE_SLOTS.includes(armedHalf.slot) && typeof armedHalf.n === "string") {
+    const touched = slots.includes(armedHalf.slot);
+    const held = sourceSlotItem(sheet, armedHalf.slot);
+    if (touched || !held || held.n !== armedHalf.n) {
+      sheet.halfNext = false;
+      if (!quiet) {
+        const evt = { type: "itemEffectEnded", item: armedHalf.n, kind: "half", slot: armedHalf.slot, why: touched ? why : "gone", left: 0, ready: remaining(sheet, `item:${armedHalf.n}`) };
+        if (state && !hero) evt.member = sheet.name;
+        events.push(evt);
+      }
+    }
   }
   if (etherEnded && hero) {
     const rng = o.rng ?? derivedRng(Number.isInteger(state.rngState) ? state.rngState : 0, "gearEnd", Number.isInteger(state.acts) ? state.acts : 0);
@@ -1549,6 +1575,41 @@ export function pilferFumbleRng(state, rng, it) {
 }
 
 /**
+ * partyHealBody(state, idx) — Phase 89 (ITEM-01), module-private: the object
+ * that holds party member `idx`'s LIVE hit points right now, or null. In a
+ * fight that is the member's `state.combat.allies` entry (endCombat syncs its
+ * `wp` back to the sheet); outside one it is the sheet. A missing member, one
+ * flagged `status: "downed"`, or one with no live fight entry (downMember
+ * splices a downed member out of `C.allies`) is null. Pure, no rng.
+ */
+function partyHealBody(state, idx) {
+  const sheet = Array.isArray(state.party) ? state.party[idx] : null;
+  if (!sheet || typeof sheet !== "object" || sheet.status === "downed") return null;
+  const C = state.combat;
+  if (!C) return sheet;
+  const ally = Array.isArray(C.allies) ? C.allies.find((a) => a && a.partyIdx === idx) : null;
+  return ally && ally.wp > 0 ? ally : null;
+}
+
+/**
+ * healPartyMember(state, idx, amount) — Phase 89 (ITEM-01, ITEM-06): THE one
+ * write for healing a Joiner. Raises party member `idx`'s hit points by
+ * `amount`, clamped to its maximum, on its `state.combat.allies` entry in a
+ * fight and on its sheet otherwise (see partyHealBody), and returns the hp
+ * actually gained (0 for a full body or a non-positive amount). Returns null
+ * for a missing, downed or departed member. Pure, no rng. The Poplar Staff
+ * uses it today; a Joiner's own potion reuses it (Phase 89 plan 05).
+ */
+export function healPartyMember(state, idx, amount) {
+  const body = partyHealBody(state, idx);
+  if (!body) return null;
+  const max = Number.isFinite(body.maxWP) ? body.maxWP : Number.isFinite(state.party[idx].maxWP) ? state.party[idx].maxWP : body.wp;
+  const before = body.wp;
+  body.wp = Math.max(before, Math.min(max, before + (Number.isFinite(amount) && amount > 0 ? amount : 0)));
+  return Math.max(0, body.wp - before);
+}
+
+/**
  * useItem(state, ref, rng, events, now) — triggers a carried OR worn item's
  * effect. Ports mazeworld.html useItem() (lines 1963-1995). `ref` addresses
  * the item two ways: a non-negative bag index (the original form,
@@ -1604,7 +1665,13 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // refusal below.
   if (refuseIfPending(state, events, "useRefused", { item: it })) return events;
 
-  const kind = it.kind === "potion" ? it.eff2 : (it.use ?? activationFor(it)?.kind);
+  // Phase 89 (ITEM-01): a STAFF's kind is read from its activation record
+  // first. A saved Poplar Staff still carries the pre-Phase-89 `use: "heal"`
+  // (the Healing potion's hero-only d10+2); its activation says partyHeal, so
+  // the old item heals the party with no migration. Every other staff's `use`
+  // equals its activation kind, so nothing else moves. The Torch keeps its
+  // light/lit pair because it is not a staff.
+  const kind = it.kind === "potion" ? it.eff2 : it.kind === "staff" ? (activationFor(it)?.kind ?? it.use) : (it.use ?? activationFor(it)?.kind);
 
   // CMB-02 (Phase 31): a staff used by a non-caster — stowItem/takeItem
   // already refuse a staff at ACQUIRE time (itemRejected wrongClass), but a
@@ -1747,6 +1814,33 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       events.push({ type: "healed", amount: a, gained: c.wp - before });
       break;
     }
+    case "partyHeal": {
+      // Phase 89 (ITEM-01, ITEM-06): the Poplar Staff heals the hero and every
+      // living Joiner, one heal die each (activation data, 1d20+10), hero
+      // first then state.party order. Every die comes from ONE derived stream
+      // (the pilferFumbleRng key shape): the main rng is only READ for its
+      // cursor, never drawn. A full-hp body gains 0 and is still listed.
+      const dice = activationFor(it).heal;
+      const healRng = derivedRng(
+        typeof rng.getState === "function" ? rng.getState() : 0,
+        "partyHeal",
+        Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0,
+        it.n,
+      );
+      const heroAmount = rollDice(healRng, dice);
+      const heroBefore = c.wp;
+      c.wp = Math.min(c.maxWP, c.wp + heroAmount);
+      const heals = [{ name: c.name, hero: true, amount: heroAmount, gained: c.wp - heroBefore }];
+      const party = Array.isArray(state.party) ? state.party : [];
+      for (let k = 0; k < party.length; k++) {
+        // A downed or departed member is skipped (null) and draws no die.
+        if (!partyHealBody(state, k)) continue;
+        const amount = rollDice(healRng, dice);
+        heals.push({ name: party[k].name, amount, gained: healPartyMember(state, k, amount) });
+      }
+      events.push({ type: "partyHealed", item: it.n, heals });
+      break;
+    }
     case "full": {
       const before = c.wp;
       c.wp = c.maxWP;
@@ -1794,7 +1888,12 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     case "half": {
-      c.halfNext = true;
+      // Phase 89 (ITEM-06): the armed charge carries its source like a timer
+      // record, `{ slot, n }` (truthy, so every read of `c.halfNext` is
+      // unchanged); endSourceEffects disarms it when the Pendant leaves that
+      // slot. A bag use, reachable only on a test double with no worn map,
+      // carries slot null and is never linked.
+      c.halfNext = { slot: slot || null, n: it.n };
       break;
     }
     case "glow": {

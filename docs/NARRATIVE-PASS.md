@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -40,12 +40,12 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 94 | 233 | 5 | 110 | 3 |
-| rail (rail lines and the fight log) | 287 | 79 | 208 | 5 | 89 | 3 |
+| oracle (the Oracle log) | 327 | 94 | 233 | 6 | 111 | 3 |
+| rail (rail lines and the fight log) | 287 | 79 | 208 | 6 | 90 | 3 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 17 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 4 | 26 | 1 |
-| items (item, gear and store text) | 110 | 12 | 98 | 0 | 15 | 0 |
+| items (item, gear and store text) | 110 | 13 | 97 | 0 | 16 | 0 |
 | spells (spells, abilities and skills) | 87 | 33 | 54 | 0 | 33 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **327** | **1544** | **140** | **559** | **87** |
+| **Total** | **1871** | **328** | **1543** | **142** | **562** | **87** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-110 changed lines.
+111 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -254,6 +254,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:memberResisted`<br>memberResisted — engine/foeAbilities.js#memberResist (a foe's bolt or drain at a Joiner) | *(new line)* | Ada resists Viper's spell. 16 vs 16–20 (intel 10). Somebody on your side was paying attention. | **q-260928-z4-nrf** (what happened, to whom, the joke after the fact): User ruling 2026-09-28 (Joiners resist: "Yes, same scale"): a Joiner rolls its own intel against a foe's bolt or drain on the half-intel scale the hero and foes use, and a resist blocks the whole effect. The line names the Joiner and the foe, states the roll, the range and the intel, then the joke. |
 | `oracle:memberSecondWind`<br>memberSecondWind { gained 0 } — a Joiner's second wind at full hp | Viper remembers why they came. +2 hp. | Viper remembers why they came, already at full hp. | **79-02** (honest number, accurate to the engine): At full hp it would have printed '+0 hp'; it now says the companion was already at full. |
 | `oracle:mirrorSelf`<br>mirrorSelf — the hero casts Mirror Self | A mirror image holds for 1 rounds. | A mirror image holds for 1 round: foes hit you only on their die's top face (the top two if you insulted them). | **79-08** (what happened, to whom, reads aloud): It never said what the image does; it now states it in the grimoire's roll-high terms, and "1 round". |
+| `oracle:partyHealed`<br>partyHealed — engine/items.js#useItem (the Poplar Staff heals the hero and every Joiner) | *(new line)* | The staff hums over an empty party. Nobody to mend. | **89-03** (what happened, to whom): Phase 89 ITEM-01 and ITEM-06 (2026-09-30): the Poplar Staff heals every party member, so its use needs its own line. A real use names the staff and every body healed with the hp each actually gained, the hero first as "you" (for example "Poplar Staff: you +21 hp; Grum +12 hp (18 rolled, back to full)."), and says so plainly when a body was already at full hp. The corpus's synthetic event carries no heals, so the corpus renders only this empty-party fallback; a real use prints the per-body line. |
 | `oracle:phobiaAfraid`<br>phobiaAfraid — a phobia makes the hero Afraid as a fight opens | Your phobia has you shaking. Harder to hit and softer blows for 2 rounds. You can still swing — you just will not enjoy it. | Your phobia has you shaking. For 2 rounds your swings land less often and hit softer. You can still swing — you just will not enjoy it. | **79-04** (accurate to the engine, reads aloud): "Harder to hit" read as if foes found you harder to hit; the penalty is on your own swings. |
 | `oracle:planeGated`<br>planeGated — the hero's Plane Gate sends Demons or Walking Dead back | 1 are gated straight back out. | 1 foe is gated straight back out to the Planes. | **79-08** (what happened, to whom, reads aloud): A bare count with no "who", and "1 are". |
 | `oracle:poisonedEdgeApplied`<br>poisonedEdgeApplied — the hero or a Joiner uses Poisoned Edge | The blade weeps into Viper. 3 rounds of that. | Viper is poisoned for 3 rounds. The blade weeps into it. | **79-04** (what happened, to whom, the joke after the fact): The image stood in for the fact; the line now says the foe is poisoned, then keeps the image. |
@@ -303,7 +304,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-89 changed lines.
+90 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -364,6 +365,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:memberResisted`<br>memberResisted — engine/foeAbilities.js#memberResist (a foe's bolt or drain at a Joiner) | *(new line)* | Ada resists Viper's spell (16 vs 16–20, intel 10). | **q-260928-z4-nrf** (what happened, to whom): The rail twin of a Joiner's resist, shaped like the hero's heroResisted rail line: names the Joiner and prints the roll, the range and the Joiner's own intel. |
 | `rail:memberSecondWind`<br>memberSecondWind { gained 0 } — a Joiner's second wind at full hp | Viper remembers why they came. +2 hp. | Viper remembers why they came, already at full hp. | **79-02** (honest number, accurate to the engine): At full hp it would have printed '+0 hp'; it now says the companion was already at full. |
 | `rail:mirrorSelf`<br>mirrorSelf — the hero casts Mirror Self | A mirror image holds (3). | A mirror image holds, 3 rounds: foes hit you only on their top face. | **79-08** (what happened, to whom): A bare "(3)" did not say it counts rounds, or what the image does. |
+| `rail:partyHealed`<br>partyHealed — engine/items.js#useItem | *(new line)* | Staff: no one to heal. | **89-03** (what happened, to whom): The rail twin of the Oracle's partyHealed (Phase 89 ITEM-01 and ITEM-06): "Poplar Staff: you +21, Grum +12 HP." for a real use, "already full" for a full body. A minor event, never a decision card. The synthetic corpus event carries no heals, so the corpus renders only the empty-party fallback. |
 | `rail:pommelStruck`<br>pommelStruck — the hero or a Joiner uses Pommel Strike | The pommel finds Viper's temple. | The pommel finds Viper's temple: it loses its next turn. | **79-04** (what happened, to whom, hygiene): The rail twin now states the lost turn, and a nameless foe reads "its temple". |
 | `rail:potionDrunk`<br>potionDrunk { amount 2, gained 1 } — a potion drunk 1 hp below full | Potion +2 hp (1 left) | Potion +1 hp, back to full (1 left) | **79-02** (honest number, accurate to the engine): A potion near full printed the whole dose; it now leads with the HP it really restored, then the roll and 'back to full'. |
 | `rail:purchaseBagged`<br>purchaseBagged — engine/economy.js#buyFrom stows a legal buy that is not an upgrade (the upgradeWhyText clause) | Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 a swing · loses your +2 practiced bonus. | Into the bag: Dagger — not an upgrade: d8 vs your d6 · −1 to hit, worse than yours · 4.1 vs 5.0 average damage a swing · loses your +2 damage from practice. | **79-09** (what happened, to whom): UPGRADE\_WHY\_COPY's rewording reaches this line: the swing numbers now say they are average damage, and the lost proficiency says it is damage from practice. |
@@ -464,7 +466,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## items — item, gear and store text
 
-15 changed lines.
+16 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -477,6 +479,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `content:POTIONS.Invisible.txt`<br>a potion's item text | invisible for a day | invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them) | **79-05** (what happened, to whom): It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted. |
 | `content:STAVES.Birch Staff.txt`<br>the Birch Staff's item text | freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds | freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry | **q-260928-frz** (what happened, to whom, accurate to the engine): User rulings 2026-09-28: the Birch Staff's freeze follows the Freeze spell, a d4-round freeze on each foe it reaches unless that foe resists, at every depth. "Indefinitely" is no longer true anywhere, so the text states the d4 and the resist, then echoes Freeze's own "just cold and angry". |
 | `content:STAVES.Crystal Staff.txt`<br>a staff's item text | party invisible d10+5 squares; enemies need a 1 | party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them) | **79-05** (roll-high (ROLL-04)): The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does. |
+| `content:STAVES.Poplar Staff.txt`<br>a staff's item text | 1d20+10 hp to up to 6 | heals you and every Joiner with you d20+10 hp each | **89-03** (what happened, to whom): Phase 89 ITEM-01 and ITEM-06 (2026-09-30): "Poplar Staff: engine to text: it heals every party member (hero and Joiner) d20+10 each; the text says 'the whole party' (the party is at most two)." The old text promised hp "to up to 6" (a number of bodies no party can reach) while the engine healed d10+2 to the hero alone. The engine now does what the text promised, and the text states the dice and who it reaches in plain words: you and every Joiner with you, d20+10 hp each. |
 | `raw:engine/economy.js#openStore`<br>inline literal in engine/economy.js#openStore | 1–5 on d10 against any lock | 6–10 on d10 against any lock | **79-05** (roll-high (ROLL-04)): The store's Lockpicks carry the same text as a found set: five winning faces on a d10 rolled high, 6–10. |
 | `raw:engine/economy.js#openStore`<br>inline literal in engine/economy.js#openStore | opens boxes on 1–5 | opens boxes on 6–10 | **79-05** (roll-high (ROLL-04)): The store row's line states the same roll-high range as the item it sells. |
 | `raw:engine/items.js#rollTreasureItem`<br>inline literal in engine/items.js#rollTreasureItem | 1–5 on d10 against any lock | 6–10 on d10 against any lock | **79-05** (roll-high (ROLL-04)): Lockpicks give the lock check five winning faces on a d10 rolled high: 6–10, not 1–5. |

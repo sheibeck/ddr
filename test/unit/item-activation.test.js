@@ -211,7 +211,9 @@ test("useItem on a Pendant of Fortitude sets c.halfNext and starts an instant CO
   const pendant = { kind: "jewel", n: "Pendant of Fortitude", eff: {}, use: "half" };
   const state = fixedState({ c: { items: [pendant] } });
   const events = useItem(state, 0, fakeRng([]), []);
-  assert.equal(state.c.halfNext, true);
+  // Phase 89 plan 03 (ITEM-06): before, `true`; after, the armed charge carries
+  // its source ({ slot, n }; a bag use, a legacy double with no worn map, has slot null).
+  assert.deepStrictEqual(state.c.halfNext, { slot: null, n: "Pendant of Fortitude" });
   assert.equal(events.some((e) => e.type === "itemEffectStarted"), false);
   assert.deepStrictEqual(state.c.timers["item:Pendant of Fortitude"], { cadence: "squares", left: 100, phase: "cooldown" });
   assert.equal(itemReady(state, pendant), false);

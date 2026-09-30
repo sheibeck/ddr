@@ -5929,3 +5929,62 @@ pin, the Human, Dwarf, Elf and Gauntlet-plus-Enlarge damage deltas
 (`authored-ranges.test.js`, `size-voice.test.js`).
 
 No other fixture, save, golden or state pin was re-recorded.
+
+### Phase 89 plan 03: the Poplar Staff heals the party; the Pendant disarms when it comes off (ITEM-01, ITEM-06)
+
+Plan 89-03, base `149b3edd` (gate 8,296 tests, 8,294 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (CONTEXT "Poplar Staff" and "Pendant of Fortitude", user 2026-09-30).**
+The Poplar Staff heals the hero and every living Joiner d20+10 hp each (canon
+mazeworld.pdf p.46, "adds 1d20+10 WP to 1d6"; the party is at most two), every
+die from one derived stream (`derivedRng(cursor, "partyHeal", acts, item name)`),
+never the main rng; its row is `use: "partyHeal"` with its dice on the activation
+record (`act.heal`), and its text says so. The Pendant of Fortitude's armed
+half-damage charge is now `halfNext = { slot, n }` (was the boolean `true`), linked
+to its slot like a timer record and disarmed by `endSourceEffects` on take-off,
+swap, destroy and the drop/sell sweep, its cooldown untouched; an old save's armed
+Pendant links on load or is quietly disarmed.
+
+**The predictor.** Five things can move a recorded artefact: (a) the Poplar
+Staff's item TEXT and USE, which ride every rolled, stocked or carried Poplar
+object, so any record or hashed state that carries one moves; (b) a replay or
+pinned run that USES a Poplar Staff (its heal is d20+10 to the party, from a
+derived stream, not d10+2 on the main rng; the main stream is no longer drawn);
+(c) a record that carries an armed Pendant (`halfNext` `true` now `{ slot, n }`);
+(d) the roll-high draw inventory, unmoved (the dice go through `rollDice`, so
+`engine/items.js` gains no tagged `.d(`); (e) the comparables, unmoved (nothing
+compared carries `halfNext`).
+
+**The live scan (measured with the change).**
+
+1. `node tools/fixture-inventory.mjs --json` read: no parity scenario lists a
+   Poplar Staff or a Pendant of Fortitude; `grep` of `test/parity` and the
+   `test/unit/fixtures` tree for `Poplar Staff`, `Pendant of Fortitude` and
+   `halfNext` finds only the frozen prototype, `comparables.js` (the Poplar is
+   already in `REWORDED_TXT_ITEMS`) and this file.
+2. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt` is untouched. `test/parity/harness/
+   comparables.js` is untouched: no compared object carries `halfNext`, so no
+   carve-out was needed (measured, not assumed: parity is green with the new
+   shape).
+3. `roll-high-state-pins.test.js`: **one label moved, `solo-thief-pilfer`**
+   (declared below). `roll-high-save-compat.test.js`: zero drift.
+   `roll-high-baseline.mjs save` was not run; only the moved label was pasted by
+   hand from `node tools/roll-high-baseline.mjs pins` (hashed identically twice).
+4. `npm test` (full): one failure before the pin below was updated (`worn-slots`
+   "a wielded staff heals ..."), then green.
+
+**Moved (each measured, declared, regenerated alone).**
+
+| Entry | before | after | rationale |
+|---|---|---|---|
+| `roll-high-state-pins.test.js`, `solo-thief-pilfer` | `400 / false / 4`, hash `845bfc4c...3b0` | `400 / false / 4`, hash `5f0056f4...8ca` | this run's bag ends holding a Poplar Staff (a Pilfer cannot wield it); the item object rides the hashed state and its `use` (`heal` to `partyHeal`) and text changed. Proven use/text-only: swapping the old use and text back into the new final state re-hashes to the old pin. No Pendant is worn or used and nothing uses the staff, so no draw differs. |
+| `worn-slots.test.js`, "a wielded staff heals, spends its one charge ..." | the use pushes `healed` (d10+2 on the main rng, the faked 5) | the use pushes `partyHealed` (d20+10, derived stream; the faked rng is never drawn) and the hero's hp rises | the Poplar is no longer the Healing potion's branch. Charge and recharge bookkeeping byte-identical. |
+| `item-activation.test.js`, "useItem on a Pendant of Fortitude ..." | `c.halfNext === true` | `c.halfNext` deep-equals `{ slot: null, n: "Pendant of Fortitude" }` (a bag use on a legacy double; a worn use carries its slot) | the armed charge carries its source. |
+
+Unit pins added, not moved: `poplar-party-heal.test.js`, `pendant-source-link.test.js`,
+the `half` clause in `item-effect-ended-lines.test.js`, the Poplar party-heal read in
+`bot-tactics.test.js`.
+
+No other fixture, save, golden or state pin was re-recorded.
