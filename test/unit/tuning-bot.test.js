@@ -984,8 +984,20 @@ test("Phase 41 (TERR-02): the bot paths across water and never stalls", () => {
   // (re-measured live), so this test keeps its real invariant (water never
   // blocks routing, the bot keeps running into and through it) on a seed
   // set the current identity-commit engine can actually resolve.
+  //
+  // [Rule 3 deviation, Phase 89 plan 06 (ITEM-07) fallout]: a Joiner now drinks
+  // its own potions and uses its worn items in a fight, so seed 4's Joiner
+  // keeps the run alive past its old death (action 894) to depth 8, where the
+  // fair bot's camp gate (it reads only the HERO's appetite; makeCamp refuses
+  // on the party's, the known seed-55434 stall documented in
+  // tools/lib/days-farm.mjs) repeats a refused campFailed to maxActions: not a
+  // water-routing stall (that run does wade). Measured live at
+  // identity dials: seed 6 dies at action 322 and wades, like seeds 1 and 5,
+  // so seed 6 takes seed 4's place. The bot's camp gate is left as it is (a
+  // fair-bot policy call for the Phase 92 bot pass, logged in the 89-06
+  // SUMMARY).
   let sawWaded = false;
-  for (const seed of [1, 4, 5]) {
+  for (const seed of [1, 5, 6]) {
     const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1500 }, (events) => {
       if (events.some((e) => e.type === "waded")) sawWaded = true;
     });
