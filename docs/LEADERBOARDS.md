@@ -272,7 +272,8 @@ floor and steps, and nothing else (report #9, BOARD-28).
 difference and refuses every third value. The plain command is the 2.3
 cutover (`docs/RELEASING.md`, "Release 2.3.0"). Until a re-key, a 2.2.0 run
 mis-orders only among runs tied on the same floor (accepted, CONTEXT). The
-first transition deploy is the user's go at Phase 87's end (87-08).
+first transition deploy was deferred by the user at Phase 87's end (87-08);
+it is still pending (see the Phase 87 record in section 14).
 
 After a transition deploy, prove the live rules with
 `node tools/boards-smoke.mjs --transition`: it signs up anonymously, creates a
@@ -807,6 +808,43 @@ Independently confirmed after both runs with `node tools/boards-admin.mjs
 top --stat deep --race Troll --sub "Court Mage"` and `--stat kills` (same
 filters): **`(no runs)`** for both — no "Smoke Probe" row remains on the
 live board.
+
+### DEPTH-key transition deploy (Phase 87, 2026-09-30)
+
+**Status: PENDING. Deferred by the user (2026-09-30, resume signal "defer" at
+the 87-08 checkpoint). Nothing ran live.** No firebase deploy, no gcloud call,
+no `boards-smoke`, no `boards-admin` was run in Phase 87. The live project
+still runs the 2.2.0 final rules (`deepKey` = `floor * 1,000,000 + (999,999 -
+steps)` only), which refuse a 2.3 client's run (`floor * 1,000,000 + steps`).
+No final-rules deploy and no `rekey-deep --yes` ran either; both remain
+Release 2.3.0 steps (`docs/RELEASING.md`).
+
+**Reason:** the user asked whether to push the transition rules now or wait for
+a signed closed-testing package, and chose to defer until the deploy is needed.
+The offline gate passed first (rules tests 36/36, full suite 8170 pass / 0 fail
+/ 2 skipped, the vc12 formula in tag `v2.2.0` confirmed, clean tree), so the
+deploy is ready to run on the user's go.
+
+**Trigger (whichever comes first):** the transition rules must be live
+- before the milestone-end debug-APK device testing with Compete ON (a 2.3
+  debug build submits runs with the new key), or
+- at Release 2.3.0 step 1 (`docs/RELEASING.md`), before any 2.3 build submits a
+  run.
+
+**Exact command** (from `C:/projects/mazeworld`, on the user's go; never the
+plain `firebase deploy`, which points at the final rules and would refuse every
+2.2.0 run):
+```
+firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
+```
+
+**After the deploy, in order:** `gcloud firestore indexes composite list
+--project=delve-die-repeat-6ba5f --database="(default)"` (19 composite
+indexes, each READY), then `node tools/boards-smoke.mjs --transition` (every
+step PASS, cleanup ok), then optionally a read-only
+`node tools/boards-admin.mjs rekey-deep` census (dry run, no `--yes`). Replace
+this PENDING note with the date, the probe table and the census counts when it
+runs.
 
 ## 15. Troubleshooting
 

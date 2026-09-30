@@ -134,9 +134,10 @@ the shipped 2.2.0 / vc12 client still writes the old value). Every live step
 below (a deploy, the smoke probe, a re-key) is the user's go first; ask
 before each one.
 
-1. **The transition rules are live before any 2.3 build submits a run.** They
-   are deployed at Phase 87's end (87-08) and recorded in
-   `docs/LEADERBOARDS.md` section 14. If they are not, deploy them with the
+1. **The transition rules are live before any 2.3 build submits a run.** The
+   user deferred the Phase 87 deploy (87-08, 2026-09-30), so it is still
+   pending (recorded in `docs/LEADERBOARDS.md` section 14). Deploy it before the milestone-end debug-APK
+   device testing with Compete ON, or here, whichever comes first, with the
    transition command in `docs/LEADERBOARDS.md` section 6, then run
    `node tools/boards-smoke.mjs --transition`: every step PASS (a 2.3 key
    lands, a 2.2.0 key lands, any third value is refused).
