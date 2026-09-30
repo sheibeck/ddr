@@ -128,6 +128,7 @@ test("CSS: the back button, header box, pickers, sheet options, DONE, CLEAR FILT
     ".mw-lb-opt",
     ".mw-lb-sheet-done",
     ".mw-lb-clear",
+    ".mw-lb-detail-filter",
     ".mw-lb-note-btn",
     ".mw-lb-dock-btn",
   ];

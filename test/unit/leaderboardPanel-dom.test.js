@@ -316,6 +316,47 @@ test("rows: an open row adds .mw-lb-detail with the detail text, six .mw-lb-stat
   assert.equal(date.textContent, "Died 28 Sep 2026 · 2.1.0 (11)");
 });
 
+test("BOARD-29 rows: an open row shows the who line first and a FILTER LIKE THIS button that never toggles the row", () => {
+  const onRow = spy();
+  const onRowMenu = spy();
+  const view = makeView({
+    body: { kind: "rows", rows: [makeOpenRow({ who: "Dwarven · Wizard (Magic User)", race: "Dwarven", sub: "Wizard", filterLabel: "FILTER LIKE THIS" })] },
+  });
+  const { root } = renderFresh(view, { onRow, onRowMenu });
+  const detail = find(root, "mw-lb-detail");
+  const who = find(detail, "mw-lb-detail-who");
+  assert.ok(who);
+  assert.equal(who.textContent, "Dwarven · Wizard (Magic User)");
+  assert.equal(detail.children[0], who, "the who line is the detail's first child");
+  const btn = find(detail, "mw-lb-detail-filter");
+  assert.ok(btn);
+  assert.equal(btn.tagName, "button");
+  assert.equal(btn.type, "button");
+  assert.equal(btn.textContent, "FILTER LIKE THIS");
+  const stop = spy();
+  btn.onclick({ stopPropagation: stop });
+  assert.equal(onRowMenu.calls.length, 1);
+  assert.deepEqual(onRowMenu.calls[0], ["hero-b"]);
+  assert.equal(stop.calls.length, 1, "the click never bubbles to the row");
+  assert.equal(onRow.calls.length, 0);
+  assert.doesNotThrow(() => btn.onclick());
+});
+
+test("BOARD-29 rows: a row with no who and no filter label renders neither", () => {
+  const view = makeView({ body: { kind: "rows", rows: [makeOpenRow({ who: "", filterLabel: "" })] } });
+  const { root } = renderFresh(view);
+  assert.equal(find(root, "mw-lb-detail-who"), null);
+  assert.equal(find(root, "mw-lb-detail-filter"), null);
+});
+
+test("BOARD-29 rows: a hostile who line renders as text only", () => {
+  const hostile = "<img src=x onerror=alert(1)>";
+  const view = makeView({ body: { kind: "rows", rows: [makeOpenRow({ who: hostile, filterLabel: "" })] } });
+  const { root } = renderFresh(view);
+  assert.equal(find(root, "mw-lb-detail-who").textContent, hostile);
+  assert.equal(findAll(root, "img").length, 0);
+});
+
 test("rows: the date line is omitted when dateLine is empty", () => {
   const view = makeView({ body: { kind: "rows", rows: [makeOpenRow({ dateLine: "" })] } });
   const { root } = renderFresh(view);
@@ -559,7 +600,10 @@ test("LEADERBOARD_CLASSES is a non-empty frozen array of unique names, and a ren
   assert.ok(Object.isFrozen(LEADERBOARD_CLASSES));
   assert.equal(new Set(LEADERBOARD_CLASSES).size, LEADERBOARD_CLASSES.length, "no duplicate class names");
 
-  const view = makeView({ sheet: SHEET_WITH_COUNTS });
+  const view = makeView({
+    sheet: SHEET_WITH_COUNTS,
+    body: { kind: "rows", rows: [makeOpenRow({ who: "Dwarven · Wizard (Magic User)", filterLabel: "FILTER LIKE THIS" })] },
+  });
   const { root } = renderFresh(view);
   const seen = new Set();
   for (const node of walkAll(root)) {

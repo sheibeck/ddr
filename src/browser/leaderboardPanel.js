@@ -83,7 +83,9 @@ export const LEADERBOARD_CLASSES = Object.freeze([
   "mw-lb-tag",
   "mw-lb-line",
   "mw-lb-detail",
+  "mw-lb-detail-who",
   "mw-lb-detail-text",
+  "mw-lb-detail-filter",
   "mw-lb-stats",
   "mw-lb-stat",
   "mw-lb-stat-k",
@@ -249,6 +251,8 @@ function buildRow(doc, view, row, handlers) {
 
   if (row.open) {
     const detail = el(doc, "div", "mw-lb-detail");
+    // Phase 87 (BOARD-29): the hero's race and sub-class in plain text, first.
+    if (row.who) detail.appendChild(el(doc, "span", "mw-lb-detail-who", row.who));
     detail.appendChild(el(doc, "span", "mw-lb-detail-text", row.detail));
     const stats = el(doc, "div", "mw-lb-stats");
     for (const stat of row.stats) {
@@ -259,6 +263,17 @@ function buildRow(doc, view, row, handlers) {
     }
     detail.appendChild(stats);
     if (row.dateLine) detail.appendChild(el(doc, "span", "mw-lb-date", row.dateLine));
+    if (row.filterLabel) {
+      // the non-gesture path to the long-press menu (keyboard and TalkBack);
+      // it must never also toggle the row it sits inside.
+      const filter = el(doc, "button", "mw-lb-detail-filter", row.filterLabel);
+      filter.type = "button";
+      filter.onclick = (e) => {
+        if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+        handlers.onRowMenu?.(row.key);
+      };
+      detail.appendChild(filter);
+    }
     main.appendChild(detail);
   }
 
@@ -475,7 +490,9 @@ export function createLeaderboardPanel({
   let race = null;
   let sub = null;
   let open = null; // an open row's key, or null
-  let sheet = null; // "stat" | "race" | "sub" | null
+  let sheet = null; // "stat" | "race" | "sub" | "row" | null
+  let menu = null; // the open row menu: { key, race, sub } (validated content ids), or null
+  let lastView = null; // the last view render() drew, so openMenu can find a row by key
   let hasHero = false;
   let dead = false; // true only while the in-game DEAD tab is open with a dead hero (CONTEXT area 1, "dead-hero dock stays")
   let competePrev = null; // the last competeOn() refresh() saw, so an OFF->ON transition fetches the EVERYONE total exactly once
@@ -569,12 +586,14 @@ export function createLeaderboardPanel({
         sub,
         open,
         sheet,
+        menu,
         history: hist,
         board: boardField,
         now: nowVal,
         tzOffsetMinutes: tz,
         season,
       });
+      lastView = view;
       renderLeaderboardPanel(host, view, handlers);
       if (reset) {
         const bodyEl = host.querySelector(".mw-lb-body");
@@ -648,6 +667,7 @@ export function createLeaderboardPanel({
     sub = null;
     open = null;
     sheet = null;
+    menu = null;
     mode = safeCompeteOn() ? "board" : "mine";
     competePrev = safeCompeteOn();
   }
@@ -656,6 +676,46 @@ export function createLeaderboardPanel({
   function openBoardOrMine() {
     if (mode === "board") requestBoard({ reset: true });
     else render({ reset: true });
+  }
+
+  /**
+   * focusPicker(id) — moves focus to the RACE or SUB-CLASS picker after a
+   * filter pick, so TalkBack reads the new filter value (Phase 87, BOARD-29).
+   * A missing element or a focus() that throws never breaks the pick.
+   */
+  function focusPicker(id) {
+    try {
+      const btn = host.querySelectorAll(".mw-lb-picker").find((b) => b.dataset && b.dataset.picker === id);
+      if (btn && typeof btn.focus === "function") btn.focus();
+    } catch {
+      // focus is a courtesy to assistive tech; it must never break a pick.
+    }
+  }
+
+  /** applyFilterPick(focusId) — the shared tail of every race/sub filter pick: re-query or re-filter, then focus the changed picker. */
+  function applyFilterPick(focusId) {
+    if (mode === "board") requestBoard({ reset: true });
+    else render({ reset: true });
+    focusPicker(focusId);
+  }
+
+  /**
+   * openMenu(key) — opens the row filter menu for a rendered row. Only a
+   * known race id and a known sub-class id are kept (the row is a board doc,
+   * untrusted); false, with nothing changed, when the panel is closed, the
+   * key is not on screen, or neither value validates.
+   */
+  function openMenu(key) {
+    if (entry === null || !lastView || !lastView.body || !Array.isArray(lastView.body.rows)) return false;
+    const row = lastView.body.rows.find((r) => r.key === key);
+    if (!row) return false;
+    const menuRace = RACE_IDS.includes(row.race) ? row.race : null;
+    const menuSub = SUB_IDS.includes(row.sub) ? row.sub : null;
+    if (menuRace === null && menuSub === null) return false;
+    menu = { key, race: menuRace, sub: menuSub };
+    sheet = "row";
+    render({ reset: false });
+    return true;
   }
 
   const handlers = {
@@ -667,11 +727,13 @@ export function createLeaderboardPanel({
         mode = "mine";
         open = null;
         sheet = null;
+        menu = null;
         render({ reset: true });
       } else if (action === "board") {
         mode = "board";
         open = null;
         sheet = null;
+        menu = null;
         requestBoard({ reset: true });
       }
     },
@@ -679,6 +741,7 @@ export function createLeaderboardPanel({
       mode = "mine";
       open = null;
       sheet = null;
+      menu = null;
       render({ reset: true });
     },
     onPicker(id) {
@@ -689,7 +752,11 @@ export function createLeaderboardPanel({
     onSheetClose() {
       if (sheet === null) return;
       sheet = null;
+      menu = null;
       render({ reset: false });
+    },
+    onRowMenu(key) {
+      openMenu(key);
     },
     onSheetPick(sheetId, value) {
       if (sheetId === "stat") {
@@ -705,16 +772,42 @@ export function createLeaderboardPanel({
         if (value !== null && !RACE_IDS.includes(value)) return;
         race = value;
         sheet = null;
-        if (mode === "board") requestBoard({ reset: true });
-        else render({ reset: true });
+        applyFilterPick("race");
         return;
       }
       if (sheetId === "sub") {
         if (value !== null && !SUB_IDS.includes(value)) return;
         sub = value;
         sheet = null;
-        if (mode === "board") requestBoard({ reset: true });
-        else render({ reset: true });
+        applyFilterPick("sub");
+        return;
+      }
+      if (sheetId === "row") {
+        if (menu === null) return;
+        const m = menu;
+        if (value === "cancel") {
+          sheet = null;
+          menu = null;
+          render({ reset: false });
+          return;
+        }
+        let focusId = null;
+        if (value === "race" && m.race !== null) {
+          race = m.race;
+          focusId = "race";
+        } else if (value === "sub" && m.sub !== null) {
+          sub = m.sub;
+          focusId = "sub";
+        } else if (value === "both" && m.race !== null && m.sub !== null) {
+          race = m.race;
+          sub = m.sub;
+          focusId = "race";
+        } else {
+          return; // a value the menu does not carry is ignored, the menu stays open.
+        }
+        sheet = null;
+        menu = null;
+        applyFilterPick(focusId);
         return;
       }
       // an unknown sheetId is ignored.
@@ -766,6 +859,7 @@ export function createLeaderboardPanel({
     if (entry === null) return false;
     if (sheet !== null) {
       sheet = null;
+      menu = null;
       render({ reset: false });
       return true;
     }
@@ -833,8 +927,8 @@ export function createLeaderboardPanel({
   }
 
   function state() {
-    return Object.freeze({ entry, mode, stat, race, sub, open, sheet, hasHero, dead });
+    return Object.freeze({ entry, mode, stat, race, sub, open, sheet, menu, hasHero, dead });
   }
 
-  return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, refresh, state });
+  return Object.freeze({ openFromTab, openFromTitle, onDeadTab, back, isTitleOpen, refresh, openRowMenu: openMenu, state });
 }

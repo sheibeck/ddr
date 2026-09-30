@@ -488,6 +488,177 @@ test("onSeeMine() (the SEE YOUR DEAD note button) switches to YOUR DEAD", async 
   assert.equal(panel.state().mode, "mine");
 });
 
+// ─── Phase 87 (BOARD-29): the row filter menu ────────────────────────────────
+
+/** trackFocus(doc) — every element made from now on records focus() calls as its data-picker value. */
+function trackFocus(doc) {
+  const focused = [];
+  const make = doc.document.createElement.bind(doc.document);
+  doc.document.createElement = (tag) => {
+    const e = make(tag);
+    e.focus = () => focused.push(e.dataset.picker ?? null);
+    return e;
+  };
+  return focused;
+}
+
+function menuSetup(overrides = {}) {
+  const rows = [historyRun({ hash: "aaaaaaa1", race: "Dwarven", sub: "Wizard", cls: "Magic User", floor: 9 })];
+  const ctx = setup({ compete: false, historyArr: rows, ...overrides });
+  const focused = trackFocus(ctx.doc);
+  ctx.panel.openFromTab({});
+  rowButton(ctx.host, "aaaaaaa1").onclick();
+  return { ...ctx, focused };
+}
+
+function optLabels(host) {
+  return optButtons(host).map((b) => b.querySelectorAll(".mw-lb-opt-label")[0].textContent);
+}
+
+test("openRowMenu(key): opens the row sheet with the validated race and sub; unknown key, closed panel or nothing valid change nothing", () => {
+  const { panel, host } = menuSetup();
+  assert.equal(panel.openRowMenu("aaaaaaa1"), true);
+  assert.equal(panel.state().sheet, "row");
+  assert.deepEqual(panel.state().menu, { key: "aaaaaaa1", race: "Dwarven", sub: "Wizard" });
+  assert.equal(host.querySelector(".mw-lb-sheet").hidden, false);
+  assert.deepEqual(optLabels(host), ["FILTER BY DWARVEN", "FILTER BY WIZARD", "FILTER BY DWARVEN WIZARD", "CANCEL"]);
+
+  panel.back();
+  const before = panel.state();
+  assert.equal(panel.openRowMenu("nope"), false);
+  assert.deepEqual(panel.state(), before);
+
+  const closed = setup({ compete: false, historyArr: [historyRun()] });
+  assert.equal(closed.panel.openRowMenu("00000001"), false);
+
+  const junk = setup({ compete: false, historyArr: [historyRun({ race: "Blorp", sub: "Nope" })] });
+  junk.panel.openFromTab({});
+  assert.equal(junk.panel.openRowMenu("00000001"), false);
+  assert.equal(junk.panel.state().sheet, null);
+});
+
+test("openRowMenu works on LEADERBOARD rows too", () => {
+  const board = makeBoard();
+  board.setCached(() => readySnapshot([boardDoc({ id: "d1", race: "Troll", sub: "Cleric", cls: "Magic User" })]));
+  const { panel } = setup({ compete: true, board });
+  panel.openFromTab({});
+  assert.equal(panel.openRowMenu("d1"), true);
+  assert.deepEqual(panel.state().menu, { key: "d1", race: "Troll", sub: "Cleric" });
+});
+
+test("row menu picks: race, sub, both set the filters like a sheet pick, close the sheet, reset scroll and move focus to the changed picker", () => {
+  for (const [value, wantRace, wantSub, wantFocus] of [
+    ["race", "Dwarven", null, "race"],
+    ["sub", null, "Wizard", "sub"],
+    ["both", "Dwarven", "Wizard", "race"],
+  ]) {
+    const { panel, host, focused } = menuSetup();
+    panel.openRowMenu("aaaaaaa1");
+    host.querySelector(".mw-lb-body").scrollTop = 40;
+    optButtons(host)[["race", "sub", "both", "cancel"].indexOf(value)].onclick();
+    const st = panel.state();
+    assert.equal(st.race, wantRace, value);
+    assert.equal(st.sub, wantSub, value);
+    assert.equal(st.sheet, null);
+    assert.equal(st.menu, null);
+    assert.equal(host.querySelector(".mw-lb-body").scrollTop, 0);
+    assert.equal(focused[focused.length - 1], wantFocus, `${value} focuses the ${wantFocus} picker`);
+  }
+});
+
+test("row menu CANCEL only closes; a value the menu does not carry changes nothing", () => {
+  const { panel, host } = menuSetup();
+  panel.openRowMenu("aaaaaaa1");
+  optButtons(host)[3].onclick();
+  assert.equal(panel.state().sheet, null);
+  assert.equal(panel.state().race, null);
+  assert.equal(panel.state().sub, null);
+
+  // a race-only menu (the sub is not a content id): forged "sub" / "both" / unknown picks are ignored
+  const forge = wrappedBuildView((view) => {
+    if (view.sheet && view.sheet.id === "row") {
+      const o = view.sheet.opts[0];
+      view.sheet = { ...view.sheet, opts: [{ ...o, value: "sub" }, { ...o, value: "both" }, { ...o, value: "zzz" }] };
+    }
+  });
+  const f = setup({ compete: false, historyArr: [historyRun({ hash: "bbbbbbb1", race: "Dwarven", sub: "Nope" })], buildView: forge });
+  f.panel.openFromTab({});
+  rowButton(f.host, "bbbbbbb1").onclick();
+  f.panel.openRowMenu("bbbbbbb1");
+  assert.deepEqual(f.panel.state().menu, { key: "bbbbbbb1", race: "Dwarven", sub: null });
+  for (const i of [0, 1, 2]) {
+    optButtons(f.host)[i].onclick();
+    assert.equal(f.panel.state().race, null);
+    assert.equal(f.panel.state().sub, null);
+    assert.equal(f.panel.state().sheet, "row");
+  }
+});
+
+test("row menu pick on LEADERBOARD re-queries the board with the new filters", () => {
+  const board = makeBoard();
+  board.setCached((q) => (q.race === null && q.sub === null ? readySnapshot([boardDoc({ id: "d1", race: "Troll", sub: "Cleric", cls: "Magic User" })]) : null));
+  const { panel, host } = setup({ compete: true, board });
+  panel.openFromTab({});
+  rowButton(host, "d1").onclick();
+  panel.openRowMenu("d1");
+  optButtons(host)[2].onclick();
+  assert.deepEqual(board.loadCalls[board.loadCalls.length - 1], { stat: "deep", race: "Troll", sub: "Cleric" });
+  assert.equal(panel.state().race, "Troll");
+  assert.equal(panel.state().sub, "Cleric");
+});
+
+test("RACE and SUB-CLASS sheet picks also move focus to the changed picker; a focus that throws never breaks the pick", () => {
+  const { host, focused } = menuSetup();
+  pickerButton(host, "race").onclick();
+  optButtons(host)[raceOptIndex("Dwarven")].onclick();
+  assert.equal(focused[focused.length - 1], "race");
+  pickerButton(host, "sub").onclick();
+  optButtons(host)[subOptIndex("Wizard")].onclick();
+  assert.equal(focused[focused.length - 1], "sub");
+
+  const ctx = setup({ compete: false, historyArr: [historyRun()] });
+  const make = ctx.doc.document.createElement.bind(ctx.doc.document);
+  ctx.doc.document.createElement = (tag) => {
+    const e = make(tag);
+    e.focus = () => {
+      throw new Error("boom");
+    };
+    return e;
+  };
+  ctx.panel.openFromTab({});
+  pickerButton(ctx.host, "race").onclick();
+  assert.doesNotThrow(() => optButtons(ctx.host)[raceOptIndex("Human")].onclick());
+  assert.equal(ctx.panel.state().race, "Human");
+});
+
+test("row menu: back() and the scrim close it, and every open resets it", () => {
+  const { panel, host } = menuSetup();
+  panel.openRowMenu("aaaaaaa1");
+  assert.equal(panel.back(), true);
+  assert.equal(panel.state().sheet, null);
+  assert.equal(panel.state().menu, null);
+
+  panel.openRowMenu("aaaaaaa1");
+  host.querySelector(".mw-lb-scrim").onclick();
+  assert.equal(panel.state().sheet, null);
+  assert.equal(panel.state().menu, null);
+
+  panel.openRowMenu("aaaaaaa1");
+  panel.openFromTab({});
+  assert.equal(panel.state().sheet, null);
+  assert.equal(panel.state().menu, null);
+  assert.equal(panel.state().race, null);
+});
+
+test("the FILTER LIKE THIS button in the open detail opens the same menu and leaves the row open", () => {
+  const { panel, host } = menuSetup();
+  const btn = host.querySelectorAll(".mw-lb-detail-filter")[0];
+  assert.ok(btn);
+  btn.onclick({ stopPropagation() {} });
+  assert.equal(panel.state().sheet, "row");
+  assert.equal(panel.state().open, "aaaaaaa1");
+});
+
 test("back(): a sheet open closes it and returns true", () => {
   const { panel, host } = setup({ compete: false });
   panel.openFromTab({});
