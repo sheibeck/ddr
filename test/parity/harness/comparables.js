@@ -212,7 +212,9 @@ function stripStaffField(c) {
  * startEffect/startCooldown), so this is carved out purely as a structural
  * tripwire like stripFoeEffectField, so a future fixture that does carry
  * timers never reaches the diff on this genuine, permanent, deliberate
- * divergence. */
+ * divergence. Phase 88 (ITEM-02) adds `src { slot, n }` on item timer
+ * records; it rides inside `c.timers`, so this strip already carves it out of
+ * all three chains (pinned by test/unit/item-source-comparables.test.js). */
 function stripTimersField(c) {
   if (!c || !("timers" in c)) return c;
   const { timers, ...rest } = c;
