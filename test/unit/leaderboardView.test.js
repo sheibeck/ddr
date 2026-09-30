@@ -178,7 +178,7 @@ test("mode/stat/race/sub fall back on bad input; unknown race/sub ids read as nu
   assert.equal(view.pickers[2].value, C.pick.any);
 });
 
-test("YOUR DEAD ranking: DEPTH (floor desc, fewer steps), DAYS (capped), KILLS, WILMST — rank strings, top/podium, no you/tag", () => {
+test("YOUR DEAD ranking: DEPTH (floor desc, more steps; Phase 87 BOARD-28), DAYS (capped), KILLS, WILMST — rank strings, top/podium, no you/tag", () => {
   const history = [
     historyRun({ hash: "0000000a", name: "A", floor: 6, steps: 100, day: 20, kills: 1, gold: 10 }),
     historyRun({ hash: "0000000b", name: "B", floor: 6, steps: 50, day: 5, kills: 20, gold: 20 }),
@@ -187,7 +187,7 @@ test("YOUR DEAD ranking: DEPTH (floor desc, fewer steps), DAYS (capped), KILLS, 
   const deep = leaderboardView({ stat: "deep", history });
   assert.deepEqual(
     deep.body.rows.map((r) => r.headline),
-    ["B", "A", "C"] // floor 6/steps 50 beats floor 6/steps 100 beats floor 1
+    ["A", "B", "C"] // floor 6/steps 100 beats floor 6/steps 50 beats floor 1
   );
   assert.equal(deep.body.rows[0].rank, "1");
   assert.equal(deep.body.rows[0].top, true);

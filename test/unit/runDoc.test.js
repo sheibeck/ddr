@@ -51,6 +51,7 @@ import {
   BOARD_STATS,
   isBoardStat,
   deepKeyOf,
+  legacyDeepKeyOf,
   daysKeyOf,
   killsKeyOf,
   goldKeyOf,
@@ -411,12 +412,7 @@ test("2,000 random in-bound pairs: key ordering matches compareRuns (deep/kills/
     const deepA = deepKeyOf(a);
     const deepB = deepKeyOf(b);
     assert.ok(Number.isSafeInteger(deepA) && Number.isSafeInteger(deepB), `deep safe int pair ${i}`);
-    // Phase 87 (87-04, BOARD-28): compareRuns("deep") now ranks ties by MORE steps, but
-    // the server deepKeyOf still encodes the old fewest-steps key until 87-05 flips it.
-    // Interim pin: the key matches the old (floor desc, steps asc) order. 87-05 must
-    // re-point this line to compareRuns("deep", a, b) when deepKeyOf changes.
-    const legacyDeepCmp = b.floor - a.floor || a.steps - b.steps;
-    assert.equal(sign(deepB - deepA), sign(legacyDeepCmp), `deep pair ${i}`);
+    assert.equal(sign(deepB - deepA), sign(compareRuns("deep", a, b)), `deep pair ${i}`);
 
     const killsA = killsKeyOf(a);
     const killsB = killsKeyOf(b);
@@ -555,4 +551,33 @@ test("purity: no window/document/navigator/localStorage/sessionStorage and no ba
     assert.ok(!new RegExp(`\\b${bad}\\b`).test(src), `must not reference ${bad}`);
   }
   assert.ok(!/(^|[^.\w])fetch\s*\(/.test(src), "must not call a bare global fetch");
+});
+
+// ---------------------------------------------------------------------------
+// Phase 87 (BOARD-28, report #9): DEPTH ties go to the MOST steps
+// ---------------------------------------------------------------------------
+
+test("deepKeyOf (Phase 87 BOARD-28): floor * 1,000,000 + steps, more steps ranks higher, a floor always dominates", () => {
+  assert.equal(deepKeyOf({ floor: 5, steps: 900 }), 5000900);
+  assert.equal(deepKeyOf({ floor: 5, steps: 100 }), 5000100);
+  assert.ok(deepKeyOf({ floor: 5, steps: 900 }) > deepKeyOf({ floor: 5, steps: 100 }));
+  assert.ok(deepKeyOf({ floor: 6, steps: 0 }) > deepKeyOf({ floor: 5, steps: STEPS_MAX }));
+});
+
+test("legacyDeepKeyOf: the 2.2.0 (vc12) fewer-steps formula, never equal to deepKeyOf for any in-bound steps", () => {
+  assert.equal(legacyDeepKeyOf({ floor: 5, steps: 100 }), 5999899);
+  for (const floor of [1, 5, 200]) {
+    for (let steps = 0; steps <= STEPS_MAX; steps += 997) {
+      assert.notEqual(legacyDeepKeyOf({ floor, steps }), deepKeyOf({ floor, steps }));
+    }
+    assert.notEqual(legacyDeepKeyOf({ floor, steps: STEPS_MAX }), deepKeyOf({ floor, steps: STEPS_MAX }));
+    assert.notEqual(legacyDeepKeyOf({ floor, steps: 0 }), deepKeyOf({ floor, steps: 0 }));
+  }
+});
+
+test("validateRunDoc: a doc carrying the legacy (2.2.0) deepKey fails exactly [deepkey] against the final-rules mirror", () => {
+  const valid = baseValidDoc();
+  assert.deepEqual(validateRunDoc(valid), []);
+  const legacy = { ...valid, deepKey: legacyDeepKeyOf(valid) };
+  assert.deepEqual(validateRunDoc(legacy), ["deepkey"]);
 });

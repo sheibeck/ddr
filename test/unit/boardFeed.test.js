@@ -165,8 +165,9 @@ test("load({stat}): ready, rows = topTen order, total/filteredTotal 14, you = yo
   assert.equal(snap.youKnown, true);
   assert.ok(snap.you);
   assert.equal(snap.you.listed, false);
-  // the mine run with steps=100 has the largest deepKey among the 3 owned runs
-  assert.equal(snap.you.run.steps, 100);
+  // the mine run with steps=300 has the largest deepKey among the 3 owned runs
+  // (deepKey formula, Phase 87 BOARD-28: same floor, MORE steps ranks higher; was steps=100)
+  assert.equal(snap.you.run.steps, 300);
   assert.equal(snap.you.run.uid, MY_UID);
   // rank = count of ALL board runs with a strictly larger deepKey, + 1 (the 11 "others" all outrank floor 2)
   assert.equal(snap.you.rank, 12);

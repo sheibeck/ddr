@@ -10,7 +10,8 @@
 // currentDocument.exists=false precondition).
 //
 // The four rank keys (deepKey/daysKey/killsKey/goldKey) are exact integers so
-// every board query is a single orderBy/count — no client-side sort. daysKey
+// every board query is a single orderBy/count — no client-side sort. deepKey is
+// floor * 1,000,000 + steps (floor desc, ties by MORE steps; Phase 87 BOARD-28). daysKey
 // applies the Phase 82 DAYS rule (docs/DAYS-FARMING.md "## The DAYS rule"):
 // min(day, 10 * floor) desc, ties by floor desc — a deliberate divergence
 // from engine/records.js#compareRuns("days")'s uncapped local comparator, so
@@ -119,8 +120,28 @@ const HASH_RE = new RegExp(HASH_PATTERN);
 // Rank keys
 // ---------------------------------------------------------------------------
 
-/** deepKeyOf(run) — floor desc, then fewer steps (floor * 1,000,000 + (999,999 - steps)). */
+/**
+ * deepKeyOf(run) — floor desc, then more steps (floor * 1,000,000 + steps).
+ * steps never exceed STEPS_MAX (999,999), so a floor's keys never reach the
+ * next floor. Phase 87 (BOARD-28, report #9) reverses v2.1 BOARD-17's
+ * fewer-steps tie-break.
+ */
 export function deepKeyOf(run) {
+  const floor = Number(run?.floor);
+  const steps = Number(run?.steps);
+  return floor * 1000000 + steps;
+}
+
+/**
+ * legacyDeepKeyOf(run) — the formula the shipped 2.2.0 (vc12) clients still
+ * write: floor * 1,000,000 + (999,999 - steps), i.e. fewer steps first.
+ * Transition-only: read by test/unit/firestore-transition-rules.test.js,
+ * fakeBoardServer.js's acceptLegacyDeepKey mode, tools/boards-admin.mjs
+ * rekey-deep and tools/boards-smoke.mjs --transition. The client never writes
+ * it; delete it with the transition files at the 2.3 cutover (docs/RELEASING.md,
+ * Release 2.3.0).
+ */
+export function legacyDeepKeyOf(run) {
   const floor = Number(run?.floor);
   const steps = Number(run?.steps);
   return floor * 1000000 + (999999 - steps);

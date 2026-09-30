@@ -152,12 +152,12 @@ service cloud.firestore {
         && d.createdAt == request.time;
     }
 
-    // deepKey: floor desc, then fewer steps. daysKey: the Phase 82 DAYS rule
+    // deepKey: floor desc, then more steps (Phase 87, BOARD-28). daysKey: the Phase 82 DAYS rule
     // — min(day, 10 * floor) desc, then floor desc (the ternary stands in
     // for math.min, which Firestore rules do not have). killsKey: kills
     // desc, then floor desc. goldKey: gold desc.
     function deepKeyOf(d) {
-      return d.floor * 1000000 + (999999 - d.steps);
+      return d.floor * 1000000 + d.steps;
     }
 
     function daysKeyOf(d) {

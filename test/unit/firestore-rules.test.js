@@ -361,6 +361,10 @@ test("deepKeyOf/daysKeyOf/killsKeyOf/goldKeyOf rules functions match runDoc.js's
   const killsFn = new Function("d", `return (${killsExpr});`);
   const goldFn = new Function("d", `return (${goldExpr});`);
 
+  // Phase 87 (BOARD-28): the rules' deepKeyOf ranks a same-floor tie by MORE steps.
+  assert.ok(deepFn({ floor: 5, steps: 900 }) > deepFn({ floor: 5, steps: 100 }));
+  assert.ok(deepFn({ floor: 6, steps: 0 }) > deepFn({ floor: 5, steps: 999999 }));
+
   const floors = [1, 2, 5, 13, 200];
   const days = [1, 9, 10, 11, 25, 300, 2000];
   const stepsList = [0, 1, 250, 999999];

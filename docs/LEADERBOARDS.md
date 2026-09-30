@@ -127,8 +127,12 @@ has nothing to do with ranking — that is `daysKey`, below.
 `orderBy`/`count` — no client-side sort, and the rules re-derive each one so
 a client can never lie about its own rank:
 
-- `deepKey = floor * 1,000,000 + (999,999 - steps)` — floor desc, ties by
-  fewer steps.
+- `deepKey = floor * 1,000,000 + steps` — floor desc, ties by MORE steps
+  (report #9, Phase 87 BOARD-28, reversing BOARD-17). Steps never exceed
+  999,999, so a deeper floor always outranks any step count on a shallower
+  one. Runs written before the change carry the old key
+  (`floor * 1,000,000 + (999,999 - steps)`) until the release re-key
+  (`docs/RELEASING.md`, Release 2.3.0).
 - `daysKey = min(day, 10 * floor) * 1,000 + floor` — **the Phase 82 DAYS
   rule**, quoted from `docs/DAYS-FARMING.md` "## The DAYS rule": *"DAYS ranks
   every run by daysKey = min(day, 10 * floor) (desc), ties by floor (desc);
