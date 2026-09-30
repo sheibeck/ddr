@@ -3701,10 +3701,12 @@ const CONDITION_EXPLAIN = {
   power: "One more point of damage on every swing, for a while. The ring calls it generosity.",
   // RULES-11 (Phase 75.2, Plan 04): states exactly what a size step does —
   // no overhead-clearance promise, no shrinking-back promise. Both the
-  // Gauntlet of the Giant (giant) and Enlarge (enlarge) are exactly a +1
-  // size step, so they share the same sentence.
+  // Gauntlet of the Giant (giant) is exactly a +1 size step; Enlarge
+  // (enlarge) is a step plus bulk since Phase 89 and has its own sentence.
   giant: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
-  enlarge: "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
+  // Phase 89 (ITEM-05): Enlarge is Troll-sized, so it has its own sentence:
+  // the size step's +2 plus the potion's +9 bulk, and the step's cost.
+  enlarge: "One size larger while it lasts: +11 damage, and foes +1 to hit you. A bigger stick, and a bigger target.",
   glow: "You are your own lantern, so the dark cannot make your strikes harder to land. The dark is filing a complaint.",
   unseen: "Every foe has two fewer faces that hit you, and they know it.",
   tongue: "You can try a parley with anything but the Magical and the Walking Dead, and the roll gets two more faces. Whether they listen is up to them.",

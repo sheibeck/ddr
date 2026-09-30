@@ -30,6 +30,8 @@ import {
 } from "../../engine/derived.js";
 import { startEffect } from "../../engine/effects.js";
 import { ACTIVATION_OF, POTIONS } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -211,4 +213,26 @@ test("the Enlarge text states both sides, and both numbers are the engine's own"
   assert.ok(txt.includes(`+${damageDelta("Human")} damage`), txt);
   assert.ok(txt.includes(`foes +${toHitDelta("Human")} to hit you`), txt);
   assert.equal(txt, "one size larger for fifty squares: +11 damage, and foes +1 to hit you");
+});
+
+// --- the lines ---------------------------------------------------------------
+
+test("the Oracle and rail lines for a real Enlarge started event both state +11 damage and foes +1 to hit", () => {
+  const state = fixedState({ c: { items: [enlargePotion()] } });
+  const started = useItem(state, 0, fakeRng([]), []).find((e) => e.type === "itemEffectStarted");
+  const oracle = EVENT_NARRATION.itemEffectStarted(started).replace(/<[^>]+>/g, "");
+  const rail = LINE_FOR.itemEffectStarted(started, {}).text;
+  for (const line of [oracle, rail]) {
+    assert.ok(line.includes(`+${damageDelta("Human")} damage`), line);
+    assert.ok(line.includes(`+${toHitDelta("Human")} to hit`), line);
+    assert.doesNotMatch(line, /\bwp\b/i);
+  }
+});
+
+test("a bare Enlarge started event renders non-empty with no undefined or NaN", () => {
+  const bare = { type: "itemEffectStarted", kind: "enlarge" };
+  for (const line of [EVENT_NARRATION.itemEffectStarted(bare).replace(/<[^>]+>/g, ""), LINE_FOR.itemEffectStarted(bare, {}).text]) {
+    assert.ok(line.length > 0);
+    assert.doesNotMatch(line, /undefined|NaN/);
+  }
 });

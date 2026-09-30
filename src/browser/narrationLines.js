@@ -2566,8 +2566,10 @@ export const LINE_FOR = {
       giant: e?.size
         ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
         : `One size larger for ${sq}.`,
+      // Phase 89 (ITEM-05): Enlarge's own rail line, the Oracle's numbers
+      // (dmgTotal and the step) in the rail's short form.
       enlarge: e?.size
-        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit you.`
         : `One size larger for ${sq}.`,
       glow: `Fifty squares of being your own lantern.`,
       unseen: `Unseen for ${sq}: every foe has two fewer faces that hit you.`,

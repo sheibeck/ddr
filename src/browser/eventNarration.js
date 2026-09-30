@@ -1692,8 +1692,12 @@ export const EVENT_NARRATION = {
       giant: e.size
         ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
         : `<span class="hit">One size larger for ${sq}.</span>`,
+      // Phase 89 (ITEM-05, report #6, ruling 2026-09-30): Enlarge is Troll-
+      // sized, so its line is its own — it reads the event's `dmgTotal` (the
+      // size step's damage plus the potion's +9 bulk, engine/items.js) and
+      // the step, and names both sides in TEXT-01 wording.
       enlarge: e.size
-        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit you.</span> A bigger stick and a bigger target. Nobody said it was free.`
         : `<span class="hit">One size larger for ${sq}.</span>`,
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
       unseen: `<span class="hit">Unseen for ${sq}: every foe has two fewer faces that hit you.</span>`,

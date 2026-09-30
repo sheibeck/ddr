@@ -36,6 +36,7 @@ import { createFakeClock } from "./harness/fakeClock.js";
 import { railPush, railLineCard } from "../../src/browser/rail.js";
 import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
 import { startEffect } from "../../engine/effects.js";
+import { weaponDamageTerms, foeToHitVs } from "../../engine/derived.js";
 
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
@@ -136,7 +137,12 @@ test("(a) Enlarge alone: chip labelled 'Large', tone good; the tap card names 'E
   const cn = r.descriptor("enlarge");
   const text = r.explain(cn, c.textContent);
   assert.match(text, /^Enlarge — large, 50 squares\./, "names the item, not the chip's own fixed label");
-  assert.match(text, /One size larger while it lasts: \+2 damage, and one face easier for foes to hit\.$/);
+  // Phase 89 (ITEM-05): Enlarge's own sentence, its two numbers read from the engine.
+  const dmg = weaponDamageTerms(s.c).bonus - weaponDamageTerms({ ...s.c, timers: {} }).bonus;
+  const faces = foeToHitVs({ c: s.c, combat: { foes: [{ alive: true }] } }) - foeToHitVs({ c: { ...s.c, timers: {} }, combat: { foes: [{ alive: true }] } });
+  assert.equal(dmg, 11);
+  assert.equal(faces, 1);
+  assert.match(text, new RegExp(`One size larger while it lasts: \\+${dmg} damage, and foes \\+${faces} to hit you\\.`));
 });
 
 test("(b) a Human with a live Gauntlet: the tap card leads with the measured effect, then the item, then what a step does", () => {
@@ -177,13 +183,18 @@ test("(c) a chip with no size field renders its old label and detail (a Ring of 
 
 // ─── (d) the Oracle and the rail narrate a size item's start ───────────────
 
-test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) names the resulting size, the signed damage and the face clause, with no overhead-clearance/corridor promise", () => {
-  for (const kind of ["giant", "enlarge"]) {
-    const html = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2 });
-    assert.match(html, /50 squares one size larger: you are Large\./, `${kind}: names the resulting size`);
-    assert.match(html, /\+2 damage, and one face easier for foes to hit\./, `${kind}: states exactly what a step does`);
-    assert.doesNotMatch(html, /ceiling/i, `${kind}: no overhead-clearance promise`);
-    assert.doesNotMatch(html, /corridor/i, `${kind}: the old corridor line is gone`);
+test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) names the resulting size, the signed damage and the foes' side, with no overhead-clearance/corridor promise", () => {
+  // The Gauntlet keeps its step-only line; Enlarge (Phase 89, ITEM-05) states
+  // its dmgTotal and the to-hit cost in TEXT-01 wording.
+  const giant = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "giant", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 2 });
+  assert.match(giant, /50 squares one size larger: you are Large\./);
+  assert.match(giant, /\+2 damage, and one face easier for foes to hit\./);
+  const enlarge = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "enlarge", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 11 });
+  assert.match(enlarge, /50 squares one size larger: you are Large\./);
+  assert.match(enlarge, /\+11 damage, and foes \+1 to hit you\./);
+  for (const html of [giant, enlarge]) {
+    assert.doesNotMatch(html, /ceiling/i, "no overhead-clearance promise");
+    assert.doesNotMatch(html, /corridor/i, "the old corridor line is gone");
   }
 });
 
@@ -196,10 +207,11 @@ test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) with no size fields 
 
 test("(d) LINE_FOR.itemEffectStarted (giant/enlarge) mirrors the Oracle line, tone magic", () => {
   for (const kind of ["giant", "enlarge"]) {
-    const line = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Huge", step: 1, sizeDmg: 2 });
+    const line = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Huge", step: 1, sizeDmg: 2, dmgTotal: kind === "enlarge" ? 11 : 2 });
     assert.equal(line.tone, "magic");
     assert.match(line.text, /50 squares one size larger: you are Huge\./);
-    assert.match(line.text, /\+2 damage, and one face easier for foes to hit\./);
+    if (kind === "giant") assert.match(line.text, /\+2 damage, and one face easier for foes to hit\./);
+    else assert.match(line.text, /\+11 damage, foes \+1 to hit you\./);
     const fallback = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares" });
     assert.match(fallback.text, /One size larger for 50 squares\./);
   }
