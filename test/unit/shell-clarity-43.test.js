@@ -244,7 +244,8 @@ test("Store rows: usable is computed guarded on effectParams.item and rs.showUsa
     region,
     /const usable = !stats && rs\.showUsable && item\.effectParams && item\.effectParams\.item \? usableBy\(item\.effectParams\.item, c\) : "";/,
   );
-  assert.match(region, /const subText = \[sub, rs\.compareLine, rs\.reasonText\]\.filter\(Boolean\)\.join\(" · "\);/);
+  // Phase 87 (STORE-04): the Rations row's "N left" count rides the sub, right after the item's own.
+  assert.match(region, /const subText = \[sub, storeCountText\(item\), rs\.compareLine, rs\.reasonText\]\.filter\(Boolean\)\.join\(" · "\);/);
   assert.match(region, /\$\{subText \|\| usable \? `<i>\$\{subText \|\| ""\}\$\{subText && usable \? " " : ""\}\$\{usable\}<\/i>` : ""\}/);
 });
 

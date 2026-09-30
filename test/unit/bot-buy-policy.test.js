@@ -10,7 +10,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { chooseStorePurchase, decideAction, makeBotContext, GOLD_RESERVE } from "../../tools/lib/tuning-bot.mjs";
+import { chooseStorePurchase, decideAction, makeBotContext, GOLD_RESERVE, BOT_RATION_DAYS } from "../../tools/lib/tuning-bot.mjs";
+import { buyFrom } from "../../engine/economy.js";
+import { nightlyEats } from "../../engine/movement.js";
 
 /** hero(over) — a level-1 Human Fighter/Soldier with a Club and no armor, overridable. */
 function hero(over = {}) {
@@ -183,6 +185,138 @@ test("GOLD_RESERVE is exactly 50 and store.stock missing/empty never throws", ()
   const c = hero({ gold: 1000 });
   assert.strictEqual(chooseStorePurchase(mkState(c, null), makeBotContext()), null);
   assert.strictEqual(chooseStorePurchase({ c, store: {} }, makeBotContext()), null);
+});
+
+// ─── Phase 87 STORE-04: the fair bot's ration target (user ruling 2026-09-29) ───
+
+/** rationsLine(cost, left) — the engine's Rations stock line (economy.js openStore shape). */
+function rationsLine(cost, left, opts = {}) {
+  return {
+    n: "Rations (+1 ration)",
+    sub: null,
+    cost,
+    effectId: "buyRations",
+    effectParams: { amount: 1 },
+    sold: opts.sold ?? false,
+    left,
+  };
+}
+
+/** Drive chooseStorePurchase -> the REAL engine buyFrom until the bot returns null; returns the picked idxs. */
+function driveBuys(state, ctx, limit = 60) {
+  const picks = [];
+  for (let n = 0; n < limit; n++) {
+    const a = chooseStorePurchase(state, ctx);
+    if (a === null) return picks;
+    assert.equal(a.type, "buyItem");
+    const before = { gold: state.c.gold, rations: state.c.rations };
+    buyFrom(state, a.idx, []);
+    // never a buy the engine refuses: the purse and the pack must have moved
+    assert.ok(state.c.gold < before.gold && state.c.rations > before.rations, "the bot picked a buy the engine refused");
+    picks.push(a.idx);
+  }
+  assert.fail("chooseStorePurchase looped without settling");
+}
+
+test("BOT_RATION_DAYS is exactly 3", () => {
+  assert.strictEqual(BOT_RATION_DAYS, 3);
+});
+
+test("Human hero alone tops up to BOT_RATION_DAYS x 1 rations, one per pick, then null; decideAction then leaves", () => {
+  const c = hero({ gold: 200, rations: 1, bag: "small" });
+  const stock = [rationsLine(30, 7)];
+  const state = mkState(c, stock);
+  const ctx = makeBotContext();
+  assert.deepStrictEqual(chooseStorePurchase(state, ctx), { type: "buyItem", idx: 0 });
+  const picks = driveBuys(state, ctx);
+  assert.deepStrictEqual(picks, [0, 0], "1 -> 3 rations is two buys");
+  assert.equal(c.rations, BOT_RATION_DAYS * nightlyEats(state));
+  assert.equal(stock[0].left, 5);
+  assert.strictEqual(chooseStorePurchase(state, ctx), null);
+  assert.deepStrictEqual(decideAction(state, { pick: (arr) => arr[0] }, ctx), { type: "leaveStore" });
+});
+
+test("the target is nightlyEats(state): a Troll (eats 2) targets 6; a Human with one Troll Joiner (1 + 2) targets 9", () => {
+  const troll = hero({ race: "Troll", gold: 1000, rations: 0, bag: "large" });
+  const s1 = mkState(troll, [rationsLine(30, 10)]);
+  assert.equal(nightlyEats(s1), 2);
+  driveBuys(s1, makeBotContext());
+  assert.equal(troll.rations, 6);
+
+  const human = hero({ gold: 1000, rations: 0, bag: "large" });
+  const s2 = mkState(human, [rationsLine(30, 10)]);
+  s2.party = [{ race: "Troll", name: "Zell" }];
+  assert.equal(nightlyEats(s2), 3);
+  driveBuys(s2, makeBotContext());
+  assert.equal(human.rations, 9);
+});
+
+test("an affordable weapon and armour upgrade are still bought first; the ration pass runs only after both", () => {
+  const c = hero({ gold: 1000, rations: 0, bag: "large" });
+  const stock = [
+    rationsLine(30, 10), // idx 0 — listed FIRST, must still lose to gear
+    weaponLine("Flail", 250), // idx 1
+    armorLine("Studded", 10, "FT", 450), // idx 2
+  ];
+  const state = mkState(c, stock);
+  const ctx = makeBotContext();
+  assert.deepStrictEqual(chooseStorePurchase(state, ctx), { type: "buyItem", idx: 1 });
+  stock[1].sold = true;
+  c.weapon = "Flail";
+  assert.deepStrictEqual(chooseStorePurchase(state, ctx), { type: "buyItem", idx: 2 });
+  stock[2].sold = true;
+  c.armor = "Studded";
+  c.ar = 10;
+  assert.deepStrictEqual(chooseStorePurchase(state, ctx), { type: "buyItem", idx: 0 }, "gear done, now the rations");
+});
+
+test("the ration pass stops at the shelf, the purse and the pack cap, and never offers a refused buy", () => {
+  // shelf: two left, target 3 from 0 -> exactly two buys, then null
+  const a = hero({ gold: 500, rations: 0, bag: "large" });
+  const sa = mkState(a, [rationsLine(30, 2)]);
+  assert.deepStrictEqual(driveBuys(sa, makeBotContext()), [0, 0]);
+  assert.equal(a.rations, 2);
+  assert.equal(sa.store.stock[0].sold, true);
+  assert.strictEqual(chooseStorePurchase(sa, makeBotContext()), null);
+
+  // purse: 70 wm buys two at 30; the third is short, so it stops (no GOLD_RESERVE on rations)
+  const b = hero({ gold: 70, rations: 0, bag: "large" });
+  const sb = mkState(b, [rationsLine(30, 10)]);
+  assert.deepStrictEqual(driveBuys(sb, makeBotContext()), [0, 0]);
+  assert.equal(b.gold, 10);
+
+  // pack cap: the 3-day target (30 here) is far above a small pack's cap of 10
+  const d = hero({ race: "Troll", gold: 5000, rations: 9, bag: "small" });
+  const sd = mkState(d, [rationsLine(30, 10)]);
+  sd.party = [{ race: "Troll", name: "A" }, { race: "Troll", name: "B" }, { race: "Troll", name: "C" }, { race: "Troll", name: "D" }];
+  assert.deepStrictEqual(driveBuys(sd, makeBotContext()), [0]);
+  assert.equal(d.rations, 10);
+  assert.strictEqual(chooseStorePurchase(sd, makeBotContext()), null, "at the pack cap the bot never asks");
+
+  // sold / left 0 lines are never picked
+  const e = hero({ gold: 500, rations: 0, bag: "large" });
+  assert.strictEqual(chooseStorePurchase(mkState(e, [rationsLine(30, 0, { sold: true })]), makeBotContext()), null);
+  assert.strictEqual(chooseStorePurchase(mkState(e, [rationsLine(30, 0)]), makeBotContext()), null);
+});
+
+test("at or above the target the ration pass returns null", () => {
+  const c = hero({ gold: 500, rations: 3, bag: "large" });
+  assert.strictEqual(chooseStorePurchase(mkState(c, [rationsLine(30, 10)]), makeBotContext()), null);
+  const c2 = hero({ gold: 500, rations: 8, bag: "large" });
+  assert.strictEqual(chooseStorePurchase(mkState(c2, [rationsLine(30, 10)]), makeBotContext()), null);
+});
+
+test("the ration pass ignores GOLD_RESERVE: a hero with 30 wm buys a 30 wm ration (food is the reserve's own purpose)", () => {
+  const c = hero({ gold: 30, rations: 0, bag: "large" });
+  assert.deepStrictEqual(chooseStorePurchase(mkState(c, [rationsLine(30, 5)]), makeBotContext()), { type: "buyItem", idx: 0 });
+});
+
+test("a legacy Rations line (no left, unsold) is bought once, then it is sold", () => {
+  const c = hero({ gold: 200, rations: 0, bag: "large" });
+  const line = { n: "Rations (+1 ration)", sub: null, cost: 30, effectId: "buyRations", effectParams: { amount: 1 }, sold: false };
+  const state = mkState(c, [line]);
+  assert.deepStrictEqual(driveBuys(state, makeBotContext()), [0]);
+  assert.equal(c.rations, 1);
 });
 
 test("decideAction is unchanged for one in-combat and one exploration decision (no drift)", () => {

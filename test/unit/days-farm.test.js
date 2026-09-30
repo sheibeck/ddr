@@ -9,6 +9,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { playRun, decideAction, makeBotContext, botLine, BOT_DEFAULTS, forceParty, RUN_FLAGS } from "../../tools/lib/tuning-bot.mjs";
+import { buyFrom } from "../../engine/economy.js";
 import { newRun } from "../../engine/engine.js";
 import { eatsFor, nightlyEats } from "../../engine/movement.js";
 import { seedList } from "../../tools/lib/class-matrix.mjs";
@@ -196,6 +197,53 @@ test("Task 2: hoarderStorePick", async (t) => {
   await t.test("returns null when c.rations is already at BAGS[c.bag].rations (small: 10)", () => {
     const state = storeState();
     state.c.rations = 10;
+    assert.equal(hoarderStorePick(state), null);
+  });
+
+  // Phase 87 (STORE-04): one ration per purchase, repeated until the shelf, the
+  // purse or the pack cap runs out. Driven through the REAL engine buyFrom.
+  function hoard(state) {
+    let buys = 0;
+    for (let n = 0; n < 50; n++) {
+      const pick = hoarderStorePick(state);
+      if (pick === null) return buys;
+      const before = state.c.rations;
+      buyFrom(state, pick.idx, []);
+      assert.ok(state.c.rations > before, "hoarder picked a buy the engine refused");
+      buys++;
+    }
+    assert.fail("hoarder looped");
+  }
+  const perRation = (left, over = {}) => ({
+    store: { stock: [{ n: "Rations (+1 ration)", sub: null, cost: 30, effectId: "buyRations", effectParams: { amount: 1 }, sold: false, left }] },
+    c: { gold: 100, rations: 0, bag: "small" },
+    ...over,
+  });
+
+  await t.test("Phase 87: left 3, gold 100 -> exactly 3 buys (gold 10 left), then null", () => {
+    const state = perRation(3);
+    assert.equal(hoard(state), 3);
+    assert.equal(state.c.gold, 10);
+    assert.equal(state.c.rations, 3);
+    assert.equal(hoarderStorePick(state), null);
+  });
+
+  await t.test("Phase 87: left 10, 8 rations in a small bag -> exactly 2 buys (the cap), then null", () => {
+    const state = perRation(10, { c: { gold: 1000, rations: 8, bag: "small" } });
+    assert.equal(hoard(state), 2);
+    assert.equal(state.c.rations, 10);
+  });
+
+  await t.test("Phase 87: left 10, gold 70 -> exactly 2 buys (the purse), then null", () => {
+    const state = perRation(10, { c: { gold: 70, rations: 0, bag: "small" } });
+    assert.equal(hoard(state), 2);
+    assert.equal(state.c.gold, 10);
+  });
+
+  await t.test("Phase 87: a legacy line (no left, unsold) still returns its idx once", () => {
+    const state = storeState();
+    assert.deepStrictEqual(hoarderStorePick(state), { type: "buyItem", idx: 0 });
+    state.store.stock[0].sold = true;
     assert.equal(hoarderStorePick(state), null);
   });
 

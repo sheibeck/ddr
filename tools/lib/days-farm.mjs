@@ -21,6 +21,7 @@
 
 import { playRun, decideAction, BOT_DEFAULTS, bfsFirstStep, legalDirs, DIRS, HAZARD_FEATS, chooseStorePurchase, percentile, distribution } from "./tuning-bot.mjs";
 import { nightlyEats } from "../../engine/movement.js";
+import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { BAGS } from "../../content/bags.js";
 
 // FARM_CAPS — the hard safety stop (Pitfall 4 precedent, T-82-02): a farmer
@@ -116,11 +117,16 @@ export function farmDir(state, policyRng) {
  * store's Rations line with all its gold before anything else, every store
  * visit. There is no GOLD_RESERVE (`chooseStorePurchase`'s own reserve,
  * tools/lib/tuning-bot.mjs) — the hoarder spends everything on food. Returns
- * `{type:"buyItem", idx}` for the first unsold, affordable `"buyRations"`
- * stock line; `null` when that line is sold, its cost exceeds `c.gold`, or
- * `c.rations` is already at `BAGS[c.bag].rations` (the engine sells each
- * line once — `buyFrom` sets `sold` — so this buys at most one ration per
- * store visit).
+ * `{type:"buyItem", idx}` for the first `"buyRations"` stock line with stock
+ * left (`rationsLeft`) that the engine's own `storeBuyRefusal` lets through
+ * (affordable, and not past the pack's ration cap); `null` when there is none
+ * or `c.rations` is already at `BAGS[c.bag].rations` (its target).
+ *
+ * Phase 87 (STORE-04): the engine now sells the Rations line PER RATION (a d10
+ * of them per store, `buyFrom` decrements `left`), so this buys ONE ration per
+ * purchase and is asked again on each decision, until the cap, the purse or
+ * the shelf runs out. The old one-ration-per-visit note is retired. It reads
+ * the engine's refusal, so it can never loop on a buy the engine would refuse.
  */
 export function hoarderStorePick(state) {
   const st = state.store;
@@ -128,7 +134,7 @@ export function hoarderStorePick(state) {
   const c = state.c;
   const cap = BAGS[c.bag] && BAGS[c.bag].rations;
   if (cap !== undefined && c.rations >= cap) return null;
-  const idx = st.stock.findIndex((line) => line.effectId === "buyRations" && !line.sold && line.cost <= c.gold);
+  const idx = st.stock.findIndex((line) => line.effectId === "buyRations" && !line.sold && rationsLeft(line) > 0 && storeBuyRefusal(c, line) === null);
   return idx === -1 ? null : { type: "buyItem", idx };
 }
 
@@ -139,7 +145,9 @@ export function hoarderStorePick(state) {
  *
  * `policy(state, policyRng, ctx)`:
  *   - First, `action = decideAction(state, policyRng, ctx)` — the shipped
- *     fair bot, unmodified. This is a WRAP, never a fork.
+ *     fair bot, unmodified. This is a WRAP, never a fork. (Phase 87 STORE-04:
+ *     the wrapped fair bot now also tops up rations in a store, one per
+ *     purchase, after its gear passes — see tuning-bot.mjs#BOT_RATION_DAYS.)
  *   - Below the farm floor (`state.floor.depth < farmFloor`), `action` is
  *     returned unchanged — a farm-floor-2 run descends exactly like the
  *     honest run until it first reaches floor 2.

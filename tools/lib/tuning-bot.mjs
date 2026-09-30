@@ -30,7 +30,8 @@ import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
 import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
-import { maxCharges } from "../../engine/movement.js";
+import { maxCharges, nightlyEats } from "../../engine/movement.js";
+import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
 import { abilityUnavailableReason } from "../../engine/abilities.js";
@@ -698,6 +699,16 @@ export function makeBotContext(opts = {}) {
 // need in the same run.
 export const GOLD_RESERVE = 50;
 
+// BOT_RATION_DAYS — Phase 87 (STORE-04, user ruling 2026-09-29): the fair bot
+// tops c.rations up to about this many days of its PARTY's ration upkeep
+// (BOT_RATION_DAYS x nightlyEats(state) — the hero's appetite plus each
+// Joiner's, exactly what the daily eat step charges) after its weapon and
+// armour passes. The ration pass deliberately does NOT apply GOLD_RESERVE:
+// that reserve is kept back for "a later repair/food need", and buying food is
+// that need. It is gated by the engine's own storeBuyRefusal instead (purse
+// and the pack's ration cap), so it can never pick a buy the engine refuses.
+export const BOT_RATION_DAYS = 3;
+
 /**
  * RUN_FLAGS — the bot plays the shipped run rules: `storeRoll` enables the
  * depth-rolled store stock. The worn-slot model needs no flag since Phase 45
@@ -772,6 +783,15 @@ function readyWornOfKind(state, ctx, kinds, opts = {}) {
  * Returns `null` when nothing qualifies (including a missing/empty
  * `state.store.stock`) — `decideAction`'s step (l) falls back to
  * `{ type: "leaveStore" }`, exactly the pre-Phase-39 behaviour.
+ *
+ * Ration pass (Phase 87 STORE-04, user ruling 2026-09-29; only reached once
+ * BOTH gear passes find nothing): while `c.rations` is below
+ * `BOT_RATION_DAYS * nightlyEats(state)`, returns the first `buyRations`
+ * line with stock left (`rationsLeft`) that the engine's own
+ * `storeBuyRefusal` lets through (affordable against the whole purse, and
+ * never past the pack's ration cap). ONE ration per call — the caller's next
+ * `decideAction` buys the next — so the pass can never offer a buy the engine
+ * would refuse and `decideAction` can never loop on one.
  */
 export function chooseStorePurchase(state, ctx) {
   const stock = state.store && Array.isArray(state.store.stock) ? state.store.stock : null;
@@ -815,6 +835,15 @@ export function chooseStorePurchase(state, ctx) {
     }
   }
   if (armorIdx !== null) return { type: "buyItem", idx: armorIdx };
+
+  // Ration pass (Phase 87 STORE-04): top up to BOT_RATION_DAYS of party upkeep.
+  if ((c.rations || 0) < BOT_RATION_DAYS * nightlyEats(state)) {
+    for (let i = 0; i < stock.length; i++) {
+      const line = stock[i];
+      if (line.effectId !== "buyRations" || line.sold || rationsLeft(line) <= 0) continue;
+      if (storeBuyRefusal(c, line) === null) return { type: "buyItem", idx: i };
+    }
+  }
 
   return null;
 }
