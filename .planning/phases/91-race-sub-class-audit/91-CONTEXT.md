@@ -55,6 +55,9 @@ Requirements: IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-
 - **Joiner Bards** sing once per fight, automatically on their turn.
 - Today: one song per 100 squares, always the highest of five fixed songs up to the Bard's level (`engine/combat.js` `SONGS`).
 
+### School limits are stated and enforced (user, 2026-09-30, mid-run)
+- Phase 90 builds the new Special and Illusion spells and enforces the school gates for them (see `90-CONTEXT.md`, "School gates hold for the new spells"). This audit checks every Magic User sub-class row: its blurb names the schools it can never learn, the Cleric's new offense ban (IDENT-15) joins the same gate data, and the identity proof tests cover each school limit.
+
 ### Gates (milestone)
 - Greenfield: no dual code paths; old saves tolerant-load only.
 - New rolls from derived streams; existing draws never reorder.

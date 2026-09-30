@@ -41,6 +41,12 @@ Requirements: SPELL-08, SPELL-09, SPELL-10, SPELL-11, SPELL-12, ABIL-06, ABIL-07
 - **Reuse existing engine effects where they fit** (flight, invisibility, wards, stun/sleep, to-hit changes, the teleport path); a new system only where a spell cannot work otherwise.
 - **Full integration:** new spells join the Magic User pools and school gates (`content/mu-chart.js`, keeping the gates meaningful), scrolls and store stock like every spell, each with its `EVENT_NARRATION` entry, rail twin and Grimoire entry.
 
+### School gates hold for the new spells (user, 2026-09-30, mid-run)
+- **User:** "We need to make sure that sub-classes or races that cannot cast [Special] or illusionist spell schools are properly excluded after we add those."
+- **Rule:** every new Special and Illusion spell obeys the existing school gates: a sub-class whose `MU_CHART` school is `null` never learns, is dealt, copies or casts it (today: Warlock, Court Mage and Cleric have no Special or Illusion; Sorcerer and Summoner have no Illusion), and a `gate` level is honoured (`engine/derived.js#canLearn` / `schoolGate` / `canCast`). Any race or sub-class rule that forbids a school is honoured the same way.
+- **Every path that hands out a spell is covered:** chargen `rollGrimoire` (hero and Joiner Magic Users), level-up spell picks, the Wizard's day-one pool, copying a scroll into the book (scribing), store and loot scroll offers made for the hero's own book, and the combat spell menu (a forbidden spell never shows as castable). One-shot scroll reading stays under the RULES-10 rule (anyone may try on an intelligence roll; the scroll is consumed) unless the audit finds the text promises otherwise; if it does, that goes to the batched checkpoint.
+- **Pinned:** a seed-sweep test (every Magic User sub-class × a wide seed range × levels 1–5) proves no book ever holds, and no menu ever offers, a spell from a school that sub-class cannot learn, and a content guard fails if a new spell's `s` school is missing from `MU_CHART`. The Summoner's ruled exception (the level-2 Summon from level 1, SPELL-12) is written as an explicit, named exception in the gate data, never a name check scattered in code.
+
 ### Gates (milestone)
 - Greenfield: no dual code paths; old saves tolerant-load only (a saved book holding a removed spell loads tolerantly).
 - New rolls from derived streams; existing draws never reorder.
