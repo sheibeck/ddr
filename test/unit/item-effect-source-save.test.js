@@ -112,12 +112,12 @@ test("relaunch: a Cloak of Flying used and walked keeps src and left exactly, th
 
   const loaded = relaunch(state);
   assert.deepEqual(loaded.c.timers["item:Cloak of Flying"], saved, "the record survives byte-identical");
-  assert.equal(isFlying(loaded.c), true);
+  assert.equal(isFlying(loaded), true);
 
   const events = unequipSlot(loaded, "cloak", [], NO_DRAW());
   assert.equal(endedEvents(events).length, 1, "exactly one itemEffectEnded");
   assert.equal(endedEvents(events)[0].item, "Cloak of Flying");
-  assert.equal(isFlying(loaded.c), false);
+  assert.equal(isFlying(loaded), false);
 });
 
 test("relaunch: validateSave alone (without rehydrate) keeps the record exactly", () => {
@@ -170,7 +170,7 @@ test("tampered: a stale src (the item is no longer in its slot) ends quietly, ne
   state.c.timers["item:Cloak of Flying"].src = { slot: "cloak", n: "Cloak of Flying" };
   const c = load(state).c;
   assert.equal(c.timers["item:Cloak of Flying"].phase, "cooldown");
-  assert.equal(isFlying(c), false);
+  assert.equal(isFlying({ c }), false);
 });
 
 test("tampered: a malformed src (string, array, unknown slot, empty name, wrong name) is treated as missing: linked when worn, ended when not, never throws", () => {
