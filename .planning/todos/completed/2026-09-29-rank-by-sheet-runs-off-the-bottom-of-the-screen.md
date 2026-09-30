@@ -3,6 +3,7 @@ created: 2026-09-30T01:55:00.000Z
 title: Leaderboard RANK BY sheet runs off the bottom of the screen
 area: ui
 milestone: v2.3
+resolves_phase: 87
 files:
   - mazeworld.html:1482-1497
   - src/browser/leaderboardView.js:492
@@ -25,3 +26,6 @@ TBD at planning. Likely fix:
 - Verify at the smallest supported width/height and with the largest text scale (`--mw-text-scale`): the last option is fully visible or reachable by scrolling. Pin with a CSS/source assertion test. The device check goes in the v2.3 batched UAT.
 - Shell-only (CSS). No engine or server changes.
 </content>
+
+## Resolution (Phase 87, 2026-09-30)
+Closed by v2.3 Phase 87 (BOARD-30, plan 87-10): `.mw-lb-sheet-opts` pads its bottom by the system inset on the title-opened panel (the in-game path is already padded by the tab bar), so WILMST and its rule line clear the navigation bar and the list still scrolls. Device checks are in 87-VERIFICATION.md.

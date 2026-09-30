@@ -23,3 +23,6 @@ TBD at planning — outline:
 - Store screen (src/browser/storeScreen.js) shows the remaining count (e.g. "Rations · 7 left").
 - Balance: more food means longer runs and more DAYS. Phase 82's per-floor DAYS cap (daysKey = min(day, 10 × floor)) already stops floor-1 farming from topping the DAYS board, but the milestone-end bot readout should re-measure starvation deaths after this lands (bots only at milestone end).
 - Not part of v2.2 (engine untouched this milestone) unless the user pulls it in.
+
+## Resolution (Phase 87, 2026-09-30)
+Closed by v2.3 Phase 87 (STORE-04, plans 87-02 and 87-03): each store rolls 1-10 rations on the derived "storeRations" stream when it opens, sells one per tap until the count is spent, shows "N left" on the Rations row, refuses a buy at the pack cap before any gold moves, and keeps the count through save and load. The fair bot tops up to three days of party ration upkeep; the DAYS-farm hoarder buys one per purchase to its cap. Device checks are in 87-VERIFICATION.md.

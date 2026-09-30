@@ -3,6 +3,7 @@ created: 2026-09-30T01:45:03.876Z
 title: Leaderboard: race/sub-class in the row detail, long-press to filter by them
 area: ui
 milestone: v2.3
+resolves_phase: 87
 files:
   - src/browser/leaderboardPanel.js:227-262
   - src/browser/leaderboardPanel.js:475-720
@@ -28,3 +29,6 @@ TBD at planning. Outline:
 - Shell-only (no engine, no server). Works on the ME and ALL views alike. Device checks go in the v2.3 batched UAT.
 </content>
 </invoke>
+
+## Resolution (Phase 87, 2026-09-30)
+Closed by v2.3 Phase 87 (BOARD-29, plan 87-09): an expanded row states the race and sub-class; a long press on a row (or the FILTER LIKE THIS button in the detail) opens FILTER BY race / sub-class / both / CANCEL, a pick sets the filters and reloads the board, and the long press never toggles the row. Device checks are in 87-VERIFICATION.md.
