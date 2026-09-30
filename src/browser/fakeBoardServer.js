@@ -28,11 +28,21 @@
 // actually returns; every later module that reads this fake's answer should
 // treat all three as "already there, acknowledged".
 //
+// Phase 87 (BOARD-28): `acceptLegacyDeepKey` (default false) is the DEPTH-key
+// transition mode. The default mirrors the FINAL rules (firebase/
+// firestore.rules: deepKey = floor * 1,000,000 + steps only); with it true the
+// fake mirrors firebase/firestore.transition.rules (the new formula or the
+// shipped 2.2.0 one, floor * 1,000,000 + (999999 - steps), nothing else).
+// Delete the option with the transition files at the 2.3 cutover. The fake
+// also accepts an admin single-field PATCH of a run's deepKey (the way
+// Firestore's IAM-level admin access does), which is what tools/
+// boards-admin.mjs's rekey-deep uses.
+//
 // Pure, DOM-free: never calls a bare global fetch and never reads window,
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
 
-import { RUN_COLLECTION, validateRunDoc, runDocId, LIST_LIMIT_MAX } from "./runDoc.js";
+import { RUN_COLLECTION, validateRunDoc, runDocId, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
 import { validateReport } from "./bugReport.js";
 import { REPORT_LIMITS_COLLECTION, validateLimitStep, decodeLimitDoc } from "./reportLimits.js";
 import { isValidHandle } from "./handles.js";
@@ -134,7 +144,8 @@ function sortRecords(records, orderBy) {
 
 /**
  * createFakeBoardFetch({ config, now, online, existsResponse,
- * anonymousEnabled, runs, tokenTtlMs }) — the in-memory fetchFn factory.
+ * anonymousEnabled, runs, tokenTtlMs, acceptLegacyDeepKey }) — the in-memory
+ * fetchFn factory.
  * Returns { fetchFn, calls, docs, reports, limits, users, banned, setOnline,
  * ban, unban }. Never throws.
  */
@@ -147,6 +158,7 @@ export function createFakeBoardFetch(opts = {}) {
     anonymousEnabled = true,
     runs: seedRuns = [],
     tokenTtlMs = 3600000,
+    acceptLegacyDeepKey = false,
   } = opts;
 
   let online = initialOnline !== false;
@@ -373,15 +385,29 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: commitOkBody(classified.length, nowIso()) };
   }
 
+  // Transition mode (Phase 87 BOARD-28): the one failure the transition rules
+  // forgive is a deepKey equal to the 2.2.0 formula; anything else denies.
+  function runDocValid(clientDoc, validateOpts) {
+    const fails = validateRunDoc(clientDoc, validateOpts);
+    if (fails.length === 0) return true;
+    return (
+      acceptLegacyDeepKey === true &&
+      fails.length === 1 &&
+      fails[0] === "deepkey" &&
+      Number.isInteger(clientDoc.deepKey) &&
+      clientDoc.deepKey === legacyDeepKeyOf(clientDoc)
+    );
+  }
+
   function commitRunCreate(id, write, authKind, authUid) {
     const clientDoc = fromFirestoreFields(write.update.fields);
     if (authKind === "user") {
       if (clientDoc.uid !== authUid) return denied();
       if (id !== runDocId(authUid, clientDoc.hash)) return denied();
       if (banned.has(authUid)) return denied();
-      if (validateRunDoc(clientDoc, { uid: authUid, now: now() }).length > 0) return denied();
+      if (!runDocValid(clientDoc, { uid: authUid, now: now() })) return denied();
     } else if (authKind === "admin") {
-      if (validateRunDoc(clientDoc, { now: now() }).length > 0) return denied();
+      if (!runDocValid(clientDoc, { now: now() })) return denied();
     } else {
       return denied();
     }
@@ -468,6 +494,27 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: {} };
   }
 
+  // Admin-only single-field update of a run's deepKey (updateMask exactly
+  // ["deepKey"]). Mirrors Firestore's IAM admin bypass for a document
+  // PATCH; used by tools/boards-admin.mjs rekey-deep. Clients never reach it
+  // (they get denied()), matching the rules' `allow update: if false`.
+  function handleRunPatch(id, init, query, authKind) {
+    if (authKind !== "admin") return denied();
+    const masks = query.getAll("updateMask.fieldPaths");
+    if (masks.length !== 1 || masks[0] !== "deepKey") return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const rec = runStore.get(id);
+    if (!rec) return notFound();
+    const body = parseJsonBody(init.body);
+    const fields = fromFirestoreFields(body?.fields);
+    if (!Number.isInteger(fields.deepKey)) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const updated = { ...rec, doc: Object.freeze({ ...rec.doc, deepKey: fields.deepKey }), updateTimeIso: nowIso() };
+    runStore.set(id, updated);
+    return {
+      status: 200,
+      body: { name: updated.name, fields: encodeRunDocFields(updated.doc, updated.createdAtIso), createTime: updated.createTimeIso, updateTime: updated.updateTimeIso },
+    };
+  }
+
   function encodeLimitFields(rec) {
     return {
       last: { timestampValue: new Date(rec.lastMs).toISOString() },
@@ -522,7 +569,7 @@ export function createFakeBoardFetch(opts = {}) {
 
   // --- routing --------------------------------------------------------------
 
-  function route(path, method, init, auth) {
+  function route(path, method, init, auth, query) {
     if (path === `${IDENTITY_BASE}/accounts:signUp` && method === "POST") return handleSignUp();
     if (path === `${IDENTITY_BASE}/accounts:delete` && method === "POST") return handleAccountDelete(init);
     if (path === `${SECURETOKEN_BASE}/token` && method === "POST") return handleRefresh(init);
@@ -556,6 +603,7 @@ export function createFakeBoardFetch(opts = {}) {
         const id = suffix.slice("/runs/".length);
         if (method === "GET") return handleRunGet(id);
         if (method === "DELETE") return handleRunDeleteDoc(id, auth.kind);
+        if (method === "PATCH") return handleRunPatch(id, init, query, auth.kind);
       }
       if (suffix.startsWith(`/${BANNED_COLLECTION}/`)) {
         const uid = suffix.slice(BANNED_COLLECTION.length + 2);
@@ -595,7 +643,7 @@ export function createFakeBoardFetch(opts = {}) {
           return;
         }
 
-        const result = route(path, method, init, auth);
+        const result = route(path, method, init, auth, query);
         resolve(jsonResponse(result.status, result.body));
       } catch (err) {
         resolve(jsonResponse(500, errorBody(500, "INTERNAL")));

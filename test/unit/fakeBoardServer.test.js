@@ -28,6 +28,8 @@ import {
   RUN_CLIENT_FIELDS,
   WHEN_SKEW_MS,
   rankKeys,
+  deepKeyOf,
+  legacyDeepKeyOf,
   runDocId,
   createRunCommit,
   handleUpdateCommit,
@@ -510,7 +512,7 @@ test("runQuery: filters/order/limit and non-admin limit gate (missing/over LIST_
   const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
   assert.ok(Array.isArray(hits));
   assert.equal(hits.length, 3);
-  // deep = floor desc, then fewer steps: floor 10 first, floor 5, floor 3
+  // deep = floor desc, then more steps (Phase 87 BOARD-28): floor 10 first, floor 5, floor 3
   const floors = hits.map((h) => Number(h.document.fields.floor.integerValue));
   assert.deepEqual(floors, [10, 5, 3]);
 
@@ -806,6 +808,102 @@ test("seeded runs appear in queries", async () => {
   const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
   assert.equal(hits.length, 1);
   assert.equal(hits[0].document.name, docName(VALID_CONFIG, RUN_COLLECTION, s.id));
+});
+
+/* ================================================================
+   Phase 87 (BOARD-28): the DEPTH key transition mode + admin deepKey patch
+   ================================================================ */
+
+async function createWithDeepKey(server, u, deepKeyFor, overrides = {}) {
+  const doc = docFrom({ uid: u.uid, ...overrides });
+  doc.deepKey = deepKeyFor(doc);
+  const id = runDocId(u.uid, doc.hash);
+  const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
+  return { res, id };
+}
+
+test("BOARD-28 fake: default mirrors the final rules — the legacy deepKey is denied, the new one stored", async () => {
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newUser(server);
+  const legacy = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "aaaaaaa1" });
+  assert.equal(legacy.res.status, 403);
+  const current = await createWithDeepKey(server, u, deepKeyOf, { hash: "aaaaaaa2" });
+  assert.equal(current.res.status, 200);
+  assert.deepEqual(server.docs().map((d) => d.id), [current.id]);
+});
+
+test("BOARD-28 fake: acceptLegacyDeepKey mirrors the transition rules — old or new formula only, every other clause intact", async () => {
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, acceptLegacyDeepKey: true });
+  const u = await newUser(server);
+  const legacy = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "bbbbbbb1" });
+  assert.equal(legacy.res.status, 200);
+  const current = await createWithDeepKey(server, u, deepKeyOf, { hash: "bbbbbbb2" });
+  assert.equal(current.res.status, 200);
+  const neither = await createWithDeepKey(server, u, (d) => deepKeyOf(d) + 1, { hash: "bbbbbbb3" });
+  assert.equal(neither.res.status, 403);
+  const otherClause = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "bbbbbbb4", handle: "not a handle" });
+  assert.equal(otherClause.res.status, 403);
+  assert.equal(server.docs().length, 2);
+});
+
+test("BOARD-28 fake: a runQuery by deepKey DESCENDING puts the same-floor run with more steps first", async () => {
+  const seeds = [
+    seed({ uid: "d1", hash: "00000001", floor: 6, steps: 50 }),
+    seed({ uid: "d1", hash: "00000002", floor: 6, steps: 100 }),
+  ];
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: seeds });
+  const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
+  assert.deepEqual(hits.map((h) => Number(h.document.fields.steps.integerValue)), [100, 50]);
+});
+
+function patchDeepKeyUrl(id, mask = "updateMask.fieldPaths=deepKey") {
+  return `${firestoreUrl(VALID_CONFIG, `/runs/${id}`)}&${mask}`;
+}
+
+function deepKeyBody(value) {
+  return { fields: { deepKey: { integerValue: value } } };
+}
+
+test("BOARD-28 fake: admin PATCH runs/{id} with mask deepKey sets that field alone and bumps updateTime", async () => {
+  let nowMs = Date.parse("2026-09-28T12:00:00.000Z");
+  const s = seed({ uid: "p1", hash: "00000001" });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s], now: () => nowMs });
+  const before = server.docs().find((d) => d.id === s.id);
+  const getBefore = await (await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), { method: "GET" })).json();
+  nowMs += 60000;
+  const res = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
+  assert.equal(res.status, 200);
+  const after = server.docs().find((d) => d.id === s.id);
+  assert.equal(after.deepKey, 5000900);
+  const { deepKey: _b, ...beforeRest } = before;
+  const { deepKey: _a, ...afterRest } = after;
+  assert.deepEqual(afterRest, beforeRest);
+  const getAfter = await (await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), { method: "GET" })).json();
+  assert.notEqual(getAfter.updateTime, getBefore.updateTime);
+  assert.equal(getAfter.createTime, getBefore.createTime);
+});
+
+test("BOARD-28 fake: the deepKey PATCH is refused for a user or no token, a wrong mask, a missing run and a non-integer value", async () => {
+  const s = seed({ uid: "p2", hash: "00000001" });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s] });
+  const u = await newUser(server);
+  const snapshot = JSON.stringify(server.docs());
+
+  const asUser = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900"), u.idToken));
+  assert.equal(asUser.status, 403);
+  const noToken = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900")));
+  assert.equal(noToken.status, 403);
+  const wrongMask = await server.fetchFn(patchDeepKeyUrl(s.id, "updateMask.fieldPaths=floor"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
+  assert.equal(wrongMask.status, 400);
+  const twoMasks = await server.fetchFn(patchDeepKeyUrl(s.id, "updateMask.fieldPaths=deepKey&updateMask.fieldPaths=floor"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
+  assert.equal(twoMasks.status, 400);
+  const noMask = await server.fetchFn(patchDeepKeyUrl(s.id, "x=1"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
+  assert.equal(noMask.status, 400);
+  const missing = await server.fetchFn(patchDeepKeyUrl("nope_00000000"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
+  assert.equal(missing.status, 404);
+  const notInt = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", { fields: { deepKey: { stringValue: "5000900" } } }, FAKE_ADMIN_TOKEN));
+  assert.equal(notInt.status, 400);
+  assert.equal(JSON.stringify(server.docs()), snapshot);
 });
 
 /* ================================================================
