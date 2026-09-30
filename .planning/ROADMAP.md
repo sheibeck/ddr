@@ -27,6 +27,7 @@
 - [ ] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled.
 - [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
+- [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
 - [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
 
 **Sequencing (user standing rules):** bots run ONCE, at the milestone end (Phase 92). Every rule change lands in Phases 87–91, STORE-04 included. The audits drive the fixes, so the item systems (Phase 88) come before the item audit (Phase 89). No phase needs research (user, 2026-09-29).
@@ -103,6 +104,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 **Plans:** 10 plans (waves 1–10, run in order; 87-08's user-gated deploy runs last)
 
 Plans:
+
 - [ ] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
 - [ ] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
 - [ ] 87-03-PLAN.md — STORE-04 UI + bots: "N left" on the Rations row, pack-full reason; fair bot tops up 3 days of party ration upkeep, hoarder buys per ration to its cap; snapshots and bot pins declared
@@ -172,10 +174,27 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 91.1: Value Review: Races, Sub-classes & Abilities (INSERTED)
+
+**Goal**: Every race, sub-class and ability has every system its text names, and earns its place. Anything weak, tiny, one-round or needlessly once-per-combat is surfaced to the user, ruled on, and the approved changes are built.
+**Depends on**: Phase 91 (it reviews the honest, audited numbers from Phases 89–91). User request, 2026-09-29: "iterate over every sub-class and every race and every ability and once again make sure we've accounted for all systems in the text. Or update them as necessary. If a system seems like it provides little or no value to how the game works, surface these things so we can modify them, or add new systems. Also, check for very low bonuses, or effects that only last for a single round. We might want to re-visit once per combat skills again to see if any in there deserve more than once per combat." Flow (user ruling): findings, then the user's rulings (a checkpoint mid-phase), then build what was approved. No bot pass (Phase 92 measures these changes). Gates: greenfield, derived rng streams, narration for every new event, moved fixtures declared.
+**Requirements**: VALUE-01, VALUE-02, VALUE-03, VALUE-04
+**Success Criteria** (what must be TRUE):
+
+  1. A value ledger in `docs/` covers every race, every sub-class and every ability (skills, level-up abilities and active abilities). Each row lists every system its text names and confirms that system exists in the engine, or marks the gap.
+  2. The ledger flags every entry that adds little or nothing to play, every very low bonus (for example a +1 that rarely matters), every effect that lasts a single round, and every once-per-combat ability, each with a recommendation: keep, buff, lengthen, rework, allow more uses, or add a new system.
+  3. The user rules on each flagged entry at a checkpoint before any change is built, and the rulings are recorded in the ledger.
+  4. Every approved change is built, its text updated to match, and each one pinned by a test. Any fixture it moves is declared and regenerated.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 91.1 to break down)
+
 ### Phase 92: Store Economy & Balance Close
 
 **Goal**: A depth-7 hero can't buy out a store, and one bot pass over the finished rules confirms the difficulty curve held.
-**Depends on**: Phases 87–91 (every rule change, STORE-04 included, has landed: bots run ONCE, at the milestone end, never per phase). Sequence inside the phase: the `tools/tune-economy.mjs` readout (ECON-11), then the user confirms the target from it, then the retune (ECON-12, itself a rules change, so its moved store fixtures are declared and regenerated), then the fair-bot pass (TUNE-10). The orchestrator adjusts search parameters on its own, engine changes go to the user, and fit runs follow the checkpointed protocol (blocks of 10). `/gsd-discuss-phase` recommended for ECON-12's target ("about a third to a half of a store" at depth 7). No full test suite after build-only steps, and the release build stays outside this phase.
+**Depends on**: Phases 87–91.1 (every rule change, STORE-04 and the Phase 91.1 value changes included, has landed: bots run ONCE, at the milestone end, never per phase). Sequence inside the phase: the `tools/tune-economy.mjs` readout (ECON-11), then the user confirms the target from it, then the retune (ECON-12, itself a rules change, so its moved store fixtures are declared and regenerated), then the fair-bot pass (TUNE-10). The orchestrator adjusts search parameters on its own, engine changes go to the user, and fit runs follow the checkpointed protocol (blocks of 10). `/gsd-discuss-phase` recommended for ECON-12's target ("about a third to a half of a store" at depth 7). No full test suite after build-only steps, and the release build stays outside this phase.
 **Requirements**: ECON-11, ECON-12, TUNE-10
 **Success Criteria** (what must be TRUE):
 
@@ -212,6 +231,7 @@ Plans:
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
+| 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
 ## Backlog

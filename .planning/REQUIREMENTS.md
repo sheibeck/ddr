@@ -66,6 +66,13 @@
 - [ ] **ECON-11**: A milestone-end readout (`tools/tune-economy.mjs`) measures, for each depth on floors 1–12, the gold a hero holds on reaching a store against that store's total stock price, and breaks gold income down by source.
 - [ ] **ECON-12**: Store prices and gold income are retuned so that at depth 7 a typical hero can afford about a third to a half of a store. The exact target is confirmed with the user from the ECON-11 readout.
 
+### Value review (VALUE) — user request 2026-09-29, Phase 91.1
+
+- [ ] **VALUE-01**: A value ledger covers every race, sub-class and ability. For each one, every system its text names exists and works in the engine, or the text is updated to match.
+- [ ] **VALUE-02**: The ledger surfaces every system that adds little or no value to play, every very low bonus and every effect that lasts only a single round, each with a recommendation (buff, lengthen, rework, cut, or a new system).
+- [ ] **VALUE-03**: Every once-per-combat skill and ability is re-reviewed, with a recommendation on whether it deserves more than one use per combat.
+- [ ] **VALUE-04**: The user rules on each flagged entry before anything is built. Every approved change is built with its text updated and a pinning test, and any fixture it moves is declared.
+
 ### Balance close (TUNE)
 
 - [ ] **TUNE-10**: After every rule change in the milestone lands, one milestone-end bot pass confirms the fair-bot p50 death stays at floor 3–4 and re-measures starvation deaths after STORE-04. Any drift is recorded and retuned with the user.
@@ -106,6 +113,10 @@
 | STORE-04 | Phase 87 | Pending |
 | ECON-11 | Phase 92 | Pending |
 | ECON-12 | Phase 92 | Pending |
+| VALUE-01 | Phase 91.1 | Pending |
+| VALUE-02 | Phase 91.1 | Pending |
+| VALUE-03 | Phase 91.1 | Pending |
+| VALUE-04 | Phase 91.1 | Pending |
 | TUNE-10 | Phase 92 | Pending |
 
-**Coverage:** 22 requirements, 22 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 92: 3). No orphans, no duplicates.
+**Coverage:** 26 requirements, 26 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 91.1: 4, 92: 3). No orphans, no duplicates.

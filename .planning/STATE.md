@@ -2,13 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
+current_phase: 87
+current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
 status: planning
-last_updated: "2026-09-30T01:05:57.007Z"
+stopped_at: v2.3 roadmap created (Phases 87–92); next is Phase 87
+last_updated: "2026-09-30T02:37:10.272Z"
 last_activity: 2026-09-29
+last_activity_desc: v2.3 roadmap created (6 phases, 20/20 requirements mapped)
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 0
-  total_plans: 0
+  total_plans: 10
   completed_plans: 0
   percent: 0
 ---
@@ -153,6 +157,7 @@ detail; the backlog phases are the index.
 - Phase 79.3 inserted after Phase 79: In-app bug reports: ☰ REPORT A BUG → Firestore (delve-die-repeat-6ba5f, Spark) → scheduled GitHub Action files public issues on sheibeck/ddr (user request + rulings 2026-09-28) (URGENT)
 - v2.2 roadmap created 2026-09-28: Phases 82–86 (30 requirements), promoted from backlog 999.13 by the user; order 82 DAYS farming check → 83 server (research flagged) → 84 panel v3 → 85 Play Games out → 86 compliance close.
 - v2.3 roadmap created 2026-09-29: Phases 87–92 (20 requirements), promoted from backlog 999.15 (spell and skill review) and 999.16 (itemization pass), plus player reports #3–#6, #8, #9 and the two 2026-09-28 store todos. Order: 87 player-report fixes (PARTY-11, STORE-04, BOARD-28: the small independent fixes go first so the reported bugs ship even if an audit runs long, PARTY-11 pins the foe-hits-a-Joiner path before ITEM-04 extends it, and BOARD-28's live-backend check against shipped 2.2.0 clients gets the most slack; BOARD-28 sits in its own plan(s), apart from engine work) → 88 item systems (ITEM-02/03/04) → 89 item audit and fixes (ITEM-01/05/06) → 90 spell and skill audit (SPELL-08/09, ABIL-06/07; before 91 so the blurb checks and the Wizard's day-one pool run against audited spells) → 91 race and sub-class audit (IDENT-11..14) → 92 store economy and balance close (ECON-11/12, TUNE-10: bots run once, at the milestone end). No research pass (user). `/gsd-discuss-phase` recommended for ITEM-05 (Phase 89), SPELL-09 and ABIL-07 (Phase 90), IDENT-14 (Phase 91) and ECON-12's target (Phase 92). Release (patch notes agreed first, then `npm run play:release` vc13, the user's Play upload) follows the milestone and is not a phase.
+- Phase 91.1 inserted after Phase 91: Value Review: every race, sub-class and ability accounts for its systems; weak systems, tiny bonuses, one-round effects and once-per-combat limits surfaced for user rulings, then built (user, 2026-09-29)
 
 ## Deferred Items
 
