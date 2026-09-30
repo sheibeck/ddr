@@ -28,6 +28,7 @@
 - [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
 - [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
+- [ ] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update.
 - [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
 
 **Sequencing (user standing rules):** bots run ONCE, at the milestone end (Phase 92). Every rule change lands in Phases 87–91, STORE-04 included. The audits drive the fixes, so the item systems (Phase 88) come before the item audit (Phase 89). No phase needs research (user, 2026-09-29).
@@ -356,6 +357,22 @@ Plans:
 Plans:
 
 - [ ] TBD (run /gsd-plan-phase 91.1 to break down)
+
+### Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles (INSERTED)
+
+**Goal:** Friends recognize each other on the board: every player is named by their Google Play Games name, which is unique and verified by the server, not a rolled @handle that can repeat (user, 2026-09-30: "I want unique handles so friends can recognize each other ... Let's not let handle rerolls be thing"; then "Google / Play Games name"; "Everyone needs a play games handle already.").
+**Requirements**: BOARD-31, BOARD-32, BOARD-33
+**Depends on:** Phase 85's board stack (identity, boardWrites, runQueue, the ☰ account rows). Independent of the engine audits (shell + backend only). Research recommended (flagged): Play Games Services v2 sign-in in the Capacitor shell and a server-verifiable Play Games identity for Firestore without the Firebase SDK (Phase 83 uses plain REST). Live rules deploy just in time, with the release build (standing rule). `/gsd-discuss-phase` required: migration of 2.2.0 handle runs, Compete-OFF/decline behaviour, name changes, Data safety wording.
+**Success Criteria** (what must be TRUE):
+  1. A player with Compete ON is signed in with Play Games and every run they post shows their Play Games name on the board; the server refuses a run whose name is not the poster's own Play Games identity.
+  2. No re-roll exists anywhere; a player's earlier 2.2.0 runs appear under their Play Games name after they sign in on the update.
+  3. A 2.2.0 client's submission is refused by the live rules; the updated client's queue posts normally.
+  4. The store listing, Data safety form text and privacy policy say what the board shows publicly.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 91.2 to break down)
 
 ### Phase 92: Store Economy & Balance Close
 

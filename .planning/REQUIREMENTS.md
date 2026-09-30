@@ -75,6 +75,9 @@
 - [x] **BOARD-29**: Each leaderboard row's expanded detail states the hero's race and sub-class. A long press on a row opens a menu with "filter by this race", "filter by this sub-class", "filter by both" and cancel. Picking one sets the RACE and/or SUB-CLASS filter and reloads the board (user todo 2026-09-29).
 - [x] **BOARD-30**: The RANK BY bottom sheet, and every other leaderboard sheet, fits on screen above the system navigation bar. The last option's description (WILMST) is fully visible at the smallest supported screen and the largest text scale (user todo 2026-09-29).
 - [x] **BOARD-28**: On the DEPTH board, runs that reached the same depth rank by the most steps walked (report #9). Existing server runs rank correctly under the new rule, and submissions from shipped 2.2.0 clients still rank correctly.
+- [ ] **BOARD-31**: The board names every player by their Google Play Games name instead of a rolled @handle, so friends recognize each other and every name is unique. The server accepts a run only under the Play Games identity of the account posting it (verified, not trusted from the client) (user, 2026-09-30).
+- [ ] **BOARD-32**: A handle is never re-rolled: RE-ROLL HANDLE and the handle rewrite path are gone. A player's existing board runs (posted under a 2.2.0 rolled handle) show under their Play Games name once they sign in on the updated app (user, 2026-09-30).
+- [ ] **BOARD-33**: Compete needs Play Games sign-in (every player already has a Play Games profile, user 2026-09-30); shipped 2.2.0 clients' runs are refused until they update (user, 2026-09-30). The live rules deploy ships with the release build; the store listing, Data safety form and privacy policy state what is shown publicly.
 
 ### Store & economy (STORE, ECON)
 
@@ -147,5 +150,8 @@
 | IDENT-21 | Phase 91 | Pending |
 | PARLEY-01 | Phase 91 | Pending |
 | TUNE-10 | Phase 92 | Pending |
+| BOARD-31 | Phase 91.2 | Pending |
+| BOARD-32 | Phase 91.2 | Pending |
+| BOARD-33 | Phase 91.2 | Pending |
 
-**Coverage:** 26 requirements, 26 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 91.1: 4, 92: 3). No orphans, no duplicates.
+**Coverage:** 29 requirements, 29 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 91.1: 4, 91.2: 3, 92: 3). No orphans, no duplicates.
