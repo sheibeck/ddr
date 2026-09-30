@@ -63,6 +63,15 @@ Requirements: SPELL-08, SPELL-09, SPELL-10, SPELL-11, SPELL-12, ABIL-06, ABIL-07
 - **Every path that hands out a spell is covered:** chargen `rollGrimoire` (hero and Joiner Magic Users), level-up spell picks, the Wizard's day-one pool, copying a scroll into the book (scribing), store and loot scroll offers made for the hero's own book, and the combat spell menu (a forbidden spell never shows as castable). One-shot scroll reading stays under the RULES-10 rule (anyone may try on an intelligence roll; the scroll is consumed) unless the audit finds the text promises otherwise; if it does, that goes to the batched checkpoint.
 - **Pinned:** a seed-sweep test (every Magic User sub-class × a wide seed range × levels 1–5) proves no book ever holds, and no menu ever offers, a spell from a school that sub-class cannot learn, and a content guard fails if a new spell's `s` school is missing from `MU_CHART`. The Summoner's ruled exception (the level-2 Summon from level 1, SPELL-12) is written as an explicit, named exception in the gate data, never a name check scattered in code.
 
+### Checkpoint Q1–Q6 answered early (user, 2026-09-30, before 90-01 ran)
+The known questions in 90-01's batched checkpoint were put to the user ahead of the audit. 90-01 records these in `docs/SPELL-AUDIT.md` `## Rulings` without re-asking; its checkpoint then asks only Q7 onward (the balance-moving mismatches the audit finds). If the audit finds nothing balance-moving, the checkpoint is skipped.
+- **Q1 Strength's reach: A.** Every damage roll the hero makes: each weapon blow (both blows of a double strike) and each damage spell's roll as it lands (each foe of an area spell, each Fireballs bolt); a damage-over-time tick gets none. -> 90-03
+- **Q2 Petrify's experience: A.** The stone foe pays its experience like any kill and drops no coin or treasure. -> 90-04
+- **Q3 Which sleeps wake on a hit: A.** Only Doze's. -> 90-05
+- **Q4 Doze's reach: A.** Exactly d4 foes, your target first. -> 90-05
+- **Q5 Ice's shape: A.** No to-hit roll; every foe takes d10 + level²; a survivor is frozen d4 rounds unless it resists (the resist stops only the freeze). -> 90-05
+- **Q6 The school bonus's step: A.** +10 squares per point on a square-timed new spell, +1 round per point on a round-timed one. -> 90-07, 90-08
+
 ### Gates (milestone)
 - Greenfield: no dual code paths; old saves tolerant-load only (a saved book holding a removed spell loads tolerantly).
 - New rolls from derived streams; existing draws never reorder.

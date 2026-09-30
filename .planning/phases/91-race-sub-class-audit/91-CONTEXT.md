@@ -59,6 +59,16 @@ Requirements: IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-
 ### School limits are stated and enforced (user, 2026-09-30, mid-run)
 - Phase 90 builds the new Special and Illusion spells and enforces the school gates for them (see `90-CONTEXT.md`, "School gates hold for the new spells"). This audit checks every Magic User sub-class row: its blurb names the schools it can never learn, the Cleric's new offense ban (IDENT-15) joins the same gate data, and the identity proof tests cover each school limit.
 
+### Checkpoint Q1–Q7 answered early (user, 2026-09-30, before 91-01 ran)
+The known questions in 91-01's batched checkpoint were put to the user ahead of the audit. 91-01 records these in `docs/IDENTITY-AUDIT.md` `## Rulings` without re-asking; its checkpoint then asks only Q8 onward (the balance-moving mismatches the audit finds). If the audit finds nothing balance-moving, the checkpoint is skipped.
+- **Q1 Pickpocket's gold take: B.** The extra item (IDENT-18) REPLACES the extra-gold take: `gainWilmst`'s Pickpocket bonus goes away; the blurb states the extra item and the shop drawback only. -> 91-08 (engine + pin), 91-10 (text)
+- **Q2 Cleric hit points: A.** No new HP rule; the blurb states the real trade (chain mail, a shield, +1 to hit over other Magic Users) and the offense ban. -> 91-10
+- **Q3 A Cleric's offense scroll: B.** RULES-10 stands: a scroll that rolls an offense spell still casts for a Cleric (the scroll pays for itself). The offense ban covers the Cleric's own grimoire and learning only; the Cleric blurb says so plainly (e.g. "cannot learn or cast offensive spells, though a scroll will still fire one"). No engine change in 91-09; pin that the scroll path still casts for a Cleric. -> 91-09 (pin), 91-10 (text)
+- **Q4 Wilmsry potions: A.** Every healing potion the Wilmsry drinks heals double (found Healing and Xtra Healing too). -> 91-09
+- **Q5 Race prices on selling: A.** Stores pay every race the ordinary price; the race multiplier is a buying rule only. -> 91-08 (with the Troll prices)
+- **Q6 Fridgian frenzy after a kill: A.** The second swing is lost; the text says so. -> 91-10
+- **Q7 Body traits on a Joiner: A.** A Joiner's own race and skill traits that protect its body apply like the hero's (a Fridgian Joiner's hide soaks 2 of every blow; Hardiness likewise). -> 91-09
+
 ### Gates (milestone)
 - Greenfield: no dual code paths; old saves tolerant-load only.
 - New rolls from derived streams; existing draws never reorder.
