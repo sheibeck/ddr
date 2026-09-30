@@ -7531,8 +7531,11 @@ window.__mzClassicBoot = async function classicBoot() {
   document.addEventListener("pointerup", (e) => foeLongPress.up({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
   document.addEventListener("pointercancel", () => foeLongPress.cancel(), true);
   document.addEventListener("scroll", () => foeLongPress.cancel(), true);
+  // Phase 87 (BOARD-29): this one suppressor also serves the board-row press
+  // (boardRowLongPress, declared below): each recognizer only ever reports
+  // true for its own fired press, so at most one of them swallows a click.
   window.addEventListener("click", (e) => {
-    if (!foeLongPress.consumeClick()) return;
+    if (!foeLongPress.consumeClick() && !boardRowLongPress.consumeClick()) return;
     e.stopPropagation();
     e.preventDefault();
   }, true);
@@ -7552,7 +7555,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // - move/up/cancel and scroll listen on document in the capture phase, so a
   //   re-render that replaces the pressed row mid-hold still reports the
   //   pointer and a scroll of the list cancels the press.
-  // - The click suppressor listens on WINDOW in the capture phase: after a
+  // - The click suppressor is the foe block's one WINDOW capture-phase click
+  //   listener above (it asks this recognizer too): after a
   //   fired long press it swallows the trailing click exactly once, before the
   //   row's own onclick, so the press never also opens or closes the row.
   // - contextmenu is prevented on a row (with the .mw-lb-row CSS, no text
@@ -7584,11 +7588,6 @@ window.__mzClassicBoot = async function classicBoot() {
   document.addEventListener("pointerup", (e) => boardRowLongPress.up({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
   document.addEventListener("pointercancel", () => boardRowLongPress.cancel(), true);
   document.addEventListener("scroll", () => boardRowLongPress.cancel(), true);
-  window.addEventListener("click", (e) => {
-    if (!boardRowLongPress.consumeClick()) return;
-    e.stopPropagation();
-    e.preventDefault();
-  }, true);
   document.getElementById("screen-dead")?.addEventListener("contextmenu", (e) => {
     if (pressedBoardRow(e) !== null) e.preventDefault();
   });

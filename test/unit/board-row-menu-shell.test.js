@@ -117,7 +117,7 @@ test("pins: boardRowLongPress is built with createLongPress, injected timers, an
   );
 });
 
-test("pins: the gesture listeners — pointerdown on #screen-dead arms only on .mw-lb-row[data-key]; document move/up/cancel/scroll in capture; the window capture click suppressor; contextmenu", () => {
+test("pins: the gesture listeners — pointerdown on #screen-dead arms only on .mw-lb-row[data-key]; document move/up/cancel/scroll in capture; the shared window capture click suppressor; contextmenu", () => {
   assert.match(CODE, /closest\("\.mw-lb-row\[data-key\]"\)/);
   const down = sliceFrom(CODE, 'document.getElementById("screen-dead")?.addEventListener("pointerdown"', 500);
   assert.match(down, /boardRowLongPress\.cancel\(\)/, "a press off a row cancels");
@@ -127,12 +127,14 @@ test("pins: the gesture listeners — pointerdown on #screen-dead arms only on .
   assert.match(CODE, /document\.addEventListener\("pointercancel", \(\) => boardRowLongPress\.cancel\(\), true\);/);
   assert.match(CODE, /document\.addEventListener\("scroll", \(\) => boardRowLongPress\.cancel\(\), true\);/);
   assert.equal((CODE.match(/boardRowLongPress\.consumeClick\(\)/g) || []).length, 1);
-  const click = sliceFrom(CODE, "if (!boardRowLongPress.consumeClick()) return;", 200);
+  // The trailing-click suppressor is the shell's one window capture listener
+  // (ui-tap-shell pins exactly one); it asks both recognizers.
+  assert.equal((CODE.match(/window\.addEventListener\("click"/g) || []).length, 1);
+  const click = sliceFrom(CODE, 'window.addEventListener("click", (e) => {', 700);
+  assert.match(click, /foeLongPress\.consumeClick\(\) && !boardRowLongPress\.consumeClick\(\)/);
   assert.match(click, /e\.stopPropagation\(\);/);
   assert.match(click, /e\.preventDefault\(\);/);
-  const clickStart = CODE.lastIndexOf('window.addEventListener("click"', CODE.indexOf("boardRowLongPress.consumeClick()"));
-  assert.ok(clickStart !== -1, "the suppressor is a window click listener");
-  assert.match(sliceFrom(CODE.slice(clickStart), 'window.addEventListener("click"', 300), /\}, true\);/, "in the capture phase");
+  assert.match(click, /\}, true\);/, "in the capture phase");
   const menu = sliceFrom(CODE, 'document.getElementById("screen-dead")?.addEventListener("contextmenu"', 300);
   assert.match(menu, /preventDefault\(\)/);
   // No click listener on the host or the rows: the row's own tap keeps working.
