@@ -433,7 +433,6 @@ const CLAMP_PATTERNS = [
  * carry no hero/member HP at all). Keyed by file and the exact clamp text. */
 const CLAMP_ALLOWLIST = [
   { file: "engine/foeAbilities.js", text: "f.wp = Math.min(f.maxWP, f.wp + amt)", why: "a foe's own Heal ability; foeHealed already reports the clamped amount" },
-  { file: "engine/foeAbilities.js", text: "f.wp = Math.min(f.maxWP, f.wp + dmg)", why: "a foe's life-drain heals the foe, not the hero" },
   { file: "engine/foeAbilities.js", text: "f.wp = Math.min(f.maxWP, f.wp + hit.applied)", why: "a foe's life-drain heals the foe, not the hero" },
   { file: "engine/scrollFumble.js", text: "t.wp = Math.min(t.maxWP, t.wp + amount)", why: "a fumbled heal lands on a foe; fumbleOnFoe already reports the clamped amount" },
   { file: "engine/combat.js", text: "const amount = Math.min(f.maxWP - f.wp, foeRegenRng.d(8))", why: "foe Regeneration; foeRegenerated already reports the clamped amount" },

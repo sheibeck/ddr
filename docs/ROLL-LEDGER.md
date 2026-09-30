@@ -1239,3 +1239,27 @@ adds 1d20+10 WP to 1d6".
   a heal at full hp gains 0 and is still narrated.
 - **The Pendant of Fortitude adds no roll.** Its armed charge is bookkeeping
   (`halfNext = { slot, n }`); disarming draws nothing.
+
+## Phase 89 plan 04: a Joiner's armour soaks foe hits (ITEM-07, user 2026-09-30)
+
+"Let their armor soak damage. Just like players."
+
+- **One soak die per landed blow on an armoured Joiner, from a derived
+  stream.** `applyFoeDamageToMember` (engine/combat.js) rolls the Joiner's
+  soak d20 through `rollCheck(derivedRng(<main rng cursor>, "memberSoak",
+  <C.round>, <foe index>, <swing>, <party index>), 20, atLeastFor(soakAr,
+  20))`, roll-high, the same check the hero's soak is (`armorSoak(sheet)` on
+  the Joiner's own sheet, doubled to a cap of 20 under its own Taunt). The
+  main rng is only READ for its cursor, never advanced, so no existing draw
+  reorders. A melee swing passes its swing index; a bolt passes -1.
+- **No die when there is nothing to soak with.** A Joiner with no armour
+  (AR 0 or 0 durability, a Fridgian), a drain, a no-armour foe, and a blow
+  that arrives at 0 draw no soak die. A solo fight never reaches the helper.
+- **Roll-high draw inventory for `engine/combat.js` moves one:** rollCheck
+  22 -> 23 (the soak call). `engine/foeAbilities.js` does not move (the
+  member bolt's damage die is the same `rollDice` call, same position).
+- **The check direction is the hero's.** Roll at or above the threshold
+  soaks, a die exactly at the threshold soaks; no new check was flipped.
+- **The pipeline order moved for a Joiner only.** The round-damage ceiling
+  now sits before the Brace (the hero's order) instead of after it: a Brace
+  halves the ceilinged blow, and the Pendant halves it first.
