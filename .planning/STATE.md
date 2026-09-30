@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 87
 current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
 status: executing
-stopped_at: Completed 87-05-PLAN.md
-last_updated: "2026-09-30T03:29:51.867Z"
+stopped_at: Completed 87-06-PLAN.md
+last_updated: "2026-09-30T03:36:29.141Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 87 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards ship
 ## Current Position
 
 Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 87 execution started
 
-Progress: [█████░░░░░] 50% (0/6 phases)
+Progress: [██████░░░░] 60% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -270,8 +270,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T03:29:51.831Z
-Stopped at: Completed 87-05-PLAN.md
+Last session: 2026-09-30T03:36:29.105Z
+Stopped at: Completed 87-06-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -471,6 +471,7 @@ Resume file: None
 | Phase 87 P03 | 40min | 2 tasks | 12 files |
 | Phase 87 P04 | 25min | 2 tasks | 5 files |
 | Phase 87 P05 | 30min | 2 tasks | 12 files |
+| Phase 87 P06 | 25min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -832,6 +833,7 @@ Resume file: None
 - [Phase ?]: 87-03: fair bot ration target = BOT_RATION_DAYS (3) x nightlyEats(state), gated by storeBuyRefusal not GOLD_RESERVE; store row count via storeCountText
 - [Phase ?]: 87-04: local DEPTH/LINEAGE/GRAVEYARD rank floor desc then MOST steps; stored records re-rank via sanitizeBests, no migration
 - [Phase ?]: 87-05: deepKey = floor*1e6 + steps (DEPTH ties by most steps); transition rules accept old or new formula only; legacyDeepKeyOf is transition-only; nothing deployed (87-08 is the user's go)
+- [Phase ?]: 87-06: rekey-deep is dry-run by default (--yes writes), scoped like export, single-field deepKey PATCH; fake board default mirrors final rules, acceptLegacyDeepKey mirrors transition rules
 
 ### Blockers
 
