@@ -6,14 +6,14 @@ current_phase: 89
 current_phase_name: Item Audit & Fixes
 status: executing
 stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
-last_updated: "2026-09-30T18:54:23.866Z"
+last_updated: "2026-09-30T20:03:03.077Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 89 execution started
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 46
-  completed_plans: 18
+  completed_plans: 19
   percent: 29
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 ## Current Position
 
 Phase: 89 (Item Audit & Fixes) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 89 execution started
 
-Progress: [████░░░░░░] 39% (2/7 phases)
+Progress: [████░░░░░░] 41% (2/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -275,7 +275,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30T15:00:16.664Z
-Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 executing: 89-01..04 merged (master 3d2f5d3b, suite 8,368/8,366/0/2); 89-05 RUNNING in worktree .claude/worktrees/agent-a5d03c0d10f621c5e (branch worktree-agent-a5d03c0d10f621c5e, base 3d2f5d3bf1f495f2f7aa0016bd4227548dfe99ff) — on its hand-back: merge --no-ff, remove worktree + branch, npm test, roadmap.update-plan-progress 89 89-05 complete, state.advance-plan, commit tracking, then dispatch 89-06 (then 07..10 strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1 and 92 still need discuss (91.1 after 91; 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
+Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 executing: 89-01..05 merged (suite 8,480/8,478/0/2); 89-06 RUNNING (see git worktree list for its path/branch; base = the tracking commit after the 89-05 merge) — on its hand-back: merge --no-ff, remove worktree + branch, npm test, roadmap.update-plan-progress 89 89-06 complete, state.advance-plan, commit tracking, then dispatch 89-07 (then 08..10 strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1 and 92 still need discuss (91.1 after 91; 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
 
 - (history below is the pre-close record)
 
