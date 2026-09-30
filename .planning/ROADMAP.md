@@ -101,12 +101,12 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. An expanded leaderboard row states the hero's race and sub-class. Long-pressing a row offers "filter by race / sub-class / both", and picking one sets those filters and reloads the board. The long press never also toggles the row.
   5. The RANK BY sheet, and every other leaderboard sheet, shows its last option (WILMST and its description) in full above the navigation bar at the smallest screen and the largest text scale.
 
-**Plans:** 10 plans (waves 1–10, run in order; 87-08's user-gated deploy runs last)
+**Plans:** 1/10 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
+- [x] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -255,7 +255,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 0/TBD | Not started | - |
+| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 1/10 | In Progress|  |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 0/TBD | Not started | - |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |

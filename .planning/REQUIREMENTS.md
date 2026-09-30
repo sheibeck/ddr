@@ -52,7 +52,7 @@
 
 ### Party bug (PARTY)
 
-- [ ] **PARTY-11**: When a foe hits a Joiner, the Joiner loses that hp, and YOUR LOT, the Hero Company and every other party display show the loss (report #5: "Cave Bear turns on Zell Bonecrack for 11 hp", still 30/30).
+- [x] **PARTY-11**: When a foe hits a Joiner, the Joiner loses that hp, and YOUR LOT, the Hero Company and every other party display show the loss (report #5: "Cave Bear turns on Zell Bonecrack for 11 hp", still 30/30).
 
 ### Leaderboard (BOARD)
 
@@ -106,7 +106,7 @@
 | SPELL-09 | Phase 90 | Pending |
 | ABIL-06 | Phase 90 | Pending |
 | ABIL-07 | Phase 90 | Pending |
-| PARTY-11 | Phase 87 | Pending |
+| PARTY-11 | Phase 87 | Complete |
 | BOARD-28 | Phase 87 | Pending |
 | BOARD-29 | Phase 87 | Pending |
 | BOARD-30 | Phase 87 | Pending |

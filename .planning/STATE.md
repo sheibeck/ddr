@@ -4,16 +4,16 @@ milestone: v2.3
 milestone_name: Truth in Advertising
 current_phase: 87
 current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
-status: planning
-stopped_at: v2.3 roadmap created (Phases 87–92); next is Phase 87
-last_updated: "2026-09-30T02:37:10.272Z"
+status: executing
+stopped_at: Completed 87-01-PLAN.md
+last_updated: "2026-09-30T02:46:48.355Z"
 last_activity: 2026-09-29
-last_activity_desc: v2.3 roadmap created (6 phases, 20/20 requirements mapped)
+last_activity_desc: Phase 87 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Milestone v2.3 Truth in Advertising — roadmap created (Phases 87–92, 20/20 requirements mapped): 87 player-report fixes (Joiner hp, d10 rations, DEPTH ties) → 88 item systems → 89 item audit and fixes → 90 spell and skill audit → 91 race and sub-class audit → 92 store economy and balance close (the bots run once, at the end)
+**Current focus:** Phase 87 — Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties
 
 ## Current Position
 
-Phase: 87 of 92 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — not started
-Plan: —
-Status: Roadmap created; Phase 87 ready to plan (no phase needs research; /gsd-discuss-phase recommended for Phases 89, 90, 91 and 92)
-Last activity: 2026-09-29 — v2.3 roadmap created (6 phases, 20/20 requirements mapped)
+Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
+Plan: 2 of 10
+Status: Ready to execute
+Last activity: 2026-09-29 — Phase 87 execution started
 
-Progress: [░░░░░░░░░░] 0% (0/6 phases)
+Progress: [█░░░░░░░░░] 10% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -270,8 +270,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T01:05:57.007Z
-Stopped at: v2.3 roadmap created (Phases 87–92); next is Phase 87
+Last session: 2026-09-30T02:46:48.318Z
+Stopped at: Completed 87-01-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -466,6 +466,7 @@ Resume file: None
 | Phase 86 P01 | 45min | 2 tasks | 4 files |
 | Phase 86 P04 | 27min | 2 tasks | 2 files |
 | Phase 86-compliance-device-close P05 | 38min | 2 tasks | 3 files |
+| Phase 87 P01 | 25min | 2 tasks | 4 files |
 
 ## Decisions
 
@@ -822,6 +823,7 @@ Resume file: None
 - [Phase ?]: The www/ network-API audit for 86-04 was widened beyond the plan's literal fetch\( grep to also catch fetch.bind( call sites, since board/identity/bug-report code injects fetchFn rather than calling fetch( directly
 - [Phase ?]: 86-04: Cross-checked LISTING.md's Data safety rows against darktier-studio's pushed apps.astro (86-02, commit 82912a9) — no mismatch found, apps.astro left untouched
 - [Phase ?]: 86-04: Kept LISTING.md's 'rules came from a binder' framing (unlike the website copy) — left for the user's discretion, not changed
+- [Phase ?]: 87-01: Joiner live hp fixed in the presentation layer (memberLiveWp by partyIdx); Joiner armour soak is a Phase 89 ITEM-06 finding, not built
 
 ### Blockers
 
