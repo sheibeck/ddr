@@ -290,7 +290,12 @@ test("tabs read, never tick: conditionsOf ten times leaves the state deep-equal"
   assert.deepStrictEqual(cast, before);
 });
 
-test("one tick site: the only tickSquares( call outside engine/effects.js is engine/movement.js, once", () => {
+// Phase 89 plan 05 (ITEM-07): before, movement.js held ONE tickSquares( call (the
+// hero's); now it holds two, both inside move's one per-step tick block: the
+// hero's and each Joiner's own item timers (`tickSquares(m, cost)`). Still the
+// only file with one, still only on a step, and only movement ticks the
+// `spell:reveal` window (a Joiner's timers never carry one).
+test("one tick site: the only tickSquares( calls outside engine/effects.js are engine/movement.js's per-step tick, the hero's and each Joiner's", () => {
   const sites = [];
   for (const name of fs.readdirSync(ENGINE_DIR).filter((f) => f.endsWith(".js") && f !== "effects.js")) {
     const src = fs
@@ -300,7 +305,7 @@ test("one tick site: the only tickSquares( call outside engine/effects.js is eng
     const n = (src.match(/\btickSquares\s*\(/g) || []).length;
     if (n) sites.push([name, n]);
   }
-  assert.deepEqual(sites, [["movement.js", 1]]);
+  assert.deepEqual(sites, [["movement.js", 2]]);
 });
 
 // --- recast -----------------------------------------------------------------

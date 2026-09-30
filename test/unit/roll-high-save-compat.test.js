@@ -53,6 +53,14 @@
 // index 27 (move N on floor 3), where a Poltergeist's starting wp reads
 // FOE_HP_SCALE (base 0.9 -> 1.2): 9 -> 12. Same draws, same position.
 
+// Phase 89 plan 05 (ITEM-07, 2026-09-30): `expected.hash` re-recorded ONLY
+// (`dead`/`depth`/`actions` still false/3/300; `save`/`dispatched` untouched).
+// A loaded Joiner is dressed the way a new one is (engine/saveState.js runs
+// reconcileWorn on each party member), so the save's Joiner, Denn of Ash
+// Alley (no cloak or jewel), gains an empty `worn: {}` from the load on.
+// Proven state-only: replaying and deleting that empty map re-hashes to the
+// old pin b390924b... exactly. No rule, draw or event moved.
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

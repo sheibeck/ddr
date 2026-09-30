@@ -56,8 +56,13 @@ test("round-trip: a non-empty party serializes and rehydrates losslessly", () =>
   assert.equal(check.ok, true, "a save carrying a full member sheet must validate");
   const rehydrated = rehydrate(check.value);
 
-  assert.deepStrictEqual(rehydrated.party, s.party, "the party must round-trip deep-equal");
-  assert.deepStrictEqual(rehydrated.party[0], member, "the member sheet survives byte-for-byte");
+  // Phase 89 plan 05 (ITEM-07): a loaded Joiner is dressed the way a new one is
+  // (saveState runs reconcileWorn on each party member), so a sheet saved with
+  // no worn map (this Magic User carries no cloak or jewel) loads with an empty
+  // one. Before: the party round-tripped with no new field; now the one additive
+  // field is `worn: {}`. Nothing else changes.
+  assert.deepStrictEqual(rehydrated.party, [{ ...member, worn: {} }], "the party must round-trip deep-equal, plus the empty worn map");
+  assert.deepStrictEqual(rehydrated.party[0], { ...member, worn: {} }, "the member sheet survives byte-for-byte, plus the empty worn map");
 });
 
 test("migration: a pre-Phase-7 save with NO party field rehydrates to party:[] with no other loss", () => {
@@ -105,7 +110,9 @@ test("fail-open: malformed members (party:[null] / bad shapes) are dropped, good
   assert.equal(check.ok, true);
   const rehydrated = rehydrate(check.value);
   assert.equal(rehydrated.party.length, 1, "only the one valid member survives");
-  assert.deepStrictEqual(rehydrated.party[0], good, "the valid member is preserved intact");
+  // Phase 89 plan 05 (ITEM-07): plus the empty worn map a loaded Joiner gains
+  // (see the round-trip test above); the Fighter carries no cloak or jewel.
+  assert.deepStrictEqual(rehydrated.party[0], { ...good, worn: {} }, "the valid member is preserved intact, plus the empty worn map");
 
   // rehydrate() must also fail open on its own if handed a malformed party
   // directly (not just via validateSave).

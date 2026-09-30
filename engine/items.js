@@ -1672,7 +1672,7 @@ function rollPilferFumble(fumbleRng) {
  * in-fight policy checks its own); this only spends and heals. The potion is
  * the hero's stock one, `2d10 + 5` written as `2 * d10 + 5`, doubled for a
  * heal-twice race (RACES[race].heal2x), rolled from the derived stream
- * `derivedRng(<main rng cursor>, "memberPotion", <state.acts>, idx, <potions
+ * `derivedRng(<main rng cursor>, memberPotion, <state.acts>, idx, <potions
  * before the drink>)`: the main rng is only READ for its cursor, never drawn.
  * It spends `sheet.potions` (never the hero's), heals through
  * healPartyMember (its C.allies entry in a fight, its sheet outside one,
