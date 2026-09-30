@@ -200,12 +200,17 @@ const CLOAKS_ROWS = [
     act: { kind: "haste", effect: 50 },
   },
   {
-    // Use-activated (260918-w4n): worn + used, a flat d6 hp back at once,
-    // then twenty squares of rest — the once-per-use faithful reading of the
-    // frozen prototype's "d6 hp back every 20 squares".
+    // Phase 88 (ITEM-03, user 2026-09-30): "The cloak should be active for 30
+    // squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50
+    // squares." Use-activated (260918-w4n) still: worn + used starts a 30-square
+    // window; the instant d6 on use is gone. `act.hot` is the general
+    // heal-over-time record (every / ticks / heal dice), read by
+    // engine/items.js#tickHealOverTime on each squares step: three ticks, a d6
+    // each, at 10, 20 and 30 squares after the use. 30 + 50 = 80 keeps the
+    // once-a-day rule. `eff` stays (it is on every rolled item).
     n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 },
-    txt: "used, a d6 hp back at once; then twenty squares of rest before it works again",
-    act: { kind: "knit", effect: 0, cd: 20 },
+    txt: "used, a d6 hp back every ten squares you walk, three times; then fifty squares before it will do it again",
+    act: { kind: "knit", effect: 30, cd: 50, hot: { every: 10, ticks: 3, heal: { n: 1, sides: 6, bonus: 0 } } },
   },
   // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
   // class — with a wink of the original "weighs nothing" flavor. Use-
@@ -351,7 +356,12 @@ export const SLOT_OF = Object.freeze(
  * the row's own `eff` map (its while-live payload, engine/derived.js#eff) is
  * copied onto BOTH branches as `eff`, but ONLY when it carries at least one
  * key — a row with `eff: {}` (Cloak of Speed, Pendant, Amulet of Stone,
- * every staff/potion) stays byte-identical to before this task. */
+ * every staff/potion) stays byte-identical to before this task.
+ * Phase 88 (ITEM-03): a duration row whose `act.hot` is present is a
+ * HEAL-OVER-TIME activation — `hot: { every, ticks, heal: { n, sides, bonus } }`,
+ * copied frozen onto the record and read by engine/items.js#tickHealOverTime
+ * (a `heal` die every `every` squares of the live window, `ticks` times;
+ * `every * ticks` equals the effect length). */
 function buildActivation(row) {
   if (!row.act) return null;
   const { act } = row;
@@ -364,6 +374,7 @@ function buildActivation(row) {
   }
   const entry = { kind: act.kind, effect: act.effect, cd: act.cd ?? row.every };
   if (hasEff) entry.eff = row.eff;
+  if (act.hot) entry.hot = Object.freeze({ ...act.hot, heal: Object.freeze({ ...act.hot.heal }) });
   return Object.freeze(entry);
 }
 

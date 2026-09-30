@@ -160,16 +160,20 @@ const LINKED_WORN = Object.keys(ACTIVATION_OF).filter(
 
 // ─── the link ────────────────────────────────────────────────────────────────
 
-test("the linked worn set is the twelve the plan names", () => {
+// Phase 88 plan 04 (ITEM-03): the Cloak of Regeneration's effect went from 0
+// (an instant d6) to 30 (a heal-over-time window), so it is now a linked worn
+// effect too: the twelve of plan 01 plus the Regeneration window (CONTEXT
+// "Linked effects"). Before: twelve; after: thirteen.
+test("the linked worn set is the twelve the plan names plus the Cloak of Regeneration's window", () => {
   assert.deepEqual(
     [...LINKED_WORN].sort(),
     [
       "Amulet of Light", "Anklet of Invisibility", "Bracelet of Flight", "Cloak of Armor", "Cloak of Ether",
-      "Cloak of Flying", "Cloak of Invisibility", "Cloak of Speed", "Cloak of Strength", "Gauntlet of the Giant",
-      "Helm of Knowledge", "Ring of Power",
+      "Cloak of Flying", "Cloak of Invisibility", "Cloak of Regeneration", "Cloak of Speed", "Cloak of Strength",
+      "Gauntlet of the Giant", "Helm of Knowledge", "Ring of Power",
     ].sort(),
   );
-  assert.equal(LINKED_WORN.length, 12);
+  assert.equal(LINKED_WORN.length, 13);
 });
 
 test("SOURCE_SLOTS is the three worn keys plus the weapon slot, frozen", () => {

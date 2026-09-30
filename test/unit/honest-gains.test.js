@@ -29,7 +29,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { castSpell, drinkPotion } from "../../engine/magic.js";
-import { useItem } from "../../engine/items.js";
+import { useItem, tickHealOverTime } from "../../engine/items.js";
 import { foeTurn, killFoe, alliesTurn } from "../../engine/combat.js";
 import { useAbility } from "../../engine/abilities.js";
 import { tableFour, findFood, meetFaerie, encounterDot } from "../../engine/encounters.js";
@@ -171,15 +171,22 @@ test("healed (a healing potion item, and an Xtra Healing 'full' potion): `gained
   }
 });
 
-test("cloakRegenerated: `gained` equals the clamped amount; 1 draw", () => {
+// Phase 88 (ITEM-03): the Cloak of Regeneration's use-time instant heal
+// (cloakRegenerated, 1 main-rng draw) is retired; each heal-over-time tick is
+// `healTick`, rolled from a derived stream, so the main rng sees ZERO draws.
+test("healTick: `gained` equals the clamped die (`amount` stays the die); zero main-rng draws", () => {
   const CLOAK = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 }, txt: "" };
-  for (const [missing, expectGained] of [[NEAR, NEAR], [FAR, 6], [0, 0]]) {
+  for (const missing of [NEAR, FAR, 0]) {
     const state = fixedState({ c: { wp: 100 - missing, worn: { cloak: { ...CLOAK } } } });
-    const rng = countingRng([6]);
-    const e = find(useItem(state, { slot: "cloak" }, rng, []), "cloakRegenerated");
-    assert.equal(e.gained, expectGained, `missing ${missing}`);
-    assert.equal(e.amount, expectGained, "amount was already the clamped value");
-    assert.equal(rng.counter.draws, 1);
+    const rng = countingRng([]);
+    useItem(state, { slot: "cloak" }, rng, []);
+    state.steps = 10;
+    state.c.timers["item:Cloak of Regeneration"].left = 21; // nine squares walked; the tenth step ticks
+    const e = find(tickHealOverTime(state, 1, rng, []), "healTick");
+    assert.ok(e.amount >= 1 && e.amount <= 6, `a d6: ${e.amount}`);
+    assert.equal(e.gained, Math.min(missing, e.amount), `missing ${missing}: gained is the clamped die`);
+    assert.equal(state.c.wp, 100 - missing + e.gained, "the hero gained exactly what the event says");
+    assert.equal(rng.counter.draws, 0, "the tick draws nothing from the main rng");
   }
 });
 
