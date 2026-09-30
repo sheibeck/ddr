@@ -891,30 +891,7 @@ export function conditionsOf(state) {
   // live record yields no flight chip at all (a ready-but-unused item is not
   // flying), and a COOLING flight item is reported by the generic
   // itemCooldown loop below like every other item.
-  for (const { key, act, rec } of liveItemEffects(c)) {
-    if (act.kind === "fly") {
-      out.push({ key: "flight", polarity: "good", flight: "charged", remaining: rec.left, cadence: rec.cadence, source: key });
-      continue;
-    }
-    const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
-    if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
-    // Phase 88 (ITEM-03): a heal-over-time item's chip carries the ticks it
-    // still owes (3, 2, 1) — the Regenerating chip's detail.
-    if (act.hot) chip.ticks = healTicksLeft(act, rec);
-    // RULES-11 (Phase 75.2, Plan 02): a live size-stepping item (the
-    // Gauntlet of the Giant, Enlarge, or any future size item) also
-    // carries the item's own step and the hero's CURRENT size name —
-    // never masked, read the same way applyActivation's started event is.
-    if (act.eff && typeof act.eff.size === "number") {
-      chip.step = act.eff.size;
-      chip.size = heroSize(c).name;
-      // Phase 89 (ITEM-05): the item's whole damage bonus, the size step's
-      // plus its own `eff.dmg` bulk (Enlarge 11, the Gauntlet 2) — the same
-      // formula applyActivation's started event uses.
-      chip.dmgTotal = SIZE_DAMAGE_PER_STEP * act.eff.size + (typeof act.eff.dmg === "number" ? act.eff.dmg : 0);
-    }
-    out.push(chip);
-  }
+  for (const chip of liveItemChips(c)) out.push(chip);
 
   // CMBUI-13 (Phase 77): one chip per LIVE duration ability on the hero
   // (Sidestep, Battle Roar, Riposte, Taunt, Smoke — engine/abilities.js's
@@ -988,13 +965,7 @@ export function conditionsOf(state) {
   // insertion order. 260918-w4n: the Cloak of Flying / Bracelet of Flight
   // exclusion is removed — a cooling flight item is reported here exactly
   // like every other cooling item (no more dedicated flight cooldown chip).
-  for (const id of Object.keys(c.timers || {})) {
-    if (!id.startsWith("item:")) continue;
-    const rec = c.timers[id];
-    if (!rec || rec.phase !== "cooldown") continue;
-    const key = id.slice("item:".length);
-    out.push({ key: "itemCooldown", polarity: "good", item: key, remaining: rec.left });
-  }
+  for (const chip of itemCooldownChips(c)) out.push(chip);
 
   // Phase 39 (GEAR-02): one `staffCharges` chip per RECHARGING staff (a
   // `charges:<key>` record, always a cooldown), insertion order. `charges`
@@ -1090,6 +1061,65 @@ export function conditionsOf(state) {
 }
 
 /**
+ * liveItemChips(sheet) — Phase 89 (ITEM-07, plan 06): the one live-item-chip
+ * builder conditionsOf and memberConditionsOf share (one source, no second
+ * enumerator). One chip per LIVE `item:<key>` record on `sheet.timers`
+ * (liveItemEffects), in insertion order: a `flight` chip for a fly-kind
+ * record, otherwise `{ key: <kind>, polarity: "good", remaining, cadence,
+ * source }` plus `might` (a might-kind record), `ticks` (a heal-over-time
+ * record), and `step`, `size` (the wearer's own size name) and `dmgTotal` (a
+ * size item). Moved out of conditionsOf unchanged, so the hero's chips are
+ * byte-identical. Pure, no rng.
+ */
+function liveItemChips(sheet) {
+  const out = [];
+  for (const { key, act, rec } of liveItemEffects(sheet)) {
+    if (act.kind === "fly") {
+      out.push({ key: "flight", polarity: "good", flight: "charged", remaining: rec.left, cadence: rec.cadence, source: key });
+      continue;
+    }
+    const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
+    if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
+    // Phase 88 (ITEM-03): a heal-over-time item's chip carries the ticks it
+    // still owes (3, 2, 1) — the Regenerating chip's detail.
+    if (act.hot) chip.ticks = healTicksLeft(act, rec);
+    // RULES-11 (Phase 75.2, Plan 02): a live size-stepping item (the
+    // Gauntlet of the Giant, Enlarge, or any future size item) also
+    // carries the item's own step and the hero's CURRENT size name —
+    // never masked, read the same way applyActivation's started event is.
+    if (act.eff && typeof act.eff.size === "number") {
+      chip.step = act.eff.size;
+      chip.size = heroSize(sheet).name;
+      // Phase 89 (ITEM-05): the item's whole damage bonus, the size step's
+      // plus its own `eff.dmg` bulk (Enlarge 11, the Gauntlet 2) — the same
+      // formula applyActivation's started event uses.
+      chip.dmgTotal = SIZE_DAMAGE_PER_STEP * act.eff.size + (typeof act.eff.dmg === "number" ? act.eff.dmg : 0);
+    }
+    out.push(chip);
+  }
+  return out;
+}
+
+/**
+ * itemCooldownChips(sheet) — Phase 89 (ITEM-07, plan 06): one `itemCooldown`
+ * chip per duration+cooldown item CURRENTLY cooling (an `item:<key>` record
+ * in `phase: "cooldown"`) on `sheet.timers`, insertion order. Shared by
+ * conditionsOf and memberConditionsOf, moved out of conditionsOf unchanged.
+ * Pure, no rng.
+ */
+function itemCooldownChips(sheet) {
+  const out = [];
+  for (const id of Object.keys(sheet.timers || {})) {
+    if (!id.startsWith("item:")) continue;
+    const rec = sheet.timers[id];
+    if (!rec || rec.phase !== "cooldown") continue;
+    const key = id.slice("item:".length);
+    out.push({ key: "itemCooldown", polarity: "good", item: key, remaining: rec.left });
+  }
+  return out;
+}
+
+/**
  * liveAbilityChips(timers) — CMBUI-13 (Phase 77): the one ability-chip
  * builder conditionsOf and memberConditionsOf share. One `{ key: "ability",
  * ability, polarity: "good", remaining, cadence: "rounds" }` per
@@ -1113,31 +1143,45 @@ function liveAbilityChips(timers) {
 /**
  * memberConditionsOf(state, partyIdx) — CMBUI-13 (Phase 77): the party
  * member's sibling of conditionsOf, with the SAME descriptor shape (ONE
- * source, no parallel chip system: YOUR LOT's member chip row reads this and
- * nothing else). Lists, in order:
- *   - ability {polarity:"good", ability:<id>, remaining:<rounds>, cadence:"rounds"}
- *     — one per live duration ability on `state.party[partyIdx].timers`
+ * source, no parallel chip system: YOUR LOT's member chip row and the Company
+ * panel read this and nothing else). Lists, in order:
+ *   - the member's live ITEM effects, anywhere (Phase 89, ITEM-07, plan 06:
+ *     the same liveItemChips conditionsOf uses — `{ key:<kind>, polarity:"good",
+ *     remaining, cadence, source }` plus `might` / `ticks` / `step`, `size` and
+ *     `dmgTotal` where the hero's carry them, a `flight` chip for a fly kind),
+ *     in `state.party[partyIdx].timers` insertion order;
+ *   - in a fight only: ability {polarity:"good", ability:<id>, remaining:<rounds>,
+ *     cadence:"rounds"} — one per live duration ability on the same timers
  *     (engine/combat.js#startMemberAbilityTimer), insertion order;
- *   - braced  {polarity:"good"} — the member's own Brace, the
+ *   - in a fight only: braced {polarity:"good"} — the member's own Brace, the
  *     `state.combat.allies` entry with this partyIdx carrying `braced`
  *     (engine/combat.js#resolveMemberAbility; consumed by the next landed blow
- *     in foeTurn's member branch).
- * Fight-only: a missing combat gives []. A missing member, a bad index, a
- * sheet with no timers and a malformed state give [] and never throw. Pure:
- * no rng, no mutation, no new serialized field.
+ *     in foeTurn's member branch);
+ *   - halfNext {polarity:"good"} — the member's own armed Pendant of Fortitude,
+ *     anywhere;
+ *   - itemCooldown {polarity:"good", item, remaining} — one per item of the
+ *     member's CURRENTLY cooling, anywhere (itemCooldownChips).
+ * Item chips show with or without a fight so the Company panel can read them
+ * between fights; ability and Brace chips stay fight-only. A missing member, a
+ * bad index, a sheet with no timers and a malformed state give [] and never
+ * throw. Pure: no rng, no mutation, no new serialized field.
  */
 export function memberConditionsOf(state, partyIdx) {
   try {
     if (!state || typeof state !== "object") return [];
-    const C = state.combat;
-    if (!C || typeof C !== "object") return [];
     const party = state.party;
     if (!Array.isArray(party) || !Number.isInteger(partyIdx) || partyIdx < 0 || partyIdx >= party.length) return [];
     const m = party[partyIdx];
     if (!m || typeof m !== "object") return [];
-    const out = liveAbilityChips(m.timers);
-    const entry = Array.isArray(C.allies) ? C.allies.find((a) => a && typeof a === "object" && a.partyIdx === partyIdx) : null;
-    if (entry && entry.braced) out.push({ key: "braced", polarity: "good" });
+    const out = liveItemChips(m);
+    const C = state.combat;
+    if (C && typeof C === "object") {
+      for (const chip of liveAbilityChips(m.timers)) out.push(chip);
+      const entry = Array.isArray(C.allies) ? C.allies.find((a) => a && typeof a === "object" && a.partyIdx === partyIdx) : null;
+      if (entry && entry.braced) out.push({ key: "braced", polarity: "good" });
+    }
+    if (m.halfNext) out.push({ key: "halfNext", polarity: "good" });
+    for (const chip of itemCooldownChips(m)) out.push(chip);
     return out;
   } catch {
     return [];
