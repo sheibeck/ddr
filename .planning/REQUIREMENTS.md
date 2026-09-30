@@ -30,7 +30,7 @@
 - [x] **ITEM-02**: When the player takes off, drops, sells or swaps a used worn item, or the item is destroyed, its activated benefit ends at once with a narrated line. Timed effects carry their source item and slot, which survives save, load and relaunch. Joiners' gear is covered too, so a player can't stack benefits from items they're no longer wearing.
 - [x] **ITEM-03**: A heal-over-time system exists. Once used, the Cloak of Regeneration heals every 10 steps for 30 steps (three ticks), with a narrated line for each tick.
 - [x] **ITEM-04**: The Cloak of Strength stops foe critical hits on its wearer (hero or Joiner) and no longer stops the wearer's own crits. Its activation gets its own chip and name, distinct from the Fighter's Braced.
-- [ ] **ITEM-05**: The Enlarge potion is worth drinking: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage (report #6).
+- [x] **ITEM-05**: The Enlarge potion is worth drinking: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage (report #6).
 - [ ] **ITEM-06**: Every system the item audit finds missing is built or re-ruled and listed in the audit. This includes party-wide item effects such as the Crystal Staff.
 - [ ] **ITEM-07**: Joiners can use the items they carry, and a foe's hit on a Joiner goes through the Joiner's armour soak, just like the hero (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
@@ -112,7 +112,7 @@
 | ITEM-02 | Phase 88 | Complete |
 | ITEM-03 | Phase 88 | Complete |
 | ITEM-04 | Phase 88 | Complete |
-| ITEM-05 | Phase 89 | Pending |
+| ITEM-05 | Phase 89 | Complete |
 | ITEM-06 | Phase 89 | Pending |
 | IDENT-11 | Phase 91 | Pending |
 | IDENT-12 | Phase 91 | Pending |

@@ -186,13 +186,13 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans:** 10 plans
+**Plans:** 2/10 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 89-01-PLAN.md — ITEM-01/ITEM-06: docs/ITEM-AUDIT.md (one row per item: text / engine / canon / verdict), the Systems list, and ONE batched balance checkpoint (Q1 floor-12 limits, Q2 Joiner movement and sense items, Q3 the Magic User Joiner's scroll, Q4 Joiner armour repair, Q5+ audit finds); rulings recorded (autonomous: false)
-- [ ] 89-02-PLAN.md — ITEM-05: Enlarge is Troll-sized (+11 damage = size step +2 plus +9 bulk, foes +1 to hit, 50 squares, price 150), text, lines and chip, declared fixture moves
+- [x] 89-01-PLAN.md — ITEM-01/ITEM-06: docs/ITEM-AUDIT.md (one row per item: text / engine / canon / verdict), the Systems list, and ONE batched balance checkpoint (Q1 floor-12 limits, Q2 Joiner movement and sense items, Q3 the Magic User Joiner's scroll, Q4 Joiner armour repair, Q5+ audit finds); rulings recorded (autonomous: false)
+- [x] 89-02-PLAN.md — ITEM-05: Enlarge is Troll-sized (+11 damage = size step +2 plus +9 bulk, foes +1 to hit, 50 squares, price 150), text, lines and chip, declared fixture moves
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -309,7 +309,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
-| 89. Item Audit & Fixes | 0/TBD | Not started | - |
+| 89. Item Audit & Fixes | 2/10 | In Progress|  |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
