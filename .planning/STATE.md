@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 87
 current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
 status: executing
-stopped_at: Completed 87-02-PLAN.md
-last_updated: "2026-09-30T02:57:05.049Z"
+stopped_at: Completed 87-03-PLAN.md
+last_updated: "2026-09-30T03:10:03.126Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 87 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards ship
 ## Current Position
 
 Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 87 execution started
 
-Progress: [██░░░░░░░░] 20% (0/6 phases)
+Progress: [███░░░░░░░] 30% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -270,8 +270,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T02:57:05.004Z
-Stopped at: Completed 87-02-PLAN.md
+Last session: 2026-09-30T03:10:03.083Z
+Stopped at: Completed 87-03-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -468,6 +468,7 @@ Resume file: None
 | Phase 86-compliance-device-close P05 | 38min | 2 tasks | 3 files |
 | Phase 87 P01 | 25min | 2 tasks | 4 files |
 | Phase 87 P02 | 35min | 2 tasks | 8 files |
+| Phase 87 P03 | 40min | 2 tasks | 12 files |
 
 ## Decisions
 
@@ -826,6 +827,7 @@ Resume file: None
 - [Phase ?]: 86-04: Kept LISTING.md's 'rules came from a binder' framing (unlike the website copy) — left for the user's discretion, not changed
 - [Phase ?]: 87-01: Joiner live hp fixed in the presentation layer (memberLiveWp by partyIdx); Joiner armour soak is a Phase 89 ITEM-06 finding, not built
 - [Phase ?]: [Phase 87-02]: STORE-04 ration stock is a flat d10 from derivedRng(main cursor after openStore draws, 'storeRations', depth), stored as Rations line 'left'; rationsFull refuses over-cap buys before payment; old saves read via rationsLeft (unsold=1, sold=0)
+- [Phase ?]: 87-03: fair bot ration target = BOT_RATION_DAYS (3) x nightlyEats(state), gated by storeBuyRefusal not GOLD_RESERVE; store row count via storeCountText
 
 ### Blockers
 
