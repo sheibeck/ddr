@@ -175,9 +175,11 @@ test("runHash is independent of key insertion order and runHash({}) never throws
 
 // --- compareRuns / boardValue / lineageKey -----------------------------------
 
-test("compareRuns deep: floor desc, then steps asc", () => {
+test("compareRuns deep: floor desc, then steps desc (Phase 87 BOARD-28, report #9)", () => {
   assert.ok(compareRuns("deep", { floor: 5, steps: 900 }, { floor: 4, steps: 10 }) < 0);
-  assert.ok(compareRuns("deep", { floor: 5, steps: 100 }, { floor: 5, steps: 200 }) < 0);
+  assert.ok(compareRuns("deep", { floor: 5, steps: 900 }, { floor: 5, steps: 100 }) < 0, "more steps ranks first on a floor tie");
+  assert.ok(compareRuns("deep", { floor: 5, steps: 100 }, { floor: 5, steps: 900 }) > 0);
+  assert.ok(compareRuns("deep", { floor: 6, steps: 1 }, { floor: 5, steps: 999999 }) < 0, "floor still dominates");
   assert.equal(compareRuns("deep", { floor: 5, steps: 100 }, { floor: 5, steps: 100 }), 0);
 });
 
@@ -206,6 +208,14 @@ test("compareRuns combo/yard order like deep", () => {
   const b = { floor: 6, steps: 50 };
   assert.equal(compareRuns("combo", a, b), compareRuns("deep", a, b));
   assert.equal(compareRuns("yard", a, b), compareRuns("deep", a, b));
+  assert.ok(compareRuns("combo", b, a) < 0, "combo: more steps first (Phase 87)");
+  assert.ok(compareRuns("yard", b, a) < 0, "yard: more steps first (Phase 87)");
+});
+
+test("compareRuns days/kills/purse are unchanged by the Phase 87 DEPTH tie-break", () => {
+  assert.equal(compareRuns("days", { day: 5, floor: 3, steps: 1 }, { day: 5, floor: 3, steps: 900 }), 0);
+  assert.equal(compareRuns("kills", { kills: 5, floor: 3, steps: 1 }, { kills: 5, floor: 3, steps: 900 }), 0);
+  assert.equal(compareRuns("purse", { gold: 5, steps: 1 }, { gold: 5, steps: 900 }), 0);
 });
 
 test("compareRuns: a full tie returns 0 on every board", () => {
@@ -246,7 +256,7 @@ test("lineageKey (Phase 70, D-10) joins race and sub-class with a space, never t
   assert.equal(lineageKey({ race: "Troll" }), "Troll ");
 });
 
-test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, orders floor desc/steps asc/hash asc, never mutates", () => {
+test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, orders floor desc/steps desc/hash asc, never mutates", () => {
   for (const bad of [null, undefined, {}, "x", 5]) assert.deepStrictEqual(lineageRuns(bad, "Human Knight"), []);
 
   const a = { race: "Human", sub: "Knight", floor: 5, steps: 50, hash: "bbbbbbbb" };
@@ -257,7 +267,7 @@ test("lineageRuns (Phase 70, D-12): non-array gives [], filters to the lineage, 
   const input = Object.freeze([a, null, "junk", [1], b, other, c, d]);
 
   const out = lineageRuns(input, "Human Knight");
-  assert.deepStrictEqual(out.map((r) => r.hash), ["cccccccc", "dddddddd", "aaaaaaaa", "bbbbbbbb"]);
+  assert.deepStrictEqual(out.map((r) => r.hash), ["cccccccc", "aaaaaaaa", "bbbbbbbb", "dddddddd"]);
   assert.notEqual(out, input);
   assert.deepStrictEqual(lineageRuns([b, a], "Human Knight").map((r) => r.hash), ["aaaaaaaa", "bbbbbbbb"], "an exact tie always falls to hash ascending");
   assert.deepStrictEqual(lineageRuns([a, b], "Human Knight").map((r) => r.hash), ["aaaaaaaa", "bbbbbbbb"]);
@@ -738,7 +748,7 @@ test("backfillBests(non-array) returns emptyBests()", () => {
   }
 });
 
-test("backfillBests normalizes legacy stones to season 0 with no seed/acts, and orders boards.deep floor desc then steps asc", () => {
+test("backfillBests normalizes legacy stones to season 0 with no seed/acts, and orders boards.deep floor desc then steps desc", () => {
   const graves = [
     legacyStone({ name: "Newest", floor: 5, steps: 10 }),
     legacyStone({ name: "Middle", floor: 8, steps: 20 }),
@@ -915,7 +925,7 @@ test("reconcileBests never mutates its inputs (deep-frozen record and graves pas
 
 // --- sortGraveyard ---------------------------------------------------------------
 
-test("sortGraveyard(60 stones) returns 60 entries ordered floor desc then steps asc, never cut, without mutating input", () => {
+test("sortGraveyard(60 stones) returns 60 entries ordered floor desc then steps desc (Phase 87), never cut, without mutating input", () => {
   const gen = seededGen(321);
   const graves = [];
   for (let i = 0; i < 60; i++) {
@@ -943,4 +953,43 @@ test("sortGraveyard skips invalid stones and keeps ties in input order (a stable
 test("sortGraveyard(non-array) returns []", () => {
   assert.deepStrictEqual(sortGraveyard(null), []);
   assert.deepStrictEqual(sortGraveyard("x"), []);
+});
+
+test("sortGraveyard (Phase 87 BOARD-28): the same-floor stone with more steps comes first", () => {
+  const few = legacyStone({ name: "Few", floor: 5, steps: 100 });
+  const many = legacyStone({ name: "Many", floor: 5, steps: 900 });
+  const shallow = legacyStone({ name: "Shallow", floor: 4, steps: 99999 });
+  assert.deepStrictEqual(sortGraveyard([few, shallow, many]).map((s) => s.name), ["Many", "Few", "Shallow"]);
+});
+
+// --- Phase 87 (BOARD-28, report #9): DEPTH ties go to the most steps ------------
+
+test("sanitizeBests (Phase 87): a deep list stored in the old fewest-steps order re-ranks on load, and a second load is idempotent", () => {
+  const few = makeSummary({ floor: 5, steps: 100, name: "Few" });
+  const many = makeSummary({ floor: 5, steps: 900, name: "Many" });
+  const stored = {
+    v: 1,
+    runs: { [few.hash]: few, [many.hash]: many },
+    boards: { deep: [few.hash, many.hash], days: [], kills: [], purse: [] },
+    last: null,
+  };
+  const once = sanitizeBests(stored);
+  assert.deepStrictEqual(once.boards.deep, [many.hash, few.hash]);
+  assert.deepStrictEqual(sanitizeBests(once), once);
+  assert.equal(once.v, 1, "no record version bump");
+});
+
+test("updateBests (Phase 87): a same-floor run with more steps than the held #1 is a NEW PERSONAL BEST on deep; fewer steps is not", () => {
+  const held = makeSummary({ floor: 5, steps: 100, name: "Held" });
+  const { record: r1 } = updateBests(emptyBests(), held);
+
+  const more = makeSummary({ floor: 5, steps: 300, name: "More" });
+  const rMore = updateBests(r1, more);
+  assert.ok(rMore.newBests.includes("deep"));
+  assert.deepStrictEqual(rMore.record.boards.deep, [more.hash, held.hash]);
+
+  const fewer = makeSummary({ floor: 5, steps: 50, name: "Fewer" });
+  const rFewer = updateBests(r1, fewer);
+  assert.ok(!rFewer.newBests.includes("deep"));
+  assert.deepStrictEqual(rFewer.record.boards.deep, [held.hash, fewer.hash]);
 });

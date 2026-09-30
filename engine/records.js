@@ -68,7 +68,8 @@ export const BOARD_TOP_N = 10;
  * BOARD_IDS — the panel's rail order. LEANEST was retired (Phase 81,
  * BOARD-17: a 1-step death could top a steps-per-floor board, and "deepest,
  * then fewest steps" is exactly DEEPEST's own ordering, leaving no honest
- * LEANEST). LINEAGE and GRAVEYARD moved to the end of the rail as the
+ * LEANEST; Phase 87 later reversed DEEPEST's own tie-break to the MOST steps,
+ * BOARD-28, report #9). LINEAGE and GRAVEYARD moved to the end of the rail as the
  * ME_ONLY_BOARDS (Phase 81, BOARD-13/BOARD-14 — GRAVEYARD's removal was
  * reversed by the user's ruling of 2026-09-25, "Let's keep the graveyard
  * then").
@@ -99,20 +100,22 @@ function field(o, k) {
 
 /**
  * compareRuns(board, a, b) — negative when a ranks above b, 0 on a full tie.
- * deep/combo/yard: floor desc, then steps asc.
+ * deep/combo/yard: floor desc, then steps desc.
+ * Phase 87 (BOARD-28, report #9): ties go to the most steps, reversing BOARD-17.
  * days: day desc, then floor desc. kills: kills desc, then floor desc.
  * purse: gold desc only. An unknown board id always returns 0.
  *
  * LEANEST (squares-per-floor) was retired (Phase 81, BOARD-17): a 1-step
  * death could top a steps-per-floor board, and "deepest, then fewest steps"
- * is exactly DEEPEST's own ordering above, leaving no honest LEANEST.
+ * was exactly DEEPEST's own ordering, leaving no honest LEANEST. The DEEPEST
+ * tie-break itself was reversed in Phase 87 (see above).
  */
 export function compareRuns(board, a, b) {
   switch (board) {
     case "deep":
     case "combo":
     case "yard":
-      return num(field(b, "floor")) - num(field(a, "floor")) || num(field(a, "steps")) - num(field(b, "steps"));
+      return num(field(b, "floor")) - num(field(a, "floor")) || num(field(b, "steps")) - num(field(a, "steps"));
     case "days":
       return num(field(b, "day")) - num(field(a, "day")) || num(field(b, "floor")) - num(field(a, "floor"));
     case "kills":
@@ -154,8 +157,9 @@ export function lineageKey(run) {
 
 /**
  * byLineageOrder(a, b) — the single per-lineage order: compareRuns("combo")
- * (floor desc, then steps asc), then run hash ascending, so two runs tied on
- * floor and steps always come out in the same order.
+ * (floor desc, then steps desc), then run hash ascending, so two runs tied on
+ * floor and steps always come out in the same order. Phase 87 (BOARD-28,
+ * report #9): ties go to the most steps, reversing BOARD-17.
  */
 function byLineageOrder(a, b) {
   const c = compareRuns("combo", a, b);
@@ -168,7 +172,8 @@ function byLineageOrder(a, b) {
 /**
  * lineageRuns(runs, key) — the runs of one lineage, best first (Phase 70,
  * D-12). Keeps only plain-object runs whose lineageKey equals `key`, ordered
- * by the single per-lineage order (floor desc, steps asc, hash asc). This is
+ * by the single per-lineage order (floor desc, steps desc, hash asc; Phase 87
+ * BOARD-28, report #9: ties go to the most steps, reversing BOARD-17). This is
  * the order prune keeps a lineage's top ten by, and the order the
  * Leaderboards LINEAGE view lists them in. A non-array input gives [];
  * always a new array, never mutates its input.
@@ -239,7 +244,10 @@ export function emptyBests() {
  * Phase 66 (D-09): re-ranks every stored list by its board's current
  * comparator, so an older record whose lists were stored in a retired order
  * loads re-ranked; a list already in order is unchanged (Array.prototype.sort
- * is stable), so this is idempotent and needs no record version bump.
+ * is stable), so this is idempotent and needs no record version bump. Phase 87
+ * (BOARD-28) rides on this: a list stored in the old fewest-steps order re-ranks
+ * to most-steps-first on load (and reconcileBests re-folds graveyard stones), so
+ * no migration code exists.
  *
  * Phase 70 (D-12): a legacy Phase 65 `lineage` {count, best} map is ignored
  * — a tolerant load with no version bump. The record is rebuilt from v,
@@ -455,9 +463,10 @@ export function reconcileBests(record, graves) {
 
 /**
  * sortGraveyard(graves) — every valid stone (a plain object with a finite
- * numeric floor), ordered floor desc then steps asc, never cut to ten. Does
+ * numeric floor), ordered floor desc then steps desc, never cut to ten. Does
  * not mutate its input; Array.prototype.sort is stable, so ties keep input
- * order.
+ * order. Phase 87 (BOARD-28, report #9): ties go to the most steps, reversing
+ * BOARD-17.
  */
 export function sortGraveyard(graves) {
   if (!Array.isArray(graves)) return [];
