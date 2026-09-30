@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 87
 current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
 status: executing
-stopped_at: Completed 87-07-PLAN.md
-last_updated: "2026-09-30T03:42:39.569Z"
+stopped_at: Completed 87-09-PLAN.md
+last_updated: "2026-09-30T03:55:04.975Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 87 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards ship
 ## Current Position
 
 Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 87 execution started
 
-Progress: [███████░░░] 70% (0/6 phases)
+Progress: [████████░░] 80% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -270,8 +270,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T03:42:39.534Z
-Stopped at: Completed 87-07-PLAN.md
+Last session: 2026-09-30T03:55:04.940Z
+Stopped at: Completed 87-09-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -473,6 +473,7 @@ Resume file: None
 | Phase 87 P05 | 30min | 2 tasks | 12 files |
 | Phase 87 P06 | 25min | 2 tasks | 4 files |
 | Phase 87 P07 | 20min | 2 tasks | 5 files |
+| Phase 87 P09 | 45min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -836,6 +837,8 @@ Resume file: None
 - [Phase ?]: 87-05: deepKey = floor*1e6 + steps (DEPTH ties by most steps); transition rules accept old or new formula only; legacyDeepKeyOf is transition-only; nothing deployed (87-08 is the user's go)
 - [Phase ?]: 87-06: rekey-deep is dry-run by default (--yes writes), scoped like export, single-field deepKey PATCH; fake board default mirrors final rules, acceptLegacyDeepKey mirrors transition rules
 - [Phase ?]: 87-07: runTransitionProbe duplicates runSmoke closures rather than refactoring the pinned runSmoke; third DEPTH key is deepKeyOf+1
+- [Phase ?]: 87-09: TalkBack announces a row-menu or sheet filter pick by moving focus to the changed RACE/SUB-CLASS picker (no sixth skeleton section)
+- [Phase ?]: 87-09: board-row long-press click suppression shares the shell's single window click listener with the foe press (ui-tap-shell pins exactly one)
 
 ### Blockers
 

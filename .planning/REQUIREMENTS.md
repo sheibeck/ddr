@@ -56,7 +56,7 @@
 
 ### Leaderboard (BOARD)
 
-- [ ] **BOARD-29**: Each leaderboard row's expanded detail states the hero's race and sub-class. A long press on a row opens a menu with "filter by this race", "filter by this sub-class", "filter by both" and cancel. Picking one sets the RACE and/or SUB-CLASS filter and reloads the board (user todo 2026-09-29).
+- [x] **BOARD-29**: Each leaderboard row's expanded detail states the hero's race and sub-class. A long press on a row opens a menu with "filter by this race", "filter by this sub-class", "filter by both" and cancel. Picking one sets the RACE and/or SUB-CLASS filter and reloads the board (user todo 2026-09-29).
 - [ ] **BOARD-30**: The RANK BY bottom sheet, and every other leaderboard sheet, fits on screen above the system navigation bar. The last option's description (WILMST) is fully visible at the smallest supported screen and the largest text scale (user todo 2026-09-29).
 - [ ] **BOARD-28**: On the DEPTH board, runs that reached the same depth rank by the most steps walked (report #9). Existing server runs rank correctly under the new rule, and submissions from shipped 2.2.0 clients still rank correctly.
 
@@ -108,7 +108,7 @@
 | ABIL-07 | Phase 90 | Pending |
 | PARTY-11 | Phase 87 | Complete |
 | BOARD-28 | Phase 87 | Pending |
-| BOARD-29 | Phase 87 | Pending |
+| BOARD-29 | Phase 87 | Complete |
 | BOARD-30 | Phase 87 | Pending |
 | STORE-04 | Phase 87 | Complete |
 | ECON-11 | Phase 92 | Pending |
