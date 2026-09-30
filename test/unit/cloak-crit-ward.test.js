@@ -16,6 +16,33 @@
 // hit. The crit roll still happens (the draws are unchanged); only its
 // doubling is dropped, and the Oracle says so. The wearer's own crits are
 // untouched; Guard, Soldier and the dark keep their own-crit ban.
+//
+// ITEM-04 clauses -> tests (Phase 88 plan 03 closes the list):
+//   hero ward ............... "a foe's top-face swing at a wearer with the cloak
+//                              live lands as an ordinary hit, ..."
+//   Joiner ward ............. "a Joiner with the cloak's effect live takes a
+//                              foe's crit as an ordinary hit; ..."
+//   pursuit strike .......... "a pursuer's parting crit on a fleeing wearer is
+//                              warded"
+//   hero own crits .......... "the wearer's own crits happen again: ..."
+//   Joiner own crits ........ "a Joiner wearing the cloak with its ward live
+//                              still lands its own crits: ..."
+//   Guard / Soldier ban ..... "Guard and Soldier still never crit, cloak or no
+//                              cloak"
+//   chip Crit-proof, not
+//   Braced .................. "the chip: the live cloak shows its own Crit-proof
+//                              chip, never Braced" and "the chip and its name:
+//                              Crit-proof (item) is never the Fighter's Bracing
+//                              (ability), ..." (both chips side by side)
+//   the ward ends with the
+//   cloak (ITEM-02 link) .... "take-off (hero): ...", "swap (hero): a different
+//                              cloak ...", "swap (hero): an identical ... copy",
+//                              "a Joiner sheet: the one end helper ends the
+//                              ward ...", "narration: the ended ward names the
+//                              Cloak of Strength ..."
+//   identity by exact name .. "identity is the exact display name: ..."
+//   empty edge .............. "empty: with no live ward (no cloak, worn but
+//                              unused, or used then taken off) ..."
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -30,6 +57,7 @@ import { startEffect } from "../../engine/effects.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun, validateSave } from "../../engine/saveState.js";
 import { ACTIVATION_OF, CLOAKS } from "../../content/index.js";
+import { ABILITY_BY_ID } from "../../content/abilities.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { HERO_CONDITIONS } from "../../src/browser/heroConditions.js";
@@ -433,6 +461,120 @@ test("a Joiner sheet: the one end helper ends the ward (member named, nothing en
 
   // the helper is idempotent: nothing live is left to end
   assert.deepEqual(endSourceEffects(state, ada, [], { slots: ["cloak"], why: "off" }), []);
+});
+
+// ─── a Joiner's own blows ─────────────────────────────────────────────────
+
+test("a Joiner wearing the cloak with its ward live still lands its own crits: a top-face member strike doubles, ward or no ward", () => {
+  const strike = (worn, rolls) => {
+    const state = joinerFight(worn ? { worn: { cloak: CLOAK } } : {});
+    if (worn) {
+      const rec = startEffect(state.party[0], "item:Cloak of Strength", { squares: 50, cd: 50 });
+      rec.src = { slot: "cloak", n: "Cloak of Strength" };
+      assert.equal(critWardOf(state.party[0]), "Cloak of Strength", "the ward is live");
+    }
+    const rng = fakeRng(rolls);
+    const events = alliesTurn(state, rng, []);
+    return { events, rng, hit: events.find((e) => e.type === "allyStruck") };
+  };
+
+  // raw 1 on the strike die -> its top face (a crit); Club d6 raw 5 -> 1 + 5 = 6, doubled.
+  const warded = strike(true, [1, 5]);
+  assert.equal(warded.rng.draws, 2, "one strike die, one damage die: the ward adds no draw");
+  assert.equal(warded.hit.crit, true, "the member's top face is a crit");
+  assert.equal(warded.hit.dmg, 12, "(1 + 5) * 2");
+  assert.equal(warded.hit.roll, warded.hit.dieN, "the top face of its own die");
+  assert.equal(warded.events.some((e) => e.type === "critWarded"), false, "the ward is for blows taken, never blows dealt");
+
+  // the same blow with no cloak: identical events, so the ward never touches the wearer's own blows
+  const bare = strike(false, [1, 5]);
+  assert.deepStrictEqual(warded.events, bare.events);
+
+  // a non-top face lands as an ordinary blow: the doubling above was the crit
+  const plain = strike(true, [2, 5]);
+  assert.equal(plain.hit.crit, undefined);
+  assert.equal(plain.hit.dmg, 6);
+});
+
+// ─── the chip's own name ──────────────────────────────────────────────────
+
+test("the chip and its name: Crit-proof (item) is never the Fighter's Bracing (ability), and a braced Fighter with a live cloak shows both side by side", () => {
+  const copy = (key) => new RegExp(`\\b${key}:\\s*\\{\\s*label:\\s*"([^"]+)"`).exec(SHELL);
+  const critLabel = copy("critWard");
+  const bracedLabel = copy("braced");
+  assert.ok(critLabel && bracedLabel, "both CONDITION_COPY rows exist");
+  assert.equal(critLabel[1], "Crit-proof");
+  assert.equal(bracedLabel[1], "Bracing");
+  assert.notEqual(critLabel[1], bracedLabel[1]);
+  assert.doesNotMatch(critLabel[1], /brac/i, "the cloak's label never borrows the Brace name");
+
+  const explain = SHELL.slice(SHELL.indexOf("const CONDITION_EXPLAIN"));
+  const critText = /\bcritWard:\s*"([^"]*)"/.exec(explain);
+  const bracedText = /\bbraced:\s*"([^"]*)"/.exec(explain);
+  assert.ok(critText && bracedText, "both CONDITION_EXPLAIN sentences exist");
+  assert.notEqual(critText[1], bracedText[1], "each chip explains itself");
+  assert.doesNotMatch(critText[1], /brac|half damage/i);
+
+  const critEntry = HERO_CONDITIONS.find((e) => e.key === "critWard");
+  const bracedEntry = HERO_CONDITIONS.find((e) => e.key === "braced");
+  assert.equal(critEntry.source, "item", "the cloak's chip comes from an item");
+  assert.equal(bracedEntry.source, "ability", "Brace's chip comes from an ability");
+  assert.equal(bracedEntry.sourceName, ABILITY_BY_ID.brace.name);
+  assert.equal(critEntry.sourceName, undefined, "the cloak's source name is the item's own, read off its record");
+
+  // the activation is its own kind, not an ability id
+  assert.equal(activationFor(CLOAK).kind, "critWard");
+  assert.equal(Object.prototype.hasOwnProperty.call(ABILITY_BY_ID, "critWard"), false, "critWard is not an ability id");
+  assert.equal(Object.prototype.hasOwnProperty.call(ABILITY_BY_ID, "braced"), false);
+  assert.ok(ABILITY_BY_ID.brace, "the Fighter's ability id is brace");
+
+  // side by side: a braced Fighter with the live cloak
+  const state = wearer();
+  state.combat = fixedCombat([fixedFoe()], { braced: true });
+  const chips = conditionsOf(state);
+  const wardChip = chips.find((cn) => cn.key === "critWard");
+  const braceChip = chips.find((cn) => cn.key === "braced");
+  assert.ok(wardChip, "the Crit-proof chip");
+  assert.ok(braceChip, "the Bracing chip");
+  assert.equal(wardChip.source, "Cloak of Strength", "named for the cloak");
+  assert.equal("source" in braceChip, false, "Brace's chip carries no item name");
+  assert.notEqual(wardChip.key, braceChip.key);
+});
+
+// ─── identity: the exact display name ─────────────────────────────────────
+
+test("identity is the exact display name: 'cloak of strength' and 'Cloak of Strength ' have no activation, cannot be used and never ward", () => {
+  for (const n of ["cloak of strength", "Cloak of Strength "]) {
+    const lookalike = { kind: "cloak", n, eff: { critWard: 1 }, txt: "" };
+    assert.equal(activationFor(lookalike), null, `${JSON.stringify(n)} has no activation`);
+    const state = fixedState({ c: { worn: { cloak: lookalike } } });
+    const events = useItem(state, { slot: "cloak" }, fakeRng([]), []);
+    assert.equal(events.some((e) => e.type === "itemEffectStarted"), false, `${JSON.stringify(n)} starts no effect`);
+    assert.equal(Object.keys(state.c.timers || {}).some((id) => id.startsWith("item:")), false, "and leaves no item record");
+    assert.equal(critWardOf(state.c), null);
+    const { hit, events: fight } = heroTopFace(state);
+    assert.equal(hit.critical, true, "a foe top face crits");
+    assert.equal(hit.dmg, 37);
+    assert.equal(fight.some((e) => e.type === "critWarded"), false);
+  }
+});
+
+// ─── empty edge ───────────────────────────────────────────────────────────
+
+test("empty: with no live ward (no cloak, worn but unused, or used then taken off) a foe's top face crits", () => {
+  const noCloak = fixedState();
+  const wornUnused = fixedState({ c: { worn: { cloak: CLOAK } } });
+  const takenOff = wearer();
+  unequipSlot(takenOff, "cloak", [], fakeRng([]));
+  assert.equal(takenOff.c.worn.cloak, undefined, "the cloak is in the bag");
+
+  for (const [label, state] of [["no cloak", noCloak], ["worn but unused", wornUnused], ["used then taken off", takenOff]]) {
+    assert.equal(critWardOf(state.c), null, `${label}: no ward`);
+    const { hit, events } = heroTopFace(state);
+    assert.equal(hit.critical, true, `${label}: the top face crits`);
+    assert.equal(hit.dmg, 37, `${label}: 25 + 2*6`);
+    assert.equal(events.some((e) => e.type === "critWarded"), false, `${label}: no ward is narrated`);
+  }
 });
 
 test("narration: the ended ward names the Cloak of Strength on the Oracle and the rail and says criticals can land again", () => {
