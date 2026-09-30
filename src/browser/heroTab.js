@@ -41,6 +41,14 @@ import { footerLines } from "./identityFooter.js";
 // Phase 87 (PARTY-11, report #5) — a SEPARATE import line: the Company cards read
 // a Joiner's live fight hp through the same helper YOUR LOT uses.
 import { memberLiveWp } from "./partyHp.js";
+// Phase 89 (ITEM-07, plan 07) — a SEPARATE import block: the Company panel's
+// item rows read the engine's own worn-slot list, activation records and the
+// Joiner use refusals' constants (engine/items.js), the ONE item stat text
+// (viewModels.js#itemStatLines) and the timer read (engine/effects.js#remaining).
+import { WORN_SLOTS, activationFor, itemTimerId } from "../../engine/derived.js";
+import { MEMBER_LEADER_KINDS, TARGETED_KINDS } from "../../engine/items.js";
+import { remaining } from "../../engine/effects.js";
+import { itemStatLines, ITEM_STAT_COPY } from "./viewModels.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -559,6 +567,119 @@ function renderGrimoire(doc, state, deps) {
   }
 }
 
+/**
+ * COMPANY_COPY — Phase 89 (ITEM-07, plan 07): every label and line the Company
+ * panel's item rows draw, a frozen leaf-string bank like RATIONS_COPY. House
+ * voice; player-facing text says HP, never WP. `reason` holds the one-line why
+ * a DRINK or USE is off; `leaderOnly` is the docs/ITEM-AUDIT.md Q2 line (the
+ * party-moving and leading items are the one in front's alone).
+ */
+export const COMPANY_COPY = Object.freeze({
+  armour: "Armour",
+  armourNone: "none, bravely",
+  potions: "Healing potions",
+  drink: "DRINK",
+  use: "USE",
+  ready: "ready",
+  live: "live {n} {unit}",
+  armed: "armed",
+  cooling: "cooling {n} {unit}",
+  unit: Object.freeze({ squares: "sq", rounds: "rds" }),
+  inFight: "In a fight they sort out their own potions and gear. Nobody asked you to help.",
+  reason: Object.freeze({
+    inFight: "the fight runs itself",
+    downed: "downed, and not drinking",
+    noPotions: "no potions left",
+    fullHealth: "already at full HP",
+    live: "already working, {n} squares left",
+    armed: "already armed",
+    cooling: "cooling for {n} squares",
+    leaderOnly: "Only the one in front can use this. It moves or leads the party.",
+    wantsTarget: "needs a foe to aim at",
+  }),
+});
+
+/**
+ * companyItemsModel(state, idx) — Phase 89 (ITEM-07, plan 07): the ONE pure
+ * view model for what Joiner `state.party[idx]` carries, read by the Company
+ * panel and nothing else, so every row, label and enabled state is decided
+ * here and testable in node. It restates no rule: each refusal mirrors the
+ * engine's own memberUseItem / memberUseWorn ladder (noMember for a downed
+ * Joiner, inCombat, noPotions, fullHealth; per worn item leaderOnly
+ * (MEMBER_LEADER_KINDS), combatOnly (TARGETED_KINDS outside a fight),
+ * cooldown / a live record (isReady)), in the engine's own order.
+ *
+ * Returns `{ armour, potions, worn, inFight }`:
+ *   - armour: `{ name, ar, left, max, destroyed }` from the sheet's armour
+ *     fields, or null when it wears none;
+ *   - potions: `{ n, canDrink, reason }` (`reason` null when it can drink);
+ *   - worn: one row per worn slot in WORN_SLOTS order,
+ *     `{ slot, name, effect, status: "ready" | "live" | "cooling", statusText,
+ *     left, canUse, reason }` (`effect` is the item's own itemStatLines
+ *     effect text, `left` the record's count or null);
+ *   - inFight: a fight is on (every canDrink / canUse is false: a Joiner
+ *     handles its own items then, engine/combat.js#alliesTurn).
+ * A bad index, a missing state, a sheet with no worn map, timers or potions
+ * field gives the empty model and never throws. Pure: no rng, no mutation.
+ */
+export function companyItemsModel(state, idx) {
+  const inFight = !!(state && typeof state === "object" && state.combat);
+  const empty = () => ({ armour: null, potions: { n: 0, canDrink: false, reason: COMPANY_COPY.reason.noPotions }, worn: [], inFight });
+  try {
+    const party = state && typeof state === "object" && Array.isArray(state.party) ? state.party : null;
+    const sheet = party && Number.isInteger(idx) && idx >= 0 ? party[idx] : null;
+    if (!sheet || typeof sheet !== "object") return empty();
+    const downed = sheet.status === "downed";
+    const R = COMPANY_COPY.reason;
+
+    let armour = null;
+    if (sheet.armor && sheet.armor !== "Nothing" && sheet.ar > 0) {
+      const left = Math.max(0, Number(sheet.armorWP) || 0);
+      armour = { name: String(sheet.armor), ar: sheet.ar, left, max: Number(sheet.armorMax) || 0, destroyed: left <= 0 };
+    }
+
+    const n = sheet.potions > 0 ? sheet.potions : 0;
+    const drinkWhy = inFight ? R.inFight : downed ? R.downed : !(n > 0) ? R.noPotions : !(sheet.wp < sheet.maxWP) ? R.fullHealth : null;
+    const potions = { n, canDrink: drinkWhy === null, reason: drinkWhy };
+
+    const worn = [];
+    const wornMap = sheet.worn && typeof sheet.worn === "object" ? sheet.worn : {};
+    const timers = sheet.timers && typeof sheet.timers === "object" ? sheet.timers : {};
+    for (const slot of WORN_SLOTS) {
+      const it = wornMap[slot];
+      if (!it || typeof it !== "object") continue;
+      const act = activationFor(it);
+      const id = itemTimerId(it);
+      const rec = id && timers[id] && typeof timers[id] === "object" ? timers[id] : null;
+      const halfArmed = act?.kind === "half" && sheet.halfNext && typeof sheet.halfNext === "object" && sheet.halfNext.slot === slot;
+      let status = "ready";
+      if (rec) status = rec.phase === "effect" && rec.left > 0 ? "live" : "cooling";
+      if (halfArmed) status = "live";
+      const left = rec && typeof rec.left === "number" ? remaining(sheet, id) : null;
+      const unit = rec && rec.cadence === "rounds" ? COMPANY_COPY.unit.rounds : COMPANY_COPY.unit.squares;
+      const statusText = halfArmed ? COMPANY_COPY.armed
+        : status === "ready" ? COMPANY_COPY.ready
+        : status === "live" ? COMPANY_COPY.live.replace("{n}", left).replace("{unit}", unit)
+        : COMPANY_COPY.cooling.replace("{n}", left).replace("{unit}", unit);
+      const kind = act ? act.kind : null;
+      const why = inFight ? R.inFight
+        : downed ? R.downed
+        : !act ? R.wantsTarget
+        : MEMBER_LEADER_KINDS.includes(kind) ? R.leaderOnly
+        : TARGETED_KINDS.has(kind) ? R.wantsTarget
+        : halfArmed ? R.armed
+        : status === "live" ? R.live.replace("{n}", left)
+        : status === "cooling" ? R.cooling.replace("{n}", left)
+        : null;
+      const effect = itemStatLines(it, sheet).find((l) => l.key === "effect")?.text ?? "";
+      worn.push({ slot, name: String(it.n ?? slot), effect, status, statusText, left, canUse: why === null, reason: why });
+    }
+    return { armour, potions, worn, inFight };
+  } catch {
+    return empty();
+  }
+}
+
 // Phase 36 (JOIN-01) — the Company panel's DISMISS confirm. DOM-local
 // presentation state, never on S (serializeRun spreads S); one row armed at
 // a time; the revert is a setTimeout of DISMISS_CONFIRM_MS, never a CSS
@@ -571,6 +692,112 @@ function revertDismissConfirm() { if (!dismissConfirmRevert) return; const r = d
 // Member sheet strings (name/sub/race/cls/weapon) are interpolated into the
 // Company card's innerHTML — escape them the same way eventNarration.js does.
 const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * armourLineFor(armour) — Phase 89 (ITEM-07, plan 07): the Company card's
+ * Armour line from companyItemsModel's `armour` ("Leather · AR 6 · 12/15 hp",
+ * "Leather · AR 6 · destroyed", or none), in the ITEM_STAT_COPY words the Gear
+ * tab and the store use. Pure.
+ */
+function armourLineFor(armour) {
+  if (!armour) return `${COMPANY_COPY.armour}: ${COMPANY_COPY.armourNone}`;
+  const wear = armour.destroyed
+    ? ITEM_STAT_COPY.text.destroyed
+    : ITEM_STAT_COPY.text.wear.replace("{left}", armour.left).replace("{max}", armour.max);
+  return `${COMPANY_COPY.armour}: ${armour.name} · ${ITEM_STAT_COPY.text.ar.replace("{n}", armour.ar)} · ${wear}`;
+}
+
+/**
+ * appendCompanyChips(doc, card, deps, idx) — Phase 89 (ITEM-07, plan 07): the
+ * Joiner's live item effects as chips, the same ones (labels, tones, tap text)
+ * YOUR LOT and the hero's HUD strip read; deps.memberChipsFor(idx) returns
+ * `{ text, tone, label, tapText }` entries from the engine's memberConditionsOf
+ * (mazeworld.html owns the labels). A tap raises the chip's text through
+ * deps.railInfo (the rail is the one feedback surface), never in the panel.
+ * No chips, or no deps seam, draws nothing.
+ */
+function appendCompanyChips(doc, card, deps, idx) {
+  const chips = typeof deps.memberChipsFor === "function" ? deps.memberChipsFor(idx) : [];
+  if (!Array.isArray(chips) || !chips.length) return;
+  const row = doc.createElement("div");
+  row.className = "mw-party-chips";
+  for (const ch of chips) {
+    const btn = doc.createElement("button");
+    btn.type = "button";
+    btn.className = "cb-lot-chip";
+    btn.dataset.tone = ch.tone === "bad" ? "bad" : "good";
+    btn.textContent = String(ch.text ?? "");
+    btn.onclick = () => {
+      if (typeof deps.railInfo === "function" && typeof ch.tapText === "function") deps.railInfo(String(ch.label ?? ch.text ?? "").toUpperCase(), ch.tapText());
+    };
+    row.appendChild(btn);
+  }
+  card.appendChild(row);
+}
+
+/**
+ * appendCompanyItems(doc, card, model, deps, idx) — Phase 89 (ITEM-07, plan
+ * 07): the potion row and one row per worn item, from companyItemsModel. Out
+ * of a fight an enabled DRINK / USE calls deps.memberUseItem(idx, { potion:
+ * true }) / (idx, { slot }) (the engine action memberUseItem through the same
+ * dispatch-with-narration seam as DISMISS; the result is told on the rail
+ * only); a disabled one shows its one-line reason instead of a button. In a
+ * fight the rows stay (what they carry) but there are no buttons, and one line
+ * says the fight is automatic.
+ */
+function appendCompanyItems(doc, card, model, deps, idx) {
+  const box = doc.createElement("div");
+  box.className = "mw-party-items";
+  const addRow = (kind, textHtml, enabled, label, onTap, reason) => {
+    const row = doc.createElement("div");
+    row.className = "mw-party-item";
+    row.dataset.kind = kind;
+    const text = doc.createElement("span");
+    text.className = "mw-party-item-text";
+    text.innerHTML = textHtml;
+    row.appendChild(text);
+    if (!model.inFight) {
+      if (enabled) {
+        const bt = doc.createElement("button");
+        bt.className = "small mw-party-item-btn";
+        bt.textContent = label;
+        bt.onclick = onTap;
+        row.appendChild(bt);
+      } else if (reason) {
+        const hint = doc.createElement("span");
+        hint.className = "mw-party-hint";
+        hint.textContent = reason;
+        row.appendChild(hint);
+      }
+    }
+    box.appendChild(row);
+  };
+  addRow(
+    "potions",
+    `${escText(COMPANY_COPY.potions)}: <b>${escText(model.potions.n)}</b>`,
+    model.potions.canDrink,
+    COMPANY_COPY.drink,
+    () => deps.memberUseItem?.(idx, { potion: true }),
+    model.potions.reason,
+  );
+  for (const w of model.worn) {
+    addRow(
+      "worn",
+      `<b>${escText(w.name)}</b> · ${escText(w.statusText)}${w.effect ? `<span class="mw-party-effect">${escText(w.effect)}</span>` : ""}`,
+      w.canUse,
+      COMPANY_COPY.use,
+      () => deps.memberUseItem?.(idx, { slot: w.slot }),
+      w.reason,
+    );
+  }
+  if (model.inFight) {
+    const note = doc.createElement("div");
+    note.className = "mw-party-line";
+    note.textContent = COMPANY_COPY.inFight;
+    box.appendChild(note);
+  }
+  card.appendChild(box);
+}
 
 // 2026-09-17 UAT (user ruling): the party roster is a Hero-tab panel
 // (#hero-party / #hero-party-list), reads the engine's own persistent
@@ -604,6 +831,7 @@ function renderPartyRoster(doc, state, deps) {
     // Hero RATIONS panel; the old inline RACES read is gone.
     const eatsLine = eatsLineFor(m);
     const eatsText = eatsLine.charAt(0).toUpperCase() + eatsLine.slice(1);
+    const carried = companyItemsModel(state, idx);
     card.innerHTML =
       `<div class="mw-party-head">
          <span class="mw-party-name">${escText(m.name || "Companion")}</span>
@@ -614,7 +842,12 @@ function renderPartyRoster(doc, state, deps) {
        <div class="mw-map-hptrack"><div class="mw-map-hpfill${pct < 34 ? " low" : ""}" style="width:${pct}%"></div></div>
        ${downed ? `<span class="fchip fchip-bad mw-party-status">Downed</span>` : ""}
        <div class="mw-party-line">Weapon: ${escText(m.weapon || "—")}</div>
-       <div class="mw-party-line">${escText(eatsText)}</div>`;
+       <div class="mw-party-line">${escText(eatsText)}</div>
+       <div class="mw-party-line mw-party-armour">${escText(armourLineFor(carried.armour))}</div>`;
+    // Phase 89 (ITEM-07, plan 07): after Eats and Armour, the Joiner's live
+    // item chips, its potion row and its worn-item rows; DISMISS stays last.
+    appendCompanyChips(doc, card, deps, idx);
+    appendCompanyItems(doc, card, carried, deps, idx);
     if (!state.combat) {
       const dismiss = doc.createElement("button");
       dismiss.className = "small mw-party-dismiss";

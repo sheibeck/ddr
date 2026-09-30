@@ -142,6 +142,12 @@
 <div id="hero-party-list">
   html=""
   <div class="mw-party-member">
-    html="<div class=\"mw-party-head\">\n         <span class=\"mw-party-name\">Grimbeld Granitejaw</span>\n         <span class=\"mw-party-sub\">Cat Burglar / Dwarven</span>\n       </div>\n       <div class=\"mw-party-line\">Thief · I</div>\n       <div class=\"mw-party-hp-lab\">HP <b>40</b>/<b>40</b></div>\n       <div class=\"mw-map-hptrack\"><div class=\"mw-map-hpfill\" style=\"width:100%\"></div></div>\n       \n       <div class=\"mw-party-line\">Weapon: Dagger</div>\n       <div class=\"mw-party-line\">Eats 1 a rest</div>"
+    html="<div class=\"mw-party-head\">\n         <span class=\"mw-party-name\">Grimbeld Granitejaw</span>\n         <span class=\"mw-party-sub\">Cat Burglar / Dwarven</span>\n       </div>\n       <div class=\"mw-party-line\">Thief · I</div>\n       <div class=\"mw-party-hp-lab\">HP <b>40</b>/<b>40</b></div>\n       <div class=\"mw-map-hptrack\"><div class=\"mw-map-hpfill\" style=\"width:100%\"></div></div>\n       \n       <div class=\"mw-party-line\">Weapon: Dagger</div>\n       <div class=\"mw-party-line\">Eats 1 a rest</div>\n       <div class=\"mw-party-line mw-party-armour\">Armour: Leather · AR 6 · 15/15 hp</div>"
+    <div class="mw-party-items">
+      <div class="mw-party-item" data-kind="potions">
+        <span class="mw-party-item-text">
+          html="Healing potions: <b>2</b>"
+        <span class="mw-party-hint">
+          text="already at full HP"
     <button class="small mw-party-dismiss" onclick>
       text="DISMISS"

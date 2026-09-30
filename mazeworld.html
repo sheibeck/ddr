@@ -1547,6 +1547,17 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-party-hp-lab b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .mw-party-line{font-family:var(--mono);font-size:calc(0.5625rem * var(--mw-text-scale));letter-spacing:.04em;text-transform:uppercase;color:var(--ditto)}
 .mw-party-dismiss{margin-top:4px;align-self:flex-start}
+/* Phase 89 (ITEM-07, plan 07): what a Joiner carries. The chip row reuses the
+   YOUR LOT chip look (.cb-lot-chip); each item row is its text, then a DRINK /
+   USE button or the one-line reason it is off. No transition or animation. */
+.mw-party-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.mw-party-items{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.mw-party-item{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding-top:4px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:calc(0.5625rem * var(--mw-text-scale));letter-spacing:.04em;color:var(--ink-soft)}
+.mw-party-item-text{flex:1 1 120px;min-width:0;overflow-wrap:anywhere}
+.mw-party-item-text b{color:var(--ink);font-weight:600}
+.mw-party-effect{display:block;color:var(--ditto);letter-spacing:.02em}
+.mw-party-item-btn{flex:none;margin:0}
+.mw-party-hint{flex:none;max-width:100%;color:var(--ditto);font-style:italic}
 .mw-party-status{align-self:flex-start;margin-top:1px}
 /* Phase 57 (LAYOUT-01): #mw-stage is the rail's positioning parent — it must
    stay flex:1/min-height:0 (a link in the #app -> .mw-stage -> .mw-screens
@@ -4041,6 +4052,25 @@ function paintVignette(c) {
 let gearSheetTarget = null;
 let gearSheetOpenerId = null;
 
+// Phase 89 (ITEM-07, plan 07) — memberChipsFor(i): the Hero tab's Company card
+// chips for party member `i`, read from the engine's ONE member enumerator
+// (memberConditionsOf, through window.__mzMemberConditionsOf), with the same
+// label (conditionLabel) and tap text (conditionTapText, member form) the
+// hero's HUD strip and YOUR LOT use. Unlike YOUR LOT it keeps the out-of-fight
+// entries (a cooling item, an armed Pendant): the Company panel is where they
+// are read between fights. `text` adds the count the way the HUD's detail does
+// ("Strength · 31 sq"). Returns [] when the bridge or the member is missing.
+function memberChipsFor(i) {
+  const conds = window.__mzMemberConditionsOf?.(S, i);
+  if (!Array.isArray(conds)) return [];
+  return conds.map((cn) => {
+    const label = conditionLabel(cn);
+    const unit = cn.cadence === "rounds" ? "rds" : (CONDITION_COPY[cn.key]?.unit || "sq");
+    const text = typeof cn.remaining === "number" && cn.remaining > 0 ? `${label} · ${cn.remaining} ${unit}` : label;
+    return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, tapText: () => conditionTapText(cn, label, S, { member: true }) };
+  });
+}
+
 // Phase 47 (SHELL-01), Plan 03 — the deps object every tab module receives
 // (docs/SHELL-MODULES.md#Contract): guardTap plus one forwarding closure per
 // window.mz* action bridge, so a module never reaches for `window` itself.
@@ -4059,6 +4089,9 @@ function tabDeps() {
     buyItem: (i) => window.mzBuyItem?.(i),
     leaveStore: () => window.mzLeaveStore?.(),
     dismissJoiner: (i) => window.mzDismissJoiner?.(i),
+    memberUseItem: (i, ref) => window.mzMemberUseItem?.(i, ref),
+    memberChipsFor: (i) => memberChipsFor(i),
+    railInfo: (title, text) => window.mzRailLine?.(title, text, "info", 8400, "·"),
     castSpell: (idx) => window.mzCastSpell?.(idx),
     openGearSheet: (target, openerId) => openGearSheet(target, openerId),
     closeGearSheet: () => closeGearSheet(),
@@ -9659,6 +9692,26 @@ window.__mzClassicBoot = async function classicBoot() {
   // re-runs renderPartyRoster() so the panel empties.
   window.mzDismissJoiner = function dismissJoinerBridge(i) {
     const { state, html } = dispatchWithNarration({ type: "dismissJoiner", i: Number.isInteger(i) && i >= 0 ? i : 0 });
+    window.__mzState.set(state);
+    for (const line of html) window.logLine(line);
+    window.paint();
+    window.renderEncounter();
+  };
+
+  // Phase 89 (ITEM-07, plan 07) — the Company panel's DRINK and USE route
+  // through the SAME dispatch()->applyAction() seam as mzDismissJoiner above:
+  // the engine owns the named refusals (noMember, inCombat, noPotions,
+  // fullHealth, leaderOnly, cooldown) and every roll (derived streams);
+  // dispatchWithNarration turns the memberPotionDrunk / itemUsed / useRefused
+  // lines into the rail (the one feedback surface, never the panel); paint()
+  // re-runs renderPartyRoster() so the card shows the new count and state.
+  // `ref` is { potion: true } or { slot }.
+  window.mzMemberUseItem = function memberUseItemBridge(i, ref) {
+    const idx = Number.isInteger(i) && i >= 0 ? i : 0;
+    const action = ref && ref.potion === true
+      ? { type: "memberUseItem", i: idx, potion: true }
+      : { type: "memberUseItem", i: idx, slot: ref && ref.slot };
+    const { state, html } = dispatchWithNarration(action);
     window.__mzState.set(state);
     for (const line of html) window.logLine(line);
     window.paint();
