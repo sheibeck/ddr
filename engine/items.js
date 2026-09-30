@@ -1378,6 +1378,10 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * character's own `heroSize(c).name` AFTER the record starts — the
  * resulting total, race + every live item step), `step` (this ITEM's own
  * step, always ±1) and `sizeDmg` (SIZE_DAMAGE_PER_STEP × that item step).
+ * Phase 89 (ITEM-05): it also carries `dmgTotal`, the item's whole damage
+ * bonus: `sizeDmg` plus the item's own `eff.dmg` bulk (Enlarge: 2 + 9 = 11;
+ * the Gauntlet of the Giant carries no bulk, so 2). The narration reads it,
+ * never a restated formula.
  *
  * Phase 88 (ITEM-02): `slot` is the source slot the use came through (the
  * ref's `{ slot }`: cloak, jewelry1, jewelry2, or "weapon" for a wielded
@@ -1409,6 +1413,7 @@ function applyActivation(state, it, rng, events, slot = null) {
       started.size = heroSize(c).name;
       started.step = act.eff.size;
       started.sizeDmg = SIZE_DAMAGE_PER_STEP * act.eff.size;
+      started.dmgTotal = started.sizeDmg + (typeof act.eff.dmg === "number" ? act.eff.dmg : 0);
     }
     // Phase 88 (ITEM-03): a heal-over-time item states its cadence, count and
     // die so the start line can tell the player what the window will do.

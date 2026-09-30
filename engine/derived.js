@@ -835,7 +835,9 @@ export function isFlying(state) {
  *     step?:<the item's own ±1 size step>, size?:<the hero's CURRENT
  *     size name, heroSize(c).name — RULES-11, Phase 75.2, Plan 02, only
  *     when act.eff carries a numeric `size`, e.g. the Gauntlet of the
- *     Giant or Enlarge>}
+ *     Giant or Enlarge, dmgTotal?:<that item's whole damage bonus — the
+ *     size step's plus its own eff.dmg bulk; Phase 89, ITEM-05: Enlarge 11,
+ *     the Gauntlet 2>}
  *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>
  *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape
@@ -906,6 +908,10 @@ export function conditionsOf(state) {
     if (act.eff && typeof act.eff.size === "number") {
       chip.step = act.eff.size;
       chip.size = heroSize(c).name;
+      // Phase 89 (ITEM-05): the item's whole damage bonus, the size step's
+      // plus its own `eff.dmg` bulk (Enlarge 11, the Gauntlet 2) — the same
+      // formula applyActivation's started event uses.
+      chip.dmgTotal = SIZE_DAMAGE_PER_STEP * act.eff.size + (typeof act.eff.dmg === "number" ? act.eff.dmg : 0);
     }
     out.push(chip);
   }
@@ -2230,8 +2236,10 @@ export function weaponDamageTerms(c) {
   // Phase 39 (GEAR-02): the retired never-expiring c.might += 8 potion
   // write — a live Strength potion effect now reads through c.timers
   // (potionMight), additive alongside the spell's own c.might. RULES-11
-  // (Phase 75.2, Plan 02): Enlarge no longer contributes here — it is a
-  // size step, read below through sizeDamage(c) instead.
+  // (Phase 75.2, Plan 02): Enlarge is no longer a might-kind payload here —
+  // it is a size step, read below through sizeDamage(c). Phase 89 (ITEM-05):
+  // its +9 bulk arrives through eff(c, "dmg") (below) and its step through
+  // sizeDamage(c), +11 in all.
   bonus += potionMight(c);
   if (skill(c, "Heft")) bonus += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of

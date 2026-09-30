@@ -94,8 +94,11 @@ function enlargePotion() {
 // ACTIVATION_OF shape
 // =============================================================================
 
-test("ACTIVATION_OF.Enlarge is exactly a +1 size step with no might; Strength is unchanged; the Gauntlet still carries eff.size 1", () => {
-  assert.deepStrictEqual(ACTIVATION_OF.Enlarge, { kind: "enlarge", effect: 50, eff: { size: 1 } });
+// Phase 89 (ITEM-05): Enlarge's activation gains +9 bulk (`eff.dmg`) on top
+// of its one size step: before { size: 1 }, after { size: 1, dmg: 9 } (+11 in
+// all with the step's +2). The Gauntlet of the Giant is unchanged.
+test("ACTIVATION_OF.Enlarge is a +1 size step plus +9 bulk with no might; Strength is unchanged; the Gauntlet still carries eff.size 1", () => {
+  assert.deepStrictEqual(ACTIVATION_OF.Enlarge, { kind: "enlarge", effect: 50, eff: { size: 1, dmg: 9 } });
   assert.deepStrictEqual(ACTIVATION_OF.Strength, { kind: "might", effect: 25, might: 8 });
   assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1 } });
 });
@@ -104,7 +107,7 @@ test("ACTIVATION_OF.Enlarge is exactly a +1 size step with no might; Strength is
 // Drinking Enlarge: size step, not might
 // =============================================================================
 
-test("drinking Enlarge starts item:Enlarge for 50 squares; sizeStepOf rises by 1 and potionMight stays 0; a Human's weaponDamage rises by 2 and foeToHitVs by 1", () => {
+test("drinking Enlarge starts item:Enlarge for 50 squares; sizeStepOf rises by 1 and potionMight stays 0; a Human's weaponDamage rises by 11 (was 2, Phase 89) and foeToHitVs by 1", () => {
   const before = fixedState({ c: { items: [] } });
   const humanDamage = weaponDamage(before.c, fakeRng([3]));
   before.combat = { foes: [{ alive: true }] };
@@ -115,7 +118,7 @@ test("drinking Enlarge starts item:Enlarge for 50 squares; sizeStepOf rises by 1
   assert.deepStrictEqual(state.c.timers["item:Enlarge"], { cadence: "squares", left: 50, phase: "effect" });
   assert.equal(sizeStepOf(state.c), 1);
   assert.equal(potionMight(state.c), 0);
-  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 2);
+  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 11);
   state.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(state), humanNeed + 1);
   assert.ok(events.some((e) => e.type === "itemConsumed"));
@@ -130,7 +133,7 @@ test("Strength then Enlarge: potionMight is 8 (Strength only) and the size step 
   assert.equal(sizeStepOf(state.c), 1);
 });
 
-test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +4 damage, foe faces +2; a second Enlarge while the first is live leaves the step at 2", () => {
+test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +13 damage (the Gauntlet's 2 and Enlarge's 11; was +4, Phase 89), foe faces +2; a second Enlarge while the first is live leaves the step at 2", () => {
   const humanDamage = weaponDamage(fixedFighter(), fakeRng([3]));
   const needState = fixedState({ c: fixedFighter() });
   needState.combat = { foes: [{ alive: true }] };
@@ -141,7 +144,7 @@ test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +4 damage, foe 
   useItem(state, 0, fakeRng([]), []); // drink Enlarge
   assert.equal(sizeStepOf(state.c), 2);
   assert.equal(heroSize(state.c).name, "Huge");
-  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 4);
+  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 13);
   state.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(state), humanNeed + 2);
 
@@ -152,25 +155,25 @@ test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +4 damage, foe 
   assert.equal(sizeStepOf(state.c), 2, "still exactly 2 steps — the record was refreshed, not duplicated");
 });
 
-test("masks never touch items: a Dwarf drinking Enlarge gains exactly +2 damage (Human + 4 in all) and its foe need goes from 4 to 5", () => {
+test("masks never touch items: a Dwarf drinking Enlarge gains exactly +11 damage (Human + 13 in all; was +2 and Human + 4, Phase 89) and its foe need goes from 4 to 5", () => {
   const human = weaponDamage(fixedFighter({ race: "Human" }), fakeRng([3]));
   const dwarvenState = fixedState({ c: fixedFighter({ race: "Dwarven", items: [enlargePotion()] }) });
   dwarvenState.combat = { foes: [{ alive: true }] };
   const dwarvenNeedBefore = foeToHitVs(dwarvenState);
   useItem(dwarvenState, 0, fakeRng([]), []);
-  assert.equal(weaponDamage(dwarvenState.c, fakeRng([3])), human + 4);
+  assert.equal(weaponDamage(dwarvenState.c, fakeRng([3])), human + 13);
   dwarvenState.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(dwarvenState), dwarvenNeedBefore + 1, "the item's face step is never masked, even though the Dwarven RACE base is unmasked on this axis already");
 });
 
-test("masks never touch items: an Elf drinking Enlarge loses nothing to the mask either — damage back to the Human's, foe need 6 to 7", () => {
+test("masks never touch items: an Elf drinking Enlarge loses nothing to the mask either — damage Human + 9 (Elven's own -2 plus Enlarge's 11; was back to the Human's, Phase 89), foe need 6 to 7", () => {
   const human = weaponDamage(fixedFighter({ race: "Human" }), fakeRng([3]));
   const elvenState = fixedState({ c: fixedFighter({ race: "Elven", items: [enlargePotion()] }) });
   elvenState.combat = { foes: [{ alive: true }] };
   const elvenNeedBefore = foeToHitVs(elvenState);
   assert.equal(elvenNeedBefore, 6);
   useItem(elvenState, 0, fakeRng([]), []);
-  assert.equal(weaponDamage(elvenState.c, fakeRng([3])), human, "Elven's own -2 damage plus the item's own +2 damage nets back to the Human baseline");
+  assert.equal(weaponDamage(elvenState.c, fakeRng([3])), human + 9, "Elven's own -2 damage plus the item's own +11 damage nets Human + 9");
   elvenState.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(elvenState), 7, "the item's face step applies in full despite the Elven face-axis mask on the race base");
 });
@@ -179,7 +182,7 @@ test("masks never touch items: an Elf drinking Enlarge loses nothing to the mask
 // itemEffectStarted's size/step/sizeDmg fields
 // =============================================================================
 
-test("itemEffectStarted for Enlarge carries kind enlarge, size Large, step 1, sizeDmg 2 (a Human)", () => {
+test("itemEffectStarted for Enlarge carries kind enlarge, size Large, step 1, sizeDmg 2, dmgTotal 11 (a Human)", () => {
   const state = fixedState({ c: { items: [enlargePotion()] } });
   const events = useItem(state, 0, fakeRng([]), []);
   const started = events.find((e) => e.type === "itemEffectStarted");
@@ -188,6 +191,7 @@ test("itemEffectStarted for Enlarge carries kind enlarge, size Large, step 1, si
   assert.equal(started.size, "Large");
   assert.equal(started.step, 1);
   assert.equal(started.sizeDmg, 2);
+  assert.equal(started.dmgTotal, 11);
   assert.equal("might" in started, false);
 });
 
