@@ -169,18 +169,20 @@ test("conditionsOf: a live flight record, then ward, might, mirror/senses/regen/
 // of the Giant, Enlarge, or any future size item) carries `step` (the
 // item's own ±1) and `size` (the hero's CURRENT total size name,
 // heroSize(c).name) on its chip; no other item's chip ever gets these
-// fields.
+// fields. Phase 89 (ITEM-05): the chip also carries `dmgTotal`, the item's
+// whole damage bonus (the Gauntlet's is the step's 2; Enlarge's is 11).
 test("conditionsOf: a live Gauntlet record carries step and the hero's current size name; a plain haste chip carries neither", () => {
   const conds = conditionsOf({
     c: cleanChar({ race: "Human", timers: { "item:Gauntlet of the Giant": rec("squares", 30, 50) } }),
   });
   assert.deepStrictEqual(conds, [
-    { key: "giant", polarity: "good", remaining: 30, cadence: "squares", source: "Gauntlet of the Giant", step: 1, size: "Large" },
+    { key: "giant", polarity: "good", remaining: 30, cadence: "squares", source: "Gauntlet of the Giant", step: 1, size: "Large", dmgTotal: 2 },
   ]);
 
   const hasteConds = conditionsOf({ c: cleanChar({ timers: { "item:Cloak of Speed": rec("squares", 34, 50) } }) });
   assert.equal("step" in hasteConds[0], false);
   assert.equal("size" in hasteConds[0], false);
+  assert.equal("dmgTotal" in hasteConds[0], false);
 });
 
 test("conditionsOf: BAD affliction names its kind", () => {

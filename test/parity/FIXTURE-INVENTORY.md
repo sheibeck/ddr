@@ -5878,3 +5878,54 @@ list of the ended lines 13 -> 14 with a `knit` phrase (`item-effect-ended-lines.
 and the knit chip lists (`hero-conditions.test.js`, `status-chit-combat.test.js`).
 
 No other fixture, save, golden or state pin was re-recorded.
+
+### Phase 89 plan 02: the Enlarge potion is Troll-sized (ITEM-05)
+
+Plan 89-02, base `70164797` (gate 8,282 tests, 8,280 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (report #6 and the user's 2026-09-30 ruling).** Report #6, verbatim:
+"Enlarge potion send worthless. +2 damage to get hit now often? Should be more in
+alignment with troll +11 to damage." Ruling: Enlarge is Troll-sized, +11 damage
+in all (the one size step's +2 plus +9 bulk, carried as activation data
+`eff.dmg: 9` and read through the same `eff(c, "dmg")` term the Ring of Power's
++1 uses), at the cost of one size step (every foe +1 to hit the drinker), for
+50 squares, price 75 to 150 so it does not undercut Strength (+8 for 25 squares
+at 100). The text states both sides in TEXT-01 wording. The started event and the
+chip gain `dmgTotal`; no rng draw is added or removed.
+
+**The predictor.** Four things can move a recorded artefact: (a) the Enlarge
+potion's item TEXT, which rides every rolled or stocked Enlarge potion object, so
+any record or hashed state that carries one moves; (b) the Enlarge store PRICE
+(75 to 150), so any store snapshot or pinned purchase that stocks one moves;
+(c) a replay or pinned run that drinks Enlarge (its damage is +11 now, +2 before);
+(d) the roll-high draw inventory, which is unmoved because no draw changed.
+
+**The live scan (measured with the change).**
+
+1. `node tools/fixture-inventory.mjs --json` read: no parity scenario lists an
+   Enlarge potion or an Enlarge store line.
+2. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt` is untouched and
+   `test/parity/harness/comparables.js` is untouched (no `REWORDED_TXT_ITEMS`
+   carve-out was needed).
+3. `roll-high-state-pins.test.js` **13 / 13** and `roll-high-save-compat.test.js`:
+   zero drift, measured: no pinned hash moved (the pinned bot runs never drink or
+   buy Enlarge, and the index-192 save's `expected.hash` is unchanged under the
+   new text); `roll-high-baseline.mjs save` was not run and no label was pasted.
+4. `npm test` (full): one failure, `shell-tab-snapshots` `thief-store.store`,
+   declared below; everything else green.
+
+**Moved (each measured, declared, regenerated alone).**
+
+| Entry | before | after | rationale |
+|---|---|---|---|
+| `test/unit/fixtures/shell-snapshots/thief-store.store.txt`, the Enlarge potion row | `Enlarge potion<i>one size larger for fifty squares: +2 damage, and one face easier for foes to hit</i>`, `53 wm` | `Enlarge potion<i>one size larger for fifty squares: +11 damage, and foes +1 to hit you</i>`, `105 wm` | the potion's rewritten text and its new price 150 (the Thief's 0.7 haggle: 75 x 0.7 = 52.5 to 53, 150 x 0.7 = 105). Regenerated with `MZ_SNAPSHOT_UPDATE=1`; the other seven fixtures re-wrote byte-identical (`git diff` empty) and were restored, so only this one changed. The declared paragraph is added to that test file's header. |
+
+Unit pins moved with the rule (declared in the SUMMARY): the `ACTIVATION_OF` Enlarge
+pin, the Human, Dwarf, Elf and Gauntlet-plus-Enlarge damage deltas
+(`size-items.test.js`), the Gauntlet chip's new `dmgTotal` field
+(`conditions.test.js`), the Enlarge and Gauntlet text and line pins
+(`authored-ranges.test.js`, `size-voice.test.js`).
+
+No other fixture, save, golden or state pin was re-recorded.

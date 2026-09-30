@@ -43,6 +43,7 @@ import {
   strikeDie,
   foeDie,
   weaponDamage,
+  weaponDamageTerms,
   sizeAxisStep,
   SIZE_DAMAGE_PER_STEP,
   SIZE_FACES_PER_STEP,
@@ -68,7 +69,7 @@ import { facesRangeText, hitRangeText } from "../../src/browser/rollRange.js";
 import { resistFaces, resistRoll } from "../../engine/derived.js";
 import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 import {
-  SPELLS, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, BESTIARY, POTIONS, JEWELRY, CLOAKS, STAVES,
+  SPELLS, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, BESTIARY, POTIONS, JEWELRY, CLOAKS, STAVES, ACTIVATION_OF,
 } from "../../content/index.js";
 
 // --- local fixtures (mirror test/unit/odds-helpers.test.js) ---------------
@@ -356,11 +357,17 @@ const SIGNED_ROWS = [
   { id: "BESTIARY.Rast.sp.note", text: () => foeNote("Rast").sp.note, signed: "+4 with any weapon", engine: () => foeNote("Rast").sp.dmg.bonus, value: 4 },
   { id: "POTIONS.Strength.txt", text: () => potion("Strength"), signed: "+8 damage", engine: () => POTIONS.find((p) => p.n === "Strength").act.might, value: 8 },
   { id: "JEWELRY.Ring of Power.txt", text: () => row(JEWELRY, "Ring of Power"), signed: "+1 damage", engine: () => JEWELRY.find((p) => p.n === "Ring of Power").eff.dmg, value: 1 },
-  { id: "POTIONS.Enlarge.txt", text: () => potion("Enlarge"), signed: "+2 damage", engine: () => SIZE_DAMAGE_PER_STEP * sizeAxisStep(fixedFighter({ timers: itemTimer("Enlarge") }), "dmg"), value: 2 },
+  // Phase 89 (ITEM-05): Enlarge is Troll-sized, +11 (the step's +2 and +9 bulk) — was "+2 damage".
+  { id: "POTIONS.Enlarge.txt", text: () => potion("Enlarge"), signed: "+11 damage", engine: () => enlargeDamage(), value: 11 },
   { id: "JEWELRY.Gauntlet of the Giant.txt", text: () => row(JEWELRY, "Gauntlet of the Giant"), signed: "+2 damage", engine: () => SIZE_DAMAGE_PER_STEP * sizeAxisStep(fixedFighter({ timers: itemTimer("Gauntlet of the Giant") }), "dmg"), value: 2 },
   { id: "THIEF_SKILLS.Heft.txt", text: () => THIEF_SKILLS.Heft.txt, signed: "+2 damage", engine: () => weaponDamage(fixedFighter({ skills: { Heft: 1 } }), fakeRng([], 1)) - weaponDamage(fixedFighter(), fakeRng([], 1)), value: 2 },
   { id: "ABILITIES.mark.txt", text: () => ABILITY_BY_ID.mark.txt, signed: "+2 damage", engine: () => markedStrike(true) - markedStrike(false), value: 2 },
 ];
+
+/** enlargeDamage() — the damage bonus a live Enlarge record adds to a Human Fighter's terms, from the engine. */
+function enlargeDamage() {
+  return weaponDamageTerms(fixedFighter({ timers: itemTimer("Enlarge") })).bonus - weaponDamageTerms(fixedFighter()).bonus;
+}
 
 /** markedStrike(marked) — the damage one fixed landed blow (a raw 2: a hit, no crit) does to a marked or unmarked foe. */
 function markedStrike(marked) {
@@ -392,10 +399,15 @@ test("every signed number in a bestiary note is that foe's own damage bonus", ()
   }
 });
 
-test("Enlarge and the Gauntlet state the size step's face change for foes", () => {
+test("the Gauntlet states the size step's face change for foes", () => {
   assert.equal(SIZE_FACES_PER_STEP, 1);
-  assert.ok(potion("Enlarge").includes("one face easier for foes to hit"));
   assert.ok(row(JEWELRY, "Gauntlet of the Giant").includes("one face easier for foes to hit"));
+});
+
+test("Enlarge states the size step's cost as a to-hit number: foes +1 to hit you (Phase 89, ITEM-05)", () => {
+  const faces = SIZE_FACES_PER_STEP * ACTIVATION_OF.Enlarge.eff.size;
+  assert.equal(faces, 1);
+  assert.ok(potion("Enlarge").includes(`foes +${faces} to hit you`), potion("Enlarge"));
 });
 
 // ---------------------------------------------------------------------------
@@ -454,19 +466,31 @@ test("CONDITION_EXPLAIN.acute and itemEffectStarted (acute): 'you strike on a d6
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`strike on a d${die}`), LINE_FOR.itemEffectStarted(ev, {}).text);
 });
 
-test("CONDITION_EXPLAIN (giant, enlarge) and itemEffectStarted: one size step is '+2 damage, and one face easier for foes to hit'", () => {
-  for (const [key, item] of [["giant", "Gauntlet of the Giant"], ["enlarge", "Enlarge"]]) {
-    const hero = fixedFighter({ timers: itemTimer(item) });
-    const dmg = SIZE_DAMAGE_PER_STEP * sizeAxisStep(hero, "dmg");
-    const faces = foeToHitVs(fixedState({ timers: itemTimer(item) })) - foeToHitVs(fixedState({}));
-    assert.equal(faces, 1, `${item}: one face easier`);
-    const phrase = `+${dmg} damage, and one face easier for foes to hit`;
-    assert.ok(EXPLAIN[key].includes(phrase), `${key}: ${EXPLAIN[key]}`);
-    // engine/items.js stamps `size` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
-    const ev = { type: "itemEffectStarted", kind: key, item, left: 3, size: "Large", sizeDmg: dmg };
-    assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
-    assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
-  }
+test("CONDITION_EXPLAIN.giant and itemEffectStarted (giant): one size step is '+2 damage, and one face easier for foes to hit'", () => {
+  const item = "Gauntlet of the Giant";
+  const hero = fixedFighter({ timers: itemTimer(item) });
+  const dmg = SIZE_DAMAGE_PER_STEP * sizeAxisStep(hero, "dmg");
+  const faces = foeToHitVs(fixedState({ timers: itemTimer(item) })) - foeToHitVs(fixedState({}));
+  assert.equal(faces, 1, `${item}: one face easier`);
+  const phrase = `+${dmg} damage, and one face easier for foes to hit`;
+  assert.ok(EXPLAIN.giant.includes(phrase), `giant: ${EXPLAIN.giant}`);
+  // engine/items.js stamps `size` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
+  const ev = { type: "itemEffectStarted", kind: "giant", item, left: 3, size: "Large", sizeDmg: dmg };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+});
+
+test("CONDITION_EXPLAIN.enlarge and itemEffectStarted (enlarge): Enlarge is '+11 damage, and foes +1 to hit you', both numbers from the engine (Phase 89, ITEM-05)", () => {
+  const dmg = enlargeDamage();
+  const faces = foeToHitVs(fixedState({ timers: itemTimer("Enlarge") })) - foeToHitVs(fixedState({}));
+  assert.equal(dmg, 11);
+  assert.equal(faces, SIZE_FACES_PER_STEP * ACTIVATION_OF.Enlarge.eff.size);
+  const phrase = `+${dmg} damage, and foes +${faces} to hit you`;
+  assert.ok(EXPLAIN.enlarge.includes(phrase), `enlarge: ${EXPLAIN.enlarge}`);
+  const ev = { type: "itemEffectStarted", kind: "enlarge", item: "Enlarge", left: 3, size: "Large", step: 1, sizeDmg: SIZE_DAMAGE_PER_STEP, dmgTotal: dmg };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  const rail = `+${dmg} damage, foes +${faces} to hit you`;
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(rail), LINE_FOR.itemEffectStarted(ev, {}).text);
 });
 
 test("CONDITION_EXPLAIN.heroBlind: 'only your die's top face lands' is the hero's measured faces while blind", () => {

@@ -39,9 +39,18 @@ export const POTIONS = [
     // Gauntlet of the Giant does (engine/derived.js#itemSizeStep), never
     // masked by a race's own signature; the text states exactly what a
     // step does and nothing more (no overhead-clearance promise).
-    n: "Enlarge", col: "Brown", uses: { n: 1, sides: 6, bonus: 0 }, price: 75, eff: "enlarge",
-    txt: "one size larger for fifty squares: +2 damage, and one face easier for foes to hit",
-    act: { kind: "enlarge", effect: 50, eff: { size: 1 } },
+    //
+    // Phase 89 plan 02 (ITEM-05, report #6, user ruling 2026-09-30): the step
+    // alone was a trap (+2 damage for foes +1 to hit you). Enlarge is now
+    // Troll-sized: eleven damage in all, the step's +2 (SIZE_DAMAGE_PER_STEP)
+    // plus +9 bulk carried as activation data (`eff.dmg`, the same term the
+    // Ring of Power's +1 rides), in line with a Troll's own +11 (its +9 and
+    // Large +2). The cost stays one size step (foes +1 to hit you, from
+    // SIZE_FACES_PER_STEP), 50 squares, price 75 -> 150 so it does not
+    // undercut Strength (+8 for 25 squares at 100). Phase 92 may retune it.
+    n: "Enlarge", col: "Brown", uses: { n: 1, sides: 6, bonus: 0 }, price: 150, eff: "enlarge",
+    txt: "one size larger for fifty squares: +11 damage, and foes +1 to hit you",
+    act: { kind: "enlarge", effect: 50, eff: { size: 1, dmg: 9 } },
   },
   {
     n: "Acuteness", col: "White", uses: { n: 1, sides: 4, bonus: 0 }, price: 800, eff: "acute",

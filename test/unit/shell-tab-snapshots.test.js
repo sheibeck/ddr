@@ -78,6 +78,14 @@
 // The two counts are the d10 from the derived storeRations stream (87-02) for
 // each fixture's fixed seed. Price column and every other row are unchanged.
 //
+// Phase 89 (ITEM-05), Plan 02: ONE declared regeneration —
+// thief-store.store's Enlarge potion row moves from "one size larger for
+// fifty squares: +2 damage, and one face easier for foes to hit" at "53 wm"
+// to "one size larger for fifty squares: +11 damage, and foes +1 to hit you"
+// at "105 wm" (content/potions.js: the potion is Troll-sized and its price
+// went 75 -> 150, times the Thief's 0.7 haggle). Every other of the eight
+// committed fixtures re-wrote byte-identical (`git diff` empty).
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

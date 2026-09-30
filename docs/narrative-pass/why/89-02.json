@@ -1,0 +1,38 @@
+[
+  {
+    "key": "content:POTIONS.Enlarge.txt",
+    "surface": "items",
+    "trigger": "a potion's item text",
+    "before": "one size larger for fifty squares: +2 damage, and one face easier for foes to hit",
+    "after": "one size larger for fifty squares: +11 damage, and foes +1 to hit you",
+    "reasons": ["fact"],
+    "why": "Report #6 (\"Enlarge potion send worthless. +2 damage to get hit now often? Should be more in alignment with troll +11 to damage.\") and the 2026-09-30 ruling: Enlarge is Troll-sized, +11 damage in all (the one size step's +2 plus +9 bulk), at the cost of one size step, foes +1 to hit you, for fifty squares. The text now states both sides in TEXT-01 wording, a signed to-hit number rather than a face count."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "3 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target.",
+    "after": "3 squares one size larger: you are Large. +11 damage, and foes +1 to hit you. A bigger stick and a bigger target. Nobody said it was free.",
+    "reasons": ["fact"],
+    "why": "Report #6 and the 2026-09-30 ruling: Enlarge is Troll-sized and no longer shares the Gauntlet of the Giant's line. The started event now carries dmgTotal (the size step's +2 plus the potion's +9 bulk, 11), so the line states +11 damage and, plainly, that foes are +1 to hit you. The Gauntlet's own line is unchanged. The synthetic corpus event carries no dmgTotal, so the corpus renders the step's own +2 here; a real potion prints +11."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "3 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target.",
+    "after": "3 squares one size larger: you are Large. +11 damage, foes +1 to hit you.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Enlarge Oracle line (report #6, 2026-09-30 ruling): the same dmgTotal and to-hit numbers in the rail's short form. The synthetic corpus event carries no dmgTotal, so the corpus renders +2 here; a real potion prints +11."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "inline literal in mazeworld.html#CONDITION_EXPLAIN",
+    "before": "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
+    "after": "One size larger while it lasts: +11 damage, and foes +1 to hit you. A bigger stick, and a bigger target.",
+    "reasons": ["fact"],
+    "why": "Report #6 and the 2026-09-30 ruling: the Enlarged chip's tap card shared the Gauntlet's step-only sentence, which understated the potion. Enlarge now has its own sentence stating +11 damage and foes +1 to hit you; the Gauntlet of the Giant's sentence is unchanged."
+  }
+]

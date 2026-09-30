@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -40,12 +40,12 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 94 | 233 | 5 | 109 | 3 |
-| rail (rail lines and the fight log) | 287 | 79 | 208 | 5 | 88 | 3 |
+| oracle (the Oracle log) | 327 | 94 | 233 | 5 | 110 | 3 |
+| rail (rail lines and the fight log) | 287 | 79 | 208 | 5 | 89 | 3 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 17 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
-| combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 4 | 25 | 1 |
-| items (item, gear and store text) | 110 | 11 | 99 | 0 | 14 | 0 |
+| combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 4 | 26 | 1 |
+| items (item, gear and store text) | 110 | 12 | 98 | 0 | 15 | 0 |
 | spells (spells, abilities and skills) | 87 | 33 | 54 | 0 | 33 | 0 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **326** | **1545** | **140** | **555** | **87** |
+| **Total** | **1871** | **327** | **1544** | **140** | **559** | **87** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-109 changed lines.
+110 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -244,6 +244,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:insanityRolled`<br>insanityRolled — an Insanity result on the dot rolls the hero's d6 | Insanity. It comes apart at the seams. | Insanity takes hold of you. | **79-11** (what happened, to whom, accurate to the engine): The line printed the INSANITY table's foe-side row ("It strikes the nearest of its own") for the hero's own insanity; it now says it is yours, and faces 2, 4 and 6, which do nothing, say so. |
 | `oracle:itemEffectEnded`<br>itemEffectEnded — engine/items.js#endSourceEffects (an item effect ended early: its item left the source slot) | *(new line)* | The item is gone — its magic stops. | **88-01** (what happened, to whom): User ruling (backlog 999.16, 2026-09-28): "when you use an item and then take that item off, you should lose the items benefit ... if I wear the cloak of flying and use it, I gain flying, and then if I take it off, I should lose that flying condition." Rulings 2026-09-30: every item effect started from a worn slot, and the Crystal Staff's party invisibility from the weapon slot, ends the moment the item leaves that slot; the use is spent (ready again exactly when a full run would have been); narrated on the Oracle and the rail, naming the item and what stops. The line leads with the item and how it left (comes off, is swapped out, is dust, is gone), then says what stops per kind (flying, solid again, critical hits, visible again, the light, the fluency; the whole party is seen again for the Crystal Staff), then, when the use left a cooldown, when it is ready. The synthetic corpus event carries no item name, so it renders the bare form shown here. |
 | `oracle:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | Unseen for 3 squares. They need two better. | Unseen for 3 squares: every foe has two fewer faces that hit you. | **79-11** (roll-high (ROLL-04), what happened, to whom, hygiene): The Anklet's "need two better" was roll-under and the Cloak's line never said what being unseen does; both now use their item text's roll-high words, a count of one reads "1 square", and a bare event no longer leaks "undefined squares". |
+| `oracle:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | 3 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target. | 3 squares one size larger: you are Large. +11 damage, and foes +1 to hit you. A bigger stick and a bigger target. Nobody said it was free. | **89-02** (what happened, to whom): Report #6 and the 2026-09-30 ruling: Enlarge is Troll-sized and no longer shares the Gauntlet of the Giant's line. The started event now carries dmgTotal (the size step's +2 plus the potion's +9 bulk, 11), so the line states +11 damage and, plainly, that foes are +1 to hit you. The Gauntlet's own line is unchanged. The synthetic corpus event carries no dmgTotal, so the corpus renders the step's own +2 here; a real potion prints +11. |
 | `oracle:itemUnequipped`<br>itemUnequipped — engine/items.js#unequipSlot | You peel off what is left of your Dagger and leave it where it falls. The bag declines the honor. | You peel off what is left of your Dagger and leave it where it falls. The bag declines the honour. | **79-12** (naming ruling): House spelling: the player reads British spellings ("armour", "honour", "rumour"), 79-12's decision by the corpus majority; the line is otherwise word for word. |
 | `oracle:joinerMet`<br>joinerMet — a Joiner is met on the dot | Viper, a Apprentice, joins you for a while. | Viper, an Apprentice, offers to travel with you for a while. | **79-11** (accurate to the engine, reads aloud): The meeting is an offer that the accept, decline or refusal follows, so "joins you" contradicted a decline; the article agrees, and a real event states the Joiner's level. |
 | `oracle:leveled`<br>leveled — engine/character.js#checkLevel (synthetic { wpGain 3, gained 8 }; in play \`gained\` equals \`wpGain\`) | Skill level 2 (+3 hp). | Skill level 2 (+8 hp). | **79-02** (honest number): The level-up line now prints \`gained\`, the HP the engine says it really added, instead of \`wpGain\`; 79-02 stamps \`gained\` on every gain event and here it always equals \`wpGain\`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source). |
@@ -302,7 +303,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-88 changed lines.
+89 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -355,6 +356,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:insanityRolled`<br>insanityRolled — an Insanity result on the dot rolls the hero's d6 | Insanity — it comes apart. | Insanity takes hold of you. | **79-11** (what happened, to whom, accurate to the engine): The rail twin of the Oracle fix. |
 | `rail:itemEffectEnded`<br>itemEffectEnded — engine/items.js#endSourceEffects | *(new line)* | Item gone: its magic stops. | **88-01** (what happened, to whom): The rail twin of the Oracle line (Phase 88 plan 01, ITEM-02; user words 999.16 and the 2026-09-30 rulings, the Crystal Staff included): the item, how it left, what stops, and when it is ready. A real event names the item and the wearer, for example "Cloak of Flying off: flying stops (ready in 65 squares)." |
 | `rail:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | Unseen for 3 squares. They need two better. | Unseen for 3 squares: every foe has two fewer faces that hit you. | **79-11** (roll-high (ROLL-04), what happened, to whom, hygiene): The rail twin of the Oracle fix, the Cloak of Invisibility's effect in the rail's short form. |
+| `rail:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | 3 squares one size larger: you are Large. +2 damage, and one face easier for foes to hit. You are, on reflection, a bigger target. | 3 squares one size larger: you are Large. +11 damage, foes +1 to hit you. | **89-02** (what happened, to whom): The rail twin of the Enlarge Oracle line (report #6, 2026-09-30 ruling): the same dmgTotal and to-hit numbers in the rail's short form. The synthetic corpus event carries no dmgTotal, so the corpus renders +2 here; a real potion prints +11. |
 | `rail:leveled`<br>leveled — engine/character.js#checkLevel (synthetic { wpGain 3, gained 8 }; in play \`gained\` equals \`wpGain\`) | Skill level 2 (+3 hp). | Skill level 2 (+8 hp). | **79-02** (honest number): The level-up line now prints \`gained\`, the HP the engine says it really added, instead of \`wpGain\`; 79-02 stamps \`gained\` on every gain event and here it always equals \`wpGain\`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source). |
 | `rail:lullabyRolled`<br>lullabyRolled { n 2 } — a Bard's Lullaby rolls how many foes it can reach | 2 nod off. | Lullaby: up to 2 nod off. | **79-04** (accurate to the engine): The roll is a ceiling, not a count of foes that slept. |
 | `rail:marked`<br>marked — the hero or a Joiner Marks a foe | Every blow on Viper lands +2. | Every blow on Viper does +2 damage. | **79-04** (what happened, to whom): The rail twin now says the +2 is damage. |
@@ -429,7 +431,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## combat-screen — the combat screen and its chips
 
-25 changed lines.
+26 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -458,10 +460,11 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `raw:mazeworld.html#CONDITION_EXPLAIN`<br>inline literal in mazeworld.html#CONDITION\_EXPLAIN | Only the very best swing of the die lands. | Only your die's top face lands. | **79-07** (reads aloud): "The very best swing of the die" is stilted; the scaling strike die speaks in faces (the ROLL-04 phrasing rule). |
 | `raw:mazeworld.html#CONDITION_EXPLAIN`<br>inline literal in mazeworld.html#CONDITION\_EXPLAIN | The next blow that lands on you does half damage. Planning ahead, for once. | The next blow that lands does half damage. Planning ahead, for once. | **79-07** (accurate to the engine): A party member's Brace chip reads this same sentence in YOUR LOT, where "on you" named the wrong body. |
 | `raw:mazeworld.html#CONDITION_EXPLAIN`<br>inline literal in mazeworld.html#CONDITION\_EXPLAIN | The song is still ringing in everyone's ears, so every swing lands a little easier. | Your song is still ringing in your ears: your own strikes land one face easier. The party is pretending not to have heard it. | **79-07** (accurate to the engine, what happened, to whom): The level-2 song adds one face to the hero's own toHit only; memberToHit never reads it, so "everyone" and "every swing" were wrong. |
+| `raw:mazeworld.html#CONDITION_EXPLAIN`<br>inline literal in mazeworld.html#CONDITION\_EXPLAIN | One size larger while it lasts: +2 damage, and one face easier for foes to hit. | One size larger while it lasts: +11 damage, and foes +1 to hit you. A bigger stick, and a bigger target. | **89-02** (what happened, to whom): Report #6 and the 2026-09-30 ruling: the Enlarged chip's tap card shared the Gauntlet's step-only sentence, which understated the potion. Enlarge now has its own sentence stating +11 damage and foes +1 to hit you; the Gauntlet of the Giant's sentence is unchanged. |
 
 ## items — item, gear and store text
 
-14 changed lines.
+15 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -470,6 +473,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `bank:UPGRADE_WHY_COPY.swing`<br>why a store or loot item is, or is not, an upgrade | {got} vs {have} a swing | {got} vs {have} average damage a swing | **79-09** (what happened, to whom): The numbers had no unit; they are expectedStrike's average damage per swing, misses and crits included. |
 | `content:CLOAKS.Cloak of Invisibility.txt`<br>a cloak's item text | invisible for 50 squares, once every 100 | invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them) | **79-05** (roll-high (ROLL-04), what happened, to whom): It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted. |
 | `content:JEWELRY.Anklet of Invisibility.txt`<br>a jewelry piece's item text | used, foes need two better to land a blow on you for fifty squares; then fifty squares back in plain sight | used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight | **79-05** (roll-high (ROLL-04)): "Needs two better" was roll-under shorthand; the engine takes two faces off every foe's winning range, so the text says two fewer faces. |
+| `content:POTIONS.Enlarge.txt`<br>a potion's item text | one size larger for fifty squares: +2 damage, and one face easier for foes to hit | one size larger for fifty squares: +11 damage, and foes +1 to hit you | **89-02** (what happened, to whom): Report #6 ("Enlarge potion send worthless. +2 damage to get hit now often? Should be more in alignment with troll +11 to damage.") and the 2026-09-30 ruling: Enlarge is Troll-sized, +11 damage in all (the one size step's +2 plus +9 bulk), at the cost of one size step, foes +1 to hit you, for fifty squares. The text now states both sides in TEXT-01 wording, a signed to-hit number rather than a face count. |
 | `content:POTIONS.Invisible.txt`<br>a potion's item text | invisible for a day | invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them) | **79-05** (what happened, to whom): It said invisible without saying what that buys; the engine lets foes hit only on their die's top face, the top two if insulted. |
 | `content:STAVES.Birch Staff.txt`<br>the Birch Staff's item text | freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds | freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry | **q-260928-frz** (what happened, to whom, accurate to the engine): User rulings 2026-09-28: the Birch Staff's freeze follows the Freeze spell, a d4-round freeze on each foe it reaches unless that foe resists, at every depth. "Indefinitely" is no longer true anywhere, so the text states the d4 and the resist, then echoes Freeze's own "just cold and angry". |
 | `content:STAVES.Crystal Staff.txt`<br>a staff's item text | party invisible d10+5 squares; enemies need a 1 | party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them) | **79-05** (roll-high (ROLL-04)): The old text was a roll-under face count; foes roll high on a die that scales with their level, so it now names the top face, and the insulted top two, as the engine's override does. |
