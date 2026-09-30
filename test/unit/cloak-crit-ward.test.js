@@ -23,9 +23,9 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { foeTurn, flee, playerStrike } from "../../engine/combat.js";
-import { useItem } from "../../engine/items.js";
-import { conditionsOf, critWardOf, eff, noCritFor } from "../../engine/derived.js";
+import { alliesTurn, foeTurn, flee, playerStrike } from "../../engine/combat.js";
+import { endSourceEffects, equipItem, unequipSlot, useItem } from "../../engine/items.js";
+import { activationFor, conditionsOf, critWardOf, eff, noCritFor } from "../../engine/derived.js";
 import { startEffect } from "../../engine/effects.js";
 import { newRun } from "../../engine/engine.js";
 import { serializeRun, validateSave } from "../../engine/saveState.js";
@@ -337,4 +337,117 @@ test("an old save (the cloak item still carrying eff.noCrit, its record live) lo
   assert.equal(c.worn.cloak.n, "Cloak of Strength");
   assert.equal(critWardOf(c), "Cloak of Strength", "the live record reads the cloak's current payload");
   assert.ok(conditionsOf(loaded.value).some((cn) => cn.key === "critWard"));
+});
+
+// ─── the ward ends with the cloak (ITEM-02 source link) ───────────────────
+
+const endedOf = (events) => events.filter((e) => e.type === "itemEffectEnded");
+
+/** heroTopFace(state) — set up a fight against one Wolf and let it swing its
+ * top face (raw 1) with damage die 6. Returns the struckByFoe event and the
+ * whole event list. */
+function heroTopFace(state) {
+  state.combat = fixedCombat([fixedFoe()]);
+  const events = foeTurn(state, fakeRng([1, 6]), []);
+  return { hit: events.find((e) => e.type === "struckByFoe"), events };
+}
+
+test("take-off (hero): the ward ends at once, the chip goes, the cloak shows its spent cooldown, and the next foe top face crits", () => {
+  const state = wearer();
+  assert.equal(critWardOf(state.c), "Cloak of Strength", "live before the take-off");
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Strength"].src, { slot: "cloak", n: "Cloak of Strength" }, "the use is linked to its slot");
+
+  const events = unequipSlot(state, "cloak", [], fakeRng([]));
+  assert.deepEqual(events.map((e) => e.type), ["itemUnequipped", "itemEffectEnded"], "the take-off, then the early end");
+  assert.deepStrictEqual(endedOf(events)[0], {
+    type: "itemEffectEnded", item: "Cloak of Strength", kind: "critWard", slot: "cloak", why: "off", left: 50, ready: 100,
+  });
+  assert.equal(critWardOf(state.c), null, "the ward reads null the moment the cloak is off");
+  const chips = conditionsOf(state);
+  assert.equal(chips.some((cn) => cn.key === "critWard"), false, "the Crit-proof chip is gone");
+  assert.ok(chips.some((cn) => cn.key === "itemCooldown" && cn.item === "Cloak of Strength"), "the cloak shows its spent cooldown");
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Strength"], { cadence: "squares", left: 100, phase: "cooldown" }, "50 effect squares unwalked + 50 cooldown: taking it off is no free reset");
+
+  // Re-worn (the bag copy back on), the record is a cooldown: no ward. The
+  // foe's top face is a critical again.
+  state.c.worn.cloak = CLOAK;
+  const { hit, events: fight } = heroTopFace(state);
+  assert.equal(hit.dmg, 37, "25 + 2*6");
+  assert.equal(hit.critical, true);
+  assert.equal(fight.some((e) => e.type === "critWarded"), false);
+});
+
+test("swap (hero): a different cloak into the slot ends the ward with why swap", () => {
+  const state = wearer();
+  state.c.items.push({ kind: "cloak", ...CLOAKS.find((r) => r.n === "Cloak of Speed") });
+  const events = equipItem(state, 0, [], null, fakeRng([]));
+  assert.deepEqual(events.map((e) => e.type), ["itemEquipped", "itemEffectEnded"]);
+  const end = endedOf(events)[0];
+  assert.deepEqual([end.item, end.kind, end.slot, end.why, end.left, end.ready], ["Cloak of Strength", "critWard", "cloak", "swap", 50, 100]);
+  assert.equal(critWardOf(state.c), null);
+  assert.equal(conditionsOf(state).some((cn) => cn.key === "critWard"), false);
+  const { hit } = heroTopFace(state);
+  assert.equal(hit.dmg, 37, "the swap left the wearer with no ward");
+  assert.equal(hit.critical, true);
+});
+
+test("swap (hero): an identical Cloak of Strength copy ends the ward too, and the new copy is refused on cooldown", () => {
+  const state = wearer();
+  state.c.items.push({ ...CLOAK });
+  const events = equipItem(state, 0, [], null, fakeRng([]));
+  const end = endedOf(events);
+  assert.equal(end.length, 1, "one early end");
+  assert.equal(end[0].why, "swap");
+  assert.equal(end[0].kind, "critWard");
+  assert.equal(critWardOf(state.c), null, "the copy does not inherit the live ward");
+  const use = useItem(state, { slot: "cloak" }, fakeRng([]), []);
+  const refused = use.find((e) => e.type === "useRefused");
+  assert.ok(refused, "the new copy cannot be used yet");
+  assert.equal(refused.reason, "cooldown");
+  assert.equal(refused.left, 100);
+  assert.equal(use.some((e) => e.type === "itemEffectStarted"), false);
+  const { hit } = heroTopFace(state);
+  assert.equal(hit.critical, true, "and a foe top face crits");
+});
+
+test("a Joiner sheet: the one end helper ends the ward (member named, nothing entombed), and the next foe crit on the Joiner lands", () => {
+  const state = joinerFight({ worn: { cloak: CLOAK } });
+  const ada = state.party[0];
+  const rec = startEffect(ada, "item:Cloak of Strength", { squares: 50, cd: 50 });
+  rec.src = { slot: "cloak", n: "Cloak of Strength" }; // exactly what useItem stamps
+  assert.equal(critWardOf(ada), "Cloak of Strength", "live before the end");
+
+  const events = endSourceEffects(state, ada, [], { slots: ["cloak"], why: "off" });
+  assert.deepStrictEqual(events, [
+    { type: "itemEffectEnded", item: "Cloak of Strength", kind: "critWard", slot: "cloak", why: "off", left: 50, ready: 100, member: "Ada" },
+  ]);
+  assert.equal(critWardOf(ada), null);
+  assert.deepStrictEqual(ada.timers["item:Cloak of Strength"], { cadence: "squares", left: 100, phase: "cooldown" });
+  assert.equal(critWardOf(state.c), null, "the hero was never involved");
+
+  const foe = foeTurn(state, fakeRng([1, 6]), []);
+  const hit = foe.find((e) => e.type === "memberStruck");
+  assert.equal(hit.dmg, 37, "25 + 2*6");
+  assert.equal(hit.critical, true);
+  assert.equal(foe.some((e) => e.type === "critWarded"), false);
+
+  // the helper is idempotent: nothing live is left to end
+  assert.deepEqual(endSourceEffects(state, ada, [], { slots: ["cloak"], why: "off" }), []);
+});
+
+test("narration: the ended ward names the Cloak of Strength on the Oracle and the rail and says criticals can land again", () => {
+  const hero = { type: "itemEffectEnded", item: "Cloak of Strength", kind: "critWard", slot: "cloak", why: "off", left: 50, ready: 100 };
+  const oracle = EVENT_NARRATION.itemEffectEnded(hero).replace(/<[^>]+>/g, "");
+  assert.match(oracle, /^Your Cloak of Strength comes off/);
+  assert.match(oracle, /critical hits can find you again/);
+  assert.match(oracle, /Ready again in 100 squares/);
+  const rail = LINE_FOR.itemEffectEnded(hero).text;
+  assert.match(rail, /Cloak of Strength off/);
+  assert.match(rail, /crits can land again/);
+
+  const joiner = EVENT_NARRATION.itemEffectEnded({ ...hero, member: "Ada" }).replace(/<[^>]+>/g, "");
+  assert.match(joiner, /Ada's Cloak of Strength comes off/);
+  assert.match(joiner, /critical hits can find Ada again/);
+  assert.doesNotMatch(joiner, /\byou\b/i, "a Joiner's line never says you");
+  assert.match(LINE_FOR.itemEffectEnded({ ...hero, member: "Ada", why: "swap" }).text, /^Ada's Cloak of Strength swapped out: crits can land again/);
 });
