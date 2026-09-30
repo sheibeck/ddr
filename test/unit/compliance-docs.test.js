@@ -60,6 +60,17 @@ function releaseChecklistSection() {
   return nextHeadingOffset >= 0 ? rest.slice(0, nextHeadingOffset + 1) : rest;
 }
 
+/** The Release 2.3.0 DEPTH-key section's own text, up to the next "## " heading. */
+function depthKeySection() {
+  const doc = read(RELEASING_PATH);
+  const heading = "## Release 2.3.0: the DEPTH-key steps (BOARD-28)";
+  const start = doc.indexOf(heading);
+  assert.ok(start >= 0, `RELEASING.md has "${heading}"`);
+  const rest = doc.slice(start);
+  const nextHeadingOffset = rest.slice(1).search(/\n## /);
+  return nextHeadingOffset >= 0 ? rest.slice(0, nextHeadingOffset + 1) : rest;
+}
+
 // ─── docs/PLAY-GAMES-SETUP.md: the retirement notice ────────────────────────
 
 test("docs/PLAY-GAMES-SETUP.md is at most 20 lines and says it is retired", () => {
@@ -125,6 +136,25 @@ test("docs/RELEASING.md's checklist section carries its markers in the release's
 test("docs/RELEASING.md's checklist names android:release, not play:release, for the 2.2.0 build", () => {
   const section = releaseChecklistSection();
   assert.match(section, /not `npm run play:release`/);
+});
+
+test("docs/RELEASING.md's Release 2.3.0 DEPTH-key section keeps its steps in hard order (BOARD-28)", () => {
+  const section = depthKeySection();
+  const orderedMarkers = [
+    "boards-smoke.mjs --transition",
+    "rekey-deep",
+    "rekey-deep --yes",
+    "firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f",
+    "rekey-deep --yes",
+    "firestore.transition.rules",
+  ];
+  let pos = 0;
+  for (const marker of orderedMarkers) {
+    const idx = section.indexOf(marker, pos);
+    assert.ok(idx >= 0, `DEPTH-key section contains "${marker}" after the previous marker`);
+    pos = idx + marker.length;
+  }
+  assert.match(section, /2\.2\.0 client's run is refused/);
 });
 
 // ─── docs/BUG-REPORTS.md: the release-day probe target ──────────────────────

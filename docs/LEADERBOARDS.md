@@ -274,6 +274,16 @@ cutover (`docs/RELEASING.md`, "Release 2.3.0"). Until a re-key, a 2.2.0 run
 mis-orders only among runs tied on the same floor (accepted, CONTEXT). The
 first transition deploy is the user's go at Phase 87's end (87-08).
 
+After a transition deploy, prove the live rules with
+`node tools/boards-smoke.mjs --transition`: it signs up anonymously, creates a
+run with the 2.3 `deepKey`, creates a run with the exact 2.2.0 `deepKey`
+(`legacyDeepKeyOf`, the value a shipped vc12 client writes), confirms a third
+`deepKey` value is refused, then erases its runs and deletes its account (in a
+`finally`, even when a step fails). Every step must PASS. Against the final
+rules the `create-legacy-key` step fails, which is how the probe tells the two
+rule sets apart. It is a Phase 87 transition artifact, deleted at the 2.3
+cutover.
+
 ## 7. Identity
 
 Every board write needs an anonymous Firebase identity, created lazily —
@@ -492,7 +502,23 @@ node tools/boards-admin.mjs export --format json --since 2026-09-01 --until 2026
 
 # With a service-account key file instead of gcloud:
 node tools/boards-admin.mjs top --stat purse --key ../ddr-boards-sa.json
+
+# Phase 87 (BOARD-28) transition tool: move runs filed with the old 2.2.0
+# DEPTH key onto the most-steps key. A dry run by default (prints scanned /
+# current / old / left-alone counts), --yes to patch:
+node tools/boards-admin.mjs rekey-deep
+node tools/boards-admin.mjs rekey-deep --yes
 ```
+
+**`rekey-deep [--season N|--all-seasons] [--yes]`** reads every run in the
+season (one billed read per run) and classifies its `deepKey` against its own
+floor and steps: already on the new formula, on the 2.2.0 formula (to be
+re-keyed), or neither (left alone and reported). It is a dry run unless
+`--yes`, and idempotent: a second `--yes` finds nothing left to move. It
+patches only `deepKey`, with the operator's admin credentials (which bypass
+the security rules, so it works under either rule set). It is a Phase 87 transition artifact, run at the 2.3
+release and again at the final-rules cutover (`docs/RELEASING.md`, "Release
+2.3.0"), then deleted.
 
 **Key hygiene:** a service-account key file (if one is ever created) lives
 **outside** the repository, never in `www/`. An `--out` export path resolving

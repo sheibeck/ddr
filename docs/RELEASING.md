@@ -124,6 +124,48 @@ ask before pushing a versionCode-bumped signed AAB to the testing track).
   A Play-installed build and a locally-signed build have different signers, so one must be
   uninstalled before the other installs — the phone can't hold both.
 
+## Release 2.3.0: the DEPTH-key steps (BOARD-28)
+
+These steps slot into the 2.3.0 ordered checklist when it is written at
+milestone close. Hard order, do not skip ahead (Phase 87, report #9: the
+DEPTH board now breaks a floor tie by MORE steps, so `deepKey` changed from
+`floor * 1,000,000 + (999,999 - steps)` to `floor * 1,000,000 + steps`, and
+the shipped 2.2.0 / vc12 client still writes the old value). Every live step
+below (a deploy, the smoke probe, a re-key) is the user's go first; ask
+before each one.
+
+1. **The transition rules are live before any 2.3 build submits a run.** They
+   are deployed at Phase 87's end (87-08) and recorded in
+   `docs/LEADERBOARDS.md` section 14. If they are not, deploy them with the
+   transition command in `docs/LEADERBOARDS.md` section 6, then run
+   `node tools/boards-smoke.mjs --transition`: every step PASS (a 2.3 key
+   lands, a 2.2.0 key lands, any third value is refused).
+2. **At the 2.3 release, after the user's Play upload:** run
+   `node tools/boards-admin.mjs rekey-deep` (a dry run; record the
+   scanned / current / old / left-alone counts), then
+   `node tools/boards-admin.mjs rekey-deep --yes`. It is idempotent and safe
+   to repeat.
+3. **When 2.3 reaches testers** (the user confirms the update is live on
+   their track): deploy the final rules with the plain command —
+   `firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f --non-interactive`.
+   Then run `node tools/boards-smoke.mjs` (every step PASS), then
+   `node tools/boards-admin.mjs rekey-deep --yes` once more (it catches
+   2.2.0 runs filed between step 2 and the cutover), then
+   `node tools/boards-admin.mjs rekey-deep` must report 0 runs on the old
+   key. **From this moment a 2.2.0 client's run is refused by the live
+   rules**, the same trade the 2.2 cutover made for 2.1.0 bug reports:
+   confirm it with the user before deploying.
+4. **Delete the transition artifacts:** `firebase/firestore.transition.rules`,
+   `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js`,
+   `legacyDeepKeyOf` (`src/browser/runDoc.js`), the fake's
+   `acceptLegacyDeepKey` option and admin runs PATCH
+   (`src/browser/fakeBoardServer.js`), `rekey-deep` / `classifyDeepKeys` /
+   `patchDeepKey` (`tools/boards-admin.mjs`), the `--transition` probe
+   (`tools/boards-smoke.mjs`) and their tests. Flip
+   `test/unit/compliance-docs.test.js`'s section-6 test back to "the
+   transition files are gone", turn `docs/LEADERBOARDS.md` section 6's 2.3
+   subsection into history, run `npm test`, commit.
+
 ## Android toolchain pin (AGP 8.13.0, D-21)
 
 The build stays on **AGP 8.13.0 / Gradle 8.14.3 / JDK 21 / compileSdk 36** (Phase 67, D-21).
