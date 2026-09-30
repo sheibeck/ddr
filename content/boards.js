@@ -105,7 +105,7 @@ export const LEADERBOARD_COPY = Object.freeze({
       label: "DEPTH",
       unit: "FLOOR · SQ",
       col: "#d3c49f",
-      rule: "Lowest floor reached. Ties go to fewer squares walked.",
+      rule: "Lowest floor reached. Ties go to more squares walked.",
     }),
     days: Object.freeze({
       label: "DAYS",

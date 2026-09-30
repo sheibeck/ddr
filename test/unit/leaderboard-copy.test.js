@@ -173,9 +173,10 @@ test("LEADERBOARD_COPY.stats has exactly deep/days/kills/purse in BOARD_STATS or
   assert.deepStrictEqual(Object.keys(LEADERBOARD_COPY.stats), ["deep", "days", "kills", "purse"]);
 });
 
+// Phase 87 (BOARD-28, report #9) reversed the DEPTH tie-break: most steps first.
 test("LEADERBOARD_COPY.stats each pins label/unit/col/rule verbatim from the mock", () => {
   const pins = {
-    deep: { label: "DEPTH", unit: "FLOOR · SQ", col: "#d3c49f", rule: "Lowest floor reached. Ties go to fewer squares walked." },
+    deep: { label: "DEPTH", unit: "FLOOR · SQ", col: "#d3c49f", rule: "Lowest floor reached. Ties go to more squares walked." },
     days: { label: "DAYS", unit: "DAYS", col: "#8fb08a", rule: "Days survived underground." },
     kills: { label: "KILLS", unit: "KILLS", col: "#e07260", rule: "Things killed before being killed." },
     purse: { label: "WILMST", unit: "WILMST", col: "#e8c97a", rule: "Carried at the moment of death. All of it still down there." },
