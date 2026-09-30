@@ -186,7 +186,45 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans**: TBD
+**Plans:** 10 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 89-01-PLAN.md — ITEM-01/ITEM-06: docs/ITEM-AUDIT.md (one row per item: text / engine / canon / verdict), the Systems list, and ONE batched balance checkpoint (Q1 floor-12 limits, Q2 Joiner movement and sense items, Q3 the Magic User Joiner's scroll, Q4 Joiner armour repair, Q5+ audit finds); rulings recorded (autonomous: false)
+- [ ] 89-02-PLAN.md — ITEM-05: Enlarge is Troll-sized (+11 damage = size step +2 plus +9 bulk, foes +1 to hit, 50 squares, price 150), text, lines and chip, declared fixture moves
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 89-03-PLAN.md — Poplar Staff heals the whole party d20+10 each (derived stream, partyHealed); the Pendant of Fortitude's armed charge joins the source link (disarmed on take-off, cooldown runs on)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 89-04-PLAN.md — ITEM-07 soak: one Joiner damage pipeline (its own Pendant, Brace, armour soak, wear and breakage from a derived stream), foe bolts included, narrated
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 89-05-PLAN.md — ITEM-07 use path: wear-on-join (and on load), memberUseItem (potion or worn item, named refusals), Joiner item timers and heal-over-time tick on every step, the Q2 and Q3 rulings
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 89-06-PLAN.md — ITEM-07 in a fight: round-1 worn item, the one-third potion, Speed's second swing; Joiner item chips anywhere (memberConditionsOf)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 89-07-PLAN.md — ITEM-07 player side: the Company panel lists armour, potions, worn items and chips with DRINK/USE outside a fight; the bot uses its Joiner's items
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 89-08-PLAN.md — the audit's remaining engine fixes and engine rulings (Q1, Q4, Q5+), one pin per row
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 89-09-PLAN.md — TEXT-01 for every item row, line and chip (to hit / d20 ranges / foe counts / parley), Walnut casts Weaken, the Death typo, every audit text fix; old saves' item text refreshed on load
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 89-10-PLAN.md — the text-vs-engine guard (every stated number claimed and equal to the engine; surfaces; party-wide reach), the audit table closed with a pin per row, GEAR-BALANCE and USABLE-FEATURES-AUDIT updated, phase gate
 
 ### Phase 90: Spell & Skill Audit
 
