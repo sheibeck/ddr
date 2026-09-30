@@ -28,7 +28,7 @@
 
 - [ ] **ITEM-01**: Every item (treasure, armour, weapon, cloak, jewellery, staff, wand, potion, scroll) is in an audit table comparing its text, engine behaviour and canon. Each mismatch is fixed or recorded as a deliberate ruling, and each fix is pinned by a test.
 - [x] **ITEM-02**: When the player takes off, drops, sells or swaps a used worn item, or the item is destroyed, its activated benefit ends at once with a narrated line. Timed effects carry their source item and slot, which survives save, load and relaunch. Joiners' gear is covered too, so a player can't stack benefits from items they're no longer wearing.
-- [ ] **ITEM-03**: A heal-over-time system exists. Once used, the Cloak of Regeneration heals every 10 steps for 30 steps (three ticks), with a narrated line for each tick.
+- [x] **ITEM-03**: A heal-over-time system exists. Once used, the Cloak of Regeneration heals every 10 steps for 30 steps (three ticks), with a narrated line for each tick.
 - [x] **ITEM-04**: The Cloak of Strength stops foe critical hits on its wearer (hero or Joiner) and no longer stops the wearer's own crits. Its activation gets its own chip and name, distinct from the Fighter's Braced.
 - [ ] **ITEM-05**: The Enlarge potion is worth drinking: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage (report #6).
 - [ ] **ITEM-06**: Every system the item audit finds missing is built or re-ruled and listed in the audit. This includes party-wide item effects such as the Crystal Staff.
@@ -110,7 +110,7 @@
 |-------------|-------|--------|
 | ITEM-01 | Phase 89 | Pending |
 | ITEM-02 | Phase 88 | Complete |
-| ITEM-03 | Phase 88 | Pending |
+| ITEM-03 | Phase 88 | Complete |
 | ITEM-04 | Phase 88 | Complete |
 | ITEM-05 | Phase 89 | Pending |
 | ITEM-06 | Phase 89 | Pending |

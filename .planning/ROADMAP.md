@@ -23,7 +23,7 @@
 ### v2.3 Truth in Advertising (Phases 87–92) — IN PROGRESS
 
 - [x] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps. (completed 2026-09-30)
-- [ ] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits.
+- [x] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits. (completed 2026-09-30)
 - [ ] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled.
 - [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
@@ -158,7 +158,7 @@ Plans:
   3. Once the Cloak of Regeneration is used, its wearer heals on each of the next three 10-step marks (30 steps in all) with a narrated line for each tick, and taking the cloak off stops the ticks that are left.
   4. A hero or Joiner wearing the Cloak of Strength takes no critical hits from foes and still lands their own crits, and its activation shows its own chip and name, not the Fighter's Braced.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -172,7 +172,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 88-04-PLAN.md — ITEM-03: heal-over-time as activation data on the squares tick; Cloak of Regeneration 30 squares, a d6 at 10/20/30 from a derived stream, 50 cd; every tick narrated; Regenerating chip; declared fixture moves
+- [x] 88-04-PLAN.md — ITEM-03: heal-over-time as activation data on the squares tick; Cloak of Regeneration 30 squares, a d6 at 10/20/30 from a derived stream, 50 cd; every tick narrated; Regenerating chip; declared fixture moves
 
 ### Phase 89: Item Audit & Fixes
 
@@ -270,7 +270,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
-| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 3/4 | In Progress|  |
+| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |

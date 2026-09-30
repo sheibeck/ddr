@@ -2,38 +2,38 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 88
-current_phase_name: "Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak"
-status: executing
+current_phase: 89
+current_phase_name: Item Audit & Fixes
+status: planning
 stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
-last_updated: "2026-09-30T15:00:16.703Z"
+last_updated: "2026-09-30T15:41:48.362Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 88 execution started
+last_activity_desc: Phase 88 complete, transitioned to Phase 89
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 14
-  completed_plans: 13
-  percent: 14
+  completed_plans: 14
+  percent: 29
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-30 after Phase 87; v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 88 — Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
+**Current focus:** Phase 89 — Item Audit & Fixes (CONTEXT written; 90 and 91 CONTEXT written too)
 
 ## Current Position
 
-Phase: 88 (Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-09-30 — Phase 88 execution started
+Phase: 89 — Item Audit & Fixes
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-30 — Phase 88 complete, transitioned to Phase 89
 
-Progress: [█████████░] 93% (1/7 phases)
+Progress: [███░░░░░░░] 29% (2/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -60,6 +60,8 @@ Progress: [█████████░] 93% (1/7 phases)
 ## Accumulated Context
 
 ### Blockers/Concerns (open)
+
+- [Phase 88 → Phase 92, bot]: `tools/lib/tuning-bot.mjs` still treats a ready worn Cloak of Regeneration as an instant "free heal"; since 88-04 it heals 1d6 at 10/20/30 squares. Re-read that bot logic before the milestone-end bot pass (88-04 finding).
 
 - [Phase 87, BOARD-28 live]: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
 
@@ -273,7 +275,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30T15:00:16.664Z
-Stopped at: Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04
+Stopped at: Phase 88 complete (VERIFICATION passed, suite 8280/0 on 6800c053), ready to plan Phase 89. Smart-discuss CONTEXT already written for Phases 89, 90 and 91 (user-accepted 2026-09-30); 91.1 and 92 discuss later (need 91's audit and the ECON-11 readout). Autonomous run in progress (/gsd-autonomous --from 88).
 
 - (history below is the pre-close record)
 
@@ -482,6 +484,7 @@ Resume file: None
 | Phase 88 P01 | 22 min | 3 tasks | 15 files |
 | Phase 88 P02 | 11 min | 2 tasks | 5 files |
 | Phase 88 P03 | 6 min | 2 tasks | 1 files |
+| Phase 88 P04 | 31 min | 3 tasks | 25 files |
 
 ## Decisions
 
