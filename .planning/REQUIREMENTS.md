@@ -32,6 +32,7 @@
 - [ ] **ITEM-04**: The Cloak of Strength stops foe critical hits on its wearer (hero or Joiner) and no longer stops the wearer's own crits. Its activation gets its own chip and name, distinct from the Fighter's Braced.
 - [ ] **ITEM-05**: The Enlarge potion is worth drinking: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage (report #6).
 - [ ] **ITEM-06**: Every system the item audit finds missing is built or re-ruled and listed in the audit. This includes party-wide item effects such as the Crystal Staff.
+- [ ] **ITEM-07**: Joiners can use the items they carry, and a foe's hit on a Joiner goes through the Joiner's armour soak, just like the hero (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Races & sub-classes (IDENT)
 
@@ -39,16 +40,31 @@
 - [ ] **IDENT-12**: All 24 sub-classes are audited. Each trait in `content/identity.js`, each blurb and each sub-class note states every advantage and drawback the engine applies, and matches it. Mismatches are fixed with tests.
 - [ ] **IDENT-13**: A Wizard always starts with at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled. This is pinned across a wide seed sweep.
 - [ ] **IDENT-14**: An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
+- [ ] **IDENT-15**: A Cleric cannot cast offensive spells (they gain more hit points), and always starts with the level-1 Heal spell (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-16**: The Master of Arms gets a real drawback in place of "no clean withdrawal in round one", agreed with the user (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-17**: The Bard sings a random song from a song table once every 50 squares; each song has the effect of a random offense or defense spell of the Bard's level or lower. The dim-witted-foes drawback is stated plainly (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-18**: A Pickpocket who gains an item from a chest or a monster gains one extra item as well; the shop drawback stays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-19**: A Cutthroat who descends with a Joiner rolls a d10; on a 1, that Joiner dies (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-20**: Fridgian frenzy: each swing, a 4–6 on a d6 gives a second swing; no armour, thick hide soaks 2; the "never wastes itself on a corpse" line is removed (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **IDENT-21**: Troll store prices are doubled; the text states 75 starting hit points and +11 damage (the Large +2 included). The Wilmsry drawback is reworded: you refuse to take Magic User Joiners on (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Spells (SPELL) — backlog 999.15
 
 - [ ] **SPELL-08**: Every spell is in an audit table covering its to-hit roll (if any), damage dice, multipliers, duration, resist checks, school gates, and backfire and fumble odds. Its text, the Grimoire, its chips and the foe card all agree with the engine and canon, stated in roll-high form.
 - [ ] **SPELL-09**: The Strength spell does what its text says (report #8). The damage bonus, its duration ("till tomorrow" vs "until you make camp") and the hp it grants all match between the text and the engine.
+- [ ] **SPELL-10**: The Special and Illusion schools get spells, drawn first from the rulebook's page-50 spell list, combat-effective or useful in the maze (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **SPELL-11**: Doze and Stun are swapped: Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Stun holds one foe for d4 rounds and a hit does not end it (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **SPELL-12**: Spell reworks: Petrify kills one foe outright (no loot, resist still allowed, no floor-12 cap); Stupidity drops a foe's intelligence to 1 for the fight; Blind limits a foe to its maximum roll and no crits (no floor-12 cap); Ice is an area d10 with a chance to freeze each target 1d4 rounds; Strength gives +d10 damage rolled on every damage roll, no hp; Lesser Summon and Phantom Host are removed, and the Summoner casts the level-2 Summon from level 1 (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Skills & abilities (ABIL) — backlog 999.15
 
 - [ ] **ABIL-06**: Every skill and ability is in an audit table covering its cooldown or once-per-fight rule, auto-hit or forced crit, bonus terms, and who can use it (hero, Joiners). Its text and the engine agree.
 - [ ] **ABIL-07**: Pommel Strike gains the player more than it costs (report #4). Using it doesn't trade the hero's attack for the foe's lost turn.
+
+### Plain-language text & parley (TEXT, PARLEY) — user, 2026-09-30
+
+- [ ] **TEXT-01**: Rules text reads plainly: "faces" wording becomes "+/− to hit" (hard caps name the d20 range), "squares of enemies" becomes how many foes an area effect hits, and "can talk to" becomes "can always parley with". Each audit phase (89, 90, 91) applies it to its own rows (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [ ] **PARLEY-01**: A successful parley gives experience and loot (recommended: full experience and the fight's normal spoils), and the game explains to the player what a parley is and what it pays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Party bug (PARTY)
 
@@ -85,7 +101,7 @@
 ## Out of Scope
 
 - **Networked multiplayer / new party features.** This milestone only fixes the party display bug.
-- **New content** (new items, spells, races or sub-classes) unless the audit shows an existing entry needs a missing system to work. That system is ITEM-06.
+- **New content** (new items, spells, races or sub-classes) unless the audit shows an existing entry needs a missing system to work. That system is ITEM-06. Exceptions by user ruling 2026-09-30: new Special and Illusion spells (SPELL-10) and the Bard song table (IDENT-17).
 - **The first-run tutorial (UX-06) and the Play production launch (STR-*).** These are still the v1.0 launch tail.
 
 ## Traceability
@@ -117,6 +133,19 @@
 | VALUE-02 | Phase 91.1 | Pending |
 | VALUE-03 | Phase 91.1 | Pending |
 | VALUE-04 | Phase 91.1 | Pending |
+| ITEM-07 | Phase 89 | Pending |
+| TEXT-01 | Phases 89, 90, 91 | Pending |
+| SPELL-10 | Phase 90 | Pending |
+| SPELL-11 | Phase 90 | Pending |
+| SPELL-12 | Phase 90 | Pending |
+| IDENT-15 | Phase 91 | Pending |
+| IDENT-16 | Phase 91 | Pending |
+| IDENT-17 | Phase 91 | Pending |
+| IDENT-18 | Phase 91 | Pending |
+| IDENT-19 | Phase 91 | Pending |
+| IDENT-20 | Phase 91 | Pending |
+| IDENT-21 | Phase 91 | Pending |
+| PARLEY-01 | Phase 91 | Pending |
 | TUNE-10 | Phase 92 | Pending |
 
 **Coverage:** 26 requirements, 26 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 91.1: 4, 92: 3). No orphans, no duplicates.

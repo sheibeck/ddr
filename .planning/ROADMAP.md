@@ -178,7 +178,7 @@ Plans:
 
 **Goal**: Every item does what its text says: one audit table covers them all, each mismatch is fixed or ruled, the Enlarge potion is worth drinking, and every missing item system is built or re-ruled.
 **Depends on**: Phase 88 (the effect-source and heal-over-time systems are the foundation the fixes and ITEM-06's new systems build on). The audit table lives in `docs/`, one row per item (text / engine / canon / verdict), and every fixed row is pinned by a test in the `authored-ranges` / `roll-sign-consistency` style. No new items unless the audit shows an existing entry needs a missing system, and that system is ITEM-06. `/gsd-discuss-phase` recommended for ITEM-05 (the Enlarge numbers: how much damage, how much easier to hit, measured against a Troll's size damage). No bot pass.
-**Requirements**: ITEM-01, ITEM-05, ITEM-06
+**Requirements**: ITEM-01, ITEM-05, ITEM-06, ITEM-07, TEXT-01 (plus the user rulings of 2026-09-30: `.planning/notes/v2.3-user-rulings-2026-09-30.md`, required reading)
 **Success Criteria** (what must be TRUE):
 
   1. The audit table has one row for every treasure, armour, weapon, cloak, jewellery, staff, wand, potion and scroll, comparing its text, the engine and canon, and every mismatch is fixed or recorded as a deliberate ruling.
@@ -192,7 +192,7 @@ Plans:
 
 **Goal**: Every spell and every skill does what its text says, stated in roll-high form, and the Strength spell and Pommel Strike do what players expect.
 **Depends on**: Phase 89 (sequential: it shares the audit-table and ledger-test method, and any spell or skill that grants a timed effect uses the Phase 88 effect system). Two audit tables in `docs/`, one row per spell and per skill or ability (text / engine / canon / verdict), each fixed row pinned by a test that extends `authored-ranges` and `roll-sign-consistency` to every roll a spell or skill makes. This is backlog 999.15, including the second roll that the 2026-09-27 universal spell resist adds after a thrown spell's to-hit. `/gsd-discuss-phase` recommended: SPELL-09 (which way Strength gets fixed: change the text to match the engine, or the engine to match the text) and ABIL-07 (the Pommel Strike redesign). No bot pass.
-**Requirements**: SPELL-08, SPELL-09, ABIL-06, ABIL-07
+**Requirements**: SPELL-08, SPELL-09, SPELL-10, SPELL-11, SPELL-12, ABIL-06, ABIL-07, TEXT-01 (plus the user rulings of 2026-09-30: `.planning/notes/v2.3-user-rulings-2026-09-30.md`, required reading)
 **Success Criteria** (what must be TRUE):
 
   1. The spell table covers every spell's to-hit roll (if any), damage dice, multipliers, duration, resist checks, school gates, and backfire and fumble odds. The spell's text, the Grimoire, its chips and the foe card all agree with the engine and canon in roll-high form (a damage die no longer reads like a to-hit roll, and the real hit odds are stated).
@@ -206,7 +206,7 @@ Plans:
 
 **Goal**: Every race and sub-class does what its blurb says, a Wizard always opens with a spell that hurts, and an Illusionist chooses where a teleport lands.
 **Depends on**: Phase 90 (the blurb and trait checks run against the audited spells, school gates and abilities, and the Wizard's day-one pool is read from the audited spell list, so chargen moves once). The audit table lives in `docs/`, one row per race and sub-class (trait / blurb / engine / canon / verdict), with a test pinning each fixed row. IDENT-13 moves chargen: the fixtures it moves are measured, declared and regenerated, it is pinned across a wide seed sweep, and it covers the Wizard sub only (the other Magic User subs keep the Phase 40 best-effort guarantee). `/gsd-discuss-phase` recommended for IDENT-14 (the teleport destination UI: how the Illusionist picks the landing square). No bot pass.
-**Requirements**: IDENT-11, IDENT-12, IDENT-13, IDENT-14
+**Requirements**: IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-17, IDENT-18, IDENT-19, IDENT-20, IDENT-21, PARLEY-01, TEXT-01 (plus the user rulings of 2026-09-30: `.planning/notes/v2.3-user-rulings-2026-09-30.md`, required reading)
 **Success Criteria** (what must be TRUE):
 
   1. All 6 races and 24 sub-classes are in the audit table: each trait in `content/identity.js`, each blurb and each race and sub-class note is checked against the engine and canon, each blurb states every advantage and drawback the engine applies, and every mismatch is fixed with a test or ruled deliberate.
