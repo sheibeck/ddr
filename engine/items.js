@@ -62,7 +62,7 @@ import { derivedRng } from "./rng.js";
 // calls resolveEtherEnd only inside endSourceEffects, never at module
 // evaluation time).
 import { resolveEtherEnd } from "./movement.js";
-import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe, downMember } from "./combat.js";
 // RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
 // weaken cases below read (difficulty.js imports nothing from engine/).
 import { controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
@@ -1415,9 +1415,15 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * `src: { slot, n }` (endSourceEffects ends it when the item leaves that slot)
  * only when `slot` is a SOURCE_SLOTS key and the item is not used up on use:
  * potions and the Torch are consumed, so their effects run their course.
+ *
+ * Phase 89 (ITEM-07): `sheet` is the optional character sheet the effect starts
+ * on, for a Joiner's own use (memberUseWorn). It defaults to the hero, so every
+ * hero call is unchanged. Everything above runs on that sheet (its timers, its
+ * staff charge, its size), and the started event carries `member` (the sheet's
+ * name) when the sheet is not the hero's.
  */
-function applyActivation(state, it, rng, events, slot = null) {
-  const c = state.c;
+function applyActivation(state, it, rng, events, slot = null, sheet = null) {
+  const c = sheet ?? state.c;
   const act = activationFor(it);
   if (!act) return;
   if (act.charges !== undefined) {
@@ -1448,6 +1454,7 @@ function applyActivation(state, it, rng, events, slot = null) {
       started.ticks = act.hot.ticks;
       started.heal = { ...act.hot.heal };
     }
+    if (c !== state.c) started.member = c.name;
     events.push(started);
   } else if (act.cd) {
     startCooldown(c, itemTimerId(it), { squares: act.cd });
@@ -1466,16 +1473,22 @@ function applyActivation(state, it, rng, events, slot = null) {
  * via `carriedItems`, bag ∪ worn — a dropped staff's record simply vanishes,
  * no event) and, only when the pool isn't yet full, restarts the recharge
  * cooldown so the NEXT charge keeps counting down.
+ *
+ * Phase 89 (ITEM-07): `sheet` is the optional character whose transitions
+ * these are (a Joiner's, after movement.js ticks its timers). It defaults to
+ * the hero; a Joiner's events carry `member` (its name), the hero's are
+ * byte-identical to before.
  */
-export function narrateTimerTransitions(state, transitions, events = []) {
-  const c = state.c;
+export function narrateTimerTransitions(state, transitions, events = [], sheet = null) {
+  const c = sheet ?? state.c;
+  const who = c !== state.c ? { member: c.name } : {};
   for (const { id, from } of transitions || []) {
     if (id.startsWith("item:")) {
       const key = id.slice("item:".length);
       if (from === "effect") {
-        events.push({ type: "itemEffectFaded", item: key, kind: ACTIVATION_OF[key]?.kind ?? null });
+        events.push({ type: "itemEffectFaded", item: key, kind: ACTIVATION_OF[key]?.kind ?? null, ...who });
       } else if (from === "cooldown") {
-        events.push({ type: "itemCooled", item: key });
+        events.push({ type: "itemCooled", item: key, ...who });
       }
     } else if (id.startsWith("charges:")) {
       const key = id.slice("charges:".length);
@@ -1484,7 +1497,7 @@ export function narrateTimerTransitions(state, transitions, events = []) {
       const it = carriedItems(c).find((x) => x && x.n === key);
       if (it) {
         it.charges = (Number.isInteger(it.charges) ? it.charges : 0) + 1;
-        events.push({ type: "staffRecharged", item: key, charges: it.charges, max });
+        events.push({ type: "staffRecharged", item: key, charges: it.charges, max, ...who });
         if (it.charges < max) startCooldown(c, id, { squares: act.recharge });
       }
     }
@@ -1512,25 +1525,32 @@ export function narrateTimerTransitions(state, transitions, events = []) {
  * `healTick { type, item, amount, gained, tick, ticks }` (a full-hp tick has
  * gained 0 and is still spent: it counts as one of the ticks).
  *
- * Hero only (CONTEXT "Wearer only"; Joiner sheets are not ticked). A dead
- * state, a hero at 0 hp, or a sheet with no plain-object `timers` ticks
- * nothing. There are no ticks in a fight: move returns before this runs while
- * `state.combat` is set. Adds no main-rng draw.
+ * The hero, and since Phase 89 (ITEM-07) each Joiner on its own sheet
+ * (`sheet`, the optional trailing parameter, defaults to the hero: CONTEXT
+ * "Wearer only" held for Phase 88 only). A Joiner's dice come from the same
+ * keyed stream with `"member", <its party index>` appended to the key (the
+ * hero's key is unchanged), its heal writes its own `wp`, and its healTick
+ * carries `member`. A dead state, a sheet at 0 hp, or a sheet with no
+ * plain-object `timers` ticks nothing. There are no ticks in a fight: move
+ * returns before this runs while `state.combat` is set. Adds no main-rng draw.
  */
-export function tickHealOverTime(state, cost, rng, events = []) {
+export function tickHealOverTime(state, cost, rng, events = [], sheet = null) {
   if (!state || state.dead) return events;
-  const c = state.c;
+  const c = sheet ?? state.c;
   if (!c || !(c.wp > 0)) return events;
+  const isMember = c !== state.c;
+  const partyIdx = isMember && Array.isArray(state.party) ? state.party.indexOf(c) : -1;
   const timers = c.timers;
   if (!timers || typeof timers !== "object" || Array.isArray(timers)) return events;
   const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
   for (const { key, act, rec } of liveItemEffects(c)) {
     if (!act.hot) continue;
     for (const k of healTicksDue(act, rec.left, cost)) {
-      const amount = rollDice(derivedRng(cursor, "healTick", key, k, state.steps), act.hot.heal);
+      const tickRng = isMember ? derivedRng(cursor, "healTick", key, k, state.steps, "member", partyIdx) : derivedRng(cursor, "healTick", key, k, state.steps);
+      const amount = rollDice(tickRng, act.hot.heal);
       const gained = Math.max(0, Math.min(c.maxWP - c.wp, amount));
       c.wp += gained;
-      events.push({ type: "healTick", item: key, amount, gained, tick: k, ticks: act.hot.ticks });
+      events.push({ type: "healTick", item: key, amount, gained, tick: k, ticks: act.hot.ticks, ...(isMember ? { member: c.name } : {}) });
     }
   }
   return events;
@@ -1607,6 +1627,184 @@ export function healPartyMember(state, idx, amount) {
   const before = body.wp;
   body.wp = Math.max(before, Math.min(max, before + (Number.isFinite(amount) && amount > 0 ? amount : 0)));
   return Math.max(0, body.wp - before);
+}
+
+/**
+ * MEMBER_LEADER_KINDS — Phase 89 (ITEM-07, ruling Q2, 2026-09-30, recorded in
+ * docs/ITEM-AUDIT.md "## Rulings"): "A Joiner cannot use the party-moving and
+ * leading items (Cloak of Flying, Cloak of Ether, Bracelet of Flight, Amulet of
+ * Light, Helm of Knowledge, Amulet of Stone)". Those six items are five
+ * activation kinds: fly (Cloak of Flying, Bracelet of Flight), ether, glow,
+ * tongue and stone. A Joiner's use of one is refused `leaderOnly`, before any
+ * other check, with no draw and no change; the hero alone moves the party and
+ * leads it. Frozen, exactly these five (a test pins the list).
+ */
+export const MEMBER_LEADER_KINDS = Object.freeze(["fly", "ether", "glow", "tongue", "stone"]);
+
+/**
+ * MEMBER_SELF_KINDS — Phase 89 (ITEM-07), module-private: the worn-item
+ * activation kinds whose whole effect is the timer record applyActivation
+ * starts on the wearer's sheet (the same plain-break list useItem's switch
+ * carries for the hero, minus the MEMBER_LEADER_KINDS). `half` is handled
+ * apart (it arms the Pendant's charge). A kind in neither is an itemFizzled
+ * use, exactly like the hero's default branch.
+ */
+const MEMBER_SELF_KINDS = new Set(["knit", "strength", "enlarge", "speed", "haste", "acute", "invis", "power", "giant", "unseen", "critWard", "plate"]);
+
+/**
+ * rollPilferFumble(fumbleRng) — RULES-09, module-private: the ONE fumble roll
+ * the hero's useItem and a Joiner's memberUseWorn share. The d20 steady-hands
+ * check (rollCheck, atLeastFor(19, 20): only a 1 fails) and, only on a fumble,
+ * the d10 blast, both from the caller's derived stream. Returns
+ * `{ chk, dmg }` (`dmg` is 0 when the hands held).
+ */
+function rollPilferFumble(fumbleRng) {
+  const chk = rollCheck(fumbleRng, 20, atLeastFor(19, 20));
+  const dmg = chk.ok ? 0 : fumbleRng.d(10); // roll:amount
+  return { chk, dmg };
+}
+
+/**
+ * memberDrinkPotion(state, idx, rng, events) — Phase 89 (ITEM-07, user
+ * 2026-09-30: "let joiners use items they have ... Just like players."): party
+ * member `idx` drinks ONE of its OWN healing potions. The caller checks the
+ * refusals (memberUseItem: no member, in a fight, no potions, full hp; 89-06's
+ * in-fight policy checks its own); this only spends and heals. The potion is
+ * the hero's stock one, `2d10 + 5` written as `2 * d10 + 5`, doubled for a
+ * heal-twice race (RACES[race].heal2x), rolled from the derived stream
+ * `derivedRng(<main rng cursor>, "memberPotion", <state.acts>, idx, <potions
+ * before the drink>)`: the main rng is only READ for its cursor, never drawn.
+ * It spends `sheet.potions` (never the hero's), heals through
+ * healPartyMember (its C.allies entry in a fight, its sheet outside one,
+ * clamped to its maximum) and pushes `memberPotionDrunk { member, amount,
+ * gained, remaining, doubled? }`. Returns the events.
+ */
+export function memberDrinkPotion(state, idx, rng, events = []) {
+  const sheet = state.party[idx];
+  const before = sheet.potions;
+  sheet.potions = before - 1;
+  const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const r = derivedRng(cursor, "memberPotion", acts, idx, before);
+  let amount = 2 * r.d(10) + 5; // roll:amount
+  const doubled = RACES[sheet.race]?.heal2x ? sheet.race : null;
+  if (doubled) amount *= 2;
+  const gained = healPartyMember(state, idx, amount) ?? 0;
+  events.push({ type: "memberPotionDrunk", member: sheet.name, amount, gained, remaining: sheet.potions, ...(doubled ? { doubled } : {}) });
+  return events;
+}
+
+/**
+ * memberUseWorn(state, idx, slot, rng, events, now) — Phase 89 (ITEM-07): party
+ * member `idx` uses the item it wears in `slot` (cloak, jewelry1, jewelry2).
+ * The effect starts on the JOINER'S OWN sheet through applyActivation exactly
+ * like the hero's: the same `item:<key>` record, cooldown and `src: { slot, n }`
+ * link, so taking it off, a swap or its destruction ends it through
+ * endSourceEffects on that sheet. This function has NO fight refusal (the
+ * player's action, memberUseItem, refuses in a fight; 89-06's automatic
+ * in-fight use calls this directly).
+ *
+ * An empty slot, no such member or an item with no activation is a silent
+ * no-op, like the hero's empty slot. Refusals, in order, each
+ * `useRefused { item, member, reason }` with no draw and no change:
+ * `leaderOnly` (the activation kind is in MEMBER_LEADER_KINDS, ruling Q2),
+ * `combatOnly` (a TARGETED_KINDS item with no fight), `cooldown` (its record
+ * lives; with `left` and `phase`). Then the Pilfer fumble (RULES-09) for a
+ * Pilfer Joiner's jewel/cloak, from `derivedRng(cursor, "pilferFumble", acts,
+ * it.n, "member", idx)`: on a fumble the item is gone from its worn map, the
+ * d10 comes off the Joiner's live hp (its C.allies entry in a fight, its sheet
+ * otherwise, never below 0 on a sheet; downMember at 0 in a fight),
+ * `pilferFumbled { member }` is pushed and endSourceEffects runs on its sheet
+ * with why "destroyed". Otherwise `itemUsed { item, member }`, the Pendant
+ * arms `sheet.halfNext = { slot, n }`, and applyActivation starts the effect
+ * (`itemEffectStarted { member }`). Never touches the hero's sheet or items.
+ */
+export function memberUseWorn(state, idx, slot, rng, events = [], now = Date.now) {
+  const sheet = Array.isArray(state.party) ? state.party[idx] : null;
+  if (!sheet || typeof sheet !== "object") return events;
+  const it = WORN_SLOTS.includes(slot) && sheet.worn && typeof sheet.worn === "object" ? sheet.worn[slot] : null;
+  if (!it) return events;
+  const act = activationFor(it);
+  if (!act) return events;
+  const kind = act.kind;
+  const member = sheet.name;
+  if (MEMBER_LEADER_KINDS.includes(kind)) {
+    events.push({ type: "useRefused", item: it, member, reason: "leaderOnly" });
+    return events;
+  }
+  if (!state.combat && TARGETED_KINDS.has(kind)) {
+    events.push({ type: "useRefused", item: it, member, reason: "combatOnly" });
+    return events;
+  }
+  if (!isReady(sheet, itemTimerId(it))) {
+    const rec = sheet.timers && sheet.timers[itemTimerId(it)];
+    events.push({ type: "useRefused", item: it, member, reason: "cooldown", left: remaining(sheet, itemTimerId(it)), phase: rec ? rec.phase : "cooldown" });
+    return events;
+  }
+  if (pilferFumbles(sheet, it)) {
+    const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
+    const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+    const fumbleRng = derivedRng(cursor, "pilferFumble", acts, it.n, "member", idx);
+    const { chk, dmg } = rollPilferFumble(fumbleRng);
+    if (!chk.ok) {
+      const C = state.combat;
+      const ally = C && Array.isArray(C.allies) ? C.allies.find((a) => a && a.partyIdx === idx) : null;
+      if (ally) ally.wp -= dmg;
+      else sheet.wp = Math.max(0, sheet.wp - dmg);
+      delete sheet.worn[slot];
+      events.push({ type: "pilferFumbled", item: it.n, slot, ...rollFields(chk), dmg, member });
+      endSourceEffects(state, sheet, events, { slots: [slot], why: "destroyed", rng, now });
+      if (ally && ally.wp <= 0) downMember(state, ally, events);
+      return events;
+    }
+  }
+  events.push({ type: "itemUsed", item: it, member });
+  if (kind === "half") {
+    sheet.halfNext = { slot, n: it.n };
+  } else if (!MEMBER_SELF_KINDS.has(kind)) {
+    events.push({ type: "itemFizzled", member });
+    return events;
+  }
+  applyActivation(state, it, rng, events, slot, sheet);
+  return events;
+}
+
+/**
+ * memberUseItem(state, idx, ref, rng, events, now) — Phase 89 (ITEM-07): the
+ * player's Company-panel action (the engine action `memberUseItem { i, potion:
+ * true }` or `{ i, slot }`): make party member `idx` drink one of ITS healing
+ * potions, or use the item it wears in `slot`. OUTSIDE a fight only (CONTEXT:
+ * in a fight a Joiner's use is automatic, 89-06). Every refusal is its own
+ * named `useRefused` reason and draws nothing and changes nothing:
+ * `noMember` (no such Joiner, or one already downed), `inCombat` (a fight, or
+ * one pending), for a potion `noPotions` and `fullHealth` (at its maximum), and
+ * for a worn item the memberUseWorn refusals (`leaderOnly`, `combatOnly`,
+ * `cooldown`). An empty slot is a silent no-op, like the hero's. The hero's
+ * potions, items, charges and gold are never read or spent.
+ */
+export function memberUseItem(state, idx, ref, rng, events = [], now = Date.now) {
+  const sheet = Array.isArray(state.party) && Number.isInteger(idx) ? state.party[idx] : null;
+  if (!sheet || typeof sheet !== "object" || sheet.status === "downed") {
+    events.push({ type: "useRefused", reason: "noMember" });
+    return events;
+  }
+  if (state.combat) {
+    events.push({ type: "useRefused", member: sheet.name, reason: "inCombat" });
+    return events;
+  }
+  if (ref && ref.potion === true) {
+    if (!(sheet.potions > 0)) {
+      events.push({ type: "useRefused", member: sheet.name, reason: "noPotions" });
+      return events;
+    }
+    if (!(sheet.wp < sheet.maxWP)) {
+      events.push({ type: "useRefused", member: sheet.name, reason: "fullHealth" });
+      return events;
+    }
+    return memberDrinkPotion(state, idx, rng, events);
+  }
+  if (ref && typeof ref.slot === "string") return memberUseWorn(state, idx, ref.slot, rng, events, now);
+  return events;
 }
 
 /**
@@ -1775,10 +1973,11 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // either way, so a Pilfer's ordinary use costs the SAME main-rng draws a
   // non-Pilfer's identical use would.
   if (pilferFumbles(c, it)) {
+    // Phase 89 (ITEM-07): the roll itself is rollPilferFumble, shared with a
+    // Joiner's memberUseWorn (same d20, same d10, same stream order).
     const fumbleRng = pilferFumbleRng(state, rng, it);
-    const chk = rollCheck(fumbleRng, 20, atLeastFor(19, 20));
+    const { chk, dmg } = rollPilferFumble(fumbleRng);
     if (!chk.ok) {
-      const dmg = fumbleRng.d(10); // roll:amount
       c.wp -= dmg;
       // The item is gone — dusted, no armor/ward soak (the Apprentice
       // backfire precedent: this is the Pilfer's own hands, not a hit).
