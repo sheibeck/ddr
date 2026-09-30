@@ -30,7 +30,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Warded plate<i>AR 17 · 65/65 hp · enchanted · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
   <button class="goods" onclick>
-    html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">30 wm</span>"
+    html="<span class=\"g-n\">Rations (+1 ration)<i>6 left</i></span>\n        <span class=\"g-c\">30 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares</i></span>\n        <span class=\"g-c\">25 wm</span>"
   <button class="goods" disabled onclick>

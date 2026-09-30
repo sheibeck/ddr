@@ -10,6 +10,7 @@ import { WEAPONS, ARMORS, BAGS, STAFF_WEAPON } from "../../content/index.js";
 import { armorSoak, takesBagSlot, gearCompareParts, activationFor, strikeDie, wieldedStaff } from "../../engine/derived.js";
 import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgradeDelta, bagCap } from "../../engine/items.js";
 import { storeBuyRefusal } from "../../engine/economy.js";
+import { rationsLeft } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
 
 /**
@@ -120,7 +121,25 @@ export const USABLE_COPY = Object.freeze({
  */
 export const STORE_ROW_COPY = Object.freeze({
   bagFull: "bag full — sell or drop something first",
+  // Phase 87 (STORE-04): the Rations row's stock count ("{n}" filled by
+  // storeCountText) and the pack-cap reason (engine storeBuyRefusal's
+  // rationsFull).
+  rationsLeft: "{n} left",
+  rationsFull: "your pack holds no more rations",
 });
+
+/**
+ * storeCountText(line) — Phase 87 (STORE-04): the "N left" text an unsold
+ * Rations stock line shows in its row's italic sub, read from the engine's
+ * own `rationsLeft` (the same count buyFrom sells against), so the row can
+ * never disagree with what tapping BUY does. `null` for a sold row (it reads
+ * "sold" in the price column) and for every line that is not `buyRations`.
+ * Pure.
+ */
+export function storeCountText(line) {
+  if (!line || line.effectId !== "buyRations" || line.sold) return null;
+  return STORE_ROW_COPY.rationsLeft.replace("{n}", String(rationsLeft(line)));
+}
 
 /**
  * restrictedClasses(it) — Phase 43 (CLAR-02): the raw F/T/M letters string a
@@ -476,7 +495,9 @@ export function storeRowState(c, line) {
       ? cmp.line
       : refusal && refusal.reason === "bagFull"
         ? STORE_ROW_COPY.bagFull
-        : null;
+        : refusal && refusal.reason === "rationsFull"
+          ? STORE_ROW_COPY.rationsFull
+          : null;
   const compareLine = !line.sold && gear && cmp.legal ? cmp.line : null;
   const showUsable = !(gear && cmp && !cmp.legal);
   return { disabled, refusal, reasonText, compareLine, showUsable };

@@ -25,8 +25,14 @@
 // no item (food, rations, the sealed scroll, repair) keep their engine
 // `sub` byte-for-byte (R-07); the engine's stock `sub` strings themselves
 // are never edited (the economy parity harness compares them).
+//
+// Phase 87 (STORE-04): the Rations row also carries its stock count ("N left",
+// viewModels.js#storeCountText, read from the engine's own rationsLeft) in its
+// italic sub, and the pack-cap refusal reason rides the same row via
+// storeRowState; a spent row greys and reads "sold" like any sold row.
 
 import { armorDisplay, usableBy, storeRowState, itemStatLines } from "./viewModels.js";
+import { storeCountText } from "./viewModels.js";
 import { bagUsage, renderCarriedList } from "./gearTab.js";
 
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
@@ -125,7 +131,7 @@ export function renderStoreScreen(host, state, deps = {}) {
     // line (never disables BUY), then the row's disable reason (can't-use /
     // bag-full — a gold shortfall is already named by the price column, so
     // it adds nothing here).
-    const subText = [sub, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
+    const subText = [sub, storeCountText(item), rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
     row.innerHTML = `<span class="g-n">${item.n}${subText || usable ? `<i>${subText || ""}${subText && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
     row.onclick = () => deps.buyItem?.(i);

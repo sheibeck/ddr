@@ -67,6 +67,17 @@
 // Freeze, Ice, Blind, Petrify, Birch/Walnut/Oak/Cedar Staff or Amulet of
 // Stone row.
 //
+// Phase 87 (STORE-04), Plan 03: TWO declared regenerations, every other
+// fixture byte-identical (confirmed with `git diff --stat` at regeneration
+// time). The store's Rations row now shows the stock count the d10 roll left
+// (viewModels.js#storeCountText, the engine's own rationsLeft):
+//   - mu-store.store: the Rations row's name span moves from
+//     "Rations (+1 ration)" with no sub to "Rations (+1 ration)<i>6 left</i>".
+//   - thief-store.store: same row, "Rations (+1 ration)" ->
+//     "Rations (+1 ration)<i>3 left</i>".
+// The two counts are the d10 from the derived storeRations stream (87-02) for
+// each fixture's fixed seed. Price column and every other row are unchanged.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

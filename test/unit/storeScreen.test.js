@@ -159,6 +159,11 @@ test("storeScreen.js imports renderCarriedList/bagUsage from ./gearTab.js and ar
   assert.match(STORE_RAW, /import \{ bagUsage, renderCarriedList \} from "\.\/gearTab\.js";/);
 });
 
+test("storeScreen.js composes the Rations count into the row sub (Phase 87 STORE-04)", () => {
+  assert.match(STORE_RAW, /import \{ storeCountText \} from "\.\/viewModels\.js";/);
+  assert.match(STORE_RAW, /\[sub, storeCountText\(item\), rs\.compareLine, rs\.reasonText\]/);
+});
+
 // ─── (7) voice safety ─────────────────────────────────────────────────────
 
 const ALLOW = new Set(ALLOWLIST.map((w) => w.toLowerCase()));

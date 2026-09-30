@@ -28,7 +28,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Warded leather<i>AR 7 · 25/25 hp · enchanted · (usable by Fighters, Thieves) · AR 7 vs your AR 6 · upgrade</i></span>\n        <span class=\"g-c\">700 wm</span>"
   <button class="goods" onclick>
-    html="<span class=\"g-n\">Rations (+1 ration)</span>\n        <span class=\"g-c\">21 wm</span>"
+    html="<span class=\"g-n\">Rations (+1 ration)<i>3 left</i></span>\n        <span class=\"g-c\">21 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares · bag full — sell or drop something first</i></span>\n        <span class=\"g-c\">18 wm</span>"
 ## #sell-head

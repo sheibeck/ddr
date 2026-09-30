@@ -22,7 +22,7 @@ import { makeRng } from "../../engine/rng.js";
 import { openStore, storeBuyRefusal } from "../../engine/economy.js";
 import { bagCap, slotItems } from "../../engine/items.js";
 import { WEAPONS, ARMORS } from "../../content/index.js";
-import { storeRowState, STORE_ROW_COPY, lootCompare, itemStatLines, armorDisplay } from "../../src/browser/viewModels.js";
+import { storeRowState, storeCountText, STORE_ROW_COPY, lootCompare, itemStatLines, armorDisplay } from "../../src/browser/viewModels.js";
 import { renderStoreScreen } from "../../src/browser/storeScreen.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
@@ -169,6 +169,70 @@ test("non-gear lines (food, potion, rations, repair, scroll, tool) always have c
     const rs = storeRowState(c, line);
     assert.equal(rs.compareLine, null, `${line.effectId}: expected compareLine null`);
   }
+});
+
+// ─── Phase 87 (STORE-04): the Rations row's count and pack-full reason ─────
+
+const rationsLine = (left, opts = {}) => ({
+  ...mkStock("Rations (+1 ration)", 30, "buyRations", { amount: 1 }, null, opts.sold ?? false),
+  ...(left === undefined ? {} : { left }),
+});
+
+test("storeCountText: 'N left' for an unsold Rations line, null when sold or for any other line", () => {
+  assert.equal(storeCountText(rationsLine(7)), "7 left");
+  assert.equal(storeCountText(rationsLine(1)), "1 left");
+  assert.equal(storeCountText(rationsLine(0, { sold: true })), null);
+  // an old-save line with no count reads one left (rationsLeft's tolerant read)
+  assert.equal(storeCountText(rationsLine(undefined)), "1 left");
+  assert.equal(storeCountText(mkStock("Meal (+15 hp)", 20, "eatRation", { wp: 15 })), null);
+  assert.equal(storeCountText(weaponLine(weaponItem("Dagger"), 50)), null);
+  assert.equal(storeCountText(null), null);
+});
+
+test("STORE_ROW_COPY carries the rationsLeft template and the rationsFull reason", () => {
+  assert.equal(STORE_ROW_COPY.rationsLeft, "{n} left");
+  assert.equal(STORE_ROW_COPY.rationsFull, "your pack holds no more rations");
+});
+
+test("a Rations row at the pack cap: disabled, refusal rationsFull, reasonText names it; keys unchanged", () => {
+  const c = fixedFighter({ gold: 500, bag: "small", rations: 10 });
+  const rs = storeRowState(c, rationsLine(7));
+  assert.equal(rs.disabled, true);
+  assert.equal(rs.refusal.reason, "rationsFull");
+  assert.equal(rs.reasonText, STORE_ROW_COPY.rationsFull);
+  assert.deepStrictEqual(Object.keys(rs), ["disabled", "refusal", "reasonText", "compareLine", "showUsable"]);
+});
+
+test("a Rations row with room: enabled, no reason text", () => {
+  const c = fixedFighter({ gold: 500, bag: "small", rations: 3 });
+  const rs = storeRowState(c, rationsLine(7));
+  assert.deepStrictEqual(rs, { disabled: false, refusal: null, reasonText: null, compareLine: null, showUsable: true });
+});
+
+test("a sold-out Rations row: disabled, no refusal, no reason text, like any sold row", () => {
+  const c = fixedFighter({ gold: 500, bag: "small", rations: 10 });
+  const rs = storeRowState(c, rationsLine(0, { sold: true }));
+  assert.deepStrictEqual(rs, { disabled: true, refusal: null, reasonText: null, compareLine: null, showUsable: true });
+});
+
+test("DOM (Phase 87, STORE-04): the Rations row's italic sub carries 'N left'; refused at the cap it adds the reason; sold reads 'sold' and greys", () => {
+  const c = fixedFighter({ gold: 500, bag: "small", rations: 3 });
+  const [open] = renderRows(c, [rationsLine(7)]);
+  assert.ok(open.innerHTML.includes("Rations (+1 ration)<i>7 left</i>"), open.innerHTML);
+  assert.ok(open.innerHTML.includes("30 wm"));
+  assert.equal(open.disabled, false);
+  assert.ok(!/sold/.test(open.className));
+
+  const full = fixedFighter({ gold: 500, bag: "small", rations: 10 });
+  const [refused] = renderRows(full, [rationsLine(7)]);
+  assert.ok(refused.innerHTML.includes("<i>7 left · your pack holds no more rations</i>"), refused.innerHTML);
+  assert.equal(refused.disabled, true);
+
+  const [spent] = renderRows(c, [rationsLine(0, { sold: true })]);
+  assert.ok(spent.innerHTML.includes(">sold<"), spent.innerHTML);
+  assert.ok(!spent.innerHTML.includes("left"), spent.innerHTML);
+  assert.ok(/goods sold/.test(spent.className));
+  assert.equal(spent.disabled, true);
 });
 
 // ─── Purity ─────────────────────────────────────────────────────────────
@@ -324,7 +388,7 @@ test("DOM (Phase 71): an item line's italic segment is itemStatLines' texts join
   assert.ok(plateRow.innerHTML.includes(`AR ${plate.ar} · ${plate.wp}/${plate.wp} hp`));
 });
 
-test("DOM (Phase 71, R-07): food, rations, the sealed scroll and the repair row render byte-identically to the pre-Phase-71 composition", () => {
+test("DOM (Phase 71, R-07): food, the sealed scroll and the repair row render byte-identically to the pre-Phase-71 composition (rations gain only the Phase 87 count)", () => {
   const c = fixedFighter({ armor: "Mail", ar: 12, armorWP: 18, armorMax: 30 });
   const stock = [
     mkStock("Meal (+15 hp)", 20, "eatRation", { wp: 15 }),
@@ -338,7 +402,9 @@ test("DOM (Phase 71, R-07): food, rations, the sealed scroll and the repair row 
     // The legacy (Phase 61) composition, restated here as the byte pin.
     const rs = storeRowState(c, item);
     const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : item.sub;
-    const subText = [sub, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
+    // Phase 87 (STORE-04): the Rations row also carries its count ('1 left' for
+    // this legacy line with no `left`) right after the engine sub.
+    const subText = [sub, storeCountText(item), rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
     const expected = `<span class="g-n">${item.n}${subText ? `<i>${subText}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
     assert.equal(rows[i].innerHTML, expected, item.n);
