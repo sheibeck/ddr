@@ -21,7 +21,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-09-30 after Phase 87; v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
 **Current focus:** Phase 88 — Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
@@ -60,6 +60,8 @@ Progress: [█░░░░░░░░░] 14% (1/7 phases)
 ## Accumulated Context
 
 ### Blockers/Concerns (open)
+
+- [Phase 87, BOARD-28 live]: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
 
 - [Phase 50, tooling]: `npm run boot:check` (tools/shell-boot-check.mjs, raw `--headless=new --dump-dom`) is environment-blocked on this machine — 0-byte dump, its own `--self-test` fails, reproduces on pre-fix HTML; an interactive Chrome session appears to swallow the invocation. `tools/roller-repro.mjs`'s CDP approach works. Re-run in a clean session or migrate the tool to CDP (`.planning/phases/50-character-roller-fix/deferred-items.md`). Not a code regression.
 
@@ -270,8 +272,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T09:52:46.926Z
-Stopped at: Completed 87-08-PLAN.md
+Last session: 2026-09-30
+Stopped at: Phase 87 complete (verification passed 5/5), ready to discuss and plan Phase 88
 
 - (history below is the pre-close record)
 
@@ -288,7 +290,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Plan Phase 87 with /gsd-plan-phase 87 (no open design choices)
+- Phase 87 complete 2026-09-30; Phase 88 next (autonomous run: discuss → plan → execute)
+- BOARD-28 transition-rules deploy pending the user's go (see Blockers/Concerns)
 - Run /gsd-discuss-phase first for Phase 89 (ITEM-05 Enlarge numbers), Phase 90 (SPELL-09 Strength, ABIL-07 Pommel Strike), Phase 91 (IDENT-14 teleport destination UI) and Phase 92 (ECON-12 target)
 
 ## Performance Metrics

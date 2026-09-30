@@ -87,8 +87,8 @@
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
 - [ ] **Truth in advertising** (v2.3): every item, race, sub-class, spell and skill does what its text says, and has the systems it needs
 - [ ] **Wizard day-one direct-damage spell, always** (v2.3)
-- [ ] **Player reports #3, #4, #5, #6, #8, #9 fixed** (v2.3)
-- [ ] **Stores stock d10 rations; a store can't be bought out by depth 7** (v2.3)
+- [ ] **Player reports #3, #4, #5, #6, #8, #9 fixed** (v2.3) — #5 (a Joiner shows every hit) and #9 (DEPTH ties go to the most steps) ✓ Phase 87; #9's live server proof waits on the transition-rules deploy the user deferred (2026-09-30)
+- [ ] **Stores stock d10 rations; a store can't be bought out by depth 7** (v2.3) — d10 rations ✓ Phase 87 (STORE-04); the buy-out retune is Phase 92
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
 ### Out of Scope
@@ -383,6 +383,8 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| DEPTH ties go to the most steps: `deepKey = floor × 1,000,000 + steps`, reversing v2.1 BOARD-17; a v2.2-style transition rules file accepts the shipped 2.2.0 key until an admin re-key (`boards-admin rekey-deep`) — v2.3 Phase 87, 2026-09-29 (user, report #9) | Report #9 wins, and shipped 2.2.0 clients must keep submitting; until a re-key a 2.2.0 run only mis-orders among same-floor ties | — Code, tooling and release steps done; the live deploy was deferred by the user (2026-09-30) to before the milestone-end device testing or Release 2.3.0 step 1 |
+| Stores roll 1–10 rations on a derived stream when they open; the fair bot tops up about three days of its party's ration upkeep — v2.3 Phase 87, 2026-09-29 (user) | The user wanted more than one ration per store (2026-09-28 todo); a derived stream keeps floor generation and every stock index unmoved | ✓ Landed with declared pin and snapshot moves; the bot readout is Phase 92 |
 | Our own leaderboard on Firebase (Firestore + anonymous auth over plain REST, no SDK) replaces Google Play Games — v2.2, 2026-09-28 (user) | Play Games' private-by-default profiles made the global board a ghost town; REST keeps the no-SDK rule | ✓ Live board proven (smoke 17/17); release pending |
 | Rolled family-friendly @handle over an anonymous uid; unlimited re-roll rewrites every run; erase keeps the same handle on a new account — v2.2 (user) | Public but safe names, no login form | — Pending device UAT |
 | No friends scope: everyone or just yours — v2.2, 2026-09-28 (user) | Matches the mock; friends lists are out of scope | ✓ Good |
@@ -486,4 +488,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-29 at the start of milestone v2.3 Truth in Advertising*
+*Last updated: 2026-09-30 after Phase 87 (v2.3 Truth in Advertising)*
