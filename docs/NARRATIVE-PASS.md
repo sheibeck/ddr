@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -40,8 +40,8 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 94 | 233 | 4 | 108 | 2 |
-| rail (rail lines and the fight log) | 287 | 79 | 208 | 4 | 87 | 2 |
+| oracle (the Oracle log) | 327 | 94 | 233 | 5 | 109 | 3 |
+| rail (rail lines and the fight log) | 287 | 79 | 208 | 5 | 88 | 3 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 17 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 4 | 25 | 1 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **326** | **1545** | **138** | **553** | **85** |
+| **Total** | **1871** | **326** | **1545** | **140** | **555** | **87** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-108 changed lines.
+109 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -205,7 +205,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:braced`<br>braced — the hero or a Joiner uses Brace | Braced. The next one lands on your terms. | Braced. The next blow that lands on you does half damage. | **79-04** (what happened, to whom): The line never said what Brace does; it now states the halved next blow, and a Joiner's reads "them". |
 | `oracle:campFailed`<br>campFailed — Make Camp is refused for want of rations | You eat 5 a night (Your companion eats 1 more). You have 10. Find rations first. | Not enough food to make camp: the party eats 5 a night (Your companion eats 1 of those), and you have 10. Find rations first. | **79-11** (what happened, to whom, accurate to the engine): The refusal never named the camp it refused, and the engine's need is the whole party's night, so "you eat N (Mira eats 1 more)" counted the member twice. |
 | `oracle:chestLocked`<br>chestLocked — the lock roll on a chest fails | Not today. The lock wins this round. | The lock holds, and the box stays shut for good. Not today, and not any other day. | **79-11** (accurate to the engine, the joke after the fact): A chest gets one lock roll and its tile is cleared first, so "this round" promised a retry that never comes; the fact now comes before the joke. |
-| `oracle:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits itself back — +2 hp. Ask again in twenty squares. | The cloak finds nothing to knit. You were already at full hp. Ask again in twenty squares. | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit. |
+| `oracle:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits itself back — +2 hp. Ask again in twenty squares. | *(removed)* | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit.<br>**88-04** (what happened, to whom): User ruling 2026-09-30 (ITEM-03): "The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." The use-time instant d6 and its cloakRegenerated event are gone (greenfield), so this line would promise a heal on use that the game no longer gives. The cloak's heals now arrive as healTick lines, one per tick. |
 | `oracle:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper is held fast — 1 rounds, not forever. | Viper is held fast — 1 round, not forever. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
 | `oracle:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe (a landed Freeze or the Birch Staff) | *(new line)* | Viper is frozen for 3 rounds. Ice now, grudge later. | **q-260928-frz** (what happened, to whom, accurate to the engine, the joke after the fact): User ruling 2026-09-28: "freeze should never kill outright. It should deal its damage and freeze an enemy for 1d4 rounds." A Freeze now holds for its rolled d4 at every depth, so the line states the rounds plainly (never "not forever", which was the past-floor-12 hold's wording), then the joke. |
 | `oracle:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | You cook what is left. +4 hp, +1 ration. | You cook what is left. +1 hp (worth 4, back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
@@ -235,6 +235,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:frenzy`<br>frenzy — a Fridgian's frenzy roll lands | Something in your blood takes over. Frenzy. | Frenzy: something in your blood takes over, and you get a second wild swing. | **79-04** (what happened, to whom): The Oracle line never said what the frenzy gives you; it now names the second swing, as the rail line already did. |
 | `oracle:fumbleHeavyBlow`<br>fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow | Heal tried to be the end of you. Instead: a hard knock, −8 hp. You are shaken. | Heal backfires as a heavy blow: −8 hp. It meant to be the end of you; you are merely shaken. | **79-04** (what happened, to whom, the joke after the fact, accurate to the engine): The fumble's flavor key printed as the outcome ("Instead: death", "Instead: stone"), so the line now states the heavy blow and its cost first, and jokes after. |
 | `oracle:fumbleOnFoe`<br>fumbleOnFoe — a fumbled helpful scroll lands on the foe instead | Heal helps Viper instead. | Heal heals Viper instead: +2 hp. | **79-08** (what happened, to whom): A helpful fumble on a foe said only that it "helps"; it now says what it did (healed, warded, strengthened, mirrored…) and by how much, and a fumble with no foe left says so. |
+| `oracle:healTick`<br>healTick — engine/items.js#tickHealOverTime (a heal-over-time tick: the Cloak of Regeneration's d6 at 10, 20 and 30 squares) | *(new line)* | Nothing left to knit. The cloak spends a tick on a hero already at full hp. | **88-04** (what happened, to whom): User ruling 2026-09-30 (ITEM-03): the Cloak of Regeneration heals a d6 every ten squares walked, three times; "Every tick is narrated, including a tick at full hp ('Nothing left to knit.'), which is spent." A tick that heals leads with the hp knitted back (the clamped gain, with the capped clause when the die was cut short) and 'Tick k of N'; a tick at full hp says 'Nothing left to knit.' and that the tick is spent. The synthetic corpus event carries no item or tick, so this row shows the bare full-hp form. |
 | `oracle:healed`<br>healed { amount 2, gained 1 } — a Heal cast 1 hp below full | +2 hp from Heal. | +1 hp from Heal (2 rolled, back to full). | **79-02** (honest number, accurate to the engine): It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling. |
 | `oracle:iceApplied`<br>iceApplied — the hero's Ice lands on a foe | Ice climbs Viper: d6 a round for 1 rounds, then it stops moving. | Ice climbs Viper: d6 a round for 1 round, then it stops moving. | **79-08** (reads aloud): "1 rounds" is now "1 round". |
 | `oracle:insaneNoTarget`<br>insaneNoTarget — Insanity is cast with no foe to target | There is no one here to turn insane at. | There is no one here to drive insane. | **79-08** (reads aloud): "Turn insane at" did not read naturally. |
@@ -301,7 +302,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-87 changed lines.
+88 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -318,7 +319,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:braced`<br>braced — the hero or a Joiner uses Brace | Braced. The next one lands on your terms. | Braced. The next blow that lands on you does half damage. | **79-04** (what happened, to whom): The rail twin of the Oracle line, which now states the halved next blow. |
 | `rail:campFailed`<br>campFailed — Make Camp is refused for want of rations | You eat 5 a night, you have 10. Find rations first. | Not enough food to make camp: you eat 5 a night, you have 10. Find rations first. | **79-11** (what happened, to whom, accurate to the engine): The rail twin now names the refused camp, and a party's night reads "the party eats". |
 | `rail:chestLocked`<br>chestLocked — the lock roll on a chest fails | The lock wins this round. | The lock holds. The box stays shut for good. | **79-11** (accurate to the engine): The rail twin of the Oracle fix: a failed lock is final. |
-| `rail:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits +2 hp. | Cloak: you were already at full hp. | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit. |
+| `rail:cloakRegenerated`<br>cloakRegenerated { gained 0 } — the Cloak of Regeneration used at full hp | Flesh knits +2 hp. | *(removed)* | **79-02** (honest number, accurate to the engine): Used at full hp it printed '+0 hp'; it now says there was nothing to knit.<br>**88-04** (what happened, to whom): User ruling 2026-09-30 (ITEM-03): "The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." The use-time instant d6 and its cloakRegenerated event are gone (greenfield), so this line would promise a heal on use that the game no longer gives. The cloak's heals now arrive as healTick lines, one per tick. |
 | `rail:controlHeld`<br>controlHeld { rounds 1 } — a control past the knee holds for a few rounds | Viper held 1 rounds. | Viper held 1 round. | **79-04** (hygiene): A one-round hold printed "1 rounds". |
 | `rail:controlHeld`<br>controlHeld with freeze: true — engine/combat.js#holdFoe via freezeFoe | *(new line)* | Viper frozen for 3 rounds. | **q-260928-frz** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the rail says "frozen for N rounds". On the hero's own cast the rail folds the hit, a failed resist and this hold into one line ("Freeze hits Viper (4), frozen for 3 rounds"), so the damage and the rounds read together. |
 | `rail:cooked`<br>cooked { wp 4, gained 1 } — a Cooking hero eats the beast 1 hp below full | Cooked: +4 hp, +1 ration. | Cooked: +1 hp (back to full), +1 ration. | **79-02** (honest number, accurate to the engine): The meal printed its full portion; it now prints the HP it restored and what the portion was worth. |
@@ -343,6 +344,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:foodFound`<br>foodFound { wp 4, gained 1 } — food found 1 hp below full | Viper (+4 hp). | Viper (+1 hp, back to full). | **79-02** (honest number, accurate to the engine): Found food printed its full value; it now prints what it restored and what it was worth. |
 | `rail:fumbleHeavyBlow`<br>fumbleHeavyBlow — a fumbled Freeze, Petrify, Death or Noxious Vapor lands as a heavy blow | Heal: a hard knock instead (−8 hp). Shaken. | Heal backfires: a heavy blow (−8 hp). Shaken. | **79-04** (accurate to the engine): The rail twin printed the flavor key as the outcome ("stone instead"); it now says heavy blow. |
 | `rail:fumbleOnFoe`<br>fumbleOnFoe — a fumbled helpful scroll lands on the foe instead | Heal helps Viper instead. | Heal heals Viper instead (+2 hp). | **79-08** (what happened, to whom): The rail twin of the Oracle line, which now says what the fumble did for the foe. |
+| `rail:healTick`<br>healTick — engine/items.js#tickHealOverTime | *(new line)* | Nothing left to knit. | **88-04** (what happened, to whom): The rail twin of the Oracle line (Phase 88 plan 04, ITEM-03): '+N hp: &lt;item&gt; (k/N).' for a tick that heals, 'Nothing left to knit (k/N).' for a tick at full hp. A minor event, never a decision card. |
 | `rail:healed`<br>healed { amount 2, gained 1 } — a Heal cast 1 hp below full | +2 hp (Heal). | +1 hp (Heal), back to full. | **79-02** (honest number, accurate to the engine): It printed the roll as the gain; it now leads with the HP actually restored and says the rest hit the ceiling. |
 | `rail:heroResistFailed`<br>heroResistFailed — engine/foeAbilities.js#heroResist (a foe's bolt, drain or debuff at the hero) | Viper gets through — you fail to resist. | Viper gets through — you fail to resist (7 vs 12–20, intel 5). | **q-260928-z3-hrs** (what happened, to whom, accurate to the engine): User ruling 2026-09-28: the hero's resist is on the same half-intel scale a foe's is, and every hero rolls it now, intel below 12 included. The failure line carries the roll and range too, so a low-intel hero can see the 5% they had. |
 | `rail:heroResisted`<br>heroResisted — the hero resists a foe's spell | You resist its's spell. | You resist Viper's spell (7 vs 12–20, intel 5). | **79-08** (hygiene): A nameless event read "its's spell".<br>**q-260928-z3-hrs** (what happened, to whom, accurate to the engine): User ruling 2026-09-28 (quick 260928-hrs): "Use the same half-intel scale for heroes now." Every hero now rolls to resist a foe's spell or ability, on the top max(1, round(intel / 2)) faces of a d20, so the rail line states the roll, the range and the intel like its Oracle twin. |

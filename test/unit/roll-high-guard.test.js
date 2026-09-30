@@ -120,7 +120,11 @@ export const DRAW_INVENTORY = {
   "engine/encounters.js": { rollCheck: 3, amount: 10, selection: 13, "mishap-on-1": 0, "already-high": 1, primitive: 0 },
   "engine/maze.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/difficulty.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
-  "engine/items.js": { rollCheck: 1, amount: 8, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  // Phase 88 plan 04 (ITEM-03): amount 8 -> 7. The Cloak of Regeneration's
+  // use-time instant d6 (`rng.d(6)`, tagged roll:amount) is gone; each heal
+  // tick rolls through dice.js#rollDice from a derived rng stream (no `.d(`
+  // occurrence in items.js, so no tag and no main-stream draw).
+  "engine/items.js": { rollCheck: 1, amount: 7, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/actions.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/death.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/effects.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

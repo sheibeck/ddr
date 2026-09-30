@@ -121,6 +121,7 @@ export const HERO_CONDITIONS = Object.freeze(
     item("plate", true), // Cloak of Armor: soaks as plate (armorSoak).
     item("power", true), // Ring of Power: +1 damage (eff dmg).
     item("lit", true), // a lit torch: lifts the dark cap in a dark fight (darkWaiver).
+    item("knit", false), // Cloak of Regeneration (Phase 88, ITEM-03): heals on squares walked, never in a fight (no steps in a fight).
     item("flight", false), // Cloak of Flying / Bracelet of Flight: crossing terrain, not a fight.
     // ── duration abilities (engine/abilities.js DURATION_ROUNDS) — changes a foe's swing or your blows ──
     { key: "ability", fields: ["timers"], timers: ["ability:*"], fight: true, lasts: "rounds", source: "ability" },

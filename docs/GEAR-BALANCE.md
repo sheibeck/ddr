@@ -462,9 +462,19 @@ where noted above:
 | Anklet of Invisibility (260918-w4n) | unseen | 50 | 50 | `{ foeToHit: -2 }` while live |
 | Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
 | Bracelet of Flight (260918-w4n) | fly | 20 | 50 | `{ fly: 1 }` while live — mirrors the Cloak of Flying exactly |
-| Cloak of Regeneration (260918-w4n) | knit | 0 (instant: one `rng.d(6)` back) | 20 | the once-per-use faithful reading of "d6 hp back every 20 squares" |
+| Cloak of Regeneration (260918-w4n; Phase 88) | knit | 30 (heal-over-time: a d6 at 10, 20 and 30 squares, derived stream) | 50 | Phase 88 (ITEM-03), user 2026-09-30: "The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." Was 0 effect (an instant `rng.d(6)`) / 20 cd; 30 + 50 = 80 keeps the once-a-day rule |
 | Cloak of Strength (260918-w4n; quick 260928-cos) | critWard (was brace) | 50 | 50 | `{ critWard: 1 }` while live: a foe's critical on the wearer lands as an ordinary hit (was `{ noCrit: 1 }`, misread as the wearer's own crit ban) |
 | Cloak of Armor (260918-w4n) | plate | 50 | 50 | `{ cloakArmor: 1 }` while live |
+
+**Heal-over-time (Phase 88, ITEM-03).** An activation may carry
+`act.hot = { every, ticks, heal: { n, sides, bonus } }`: a `heal` die every
+`every` squares of the live window, `ticks` times, read by the one squares tick
+(`engine/items.js#tickHealOverTime`, called once per step from `move` before
+`tickSquares`). For every hot row `every * ticks` equals the effect length and
+`effect + cd <= 100`. Each die comes from a derived stream keyed
+`"healTick"`, never the main stream; a 2-square water step that crosses a mark
+ticks once; there are no ticks in a fight. The Cloak of Regeneration is the
+first hot row (`every 10, ticks 3, heal 1d6`).
 
 **Charges + recharge** (STAVES rows; `effect` only where the use has its
 own duration) — source: Claude's discretion per the CONTEXT's explicit

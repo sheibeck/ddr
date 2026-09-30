@@ -3518,6 +3518,11 @@ const CONDITION_COPY = {
   // thing. The cloak turns a foe's critical into an ordinary hit.
   critWard: { label: "Crit-proof", unit: "sq" },
   plate: { label: "Plated", unit: "sq" },
+  // Phase 88 (ITEM-03, user 2026-09-30, "Its own 'Regenerating' chip shows the
+  // ticks left"): the Cloak of Regeneration's own chip while its window is
+  // live. The detail is the heal ticks still owed ("3 ticks"), from the chip's
+  // own `ticks` (paintConditions' knit branch), not a squares countdown.
+  knit: { label: "Regenerating" },
   // RULES-10 (Phase 75.1, plan 09): the hero-cannot-act chip and its two
   // fight-long twins (a fumbled Blind/Shrink turned against the reader).
   // heroOut's `unit: "rds"` feeds the generic `typeof cn.remaining ===
@@ -3636,7 +3641,7 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   // 260918-w4n: power/giant/critWard/plate read as straightforward buffs
   // (good); glow/unseen/tongue read as "odd" like invis/ether above (a
   // strange-but-good state, not a plain good one).
-  power: "good", giant: "good", enlarge: "good", glow: "odd", unseen: "odd", tongue: "odd", critWard: "good", plate: "good",
+  power: "good", giant: "good", enlarge: "good", glow: "odd", unseen: "odd", tongue: "odd", critWard: "good", plate: "good", knit: "good",
   // RULES-10 (Phase 75.1, plan 09): all three read bad, exactly like
   // foeEffect/affliction above (the fallback on cn.polarity would already
   // land here, but every other bad-toned key above is explicit too).
@@ -3705,6 +3710,8 @@ const CONDITION_EXPLAIN = {
   tongue: "You can try a parley with anything but the Magical and the Walking Dead, and the roll gets two more faces. Whether they listen is up to them.",
   critWard: "No critical hit lands on you: a foe's best roll is an ordinary hit. Ordinary hits still count.",
   plate: "You soak blows as plate, or as your own armour if that is better, and none of it wears out. It still will not make you graceful.",
+  // Phase 88 (ITEM-03): the Cloak of Regeneration's window.
+  knit: "A d6 of hp comes back every ten squares you walk, until the ticks run out. Standing still and fighting do not count. The cloak has opinions about loitering.",
   // RULES-10 (Phase 75.1, plan 09): the reader-side fumble effects — a
   // fumbled scroll turning against its own reader. heroOut states the three
   // things the user's ruling requires the tap card say (the round goes on
@@ -3915,6 +3922,9 @@ function paintConditions(c) {
     } else if (cn.key === "staffCharges") {
       // Phase 39 (GEAR-02): a recharging staff's own charge pool + countdown.
       detail = `${cn.charges}/${cn.max} · ${cn.remaining} sq`;
+    } else if (cn.key === "knit" && Number.isFinite(cn.ticks)) {
+      // Phase 88 (ITEM-03): the heal ticks still owed, not the squares left.
+      detail = `${cn.ticks} ${cn.ticks === 1 ? "tick" : "ticks"}`;
     } else if (cn.key === "acute" && typeof cn.remaining === "number") {
       // Acuteness ticks in ROUNDS during a fight, SQUARES outside one
       // (Phase 39, GEAR-02: read from the item-effect chip's own `cadence`,

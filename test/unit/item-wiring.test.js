@@ -223,30 +223,33 @@ test("Amulet of Light dispels the persistent darkness counter outright on USE (w
   assert.equal(dark.c.darkFor, 29, "without the Amulet the counter merely ticks down");
 });
 
-// --- 6. Cloak of Regeneration (use-activated; the ONE rng draw is on USE) -
+// --- 6. Cloak of Regeneration (use-activated; Phase 88 heal-over-time) ----
 // 260918-w4n: the dropped healing cloak leaves the game entirely (no more
-// Cloak of Healing tests); the Cloak of Regeneration's d6 now fires on USE,
-// not on a per-step tick — a worn-but-unused cloak heals nothing while
-// walking.
+// Cloak of Healing tests). Phase 88 (ITEM-03, user 2026-09-30): using the
+// Cloak of Regeneration starts a 30-square heal-over-time window (a d6 at 10,
+// 20 and 30 squares, derived stream), then 50 squares of cooldown. The
+// instant d6 on use, and its ONE main-rng draw, are gone. A worn-but-unused
+// cloak still heals nothing while walking. Full pins: heal-over-time.test.js.
 
-test("Cloak of Regeneration rolls a d6 on USE (worn AND used), then a 20-square cooldown; worn-but-unused heals nothing while walking", () => {
+test("Cloak of Regeneration USE starts a 30-square window with zero main-rng draws and no instant heal", () => {
   const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 } });
-  const rng = fakeRng([6]); // exactly one d6 draw expected
-  const events = useItem(st, { slot: "cloak" }, rng, []);
-  assert.equal(st.c.wp, 16, "d6=6 regen on use");
-  assert.ok(events.some((e) => e.type === "cloakRegenerated" && e.amount === 6), "emits cloakRegenerated");
-  assert.deepStrictEqual(st.c.timers["item:Cloak of Regeneration"], { cadence: "squares", left: 20, phase: "cooldown" });
-  assert.equal(events.some((e) => e.type === "itemEffectStarted"), false, "an instant effect starts a bare cooldown, no itemEffectStarted");
-
+  const events = useItem(st, { slot: "cloak" }, fakeRng([]), []); // fakeRng([]) throws on any draw
+  assert.equal(st.c.wp, 10, "no instant heal on use (retired, Phase 88)");
+  assert.equal(events.some((e) => e.type === "cloakRegenerated"), false, "the retired instant-heal event is gone");
+  assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.kind === "knit" && e.left === 30), "the 30-square window starts");
+  assert.deepStrictEqual(st.c.timers["item:Cloak of Regeneration"], {
+    cadence: "squares", left: 30, cd: 50, phase: "effect", src: { slot: "cloak", n: "Cloak of Regeneration" },
+  });
   const again = useItem(st, { slot: "cloak" }, fakeRng([]), []);
-  assert.deepStrictEqual(again, [{ type: "useRefused", item: CLOAK_REGEN, reason: "cooldown", left: 20, phase: "cooldown" }]);
+  assert.equal(again.length, 1);
+  assert.equal(again[0].type, "useRefused", "a live window refuses a second use");
 });
 
-test("Cloak of Regeneration d6 is GATED: worn-but-unused draws NO rng and heals nothing while walking 20+ squares", () => {
+test("Cloak of Regeneration is GATED: worn-but-unused draws NO rng and heals nothing while walking 20+ squares", () => {
   const wornUnused = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 }, steps: 19 });
   open(wornUnused.floor.g, 5, 4);
   assert.doesNotThrow(() => move(wornUnused, "N", fakeRng([]), []));
-  assert.equal(wornUnused.c.wp, 10, "worn but unused — no movement tick heals it any more");
+  assert.equal(wornUnused.c.wp, 10, "worn but unused: no movement tick heals it");
 
   const noCloak = fixedState({ c: { wp: 10, maxWP: 55 }, steps: 19 });
   open(noCloak.floor.g, 5, 4);
@@ -254,13 +257,19 @@ test("Cloak of Regeneration d6 is GATED: worn-but-unused draws NO rng and heals 
   assert.equal(noCloak.c.wp, 10, "a non-carrier is not healed");
 });
 
-test("Cloak of Regeneration d6 is GATED: a real seeded rng cursor is untouched by movement, worn or not", () => {
-  const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 }, steps: 19 });
-  open(st.floor.g, 5, 4);
-  const rng = makeRng(12345);
-  const before = rng.getState();
-  move(st, "N", rng, []);
-  assert.deepEqual(rng.getState(), before, "no rng consumed by movement — the cloak's d6 only fires on useItem now");
+test("Cloak of Regeneration: a walk with the window live leaves the main rng cursor where the same walk without it leaves it", () => {
+  const walk = (live) => {
+    const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 } });
+    for (let y = 0; y <= 5; y++) open(st.floor.g, 5, y);
+    const rng = makeRng(12345);
+    if (live) useItem(st, { slot: "cloak" }, fakeRng([]), []);
+    for (let i = 0; i < 5; i++) move(st, "N", rng, []);
+    return { cursor: rng.getState(), wp: st.c.wp };
+  };
+  const off = walk(false);
+  const on = walk(true);
+  assert.equal(off.wp, 10, "no window, no heal");
+  assert.equal(on.cursor, off.cursor, "the live window moves the main cursor not at all");
 });
 
 // --- 7. Amulet of Stone (DR16-G) — per-item AoE count ---------------------

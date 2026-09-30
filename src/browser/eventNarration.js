@@ -67,6 +67,13 @@ import { AFFLICTIONS } from "../../content/afflictions.js";
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** healDiceText(h) — Phase 88 (ITEM-03): a heal die in words, "a d6" for one die, "2d6" for more, "+1" for a bonus. */
+const healDiceText = (h) => {
+  const n = Number.isFinite(h?.n) && h.n > 0 ? h.n : 1;
+  const bonus = Number.isFinite(h?.bonus) && h.bonus > 0 ? `+${h.bonus}` : "";
+  return `${n === 1 ? "a d" : `${n}d`}${h.sides}${bonus}`;
+};
+
 // VOX-05 (Phase 79, plan 79-11): an item effect's length, "1 square", never
 // "1 squares", and never a leaked "undefined squares" on an event with no
 // count.
@@ -87,6 +94,11 @@ const ENDED_CLAUSE = Object.freeze({
   fly: () => "the flying stops, right where things stand. No falling, no fuss",
   ether: () => "solid again, and the walls are walls once more",
   critWard: (e) => `critical hits can find ${endedWho(e).name} again`,
+  // Phase 88 (ITEM-03): a heal-over-time window cut short names the ticks it still owed.
+  knit: (e) =>
+    Number.isFinite(e?.ticks) && e.ticks > 0
+      ? `the knitting stops, with ${plural(e.ticks, "tick")} still owed`
+      : "the knitting stops",
   invis: (e) => (e?.party ? "the whole party is plainly visible again. So much for sneaking" : `${endedWho(e).name} ${endedWho(e).be} plainly visible again`),
   unseen: (e) => `foes see ${endedWho(e).name} plainly again`,
   haste: () => "the second swing goes with it",
@@ -379,15 +391,20 @@ export const EVENT_NARRATION = {
   dayBegan: (e) => `<span class="banner">Day ${e.day ?? "?"}.</span>`,
   rested: (e) =>
     `Rest restores <span class="hit">+${gainOf(e, e.amount)} hp</span>.${e.doubled ? ` (${e.doubled}: twice as fast, as promised.)` : ""}`,
-  // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
-  // the game (the "cloakHealed" event type no longer exists anywhere) — the
-  // Cloak of Regeneration is now use-activated, a flat d6 back ON USE, then
-  // a 20-square cooldown, not a per-step tick.
-  // VOX-05 (Phase 79, plan 79-02): used at full, the cloak says so.
-  cloakRegenerated: (e) =>
-    gainOf(e, e.amount) > 0
-      ? `<span class="hit">Flesh knits itself back — +${gainOf(e, e.amount)} hp.</span> Ask again in twenty squares.`
-      : `<span class="miss">The cloak finds nothing to knit.</span> You were already at full hp. Ask again in twenty squares.`,
+  // Phase 88 (ITEM-03, user 2026-09-30): a heal-over-time tick (the Cloak of
+  // Regeneration's d6 at 10, 20 and 30 squares). Replaces the retired use-time
+  // instant-heal line (260918-w4n / VOX-05 79-02; its ledger rows close in
+  // docs/narrative-pass/why/88-04.json). The gain leads and is what was
+  // actually added (`gained`, VOX-05); a full-hp tick is told too, in the
+  // user's words, and is spent. Every tick is on the Oracle and the rail.
+  healTick: (e) => {
+    const g = gainOf(e, e.amount);
+    const item = endedItem(e) || "The cloak";
+    const tail = Number.isFinite(e?.tick) && Number.isFinite(e?.ticks) ? ` Tick ${e.tick} of ${e.ticks}.` : "";
+    return g > 0
+      ? `<span class="hit">${item} knits you back: +${g} hp${cappedNote(g, e.amount)}.</span>${tail}`
+      : `<span class="miss">Nothing left to knit.</span> ${item} spends a tick on a hero already at full hp.${tail}`;
+  },
   // VOX-05 (Phase 79, plan 79-11): the +N is armour (the rail twin says so too).
   armorPatched: (e) => `${e.by ? `${e.by}: ` : ""}<span class="hit">+${e.amount ?? 0} armour</span> patched back into your kit.`,
   potionDuplicated: () => `The Warlock spends the small hours duplicating a potion. <span class="hit">+1 potion.</span>`,
@@ -1683,6 +1700,12 @@ export const EVENT_NARRATION = {
       tongue: `<span class="hit">${sq} of perfect fluency. Do not waste it on small talk.</span>`,
       critWard: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
       plate: `<span class="hit">${sq} of weightless plate.</span>`,
+      // Phase 88 (ITEM-03): the Cloak of Regeneration's window, stated from
+      // the event's own numbers (a bare payload falls back to a plain line).
+      knit:
+        Number.isFinite(e.every) && Number.isFinite(e.ticks) && e.heal && Number.isFinite(e.heal.sides)
+          ? `<span class="hit">${sq} of knitting: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} you walk, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.</span> Fights do not count. Only walking does.`
+          : `<span class="hit">${sq} of knitting. Flesh mends as you walk.</span>`,
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;
   },

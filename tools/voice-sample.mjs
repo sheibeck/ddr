@@ -99,7 +99,7 @@ const SAMPLE_OVERRIDES = {
   healed: { spell: "Heal", amount: 8, gained: 3 },
   potionDrunk: { amount: 8, gained: 3, remaining: 1 },
   regenerated: { amount: 8, gained: 3 },
-  cloakRegenerated: { amount: 5, gained: 0 },
+  healTick: { item: "Cloak of Regeneration", amount: 5, gained: 0, tick: 1, ticks: 3 }, // Phase 88: replaces the retired use-time instant-heal sample
   secondWindHealed: { amount: 3, gained: 3, rolled: 8 },
   memberSecondWind: { name: "Grunk", amount: 3, gained: 3, rolled: 8 },
   cooked: { wp: 8, gained: 3, rations: 1 },

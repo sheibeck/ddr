@@ -649,6 +649,58 @@ export function liveItemEffects(c) {
   return out;
 }
 
+/** posInt(v) — a positive safe integer (module-private helper for the hot reads). */
+function posInt(v) {
+  return Number.isSafeInteger(v) && v > 0;
+}
+
+/** validHot(act) — Phase 88 (ITEM-03): does `act` carry a usable heal-over-time
+ * record (`hot: { every, ticks }` positive integers) on a positive-integer
+ * `effect` window? Module-private. */
+function validHot(act) {
+  return !!act && typeof act === "object" && !!act.hot && typeof act.hot === "object"
+    && posInt(act.hot.every) && posInt(act.hot.ticks) && posInt(act.effect);
+}
+
+/**
+ * healTicksDue(act, leftBefore, n) — Phase 88 (ITEM-03): the heal-over-time
+ * tick numbers (1-based, ascending) a step of `n` squares brings on a live
+ * window that has `leftBefore` squares left BEFORE the step. Progress is
+ * derived from the record itself (`elapsed = effect - left`), so no new
+ * serialized field exists and a saved window resumes exactly. A step moves
+ * elapsed from e to min(effect, e + n); the ticks due are every whole
+ * multiple of `hot.every` in (e, e + n], capped at `hot.ticks`, so a
+ * 2-square water step that crosses a mark ticks exactly once (never skipped,
+ * never doubled). Returns [] for a missing/invalid hot, a non-integer
+ * `leftBefore`, `leftBefore` outside (0, effect], or an `n` that is not a
+ * positive integer. Pure, no rng.
+ */
+export function healTicksDue(act, leftBefore, n) {
+  if (!validHot(act)) return [];
+  if (!Number.isInteger(leftBefore) || leftBefore <= 0 || leftBefore > act.effect) return [];
+  if (!posInt(n)) return [];
+  const { every, ticks } = act.hot;
+  const before = act.effect - leftBefore;
+  const after = Math.min(act.effect, before + n);
+  const out = [];
+  for (let k = Math.floor(before / every) + 1; k <= Math.min(ticks, Math.floor(after / every)); k++) out.push(k);
+  return out;
+}
+
+/**
+ * healTicksLeft(act, rec) — Phase 88 (ITEM-03): how many heal ticks a LIVE
+ * window still owes: 0 unless `act.hot` is valid and `rec` is a live effect
+ * record (an integer `left` in (0, effect]); otherwise
+ * `ticks - floor((effect - left) / every)`, clamped to [0, ticks]. Drives the
+ * Regenerating chip's "N ticks" and the take-off line's unspent count. Pure.
+ */
+export function healTicksLeft(act, rec) {
+  if (!validHot(act) || !rec || typeof rec !== "object") return 0;
+  if (rec.phase !== "effect" || !Number.isInteger(rec.left) || rec.left <= 0 || rec.left > act.effect) return 0;
+  const { every, ticks } = act.hot;
+  return Math.max(0, Math.min(ticks, ticks - Math.floor((act.effect - rec.left) / every)));
+}
+
 /**
  * SOURCE_SLOTS — Phase 88 (ITEM-02): the slots a timed item effect can be
  * started from and is linked to: the three worn keys (WORN_SLOTS) and the
@@ -784,6 +836,7 @@ export function isFlying(state) {
  *     size name, heroSize(c).name — RULES-11, Phase 75.2, Plan 02, only
  *     when act.eff carries a numeric `size`, e.g. the Gauntlet of the
  *     Giant or Enlarge>}
+ *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>
  *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape
  *   - mirror {polarity:"good", remaining:<rounds>}         — Phase 40 (SPELL-02): Mirror Self — c.mirror counts down once per foeTurn; cleared at endCombat
@@ -843,6 +896,9 @@ export function conditionsOf(state) {
     }
     const chip = { key: act.kind, polarity: "good", remaining: rec.left, cadence: rec.cadence, source: key };
     if (act.kind === "might" && typeof act.might === "number") chip.might = act.might;
+    // Phase 88 (ITEM-03): a heal-over-time item's chip carries the ticks it
+    // still owes (3, 2, 1) — the Regenerating chip's detail.
+    if (act.hot) chip.ticks = healTicksLeft(act, rec);
     // RULES-11 (Phase 75.2, Plan 02): a live size-stepping item (the
     // Gauntlet of the Giant, Enlarge, or any future size item) also
     // carries the item's own step and the hero's CURRENT size name —

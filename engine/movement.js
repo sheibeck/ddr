@@ -37,7 +37,7 @@ import { encounterDot, springTrap, openChest } from "./encounters.js";
 import { moved, floorChanged } from "./events.js";
 import { CLIMB_TABLE, LEAP_TABLE, DIRECTION_TABLE, RACES, TOOLS, ACTIVATION_OF } from "../content/index.js";
 import { tickSquares } from "./effects.js";
-import { narrateTimerTransitions, toolIndex } from "./items.js";
+import { narrateTimerTransitions, tickHealOverTime, toolIndex } from "./items.js";
 import { isDeadEnd, checkTerrainPhobias, noteHeightsAttempt, resetFloorPhobiaRegions } from "./phobias.js";
 
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
@@ -148,9 +148,10 @@ const TRAPPED_PHOBIA_PANIC = 4;
 
 // 260918-w4n: the old Cloak of Healing / Cloak of Regeneration per-step tick
 // (CLOAK_TICK_SQUARES/CLOAK_HEAL_PER_TICK) is REMOVED — the dropped healing
-// cloak no longer exists, and the Cloak of Regeneration is now use-activated
-// (a flat d6 on use, engine/items.js#useItem's "knit" case) rather than an
-// automatic per-step tick.
+// cloak no longer exists, and the Cloak of Regeneration is use-activated.
+// Phase 88 (ITEM-03): using it starts a 30-square heal-over-time window (a d6
+// at 10, 20 and 30 squares; engine/items.js#tickHealOverTime, called from
+// move's squares tick), not an instant d6 and not an automatic per-step tick.
 // isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall
 // orthogonal neighbor? MOVED to engine/phobias.js (Phase 41, TERR-04) since
 // the new phobia region model needs it too (its own leave-check for Being
@@ -431,7 +432,8 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // moveCost's own doc in engine/derived.js). Every per-square system this
   // cost widens, in one dispatch: the HUD SQUARES counter (state.steps
   // itself); the affliction's own per-N cadence; c.darkFor; both
-  // Cloak-of-Healing/Regeneration 20-square ticks; c.timers (tickSquares(c,
+  // the Phase 88 heal-over-time tick (tickHealOverTime, the Cloak of
+  // Regeneration's d6 at 10/20/30 squares); c.timers (tickSquares(c,
   // cost), engine/effects.js — ability/item/spell-reveal timers, once per
   // step, never twice, per 41-RESEARCH.md Pitfall 3); the Magic User
   // 20-square spell-charge recovery; the 100-square newDay. Note for
@@ -559,11 +561,11 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // decrements — every item effect ticks through the shared c.timers
   // squares-tick below instead (its expiry is mapped to events there).
   // 260918-w4n: the old per-step Cloak of Healing / Cloak of Regeneration
-  // tick is REMOVED — the dropped healing cloak no longer exists, and the
-  // Cloak of Regeneration's d6 now fires once, on USE (engine/items.js
-  // #useItem's "knit" case), not automatically every 20 squares while
-  // merely carried. Walking hurt with an unused Cloak of Regeneration worn
-  // changes nothing here any more.
+  // tick is REMOVED — walking hurt with an unused Cloak of Regeneration worn
+  // changes nothing here. Phase 88 (ITEM-03): a USED Cloak of Regeneration
+  // starts a 30-square heal-over-time window whose d6 ticks (10, 20, 30
+  // squares after the use) are told by tickHealOverTime just below, once per
+  // step, from a derived rng stream.
   // The Cloak of Flying's effect/cooldown rides the same c.timers squares
   // tick below like every other item.
 
@@ -576,6 +578,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
   // full cost). Phase 39 (GEAR-02): the returned transition list is mapped
   // to events (itemEffectFaded/itemCooled/staffRecharged) below.
   if (c.timers) {
+    // Phase 88 (ITEM-03): the heal-over-time tick runs FIRST, reading each
+    // record's pre-step `left`, so the heal line comes before this same step's
+    // wear-off line. One call per step; `cost` already carries a water step's 2.
+    tickHealOverTime(state, cost, rng, events);
     const trans = tickSquares(c, cost);
     narrateTimerTransitions(state, trans, events);
     // Phase 40 (SPELL-05, Plan 04): the ONE sweep that re-fogs whatever Map

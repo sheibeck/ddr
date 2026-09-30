@@ -106,7 +106,10 @@ test("table: the scan of emittable keys still sees the CMBUI-13 keys and the old
   for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strengthBoost", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit"]) {
     assert.ok(keys.has(k), `the scan sees ${k}`);
   }
-  for (const k of ["fly", "half", "knit"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
+  // Phase 88 (ITEM-03): `knit` (the Cloak of Regeneration) now HAS a live window
+  // (effect 30), so it is an emittable chip; before it was effect 0 and never one.
+  for (const k of ["fly", "half"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
+  assert.ok(keys.has("knit"), "knit is a live chip since Phase 88");
 });
 
 test("table: frozen; every entry has key, non-empty fields, a boolean fight, a documented lasts and source", () => {
@@ -123,7 +126,7 @@ test("table: frozen; every entry has key, non-empty fields, a boolean fight, a d
 
 test("table: the fight rule — map-only, recharging and waiting chips stay out of YOUR LOT; fight effects are in", () => {
   const fightOf = Object.fromEntries(HERO_CONDITIONS.map((e) => [e.key, e.fight]));
-  for (const k of ["reveal", "itemCooldown", "staffCharges", "fearArmed", "foresight", "flight", "tongue", "ether"]) assert.equal(fightOf[k], false, `${k} is not a fight chip`);
+  for (const k of ["reveal", "itemCooldown", "staffCharges", "fearArmed", "foresight", "flight", "tongue", "ether", "knit"]) assert.equal(fightOf[k], false, `${k} is not a fight chip`);
   for (const k of ["afraid", "foeEffect", "ward", "mirror", "senses", "regen", "ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "fightDark", "nightVision", "acute", "invis", "unseen", "heroOut", "heroBlind", "heroShrunk"]) {
     assert.equal(fightOf[k], true, `${k} is a fight chip`);
   }

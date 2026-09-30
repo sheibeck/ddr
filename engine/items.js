@@ -39,6 +39,9 @@ import {
   PARTY_WIDE_ITEM_EFFECTS,
   sourceSlotItem,
   effectSourceOf,
+  liveItemEffects,
+  healTicksDue,
+  healTicksLeft,
 } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining, endEffectEarly } from "./effects.js";
@@ -507,9 +510,13 @@ export function endSourceEffects(state, sheet, events = [], opts = {}) {
     }
     const key = id.slice("item:".length);
     const kind = ACTIVATION_OF[key]?.kind ?? null;
+    // Phase 88 (ITEM-03): the heal ticks a heal-over-time window still owed,
+    // read BEFORE the record is ended (an ended record has no window left).
+    const ticksLeft = ACTIVATION_OF[key]?.hot ? healTicksLeft(ACTIVATION_OF[key], rec) : 0;
     const ended = endEffectEarly(sheet, id);
     if (!ended || quiet) continue;
     const evt = { type: "itemEffectEnded", item: key, kind, slot: src.slot, why: touched ? why : "gone", left: ended.left, ready: ended.ready };
+    if (ACTIVATION_OF[key]?.hot) evt.ticks = ticksLeft;
     if (PARTY_WIDE_ITEM_EFFECTS.includes(key)) evt.party = true;
     if (state && !hero) evt.member = sheet.name;
     events.push(evt);
@@ -1403,6 +1410,13 @@ function applyActivation(state, it, rng, events, slot = null) {
       started.step = act.eff.size;
       started.sizeDmg = SIZE_DAMAGE_PER_STEP * act.eff.size;
     }
+    // Phase 88 (ITEM-03): a heal-over-time item states its cadence, count and
+    // die so the start line can tell the player what the window will do.
+    if (act.hot) {
+      started.every = act.hot.every;
+      started.ticks = act.hot.ticks;
+      started.heal = { ...act.hot.heal };
+    }
     events.push(started);
   } else if (act.cd) {
     startCooldown(c, itemTimerId(it), { squares: act.cd });
@@ -1444,6 +1458,49 @@ export function narrateTimerTransitions(state, transitions, events = []) {
       }
     }
     // ability: ids — Phase 38 narrates nothing on expiry; ignored here.
+  }
+  return events;
+}
+
+/**
+ * tickHealOverTime(state, cost, rng, events) — Phase 88 (ITEM-03, user
+ * 2026-09-30): the general heal-over-time tick. For every LIVE item effect on
+ * the hero whose activation carries `act.hot` (`{ every, ticks, heal }`, e.g.
+ * the Cloak of Regeneration), a step of `cost` squares (1, or 2 on water; the
+ * same `cost` move hands tickSquares) brings on `healTicksDue(act, rec.left,
+ * cost)` ticks, each healing one `heal` die. It reads each record's `left`
+ * BEFORE the step's tickSquares, so a tick that lands on the window's last
+ * square is told before that same step's "wears off" line, and progress is the
+ * record's own `effect - left` (no new serialized field). A tick is exactly
+ * once per mark, never skipped or doubled, even for a 2-square step.
+ *
+ * Each die is rolled from `derivedRng(<main rng cursor>, "healTick", <item>,
+ * <tick>, <state.steps>)`: a pure keyed stream, so the passed main `rng` is
+ * only READ for its cursor and never advanced (floor generation and existing
+ * draws do not reorder). The heal is clamped to maxWP; every tick pushes
+ * `healTick { type, item, amount, gained, tick, ticks }` (a full-hp tick has
+ * gained 0 and is still spent: it counts as one of the ticks).
+ *
+ * Hero only (CONTEXT "Wearer only"; Joiner sheets are not ticked). A dead
+ * state, a hero at 0 hp, or a sheet with no plain-object `timers` ticks
+ * nothing. There are no ticks in a fight: move returns before this runs while
+ * `state.combat` is set. Adds no main-rng draw.
+ */
+export function tickHealOverTime(state, cost, rng, events = []) {
+  if (!state || state.dead) return events;
+  const c = state.c;
+  if (!c || !(c.wp > 0)) return events;
+  const timers = c.timers;
+  if (!timers || typeof timers !== "object" || Array.isArray(timers)) return events;
+  const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
+  for (const { key, act, rec } of liveItemEffects(c)) {
+    if (!act.hot) continue;
+    for (const k of healTicksDue(act, rec.left, cost)) {
+      const amount = rollDice(derivedRng(cursor, "healTick", key, k, state.steps), act.hot.heal);
+      const gained = Math.max(0, Math.min(c.maxWP - c.wp, amount));
+      c.wp += gained;
+      events.push({ type: "healTick", item: key, amount, gained, tick: k, ticks: act.hot.ticks });
+    }
   }
   return events;
 }
@@ -1709,6 +1766,12 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     // Flying / Bracelet of Flight) — each is pure eff-payload data
     // (content/treasure-tables.js), so applyActivation starting the record
     // is the item's entire effect; nothing else fires here.
+    // Phase 88 (ITEM-03, user 2026-09-30): `knit` (Cloak of Regeneration) joins
+    // the list. It used to heal a d6 at once from the main rng; now using it
+    // only starts the 30-square heal-over-time window (act.hot), whose ticks
+    // come from tickHealOverTime on later steps, from a derived stream. No
+    // instant heal and no main-rng draw on use.
+    case "knit":
     case "strength":
     case "enlarge":
     case "speed":
@@ -1727,18 +1790,6 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     }
     case "half": {
       c.halfNext = true;
-      break;
-    }
-    case "knit": {
-      // 260918-w4n: Cloak of Regeneration, use-activated — a flat one d6
-      // hp back INSTANTLY (no rng gate — a use at full hp still spends the
-      // cooldown, like a wasted potion), then applyActivation starts the
-      // bare 20-square cooldown (act.effect is 0, act.cd is 20).
-      const amount = Math.min(c.maxWP - c.wp, rng.d(6)); // roll:amount
-      c.wp = Math.min(c.maxWP, c.wp + amount);
-      // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
-      // actually added after the clamp to max (additive, zero draws).
-      events.push({ type: "cloakRegenerated", amount, gained: amount });
       break;
     }
     case "glow": {
