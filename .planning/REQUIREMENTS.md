@@ -56,11 +56,13 @@
 
 ### Leaderboard (BOARD)
 
+- [ ] **BOARD-29**: Each leaderboard row's expanded detail states the hero's race and sub-class. A long press on a row opens a menu with "filter by this race", "filter by this sub-class", "filter by both" and cancel. Picking one sets the RACE and/or SUB-CLASS filter and reloads the board (user todo 2026-09-29).
+- [ ] **BOARD-30**: The RANK BY bottom sheet, and every other leaderboard sheet, fits on screen above the system navigation bar. The last option's description (WILMST) is fully visible at the smallest supported screen and the largest text scale (user todo 2026-09-29).
 - [ ] **BOARD-28**: On the DEPTH board, runs that reached the same depth rank by the most steps walked (report #9). Existing server runs rank correctly under the new rule, and submissions from shipped 2.2.0 clients still rank correctly.
 
 ### Store & economy (STORE, ECON)
 
-- [ ] **STORE-04**: Each store stocks d10 rations, rolled when it opens from a derived stream. The player can buy them one at a time until the stock runs out, and the store shows how many are left. The bot buys them the new way.
+- [ ] **STORE-04**: Each store stocks d10 rations, rolled when it opens from a derived stream. The player can buy them one at a time until the stock runs out, and the store shows how many are left. The fair bot gets a ration target: it tops up to about three days of its party's ration upkeep when it can afford to (user, 2026-09-29). The DAYS-farm hoarder buys one ration at a time up to its cap. A ration buy at the pack's ration cap is refused before any gold moves.
 - [ ] **ECON-11**: A milestone-end readout (`tools/tune-economy.mjs`) measures, for each depth on floors 1–12, the gold a hero holds on reaching a store against that store's total stock price, and breaks gold income down by source.
 - [ ] **ECON-12**: Store prices and gold income are retuned so that at depth 7 a typical hero can afford about a third to a half of a store. The exact target is confirmed with the user from the ECON-11 readout.
 
@@ -99,9 +101,11 @@
 | ABIL-07 | Phase 90 | Pending |
 | PARTY-11 | Phase 87 | Pending |
 | BOARD-28 | Phase 87 | Pending |
+| BOARD-29 | Phase 87 | Pending |
+| BOARD-30 | Phase 87 | Pending |
 | STORE-04 | Phase 87 | Pending |
 | ECON-11 | Phase 92 | Pending |
 | ECON-12 | Phase 92 | Pending |
 | TUNE-10 | Phase 92 | Pending |
 
-**Coverage:** 20 requirements, 20 mapped to Phases 87–92 (87: 3, 88: 3, 89: 3, 90: 4, 91: 4, 92: 3). No orphans, no duplicates.
+**Coverage:** 22 requirements, 22 mapped to Phases 87–92 (87: 5, 88: 3, 89: 3, 90: 4, 91: 4, 92: 3). No orphans, no duplicates.

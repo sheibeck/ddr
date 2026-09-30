@@ -91,12 +91,14 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Goal**: A Joiner's hp shows every hit it takes, each store stocks a visible supply of up to ten rations, and DEPTH ties rank by the most steps.
 **Depends on**: Nothing (first phase of v2.3). Three small, independent fixes, ordered inside the phase: PARTY-11 first (it pins the foe-hits-a-Joiner damage path before Phase 88 extends it with crit-proofing), then STORE-04, then BOARD-28 last. BOARD-28 touches the live Firebase project (the DEPTH ranking order, its composite index and any ranking key a client writes), so it lives in its own plan(s): no engine bytes in them, and no engine plan touches server files. It goes live only after it is checked against shipped 2.2.0 / vc12 clients, and the deploy is a user checkpoint. It reverses v2.1 BOARD-17 ("deepest, then fewest steps"): report #9 wins. STORE-04 rolls a store's rations from a derived stream when the store opens, so floor generation and existing draws don't reorder; the store fixtures it moves are measured, declared and regenerated, and the bot buys rations the new way. No bot pass here (Phase 92).
-**Requirements**: PARTY-11, STORE-04, BOARD-28
+**Requirements**: PARTY-11, STORE-04, BOARD-28, BOARD-29, BOARD-30
 **Success Criteria** (what must be TRUE):
 
   1. When a foe hits a Joiner, the Joiner loses that hp: the report's Cave Bear hit of 11 takes Zell Bonecrack from 30/30 to 19/30, and YOUR LOT, the Hero Company panel and every other party display show the new value at once.
-  2. Opening a store rolls its ration stock (1–10). The store shows how many are left, the player can buy them one at a time until none remain, the count left survives save and load, and the fair bot buys them the same way.
+  2. Opening a store rolls its ration stock (1–10). The store shows how many are left, the player can buy them one at a time until none remain, the count left survives save and load, and the fair bot tops up to about three days of its party's ration upkeep when it can afford to.
   3. On the DEPTH board, runs that reached the same depth rank with the most steps first. Runs already on the server re-rank under the new order without being resubmitted, and a run submitted by a shipped 2.2.0 client ranks correctly too.
+  4. An expanded leaderboard row states the hero's race and sub-class. Long-pressing a row offers "filter by race / sub-class / both", and picking one sets those filters and reloads the board. The long press never also toggles the row.
+  5. The RANK BY sheet, and every other leaderboard sheet, shows its last option (WILMST and its description) in full above the navigation bar at the smallest screen and the largest text scale.
 
 **Plans:** 8 plans
 
