@@ -1343,6 +1343,12 @@ export const EVENT_NARRATION = {
   // RATION-01: the dedicated, visible ration purchase — surfaces the ration
   // gain explicitly, unlike the old silent food-side-effect +1.
   rationsBought: (e) => `<span class="hit">Stocked up:</span> +${plural(e.amount ?? 1, "ration")}. At least someone is planning ahead.`,
+  // STORE-04 (Phase 87): a store stocks a d10 of rations, sold one per buy.
+  // The last one off the shelf, and a pack already at its ration cap (the
+  // refusal lands BEFORE any wilmst moves). Minor events, never a card.
+  rationsSoldOut: () => `<span class="beat">Last ration off the shelf.</span> The shopkeeper eyes you the way a pantry eyes a Troll.`,
+  rationsFull: (e) =>
+    `<span class="miss">Your pack already holds ${e.have ?? 0} of ${e.cap ?? 0} rations.</span> The shopkeeper will not sell you a sandwich you would have to carry in your teeth.`,
   // ECON-06 (Phase 14): the store buys your gear back at a discount. Deadpan,
   // dark-but-family-friendly (a VOX-02 safety scan checks this line) — the
   // shopkeeper is doing you no favours, and knows it.

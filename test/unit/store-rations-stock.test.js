@@ -23,6 +23,8 @@ import {
   RATIONS_STOCK_DIE,
 } from "../../engine/economy.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 /** A test double whose cursor is fixed, for the derived-stream key. */
 function rngAtCursor(cursor) {
@@ -262,4 +264,19 @@ test("every other line still sells once and is marked sold", () => {
   assert.equal(state.c.gold, before - 20);
   assert.equal(state.store.stock[0].left, undefined, "only the Rations line carries left");
   assert.deepStrictEqual(buyFrom(state, 0, []), []);
+});
+
+test("narration: rationsSoldOut and rationsFull render on the Oracle and the rail, with bare and full payloads", () => {
+  for (const type of ["rationsSoldOut", "rationsFull"]) {
+    for (const payload of [{ type }, { type, have: 10, cap: 10 }]) {
+      const html = EVENT_NARRATION[type](payload);
+      assert.ok(typeof html === "string" && html.length > 0, `${type} oracle`);
+      assert.ok(!/undefined|NaN/.test(html), `${type} oracle prints no undefined`);
+      const rail = LINE_FOR[type](payload);
+      assert.ok(rail && typeof rail.text === "string" && rail.text.length > 0, `${type} rail`);
+      assert.ok(!/undefined|NaN/.test(rail.text));
+    }
+  }
+  assert.equal(LINE_FOR.rationsFull({ type: "rationsFull", have: 10, cap: 10 }).tone, "block");
+  assert.match(EVENT_NARRATION.rationsFull({ have: 10, cap: 10 }), /10 of 10/);
 });

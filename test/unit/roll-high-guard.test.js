@@ -116,7 +116,7 @@ export const DRAW_INVENTORY = {
   // hero's draw still happens, from the main rng, at the same position.
   "engine/derived.js": { rollCheck: 2, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/dice.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 2 },
-  "engine/economy.js": { rollCheck: 0, amount: 0, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  "engine/economy.js": { rollCheck: 0, amount: 1, selection: 1, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/encounters.js": { rollCheck: 3, amount: 10, selection: 13, "mishap-on-1": 0, "already-high": 1, primitive: 0 },
   "engine/maze.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/difficulty.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

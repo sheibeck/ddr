@@ -2312,7 +2312,10 @@ export const LINE_FOR = {
   },
   // VOX-05 (Phase 79, plan 79-11): "+1 ration", never "+1 rations".
   rationsBought: (e) => ({ text: `Stocked up: +${railPlural(e?.amount ?? 1, "ration")}.`, tone: "hit", priority: PRIORITY.other }),
-  itemSold: (e) => ({ text: `Sold: ${e?.item?.n ?? "something"} (${e?.price ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
+  // STORE-04 (Phase 87): the last ration of a store's d10 stock, and the pack-cap refusal.
+  rationsSoldOut: () => ({ text: "Shelf's bare: that was the last ration.", tone: "beat", priority: PRIORITY.other }),
+  rationsFull: (e) => block(`Pack full: ${e?.have ?? 0}/${e?.cap ?? 0} rations.`),
+  itemSold: (e) => ({ text: `Sold:${e?.item?.n ?? "something"} (${e?.price ?? 0} wilmst).`, tone: "hit", priority: PRIORITY.other }),
 
   /* ---------------- encounters.js ---------------- */
 

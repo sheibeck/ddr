@@ -227,7 +227,7 @@ export const RATIONS_STOCK_DIE = 10;
  */
 export function rollRationsStock(rng, depth) {
   const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
-  return derivedRng(cursor, "storeRations", depth).d(RATIONS_STOCK_DIE);
+  return derivedRng(cursor, "storeRations", depth).d(RATIONS_STOCK_DIE); // roll:amount
 }
 
 /**

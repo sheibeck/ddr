@@ -37,7 +37,7 @@ const REFUSAL_TYPES = [
   "strikeRefused", "fleeRefused", "parleyRefused", "withdrawalDenied", "vanishDenied",
   "itemRejected", "equipRejected", "useRefused", "scrollRefused", "noChargesLeft",
   "spellNotKnown", "spellAboveLevel", "spellSchoolLocked", "campFailed", "joinerRefused",
-  "buyFailed", "backstabDenied", "bagFull", "nothingToThrowAt", "nothingToTurn",
+  "buyFailed", "backstabDenied", "bagFull", "rationsFull", "nothingToThrowAt", "nothingToTurn",
   "gateRefused", "insaneNoTarget", "deathSpellTooWeak", "parleyExhausted",
   // Phase 31 (CMB-01/CMB-02): the notFought/generic-action refusal vocabulary.
   "castRefused", "actionRefused",

@@ -136,6 +136,8 @@ const NAMED_LEGIBILITY_EVENTS = [
   "backstabDenied",
   // Phase 61 (GRULE-01): the combat gear lock's refusal event.
   "gearRefused",
+  // Phase 87 (STORE-04): the ration pack-cap refusal.
+  "rationsFull",
 ];
 
 test("every engine-emitted event type either has a LINE_FOR builder or is explicitly Oracle-only", () => {
