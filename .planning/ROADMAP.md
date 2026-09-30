@@ -158,12 +158,12 @@ Plans:
   3. Once the Cloak of Regeneration is used, its wearer heals on each of the next three 10-step marks (30 steps in all) with a narrated line for each tick, and taking the cloak off stops the ticks that are left.
   4. A hero or Joiner wearing the Cloak of Strength takes no critical hits from foes and still lands their own crits, and its activation shows its own chip and name, not the Fighter's Braced.
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 88-01-PLAN.md — ITEM-02 core: worn-item effects and the wielded Crystal Staff's party invisibility carry src { slot, n } (weapon slot included); one end helper (endSourceEffects) on every gear change, use spent (remaining + cd; a staff's charge stays spent), Ether in rock entombs, narrated itemEffectEnded
+- [x] 88-01-PLAN.md — ITEM-02 core: worn-item effects and the wielded Crystal Staff's party invisibility carry src { slot, n } (weapon slot included); one end helper (endSourceEffects) on every gear change, use spent (remaining + cd; a staff's charge stays spent), Ether in rock entombs, narrated itemEffectEnded
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -270,7 +270,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
-| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 0/TBD | Not started | - |
+| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 1/4 | In Progress|  |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |

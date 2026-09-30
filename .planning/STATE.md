@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 88
 current_phase_name: "Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak"
 status: executing
-stopped_at: "Phase 88 wave 1: 88-01 tasks 1-3 committed (090f8a4e, 1ad0c821, 2647b37f); executor stopped before SUMMARY.md; npm test result unconfirmed"
-last_updated: "2026-09-30T14:10:43.895Z"
+stopped_at: Completed 88-01-PLAN.md (closed out after the session restart; full suite 8215/0 on 9f99c958)
+last_updated: "2026-09-30T14:42:06.871Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 88 execution started
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 14
-  completed_plans: 10
+  completed_plans: 11
   percent: 14
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 87; v2.2 Our Own Leade
 ## Current Position
 
 Phase: 88 (Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 88
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-30 — Phase 88 execution started
 
-Progress: [█░░░░░░░░░] 14% (1/7 phases)
+Progress: [████████░░] 79% (1/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -272,8 +272,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30
-Stopped at: Phase 88, plan 88-01: all three tasks committed (090f8a4e, 1ad0c821, 2647b37f), but the executor was stopped (user restarting the session from C:projectsmazeworld) before it wrote 88-01-SUMMARY.md. Resume: run full npm test on HEAD, close out 88-01 (write its SUMMARY from the plan + commits), then waves 2-3 (88-02 and 88-03 in parallel worktrees, then 88-04), then orchestrator verification. The user rulings of 2026-09-30 are in .planning/notes/v2.3-user-rulings-2026-09-30.md and .planning/notes/v2.3-item-audit-findings.md (Phases 89-91).
+Last session: 2026-09-30T14:42:06.829Z
+Stopped at: Completed 88-01-PLAN.md (closed out after the session restart; full suite 8215/0 on 9f99c958). Next: wave 2 (88-02 save/load + 88-03 crit-ward pins, parallel worktrees, no file overlap), then wave 3 (88-04 heal-over-time), then orchestrator verification. The user rulings of 2026-09-30 are in .planning/notes/v2.3-user-rulings-2026-09-30.md and .planning/notes/v2.3-item-audit-findings.md (Phases 89-91).
 
 - (history below is the pre-close record)
 
@@ -479,6 +479,7 @@ Resume file: None
 | Phase 87 P09 | 45min | 3 tasks | 10 files |
 | Phase 87 P10 | 15min | 1 tasks | 2 files |
 | Phase 87 P08 | 15min | 3 tasks | 2 files |
+| Phase 88 P01 | 22 min | 3 tasks | 15 files |
 
 ## Decisions
 
