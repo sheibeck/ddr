@@ -4,15 +4,15 @@ milestone: v2.3
 milestone_name: Truth in Advertising
 current_phase: 89
 current_phase_name: Item Audit & Fixes
-status: planning
+status: executing
 stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
-last_updated: "2026-09-30T15:41:48.362Z"
+last_updated: "2026-09-30T16:30:58.071Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 88 complete, transitioned to Phase 89
+last_activity_desc: Phase 89 execution started
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 14
+  total_plans: 24
   completed_plans: 14
   percent: 29
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 89 — Item Audit & Fixes (CONTEXT written; 90 and 91 CONTEXT written too)
+**Current focus:** Phase 89 — Item Audit & Fixes
 
 ## Current Position
 
-Phase: 89 — Item Audit & Fixes
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-30 — Phase 88 complete, transitioned to Phase 89
+Phase: 89 (Item Audit & Fixes) — EXECUTING
+Plan: 1 of 10
+Status: Executing Phase 89
+Last activity: 2026-09-30 — Phase 89 execution started
 
 Progress: [███░░░░░░░] 29% (2/7 phases)
 
