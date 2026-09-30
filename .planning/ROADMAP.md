@@ -104,16 +104,44 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 **Plans:** 10 plans (waves 1–10, run in order; 87-08's user-gated deploy runs last)
 
 Plans:
+**Wave 1**
 
 - [ ] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 87-03-PLAN.md — STORE-04 UI + bots: "N left" on the Rations row, pack-full reason; fair bot tops up 3 days of party ration upkeep, hoarder buys per ration to its cap; snapshots and bot pins declared
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 87-04-PLAN.md — BOARD-28 local: records.js DEPTH/LINEAGE/GRAVEYARD ties by most steps, re-rank on load, DEPTH rule copy (only BOARD-28 engine bytes; no server files)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 87-05-PLAN.md — BOARD-28 contract: deepKey = floor*1e6 + steps in runDoc.js and the final rules; transition rules + config + proof test (vc12 checked)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 87-06-PLAN.md — BOARD-28 tooling: fake transition mode + admin deepKey patch; boards-admin rekey-deep (dry run, idempotent, count report)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 87-07-PLAN.md — BOARD-28 proof + release steps: boards-smoke --transition probe; RELEASING.md Release 2.3.0 DEPTH-key steps
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 87-09-PLAN.md — BOARD-29: race and sub-class in the expanded row detail; long-press (and FILTER LIKE THIS) row menu filters by race / sub-class / both
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 87-10-PLAN.md — BOARD-30: every leaderboard sheet clears the bottom system inset (RANK BY's WILMST fully visible)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 87-08-PLAN.md — BOARD-28 live (runs last): checkpoint for the user's go to deploy the transition rules, then the live probe and the section-14 record
 
 **UI hint**: yes
@@ -185,6 +213,7 @@ Plans:
   2. The ledger flags every entry that adds little or nothing to play, every very low bonus (for example a +1 that rarely matters), every effect that lasts a single round, and every once-per-combat ability, each with a recommendation: keep, buff, lengthen, rework, allow more uses, or add a new system.
   3. The user rules on each flagged entry at a checkpoint before any change is built, and the rulings are recorded in the ledger.
   4. Every approved change is built, its text updated to match, and each one pinned by a test. Any fixture it moves is declared and regenerated.
+
 **Plans:** 0 plans
 
 Plans:
