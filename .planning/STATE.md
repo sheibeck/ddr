@@ -5,7 +5,7 @@ milestone_name: Truth in Advertising
 current_phase: 88
 current_phase_name: "Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak"
 status: executing
-stopped_at: Phase 87 verified (passed) and complete
+stopped_at: "Phase 88 wave 1: 88-01 tasks 1-3 committed (090f8a4e, 1ad0c821, 2647b37f); executor stopped before SUMMARY.md; npm test result unconfirmed"
 last_updated: "2026-09-30T14:10:43.895Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 88 execution started
@@ -273,7 +273,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30
-Stopped at: Phase 87 complete (verification passed 5/5), ready to discuss and plan Phase 88
+Stopped at: Phase 88, plan 88-01: all three tasks committed (090f8a4e, 1ad0c821, 2647b37f), but the executor was stopped (user restarting the session from C:projectsmazeworld) before it wrote 88-01-SUMMARY.md. Resume: run full npm test on HEAD, close out 88-01 (write its SUMMARY from the plan + commits), then waves 2-3 (88-02 and 88-03 in parallel worktrees, then 88-04), then orchestrator verification. The user rulings of 2026-09-30 are in .planning/notes/v2.3-user-rulings-2026-09-30.md and .planning/notes/v2.3-item-audit-findings.md (Phases 89-91).
 
 - (history below is the pre-close record)
 
