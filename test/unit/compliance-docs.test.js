@@ -85,11 +85,14 @@ test("docs/LEADERBOARDS.md carries the Play Console cleanup section and all five
   }
 });
 
-test("docs/LEADERBOARDS.md section 6 records the finished transition period and the transition files are gone", () => {
+test("docs/LEADERBOARDS.md section 6 keeps the 2.2 transition history, and the 2.3 DEPTH-key transition files exist while it runs", () => {
   const doc = read(LEADERBOARDS_PATH);
   assert.match(doc, /The transition period \(over, 2026-09-29\)/);
-  for (const gone of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
-    assert.ok(!fs.existsSync(path.join(REPO_ROOT, gone)), `${gone} was deleted at the 2.2 cutover`);
+  assert.match(doc, /Until the 2\.3 cutover: the DEPTH-key transition config/);
+  // Phase 87 recreated these for BOARD-28; the Release 2.3.0 steps delete them
+  // again and flip this assertion back to "gone".
+  for (const present of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, present)), `${present} exists until the 2.3 cutover`);
   }
 });
 

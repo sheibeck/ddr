@@ -251,8 +251,28 @@ kept 2.1.0's unauthenticated form; `docs/BUG-REPORTS.md` section 4 "Old
 builds"). On 2026-09-29, once 2.2.0 (vc12) was live on the testing track,
 the final rules were deployed with the plain command above, `--probe-rules`
 came back ten PASS (`docs/BUG-REPORTS.md`'s release-day subsection), and the
-transition rules, their config and their test were deleted. The plain
-command above is now the only deploy command.
+transition rules, their config and their test were deleted. That history
+stays here; today's transition config is the next subsection.
+
+### Until the 2.3 cutover: the DEPTH-key transition config
+
+While 2.2.0 (vc12) is a build testers run, every rules or index deploy uses
+the transition config instead of the plain command above:
+
+```
+firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
+```
+
+`firebase.transition.json` points at `firebase/firestore.transition.rules`,
+which is the final rules with exactly one clause swapped: `deepKey` may equal
+the new formula (`floor * 1,000,000 + steps`) or the old 2.2.0 one
+(`floor * 1,000,000 + (999,999 - steps)`), both computed from the doc's own
+floor and steps, and nothing else (report #9, BOARD-28).
+`test/unit/firestore-transition-rules.test.js` proves the one-clause
+difference and refuses every third value. The plain command is the 2.3
+cutover (`docs/RELEASING.md`, "Release 2.3.0"). Until a re-key, a 2.2.0 run
+mis-orders only among runs tied on the same floor (accepted, CONTEXT). The
+first transition deploy is the user's go at Phase 87's end (87-08).
 
 ## 7. Identity
 
