@@ -6,14 +6,14 @@ current_phase: 89
 current_phase_name: Item Audit & Fixes
 status: executing
 stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
-last_updated: "2026-09-30T20:03:03.077Z"
+last_updated: "2026-09-30T20:42:07.411Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 89 execution started
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 46
-  completed_plans: 19
+  completed_plans: 20
   percent: 29
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 ## Current Position
 
 Phase: 89 (Item Audit & Fixes) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 89 execution started
 
-Progress: [████░░░░░░] 41% (2/7 phases)
+Progress: [████░░░░░░] 43% (2/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -62,6 +62,7 @@ Progress: [████░░░░░░] 41% (2/7 phases)
 ### Blockers/Concerns (open)
 
 - [Phase 88 → Phase 92, bot]: `tools/lib/tuning-bot.mjs` still treats a ready worn Cloak of Regeneration as an instant "free heal"; since 88-04 it heals 1d6 at 10/20/30 squares. Re-read that bot logic before the milestone-end bot pass (88-04 finding).
+- [Phase 89 → Phase 92, bot]: the fair bot can stall at depth with a living Joiner: its camp gate reads only the hero's appetite while `makeCamp` refuses on the party's `nightlyEats`, so it loops `campFailed` (same family as the documented seed-55434 stall in tools/lib/days-farm.mjs). 89-06 swapped tuning-bot.test.js seed 4 → 6 to keep the water-routing test on topic. Fix before the milestone-end bot pass: `c.rations >= nightlyEats(state)` in decideAction's camp branch (89-06 finding).
 
 - [Phase 87, BOARD-28 live]: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
 
@@ -275,7 +276,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30T15:00:16.664Z
-Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 executing: 89-01..05 merged (suite 8,480/8,478/0/2); 89-06 RUNNING (see git worktree list for its path/branch; base = the tracking commit after the 89-05 merge) — on its hand-back: merge --no-ff, remove worktree + branch, npm test, roadmap.update-plan-progress 89 89-06 complete, state.advance-plan, commit tracking, then dispatch 89-07 (then 08..10 strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1 and 92 still need discuss (91.1 after 91; 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
+Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 executing: 89-01..06 merged (suite 8,522/8,520/0/2); 89-07 RUNNING (see git worktree list for its path/branch; base = the tracking commit after the 89-06 merge) — on its hand-back: merge --no-ff, remove worktree + branch, npm test, roadmap.update-plan-progress 89 89-07 complete, state.advance-plan, commit tracking, then dispatch 89-08 (then 09..10 strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1 and 92 still need discuss (91.1 after 91; 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
 
 - (history below is the pre-close record)
 
