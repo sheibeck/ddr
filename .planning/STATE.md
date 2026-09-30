@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 87
 current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
 status: executing
-stopped_at: Completed 87-04-PLAN.md
-last_updated: "2026-09-30T03:22:14.766Z"
+stopped_at: Completed 87-05-PLAN.md
+last_updated: "2026-09-30T03:29:51.867Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 87 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards ship
 ## Current Position
 
 Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 87 execution started
 
-Progress: [████░░░░░░] 40% (0/6 phases)
+Progress: [█████░░░░░] 50% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -270,8 +270,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T03:22:14.727Z
-Stopped at: Completed 87-04-PLAN.md
+Last session: 2026-09-30T03:29:51.831Z
+Stopped at: Completed 87-05-PLAN.md
 
 - (history below is the pre-close record)
 
@@ -470,6 +470,7 @@ Resume file: None
 | Phase 87 P02 | 35min | 2 tasks | 8 files |
 | Phase 87 P03 | 40min | 2 tasks | 12 files |
 | Phase 87 P04 | 25min | 2 tasks | 5 files |
+| Phase 87 P05 | 30min | 2 tasks | 12 files |
 
 ## Decisions
 
@@ -830,6 +831,7 @@ Resume file: None
 - [Phase ?]: [Phase 87-02]: STORE-04 ration stock is a flat d10 from derivedRng(main cursor after openStore draws, 'storeRations', depth), stored as Rations line 'left'; rationsFull refuses over-cap buys before payment; old saves read via rationsLeft (unsold=1, sold=0)
 - [Phase ?]: 87-03: fair bot ration target = BOT_RATION_DAYS (3) x nightlyEats(state), gated by storeBuyRefusal not GOLD_RESERVE; store row count via storeCountText
 - [Phase ?]: 87-04: local DEPTH/LINEAGE/GRAVEYARD rank floor desc then MOST steps; stored records re-rank via sanitizeBests, no migration
+- [Phase ?]: 87-05: deepKey = floor*1e6 + steps (DEPTH ties by most steps); transition rules accept old or new formula only; legacyDeepKeyOf is transition-only; nothing deployed (87-08 is the user's go)
 
 ### Blockers
 
