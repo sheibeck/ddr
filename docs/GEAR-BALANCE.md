@@ -688,6 +688,56 @@ refusal this plan left untouched for the no-live-effect case. Proof:
 `grep -l useItem test/parity/fixtures/*.json` and
 `grep -l '"timers"' test/parity/fixtures/*.json` are both empty.
 
+### Effect sources (Phase 88, ITEM-02)
+
+> "when you use an item and then take that item off, you should lose the
+> items benefit. For instance, if I wear the cloak of flying and use it, I
+> gain flying, and then if I take it off, I should lose that flying
+> condition. We don't want people just putting everything on and stacking
+> benefits without actually wearing the item for the benefit." — user,
+> backlog 999.16, 2026-09-28
+
+**What is linked.** Using one of the twelve worn items that start a timed
+effect (Cloaks of Strength, Invisibility, Speed, Armor, Flying and Ether;
+Ring of Power, Gauntlet of the Giant, Amulet of Light, Anklet of
+Invisibility, Helm of Knowledge, Bracelet of Flight) from its worn slot, or a
+wielded Crystal Staff from the weapon slot (user, 2026-09-30: its party
+invisibility is linked too), stamps the timer record with its source:
+`src: { slot, n }`, where `slot` is `jewelry1`, `jewelry2`, `cloak` or
+`weapon` (`engine/derived.js#SOURCE_SLOTS`) and `n` is the item's display
+name. Potions and the Torch are used up on use, so they carry no `src` and
+their effects run their course whatever the gear does.
+
+**The end rule.** One helper, `engine/items.js#endSourceEffects`, ends a
+linked effect the moment its item leaves the slot: take off (`unequipSlot`,
+the weapon slot for a staff included), swap (`equipItem`, `wearItem`,
+`takeItem`, `takeLoot`, an identical copy included), or destruction (the
+Pilfer fumble). Drop and sell only address bag rows, so a slotted item
+reaches them through the take-off; both still run the helper's sweep. Wearing
+an item into the OTHER jewelry slot leaves the effect running. A refused
+change (bag full, the combat gear lock) ends nothing. The end is narrated by
+one `itemEffectEnded` event, on the Oracle and the rail.
+
+**The use is spent.** An early end turns the record into a cooldown of
+(effect squares left + `cd`), so the item is ready again exactly when it
+would have been had the effect run its full length; putting it back on never
+brings the effect back and never readies it sooner. A charged staff has no
+cooldown: its record is removed, the charge it cost stays spent and its
+`charges:` recharge countdown is untouched. The natural effect-to-cooldown
+flip in `engine/effects.js` drops `src`, so a cooling record is byte-identical
+to the pre-link shape.
+
+**Ether in rock.** Taking the Cloak of Ether off, or swapping it, while
+standing in rock entombs the hero through `engine/movement.js#resolveEtherEnd`
+(`itemEffectEnded`, `entombed`, `died`), with no refusal and no warning (user
+ruling 2026-09-30, consistent with "if your movement ends when you are in a
+wall, you die"). A flight that ends early strands nothing: the climb and leap
+checks run as a step enters a tile.
+
+**Joiners.** The link and the helper work on any character sheet (a Joiner's
+event carries `member` and never entombs anyone); Joiners still have no
+item-use path, so nothing starts an effect on one today.
+
 ## One-shot tools (GEAR-05) — Plan 04
 
 Three hazard tools — Rope, Ladder, Torch — each answer exactly one hazard,

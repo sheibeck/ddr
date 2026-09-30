@@ -5733,3 +5733,51 @@ Quick 260928-nrf, five rulings answering the 260928-abl Fighter/Thief ability au
 | bot-tactics no-stall seed (forced Fighter/Knight) | seed 3 → seed 4 | rule (3) only. Bot step 385: a Joiner's Feint rolls 12 against 14 or better and misses where the auto-hit landed; seed 3 now survives to the 2,000-action cap (alive on depth 6). Seed 4 dies naturally (depth 10, 910 actions, 41 abilityUsed). |
 | DIALS merge pin (`test/difficulty/difficulty.test.js`) | `CLASS_MITIGATION.Thief.fleeBonus` 5 → 3 | rule (1): the dial mirrors `FLEE_THIEF_BONUS` (no engine code reads it); Phase 54's fit artifact still records 5, so the merge applies the ruling on top. |
 | unit pins | flee rows (flee-retune, combat, combatMenu, roll-sign-consistency, rollOdds, ablation-switch, flee-ledger via docs/FLEE.md), the Kata/Feint auto-hit pins (abilities, party-abilities), the one-foe Sweep armour pin (abilities), the member-bolt draw pin (foe-abilities: +1 d20), the Acrobat need pins (identity-contract, identity-footer, joiner-defences, hero-size) | the rule each names; every new value is the engine's own number. |
+
+### Phase 88 plan 01: item effects end when the item comes off (ITEM-02)
+
+Plan 88-01, base `690c90c0` (gate 8,172 tests, 8,170 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule.** The user (backlog 999.16, 2026-09-28): "when you use an item and
+then take that item off, you should lose the items benefit. For instance, if I
+wear the cloak of flying and use it, I gain flying, and then if I take it off,
+I should lose that flying condition." Rulings 2026-09-30: any slot change ends
+the effect (take off, swap with an identical copy included, drop, sell,
+destroyed); the use is spent (remaining effect plus cooldown); the Cloak of
+Ether in rock entombs the hero through `resolveEtherEnd`; a flight that ends
+early strands nothing; and the wielded Crystal Staff's party invisibility is
+linked through the weapon slot. A timer record started from a source slot now
+carries `src: { slot, n }`, and `engine/items.js#endSourceEffects` ends it on
+every gear change. The natural effect-to-cooldown flip drops `src`.
+
+**The predictor.** A replay moves only if it uses a worn item or a wielded
+staff (a record is stamped), or it changes a source slot while such a record is
+live, or a saved state hashes a live item record (the `src` field is part of
+the record). No parity script uses an item, and no non-lethal gear change draws
+from the main rng (only an entombment's epitaph pick does). The bot does equip
+staves, so the pinned bot runs were the place to look.
+
+**The live scan (measured at the base, then with the change).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical to the base
+   (compared against a `git archive` of `690c90c0` run in a scratch directory).
+   The generated roster block above is not edited.
+2. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**, no
+   carve-out and no declared divergence. `test/parity/prototype-master.js.txt`
+   and `test/parity/harness/comparables.js` are untouched.
+3. **State pins** (`roll-high-state-pins.test.js`, 13 tests in the pair with the
+   save test): all labels byte-identical to the base. No pinned run ends with a
+   live linked effect that a recorded state hashes, and none changes a source
+   slot mid-effect.
+4. **The pre-switch save** (`roll-high-save-compat.test.js`): loads and
+   `expected.hash` is unchanged.
+
+**Moved outside the parity suite (unit pins only).**
+
+| Item | old → new | cause |
+|---|---|---|
+| `item-activation.test.js`, Crystal Staff use pin | `{ cadence, left: 15, phase }` → the same plus `src: { slot: "weapon", n: "Crystal Staff" }` | the weapon slot is a source slot; the use now stamps its record |
+| `item-activation.test.js`, Cloak of Speed use pin | `{ cadence, left: 50, cd: 50, phase }` → the same plus `src: { slot: "cloak", n: "Cloak of Speed" }` | a worn use is linked to its slot |
+
+No fixture, state pin, save or golden was re-recorded.
