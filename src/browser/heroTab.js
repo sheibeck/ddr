@@ -38,6 +38,9 @@ import { signedText, playerDelta, ROLLERS } from "./rollRange.js";
 // damageBracket and damageLine instead of a restated modifier stack.
 import { weaponDamageTerms, weaponDamageRange } from "../../engine/derived.js";
 import { footerLines } from "./identityFooter.js";
+// Phase 87 (PARTY-11, report #5) — a SEPARATE import line: the Company cards read
+// a Joiner's live fight hp through the same helper YOUR LOT uses.
+import { memberLiveWp } from "./partyHp.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -574,7 +577,9 @@ const escText = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt
 // roster (state.party) and renders one card per member: name, subclass·
 // level, an HP bar (reusing .mw-map-hptrack/.mw-map-hpfill) and a Downed
 // chip. Data-driven: the panel is hidden when solo. Called from
-// renderHeroTab so member HP stays live through combat.
+// renderHeroTab so member HP stays live through combat: Phase 87 (PARTY-11,
+// report #5) the hp now comes from partyHp.js#memberLiveWp (the live fight
+// roster entry mid-fight, the sheet otherwise), the same read YOUR LOT uses.
 // Phase 36 (JOIN-01) — the card is a real sheet: name · sub/race, then
 // class · level, then the HP track, then Weapon/Eats lines, then (outside
 // combat) a DISMISS control with the same two-tap inline confirm pattern as
@@ -591,10 +596,8 @@ function renderPartyRoster(doc, state, deps) {
   if (!party.length) return;
   party.forEach((m, idx) => {
     const lvl = m.lvl ?? m.level ?? 1;
-    const maxWP = m.maxWP || 1;
-    const wp = Math.max(0, m.wp ?? 0);
+    const { wp, maxWP, down: downed } = memberLiveWp(state, idx);
     const pct = clamp(wp / maxWP * 100, 0, 100);
-    const downed = m.status === "downed" || wp <= 0;
     const card = doc.createElement("div");
     card.className = "mw-party-member" + (downed ? " downed" : "");
     // Phase 43 (CLAR-05) — the SAME appetite read as the camp gate and the

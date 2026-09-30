@@ -13,6 +13,9 @@
 
 import { ENC_TYPES } from "../../content/bestiary.js";
 import { maxCharges } from "../../engine/movement.js";
+// Phase 87 (PARTY-11, report #5) — a SEPARATE import line: the one live-hp read
+// for a Joiner (the fight roster entry during a fight, the sheet otherwise).
+import { memberLiveWp } from "./partyHp.js";
 
 /** COMBAT_PANEL_COPY — every literal string this module emits (voice-scanned by test/unit/combatPanel.test.js). */
 export const COMBAT_PANEL_COPY = Object.freeze({
@@ -179,6 +182,11 @@ function lotChipsSafe(chipsFor, ref) {
  * partyIdx }` for each member — mirroring foeListViewModel: this module
  * never derives chips itself. A summoned ally card always has `[]`; with no
  * chipsFor, or when it throws or returns a non-array, a card gets `[]`.
+ *
+ * Phase 87 (PARTY-11, report #5): a member card's hp comes from
+ * partyHp.js#memberLiveWp (the live fight roster entry during a fight, the
+ * persistent sheet otherwise), never straight from `state.party[i].wp`,
+ * which the engine only syncs at endCombat.
  */
 export function yourLotViewModel(state, opts = {}) {
   const chipsFor = typeof opts.chipsFor === "function" ? opts.chipsFor : () => [];
@@ -201,9 +209,7 @@ export function yourLotViewModel(state, opts = {}) {
 
   const party = state.party || [];
   const memberCards = party.map((m, partyIdx) => {
-    const wp = Math.max(0, m.wp ?? 0);
-    const max = m.maxWP || 1;
-    const down = m.status === "downed" || wp <= 0;
+    const { wp, maxWP: max, down } = memberLiveWp(state, partyIdx);
     const pct = pctFor(wp, max);
     return {
       kind: "member",
