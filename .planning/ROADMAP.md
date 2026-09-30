@@ -186,7 +186,7 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans:** 2/10 plans executed
+**Plans:** 3/10 plans executed
 
 Plans:
 **Wave 1**
@@ -196,7 +196,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 89-03-PLAN.md — Poplar Staff heals the whole party d20+10 each (derived stream, partyHealed); the Pendant of Fortitude's armed charge joins the source link (disarmed on take-off, cooldown runs on)
+- [x] 89-03-PLAN.md — Poplar Staff heals the whole party d20+10 each (derived stream, partyHealed); the Pendant of Fortitude's armed charge joins the source link (disarmed on take-off, cooldown runs on)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -336,6 +336,7 @@ Plans:
 **Wave 9** *(blocked on Wave 8 completion)*
 
 - [ ] 91-10-PLAN.md — TEXT-01 for every race and sub-class row (+/− to hit, d20 ranges, "can always parley with"), the blurb guard (every trait anchored in its blurb), the engine-scan guard, the audit closed with a pin per row
+
 **UI hint**: yes
 
 ### Phase 91.1: Value Review: Races, Sub-classes & Abilities (INSERTED)
@@ -393,7 +394,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
-| 89. Item Audit & Fixes | 2/10 | In Progress|  |
+| 89. Item Audit & Fixes | 3/10 | In Progress|  |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
