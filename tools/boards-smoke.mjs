@@ -31,6 +31,16 @@
 //   erase / account-deleted  owner delete-everything, then the anonymous
 //                            account is gone
 //
+// Phase 87 (BOARD-28) adds a separate --transition probe (runTransitionProbe),
+// a transition artifact deleted at the 2.3 cutover (docs/RELEASING.md, Release
+// 2.3.0). Its steps:
+//   signup                   as above
+//   create-new-key           a run carrying the 2.3 DEPTH key lands
+//   create-legacy-key        a run carrying the exact key a shipped 2.2.0
+//                            client writes (legacyDeepKeyOf) lands
+//   deny-third-key           a run carrying any other DEPTH key is refused
+//   erase / account-deleted  as above
+//
 // It creates short-lived, PUBLIC rows on the board named "Smoke Probe"
 // (race Troll, class Magic User, sub Court Mage — see smokeSummaries below)
 // and always deletes them, in a finally block, even when a step fails. It
@@ -48,7 +58,7 @@ import { SEASON } from "../content/season.js";
 import { runHash } from "../engine/records.js";
 import { FIREBASE_CONFIG, firebaseConfigured } from "../src/browser/firebaseConfig.js";
 import { firestoreUrl, restError, docName, toFirestoreFields } from "../src/browser/firestoreRest.js";
-import { buildRunDoc, createRunCommit, RUN_COLLECTION, RANK_FIELD, BOARD_STATS, rankKeys } from "../src/browser/runDoc.js";
+import { buildRunDoc, createRunCommit, RUN_COLLECTION, RANK_FIELD, BOARD_STATS, rankKeys, deepKeyOf, legacyDeepKeyOf } from "../src/browser/runDoc.js";
 import { createBoardClient, decodeRunDocument } from "../src/browser/boardClient.js";
 import { createBoardWrites } from "../src/browser/boardWrites.js";
 import { createIdentity } from "../src/browser/firebaseAuth.js";
@@ -523,6 +533,194 @@ export async function runSmoke(opts = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 87 (BOARD-28): the transition probe
+// ---------------------------------------------------------------------------
+
+/**
+ * transitionSummaries(now) — three frozen RunSummary-shaped runs on one floor
+ * (4) with distinct steps (321, 123, 77), hence distinct hashes. Run a carries
+ * the 2.3 DEPTH key, b the 2.2.0 key, c a third value the rules must refuse.
+ * The seed/when come from one now() read; each hash is computed after every
+ * field is set. Never throws.
+ */
+export function transitionSummaries(now = Date.now) {
+  const seed = Math.trunc(now());
+  const base = { ...SMOKE_SHARED, seed, when: seed, floor: 4, day: 3, kills: 2, gold: 30, sp: 120, level: 2, acts: 300 };
+  const a = { ...base, steps: 321 };
+  const b = { ...base, steps: 123 };
+  const c = { ...base, steps: 77 };
+  a.hash = runHash(a);
+  b.hash = runHash(b);
+  c.hash = runHash(c);
+  return Object.freeze({ a: Object.freeze(a), b: Object.freeze(b), c: Object.freeze(c) });
+}
+
+/**
+ * runTransitionProbe({ fetchFn, config, now, log }) — proves the DEPLOYED rules
+ * accept a run carrying the 2.3 DEPTH key and a run carrying the exact key a
+ * shipped 2.2.0 client writes, and refuse any other value; then erases its
+ * runs and deletes its anonymous account, in a finally block, even when a step
+ * fails. Same option and return shape as runSmoke. Never throws, never logs a
+ * token or the API key. A Phase 87 transition artifact: delete it at the 2.3
+ * cutover (docs/RELEASING.md, Release 2.3.0).
+ */
+export async function runTransitionProbe(opts = {}) {
+  const { fetchFn, config = FIREBASE_CONFIG, now = Date.now, log = console.log } = opts;
+
+  const steps = [];
+  const facts = { missingIndexes: [] };
+
+  const recorder = wrapRecorder(fetchFn);
+  const storage = mapStorage();
+  const identity = createIdentity({ storage, fetchFn: recorder.fetchFn, config, competeOn: () => true, now });
+  const writes = createBoardWrites({ fetchFn: recorder.fetchFn, identity, config });
+
+  const summaries = transitionSummaries(now);
+  const createdIds = [];
+
+  function bearerInit(body, idToken) {
+    const headers = { "Content-Type": "application/json" };
+    if (idToken) headers.Authorization = `Bearer ${idToken}`;
+    return { method: "POST", headers, body: JSON.stringify(body) };
+  }
+
+  async function rawRequest(url, init) {
+    const res = await recorder.fetchFn(url, init);
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      // treated as no body below
+    }
+    return { status: res.status, ok: res.ok, json };
+  }
+
+  async function getRun(id) {
+    return rawRequest(firestoreUrl(config, `/${RUN_COLLECTION}/${id}`), { method: "GET" });
+  }
+
+  async function runStep(name, fn) {
+    let outcome;
+    try {
+      outcome = await fn();
+    } catch (err) {
+      outcome = { pass: false, detail: { error: String((err && err.message) || err) } };
+    }
+    const pass = !!(outcome && outcome.pass);
+    const detail = outcome && "detail" in outcome ? outcome.detail : null;
+    steps.push(Object.freeze({ name, pass, detail: detail === undefined ? null : detail }));
+    log(pass ? `PASS ${name}` : `FAIL ${name}${detail != null ? ` ${JSON.stringify(detail)}` : ""}`);
+    if (!pass) {
+      const failure = new Error(`step failed: ${name}`);
+      failure.isStepFailure = true;
+      throw failure;
+    }
+  }
+
+  // Builds a doc from `summary` with its deepKey overridden, commits it through
+  // the shipped commit shape, and reads it back.
+  async function commitWithKey(token, summary, deepKey) {
+    const built = buildRunDoc(summary, { uid: token.uid, handle: token.handle, version: summary.version });
+    if (!built.ok) return { built: null };
+    const doc = { ...built.doc, deepKey };
+    const res = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(createRunCommit(config, built.id, doc), token.idToken));
+    const check = await getRun(built.id);
+    return { built, res, check };
+  }
+
+  let cleanup = { erased: null, accountDeleted: false };
+
+  try {
+    await runStep("signup", async () => {
+      const token = await identity.getToken();
+      return { pass: token.ok === true, detail: token.ok ? { uid: token.uid, handle: token.handle } : { reason: token.reason } };
+    });
+
+    await runStep("create-new-key", async () => {
+      const token = await identity.getToken();
+      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
+      const out = await commitWithKey(token, summaries.a, deepKeyOf(summaries.a));
+      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
+      createdIds.push(out.built.id);
+      const decoded = out.check.status === 200 ? decodeRunDocument(out.check.json) : null;
+      const keyOk = !!decoded && decoded.deepKey === deepKeyOf(summaries.a);
+      return { pass: out.res.status === 200 && keyOk, detail: { status: out.res.status, getStatus: out.check.status } };
+    });
+
+    await runStep("create-legacy-key", async () => {
+      const token = await identity.getToken();
+      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
+      const out = await commitWithKey(token, summaries.b, legacyDeepKeyOf(summaries.b));
+      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
+      createdIds.push(out.built.id);
+      const decoded = out.check.status === 200 ? decodeRunDocument(out.check.json) : null;
+      const keyOk = !!decoded && decoded.deepKey === legacyDeepKeyOf(summaries.b);
+      return { pass: out.res.status === 200 && keyOk, detail: { status: out.res.status, getStatus: out.check.status } };
+    });
+
+    await runStep("deny-third-key", async () => {
+      const token = await identity.getToken();
+      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
+      const third = deepKeyOf(summaries.c) + 1;
+      if (third === deepKeyOf(summaries.c) || third === legacyDeepKeyOf(summaries.c)) {
+        return { pass: false, detail: { reason: "third-key-collides" } };
+      }
+      const out = await commitWithKey(token, summaries.c, third);
+      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
+      if (out.res.status === 200) createdIds.push(out.built.id);
+      const deniedOk = out.res.status === 400 || out.res.status === 403;
+      return { pass: deniedOk && out.check.status === 404, detail: { status: out.res.status, getStatus: out.check.status } };
+    });
+
+    await runStep("erase", async () => {
+      const res = await writes.eraseMyRuns();
+      if (!res.ok) return { pass: false, detail: { reason: res.reason } };
+      for (const id of createdIds) {
+        const check = await getRun(id);
+        if (check.status !== 404) return { pass: false, detail: { deleted: res.deleted, getStatus: check.status } };
+      }
+      return { pass: true, detail: { deleted: res.deleted } };
+    });
+
+    await runStep("account-deleted", async () => {
+      const snap = await identity.snapshot();
+      return { pass: snap.uid === null, detail: { uid: snap.uid } };
+    });
+  } catch {
+    // a step recorded its own failure via runStep; nothing more to do here
+  } finally {
+    try {
+      const snap = await identity.snapshot();
+      if (snap.uid) {
+        const eraseResult = await writes.eraseMyRuns();
+        cleanup.erased = eraseResult.ok === true;
+      } else {
+        cleanup.erased = true;
+      }
+
+      const snap2 = await identity.snapshot();
+      if (snap2.uid) {
+        const delRes = await identity.deleteAccount();
+        cleanup.accountDeleted = !!(delRes && delRes.ok === true && delRes.deleted === true);
+      } else {
+        cleanup.accountDeleted = true;
+      }
+      await identity.drop();
+    } catch {
+      // best-effort cleanup; the caller's own report of `cleanup` reflects what happened above
+    }
+
+    facts.missingIndexes = recorder.calls
+      .filter((c) => c.errStatus === "FAILED_PRECONDITION" && typeof c.message === "string" && /index/i.test(c.message))
+      .map((c) => c.message);
+    cleanup = Object.freeze(cleanup);
+  }
+
+  const allPass = steps.length > 0 && steps.every((s) => s.pass);
+  return { ok: allPass, steps: Object.freeze([...steps]), facts: Object.freeze({ ...facts }), cleanup };
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -537,10 +735,11 @@ function plannedStepNames(withAdmin) {
 }
 
 function usage() {
-  console.log("usage: node tools/boards-smoke.mjs [--with-admin | --dry-run]");
+  console.log("usage: node tools/boards-smoke.mjs [--with-admin | --dry-run | --transition]");
   console.log("  (no flag)     runs the client-only smoke against the live project (FIREBASE_CONFIG)");
   console.log("  --with-admin  also proves the banned check and an admin delete (needs gcloud auth)");
   console.log("  --dry-run     prints the planned steps and the three smoke summaries, touches nothing");
+  console.log("  --transition  proves the deployed rules accept a 2.3 key and a shipped 2.2.0 key and refuse any other (Phase 87, BOARD-28; run right after a transition-rules deploy)");
 }
 
 export async function main(argv = process.argv) {
@@ -550,7 +749,7 @@ export async function main(argv = process.argv) {
     return 2;
   }
   const flag = args[0];
-  if (flag !== undefined && flag !== "--with-admin" && flag !== "--dry-run") {
+  if (flag !== undefined && flag !== "--with-admin" && flag !== "--dry-run" && flag !== "--transition") {
     usage();
     return 2;
   }
@@ -578,7 +777,8 @@ export async function main(argv = process.argv) {
     admin = { api };
   }
 
-  const result = await runSmoke({
+  const runner = flag === "--transition" ? runTransitionProbe : runSmoke;
+  const result = await runner({
     fetchFn: globalThis.fetch.bind(globalThis),
     config: FIREBASE_CONFIG,
     now: Date.now,

@@ -17,11 +17,11 @@ import url from "node:url";
 
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
-import { buildRunDoc } from "../../src/browser/runDoc.js";
+import { buildRunDoc, deepKeyOf, legacyDeepKeyOf } from "../../src/browser/runDoc.js";
 import { rollHandle } from "../../src/browser/handles.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import { resolveAdminAuth, createAdminApi } from "../../tools/boards-admin.mjs";
-import { smokeSummaries, runSmoke } from "../../tools/boards-smoke.mjs";
+import { smokeSummaries, runSmoke, transitionSummaries, runTransitionProbe } from "../../tools/boards-smoke.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -59,6 +59,10 @@ const ADMIN_STEP_ORDER = [
   "deny-bad-key", "deny-other-id", "deny-no-auth", "deny-non-handle-update", "deny-list-51",
   "ban", "admin-delete",
   "handle-rewrite", "erase", "account-deleted",
+];
+
+const TRANSITION_STEP_ORDER = [
+  "signup", "create-new-key", "create-legacy-key", "deny-third-key", "erase", "account-deleted",
 ];
 
 async function makeAdmin(fake) {
@@ -228,4 +232,76 @@ test("CLI --bogus: usage + exit 2, no network", () => {
 test("CLI too many args: usage + exit 2", () => {
   const res = runTool(["--dry-run", "extra"]);
   assert.equal(res.status, 2);
+});
+
+/* ---------------- Phase 87 (BOARD-28): the transition probe ---------------- */
+
+test("transitionSummaries: three frozen summaries on floor 4, distinct steps and hashes, all passing buildRunDoc", () => {
+  const clock = clockBox(7000000);
+  const { a, b, c } = transitionSummaries(clock);
+  const hashes = new Set();
+  for (const s of [a, b, c]) {
+    assert.equal(Object.isFrozen(s), true);
+    assert.equal(s.floor, 4);
+    assert.equal(s.hash, runHash(s));
+    hashes.add(s.hash);
+    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: validHandle(), version: s.version });
+    assert.equal(built.ok, true, JSON.stringify(built.fails));
+  }
+  assert.deepEqual([a.steps, b.steps, c.steps], [321, 123, 77]);
+  assert.equal(hashes.size, 3);
+  assert.equal(Object.isFrozen(transitionSummaries(clock)), true);
+});
+
+test("runTransitionProbe: against a transition-mode fake every step passes and the board ends empty", async () => {
+  const clock = clockBox(8000000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, acceptLegacyDeepKey: true });
+  const seen = [];
+  const inner = fake.fetchFn;
+  const spy = async (rawUrl, init) => {
+    if (typeof rawUrl === "string" && rawUrl.includes(":commit") && init && init.body) seen.push(JSON.parse(init.body));
+    return inner(rawUrl, init);
+  };
+  const result = await runTransitionProbe({ fetchFn: spy, config: VALID_CONFIG, now: clock, log: () => {} });
+
+  assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
+  assert.deepEqual(result.steps.map((s) => s.name), TRANSITION_STEP_ORDER);
+  assert.equal(result.steps.every((s) => s.pass), true);
+  assert.deepEqual(result.facts.missingIndexes, []);
+  assert.equal(result.cleanup.erased, true);
+  assert.equal(result.cleanup.accountDeleted, true);
+  assert.deepEqual(fake.docs(), []);
+  assert.deepEqual(fake.users(), []);
+
+  // the keys the probe wrote: the 2.3 formula, the exact 2.2.0 formula, and a third value
+  const { a, b, c } = transitionSummaries(clock);
+  const keys = seen
+    .flatMap((body) => body.writes || [])
+    .map((w) => w.update && w.update.fields && w.update.fields.deepKey)
+    .filter(Boolean)
+    .map((f) => Number(f.integerValue));
+  assert.ok(keys.includes(deepKeyOf(a)));
+  assert.ok(keys.includes(legacyDeepKeyOf(b)));
+  assert.ok(keys.includes(deepKeyOf(c) + 1));
+  assert.notEqual(deepKeyOf(c) + 1, legacyDeepKeyOf(c));
+});
+
+test("runTransitionProbe: against the default (final-rules) fake it fails at create-legacy-key and still cleans up", async () => {
+  const clock = clockBox(9000000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "create-new-key", "create-legacy-key"]);
+  assert.equal(result.steps[2].pass, false);
+  assert.deepEqual(fake.docs(), []);
+  assert.deepEqual(fake.users(), []);
+  assert.equal(result.cleanup.erased, true);
+  assert.equal(result.cleanup.accountDeleted, true);
+});
+
+test("CLI --transition is accepted as a flag (dry path is not reachable without network, so only the usage text is checked)", () => {
+  const res = runTool(["--bogus"]);
+  assert.equal(res.status, 2);
+  assert.ok(res.stdout.includes("--transition"));
 });
