@@ -102,6 +102,38 @@ test("CSS: .mw-lb-sheet-opts scrolls independently", () => {
   assert.match(body, /overflow-y:auto/);
 });
 
+// Phase 87 (BOARD-30): the player's on-device report, "the Rank By rail goes
+// slightly off the bottom of the screen with the wilmst descriptive text".
+// The app runs edge-to-edge (SystemBars), and the title-opened panel hides
+// the tab bar, so nothing between the sheet and the screen edge padded the
+// navigation-bar inset. Every sheet (RANK BY, RACE, SUB-CLASS and the
+// FILTER LIKE THIS menu) shares .mw-lb-sheet-opts, so one rule covers them.
+test("BOARD-30 (Phase 87): .mw-lb-sheet-opts clears the bottom system inset and still scrolls", () => {
+  const INSET = "var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))";
+  const opts = findRuleBody(".mw-lb-sheet-opts");
+  assert.ok(opts, "expected an exact .mw-lb-sheet-opts{...} rule");
+  assert.match(opts, /overflow-y:auto/);
+  assert.match(opts, /min-height:0/);
+  assert.ok(
+    opts.includes("padding:0 0 calc(26px + " + INSET + ")"),
+    "expected the option list's bottom padding to add the safe-area inset to 26px, got: " + opts
+  );
+  const panel = findRuleBody(".mw-lb-sheet-panel");
+  assert.ok(panel, "expected an exact .mw-lb-sheet-panel{...} rule");
+  assert.match(panel, /max-height:\d+%/, "the panel stays a capped share of the screen");
+  assert.match(panel, /display:flex/);
+  assert.match(panel, /flex-direction:column/);
+  // The inset is applied exactly once along the chain: in-game the tab bar
+  // below the stage already pads it, so the in-game override resets the sheet
+  // to the plain 26px; only the title-opened panel (tab bar hidden) keeps it.
+  assert.match(STYLE_BLOCK, /\.mw-tabbar\{[^}]*padding-bottom:calc\(8px \+ var\(--safe-area-inset-bottom/);
+  assert.match(
+    STYLE_BLOCK,
+    /^body:not\(\[data-boards-entry\]\) \.mw-lb-sheet-opts\{padding-bottom:26px\}/m
+  );
+  assert.match(STYLE_BLOCK, /^body\[data-boards-entry="title"\] #mw-tabbar\{display:none\}/m);
+});
+
 test("CSS: .mw-lb-sheet positions absolutely, over .mw-lb", () => {
   const body = findRuleBody(".mw-lb-sheet");
   assert.ok(body, "expected an exact .mw-lb-sheet{...} rule");

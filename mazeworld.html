@@ -1487,7 +1487,9 @@ html,body{height:100%}
 .mw-lb-sheet-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 14px 11px}
 .mw-lb-sheet-title{font-family:var(--disp);font-size:calc(0.46875rem * var(--mw-text-scale));line-height:1.6;color:#e8c97a}
 .mw-lb-sheet-done{min-height:44px;padding:8px 10px;font-family:var(--disp);font-size:calc(0.4375rem * var(--mw-text-scale));color:#c9bda0;cursor:pointer;background:transparent;border:2px solid #4a4032;border-radius:0}
-.mw-lb-sheet-opts{flex:1;min-height:0;overflow-y:auto;padding:0 0 26px}
+/* Phase 87 BOARD-30 (player report: the RANK BY sheet ran off the bottom under WILMST's rule line): the last option clears the navigation bar. The title-opened panel hides the tab bar, so nothing else pads the inset there; in-game the tab bar below the stage already pads it, so the sheet takes the plain 26px (inset applied exactly once). */
+.mw-lb-sheet-opts{flex:1;min-height:0;overflow-y:auto;padding:0 0 calc(26px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+body:not([data-boards-entry]) .mw-lb-sheet-opts{padding-bottom:26px}
 .mw-lb-opt{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;padding:12px 14px;box-sizing:border-box;cursor:pointer;touch-action:manipulation;background:transparent;border:0;border-radius:0;box-shadow:inset 0 -1px 0 #241f16}
 .mw-lb-opt[data-on="1"]{background:#221d13;box-shadow:inset 0 -1px 0 #241f16, inset 3px 0 0 #e8c97a}
 .mw-lb-opt-mark{flex:none;width:7px;height:7px;margin:0 3px;background:currentColor;transform:rotate(45deg);color:#3a3226}
