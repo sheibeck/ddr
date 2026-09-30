@@ -2946,6 +2946,137 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
 }
 
 /**
+ * applyFoeDamageToMember(state, foe, member, rng, events, { dmg, roll,
+ * atLeast, dieN, mods, critical, critAtLeast, critWarded, ignoresArmor,
+ * ability, swing }) — Phase 89 plan 04 (ITEM-07, user 2026-09-30: "let their
+ * armor soak damage. Just like players."): the Joiner's twin of
+ * applyFoeDamageToPlayer, so a Joiner has ONE damage pipeline the way the
+ * hero does. It serves foeTurn's member branch (a landed swing) and
+ * engine/foeAbilities.js's member bolt/drain.
+ *
+ * It mirrors the hero's order after the to-hit and the damage roll (the
+ * round-damage ceiling stays with the caller, before this, exactly as the
+ * hero's): the Joiner's OWN armed Pendant of Fortitude (`sheet.halfNext`)
+ * halves the blow (`damageHalved`), its Brace (`member.braced`) halves it
+ * again (`braceHeld`), then its OWN armour soaks it: a d20 against
+ * `armorSoak(sheet)` (the Cloak of Armor's plate and the Fighter armour
+ * multiplier included, doubled to a cap of 20 under the Joiner's own Taunt)
+ * soaks the whole blow at or above the threshold, wearing the Joiner's
+ * `sheet.armorWP` by the blow (half for a Dwarven Joiner, none at or under
+ * the armour's min, none for the Cloak's plate); armour worn to 0 is
+ * destroyed (`armorDestroyed`). A drain, a no-armour foe and a blow
+ * `ignoresArmor` draw no soak die at all, and neither does a Joiner with no
+ * armour (AR 0, 0 durability, a Fridgian).
+ *
+ * The soak die comes from a DERIVED stream keyed on the run's cursor, the
+ * round, the foe's index, the swing and the Joiner's party index, so the
+ * main stream never moves (a solo fight draws exactly what it drew before).
+ *
+ * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward,
+ * Hardiness and the Fridgian hide (not armour, not items; Phase 91's to
+ * decide for a Joiner). A missing sheet reads as a blank body (no Pendant,
+ * no armour).
+ *
+ * Events carry the Joiner's name in `member` (additive), so the Oracle and
+ * rail lines can name it. An unsoaked blow pushes `memberStruck` (or
+ * `foeBolted` for `ability`), carrying `soak` (the failed die) when one was
+ * drawn; a Joiner at 0 HP is downed via downMember (never die()).
+ *
+ * Returns `{ downed, soaked, applied }`: `applied` is the hp actually taken
+ * (0 when soaked).
+ */
+export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, roll, atLeast, dieN, mods, critical, critAtLeast, critWarded, ignoresArmor, ability, swing }) {
+  const C = state.combat;
+  const sheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
+  const body = sheet || {};
+
+  // The Joiner's own armed Pendant of Fortitude: one landed blow, halved.
+  if (body.halfNext && dmg > 0) {
+    dmg = Math.ceil(dmg / 2);
+    body.halfNext = false;
+    events.push({ type: "damageHalved", name: foe.name, member: member.name });
+  }
+
+  // The Joiner's own Brace: halves the next blow after the Pendant, as the hero's.
+  if (member.braced && dmg > 0) {
+    const before = dmg;
+    dmg = Math.ceil(dmg / 2);
+    member.braced = false;
+    events.push({ type: "braceHeld", name: foe.name, member: member.name, soaked: before - dmg });
+  }
+
+  const ignores = ignoresArmor ?? !!(foe.sp && foe.sp.noArmor);
+  let soakCheck = null;
+  if (sheet && dmg > 0) {
+    const av = armorSoak(sheet);
+    const soakAr = abilityEffectActive(sheet, "taunt") ? Math.min(20, av.ar * 2) : av.ar;
+    if (av.wp > 0 && av.ar > 0 && !ignores) {
+      const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+      const foeIdx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
+      soakCheck = rollCheck(
+        derivedRng(cursor, "memberSoak", C ? C.round : 0, foeIdx, swing ?? -1, member.partyIdx),
+        20,
+        atLeastFor(soakAr, 20),
+      );
+      if (soakCheck.ok) {
+        const R = RACES[sheet.race] || {};
+        let wear = 0;
+        let underMin = false;
+        if (!av.magic && dmg > av.min) {
+          const rawWear = R.armorWear ? Math.ceil(dmg * R.armorWear) : dmg;
+          wear = Math.min(sheet.armorWP, rawWear);
+          sheet.armorWP = Math.max(0, sheet.armorWP - rawWear);
+        } else if (!av.magic) underMin = true;
+        events.push({
+          type: "armorSoaked",
+          name: foe.name,
+          member: member.name,
+          amount: dmg,
+          wear,
+          ...(R.armorWear && wear > 0 ? { halved: true } : {}),
+          ...(underMin ? { underMin: true } : {}),
+          ...(av.magic ? { magic: true } : {}),
+          ...rollFields(soakCheck),
+        });
+        if (!av.magic && sheet.armorWP <= 0) events.push({ type: "armorDestroyed", member: member.name });
+        return { downed: false, soaked: true, applied: 0 };
+      }
+    }
+  }
+
+  member.wp -= dmg;
+  if (ability) {
+    events.push({
+      type: "foeBolted",
+      name: foe.name,
+      ability,
+      dmg,
+      ignoresArmor: !!ignores,
+      member: member.name,
+      ...(soakCheck ? { soak: rollFields(soakCheck) } : {}),
+    });
+  } else {
+    events.push({
+      type: "memberStruck",
+      name: foe.name,
+      member: member.name,
+      dmg,
+      roll,
+      atLeast,
+      dieN,
+      critical: !!critical,
+      ...(critical ? { critAtLeast } : {}),
+      ...(soakCheck ? { soak: rollFields(soakCheck) } : {}),
+      ...(mods && mods.length ? { mods } : {}),
+      ...(critWarded ? { critWarded: true } : {}),
+    });
+  }
+  const downed = member.wp <= 0;
+  if (downed) downMember(state, member, events);
+  return { downed, soaked: false, applied: dmg };
+}
+
+/**
  * HERO_OUT_MAX — RULES-10 (Phase 75.1, user ruling 2026-09-25, second
  * ruling): every turn-loss scroll fumble (Doze, Stun, Stupidity, Insane, and
  * Noxious Vapor's sleep) lasts AT MOST this many hero turns — a deliberate,
@@ -3324,9 +3455,11 @@ export function foeTurn(state, rng, events = []) {
       // for this melee swing, not foeAbilities.js's bolt/drain call.
       const member = pickFoeTarget(state, rng, f);
       if (member) {
-        // SIMPLIFIED member branch: no ward/armor/mirror/Hardiness (all
-        // hero-only machinery), no die(). Same to-hit shape, then straight to
-        // the member's own `wp`; a member at 0 wp is downed + departs.
+        // Member branch: the to-hit and damage roll here, then the Joiner's
+        // own pipeline (applyFoeDamageToMember: Pendant, Brace, its own
+        // armour soak and wear, the hit). No ward/mirror/Hardiness/hide
+        // (hero-only machinery), no die(); a member at 0 wp is downed +
+        // departs.
         // Phase 79 (quick fix 79-02b, user ruling 2026-09-27, "Joiners use
         // only their own defences against foe swings"): a Joiner is its own
         // body, built by the hero's rule. The foe die reads the Joiner's OWN
@@ -3412,36 +3545,25 @@ export function foeTurn(state, rng, events = []) {
         // draws; false on every fixture (only useAbility's "hamstring" case
         // ever sets it).
         if (f.hamstrung) mDmg = Math.ceil(mDmg / 2);
-        // Phase 38 (ABIL-05, Brace) — a single-charge buffer on the member's
-        // OWN transient combat entry, mirroring applyFoeDamageToPlayer's
-        // `state.combat.braced` pattern exactly. Pure (no rng); false on
-        // every fixture (only resolveMemberAbility's "brace" case ever sets
-        // it).
-        if (member.braced && mDmg > 0) {
-          const before = mDmg;
-          mDmg = Math.ceil(mDmg / 2);
-          member.braced = false;
-          events.push({ type: "braceHeld", name: f.name, member: member.name, soaked: before - mDmg });
-        }
         // Phase 54 (BAND-02, USER RULING D): ROUND_DAMAGE_CEILING, applied
-        // after every existing halving, before the member's wp is touched.
+        // after every existing halving, before the Joiner's pipeline — the
+        // same spot the hero's ceiling sits (Phase 89 plan 04 moved the
+        // Brace into the pipeline below, after the Pendant, as the hero's).
         mDmg = Math.min(mDmg, Math.max(0, roundDamageCapFor(c.level) - dealtThisVisit));
         dealtThisVisit += mDmg;
-        member.wp -= mDmg;
-        events.push({
-          type: "memberStruck",
-          name: f.name,
-          member: member.name,
+        // Phase 89 plan 04 (ITEM-07): the Joiner's own pipeline — Pendant,
+        // Brace, then its own armour soak and wear, then the hit.
+        applyFoeDamageToMember(state, f, member, rng, events, {
           dmg: mDmg,
           roll: mRoll,
           atLeast: mAtLeast,
           dieN: mDieN,
+          mods: mMods,
           critical: mCritical,
-          ...(mCritical ? { critAtLeast: mDieN } : {}),
-          ...(mMods.length ? { mods: mMods } : {}),
-          ...(mCritWarded ? { critWarded: true } : {}),
+          critAtLeast: mCritical ? mDieN : undefined,
+          critWarded: mCritWarded,
+          swing: s,
         });
-        if (member.wp <= 0) downMember(state, member, events);
         continue;
       }
 

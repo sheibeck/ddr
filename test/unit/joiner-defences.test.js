@@ -57,6 +57,13 @@ function partyState(heroBody, memberBody) {
   if (heroBody.dress) heroBody.dress(s.c, s);
   const idx = withMember(s, memberBody.opts);
   const sheet = s.party[idx];
+  // Phase 89 plan 04 (ITEM-07): a Joiner's own armour now soaks the landed
+  // blow (memberStruck becomes armorSoaked on a soak). These pins are about
+  // the foe's to-hit faces and die, so the pinned Joiner wears no armour and
+  // its landed blow stays a memberStruck.
+  sheet.ar = 0;
+  sheet.armorWP = 0;
+  sheet.armorMin = 0;
   if (memberBody.dress) memberBody.dress(sheet, s);
   startEffect(sheet, "ability:taunt", { rounds: 1 });
   inCombat(s, [NEUTRAL_FOE()], {

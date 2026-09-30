@@ -20,7 +20,7 @@
 //
 // Import direction (D-17): engine/combat.js -> engine/foeAbilities.js ->
 // engine/derived.js. This module imports FROM engine/combat.js (pickFoeTarget,
-// applyFoeDamageToPlayer, downMember, liveFoes) — an ESM cycle of the same
+// applyFoeDamageToPlayer, applyFoeDamageToMember, liveFoes) — an ESM cycle of the same
 // shape engine/items.js <-> engine/combat.js already has; only function
 // declarations cross it, resolved at call time, so the cycle is inert.
 
@@ -28,7 +28,7 @@ import { FOE_ABILITIES, BESTIARY } from "../content/index.js";
 import { rollDice, rollFields } from "./dice.js";
 import { resistRoll, DAZED_TO_HIT_PENALTY } from "./derived.js";
 import { difficultyCurve, abilityCadenceFor } from "./difficulty.js";
-import { pickFoeTarget, applyFoeDamageToPlayer, downMember, liveFoes } from "./combat.js";
+import { pickFoeTarget, applyFoeDamageToPlayer, applyFoeDamageToMember, liveFoes } from "./combat.js";
 
 const BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
 // The three kinds the hero's resistance check can ever apply to (FOE-07/D-07) —
@@ -200,8 +200,9 @@ function memberResist(state, rng, member, f, a, events) {
  *     refreshes, different kind replaces) + `foeDebuffed`.
  *   - bolt / drain (D-02/D-11/D-13/D-18): `pickFoeTarget` first — a live
  *     party member rolls its own resist (memberResist, quick 260928-nrf),
- *     then takes `rollDice` damage straight off `member.wp` (no
- *     ward/armor/Hardiness), downed via `downMember` at 0; otherwise
+ *     then takes `rollDice` damage through `applyFoeDamageToMember` (the
+ *     Joiner's one damage pipeline: its own Pendant, Brace and armour soak,
+ *     a drain ignoring armour; Phase 89 plan 04), downed at 0; otherwise
  *     the hero resists, then the damage runs through
  *     `applyFoeDamageToPlayer` (a drain forces `ignoresArmor: true`). A
  *     landed drain then heals the foe by the amount ACTUALLY applied
@@ -283,21 +284,19 @@ export function resolveFoeAbility(state, f, a, rng, events, gate = null) {
     // target pick, before the damage dice).
     if (memberResist(state, rng, member, f, a, events)) return { died: false };
     const dmg = rollDice(rng, a.dmg);
-    member.wp -= dmg;
-    events.push({
-      type: "foeBolted",
-      name: f.name,
-      ability: a.id,
+    // Phase 89 plan 04 (ITEM-07): the Joiner's one damage pipeline (its own
+    // Pendant, Brace and armour soak; a drain and a no-armour foe ignore the
+    // armour, as for the hero). The foe's bolt has no swing index.
+    const hit = applyFoeDamageToMember(state, f, member, rng, events, {
       dmg,
+      ability: a.id,
       ignoresArmor: a.kind === "drain" || !!(f.sp && f.sp.noArmor),
-      member: member.name,
     });
-    if (a.kind === "drain") {
+    if (a.kind === "drain" && hit.applied > 0) {
       const before = f.wp;
-      f.wp = Math.min(f.maxWP, f.wp + dmg);
+      f.wp = Math.min(f.maxWP, f.wp + hit.applied);
       events.push({ type: "foeDrained", name: f.name, ability: a.id, stolen: f.wp - before, wp: f.wp, maxWP: f.maxWP });
     }
-    if (member.wp <= 0) downMember(state, member, events);
     return { died: false };
   }
 
