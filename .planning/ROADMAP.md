@@ -186,7 +186,7 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans:** 6/10 plans executed
+**Plans:** 7/10 plans executed
 
 Plans:
 **Wave 1**
@@ -212,7 +212,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 89-07-PLAN.md — ITEM-07 player side: the Company panel lists armour, potions, worn items and chips with DRINK/USE outside a fight; the bot uses its Joiner's items
+- [x] 89-07-PLAN.md — ITEM-07 player side: the Company panel lists armour, potions, worn items and chips with DRINK/USE outside a fight; the bot uses its Joiner's items
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -394,7 +394,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
-| 89. Item Audit & Fixes | 6/10 | In Progress|  |
+| 89. Item Audit & Fixes | 7/10 | In Progress|  |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
