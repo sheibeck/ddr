@@ -176,6 +176,7 @@ export const EVENT_CLIP_GROUP = Object.freeze({
   spellResisted: "resist",
   darknessResisted: "resist",
   healed: "heal",
+  partyHealed: "heal", // Phase 89: the Poplar Staff's party heal sounds like any other heal
   secondWindHealed: "heal",
   potionDrunk: "drink",
   chestOpened: "chest",

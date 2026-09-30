@@ -396,6 +396,8 @@ const RAIL_ENDED_CLAUSE = Object.freeze({
   tongue: "the fluency goes",
   // Phase 88 (ITEM-03): a heal-over-time window; the builder adds the unspent ticks.
   knit: "the knitting stops",
+  // Phase 89 (ITEM-06): the Pendant of Fortitude's armed half-damage charge.
+  half: "the next blow is no longer halved",
 });
 
 /** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
@@ -2229,6 +2231,19 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.you,
   }),
+  // Phase 89 (ITEM-01, ITEM-06): the rail twin of the Oracle's partyHealed, one
+  // short line naming every body healed. A minor event, never a decision card
+  // (not a CARD_EVENTS type).
+  partyHealed: (e) => {
+    const heals = Array.isArray(e?.heals) ? e.heals : [];
+    const item = typeof e?.item === "string" && e.item ? e.item : "Staff";
+    const parts = heals.map((h) => {
+      const who = h?.hero ? "you" : h?.name || "someone";
+      const g = railGain(h, h?.amount);
+      return g > 0 ? `${who} +${g}` : `${who} already full`;
+    });
+    return { text: parts.length ? `${item}: ${parts.join(", ")} HP.` : `${item}: no one to heal.`, tone: "hit", priority: PRIORITY.you };
+  },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): the hp it needs (refused at fee + 1 or less).
   deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You need at least ${(e?.fee ?? 25) + 2} hp to pay it.`),

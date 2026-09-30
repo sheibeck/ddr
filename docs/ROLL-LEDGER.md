@@ -1215,3 +1215,27 @@ it goes on cooldown for 50 squares."
 - **No check-direction change.** No check or threshold was added or flipped;
   the tick is a plain heal die, clamped to max hp, and a tick at full hp is
   narrated and spent.
+
+## Phase 89 plan 03: the Poplar Staff heals the party (ITEM-01, ITEM-06, user 2026-09-30)
+
+"Engine to text: it heals every party member (hero and Joiner) d20+10 each.
+Heal rolls from a derived stream." Canon (mazeworld.pdf p.46): "Healing staff,
+adds 1d20+10 WP to 1d6".
+
+- **One amount roll per body, from one derived stream.** `useItem`'s
+  `partyHeal` case rolls `rollDice(healRng, act.heal)` (1d20+10, read from the
+  activation record) for the hero first, then once per living Joiner in
+  `state.party` order, where `healRng = derivedRng(<main rng cursor>,
+  "partyHeal", <state.acts>, <item name>)`. The main rng is only READ for its
+  cursor and never advanced, so no existing draw reorders. A solo hero draws
+  exactly one die; a downed or departed Joiner draws none.
+- **Before, it was a main-stream d10.** The Poplar used to fall into the
+  Healing-potion branch (`rng.d(10) + 2`, hero only, main stream). That tagged
+  potion line is unchanged and still the potion's.
+- **Roll-high draw inventory for `engine/items.js` does not move** (rollCheck
+  1, amount 7, selection 9): the dice go through `rollDice`, so there is no
+  `.d(` occurrence in `engine/items.js` and nothing to tag.
+- **No check-direction change.** No check or threshold was added or flipped;
+  a heal at full hp gains 0 and is still narrated.
+- **The Pendant of Fortitude adds no roll.** Its armed charge is bookkeeping
+  (`halfNext = { slot, n }`); disarming draws nothing.

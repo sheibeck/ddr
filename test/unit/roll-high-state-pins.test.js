@@ -223,7 +223,18 @@ const PINNED = {
   // `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
   "solo-1": { actions: 253, dead: true, depth: 3, hash: "47082481220cb07ea9857d986d10ca090337de206997be53411bf393261fa91c" },
   "solo-2": { actions: 294, dead: true, depth: 3, hash: "0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f" },
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "845bfc4cc24d7e5201c5012bf4184cfaca52c08f06c7de20a04ea88d270eb3b0" },
+  // "solo-thief-pilfer" re-recorded (Phase 89 plan 03, ITEM-01, 2026-09-30): this
+  // run's bag ends holding a Poplar Staff (a Pilfer can never wield it), and the
+  // item object rides the hashed state. Its row changed: use "heal" -> "partyHeal"
+  // and text "1d20+10 hp to up to 6" -> "heals you and every Joiner with you
+  // d20+10 hp each". Proven text/use-only: swapping the old use and text back into
+  // the new run's final state re-hashes to the old pin
+  // 845bfc4cc24d7e5201c5012bf4184cfaca52c08f06c7de20a04ea88d270eb3b0 (no Pendant
+  // is worn or used; nothing in the run uses the staff, so no heal die is drawn).
+  // 400 / false / 4 unchanged. Only this label was re-recorded (pasted by hand from
+  // `node tools/roll-high-baseline.mjs pins`, hashed identically twice;
+  // `roll-high-baseline.mjs save` was not run).
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca" },
   "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "3ae31ce819ca2a515d231e1a81d97bcc808096c62d31bf338f6285482d5f2689" },
   "party-1": { actions: 373, dead: true, depth: 3, hash: "bb3e4f6b079e75a6232571ca0e27879befa51370e39889c15be8e3464e3b329d" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,

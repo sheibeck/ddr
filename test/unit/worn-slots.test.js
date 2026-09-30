@@ -649,7 +649,11 @@ test("useItem slot form: a wielded staff heals, spends its one charge, and a sec
   assert.equal(staff.charges, 0);
   const types = events.map((e) => e.type);
   assert.ok(types.includes("itemUsed"));
-  assert.ok(types.includes("healed"));
+  // Phase 89 plan 03 (ITEM-01): before, the Poplar pushed the potion's `healed`
+  // (d10+2 on the main rng, here the faked 5); after, the party's `partyHealed`
+  // (d20+10 from a derived stream, so the faked rng is never drawn).
+  assert.ok(types.includes("partyHealed"));
+  assert.equal(state.c.wp > 20, true, "the hero was healed");
 
   const events2 = useItem(state, { slot: "weapon" }, rng, [], () => 12345);
   assert.equal(events2.length, 1);

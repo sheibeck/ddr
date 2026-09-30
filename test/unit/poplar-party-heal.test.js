@@ -20,6 +20,7 @@
 //   old save ........... "an old save's Poplar (use \"heal\") heals the party too"
 //   potion untouched ... "the Healing potion is untouched ..."
 //   charge model ....... "the staff's charge model is unchanged ..."
+//   narration .......... "narration: ..." (Oracle and rail both name every body)
 //   no main-rng draw ... "no main-rng draw: ..."
 //   invisibility edge .. "Crystal Staff party invisibility and a Joiner's own invisibility ..."
 
@@ -32,6 +33,8 @@ import { rollDice } from "../../engine/dice.js";
 import { foeToHitVs, itemEffectActive } from "../../engine/derived.js";
 import { startEffect } from "../../engine/effects.js";
 import { ACTIVATION_OF, STAVES } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 
 const CURSOR = 7;
 const DICE = Object.freeze({ n: 1, sides: 20, bonus: 10 });
@@ -257,4 +260,31 @@ test("edge (adjacency): a Crystal Staff's party invisibility and a Joiner's own 
   startEffect(sheet, "item:Cloak of Invisibility", { squares: 50, cd: 50 });
   assert.ok(itemEffectActive(sheet, "invis"), "the Joiner's own invisibility is live");
   assert.equal(foeToHitVs(s, "member", sheet), partyOnly, "a second invisibility does not push the foe past its top face");
+});
+
+test("narration: the Oracle and the rail both name the hero and each Joiner with the hp gained, and a bare payload is clean", () => {
+  const e = {
+    type: "partyHealed", item: "Poplar Staff",
+    heals: [{ name: "Hero", hero: true, amount: 21, gained: 21 }, { name: "Grum", amount: 18, gained: 12 }],
+  };
+  const oracle = String(EVENT_NARRATION.partyHealed(e));
+  assert.match(oracle, /Poplar Staff/);
+  assert.match(oracle, /Grum/);
+  assert.match(oracle, /21/);
+  assert.match(oracle, /12/);
+  const rail = LINE_FOR.partyHealed(e);
+  assert.match(rail.text, /Poplar Staff/);
+  assert.match(rail.text, /Grum/);
+  assert.match(rail.text, /21/);
+  assert.match(rail.text, /12/);
+  assert.equal(rail.tone, "hit");
+  for (const bare of [{ type: "partyHealed" }, { type: "partyHealed", item: "Poplar Staff", heals: [] }, { type: "partyHealed", heals: [{}] }]) {
+    for (const text of [String(EVENT_NARRATION.partyHealed(bare)), String(LINE_FOR.partyHealed(bare)?.text ?? "")]) {
+      assert.ok(!/undefined|NaN|\[object/.test(text), text);
+    }
+  }
+  // A body already full is said so plainly, never "+0".
+  const full = String(EVENT_NARRATION.partyHealed({ type: "partyHealed", item: "Poplar Staff", heals: [{ name: "Hero", hero: true, amount: 15, gained: 0 }] }));
+  assert.match(full, /full|nothing|already|no room/i);
+  assert.ok(!/\+0\b/.test(full), full);
 });
