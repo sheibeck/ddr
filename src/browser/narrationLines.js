@@ -369,6 +369,12 @@ const railWardName = (item) => (typeof item === "string" && item ? item : typeof
 // VOX-05 (Phase 79, plan 79-11): the rail twin of eventNarration.js's
 // squaresText — "1 square", and no leaked "undefined squares".
 const railSquares = (n) => (Number.isFinite(n) ? railPlural(n, "square") : "a few squares");
+/** railHealDice(h) — eventNarration.js's healDiceText twin (Phase 88): "a d6", "2d6", "+1". */
+const railHealDice = (h) => {
+  const n = Number.isFinite(h?.n) && h.n > 0 ? h.n : 1;
+  const bonus = Number.isFinite(h?.bonus) && h.bonus > 0 ? `+${h.bonus}` : "";
+  return `${n === 1 ? "a d" : `${n}d`}${h.sides}${bonus}`;
+};
 
 // Phase 88 (ITEM-02): the rail twin of eventNarration.js's ENDED_CLAUSE —
 // what stops when an item effect ends early, in the rail's short form, one per
@@ -388,6 +394,8 @@ const RAIL_ENDED_CLAUSE = Object.freeze({
   giant: "back to normal size",
   glow: "the light goes out",
   tongue: "the fluency goes",
+  // Phase 88 (ITEM-03): a heal-over-time window; the builder adds the unspent ticks.
+  knit: "the knitting stops",
 });
 
 /** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
@@ -1456,13 +1464,20 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.feature,
   }),
-  // 260918-w4n (use-activated-only): the Cloak of Healing is removed from
-  // the game — the "cloakHealed" event type no longer exists anywhere.
-  cloakRegenerated: (e) => ({
-    text: railGain(e, e?.amount) > 0 ? `Flesh knits +${railGain(e, e?.amount)} hp.` : "Cloak: you were already at full hp.",
-    tone: "hit",
-    priority: PRIORITY.other,
-  }),
+  // Phase 88 (ITEM-03): a heal-over-time tick (the Cloak of Regeneration's d6
+  // at 10, 20 and 30 squares), the rail twin of the Oracle's healTick. It
+  // replaces the retired use-time instant-heal line. A minor event, never a
+  // decision card (not a CARD_EVENTS type); a full-hp tick is told too.
+  healTick: (e) => {
+    const g = railGain(e, e?.amount);
+    const item = typeof e?.item === "string" && e.item ? e.item : "Cloak";
+    const tail = Number.isFinite(e?.tick) && Number.isFinite(e?.ticks) ? ` (${e.tick}/${e.ticks})` : "";
+    return {
+      text: g > 0 ? `+${g} hp: ${item}${railFull(g, e?.amount)}${tail}.` : `Nothing left to knit${tail}.`,
+      tone: "hit",
+      priority: PRIORITY.other,
+    };
+  },
   armorPatched: (e) => ({ text: `${e?.by ?? "Mending"}: +${e?.amount ?? 0} armour.`, tone: "hit", priority: PRIORITY.feature }),
   potionDuplicated: () => ({ text: "Warlock: +1 potion.", tone: "magic", priority: PRIORITY.feature }),
   // Phase 43 (CLAR-01/03/05): a fed night's ration cost — a cost, so it is
@@ -2559,6 +2574,11 @@ export const LINE_FOR = {
       tongue: `${sq} of perfect fluency. Do not waste it on small talk.`,
       critWard: `${sq} with nothing critical landing on you.`,
       plate: `${sq} of weightless plate.`,
+      // Phase 88 (ITEM-03): the Cloak of Regeneration's window from the event's own numbers.
+      knit:
+        Number.isFinite(e?.every) && Number.isFinite(e?.ticks) && e?.heal && Number.isFinite(e.heal.sides)
+          ? `${sq} of knitting: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+          : `${sq} of knitting.`,
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };
   },
@@ -2568,7 +2588,8 @@ export const LINE_FOR = {
   // when it is ready. A minor event, never a decision card.
   itemEffectEnded: (e) => {
     const how = e?.why === "off" ? (e?.slot === "weapon" ? "unwielded" : "off") : e?.why === "swap" ? "swapped out" : "gone";
-    const clause = e?.party && e?.kind === "invis" ? "party seen again" : (RAIL_ENDED_CLAUSE[e?.kind] ?? "its magic stops");
+    let clause = e?.party && e?.kind === "invis" ? "party seen again" : (RAIL_ENDED_CLAUSE[e?.kind] ?? "its magic stops");
+    if (e?.kind === "knit" && Number.isFinite(e?.ticks) && e.ticks > 0) clause += `, ${railPlural(e.ticks, "tick")} unspent`;
     const ready = Number.isFinite(e?.ready) && e.ready > 0 ? ` (ready in ${railSquares(e.ready)})` : "";
     const lead = `${e?.member ? `${e.member}'s ` : ""}${railEndedItem(e)} ${how}`;
     return { text: `${lead.charAt(0).toUpperCase()}${lead.slice(1)}: ${clause}${ready}.`, tone: "beat", priority: PRIORITY.other };

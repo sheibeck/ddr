@@ -347,7 +347,8 @@ function heroVocabulary() {
   }
   // Every activation kind with a live effect (a positive duration, or a
   // rolled one) makes a chip under its own kind; fly shows as flight.
-  // Kinds with effect 0 (half, stone, knit) or none never make a live chip.
+  // Kinds with effect 0 (half, stone) or none never make a live chip. Phase 88
+  // (ITEM-03): knit (the Cloak of Regeneration) left that list, its effect is 30.
   for (const act of Object.values(ACTIVATION_OF)) {
     const e = act && act.effect;
     const live = (typeof e === "number" && e > 0) || (e && typeof e === "object" && e.sides > 0);
@@ -359,7 +360,8 @@ function heroVocabulary() {
 test("(h) R-32 scan self-check: the vocabulary finds afraid, ward, darkness, fearArmed and flight, and no dead kind", () => {
   const keys = heroVocabulary();
   for (const k of ["afraid", "ward", "darkness", "fearArmed", "flight", "haste", "acute", "lit", "ability", "braced"]) assert.ok(keys.has(k), `the scan sees ${k}`);
-  for (const k of ["half", "stone", "knit", "fly"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
+  for (const k of ["half", "stone", "fly"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
+  assert.ok(keys.has("knit"), "knit is a live chip since Phase 88 (Regenerating)");
 });
 
 test("(h) R-32: every key conditionsOf can emit resolves to its own CONDITION_EXPLAIN sentence, never the default", () => {

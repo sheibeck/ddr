@@ -1,0 +1,46 @@
+[
+  {
+    "key": "oracle:cloakRegenerated",
+    "surface": "oracle",
+    "trigger": "cloakRegenerated — the use-time instant heal of the Cloak of Regeneration (removed by Phase 88 plan 04, ITEM-03)",
+    "before": "The cloak finds nothing to knit. You were already at full hp. Ask again in twenty squares.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling 2026-09-30 (ITEM-03): \"The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares.\" The use-time instant d6 and its cloakRegenerated event are gone (greenfield), so this line would promise a heal on use that the game no longer gives. The cloak's heals now arrive as healTick lines, one per tick."
+  },
+  {
+    "key": "rail:cloakRegenerated",
+    "surface": "rail",
+    "trigger": "cloakRegenerated — the use-time instant heal of the Cloak of Regeneration (removed by Phase 88 plan 04, ITEM-03)",
+    "before": "Cloak: you were already at full hp.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling 2026-09-30 (ITEM-03): \"The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares.\" The use-time instant d6 and its cloakRegenerated event are gone (greenfield), so this line would promise a heal on use that the game no longer gives. The cloak's heals now arrive as healTick lines, one per tick."
+  },
+  {
+    "key": "oracle:healTick",
+    "surface": "oracle",
+    "trigger": "healTick — engine/items.js#tickHealOverTime (a heal-over-time tick: the Cloak of Regeneration's d6 at 10, 20 and 30 squares)",
+    "before": "",
+    "after": "Nothing left to knit. The cloak spends a tick on a hero already at full hp.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling 2026-09-30 (ITEM-03): the Cloak of Regeneration heals a d6 every ten squares walked, three times; \"Every tick is narrated, including a tick at full hp ('Nothing left to knit.'), which is spent.\" A tick that heals leads with the hp knitted back (the clamped gain, with the capped clause when the die was cut short) and 'Tick k of N'; a tick at full hp says 'Nothing left to knit.' and that the tick is spent. The synthetic corpus event carries no item or tick, so this row shows the bare full-hp form."
+  },
+  {
+    "key": "rail:healTick",
+    "surface": "rail",
+    "trigger": "healTick — engine/items.js#tickHealOverTime",
+    "before": "",
+    "after": "Nothing left to knit.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line (Phase 88 plan 04, ITEM-03): '+N hp: <item> (k/N).' for a tick that heals, 'Nothing left to knit (k/N).' for a tick at full hp. A minor event, never a decision card."
+  }
+]

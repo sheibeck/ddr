@@ -530,12 +530,16 @@ test("gain lines lead with the HP actually gained: capped adds the roll and 'ful
   }
 });
 
-test("the gain lines with no pre-clamp value (cloak, rest, level-up, faerie) read `gained`; the cloak at full says so", () => {
-  assert.match(oracle({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
-  assert.match(rail({ type: "cloakRegenerated", amount: 4, gained: 4 }), /\+4 hp/);
-  for (const text of [oracle({ type: "cloakRegenerated", amount: 0, gained: 0 }), rail({ type: "cloakRegenerated", amount: 0, gained: 0 })]) {
+test("the gain lines with no pre-clamp value (cloak tick, rest, level-up, faerie) read `gained`; the cloak tick at full says so", () => {
+  // Phase 88 (ITEM-03): healTick replaces the retired use-time instant-heal event.
+  assert.match(oracle({ type: "healTick", item: "Cloak of Regeneration", amount: 4, gained: 4, tick: 1, ticks: 3 }), /\+4 hp/);
+  assert.match(rail({ type: "healTick", item: "Cloak of Regeneration", amount: 4, gained: 4, tick: 1, ticks: 3 }), /\+4 hp/);
+  for (const text of [
+    oracle({ type: "healTick", item: "Cloak of Regeneration", amount: 4, gained: 0, tick: 1, ticks: 3 }),
+    rail({ type: "healTick", item: "Cloak of Regeneration", amount: 4, gained: 0, tick: 1, ticks: 3 }),
+  ]) {
     assert.doesNotMatch(text, /\+0\b/, text);
-    assert.match(text, /already at full/, text);
+    assert.match(text, /Nothing left to knit/, text);
   }
   assert.match(oracle({ type: "rested", amount: 6, gained: 6 }), /\+6 hp/);
   assert.match(rail({ type: "rested", amount: 5, gained: 5 }), /\+5 hp/);
