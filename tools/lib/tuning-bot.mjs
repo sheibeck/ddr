@@ -887,8 +887,10 @@ export function hardFight(state) {
  *       Plan 09: the 260918-w4n "no worn slot" amendment is reversed — a
  *       staff equips into the weapon slot, `wieldedStaff(c)`, dispatched by
  *       `{ slot: "weapon" }`; a bagged staff's power is inert, so this never
- *       reads one): a targeted kind at `staffMinFoes`+ live foes, `dome` or
- *       `heal` below `potionThreshold`.
+ *       reads one): a targeted kind at `staffMinFoes`+ live foes, `dome`
+ *       below `potionThreshold`, or (Phase 89) `partyHeal` (the Poplar Staff,
+ *       which heals the hero and every Joiner) when the hero OR a live Joiner
+ *       in the fight is below `potionThreshold`.
  * Every candidate passes `itemReady` (covers the death-potion/no-charges/
  * cooldown cases) and is skipped when `ctx.itemBlocked` already carries its
  * `itemLabel`. RULES-09 (Phase 75.1, superseded 260918-w4n note): a Pilfer
@@ -969,8 +971,16 @@ export function chooseCombatItem(state, ctx) {
       if (kind === "dome" && ratio < ctx.opts.potionThreshold && !c.ward) {
         return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
       }
-      if (kind === "heal" && ratio < ctx.opts.potionThreshold) {
-        return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
+      // Phase 89 (ITEM-01): the Poplar Staff is `partyHeal` (it heals the hero
+      // AND every Joiner), so it also fires when a live Joiner in this fight is
+      // below the same line, not only the hero.
+      if (kind === "partyHeal") {
+        const joinerHurt = (state.combat?.allies || []).some(
+          (a) => a && a.wp > 0 && a.maxWP > 0 && a.wp / a.maxWP < ctx.opts.potionThreshold,
+        );
+        if (ratio < ctx.opts.potionThreshold || joinerHurt) {
+          return { action: { type: "useItem", slot: "weapon" }, reason: "staff" };
+        }
       }
     }
   }

@@ -274,8 +274,14 @@ const STAVES_ROWS = [
     act: { kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 } },
   },
   {
-    n: "Poplar Staff", use: "heal", txt: "1d20+10 hp to up to 6",
-    act: { kind: "heal", charges: 3, recharge: 60 },
+    // Phase 89 plan 03 (ITEM-01, ITEM-06, user 2026-09-30): engine to text. The
+    // Poplar heals the hero AND every Joiner with them, d20+10 hp each (canon
+    // p.46: "Healing staff, adds 1d20+10 WP to 1d6"; the party is at most
+    // two). Its kind is its own `partyHeal`, NOT the Healing potion's `heal`
+    // (d10+2, hero only), and its dice live on the activation record
+    // (`act.heal`) so the text guard reads the number from one place.
+    n: "Poplar Staff", use: "partyHeal", txt: "heals you and every Joiner with you d20+10 hp each",
+    act: { kind: "partyHeal", charges: 3, recharge: 60, heal: { n: 1, sides: 20, bonus: 10 } },
   },
   {
     n: "Pine Staff", use: "fire", txt: "d6 fireballs, automatic hits, 1d10+4 each",
@@ -361,7 +367,10 @@ export const SLOT_OF = Object.freeze(
  * HEAL-OVER-TIME activation — `hot: { every, ticks, heal: { n, sides, bonus } }`,
  * copied frozen onto the record and read by engine/items.js#tickHealOverTime
  * (a `heal` die every `every` squares of the live window, `ticks` times;
- * `every * ticks` equals the effect length). */
+ * `every * ticks` equals the effect length).
+ * Phase 89 (ITEM-01): an `act.heal` die `{ n, sides, bonus }` (the Poplar
+ * Staff's party heal, 1d20+10) is copied frozen onto the record on BOTH
+ * branches; engine/items.js's `partyHeal` case rolls it once per body. */
 function buildActivation(row) {
   if (!row.act) return null;
   const { act } = row;
@@ -370,11 +379,13 @@ function buildActivation(row) {
     const entry = { kind: act.kind, charges: act.charges, recharge: act.recharge };
     if (act.effect !== undefined) entry.effect = act.effect;
     if (hasEff) entry.eff = row.eff;
+    if (act.heal) entry.heal = Object.freeze({ ...act.heal });
     return Object.freeze(entry);
   }
   const entry = { kind: act.kind, effect: act.effect, cd: act.cd ?? row.every };
   if (hasEff) entry.eff = row.eff;
   if (act.hot) entry.hot = Object.freeze({ ...act.hot, heal: Object.freeze({ ...act.hot.heal }) });
+  if (act.heal) entry.heal = Object.freeze({ ...act.heal });
   return Object.freeze(entry);
 }
 
