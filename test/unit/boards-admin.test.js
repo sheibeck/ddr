@@ -17,7 +17,7 @@ import { SEASON } from "../../content/season.js";
 import { FIREBASE_CONFIG } from "../../src/browser/firebaseConfig.js";
 import { FIRESTORE_BASE, IDENTITY_BASE, documentsPath } from "../../src/browser/firestoreRest.js";
 import { rollHandle } from "../../src/browser/handles.js";
-import { RUN_CLIENT_FIELDS, RUN_DOC_FIELDS, rankKeys, runDocId, createRunCommit } from "../../src/browser/runDoc.js";
+import { RUN_CLIENT_FIELDS, RUN_DOC_FIELDS, rankKeys, deepKeyOf, legacyDeepKeyOf, runDocId, createRunCommit } from "../../src/browser/runDoc.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import {
   parseArgs,
@@ -29,6 +29,7 @@ import {
   isBankedEpitaph,
   filterExport,
   toCsv,
+  classifyDeepKeys,
   runCommand,
 } from "../../tools/boards-admin.mjs";
 
@@ -483,6 +484,165 @@ test("ban/unban without --yes: dry run changes nothing", async () => {
   const codeBan = await runCommand({ argv: ["ban", uid], ...baseOpts(fake) });
   assert.equal(codeBan, 0);
   assert.equal(fake.banned().includes(uid), false);
+});
+
+// --- rekey-deep (Phase 87, BOARD-28) -----------------------------------------
+
+function keyedSeed(id, kind, overrides = {}) {
+  const s = seedRun(id, { uid: `u_${id}`, hash: id.padStart(8, "0").slice(-8), ...overrides });
+  if (kind === "legacy") s.doc.deepKey = legacyDeepKeyOf(s.doc);
+  else if (kind === "other") s.doc.deepKey = deepKeyOf(s.doc) + 7;
+  else s.doc.deepKey = deepKeyOf(s.doc);
+  return s;
+}
+
+function rekeySeeds() {
+  return [
+    keyedSeed("l1", "legacy", { floor: 6, steps: 100 }),
+    keyedSeed("l2", "legacy", { floor: 6, steps: 50 }),
+    keyedSeed("l3", "legacy", { floor: 3, steps: 999999 }),
+    keyedSeed("c1", "current", { floor: 4, steps: 10 }),
+    keyedSeed("c2", "current", { floor: 9, steps: 20 }),
+    keyedSeed("o1", "other", { floor: 5, steps: 30 }),
+  ];
+}
+
+test("classifyDeepKeys: current, legacy (with from/to), other; pure", () => {
+  const rows = rekeySeeds().map((s) => ({ id: s.id, doc: s.doc }));
+  const frozen = JSON.stringify(rows);
+  const result = classifyDeepKeys(rows);
+  assert.equal(result.current, 2);
+  assert.deepEqual(result.other, ["o1"]);
+  assert.deepEqual(
+    result.legacy.map((r) => r.id),
+    ["l1", "l2", "l3"],
+  );
+  for (const r of result.legacy) {
+    const doc = rows.find((x) => x.id === r.id).doc;
+    assert.equal(r.from, legacyDeepKeyOf(doc));
+    assert.equal(r.to, deepKeyOf(doc));
+    assert.notEqual(r.from, r.to);
+  }
+  assert.equal(JSON.stringify(rows), frozen);
+});
+
+test("classifyDeepKeys: a missing or non-integer floor, steps or deepKey lands in other", () => {
+  const good = keyedSeed("g1", "legacy").doc;
+  const rows = [
+    { id: "a", doc: { ...good, floor: undefined } },
+    { id: "b", doc: { ...good, steps: "12" } },
+    { id: "c", doc: { ...good, deepKey: undefined } },
+    { id: "d", doc: { ...good, deepKey: 1.5 } },
+    { id: "e", doc: null },
+    { id: "f", doc: { ...good, floor: 2.5 } },
+  ];
+  const result = classifyDeepKeys(rows);
+  assert.deepEqual(result.other, ["a", "b", "c", "d", "e", "f"]);
+  assert.equal(result.current, 0);
+  assert.equal(result.legacy.length, 0);
+  assert.deepEqual(classifyDeepKeys(undefined), { legacy: [], current: 0, other: [] });
+});
+
+test("rekey-deep: without --yes prints the counts and the left-alone id and changes nothing", async () => {
+  const fake = createFakeBoardFetch({ runs: rekeySeeds(), now: () => NOW_MS });
+  const before = JSON.stringify(fake.docs());
+  const out = [];
+  const code = await runCommand({ argv: ["rekey-deep"], ...baseOpts(fake, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  const text = out.join("\n");
+  assert.match(text, /Scanned 6 run\(s\): 2 already on the new DEPTH key, 3 on the old key, 1 left alone/);
+  assert.match(text, /o1/);
+  assert.match(text, /Would re-key 3 run\(s\).*Pass --yes/);
+  assert.equal(JSON.stringify(fake.docs()), before);
+  assert.ok(!fake.calls().some((c) => c.method === "PATCH"));
+});
+
+test("rekey-deep --yes: re-keys exactly the old-formula docs, touches no other field or doc, creates and deletes nothing", async () => {
+  const fake = createFakeBoardFetch({ runs: rekeySeeds(), now: () => NOW_MS });
+  const before = fake.docs();
+  const out = [];
+  const code = await runCommand({ argv: ["rekey-deep", "--yes"], ...baseOpts(fake, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  assert.match(out.join("\n"), /Re-keyed 3 of 3\./);
+  const after = fake.docs();
+  assert.equal(after.length, before.length);
+  for (const b of before) {
+    const a = after.find((d) => d.id === b.id);
+    assert.ok(a, `${b.id} still exists`);
+    if (["l1", "l2", "l3"].includes(b.id)) {
+      assert.equal(a.deepKey, deepKeyOf(a));
+      const { deepKey: _x, ...aRest } = a;
+      const { deepKey: _y, ...bRest } = b;
+      assert.deepEqual(aRest, bRest);
+    } else {
+      assert.deepEqual(a, b);
+    }
+  }
+  // Only single-field PATCHes for the three legacy docs, no other writes.
+  const writes = fake.calls().filter((c) => c.method !== "POST" && c.method !== "GET");
+  assert.equal(writes.length, 3);
+  assert.ok(writes.every((c) => c.method === "PATCH" && c.url.includes("updateMask.fieldPaths=deepKey") && c.url.includes("currentDocument.exists=true")));
+});
+
+test("rekey-deep --yes is idempotent: a second run re-keys 0 and changes nothing", async () => {
+  const fake = createFakeBoardFetch({ runs: rekeySeeds(), now: () => NOW_MS });
+  assert.equal(await runCommand({ argv: ["rekey-deep", "--yes"], ...baseOpts(fake) }), 0);
+  const settled = JSON.stringify(fake.docs());
+  const patchesBefore = fake.calls().filter((c) => c.method === "PATCH").length;
+  const out = [];
+  const code = await runCommand({ argv: ["rekey-deep", "--yes"], ...baseOpts(fake, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  assert.match(out.join("\n"), /Scanned 6 run\(s\): 5 already on the new DEPTH key, 0 on the old key, 1 left alone/);
+  assert.match(out.join("\n"), /Re-keyed 0 of 0\./);
+  assert.equal(JSON.stringify(fake.docs()), settled);
+  assert.equal(fake.calls().filter((c) => c.method === "PATCH").length, patchesBefore);
+});
+
+test("rekey-deep: default scope is the current SEASON; --season N and --all-seasons scope like export", async () => {
+  const seeds = [
+    keyedSeed("s1", "legacy", { season: SEASON }),
+    keyedSeed("s2", "legacy", { season: SEASON + 1 }),
+    keyedSeed("s3", "legacy", { season: SEASON + 1 }),
+  ];
+  const scanned = async (argv) => {
+    const fake = createFakeBoardFetch({ runs: seeds, now: () => NOW_MS });
+    const out = [];
+    await runCommand({ argv, ...baseOpts(fake, { out: (l) => out.push(l) }) });
+    return out.join("\n");
+  };
+  assert.match(await scanned(["rekey-deep"]), /Scanned 1 run\(s\)/);
+  assert.match(await scanned(["rekey-deep", "--season", String(SEASON + 1)]), /Scanned 2 run\(s\)/);
+  assert.match(await scanned(["rekey-deep", "--all-seasons"]), /Scanned 3 run\(s\)/);
+});
+
+test("rekey-deep --yes: a failed patch exits 1 and the report names the failed id; the others are still re-keyed", async () => {
+  const fake = createFakeBoardFetch({ runs: rekeySeeds(), now: () => NOW_MS });
+  const failingFetch = (u, init) => {
+    if (init && init.method === "PATCH" && String(u).includes("/runs/l2?")) {
+      return Promise.resolve({ ok: false, status: 500, json: async () => ({}), text: async () => "{}" });
+    }
+    return fake.fetchFn(u, init);
+  };
+  const out = [];
+  const errs = [];
+  const code = await runCommand({
+    argv: ["rekey-deep", "--yes"],
+    ...baseOpts(fake, { fetchFn: failingFetch, out: (l) => out.push(l), err: (l) => errs.push(l) }),
+  });
+  assert.equal(code, 1);
+  assert.match(out.join("\n"), /Re-keyed 2 of 3\./);
+  assert.ok(errs.some((l) => l.includes("l2")));
+  const docs = fake.docs();
+  assert.equal(docs.find((d) => d.id === "l1").deepKey, deepKeyOf(docs.find((d) => d.id === "l1")));
+  assert.equal(docs.find((d) => d.id === "l2").deepKey, legacyDeepKeyOf(docs.find((d) => d.id === "l2")));
+});
+
+test("rekey-deep: help lists the usage line", async () => {
+  const fake = createFakeBoardFetch({ now: () => NOW_MS });
+  const out = [];
+  const code = await runCommand({ argv: ["help"], ...baseOpts(fake, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  assert.ok(out.some((l) => l.includes("rekey-deep")));
 });
 
 // --- export ------------------------------------------------------------------

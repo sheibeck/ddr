@@ -10,8 +10,22 @@
 // banned/{uid} and removes that player's runs), and `export` (CSV/JSON of
 // every run field, filterable by version/season/date, for balance tracking
 // across builds — CONTEXT "Cheating & moderation" and the 2026-09-28
-// balance-tracking addition). Never shipped: tools/ is never copied into
+// balance-tracking addition), and `rekey-deep` (Phase 87, BOARD-28: rewrites
+// the deepKey of every run still on the shipped 2.2.0 formula, floor * 1e6 +
+// (999999 - steps), to the 2.3 most-steps formula, floor * 1e6 + steps,
+// without any resubmission). Never shipped: tools/ is never copied into
 // www/ by tools/build-www.mjs.
+//
+// rekey-deep (BOARD-28): 2.2.0 clients wrote the fewer-steps key, so runs
+// already on the server would keep ranking the old way. It is run at the 2.3
+// release and once more at the final-rules cutover (docs/RELEASING.md,
+// Release 2.3.0). It writes ONLY deepKey (a single-field PATCH, updateMask
+// exactly deepKey, currentDocument.exists=true), ONLY on docs whose deepKey
+// equals the old formula (recomputed from the doc's own floor and steps) and
+// differs from the new one, and it is idempotent: after one --yes run no doc
+// matches the old formula. Docs matching neither formula are listed and left
+// alone. Every scan is billed against the Spark read quota. Delete the
+// command with the transition files once a dry run reports 0 on the old key.
 //
 // Auth is the exact shape tools/bug-reports/file-issues.mjs uses. With no
 // --key/DDR_BOARDS_SA_KEY: the developer's own `gcloud auth
@@ -32,7 +46,7 @@
 //
 // Exit codes: 0 ok, 1 a command started but failed partway through, 2 usage
 // or an auth/key-safety refusal. Destructive commands (delete-run, ban,
-// unban) are dry runs by default — printing exactly what would change — and
+// unban, rekey-deep) are dry runs by default — printing exactly what would change — and
 // only act with --yes.
 //
 // Node built-ins only; zero new dependencies.
@@ -63,6 +77,8 @@ import { FIRESTORE_BASE, documentsPath, docName, fromFirestoreFields } from "../
 import {
   RUN_COLLECTION,
   BANNED_COLLECTION,
+  deepKeyOf,
+  legacyDeepKeyOf,
   RUN_DOC_FIELDS,
   RANK_FIELD,
   BOARD_STATS,
@@ -217,7 +233,8 @@ function decodeHit(hit) {
  * createAdminApi({ projectId, fetchFn, headers }) — the admin REST surface
  * over `runs`/`banned`: query (a raw structuredQuery), listAll (paged by
  * __name__, pageSize default 300), getRun/deleteRun, runsOf/deleteRunsOf
- * (commit deletes batched at most 100 per :commit), setBan/clearBan. Every
+ * (commit deletes batched at most 100 per :commit), patchDeepKey (a
+ * single-field deepKey PATCH, BOARD-28), setBan/clearBan. Every
  * call carries `headers` (an admin Authorization Bearer token — IAM access,
  * bypassing firestore.rules) and never an API key.
  */
@@ -301,6 +318,17 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return ids.length;
   }
 
+  // Phase 87 (BOARD-28): the re-key's only write. A single-field update:
+  // updateMask exactly deepKey, and the doc must already exist so a stale id
+  // can never create a run.
+  async function patchDeepKey(id, deepKey) {
+    const { ok } = await request(`/${RUN_COLLECTION}/${id}?updateMask.fieldPaths=deepKey&currentDocument.exists=true`, {
+      method: "PATCH",
+      body: JSON.stringify({ fields: { deepKey: { integerValue: String(deepKey) } } }),
+    });
+    return ok;
+  }
+
   async function setBan(uid, { reason, at }) {
     const { ok } = await request(`/${BANNED_COLLECTION}/${uid}`, {
       method: "PATCH",
@@ -314,7 +342,7 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return ok;
   }
 
-  return Object.freeze({ query, listAll, getRun, deleteRun, runsOf, deleteRunsOf, setBan, clearBan });
+  return Object.freeze({ query, listAll, getRun, deleteRun, runsOf, deleteRunsOf, patchDeepKey, setBan, clearBan });
 }
 
 // ---------------------------------------------------------------------------
@@ -420,6 +448,38 @@ export function toCsv(rows) {
     lines.push(header.map((k) => csvEscapeField(row ? row[k] : undefined)).join(","));
   }
   return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// rekey-deep: classify
+// ---------------------------------------------------------------------------
+
+/**
+ * classifyDeepKeys(rows) — rows are [{ id, doc }]. Returns
+ * { legacy: [{ id, from, to }], current: <count>, other: [id] }. A doc is
+ * current when its deepKey equals deepKeyOf(doc), legacy when it equals
+ * legacyDeepKeyOf(doc) and differs from deepKeyOf(doc) (from = the old key,
+ * to = the new one), and otherwise other (a third value, or a missing or
+ * non-integer floor, steps or deepKey). Pure; never mutates; never throws.
+ */
+export function classifyDeepKeys(rows) {
+  const legacy = [];
+  const other = [];
+  let current = 0;
+  const list = Array.isArray(rows) ? rows : [];
+  for (const row of list) {
+    const doc = row && row.doc && typeof row.doc === "object" ? row.doc : null;
+    if (!doc || !Number.isInteger(doc.floor) || !Number.isInteger(doc.steps) || !Number.isInteger(doc.deepKey)) {
+      other.push(row ? row.id : undefined);
+      continue;
+    }
+    const to = deepKeyOf(doc);
+    const from = legacyDeepKeyOf(doc);
+    if (doc.deepKey === to) current += 1;
+    else if (doc.deepKey === from) legacy.push({ id: row.id, from, to });
+    else other.push(row.id);
+  }
+  return { legacy, current, other };
 }
 
 // ---------------------------------------------------------------------------
@@ -534,6 +594,38 @@ async function cmdUnban(api, uid, flags, out) {
   return 0;
 }
 
+async function cmdRekeyDeep(api, flags, out, err) {
+  const allSeasons = flags["all-seasons"] === true;
+  const season = allSeasons ? null : flags.season !== undefined ? Number(flags.season) : SEASON;
+  const where = season === null ? undefined : fieldEqInt("season", season);
+  const rows = await api.listAll({ where });
+  const { legacy, current, other } = classifyDeepKeys(rows);
+
+  out(
+    `Scanned ${rows.length} run(s): ${current} already on the new DEPTH key, ${legacy.length} on the old key, ${other.length} left alone (neither formula).`,
+  );
+  for (const id of other) out(`  left alone: ${id}`);
+
+  if (!flags.yes) {
+    out(`Would re-key ${legacy.length} run(s) to floor*1,000,000 + steps. Pass --yes to re-key.`);
+    return 0;
+  }
+
+  const failed = [];
+  let done = 0;
+  for (let i = 0; i < legacy.length; i += 100) {
+    const wave = legacy.slice(i, i + 100);
+    const results = await Promise.all(wave.map((r) => api.patchDeepKey(r.id, r.to).catch(() => false)));
+    results.forEach((ok, j) => {
+      if (ok) done += 1;
+      else failed.push(wave[j].id);
+    });
+  }
+  out(`Re-keyed ${done} of ${legacy.length}.`);
+  for (const id of failed) err(`Failed to re-key run ${id}.`);
+  return failed.length > 0 ? 1 : 0;
+}
+
 async function cmdExport(api, flags, out, err, writeFile, repoRoot) {
   const format = flags.format === "json" ? "json" : "csv";
   const allSeasons = flags["all-seasons"] === true;
@@ -564,7 +656,7 @@ async function cmdExport(api, flags, out, err, writeFile, repoRoot) {
 // runCommand
 // ---------------------------------------------------------------------------
 
-const COMMANDS = new Set(["top", "suspicious", "delete-run", "ban", "unban", "export", "help"]);
+const COMMANDS = new Set(["top", "suspicious", "delete-run", "ban", "unban", "export", "rekey-deep", "help"]);
 
 function usage(out) {
   out("tools/boards-admin.mjs — leaderboard moderation and balance export (dev-only)");
@@ -578,6 +670,7 @@ function usage(out) {
   out("  ban <uid> [--reason TEXT] [--yes]");
   out("  unban <uid> [--yes]");
   out("  export [--format csv|json] [--version V] [--season N|--all-seasons] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--out PATH]");
+  out("  rekey-deep [--season N|--all-seasons] [--yes]   (dry run without --yes; moves 2.2.0-keyed runs onto the most-steps DEPTH key)");
   out("  help");
   out("");
   out("Auth: no --key uses `gcloud auth print-access-token`. --key (or DDR_BOARDS_SA_KEY) must");
@@ -651,6 +744,7 @@ export async function runCommand(opts = {}) {
     if (command === "ban") return await cmdBan(api, positionals[0], flags, now, out);
     if (command === "unban") return await cmdUnban(api, positionals[0], flags, out);
     if (command === "export") return await cmdExport(api, flags, out, err, writeFile, repoRoot);
+    if (command === "rekey-deep") return await cmdRekeyDeep(api, flags, out, err);
   } catch {
     err("The command failed before it could finish.");
     return 1;
