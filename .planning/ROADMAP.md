@@ -15,9 +15,23 @@
 - ✅ **v2.0 Leaderboards** — Phases 65–71 (shipped 2026-09-24 as Play 2.0.0 / vc10; override closeout: 38/38 requirements, 7/7 phases passed, 142-row Pixel 7 batch `docs/UAT-v2.0.md` spread over the user's play sessions) → `.planning/milestones/v2.0-ROADMAP.md`
 - ✅ **v2.1 Bug Fixes** — Phases 72–81, incl. 75.1–75.3 and 79.1–79.3 (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; override closeout: 68/68 requirements, 16/16 phases passed, audit tech_debt; UAT batch `docs/UAT-v2.1.md`, 80-05 emulator pass deferred) → `.planning/milestones/v2.1-ROADMAP.md`
 - ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track; override closeout: 35/35 requirements — SRV-09's live proof passed on release day — 5/5 phases passed, Pixel 7 batch `docs/UAT-v2.2.md` passed bar 3 upgrade-path rows) → `.planning/milestones/v2.2-ROADMAP.md`
+- 🚧 **v2.3 Truth in Advertising** — Phases 87–92 (started 2026-09-29; promoted from backlog 999.15 + 999.16; 20 requirements; release as Play 2.3.0 / vc13 follows the milestone)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### v2.3 Truth in Advertising (Phases 87–92) — IN PROGRESS
+
+- [ ] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps.
+- [ ] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits.
+- [ ] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled.
+- [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
+- [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
+- [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
+
+**Sequencing (user standing rules):** bots run ONCE, at the milestone end (Phase 92). Every rule change lands in Phases 87–91, STORE-04 included. The audits drive the fixes, so the item systems (Phase 88) come before the item audit (Phase 89). No phase needs research (user, 2026-09-29).
+
+**After the milestone (not requirements, not a phase):** per the deferred-UAT protocol each phase's verification lists its Pixel 7 checks, and one batched checklist `docs/UAT-v2.3.md` plus the debug APK are built after the last wave. The release then follows `docs/RELEASING.md`, as v2.2 did: patch notes agreed with the user first, then the release build (`npm run play:release`, versionCode 13), the user's Play upload, tags, the GitHub Release and the darktierstudios.com deploy.
 
 <details>
 <summary>✅ v2.2 Our Own Leaderboards (Phases 82–86) — CODE-COMPLETE 2026-09-29</summary>
@@ -71,6 +85,92 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 </details>
 
+## Phase Details
+
+### Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties
+
+**Goal**: A Joiner's hp shows every hit it takes, each store stocks a visible supply of up to ten rations, and DEPTH ties rank by the most steps.
+**Depends on**: Nothing (first phase of v2.3). Three small, independent fixes, ordered inside the phase: PARTY-11 first (it pins the foe-hits-a-Joiner damage path before Phase 88 extends it with crit-proofing), then STORE-04, then BOARD-28 last. BOARD-28 touches the live Firebase project (the DEPTH ranking order, its composite index and any ranking key a client writes), so it lives in its own plan(s): no engine bytes in them, and no engine plan touches server files. It goes live only after it is checked against shipped 2.2.0 / vc12 clients, and the deploy is a user checkpoint. It reverses v2.1 BOARD-17 ("deepest, then fewest steps"): report #9 wins. STORE-04 rolls a store's rations from a derived stream when the store opens, so floor generation and existing draws don't reorder; the store fixtures it moves are measured, declared and regenerated, and the bot buys rations the new way. No bot pass here (Phase 92).
+**Requirements**: PARTY-11, STORE-04, BOARD-28
+**Success Criteria** (what must be TRUE):
+
+  1. When a foe hits a Joiner, the Joiner loses that hp: the report's Cave Bear hit of 11 takes Zell Bonecrack from 30/30 to 19/30, and YOUR LOT, the Hero Company panel and every other party display show the new value at once.
+  2. Opening a store rolls its ration stock (1–10). The store shows how many are left, the player can buy them one at a time until none remain, the count left survives save and load, and the fair bot buys them the same way.
+  3. On the DEPTH board, runs that reached the same depth rank with the most steps first. Runs already on the server re-rank under the new order without being resubmitted, and a run submitted by a shipped 2.2.0 client ranks correctly too.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
+
+**Goal**: An item's activated benefit lasts only while the item is worn, the Cloak of Regeneration heals over time, and the Cloak of Strength stops foe crits: the item systems the audit fixes build on.
+**Depends on**: Phase 87 (the foe-hits-a-Joiner damage path is pinned first). Engine work, and the foundation of the milestone's item audit: ITEM-02's effect-source link (every timed effect carries its source item and slot, cleared on unequip, drop, sell, swap or destruction, surviving save, load and relaunch, Joiners' gear covered) and ITEM-03's heal-over-time are new engine systems that Phase 89 (ITEM-06 and the audit fixes) builds on. ITEM-04 is the first item to use both: the Cloak of Strength blocks foe crits against its wearer (the foe damage and crit paths, plus the Joiner branch) instead of suppressing the wearer's own crits, and its activation gets its own chip. Gates: greenfield (no dual paths, old saves tolerant-load only), new rolls from derived streams, an EVENT_NARRATION entry for every new event, moved fixtures declared and regenerated, prototype master never edited. No bot pass.
+**Requirements**: ITEM-02, ITEM-03, ITEM-04
+**Success Criteria** (what must be TRUE):
+
+  1. A hero who uses a worn item (a Cloak of Flying, say) and then takes it off, drops it, sells it or swaps it loses the benefit at once, with a narrated line, so nobody can put everything on, use it all and stack benefits from items they no longer wear. An item destroyed while its effect runs ends the effect too.
+  2. The same holds for a Joiner's gear, and after saving, quitting and relaunching in the middle of an effect, the effect still knows its item and ends when the item comes off.
+  3. Once the Cloak of Regeneration is used, its wearer heals on each of the next three 10-step marks (30 steps in all) with a narrated line for each tick, and taking the cloak off stops the ticks that are left.
+  4. A hero or Joiner wearing the Cloak of Strength takes no critical hits from foes and still lands their own crits, and its activation shows its own chip and name, not the Fighter's Braced.
+
+**Plans**: TBD
+
+### Phase 89: Item Audit & Fixes
+
+**Goal**: Every item does what its text says: one audit table covers them all, each mismatch is fixed or ruled, the Enlarge potion is worth drinking, and every missing item system is built or re-ruled.
+**Depends on**: Phase 88 (the effect-source and heal-over-time systems are the foundation the fixes and ITEM-06's new systems build on). The audit table lives in `docs/`, one row per item (text / engine / canon / verdict), and every fixed row is pinned by a test in the `authored-ranges` / `roll-sign-consistency` style. No new items unless the audit shows an existing entry needs a missing system, and that system is ITEM-06. `/gsd-discuss-phase` recommended for ITEM-05 (the Enlarge numbers: how much damage, how much easier to hit, measured against a Troll's size damage). No bot pass.
+**Requirements**: ITEM-01, ITEM-05, ITEM-06
+**Success Criteria** (what must be TRUE):
+
+  1. The audit table has one row for every treasure, armour, weapon, cloak, jewellery, staff, wand, potion and scroll, comparing its text, the engine and canon, and every mismatch is fixed or recorded as a deliberate ruling.
+  2. Every fix is pinned by a test, so an item's text and its numbers (duration, charges, cooldown, bonuses) can't drift apart again, and the Gear tab, store, loot and find cards all state what the engine does.
+  3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
+  4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
+
+**Plans**: TBD
+
+### Phase 90: Spell & Skill Audit
+
+**Goal**: Every spell and every skill does what its text says, stated in roll-high form, and the Strength spell and Pommel Strike do what players expect.
+**Depends on**: Phase 89 (sequential: it shares the audit-table and ledger-test method, and any spell or skill that grants a timed effect uses the Phase 88 effect system). Two audit tables in `docs/`, one row per spell and per skill or ability (text / engine / canon / verdict), each fixed row pinned by a test that extends `authored-ranges` and `roll-sign-consistency` to every roll a spell or skill makes. This is backlog 999.15, including the second roll that the 2026-09-27 universal spell resist adds after a thrown spell's to-hit. `/gsd-discuss-phase` recommended: SPELL-09 (which way Strength gets fixed: change the text to match the engine, or the engine to match the text) and ABIL-07 (the Pommel Strike redesign). No bot pass.
+**Requirements**: SPELL-08, SPELL-09, ABIL-06, ABIL-07
+**Success Criteria** (what must be TRUE):
+
+  1. The spell table covers every spell's to-hit roll (if any), damage dice, multipliers, duration, resist checks, school gates, and backfire and fumble odds. The spell's text, the Grimoire, its chips and the foe card all agree with the engine and canon in roll-high form (a damage die no longer reads like a to-hit roll, and the real hit odds are stated).
+  2. The skill table covers every skill and ability's cooldown or once-per-fight rule, auto-hit or forced crit, bonus terms, and who can use it (hero, Joiners), and each text agrees with the engine.
+  3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
+  4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
+
+**Plans**: TBD
+
+### Phase 91: Race & Sub-class Audit
+
+**Goal**: Every race and sub-class does what its blurb says, a Wizard always opens with a spell that hurts, and an Illusionist chooses where a teleport lands.
+**Depends on**: Phase 90 (the blurb and trait checks run against the audited spells, school gates and abilities, and the Wizard's day-one pool is read from the audited spell list, so chargen moves once). The audit table lives in `docs/`, one row per race and sub-class (trait / blurb / engine / canon / verdict), with a test pinning each fixed row. IDENT-13 moves chargen: the fixtures it moves are measured, declared and regenerated, it is pinned across a wide seed sweep, and it covers the Wizard sub only (the other Magic User subs keep the Phase 40 best-effort guarantee). `/gsd-discuss-phase` recommended for IDENT-14 (the teleport destination UI: how the Illusionist picks the landing square). No bot pass.
+**Requirements**: IDENT-11, IDENT-12, IDENT-13, IDENT-14
+**Success Criteria** (what must be TRUE):
+
+  1. All 6 races and 24 sub-classes are in the audit table: each trait in `content/identity.js`, each blurb and each race and sub-class note is checked against the engine and canon, each blurb states every advantage and drawback the engine applies, and every mismatch is fixed with a test or ruled deliberate.
+  2. A new Wizard's Grimoire always shows at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled, and this holds across a wide seed sweep.
+  3. An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 92: Store Economy & Balance Close
+
+**Goal**: A depth-7 hero can't buy out a store, and one bot pass over the finished rules confirms the difficulty curve held.
+**Depends on**: Phases 87–91 (every rule change, STORE-04 included, has landed: bots run ONCE, at the milestone end, never per phase). Sequence inside the phase: the `tools/tune-economy.mjs` readout (ECON-11), then the user confirms the target from it, then the retune (ECON-12, itself a rules change, so its moved store fixtures are declared and regenerated), then the fair-bot pass (TUNE-10). The orchestrator adjusts search parameters on its own, engine changes go to the user, and fit runs follow the checkpointed protocol (blocks of 10). `/gsd-discuss-phase` recommended for ECON-12's target ("about a third to a half of a store" at depth 7). No full test suite after build-only steps, and the release build stays outside this phase.
+**Requirements**: ECON-11, ECON-12, TUNE-10
+**Success Criteria** (what must be TRUE):
+
+  1. The readout shows, for each depth on floors 1–12, the gold a hero holds on reaching a store against that store's total stock price, with gold income broken down by source, and it is recorded in `docs/`.
+  2. The target is confirmed with the user from that readout, and after the retune a typical depth-7 hero can afford about a third to a half of a store, not all of it.
+  3. The fair-bot pass on the finished rules keeps median death at floor 3–4, and starvation deaths are re-measured after the d10 rations and recorded.
+  4. Any drift the pass finds is recorded and retuned with the user before the milestone closes.
+
+**Plans**: TBD
+
 ## Deferred / Not This Milestone
 
 - **80-05 emulator pass** (tablet, foldable, nav modes on the R8 build) — deferred by the user 2026-09-28 until the features are in.
@@ -86,10 +186,18 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - Shell debt noted in the v1.5 audit but not in v1.6's requirements: the unreachable parley fluency-2 branch (`canParley`'s Magical tier, `wilmsryVsMagical`) and the `railCardFor` tie-break — fold into Phase 44's orphan sweep if they fall out for free, otherwise a quick task.
 - **Backlog 999.14 (our own friends list)** — not planned (user, 2026-09-28: no friends scope, everyone or just yours).
 - Replay verification of top runs, Firebase App Check and a season picker — see REQUIREMENTS.md Future Requirements.
+- **Day-one direct-damage guarantee for Magic User subs other than the Wizard** — they keep the Phase 40 best-effort guarantee (user, 2026-09-29); v2.3 IDENT-13 covers the Wizard sub only.
 
 ## Progress
 
-No milestone in progress — next: `/gsd-new-milestone`.
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 0/TBD | Not started | - |
+| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 0/TBD | Not started | - |
+| 89. Item Audit & Fixes | 0/TBD | Not started | - |
+| 90. Spell & Skill Audit | 0/TBD | Not started | - |
+| 91. Race & Sub-class Audit | 0/TBD | Not started | - |
+| 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -572,7 +680,9 @@ Plans:
 
 - [ ] TBD (promote with 999.13 via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.15: Review every skill and every spell (BACKLOG)
+### Phase 999.15: Review every skill and every spell (PROMOTED → Phase 90)
+
+> **Promoted 2026-09-29 into milestone v2.3 as SPELL-08/09 and ABIL-06/07, Phase 90 (Spell & Skill Audit).** Player reports #8 (Strength) and #4 (Pommel Strike) ride along as SPELL-09 and ABIL-07. Kept here for its planning context until v2.3 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-27, user] "why does freeze say a d6? Looks like a spell with a to hit roll. So we have spells with to hit rolls? Maybe those rolls need to be double checked. Let's add a backlog item to review every skill and every spell." Audit every spell and every skill/ability end to end. For each one, check what the text promises against what the engine rolls and does, and against canon.
 **Requirements:** TBD
@@ -594,7 +704,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.16: Itemization pass: every item works as intended, and benefits need the item worn (BACKLOG)
+### Phase 999.16: Itemization pass: every item works as intended, and benefits need the item worn (PROMOTED → Phases 88–89)
+
+> **Promoted 2026-09-29 into milestone v2.3 as ITEM-01..06.** The new systems (effect source, heal-over-time) and the inverted Cloak of Strength are Phase 88 (ITEM-02/03/04, Item Systems); the item audit table, the Enlarge potion rebalance (report #6) and the party-wide item effects such as the Crystal Staff are Phase 89 (ITEM-01/05/06, Item Audit & Fixes). Kept here for its planning context until v2.3 closes — not a runnable backlog item, do not queue it.
 
 **Goal:** [Captured 2026-09-28, user] "we need to run an itemization pass to make sure all items are working as intended, we have all required systems, etc. For instance, the cloak of regeneration should actually heal every 10 steps for 30 steps. Also, when you use an item and then take that item off, you should lose the items benefit. For instance, if I wear the cloak of flying and use it, I gain flying, and then if I take it off, I should lose that flying condition. We don't want people just putting everything on and stacking benefits without actually wearing the item for the benefit."
 **Requirements:** TBD

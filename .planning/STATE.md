@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
 status: planning
-last_updated: "2026-09-30T00:45:21.406Z"
+last_updated: "2026-09-30T01:05:57.007Z"
 last_activity: 2026-09-29
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Milestone v2.3 Truth in Advertising — defining requirements (itemization, race and sub-class, spell and skill passes; player reports #3–#9; store rations and retune)
+**Current focus:** Milestone v2.3 Truth in Advertising — roadmap created (Phases 87–92, 20/20 requirements mapped): 87 player-report fixes (Joiner hp, d10 rations, DEPTH ties) → 88 item systems → 89 item audit and fixes → 90 spell and skill audit → 91 race and sub-class audit → 92 store economy and balance close (the bots run once, at the end)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 87 of 92 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-29 — Milestone v2.3 started
+Status: Roadmap created; Phase 87 ready to plan (no phase needs research; /gsd-discuss-phase recommended for Phases 89, 90, 91 and 92)
+Last activity: 2026-09-29 — v2.3 roadmap created (6 phases, 20/20 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0% (0/6 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -92,8 +94,8 @@ Last activity: 2026-09-29 — Milestone v2.3 started
 ### Pending Todos
 
 - 2026-09-28 — **☰ menu: drop CENTRE MAP, MAKE CAMP first** (user): remove the CENTRE MAP row (keep centerMap() for its other callers); MAKE CAMP becomes the first row under the account block; shell only, fits Phase 85 or a quick task after 83 — `todos/pending/2026-09-28-menu-drop-centre-map-make-camp-first.md`
-- 2026-09-28 — **Store can still be bought out at depth 7** (user, on device): gold income still outruns store prices mid-run despite v2.1 RULES-02; measure gold-on-arrival vs stock price by depth (tune-economy, milestone-end), then retune prices/sources; engine change, outside v2.2 unless pulled in — `todos/pending/2026-09-28-store-still-bought-out-at-depth-7.md`
-- 2026-09-28 — **Stores stock up to d10 rations** (user): each store rolls 1–10 rations (derived rng stream, declared fixtures, bot buys the new way, count shown in the store); engine rule change, outside v2.2 unless pulled in — `todos/pending/2026-09-28-stores-stock-up-to-d10-rations.md`
+- 2026-09-28 — **Store can still be bought out at depth 7** (user, on device): gold income still outruns store prices mid-run despite v2.1 RULES-02; measure gold-on-arrival vs stock price by depth (tune-economy, milestone-end), then retune prices/sources; PULLED INTO v2.3 as ECON-11/ECON-12 (Phase 92, measured at the milestone end) — `todos/pending/2026-09-28-store-still-bought-out-at-depth-7.md`
+- 2026-09-28 — **Stores stock up to d10 rations** (user): each store rolls 1–10 rations (derived rng stream, declared fixtures, bot buys the new way, count shown in the store); PULLED INTO v2.3 as STORE-04 (Phase 87) — `todos/pending/2026-09-28-stores-stock-up-to-d10-rations.md`
 - 2026-09-27 — **No healing when going down a floor** (user): drop HERO_REGEN_PER_FLOOR (0.25 → 0) before the 79.1 bot pass; 79.1 must not re-enable it — `todos/pending/2026-09-27-no-healing-when-going-down-a-floor.md`
 - 2026-09-25 — **Leaderboards lose runs** (user + friend, on device; v2.1 BOARD-15/16, Phase 81): a depth-10 run missing from the player's own DEEPEST board (Graveyard only); a friend's depth-11 score never shows on the user's ALL board; the friend's "not in the top ten" card is wrong — `todos/pending/2026-09-25-leaderboards-lose-runs-locally-and-globally.md`
 - 2026-09-24 — **Pilfer bad becomes fumbling** (user, added to v2.1 as RULES-09, Phase 75.1): drop the heal-only lockout; a Pilfer uses magic items normally but a rolled 1 destroys the item — `todos/pending/2026-09-24-pilfer-bad-becomes-fumbling-destroys-a-magic-item-on-a-1.md`
@@ -150,6 +152,7 @@ detail; the backlog phases are the index.
 - Phase 79.2 inserted after Phase 79: Early-floor difficulty retune (user 2026-09-27: floors 1-12 too easy; fair-bot p50 death ~3-4) (URGENT)
 - Phase 79.3 inserted after Phase 79: In-app bug reports: ☰ REPORT A BUG → Firestore (delve-die-repeat-6ba5f, Spark) → scheduled GitHub Action files public issues on sheibeck/ddr (user request + rulings 2026-09-28) (URGENT)
 - v2.2 roadmap created 2026-09-28: Phases 82–86 (30 requirements), promoted from backlog 999.13 by the user; order 82 DAYS farming check → 83 server (research flagged) → 84 panel v3 → 85 Play Games out → 86 compliance close.
+- v2.3 roadmap created 2026-09-29: Phases 87–92 (20 requirements), promoted from backlog 999.15 (spell and skill review) and 999.16 (itemization pass), plus player reports #3–#6, #8, #9 and the two 2026-09-28 store todos. Order: 87 player-report fixes (PARTY-11, STORE-04, BOARD-28: the small independent fixes go first so the reported bugs ship even if an audit runs long, PARTY-11 pins the foe-hits-a-Joiner path before ITEM-04 extends it, and BOARD-28's live-backend check against shipped 2.2.0 clients gets the most slack; BOARD-28 sits in its own plan(s), apart from engine work) → 88 item systems (ITEM-02/03/04) → 89 item audit and fixes (ITEM-01/05/06) → 90 spell and skill audit (SPELL-08/09, ABIL-06/07; before 91 so the blurb checks and the Wizard's day-one pool run against audited spells) → 91 race and sub-class audit (IDENT-11..14) → 92 store economy and balance close (ECON-11/12, TUNE-10: bots run once, at the milestone end). No research pass (user). `/gsd-discuss-phase` recommended for ITEM-05 (Phase 89), SPELL-09 and ABIL-07 (Phase 90), IDENT-14 (Phase 91) and ECON-12's target (Phase 92). Release (patch notes agreed first, then `npm run play:release` vc13, the user's Play upload) follows the milestone and is not a phase.
 
 ## Deferred Items
 
@@ -262,8 +265,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-29T19:14:54.675Z
-Stopped at: Completed 86-05-PLAN.md
+Last session: 2026-09-30T01:05:57.007Z
+Stopped at: v2.3 roadmap created (Phases 87–92); next is Phase 87
 
 - (history below is the pre-close record)
 
@@ -280,7 +283,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 87 with /gsd-plan-phase 87 (no open design choices)
+- Run /gsd-discuss-phase first for Phase 89 (ITEM-05 Enlarge numbers), Phase 90 (SPELL-09 Strength, ABIL-07 Pommel Strike), Phase 91 (IDENT-14 teleport destination UI) and Phase 92 (ECON-12 target)
 
 ## Performance Metrics
 

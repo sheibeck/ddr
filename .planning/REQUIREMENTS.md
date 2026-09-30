@@ -83,25 +83,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ITEM-01 | — | Pending |
-| ITEM-02 | — | Pending |
-| ITEM-03 | — | Pending |
-| ITEM-04 | — | Pending |
-| ITEM-05 | — | Pending |
-| ITEM-06 | — | Pending |
-| IDENT-11 | — | Pending |
-| IDENT-12 | — | Pending |
-| IDENT-13 | — | Pending |
-| IDENT-14 | — | Pending |
-| SPELL-08 | — | Pending |
-| SPELL-09 | — | Pending |
-| ABIL-06 | — | Pending |
-| ABIL-07 | — | Pending |
-| PARTY-11 | — | Pending |
-| BOARD-28 | — | Pending |
-| STORE-04 | — | Pending |
-| ECON-11 | — | Pending |
-| ECON-12 | — | Pending |
-| TUNE-10 | — | Pending |
+| ITEM-01 | Phase 89 | Pending |
+| ITEM-02 | Phase 88 | Pending |
+| ITEM-03 | Phase 88 | Pending |
+| ITEM-04 | Phase 88 | Pending |
+| ITEM-05 | Phase 89 | Pending |
+| ITEM-06 | Phase 89 | Pending |
+| IDENT-11 | Phase 91 | Pending |
+| IDENT-12 | Phase 91 | Pending |
+| IDENT-13 | Phase 91 | Pending |
+| IDENT-14 | Phase 91 | Pending |
+| SPELL-08 | Phase 90 | Pending |
+| SPELL-09 | Phase 90 | Pending |
+| ABIL-06 | Phase 90 | Pending |
+| ABIL-07 | Phase 90 | Pending |
+| PARTY-11 | Phase 87 | Pending |
+| BOARD-28 | Phase 87 | Pending |
+| STORE-04 | Phase 87 | Pending |
+| ECON-11 | Phase 92 | Pending |
+| ECON-12 | Phase 92 | Pending |
+| TUNE-10 | Phase 92 | Pending |
 
-**Coverage:** 20 requirements, 0 mapped (the roadmap fills this in)
+**Coverage:** 20 requirements, 20 mapped to Phases 87–92 (87: 3, 88: 3, 89: 3, 90: 4, 91: 4, 92: 3). No orphans, no duplicates.
