@@ -187,13 +187,39 @@ for (const p of POTIONS) {
       name: `potion ${where} combat: ${p.n}`,
       run: () => {
         const item = { kind: "potion", n: p.n, eff2: p.eff, uses: 1 };
-        const state = fixedState({ c: { wp: 20, maxWP: 9999, items: [item] } });
+        // Phase 89 plan 08 (ITEM-01, Q5): a cure potion only works against its
+        // own kind of affliction (the wrong kind, or none, is refused and the
+        // potion kept — pinned by the "cure potion" rows below), so the
+        // success row carries the affliction it cures.
+        const cureKind = p.eff === "poison" ? "Poison" : p.eff === "disease" ? "Disease" : null;
+        const affliction = cureKind ? { kind: cureKind, loss: { n: 1, sides: 6, bonus: 0 }, per: 2, left: 10 } : null;
+        const state = fixedState({ c: { wp: 20, maxWP: 9999, items: [item], ...(affliction ? { affliction } : {}) } });
         if (where === "inside") state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
         const events = useItem(state, 0, makeRng(SPELLS.length + POTIONS.indexOf(p) + 1), [], NOW);
         return { events, state };
       },
       expect: { ok: true },
     });
+  }
+}
+// Phase 89 plan 08 (ITEM-01, Q5): the cure potions' refusal rows, outside and
+// inside a fight — no affliction at all, or the other kind, is refused
+// nothingToCure (the detail pins live in test/unit/item-audit-fixes.test.js).
+for (const p of POTIONS.filter((x) => x.eff === "poison" || x.eff === "disease")) {
+  for (const where of ["outside", "inside"]) {
+    const other = p.eff === "poison" ? "Disease" : "Poison";
+    for (const [label, affliction] of [["no affliction", null], [`a ${other} affliction`, { kind: other, loss: { n: 1, sides: 6, bonus: 0 }, per: 2, left: 10 }]]) {
+      CASES.push({
+        name: `cure potion ${where} combat: ${p.n} with ${label} is refused nothingToCure`,
+        run: () => {
+          const item = { kind: "potion", n: p.n, eff2: p.eff, uses: 1 };
+          const state = fixedState({ c: { wp: 20, maxWP: 9999, items: [item], affliction } });
+          if (where === "inside") state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+          return { events: useItem(state, 0, fakeRng([]), [], NOW), state };
+        },
+        expect: { refused: { type: "useRefused", reason: "nothingToCure" } },
+      });
+    }
   }
 }
 CASES.push({

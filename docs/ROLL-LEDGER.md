@@ -835,22 +835,22 @@ mutation (a miss, or no roll at the knee or above it) or marks
 
 | Id | Effect | Source | Where | Rule past the knee | Verdict | Landed |
 |---|---|---|---|---|---|---|
-| C1 | freeze | Freeze (hero) | magic.js castSpell thrown `onHit` | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold; a blow that leaves the foe at 0 hp still kills | 75.3-05 |
-| C2 | freeze | Freeze (Joiner) | combat.js allyCast | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold | 75.3-04 |
+| C1 | freeze | Freeze (hero) | magic.js castSpell thrown `onHit` | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold; a blow that leaves the foe at 0 hp still kills. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): `freezeFoe` rolls the one depth-rising resist (`foeResistsEffect`), no separate control resist | 75.3-05 |
+| C2 | freeze | Freeze (Joiner) | combat.js allyCast | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the same `freezeFoe` tail | 75.3-04 |
 | C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold | 75.3-04 |
-| C4 | freeze (asleep 99) | Birch Staff | items.js freeze | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)` | 75.3-05 |
+| C4 | freeze (asleep 99) | Birch Staff | items.js freeze | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the staff's freeze is `freezeFoe` (its d4 hold at every depth since 2026-09-28) with the one depth-rising resist; see X9 | 75.3-05 |
 | C5 | stone | Petrify | magic.js petrify | resist; a stone hold instead of the removal | APPLIED: resist, then a stone hold | 75.3-05 |
-| C6 | stone | Oak Staff, Amulet of Stone | items.js stone | resist per foe; a stone hold instead of the kill | APPLIED: resist per target, then a stone hold; `foeStoned` names only the killed foes | 75.3-05 |
+| C6 | stone | Oak Staff, Amulet of Stone | items.js stone | resist per foe; a stone hold instead of the kill | APPLIED: resist per target, then a stone hold; `foeStoned` names only the killed foes. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per target, then the stone KILLS at every depth; no hold; see X9 | 75.3-05 |
 | C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
 | C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept | 75.3-05 |
 | C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-04 |
 | C10 | sleep | Noxious Vapor's sleep outcome | magic.js vapor | resist per foe (its d6+2 stays) | APPLIED: resist per foe | 75.3-05 |
 | C11 | sleep | Insane's sleep face | magic.js insane | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
-| C12 | sleep | Cedar Staff gas | items.js gas | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)` | 75.3-05 |
+| C12 | sleep | Cedar Staff gas | items.js gas | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per foe, then asleep for the fight (99) at every depth; see X9 | 75.3-05 |
 | C13 | sleep | Bard's Lullaby and Thunder songs | combat.js sing | resist per foe; the Lullaby's 24 capped, Thunder's d8 stays | APPLIED: resist per foe; the Lullaby lasts `controlCapRounds(depth, 24)` | 75.3-04 |
-| C14 | weaken | Weaken (hero) | magic.js weaken | one resist for the room (its d4+1 stays) | APPLIED: one resist keyed on the aimed foe; shaken off, every live foe is marked Unmoved | 75.3-05 |
-| C15 | weaken | Weaken (Joiner) | combat.js allyCast | one resist for the room (its d4+1 stays) | APPLIED: one resist for the room, as C14 | 75.3-04 |
-| C16 | weaken | Walnut Staff | items.js weaken | one resist for the room; timed (was the whole fight) | APPLIED: one resist for the room; a landed weaken starts a `holdRounds` `spell:weaken` timer | 75.3-05 |
+| C14 | weaken | Weaken (hero) | magic.js weaken | one resist for the room (its d4+1 stays) | APPLIED: one resist keyed on the aimed foe; shaken off, every live foe is marked Unmoved. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): `roomWeakenResists` has each live foe roll its own depth-rising resist and no extra room resist; no Unmoved marks | 75.3-05 |
+| C15 | weaken | Weaken (Joiner) | combat.js allyCast | one resist for the room (its d4+1 stays) | APPLIED: one resist for the room, as C14. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the same `roomWeakenResists` tail | 75.3-04 |
+| C16 | weaken | Walnut Staff | items.js weaken | one resist for the room; timed (was the whole fight) | APPLIED: one resist for the room; a landed weaken starts a `holdRounds` `spell:weaken` timer. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the staff casts the full Weaken (half damage and `foeToHitPenalty` 3) for the whole fight at every depth, no timer (Q6 B); see X9 | 75.3-05 |
 | C17 | stupid | Stupidity | magic.js stupid | resist; a stupid hold (was the whole fight) | APPLIED: resist, then a stupid hold | 75.3-05 |
 | C18 | blind | Blind | magic.js blind | resist; timed blind (was the whole fight) | APPLIED: resist; a landed Blind lasts `blindFor` = `holdRounds` and `blinded` carries `rounds` | 75.3-05 |
 | C19 | shrink | Shrink | magic.js shrink | resist per foe (an instant halving; nothing to cap) | APPLIED: resist per foe; `shrunk.count` counts only the halved | 75.3-05 |
@@ -862,6 +862,7 @@ mutation (a miss, or no roll at the knee or above it) or marks
 | X6 | debuffs | Hamstring, Mark, Acid, Poisoned Edge | abilities.js, magic.js | OUT: damage and debuffs, not control | OUT | — |
 | X7 | on the hero | foe abilities (c.foeEffect) | foeAbilities.js | OUT: the hero's own intel resist governs | OUT | — |
 | X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | RESOLVED (user ruling 2026-09-26, "weaken the reader"; Plan 76-06's dispatch). Found by 75.3-07's scan: it used to set the foe-side `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields, so the harmful fumble helped the reader. It now sets the reader's own `c.foeEffect` `{ kind: "weakened", rounds }` (d4+1), the debuff a foe's Weaken inflicts, and assigns no foe control, so the guard exemption is gone. Out of combat the fumble still fizzles (Phase 75.1) | 76-06 |
+| X9 | item controls | Amulet of Stone, Oak Staff, Cedar Staff, Birch Staff, Walnut Staff (and Pine Staff's fire resist) | items.js useItem | OUT of RULES-18: no floor-12 knee, no hold, no separate control resist (user Q1, 2026-09-30) | RESOLVED: every item effect a foe can resist rolls the one depth-rising resist (`combat.js#foeResistsEffect`, `derived.js#risingResistFaces`), not `resistControl`; `items.js#useItem` is exempt in the guard for that reason. Phase 90 moves the spells onto the same helper | 89-08 |
 
 **The standing guard.** `test/unit/control-at-depth-rules.test.js`
 (75.3-07) scans every comment-stripped `engine/*.js` file and fails when a
@@ -1299,3 +1300,50 @@ adds 1d20+10 WP to 1d6".
 - **Nothing is drawn on the main stream** by any Joiner path: wear-on-join
   (`reconcileWorn`), the tick loop, the refusals and the effect starts are all
   bookkeeping or derived.
+
+## Phase 89 plan 08: the depth-rising resist for items and staves (ITEM-01, ITEM-06, user 2026-09-30)
+
+The user's ruling (Q1, docs/ITEM-AUDIT.md `## Rulings`): "rising resists on
+higher floors should apply to ALL spells and spell-like effects (staves
+included) ... remove the floor-12 special effects only." Phase 89 built it for
+every item and staff effect a foe can resist; Phase 90 moves the spells onto
+the same helper.
+
+- **The one helper.** `engine/derived.js#risingResistFaces(depth, intel)` is
+  the foe's winning faces on one d20: its half-intel faces `a`
+  (`resistFaces`) and the depth faces `c` (`difficulty.js#controlResistFacesFor`,
+  none at or below floor 12, +1 a floor, dial cap 15) folded into the odds the
+  old two rolls gave, `round(a + c - a*c/20)`, capped at 19
+  (`RISING_RESIST_CEILING`). At or below floor 12 it is exactly
+  `resistFaces(intel)`. `engine/derived.js#foeRisingResistCheck` rolls it and
+  `engine/combat.js#foeResistsEffect` is the gate (always narrated, like
+  `foeResistsSpell`). **One roll, not two:** the separate control resist and
+  its `resistControl` call are gone from every item.
+- **Stream: unchanged.** The roll is on the `spellResist` derived stream with
+  the same key `foeSpellResistCheck` uses, `(main cursor, "spellResist",
+  <item or spell name>, <caster>, acts, round, foe index)`, one `rollCheck`
+  d20 through the shared `resistRollFaces`. The main rng is never touched, and
+  at or below floor 12 the roll and its result are identical to the old intel
+  resist, so every shallow fixture is byte-identical.
+- **Event:** `spellResisted` / `resistFailed` gain the additive field
+  `depthFaces` (faces the floor added), present only when it is above 0.
+- **Sites moved onto it:** the Amulet of Stone and Oak Staff stone (a foe that
+  fails it is stoned outright at any depth: no hold, no `controlResisted`),
+  the Cedar Staff gas (asleep the fight, 99 rounds, at any depth), the Pine
+  Staff fire, and the two `engine/combat.js` tails items share with spells:
+  `freezeFoe` (the Birch Staff, the hero's and a Joiner's Freeze: one resist
+  after the damage, then the d4 hold) and `roomWeakenResists` (the Walnut Staff,
+  the hero's and a Joiner's Weaken: each live foe rolls its own, and the extra
+  room resist is gone).
+- **The Walnut Staff (Q6 B)** sets `combat.weakened` and
+  `combat.foeToHitPenalty = 3` for the whole fight, at every depth (no timer;
+  a running `spell:weaken` timer is ended so its expiry cannot clear the
+  staff's). No new draw.
+- **Draws:** no main-rng draw added, removed or reordered. The Birch Staff's
+  per-foe d4 stays where it was. The removed pieces are derived-stream rolls
+  (the second `controlResist` roll and the hold), never main draws.
+- **Cure Poison and Cure Disease (Q5)** refuse with `useRefused { reason:
+  "nothingToCure", need, have }` before `itemUsed`: no draw, no change, the
+  potion kept.
+- **Joiner armour repair (Q4)** adds store lines (`repairArmor` with `{ member,
+  name }`): no draw; `openStore` draws exactly as before.

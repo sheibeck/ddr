@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem } from "../../engine/items.js";
 import { foeTurn, alliesTurn, FREEZE_HOLD_DIE } from "../../engine/combat.js";
-import { controlResistCheck, foeSpellResistCheck } from "../../engine/derived.js";
+import { foeRisingResistCheck } from "../../engine/derived.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
@@ -173,14 +173,16 @@ test("a Freeze that misses rolls no resist at all", () => {
   assert.equal(s.combat.foes[0].wp, 30);
 });
 
-test("past the knee the RULES-18 control resist still applies: shaken off = damaged, not frozen", () => {
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. Past floor 12 the Freeze has the
+// ONE depth-rising resist (more winning faces the deeper the floor), not a
+// second control resist: shaken off = damaged, not frozen, one spellResisted
+// line (freeze: true) carrying the floor's extra faces.
+test("past the knee the one depth-rising resist applies: shaken off = damaged, not frozen, no separate control resist", () => {
   const depth = 20;
   const probe = { getState: () => 0 };
   let acts = -1;
   for (let a = 0; a <= 20000; a++) {
-    const intel = foeSpellResistCheck({ acts: a, combat: { round: 1 } }, probe, "Freeze", 0, 1).resisted;
-    const ctl = controlResistCheck({ floor: { depth }, acts: a, combat: { round: 1 } }, probe, "freeze:Freeze", 0);
-    if (!intel && ctl.rolled && ctl.resisted) {
+    if (foeRisingResistCheck({ floor: { depth }, acts: a, combat: { round: 1 } }, probe, "Freeze", 0, 1).resisted) {
       acts = a;
       break;
     }
@@ -191,9 +193,12 @@ test("past the knee the RULES-18 control resist still applies: shaken off = dama
   const f = s.combat.foes[0];
   assert.equal(f.alive, true);
   assert.equal(f.wp < 30, true, "the damage landed");
-  assert.equal(f.resisted, "freeze");
+  assert.equal("resisted" in f, false);
   assert.equal("held" in f, false);
-  assert.ok(events.some((e) => e.type === "controlResisted" && e.effect === "freeze"));
+  const r = events.find((e) => e.type === "spellResisted");
+  assert.equal(r.freeze, true);
+  assert.equal(r.depthFaces, 8);
+  assert.equal(events.some((e) => e.type === "controlResisted"), false);
 });
 
 // --- a frozen foe skips its turns, then thaws ------------------------------------

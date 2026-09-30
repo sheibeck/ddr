@@ -276,15 +276,13 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // not reachable-false in real play.
     const rounds = rng.d(4) + 1; // roll:amount
     // Quick 260927-rsx (user ruling 2026-09-27): every live foe rolls its
-    // own intel resist (roomWeakenResists, C.foes order); when all resist,
-    // nothing lands. Otherwise RULES-18 (Phase 75.3, audit C14) keeps its
-    // one depth resist for the whole room, keyed on the foe the caster aimed
-    // at (the current target, else the first live foe); a depth resist
-    // marks every live foe Unmoved and starts nothing. A landed Weaken skips
-    // every foe that resisted (f.weakenResisted, derived.js#foeWeakened).
-    // The d4 + 1 above is drawn either way.
-    const aimed = C && (C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : liveFoes(state)[0]);
-    if (!C || roomWeakenResists(state, aimed, sp.n, rng, events)) {
+    // own resist (roomWeakenResists, C.foes order); when all resist, nothing
+    // lands. Phase 89 plan 08 (ITEM-01, Q1): that resist is the depth-rising
+    // one, and the separate room resist RULES-18 (Phase 75.3, audit C14) kept
+    // past floor 12 is gone. A landed Weaken skips every foe that resisted
+    // (f.weakenResisted, derived.js#foeWeakened). The d4 + 1 above is drawn
+    // either way.
+    if (!C || roomWeakenResists(state, sp.n, rng, events)) {
       if (C) {
         C.weakened = true;
         C.foeToHitPenalty = 3;

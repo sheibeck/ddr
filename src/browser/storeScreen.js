@@ -118,7 +118,14 @@ export function renderStoreScreen(host, state, deps = {}) {
     // — the same trust as the item.n/item.sub this template already
     // interpolates — so nothing new is escaped here (T-71-03).
     const stats = item.effectId === "repairArmor" ? null : storeItemStats(item, c, rs.showUsable);
-    const sub = item.effectId === "repairArmor" ? `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each` : stats ? stats.join(" · ") : item.sub;
+    // Phase 89 plan 08 (ITEM-06, Q4): a Joiner's repair line (`member` param)
+    // reads THAT Joiner's armour and points, never the hero's.
+    const repairSheet = item.effectId === "repairArmor" && item.effectParams && Number.isInteger(item.effectParams.member) ? (state.party || [])[item.effectParams.member] : null;
+    const sub = item.effectId === "repairArmor"
+      ? repairSheet
+        ? `${repairSheet.armor} · ${Math.max(0, Number(repairSheet.armorMax) - Number(repairSheet.armorWP))} hp to mend at a tenth of its cost each`
+        : `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each`
+      : stats ? stats.join(" · ") : item.sub;
     // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
     // names only, never user/item text) — safe inside innerHTML. Phase 61
     // (STORE-02/03): also gated on rs.showUsable — an illegal item's row

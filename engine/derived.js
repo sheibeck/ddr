@@ -2444,7 +2444,16 @@ export function resistFaces(intel) {
  * `engine/combat.js`, which imports `engine/foeAbilities.js`.
  */
 export function resistRoll(rng, intel) {
-  const faces = resistFaces(intel);
+  return resistRollFaces(rng, resistFaces(intel));
+}
+
+/**
+ * resistRollFaces(rng, faces) — the one d20 every resist shares (`resistRoll`
+ * above hands it the half-intel faces, `foeRisingResistCheck` below hands it
+ * the depth-rising faces): one roll-high `rollCheck`, `resisted = roll >=
+ * 21 - faces`. Draws exactly one d20 from `rng`. Pure otherwise.
+ */
+function resistRollFaces(rng, faces) {
   const check = rollCheck(rng, 20, atLeastFor(faces, 20));
   return { rolled: true, resisted: check.ok, roll: check.roll, atLeast: check.atLeast, dieN: check.dieN, faces };
 }
@@ -2464,11 +2473,71 @@ export function resistRoll(rng, intel) {
  * same key always yields the same result. Returns `resistRoll`'s shape.
  */
 export function foeSpellResistCheck(state, rng, source, idx, intel, caster = "you") {
+  return resistRoll(spellResistStream(state, rng, source, idx, caster), intel);
+}
+
+/**
+ * spellResistStream(state, rng, source, idx, caster) — the keyed derived
+ * stream both foe resists draw from (`foeSpellResistCheck` and
+ * `foeRisingResistCheck`): `derivedRng(<the main rng's cursor, or 0 for a test
+ * double with no getState>, "spellResist", source, caster, <state.acts, or 0>,
+ * <the combat round, or 0>, idx)`. Never the caller's `rng`, so a resist never
+ * moves the main cursor. One key for both, so at or below the rising resist's
+ * knee (no depth faces) the two give the SAME roll for the same key.
+ */
+function spellResistStream(state, rng, source, idx, caster) {
   const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
   const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
   const round = state.combat && Number.isInteger(state.combat.round) ? state.combat.round : 0;
-  const stream = derivedRng(cursor, "spellResist", source, caster, acts, round, idx);
-  return resistRoll(stream, intel);
+  return derivedRng(cursor, "spellResist", source, caster, acts, round, idx);
+}
+
+/**
+ * RISING_RESIST_CEILING — a d20's top face always wins for the caster: no
+ * depth, dial or intelligence makes an effect impossible. The same structural
+ * 19 `controlResistFacesFor` already holds.
+ */
+export const RISING_RESIST_CEILING = 19;
+
+/**
+ * risingResistFaces(depth, intel) — Phase 89 plan 08 (ITEM-01, user ruling Q1,
+ * 2026-09-30, docs/ITEM-AUDIT.md "## Rulings"): THE one depth-rising resist,
+ * the shared helper every item and staff effect a foe can resist rolls
+ * against, and the rule Phase 90 reuses for spells. "Rising resists on higher
+ * floors should apply to ALL spells and spell-like effects ... remove the
+ * floor-12 special effects only." So there is ONE resist roll, not a resist
+ * plus an extra control resist past floor 12. The foe's winning faces on its
+ * d20 fold its two old chances into one: its half-intel faces `a`
+ * (`resistFaces`) and the depth faces `c` (`difficulty.js#controlResistFacesFor`:
+ * none at or below floor 12, one more per floor past it, capped by the dial at
+ * 15). A foe that used to get two independent shots at shrugging an effect off
+ * (P = 1 - (1 - a/20)(1 - c/20)) keeps that same overall chance in one d20:
+ * `round(a + c - a*c/20)` faces, capped at `RISING_RESIST_CEILING`. So the
+ * rise is exactly the curve the game already had; what goes is the floor-12
+ * special effects (the second roll, the three-round cap, the hold), not the
+ * difficulty of landing an effect on a deep floor. At or below floor 12 (c = 0)
+ * this IS `resistFaces(intel)`, byte for byte. A landed effect is the floor-1
+ * effect at every depth. Pure, no rng.
+ */
+export function risingResistFaces(depth, intel) {
+  const a = resistFaces(intel);
+  const c = controlResistFacesFor(depth);
+  return Math.min(RISING_RESIST_CEILING, Math.round(a + c - (a * c) / 20));
+}
+
+/**
+ * foeRisingResistCheck(state, rng, source, idx, intel, caster = "you") — the
+ * derived-stream roll for `risingResistFaces` at `state.floor.depth`, the twin
+ * of `foeSpellResistCheck` (same stream key, same single d20, so the main rng
+ * never moves). Returns `resistRoll`'s shape plus `depthFaces`, the faces the
+ * depth added (0 at or below floor 12), so the Oracle can name the rise.
+ * `engine/combat.js#foeResistsEffect` is the gate that calls it.
+ */
+export function foeRisingResistCheck(state, rng, source, idx, intel, caster = "you") {
+  const depth = state.floor?.depth;
+  const faces = risingResistFaces(depth, intel);
+  const depthFaces = faces - resistFaces(intel);
+  return { ...resistRollFaces(spellResistStream(state, rng, source, idx, caster), faces), depthFaces };
 }
 
 /**

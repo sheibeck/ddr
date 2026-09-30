@@ -2373,7 +2373,14 @@ export const LINE_FOR = {
     }
     return { text, tone, priority: PRIORITY.feature };
   },
-  buyFailed: (e) => block(`Short ${e?.short ?? 0} wilmst.`),
+  // Phase 89 plan 08 (ITEM-06, Q4): the Joiner repair refusals, rail twins of
+  // the Oracle lines (a Joiner who left, or armour with nothing left to mend).
+  buyFailed: (e) =>
+    e?.reason === "repairGone"
+      ? block(`${e?.name ?? "Someone"} has left the party. No charge.`)
+      : e?.reason === "nothingToMend"
+        ? block(`${e?.name ? `${e.name}'s` : "That"} armour needs no mending. No charge.`)
+        : block(`Short ${e?.short ?? 0} wilmst.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-02): a store meal adds the HP it really restored.
   bought: (e) => ({
@@ -2600,6 +2607,11 @@ export const LINE_FOR = {
       notWielded: `${item} is in your bag, doing what things in bags do: nothing. Wield it first.`,
       // Phase 39 (GEAR-05): the torch used while not dark.
       notDark: "It is not dark. Save the torch for when it is.",
+      // Phase 89 plan 08 (ITEM-01, Q5): a cure potion cures only its own kind;
+      // refused and kept (`need` the kind it cures, `have` the kind carried).
+      nothingToCure: e?.have
+        ? `${item} only cures ${String(e?.need ?? "that").toLowerCase()}, not ${String(e.have).toLowerCase()}. It stays corked.`
+        : `${item} only cures ${String(e?.need ?? "that").toLowerCase()}, and you have none. It stays corked.`,
     };
     return block(map[e?.reason] ?? "That does not work for you.");
   },

@@ -62,10 +62,7 @@ import { derivedRng } from "./rng.js";
 // calls resolveEtherEnd only inside endSourceEffects, never at module
 // evaluation time).
 import { resolveEtherEnd } from "./movement.js";
-import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe, downMember } from "./combat.js";
-// RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
-// weaken cases below read (difficulty.js imports nothing from engine/).
-import { controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
+import { killFoe, refuseIfPending, liveFoes, endCombat, foeResistsEffect, roomWeakenResists, freezeFoe, downMember } from "./combat.js";
 // Phase 18 (D-09/CANON-01): the fire effect below routes through the shared
 // foe-damage seam. This edge is NOT part of the circular-import concern
 // above — engine/foeDamage.js imports only ../content/index.js, never
@@ -1808,6 +1805,13 @@ export function memberUseItem(state, idx, ref, rng, events = [], now = Date.now)
 }
 
 /**
+ * CURE_KIND_OF — Phase 89 plan 08 (ITEM-01, Q5): the affliction kind
+ * (content/afflictions.js: "Poison" or "Disease") each cure potion's `kind`
+ * clears. Frozen; a test pins it against AFFLICTIONS.
+ */
+export const CURE_KIND_OF = Object.freeze({ poison: "Poison", disease: "Disease" });
+
+/**
  * useItem(state, ref, rng, events, now) — triggers a carried OR worn item's
  * effect. Ports mazeworld.html useItem() (lines 1963-1995). `ref` addresses
  * the item two ways: a non-negative bag index (the original form,
@@ -1963,6 +1967,19 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     return events;
   }
 
+  // Phase 89 plan 08, ITEM-01 (Cure Poison and Cure Disease,
+  // docs/ITEM-AUDIT.md Q5, user 2026-09-30): "each potion cures only its own
+  // kind, as its text says; drunk against the wrong affliction (or none) it is
+  // refused and kept, not spent." Refused before `itemUsed` and before the
+  // potion is consumed, with no draw and no change; `need` is the kind the
+  // potion cures and `have` the kind the drinker carries (null for none) so
+  // the line can say which. A permanent phobia is not an `affliction` (it is
+  // `c.phobia`), so neither cure touches it.
+  if ((kind === "poison" || kind === "disease") && c.affliction?.kind !== CURE_KIND_OF[kind]) {
+    events.push({ type: "useRefused", item: it, reason: "nothingToCure", need: CURE_KIND_OF[kind], have: c.affliction?.kind ?? null });
+    return events;
+  }
+
   // RULES-09 (Phase 75.1, user 2026-09-24/25): the LAST refusal-ladder step,
   // right before `itemUsed` fires — a Pilfer's use of a jewel/cloak/staff
   // risks a fumble. Both draws come from the SAME derived stream
@@ -2050,6 +2067,8 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     }
     case "poison":
     case "disease": {
+      // Phase 89 plan 08, ITEM-01 (Q5): only reached when the affliction is
+      // this potion's own kind (the refusal above keeps the potion otherwise).
       c.affliction = null;
       events.push({ type: "cured", kind });
       break;
@@ -2135,41 +2154,41 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // below for the full rationale; the Amulet of Stone is the only item that
       // overrides it (aoe:4). NOTE: the item's DISPLAY NAME lives on `.n`, so
       // the count is carried on `.aoe`, NOT `.n` as the CONTEXT shorthand said.
-      // RULES-18 (Phase 75.3, audit C4): past the knee each target gets its
-      // own resist, and a landed freeze sleeps controlHoldRoundsFor(depth)
-      // rounds instead of 99; at or below the knee exactly as before.
       // Quick 260927-rsx (user ruling 2026-09-27): a staff's freeze is a
-      // spell cast on each foe it reaches, so each first rolls its intel
-      // resist (foeResistsSpell), then the depth resist above.
+      // spell cast on each foe it reaches, so each rolls a resist.
       // User rulings 2026-09-28 (Freeze): the staff's freeze follows the
       // Freeze spell — it never locks a foe "indefinitely" (asleep 99) any
       // more. Each foe it reaches goes through combat.js#freezeFoe: a new d4
-      // (its rounds, drawn for every foe reached, resisted or not), the intel
-      // resist, the RULES-18 control resist past the knee, then a frozen hold
-      // for the d4's rounds. The staff has no to-hit and no damage of its
-      // own, so a resist means no effect.
+      // (its rounds, drawn for every foe reached, resisted or not), the
+      // resist, then a frozen hold for the d4's rounds. The staff has no
+      // to-hit and no damage of its own, so a resist means no effect.
+      // Phase 89 plan 08, ITEM-01 (Birch Staff, docs/ITEM-AUDIT.md Q1): the
+      // floor-12 extra control resist is gone; the one resist is the
+      // depth-rising foeResistsEffect, inside freezeFoe.
       foes.slice(0, it.aoe ?? 2).forEach((f) => {
         freezeFoe(state, f, it.n, rng, events);
       });
       break;
     }
     case "weaken": {
-      // RULES-18 (Phase 75.3, audit C16): one resist for the room, keyed on
-      // the first live foe; a resist marks every live foe Unmoved and weakens
-      // nothing. A landed weaken lasts the fight at or below the knee (exactly
-      // as before) and controlHoldRoundsFor(depth) rounds past it, through
-      // the same `spell:weaken` timer whose expiry (combat.js#foeTurn's tail)
-      // clears the flag and narrates weakenFaded.
-      // Quick 260927-rsx: every live foe first rolls its own intel resist
-      // (roomWeakenResists); the room's one depth resist follows, keyed on
-      // the first live foe as before, and a landed weaken skips the foes
-      // that resisted it.
+      // Quick 260927-rsx: every live foe rolls its own resist
+      // (roomWeakenResists) and a landed weaken skips the foes that resisted.
+      // Phase 89 plan 08, ITEM-01 (Walnut Staff, docs/ITEM-AUDIT.md Q1 and
+      // Q6): the staff casts the FULL Weaken the spell casts — half damage
+      // (`combat.weakened`) AND foes hit only on their top three faces
+      // (`combat.foeToHitPenalty` 3, the Weaken spell's own cap) — for the
+      // whole fight at every depth. Q1 removed the floor-12 extra room resist
+      // and the three-round limit; Q6 B (the option the user was shown read
+      // "lasting the fight") keeps the staff's duration the fight, so it
+      // draws nothing new and starts no timer. A Weaken spell's own d4+1
+      // timer still running is ended early: the staff's fight-long Weaken
+      // must not be cleared by the shorter one's expiry (combat.js#foeTurn's
+      // tail clears the flags on that record's effect->null transition).
       if (combat) {
-        const aimed = foes[0];
-        if (roomWeakenResists(state, aimed, it.n, rng, events)) {
+        if (roomWeakenResists(state, it.n, rng, events)) {
           combat.weakened = true;
-          const weakenRounds = controlHoldRoundsFor(state.floor?.depth);
-          if (weakenRounds > 0) startEffect(c, "spell:weaken", { rounds: weakenRounds });
+          combat.foeToHitPenalty = 3;
+          endEffectEarly(c, "spell:weaken");
         }
       }
       break;
@@ -2187,21 +2206,14 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       // NOTE: the count is `it.aoe`, not `it.n` (the CONTEXT shorthand) — `.n`
       // is the item's display-name field throughout the codebase.
       const targets = foes.slice(0, it.aoe ?? 2);
-      // RULES-18 (Phase 75.3, audit C6): past the knee each target gets its
-      // own resist, then a stone HOLD (controlHoldRoundsFor rounds, the foe
-      // stays in the fight) instead of the kill; only the foes the stone
-      // actually kills are named below. At or below the knee no resist rolls
-      // and no hold lands, so `stoned` is every target — exactly as before.
-      // Quick 260927-rsx: each target first rolls its intel resist.
-      const stoned = targets.filter((f) => {
-        if (foeResistsSpell(state, f, it.n, rng, events)) return false;
-        if (resistControl(state, f, "stone", it.n, combat.foes.indexOf(f), rng, events)) return false;
-        if (controlHoldRoundsFor(state.floor?.depth) > 0) {
-          holdFoe(state, f, "stone", it.n, events);
-          return false;
-        }
-        return true;
-      });
+      // Quick 260927-rsx: each target rolls a resist; only the foes the stone
+      // actually kills are named below.
+      // Phase 89 plan 08, ITEM-01 (Amulet of Stone and Oak Staff,
+      // docs/ITEM-AUDIT.md Q1): the past-floor-12 limits are gone. The one
+      // resist is the depth-rising foeResistsEffect (its faces grow with the
+      // floor); a foe that fails it is stoned outright, at every depth: no
+      // extra control resist, no three-round hold, no `holdFoe`.
+      const stoned = targets.filter((f) => !foeResistsEffect(state, f, it.n, rng, events));
       // CMB-06 (Phase 31): one foeStoned {names} line naming every stoned foe
       // in target order, pushed BEFORE the per-foe kill loop (Pitfall 5 —
       // never batch the kills themselves; each still pays through its own
@@ -2216,10 +2228,12 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     case "fire": {
       const n = rng.d(6); // roll:amount
       // Quick 260927-rsx: the Pine Staff's fireballs are a spell cast on
-      // every live foe — each rolls its intel resist once, up front (after
-      // the fireball count); a fireball that comes round to a foe that
-      // resisted does nothing and draws no damage.
-      const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, it.n, rng, events)));
+      // every live foe — each rolls its resist once, up front (after the
+      // fireball count); a fireball that comes round to a foe that resisted
+      // does nothing and draws no damage. Phase 89 plan 08 (ITEM-01, Q1): the
+      // resist is the depth-rising one, like every item effect a foe can
+      // resist.
+      const shrugged = new Set(foes.filter((f) => foeResistsEffect(state, f, it.n, rng, events)));
       let tot = 0;
       for (let k = 0; k < n && foes.length; k++) {
         const t = foes[k % foes.length];
@@ -2238,15 +2252,15 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     case "gas": {
-      // RULES-18 (Phase 75.3, audit C12): past the knee each foe gets its own
-      // resist, and a landed gas sleeps controlHoldRoundsFor(depth) rounds
-      // instead of 99; at or below the knee exactly as before.
-      const gasRounds = controlCapRounds(state.floor?.depth, 99);
-      // Quick 260927-rsx: each foe first rolls its intel resist.
+      // Quick 260927-rsx: each foe rolls a resist.
+      // Phase 89 plan 08, ITEM-01 (Cedar Staff, docs/ITEM-AUDIT.md Q1): the
+      // past-floor-12 limits are gone. The one resist is the depth-rising
+      // foeResistsEffect; a foe that fails it sleeps for the rest of the
+      // fight (99 rounds) at every depth: no extra control resist, no
+      // three-round cap.
       foes.forEach((f) => {
-        if (foeResistsSpell(state, f, it.n, rng, events)) return;
-        if (resistControl(state, f, "sleep", it.n, combat.foes.indexOf(f), rng, events)) return;
-        f.asleep = gasRounds;
+        if (foeResistsEffect(state, f, it.n, rng, events)) return;
+        f.asleep = 99;
       });
       break;
     }
