@@ -18,7 +18,8 @@ Engine work that the Phase 89 item audit builds on. ITEM-02: every timed item ef
 ### Scope of the effect-source link (ITEM-02; orchestrator scout, confirmed in code)
 - **Root cause:** an item effect is a `c.timers` record keyed only by the item's name (`item:<name>`, `engine/derived.js#itemTimerId`). `liveItemEffects` never checks that the item is still worn, so a benefit outlives its item.
 - **Linked effects:** the 12 worn items that start a timed effect (cloaks: Strength, Invisibility, Speed, Armor, Flying, Ether; jewelry: Ring of Power, Gauntlet of the Giant, Amulet of Light, Anklet of Invisibility, Helm of Knowledge, Bracelet of Flight) plus the Cloak of Regeneration's new 30-square window.
-- **Not linked:** potions (Speed, Strength, Enlarge, Invisible) and the Torch are used up on use (`useItem` pushes `itemConsumed` and removes them), so their effects run their course. No staff or other bag item starts a timed effect today.
+- **The Crystal Staff is linked too (user, 2026-09-30, after planning):** a Magic User wields it in the WEAPON slot, and using it starts an `item:Crystal Staff` party invisibility of d10+5 squares (`PARTY_WIDE_ITEM_EFFECTS`). Correction to the orchestrator's scout, which wrongly said no staff starts a timed effect. The weapon slot joins the source slots: taking the staff out of the weapon slot (unwield, swap, drop, sell, destroyed) ends the party invisibility like every worn item, with the same spent-use cooldown and narration.
+- **Not linked:** potions (Speed, Strength, Enlarge, Invisible) and the Torch are used up on use (`useItem` pushes `itemConsumed` and removes them), so their effects run their course.
 - **The record carries its source:** the slot (`cloak`, `jewelry1`, `jewelry2`) and the item, on the timer record itself, so it survives save, load and relaunch. New serialized fields are carved out of all three `*Comparable()` functions.
 
 ### When an effect ends (ITEM-02, user-accepted 2026-09-30)

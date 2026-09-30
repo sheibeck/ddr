@@ -158,7 +158,21 @@ Plans:
   3. Once the Cloak of Regeneration is used, its wearer heals on each of the next three 10-step marks (30 steps in all) with a narrated line for each tick, and taking the cloak off stops the ticks that are left.
   4. A hero or Joiner wearing the Cloak of Strength takes no critical hits from foes and still lands their own crits, and its activation shows its own chip and name, not the Fighter's Braced.
 
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 88-01-PLAN.md — ITEM-02 core: worn-item effects and the wielded Crystal Staff's party invisibility carry src { slot, n } (weapon slot included); one end helper (endSourceEffects) on every gear change, use spent (remaining + cd; a staff's charge stays spent), Ether in rock entombs, narrated itemEffectEnded
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 88-02-PLAN.md — ITEM-02 persistence: the link survives save/load/relaunch; old and tampered saves link or end quietly (a live Crystal Staff record links to the wielded staff or ends); Joiner sheets reconciled; src proven stripped by all three comparables
+- [ ] 88-03-PLAN.md — ITEM-04 close: every Cloak of Strength clause pinned (Joiner own crits, chip name vs Braced, exact-name identity) and its ward ending with the cloak
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 88-04-PLAN.md — ITEM-03: heal-over-time as activation data on the squares tick; Cloak of Regeneration 30 squares, a d6 at 10/20/30 from a derived stream, 50 cd; every tick narrated; Regenerating chip; declared fixture moves
 
 ### Phase 89: Item Audit & Fixes
 
