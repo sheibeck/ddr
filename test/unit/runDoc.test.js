@@ -411,7 +411,12 @@ test("2,000 random in-bound pairs: key ordering matches compareRuns (deep/kills/
     const deepA = deepKeyOf(a);
     const deepB = deepKeyOf(b);
     assert.ok(Number.isSafeInteger(deepA) && Number.isSafeInteger(deepB), `deep safe int pair ${i}`);
-    assert.equal(sign(deepB - deepA), sign(compareRuns("deep", a, b)), `deep pair ${i}`);
+    // Phase 87 (87-04, BOARD-28): compareRuns("deep") now ranks ties by MORE steps, but
+    // the server deepKeyOf still encodes the old fewest-steps key until 87-05 flips it.
+    // Interim pin: the key matches the old (floor desc, steps asc) order. 87-05 must
+    // re-point this line to compareRuns("deep", a, b) when deepKeyOf changes.
+    const legacyDeepCmp = b.floor - a.floor || a.steps - b.steps;
+    assert.equal(sign(deepB - deepA), sign(legacyDeepCmp), `deep pair ${i}`);
 
     const killsA = killsKeyOf(a);
     const killsB = killsKeyOf(b);
