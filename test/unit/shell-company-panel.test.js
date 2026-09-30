@@ -119,7 +119,7 @@ test("Trio: DISMISS_CONFIRM_MS/dismissConfirmRevert/revertDismissConfirm() are d
 
 // ─── 3. Company sheet field order ──────────────────────────────────────────
 
-test("Sheet order: name/sub/race, class/level, HP track, Weapon, Eats, DISMISS are strictly increasing", () => {
+test("Sheet order: name/sub/race, class/level, HP track, Weapon, Eats, Armour, chips, items, DISMISS are strictly increasing", () => {
   const region = partyRosterRegion();
   const idx = (needle) => {
     const i = region.indexOf(needle);
@@ -136,10 +136,17 @@ test("Sheet order: name/sub/race, class/level, HP track, Weapon, Eats, DISMISS a
   // (it reads window.__mzRations.eatsLine(m)) — the needle now anchors the
   // one place that computed line is interpolated into the template.
   const iEats = idx("escText(eatsText)");
+  // Phase 89 (ITEM-07, plan 07): the Joiner's armour line, live item chips and
+  // item rows (potions, worn items with DRINK / USE) now sit between Eats and
+  // DISMISS. Before: name -> sub/race -> class/level -> HP -> Weapon -> Eats ->
+  // DISMISS. After: ... -> Eats -> Armour -> chips -> items -> DISMISS.
+  const iArmour = idx("mw-party-armour");
+  const iChips = idx("appendCompanyChips(");
+  const iItems = idx("appendCompanyItems(");
   const iDismiss = idx('"DISMISS"');
   assert.ok(
-    iName < iSub && iSub < iLine && iLine < iHp && iHp < iTrack && iTrack < iWeapon && iWeapon < iEats && iEats < iDismiss,
-    "sheet fields must appear in the locked order: name -> sub/race -> class/level -> HP track -> Weapon -> Eats -> DISMISS",
+    iName < iSub && iSub < iLine && iLine < iHp && iHp < iTrack && iTrack < iWeapon && iWeapon < iEats && iEats < iArmour && iArmour < iChips && iChips < iItems && iItems < iDismiss,
+    "sheet fields must appear in the locked order: name -> sub/race -> class/level -> HP track -> Weapon -> Eats -> Armour -> chips -> items -> DISMISS",
   );
 });
 

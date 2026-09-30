@@ -6266,3 +6266,66 @@ matches the base for all three. The other five labels (`solo-1`, `solo-2`,
 site: `memberDrinkPotion` and `memberUseWorn` were counted in 89-05);
 `test/parity/prototype-master.js.txt` untouched; no other fixture, save fixture
 or pin was re-recorded.
+
+### Phase 89 plan 07: the bot has its Joiner use its items (ITEM-07)
+
+Plan 89-07, base `53001c12` (gate 8,522 tests, 8,520 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (CONTEXT "Joiners use their items and soak hits", user 2026-09-30:
+"Outside combat: a USE on the Hero tab's Company panel lets the player make the
+Joiner drink a potion or use a worn item"; "a Joiner's live item effects show
+chips in YOUR LOT and the Company panel like the hero's").** The Company panel
+draws each Joiner's armour, potions, worn items and chips, with DRINK and USE
+(engine action `memberUseItem`, built in 89-05). The bot plays the same rule:
+`chooseMemberItem(state, ctx)` (tools/lib/tuning-bot.mjs), called from
+`decideAction` out of a fight right after `chooseFieldItem` and before the hero's
+own potion and camp checks: the first standing Joiner at or below one third of its
+HP (`wp * 3 <= maxWP`) with potions drinks one (`{ type: "memberUseItem", i,
+potion: true }`); else a Joiner below `potionThreshold` of its HP wearing a ready
+Cloak of Regeneration (kind `knit`, not in `ctx.itemBlocked`) uses it (`{ i,
+slot }`). Pure, no rng, only what the engine will not refuse. No engine file
+changed.
+
+**The predictor.** (a) parity fixtures: none has a party, zero drift; (b) the bot
+state pins where a pinned run has a Joiner at or below a third of its HP (with
+potions) or a hurt Joiner with a ready Cloak of Regeneration OUTSIDE a fight; (c)
+the save fixture's continuation hash; (d) the Hero-tab snapshot `mu.hero` (its
+Company card now has the new rows); (e) the comparables, unmoved (no new
+serialized field).
+
+**The live scan (measured with the change).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt`, the comparables and
+   `docs/narrative-pass/corpus-base.json` untouched.
+2. **Bot state pins: 0 of 8 moved.** `node --test
+   test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js`
+   passes unchanged (13 / 13). Measured with a temporary counter at the call
+   site (removed before the commit): across the eight pinned runs
+   `chooseMemberItem` was consulted 26 to 348 times per run (2,032 in all) and
+   returned an action **0** times: no pinned run ever reaches an out-of-fight
+   step with a Joiner at a third of its HP holding a potion, or below the
+   threshold wearing a ready Cloak of Regeneration (a Joiner in trouble inside a
+   fight is handled on its own turn, 89-06). So no state pin was
+   re-recorded and `roll-high-baseline.mjs save` was not run. The policy is
+   covered by `test/unit/bot-joiner-items.test.js` (13 hand-built probes) instead.
+3. **Hero-tab snapshot moved: 1 of 8**, regenerated alone (`MZ_SNAPSHOT_UPDATE=1`;
+   the other seven files rewritten with identical content were restored, not
+   committed): `test/unit/fixtures/shell-snapshots/mu.hero.txt`, the `mw-party-member`
+   card of the joined Thief Grimbeld Granitejaw. Before: the card's html ends at
+   `Eats 1 a rest`, then the DISMISS button. After: the html gains
+   `<div class="mw-party-line mw-party-armour">Armour: Leather · AR 6 · 15/15 hp</div>`
+   and the card gains `mw-party-items` (one potion row: `Healing potions: 2` with
+   the hint `already at full HP`) before DISMISS. `thief.hero` has no party and is
+   byte-identical.
+4. **Unit pin moved (before -> after):** `shell-company-panel.test.js` "Sheet order":
+   name, sub/race, class/level, HP, Weapon, Eats, DISMISS -> name, sub/race,
+   class/level, HP, Weapon, Eats, Armour, chips, items, DISMISS (the new rows sit
+   between Eats and DISMISS).
+5. Registered `COMPANY_COPY` in `tools/lib/voice-corpus.mjs` (the completeness guard
+   requires every frozen copy bank); the narrative review's 583 rows and
+   `node tools/narrative-review.mjs --check` are unchanged.
+
+**Nothing else moved.** `DRAW_INVENTORY` is unmoved (the bot and the panel add no
+draw site); no other fixture, save fixture or pin was re-recorded.
