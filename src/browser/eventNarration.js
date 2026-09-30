@@ -770,7 +770,7 @@ export const EVENT_NARRATION = {
   // PARTY-04/PARTY-05 (Phase 8): a foe lands on a party member instead of you —
   // better them than you, frankly. `name` is the foe, `member` the companion.
   memberStruck: (e) =>
-    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.`,
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} turns on ${e.member ?? "your companion"} for <span class="hurt">${e.dmg ?? 0} hp</span>.${e.soak ? ` ${possessive(e.member, "Their")} armour missed it: <span class="roll">${e.soak.roll ?? "?"}</span> vs ${rangeText(e.soak.atLeast, e.soak.dieN)}.` : ""}`,
   // PARTY-05: a member hits 0 hp — they do not die a hero's death, they simply
   // decide this dungeon is no longer their problem and leave the run.
   memberDowned: (e) => `<span class="hurt">${e.name ?? "Your companion"} goes down, and what is left of them wants no further part of this.</span>`,
@@ -813,23 +813,35 @@ export const EVENT_NARRATION = {
   // foe's next turn; this line is the telegraph, and the existing foeBolted
   // builder (pushed right after it, same action) states the hp actually lost.
   foeBubbleRebound: (e) => `<span class="hurt">${possessive(e.name, "Its")} bubble throws it back at you.</span>`,
-  armorDestroyed: () => `<span class="hurt">Your armour gives out.</span>`,
+  // Phase 89 plan 04 (ITEM-07): `member` names a Joiner whose own armour gave
+  // out; a hero payload renders exactly as before.
+  armorDestroyed: (e) =>
+    e?.member
+      ? `<span class="hurt">${possessive(e.member, "Their")} armour gives out.</span> ${e.member} is about to learn what it was for.`
+      : `<span class="hurt">Your armour gives out.</span>`,
   // Phase 28 (ARMOR-05): the same underMin/magic outcome flags narrationLines.js
   // reads, so the narration line and the Oracle can never disagree about which of
   // the four armorSoaked outcomes just happened.
-  armorSoaked: (e) =>
-    e.magic
-      ? `The cloak's plate takes ${e.amount ?? 0} from ${e.name ?? "it"}. Magic plate, light as a rumour, never wears — the maze's one honest bargain.`
+  // Phase 89 plan 04 (ITEM-07): `member` names a Joiner whose OWN armour took
+  // the blow ("Brom's armour ... so Brom does not have to"); a hero payload
+  // (no member) renders byte-identically to before.
+  armorSoaked: (e) => {
+    const armour = e.member ? `${possessive(e.member, "Their")} armour` : "Your armour";
+    const sparing = e.member ? `so ${e.member} does not have to` : "so you do not have to";
+    return e.magic
+      ? `The cloak's plate takes ${e.amount ?? 0} from ${e.name ?? "it"}${e.member ? ` for ${e.member}` : ""}. Magic plate, light as a rumour, never wears — the maze's one honest bargain.`
       : e.underMin
-        ? `Your armour takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to. Under its min — not even a scratch. No wear.`
-        : `Your armour takes ${e.amount ?? 0} from ${e.name ?? "it"} so you do not have to.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`,
+        ? `${armour} takes ${e.amount ?? 0} from ${e.name ?? "it"} ${sparing}. Under its min — not even a scratch. No wear.`
+        : `${armour} takes ${e.amount ?? 0} from ${e.name ?? "it"} ${sparing}.${e.wear ? ` It costs the armour ${e.wear}.` : ""}${e.halved ? " Dwarven steel takes the hit — half the wear." : ""}`;
+  },
   // Phase 18 (CANON-01, D-08) — the FOE's natural armor ate the hero's/
   // ally's blow. `name` is the foe; `amount` is what it shrugged off (kept
   // short for the line).
   foeArmorSoaked: (e) => `<span class="miss">Your blow rings off ${e.name ?? "the thing"}'s armour. It looks bored.</span>`,
   // Phase 15 item-wiring (ECON-08): the Pendant of Fortitude eats half of one
   // incoming blow, then spends itself. `name` is the foe whose hit was blunted.
-  damageHalved: (e) => `<span class="hit">The pendant drinks half of ${possessive(e.name, "the")} blow before it reaches you.</span>`,
+  // Phase 89 plan 04 (ITEM-07): `member` names the Joiner wearing the pendant.
+  damageHalved: (e) => `<span class="hit">The pendant drinks half of ${possessive(e.name, "the")} blow before it reaches ${e.member ?? "you"}.</span>`,
   // Quick 260928-cos (user-approved fix 2026-09-28): a live Cloak of
   // Strength turned a foe's critical into an ordinary hit. Fact first (whose
   // cloak, whose critical, the roll), then the joke. `member` names a Joiner
@@ -950,7 +962,7 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   foeBolted: (e) =>
     e.member
-      ? `<span class="hurt">${e.name ?? "It"}: it lands on ${e.member}.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}. Better them than you.`
+      ? `<span class="hurt">${e.name ?? "It"}: it lands on ${e.member}.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}. Better them than you.${e.soak ? ` ${possessive(e.member, "Their")} armour missed it: <span class="roll">${e.soak.roll ?? "?"}</span> vs ${rangeText(e.soak.atLeast, e.soak.dieN)}.` : ""}`
       : `<span class="hurt">${e.name ?? "It"}: it lands.</span> −${e.dmg ?? 0} hp${soakedText(e.soaked)}${e.ignoresArmor ? ", and your armour was not consulted" : ""}.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): `stolen` is what the FOE healed (after its

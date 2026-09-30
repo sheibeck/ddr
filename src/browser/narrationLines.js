@@ -1741,7 +1741,9 @@ export const LINE_FOR = {
   // hit without the modifier (see foeMissed's own builder below).
   memberStruck: (e) => {
     const crit = e?.critical ? " · CRIT" : "";
-    return { text: `${e?.name ?? "It"} hits ${e?.member ?? "your companion"} (${e?.dmg ?? 0})${crit}`, tone: "hurt", priority: PRIORITY.feature };
+    // Phase 89 plan 04 (ITEM-07): the armour roll that missed, when one was drawn.
+    const soak = e?.soak ? ` · armour missed (${e.soak.roll ?? "?"})` : "";
+    return { text: `${e?.name ?? "It"} hits ${e?.member ?? "your companion"} (${e?.dmg ?? 0})${crit}${soak}`, tone: "hurt", priority: PRIORITY.feature };
   },
   memberDowned: (e) => ({ text: `${e?.name ?? "Your companion"} goes down.`, tone: "hurt", priority: PRIORITY.feature }),
   regenerated: (e) => ({
@@ -1786,24 +1788,35 @@ export const LINE_FOR = {
   // The telegraph for the throw-back; foeBolted (pushed right after, same
   // action) carries the actual hp lost.
   foeBubbleRebound: (e) => ({ text: `${railPossessive(e?.name, "Its")} bubble throws it back at you.`, tone: "hurt", priority: PRIORITY.them }),
-  armorDestroyed: () => ({ text: "Your armour gives out.", tone: "hurt", priority: PRIORITY.them }),
+  // Phase 89 plan 04 (ITEM-07): `member` names a Joiner whose own armour gave out.
+  armorDestroyed: (e) => ({ text: e?.member ? `${railPossessive(e.member, "Their")} armour gives out.` : "Your armour gives out.", tone: "hurt", priority: e?.member ? PRIORITY.feature : PRIORITY.them }),
   // Phase 25 (FEED-01): `wear` is the real durability cost; `halved` names the
   // Dwarven mitigation. Phase 28 (ARMOR-05): `underMin`/`magic` are two more
   // additive outcome flags — the blow was soaked at/under the armour's min
   // (no wear), or soaked by the Cloak of Armor's magic plate (never wears) —
   // making all four armorSoaked outcomes distinguishable on screen.
-  armorSoaked: (e) => ({
-    text: e?.magic
-      ? `The cloak's plate takes ${e?.amount ?? 0} · never wears`
-      : e?.underMin
-        ? `Armour shrugs off ${e?.amount ?? 0} · under its min, no wear`
-        : `Armour takes ${e?.amount ?? 0}${e?.wear ? ` · wear ${e.wear}` : ""}${e?.halved ? " (Dwarven, halved)" : ""}`,
-    tone: "hit",
-    priority: PRIORITY.them,
-  }),
+  // Phase 89 plan 04 (ITEM-07): `member` names the Joiner whose own armour
+  // took the blow; a hero payload (no member) is byte-identical to before.
+  armorSoaked: (e) => {
+    const armour = e?.member ? `${railPossessive(e.member, "Their")} armour` : "Armour";
+    return {
+      text: e?.magic
+        ? `${e?.member ? `${railPossessive(e.member, "Their")} cloak's` : "The cloak's"} plate takes ${e?.amount ?? 0} · never wears`
+        : e?.underMin
+          ? `${armour} shrugs off ${e?.amount ?? 0} · under its min, no wear`
+          : `${armour} takes ${e?.amount ?? 0}${e?.wear ? ` · wear ${e.wear}` : ""}${e?.halved ? " (Dwarven, halved)" : ""}`,
+      tone: "hit",
+      priority: e?.member ? PRIORITY.feature : PRIORITY.them,
+    };
+  },
   // VOX-05 (Phase 79, plan 79-08): "Its armour", never "It's armour".
   foeArmorSoaked: (e) => ({ text: `${railPossessive(e?.name, "Its")} armour shrugs it off.`, tone: "miss", priority: PRIORITY.them }),
-  damageHalved: (e) => ({ text: `The pendant halves ${railPossessive(e?.name, "the")} blow.`, tone: "hit", priority: PRIORITY.them }),
+  // Phase 89 plan 04 (ITEM-07): `member` names the Joiner wearing the pendant.
+  damageHalved: (e) => ({
+    text: e?.member ? `The pendant halves ${railPossessive(e?.name, "the")} blow on ${e.member}.` : `The pendant halves ${railPossessive(e?.name, "the")} blow.`,
+    tone: "hit",
+    priority: e?.member ? PRIORITY.feature : PRIORITY.them,
+  }),
   // Quick 260928-cos: the rail twin of the Oracle's critWarded line — a
   // live Cloak of Strength turned a foe's critical into an ordinary hit.
   critWarded: (e) => ({
@@ -1901,7 +1914,7 @@ export const LINE_FOR = {
   foeBolted: (e) => {
     const suffix = soakSuffix(e?.soaked);
     return e?.member
-      ? { text: `${e?.name ?? "It"} bolts ${e.member} (${e?.dmg ?? 0})${suffix}`, tone: "hurt", priority: PRIORITY.feature }
+      ? { text: `${e?.name ?? "It"} bolts ${e.member} (${e?.dmg ?? 0})${suffix}${e?.soak ? ` · armour missed (${e.soak.roll ?? "?"})` : ""}`, tone: "hurt", priority: PRIORITY.feature }
       : { text: `${e?.name ?? "It"} bolts you (${e?.dmg ?? 0})${suffix}`, tone: "hurt", priority: PRIORITY.them };
   },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md

@@ -324,7 +324,10 @@ test("sanity: the regex would catch a violation, and does not match a hero-side 
 test("sanity: the hero and party-member wp decrements still exist, untouched, in combat.js", () => {
   const src = stripComments(fs.readFileSync(path.join(REPO_ROOT, "engine", "combat.js"), "utf8"));
   const heroMatches = src.match(/\bc\.wp -= dmg;/g) || [];
-  const memberMatches = src.match(/\bmember\.wp -= mDmg;/g) || [];
+  // Phase 89 plan 04 (ITEM-07): the member decrement moved into
+  // applyFoeDamageToMember (the Joiner's own pipeline: Pendant, Brace, armour
+  // soak, then the hit), where the amount is `dmg`.
+  const memberMatches = src.match(/\bmember\.wp -= dmg;/g) || [];
   assert.equal(heroMatches.length, 1, "combat.js's hero-side c.wp -= dmg; must still exist exactly once");
-  assert.equal(memberMatches.length, 1, "combat.js's party-member member.wp -= mDmg; must still exist exactly once");
+  assert.equal(memberMatches.length, 1, "combat.js's party-member member.wp -= dmg; (applyFoeDamageToMember) must still exist exactly once");
 });

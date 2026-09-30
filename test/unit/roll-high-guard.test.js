@@ -104,7 +104,9 @@ export const DRAW_INVENTORY = {
   "engine/character.js": { rollCheck: 0, amount: 3, selection: 13, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
   // User rulings 2026-09-28 (plan 79.2-01): freezeFoe's rng.d(FREEZE_HOLD_DIE)
   // adds one amount draw (a Freeze's d4 hold, drawn whenever a hit foe survives).
-  "engine/combat.js": { rollCheck: 22, amount: 20, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  // Phase 89 plan 04 (ITEM-07): applyFoeDamageToMember adds one rollCheck call
+  // (the Joiner's soak d20, roll-high, on a derived stream): 22 -> 23.
+  "engine/combat.js": { rollCheck: 23, amount: 20, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one

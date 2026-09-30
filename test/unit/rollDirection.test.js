@@ -1326,7 +1326,14 @@ test(
 );
 
 test("[foe-crit-vs-member:natural-best] a landed blow on a member crits on exactly one face", () => {
-  const build = () => memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+  const build = () => {
+    const s = memberCombatState({ cls: "Fighter", sub: "Soldier", race: "Human" }, { cls: "Fighter", sub: "Guard", race: "Human" }, NEUTRAL_FOE());
+    // Phase 89 plan 04 (ITEM-07): a Joiner's own armour now soaks a landed blow
+    // (memberStruck becomes armorSoaked). This row pins the crit window, so
+    // the probed Joiner wears no armour and its landed blow stays memberStruck.
+    Object.assign(s.party[0], { ar: 0, armorWP: 0, armorMin: 0 });
+    return s;
+  };
   const result = faceOdds((rng) => foeCritOnMember(build(), rng), { label: "foe-crit-vs-member:natural-best" });
   assert.equal(result.wins, 1, "[foe-crit-vs-member:natural-best] the member crit window must be exactly one face");
 });

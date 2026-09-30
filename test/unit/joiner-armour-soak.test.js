@@ -18,6 +18,8 @@ import { derivedRng } from "../../engine/rng.js";
 import { rollCheck, atLeastFor } from "../../engine/dice.js";
 import { startEffect } from "../../engine/effects.js";
 import { ARMORS } from "../../content/index.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 import { heroState, withMember, inCombat, foeFrom } from "./harness/rollOdds.js";
 
@@ -352,4 +354,60 @@ test("a solo fight touches no derived stream: no party, no cursor read", () => {
   const rng = { d: () => 3, pick: (a) => a[0], shuffle: (a) => a, getState: () => { cursorReads++; return 1; } };
   foeTurn(s, rng, []);
   assert.equal(cursorReads, 0);
+});
+
+// --- narration -------------------------------------------------------------
+
+const soakPayload = (extra = {}) => ({ type: "armorSoaked", name: "Ned", amount: 7, wear: 7, ...extra });
+
+function renderEvent(e) {
+  const f = EVENT_NARRATION[e.type];
+  assert.equal(typeof f, "function", `${e.type} has a narration entry`);
+  return String(f(e));
+}
+
+test("the three member forms name the Joiner on the Oracle and never say 'your armour'; the hero's forms are unchanged", () => {
+  const forms = [
+    soakPayload({ member: "Brom", roll: 14, atLeast: 11, dieN: 20 }),
+    { type: "armorDestroyed", member: "Brom" },
+    { type: "damageHalved", name: "Ned", member: "Brom" },
+  ];
+  for (const e of forms) {
+    const text = renderEvent(e);
+    assert.ok(text.includes("Brom"), `${e.type}: ${text}`);
+    assert.equal(/your armou?r/i.test(text), false, `${e.type}: ${text}`);
+    assert.equal(/\bWP\b/.test(text), false);
+  }
+  // A member payload never renders as the hero's; a hero payload is byte-stable.
+  for (const e of [soakPayload(), { type: "armorDestroyed" }, { type: "damageHalved", name: "Ned" }]) {
+    const text = renderEvent(e);
+    assert.equal(text.includes("Brom"), false);
+    assert.ok(text.length > 0);
+  }
+});
+
+test("the rail twins name the Joiner for each member form", () => {
+  const forms = [
+    soakPayload({ member: "Brom", roll: 14, atLeast: 11, dieN: 20 }),
+    { type: "armorDestroyed", member: "Brom" },
+    { type: "damageHalved", name: "Ned", member: "Brom" },
+  ];
+  for (const e of forms) {
+    const entry = LINE_FOR[e.type];
+    assert.ok(entry, `${e.type} has a rail twin`);
+    const text = String(entry(e).text);
+    assert.ok(text.includes("Brom"), `${e.type}: ${text}`);
+    assert.equal(/your armou?r/i.test(text), false, `${e.type}: ${text}`);
+  }
+});
+
+test("memberStruck states the failed soak die when one was drawn; a bare payload renders clean", () => {
+  const withSoak = renderEvent({ type: "memberStruck", name: "Ned", member: "Brom", dmg: 7, roll: 15, atLeast: 12, dieN: 20, critical: false, soak: { roll: 4, atLeast: 11, dieN: 20 } });
+  assert.match(withSoak, /Brom/);
+  assert.match(withSoak, /\b4\b/);
+  const bare = renderEvent({ type: "memberStruck", name: "Ned", member: "Brom", dmg: 7 });
+  assert.equal(/undefined|NaN/.test(bare), false, bare);
+  for (const e of [soakPayload({ member: "Brom" }), { type: "armorDestroyed", member: "Brom" }, { type: "damageHalved", member: "Brom" }]) {
+    assert.equal(/undefined|NaN/.test(renderEvent(e)), false, e.type);
+  }
 });

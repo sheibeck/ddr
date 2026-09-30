@@ -5988,3 +5988,86 @@ the `half` clause in `item-effect-ended-lines.test.js`, the Poplar party-heal re
 `bot-tactics.test.js`.
 
 No other fixture, save, golden or state pin was re-recorded.
+
+### Phase 89 plan 04: a Joiner's armour soaks like the hero's (ITEM-07)
+
+Plan 89-04, base `688c537d` (gate 8,342 tests, 8,340 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (CONTEXT "Joiners use their items and soak hits", user 2026-09-30:
+"let their armor soak damage. Just like players.").** A foe's landed swing or
+bolt on a Joiner goes through one pipeline, `engine/combat.js#
+applyFoeDamageToMember`, in the hero's order after the to-hit and damage roll:
+the round-damage ceiling (caller), the Joiner's own armed Pendant halves it,
+its Brace halves it, then its own armour soaks it (a d20 against
+`armorSoak(sheet)`, at or above the threshold soaks the whole blow) and wears
+(`sheet.armorWP`, never below 0, none at or under the armour's min, half for a
+Dwarven Joiner, none for the Cloak of Armor's plate), breaking at 0. The soak
+die is `derivedRng(cursor, "memberSoak", round, foe index, swing, party index)`:
+no main-rng draw is added or moved, a solo fight never reaches it. Before, the
+member branch subtracted the full blow from the Joiner's hp.
+
+**The predictor.** (a) parity fixtures: none meets a Joiner (solo level-1
+Beasts and Humans), so zero drift; (b) any hashed bot run that fights beside a
+Joiner, since a soaked blow keeps the Joiner's hp (and the armour's durability)
+different from then on, which moves the fight; (c) unit pins that assumed an
+armoured Joiner takes a full blow and reads `memberStruck` (a Joiner built by
+`rollCharacter` carries a class armour); (d) the roll-high draw inventory for
+`engine/combat.js` (one more `rollCheck` call); (e) source guards that matched
+the old inline member decrement or the old drain-on-member heal line; (f) the
+comparables, unmoved (no compared object carries a Joiner soak).
+
+**The live scan (measured with the change).**
+
+1. `node tools/fixture-inventory.mjs --json` read: no parity scenario lists a
+   Joiner.
+2. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt` and `test/parity/harness/
+   comparables.js` are untouched.
+3. `roll-high-state-pins.test.js`: **three labels moved** (declared below),
+   five byte-identical. `roll-high-save-compat.test.js`: zero drift.
+   `roll-high-baseline.mjs save` was not run; only the three moved labels were
+   pasted by hand from `node tools/roll-high-baseline.mjs pins` (each hashed
+   identically twice).
+4. `node tools/narrative-review.mjs` and `--check`: the corpus is unchanged (its
+   synthetic events carry no `member` field), so no why-ledger row is owed.
+
+**Moved state pins (before -> after, first divergence traced).** A per-step
+state-hash trace of each run against the base tree (`git archive 688c537d`)
+finds the first divergence at exactly the first soaked Joiner blow in every
+case. Each run carries a Joiner (the bot accepts one when it has none, so
+"solo-magicuser-sorcerer" fights beside a Thief).
+
+| Label | Before | After | First divergence |
+|---|---|---|---|
+| `solo-magicuser-sorcerer` | 400 / alive / depth 5, `3ae31ce8...` | 400 / alive / depth 5, `565c5fcb...` | bot step 365: Google hits Cedric Thorne for 9; the base downs him (memberStruck, memberDowned), the new engine soaks it and wears his Leather 15 -> 6 |
+| `party-1` | 373 / dead / depth 3, `bb3e4f6b...` | 372 / dead / depth 3, `978f3eb0...` | bot step 222: Hair hits Aldric Corrin for 7; soaked, his Cloth 12 -> 5 |
+| `party-fighter-knight` | 400 / alive / depth 3, `6e756e01...` | 400 / alive / depth 4, `ba93cb59...` | bot step 107: Ned's blows of 9 and 3 on Hilda Stonecut (Dwarven) both soaked, Leather 15 -> 8 (half wear: 5 + 2) |
+
+Why: a soaked blow leaves the Joiner's hp higher and its armour worn, so the
+fight, the Joiner's death and everything downstream (the same main-rng draws
+land on a different board) move. Solo-fight draws are unchanged; the other five
+labels are byte-identical.
+
+**Moved unit pins (before -> after).**
+
+| Pin | Before | After | Why |
+|---|---|---|---|
+| `joiner-defences.test.js` (the to-hit face and die pins) | the pinned Joiner's landed blow read `memberStruck` | the pinned Joiner wears no armour (`ar`, `armorWP`, `armorMin` 0) so the blow stays `memberStruck` | these pin the foe's to-hit faces, not the soak |
+| `rollDirection.test.js`, `[foe-crit-vs-member:natural-best]` | the probe read the crit off `memberStruck` of an armoured Fighter Joiner | the probed Joiner wears no armour | the crit window pin is about the to-hit die; an armoured Joiner's soaked blow reads `armorSoaked` |
+| `roll-high-guard.test.js`, `DRAW_INVENTORY` `engine/combat.js` | `rollCheck: 22` | `rollCheck: 23` | the Joiner's soak d20 (one more `rollCheck` call, derived stream) |
+| `foe-damage.test.js`, "sanity: the hero and party-member wp decrements ..." | `member.wp -= mDmg;` exactly once in combat.js | `member.wp -= dmg;` exactly once (inside `applyFoeDamageToMember`) | the member decrement moved into the Joiner's pipeline |
+| `honest-gains.test.js`, `CLAMP_ALLOWLIST` | had `f.wp = Math.min(f.maxWP, f.wp + dmg)` (the member drain's heal) | entry removed | the member drain now heals by `hit.applied` like the hero's (already allowlisted); the old line no longer exists |
+
+Unit pins added, not moved: `joiner-armour-soak.test.js` (26 tests: soak, wear,
+destruction, Dwarf half wear, Cloak of Armor, Taunt, Pendant, Brace, bolt and
+drain, the three edges, draw isolation, the derived key, both narration
+surfaces).
+
+Two behaviour notes, declared: (1) the round-damage ceiling now sits before a
+Joiner's Brace (the hero's order), not after it, so a braced, ceilinged blow is
+`ceil(min(dmg, cap) / 2)` rather than `min(ceil(dmg / 2), cap)`; (2) on a
+Joiner's lethal drain, `memberDowned` now precedes `foeDrained` (the helper
+downs the Joiner before the caller heals the foe).
+
+No other fixture, save, golden or state pin was re-recorded.

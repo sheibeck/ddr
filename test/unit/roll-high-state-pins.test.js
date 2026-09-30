@@ -235,8 +235,28 @@ const PINNED = {
   // `node tools/roll-high-baseline.mjs pins`, hashed identically twice;
   // `roll-high-baseline.mjs save` was not run).
   "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca" },
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "3ae31ce819ca2a515d231e1a81d97bcc808096c62d31bf338f6285482d5f2689" },
-  "party-1": { actions: 373, dead: true, depth: 3, hash: "bb3e4f6b079e75a6232571ca0e27879befa51370e39889c15be8e3464e3b329d" },
+  // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
+  // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
+  // Just like players."): a foe's landed blow on a Joiner now rolls the
+  // Joiner's own armour soak (engine/combat.js#applyFoeDamageToMember, a
+  // derived-stream die, no main-rng draw) and wears the Joiner's armour.
+  // Each run carries a Joiner (the bot accepts one when it has none, so even
+  // "solo-magicuser-sorcerer" fights beside a Thief). Bisected with a
+  // per-step state-hash trace against the base 688c537d: the FIRST
+  // divergence is exactly the first soaked Joiner blow. solo-magicuser-
+  // sorcerer step 365 (Google on Cedric Thorne: 9 taken and the Joiner downed
+  // at the base, soaked with Leather's durability 15 -> 6 at the new engine);
+  // party-1 step 222 (Hair on Aldric Corrin: 7 soaked, Cloth 12 -> 5);
+  // party-fighter-knight step 107 (Ned on Hilda Stonecut, two blows of 9 and
+  // 3 soaked, Leather 15 -> 8). A soaked blow leaves the Joiner's hp higher,
+  // so the fight and the stream move on from there. solo-magicuser-sorcerer
+  // 400/alive/5 -> 400/alive/5; party-1 373/dead/3 -> 372/dead/3; party-
+  // fighter-knight 400/alive/3 -> 400/alive/4. The other five labels
+  // re-measured byte-identical. Only these three labels were pasted, by hand,
+  // from `node tools/roll-high-baseline.mjs pins` (each hashed identically
+  // twice); `save` was never run.
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "565c5fcb6f3fe69c4576f12920ce89cd97c5297d23ea1df63f3aee9b17f2f89f" },
+  "party-1": { actions: 372, dead: true, depth: 3, hash: "978f3eb00bb531625e7e6ea9b46b9207e590227257da93177d009b12a6bb310e" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -305,7 +325,9 @@ const PINNED = {
   // 16–20, failed), so the Freeze still lands but its damage die moves (3 ->
   // 6) and the stream moves from there. 180/dead/2 -> 400/alive/3.
   // Regenerated via `node tools/roll-high-baseline.mjs pins`.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "6e756e013f0b745e1863bf9c341bb818d8df314cbab02d8f5d1acd554d1a03c1" },
+  // Re-pinned (Phase 89, Plan 04, ITEM-07): see the block above the
+  // "solo-magicuser-sorcerer" entry. 400/alive/3 -> 400/alive/4.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "ba93cb5956dc57ced7942342f1f6f91faca0660580f6e4f137e6aa09fb02a823" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
