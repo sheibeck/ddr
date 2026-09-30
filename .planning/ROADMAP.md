@@ -251,7 +251,45 @@ Plans:
   2. A new Wizard's Grimoire always shows at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled, and this holds across a wide seed sweep.
   3. An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
 
-**Plans**: TBD
+**Plans:** 10 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 91-01-PLAN.md — IDENT-11/IDENT-12: docs/IDENTITY-AUDIT.md (6 races, 24 sub-classes, one row per trait: text / engine / canon / verdict, school limits, escape routes) and ONE batched balance checkpoint (Q1 Pickpocket gold take, Q2 Cleric HP, Q3 Cleric offense scroll, Q4 Wilmsry potions, Q5 race sell prices, Q6 frenzy after a kill, Q7 Joiner body traits, Q8+ audit finds); rulings recorded (autonomous: false)
+- [ ] 91-02-PLAN.md — IDENT-13/IDENT-15: the Wizard's day-one direct-damage spell from the full level-1 pool, pinned across 1,000 seeds; the Cleric never learns or casts offense and always starts with Heal; the Wizard's lost Illusion school stated; declared chargen drift
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 91-03-PLAN.md — IDENT-14 engine: the Illusionist's pending teleport pick (up to 12 squares in 8 directions, LET IT CHOOSE, no roll until it commits, the input hold, save and load), narration, the bot answers it, the Illusionist's book stated
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 91-04-PLAN.md — IDENT-14 shell: the teleport decision card, the map highlight, the map tap in both TAP and ARROWS modes, LET IT CHOOSE
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 91-05-PLAN.md — IDENT-16/PARLEY-01: the Master of Arms never leaves a fight (every escape path, the menu, the bot); a parley pays full experience and the fight's spoils (derived stream) with the Humans tip on top; the PARLEY row explains it; "can always parley with X"
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 91-06-PLAN.md — IDENT-17 hero: SING once per fight, a random offense or defense spell of the Bard's level or lower at full strength (castSpell free mode, song stream), sung titles, the menu, the bot, the dim-witted foes stated plainly
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 91-07-PLAN.md — IDENT-17 Joiners: a Joiner Bard sings once per fight on its first turn through the Joiner cast path, "you" meaning the singer
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 91-08-PLAN.md — IDENT-18/19/21: the Pickpocket's extra item (kills, parleys, chests), the Cutthroat's d10, Troll prices doubled, the Wilmsry refuses Magic User Joiners; the Q1 and Q5 rulings
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 91-09-PLAN.md — IDENT-20: the Fridgian frenzy on a d6 (4–6), the hide on a Fridgian Joiner (Q7); every other engine ruling and audit fix assigned to 91-09, one pin per row
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 91-10-PLAN.md — TEXT-01 for every race and sub-class row (+/− to hit, d20 ranges, "can always parley with"), the blurb guard (every trait anchored in its blurb), the engine-scan guard, the audit closed with a pin per row
 **UI hint**: yes
 
 ### Phase 91.1: Value Review: Races, Sub-classes & Abilities (INSERTED)
