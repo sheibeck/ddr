@@ -6329,3 +6329,102 @@ serialized field).
 
 **Nothing else moved.** `DRAW_INVENTORY` is unmoved (the bot and the panel add no
 draw site); no other fixture, save fixture or pin was re-recorded.
+
+### Phase 89 plan 08: the audit's engine fixes and rulings (ITEM-01, ITEM-06)
+
+Plan 89-08, base `ca96591d` (gate 8,567 tests, 8,565 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rulings built (docs/ITEM-AUDIT.md `## Rulings`, user 2026-09-30).**
+
+- **Q1 (floor-12 limits off, one depth-rising resist for every item effect a
+  foe can resist).** The user's words: "rising resists on higher floors should
+  apply to ALL spells and spell-like effects (staves included) ... remove the
+  floor-12 special effects only." Built for the Amulet of Stone, Oak Staff,
+  Cedar Staff, Birch Staff, Walnut Staff and (uniformly) the Pine Staff's fire:
+  one resist roll per reached foe on `engine/derived.js#risingResistFaces`
+  (the foe's half-intel faces `a` and the floor's faces `c`, folded into the
+  old two-roll odds as `round(a + c - a*c/20)`, cap 19), rolled by
+  `engine/combat.js#foeResistsEffect`. A foe that fails it is stoned outright
+  (stone items), asleep for the fight (Cedar gas, 99), frozen for its d4
+  (Birch, via `freezeFoe`), weakened (Walnut, via `roomWeakenResists`): no
+  three-round cap, no hold, no extra control resist, at any depth.
+- **Q4 A (Joiner armour repair).** One store line per party member whose worn
+  armour is hurt, `Repair <name>'s <armour>` at `priceFor(armour cost, hero
+  race, hero sub) / 10` per point, `STORE_EFFECTS.repairArmor` with `{ member,
+  name }` mending that sheet; a line whose Joiner left refuses before any
+  wilmst moves.
+- **Q5 A (cures).** Each cure potion clears only its own kind; the wrong kind,
+  or none, is refused (`useRefused nothingToCure`) and the potion kept. (The
+  plan text said "spent and says so"; the recorded ruling, which wins, says
+  refused and kept.)
+- **Q6 B (Walnut Staff).** Casts the full Weaken: half damage and
+  `combat.foeToHitPenalty = 3`, for the whole fight at every depth.
+
+**The predictor.** (a) parity fixtures: none uses an item effect, a cure
+potion, a party in a store or a floor past 12, and at or below floor 12 the
+rising resist IS the half-intel resist on the same derived stream key, so
+zero drift; (b) bot state pins: a pinned run would move only if it used a
+staff or amulet on floor 13 or deeper (the pinned runs end on floors 3 to 5),
+drank a cure potion against the wrong affliction (the bot never drinks
+one), or cast Freeze or Weaken at floor 13 or deeper; a Joiner repair line
+adds a stock line the bot never buys (it picks lines by `effectId`), draws
+nothing, and does not move any other line's index it reads; (c) the save
+fixture's continuation hash (no new serialized field; the store line's
+`{ member, name }` param rides an existing plain-object param); (d) unit pins
+that assert the floor-20 control resist, hold or three-round cap on the
+shared tails and the five items, and the cure success rows with no
+affliction.
+
+**The live scan (measured with the change).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt`, the comparables and
+   `docs/narrative-pass/corpus-base.json` untouched.
+2. **Bot state pins: 0 of 8 moved.** `node --test
+   test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js`
+   passes unchanged (13 / 13). No pin was re-recorded and `roll-high-baseline.mjs
+   save` was not run.
+3. **Main-rng draws: none added, removed or reordered.** The rising resist is
+   on the `spellResist` derived stream (same key as `foeSpellResistCheck`); the
+   one d20 is shared through `resistRollFaces`. What the ruling removed are
+   derived-stream rolls (the second `controlResist` roll) and holds, never main
+   draws: the Birch Staff's per-foe `rng.d(4)` and every kill's draws stay where
+   they were. The Walnut Staff draws nothing new (no timer, no duration die).
+   `DRAW_INVENTORY` is unmoved (`resistRoll`'s `rollCheck` moved into
+   `resistRollFaces`: still one).
+4. **Unit pins moved (before -> after), each re-pinned to the new rule:**
+   - `control-spells-depth.test.js` (RULES-18 control rows; every floor-12 digest
+     row unchanged, including the Walnut Staff's): Freeze (C1) resisted, Weaken
+     (C14), main-draw parity (Freeze and Weaken rows), scroll of Freeze (forced
+     outcomes now found against `foeRisingResistCheck`), Birch (C4), Cedar (C12),
+     Oak / Amulet (C6), Walnut (C16). Before: a floor-20 resist was a
+     `controlResisted` + an Unmoved mark after an intel resist; a landed Oak or
+     Amulet stone was a three-round hold (foe alive, not named by `foeStoned`);
+     Cedar gas slept 3 rounds; the Walnut staff started a three-round
+     `spell:weaken` timer that faded; Weaken's room resist marked every live foe
+     Unmoved. After: one `spellResisted` (with `depthFaces`), no `controlResisted`,
+     no Unmoved mark; a landed stone kills (`foeStoned` names it); Cedar gas
+     sleeps 99; the Walnut staff sets `weakened` and `foeToHitPenalty` 3 with no
+     timer and no fade; Weaken's room resist is each foe's own.
+   - `control-at-depth.test.js`: Joiner Freeze (C2) landed and resisted, Joiner
+     Weaken (C15): the same move, through the Joiner's caster key.
+   - `freeze-rule.test.js`: "past the knee the RULES-18 control resist still
+     applies" -> "the one depth-rising resist applies": a resisted floor-20 Freeze
+     is one `spellResisted { freeze: true, depthFaces: 8 }`, no `f.resisted`.
+   - `usable-features-audit.test.js`: the Cure Poison / Cure Disease success rows
+     now carry the affliction they cure (before: no affliction, success); four
+     new refusal rows per cure potion (no affliction, the other kind; outside and
+     inside a fight) expect `useRefused nothingToCure`.
+   - `control-at-depth-rules.test.js`: `items.js#useItem` joins the audited
+     exemptions (X9): it no longer calls `resistControl`; `docs/ROLL-LEDGER.md`
+     gains the X9 row and the Phase 89 plan 08 section.
+5. `docs/USABLE-FEATURES-AUDIT.md` gains the `nothingToCure` reason and the two
+   cure rows' new outcomes. The narrative review's 583 rows and
+   `node tools/narrative-review.mjs --check` are unchanged (no synthetic corpus
+   event carries the new reason, `depthFaces` or a Joiner repair refusal), so no
+   `why/89-08.json` ledger file exists (the 89-04 precedent).
+
+**Nothing else moved.** No new serialized field (the Joiner repair line's param
+is `{ member, name }` on an existing plain-object `effectParams`; `sanitizeStore`
+accepts it unchanged), so the three `*Comparable()` functions need no carve-out.
