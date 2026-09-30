@@ -6174,3 +6174,95 @@ load, ticks, heal-over-time, Q3) and `joiner-item-lines.test.js` (62 tests: both
 surfaces for every Joiner event and refusal, the hero forms, bare payloads).
 
 No other fixture, save, golden or state pin was re-recorded.
+
+### Phase 89 plan 06: Joiners use their items on their own turn (ITEM-07)
+
+Plan 89-06, base `859a8d1f` (gate 8,480 tests, 8,478 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (CONTEXT "Joiners use their items and soak hits", user 2026-09-30:
+"let joiners use items they have ... Just like players.").** "In combat
+(automatic, on the Joiner's turn): a Joiner at or below 1/3 of its HP drinks one
+of its own healing potions instead of swinging (if it has any); in round 1 it
+uses a ready worn item's timed effect. Mirrors the existing class policy in
+engine/combat.js#pickMemberAbility." Built in `alliesTurn` for a classed Joiner,
+before the class policy: (1) round 1: `pickMemberItem` (the first ready worn item
+of a `MEMBER_COMBAT_KINDS` kind, never a leader kind, not already live) is used
+through `memberUseWorn` as a FREE use, then the turn goes on; (2) at or below one
+third of its HP (`wp * 3 <= maxWP`) with potions left, `memberDrinkPotion`
+replaces the turn (no swing, cast or ability); (3) a Joiner with its own live
+haste (the Cloak of Speed) swings twice on a plain strike, as the hero's does
+(`playerStrike`'s `attacks = max(attacks, 2)`), the second only while the target
+stands; casts and abilities stay single. The decisions draw nothing (the potion
+and a Pilfer fumble are derived streams inside `items.js`). Chips: a Joiner's
+live, armed and cooling item effects show like the hero's (`liveItemChips`,
+`itemCooldownChips` shared with `conditionsOf`; `memberConditionsOf` reports
+them anywhere), a read-only change.
+
+**The predictor.** (a) parity fixtures: none has a party, zero drift; (b) the
+bot state pins where a pinned run fights with a Joiner that wears a timed-effect
+item, carries potions below a third of its HP, or has Speed; (c) the save
+fixture's continuation hash (a saved Joiner in a fight), predicted unmoved
+because the fixture's Joiner wears and carries nothing the policy uses; (d) the
+hero-conditions source scan (two helpers now hold keys that used to sit inside
+`conditionsOf`); (e) bot-played unit tests whose outcome depends on a Joiner
+surviving (the TERR-02 water test); (f) the comparables, unmoved (no new
+serialized field, `state.party` stripped whole).
+
+**The live scan (measured with the change).**
+
+1. `node tools/fixture-inventory.mjs --json` read: no parity scenario lists a
+   Joiner.
+2. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt`, `test/parity/harness/comparables.js`,
+   `tools/lib/event-variants.mjs` and `docs/narrative-pass/corpus-base.json` are
+   untouched.
+3. `roll-high-state-pins.test.js`: **three labels moved** (declared below), five
+   byte-identical. `roll-high-save-compat.test.js`: **unmoved** (13 / 13 with the
+   state pins). `roll-high-baseline.mjs save` was not run; the three moved pins
+   were pasted by hand from `node tools/roll-high-baseline.mjs pins` (hashed
+   identically twice).
+4. `conditionsOf` differential: the pre-change `conditionsOf` (from the base
+   commit) and the new one, compared over 4,000 pseudo-random hero states (every
+   activation key live or cooling at random, `halfNext`, `strengthBoost`, four
+   races, in and out of a fight): **identical** for all 4,000.
+5. `node tools/narrative-review.mjs` then `--check`: in sync (no event, line or
+   ledger key was added; every line this plan causes already exists from 89-05).
+
+**Moved state pins (before -> after, first divergence traced).** A per-step
+state-hash trace of each label against the base tree (`git archive 859a8d1f`)
+finds the first divergence exactly at the first new Joiner item line:
+
+| Label | Before | After | First divergence |
+|---|---|---|---|
+| `solo-magicuser-sorcerer` | 400 / alive / 5, `e457e2c1...` | 400 / alive / 4, `992002f4...` | bot step 355: Cedric Thorne (Cutthroat) puts on his Cloak of Speed in round 1 against a Skeleton and Google (`itemUsed`, `itemEffectStarted`); his Hamstring follows |
+| `party-1` | 372 / dead / 3, `978f3eb0...` | 400 / alive / 3, `a2bb10bc...` | bot step 230: Aldric Corrin at a third of his HP or less drinks a potion against Hair (`memberPotionDrunk` 13) where the base had him swing and go down |
+| `party-fighter-knight` | 400 / alive / 4, `ba93cb59...` | 400 / alive / 4, `27bca013...` | bot step 257: Hilda Stonecut drinks her last potion against Dante where the base used Second Wind |
+
+The main rng is untouched up to each divergence (the policy is pure; the potion
+roll is the derived stream `memberPotion`), so every step before the divergence
+matches the base for all three. The other five labels (`solo-1`, `solo-2`,
+`solo-thief-pilfer`, `deep-8`, `deep-14`) are byte-identical.
+
+**Unit pins moved (before -> after).**
+
+- `test/unit/hero-conditions.test.js` ("table: exactly one entry per descriptor
+  key..."): the emittable-key scan read the literal keys of `conditionsOf`,
+  `liveAbilityChips` and `memberConditionsOf` -> it also reads `liveItemChips`
+  (`flight`) and `itemCooldownChips` (`itemCooldown`), the two helpers those keys
+  moved into. The table itself and every hero pin are unchanged.
+- `test/unit/tuning-bot.test.js` ("Phase 41 (TERR-02): the bot paths across
+  water and never stalls"): seeds `[1, 4, 5]` -> `[1, 5, 6]`. Seed 4 died at
+  action 894 at the base; with its Joiner now drinking potions and using its
+  Cloak the run survives to depth 8, where the fair bot's camp gate (hero's
+  appetite only; `makeCamp` refuses on the party's, the known seed-55434 stall
+  documented in `tools/lib/days-farm.mjs`) repeats `campFailed` to `maxActions`
+  (1,500 and 6,000 both measured). That is a fair-bot policy matter, not a
+  water-routing stall, so the test keeps its invariant on seeds that resolve:
+  seed 6 measured at identity dials: dies at action 322 and wades. The bot's
+  camp gate is left unchanged (a Phase 92 bot-pass call).
+
+**Nothing else moved.** `DRAW_INVENTORY` is unmoved (the policy adds no draw
+site: `memberDrinkPotion` and `memberUseWorn` were counted in 89-05);
+`test/parity/prototype-master.js.txt` untouched; no other fixture, save fixture
+or pin was re-recorded.

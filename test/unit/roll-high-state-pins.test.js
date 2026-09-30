@@ -270,8 +270,30 @@ const PINNED = {
   // The other seven labels re-measured byte-identical. Only this label was
   // pasted, by hand, from `node tools/roll-high-baseline.mjs pins` (hashed
   // identically twice); `save` was never run.
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "e457e2c1d54be950157272a1eb802b5553aaa12fc3573ed0a2f499c591a17aa5" },
-  "party-1": { actions: 372, dead: true, depth: 3, hash: "978f3eb00bb531625e7e6ea9b46b9207e590227257da93177d009b12a6bb310e" },
+  // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
+  // (Phase 89, Plan 06, 2026-09-30, ITEM-07, the in-fight half: "let joiners
+  // use items they have ... Just like players."): on its own turn a Joiner now
+  // uses its items automatically (engine/combat.js#alliesTurn): a ready worn
+  // item in round 1 as a free use, one of its own potions at or below one
+  // third of its HP INSTEAD of acting, and two swings under its own Speed.
+  // Bisected with a per-step state-hash trace against the base 859a8d1f: the
+  // FIRST divergence of each label is exactly the first new Joiner item line.
+  // solo-magicuser-sorcerer step 355 (Cedric Thorne puts on his Cloak of Speed
+  // in round 1 against a Skeleton and Google: itemUsed, itemEffectStarted);
+  // party-1 step 230 (Aldric Corrin, at a third of his HP or less, drinks a
+  // potion against Hair: memberPotionDrunk 13, instead of the swing that left
+  // him downed at the base); party-fighter-knight step 257 (Hilda Stonecut
+  // drinks her last potion against Dante instead of Second Wind). Every draw
+  // the policy makes is a derived stream, so the main rng is untouched up to
+  // each divergence and the fights run differently from there. Shapes:
+  // solo-magicuser-sorcerer 400/alive/5 -> 400/alive/4; party-1 372/dead/3 ->
+  // 400/alive/3 (the Joiner's potion kept the run alive); party-fighter-knight
+  // 400/alive/4 -> 400/alive/4 (hash only). The other five labels re-measured
+  // byte-identical. Only these three labels were pasted, by hand, from `node
+  // tools/roll-high-baseline.mjs pins` (each hashed identically twice);
+  // `save` was never run.
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "992002f4edb013af107541738a89ebcbf6da7dd1afe8bfd4c914d651f0d7ecf6" },
+  "party-1": { actions: 400, dead: false, depth: 3, hash: "a2bb10bccfbc83ff5d9d8431b7247c1d382b9d3ff8aa3ddf7c346304d5638faa" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -342,7 +364,9 @@ const PINNED = {
   // Regenerated via `node tools/roll-high-baseline.mjs pins`.
   // Re-pinned (Phase 89, Plan 04, ITEM-07): see the block above the
   // "solo-magicuser-sorcerer" entry. 400/alive/3 -> 400/alive/4.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "ba93cb5956dc57ced7942342f1f6f91faca0660580f6e4f137e6aa09fb02a823" },
+  // Re-pinned again (Phase 89, Plan 06, ITEM-07): see the block above the
+  // "solo-magicuser-sorcerer" entry. 400/alive/4 -> 400/alive/4 (hash only).
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "27bca013003f99a9ec9c21cdc744a16bca36627ed6163c4f5eae6b476d6e6aac" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

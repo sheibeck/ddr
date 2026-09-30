@@ -81,10 +81,12 @@ function fnBody(head) {
 
 /** emittableKeys() — every descriptor key the two enumerators can emit: the
  * literal keys in conditionsOf, liveAbilityChips and memberConditionsOf, plus
- * one per live activation kind (the generic item loop; fly shows as flight). */
+ * (Phase 89 plan 06) the two builders both enumerators now share, liveItemChips
+ * (the `flight` key) and itemCooldownChips (`itemCooldown`), plus one per live
+ * activation kind (the generic item loop; fly shows as flight). */
 function emittableKeys() {
   const keys = new Set();
-  for (const head of ["export function conditionsOf(state)", "function liveAbilityChips(timers)", "export function memberConditionsOf(state, partyIdx)"]) {
+  for (const head of ["export function conditionsOf(state)", "function liveItemChips(sheet)", "function itemCooldownChips(sheet)", "function liveAbilityChips(timers)", "export function memberConditionsOf(state, partyIdx)"]) {
     for (const m of fnBody(head).matchAll(/key: "([A-Za-z]+)"/g)) keys.add(m[1]);
   }
   for (const act of Object.values(ACTIVATION_OF)) {
