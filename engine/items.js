@@ -35,9 +35,13 @@ import {
   wieldedStaff,
   heroSize,
   SIZE_DAMAGE_PER_STEP,
+  SOURCE_SLOTS,
+  PARTY_WIDE_ITEM_EFFECTS,
+  sourceSlotItem,
+  effectSourceOf,
 } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
-import { startEffect, startCooldown, isReady, remaining } from "./effects.js";
+import { startEffect, startCooldown, isReady, remaining, endEffectEarly } from "./effects.js";
 import { die } from "./death.js";
 import { derivedRng } from "./rng.js";
 // Circular with engine/combat.js (combat.js imports takeItem/gainWilmst/
@@ -50,6 +54,11 @@ import { derivedRng } from "./rng.js";
 // bookkeeping for stone/fire since killFoe didn't exist yet); now that
 // combat.js owns the real killFoe, useItem calls it for full parity (loot,
 // skill points, checkLevel) instead of the old bookkeeping-only stand-in.
+// Phase 88 (ITEM-02): items.js <-> movement.js is the same runtime-only shape
+// (movement.js imports narrateTimerTransitions/toolIndex from here; items.js
+// calls resolveEtherEnd only inside endSourceEffects, never at module
+// evaluation time).
+import { resolveEtherEnd } from "./movement.js";
 import { killFoe, refuseIfPending, liveFoes, endCombat, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
 // RULES-18 (Phase 75.3): the control-at-depth dials the freeze / gas / stone /
 // weaken cases below read (difficulty.js imports nothing from engine/).
@@ -440,6 +449,80 @@ function refuseGear(state, verb, extra, events) {
 }
 
 /**
+ * endSourceEffects(state, sheet, events, opts) — Phase 88 (ITEM-02): THE one
+ * early-end mechanism for a timed item effect. Every gear-change path (take
+ * off, swap, the Pilfer fumble, and dropItem/sellItem's sweep) calls this
+ * rather than carrying a check of its own.
+ *
+ * A live item effect is linked to the slot it was started from (the record's
+ * `src: { slot, n }`, stamped by applyActivation). This ends every live linked
+ * record on `sheet` whose slot is in `opts.slots` (the slots THIS gear change
+ * touched: an identical copy swapped into the slot still ends the effect, and
+ * wearing an item into the OTHER jewelry slot does not) OR whose slot no
+ * longer holds an item named `src.n` (the sweep: `dropItem`/`sellItem` pass no
+ * slots and only ever catch a record whose item has already left). The hit
+ * record goes through effects.js#endEffectEarly: the use is spent (effect
+ * left + cd becomes the cooldown, so taking it off is never a free reset); a
+ * charged staff's record has no cd, so it is removed, and the charge it cost
+ * stays spent (this function never touches `it.charges` or a `charges:`
+ * record). One `itemEffectEnded { item, kind, slot, why, left, ready,
+ * party?, member? }` is pushed per ended record, in `sheet.timers` insertion
+ * order, AFTER the caller's own gear event. `why` is `opts.why` for a touched
+ * slot, "gone" for a sweep find. `party: true` marks a PARTY_WIDE_ITEM_EFFECTS
+ * item (the Crystal Staff); `member` is the sheet's name when it is not the
+ * hero (`state.c`).
+ *
+ * When an ended record was the hero's Cloak of Ether, the entombment rule
+ * runs through movement.js#resolveEtherEnd (itemEffectEnded, then entombed,
+ * then died); out of rock that is a no-op. `opts.rng` is the caller's main
+ * rng (only an entombment's epitaph pick draws from it); with none a derived
+ * stream is used. A Joiner's sheet never entombs anyone.
+ *
+ * `opts.quiet` ends records without events or entombment (88-02's load-time
+ * reconciliation). Works on ANY character sheet; a null sheet, a sheet with
+ * no timers, an empty slot or a record with no `src` is a silent no-op that
+ * never throws and never creates `sheet.timers`. Idempotent: a second call
+ * finds nothing live to end. Never draws on the main rng except as above.
+ */
+export function endSourceEffects(state, sheet, events = [], opts = {}) {
+  if (!sheet || typeof sheet !== "object") return events;
+  const timers = sheet.timers;
+  if (!timers || typeof timers !== "object" || Array.isArray(timers)) return events;
+  const o = opts && typeof opts === "object" ? opts : {};
+  const slots = Array.isArray(o.slots) ? o.slots : [];
+  const why = o.why ?? "gone";
+  const quiet = o.quiet === true;
+  const hero = !!state && sheet === state.c;
+  let etherEnded = false;
+  for (const id of Object.keys(timers)) {
+    if (!id.startsWith("item:")) continue;
+    const rec = timers[id];
+    if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
+    const src = effectSourceOf(rec);
+    if (!src) continue;
+    const touched = slots.includes(src.slot);
+    if (!touched) {
+      const held = sourceSlotItem(sheet, src.slot);
+      if (held && held.n === src.n) continue;
+    }
+    const key = id.slice("item:".length);
+    const kind = ACTIVATION_OF[key]?.kind ?? null;
+    const ended = endEffectEarly(sheet, id);
+    if (!ended || quiet) continue;
+    const evt = { type: "itemEffectEnded", item: key, kind, slot: src.slot, why: touched ? why : "gone", left: ended.left, ready: ended.ready };
+    if (PARTY_WIDE_ITEM_EFFECTS.includes(key)) evt.party = true;
+    if (state && !hero) evt.member = sheet.name;
+    events.push(evt);
+    if (kind === "ether") etherEnded = true;
+  }
+  if (etherEnded && hero) {
+    const rng = o.rng ?? derivedRng(Number.isInteger(state.rngState) ? state.rngState : 0, "gearEnd", Number.isInteger(state.acts) ? state.acts : 0);
+    resolveEtherEnd(state, rng, events, o.now ?? Date.now);
+  }
+  return events;
+}
+
+/**
  * wearItem(state, it, slot, events) — Phase 37 (GEAR-03): assigns `it`
  * (the SAME object, never cloned) into `c.worn[slot]` and pushes
  * `{ type: "itemEquipped", item: it, slot }`. Deliberately does NOT apply
@@ -453,9 +536,11 @@ function refuseGear(state, verb, extra, events) {
  * `refuseGear`) or store-only (`takeItem`, which never runs mid-fight — the
  * store screen closes before a fight starts).
  */
-export function wearItem(state, it, slot, events = []) {
+export function wearItem(state, it, slot, events = [], rng = null) {
   state.c.worn[slot] = it;
   events.push({ type: "itemEquipped", item: it, slot });
+  // Phase 88 (ITEM-02): whatever was linked to this slot ends ("swap").
+  endSourceEffects(state, state.c, events, { slots: [slot], why: "swap", rng });
   return events;
 }
 
@@ -504,6 +589,8 @@ export function takeItem(state, it, events = []) {
     // never treats a weapon as an upgrade while a staff is wielded, so this
     // branch is never actually reached mid-wield in play.
     delete c.staff;
+    // Phase 88 (ITEM-02): the weapon slot changed hands.
+    endSourceEffects(state, c, events, { slots: ["weapon"], why: "swap" });
     return events;
   }
 
@@ -788,6 +875,10 @@ export function dropItem(state, i, events = []) {
   if (!it) return events;
   c.items.splice(i, 1);
   events.push({ type: "itemDropped", item: it });
+  // Phase 88 (ITEM-02): the sweep (no slots). A drop only ever addresses a bag
+  // row, so a slotted source is never touched here; the helper still runs so
+  // every gear-change path ends a stale linked effect the same way.
+  endSourceEffects(state, c, events);
   return events;
 }
 
@@ -799,7 +890,9 @@ export function dropItem(state, i, events = []) {
  * The equip is a DIRECT SWAP: the previously-worn piece drops back into the
  * freed bag slot (no net slot change); if the character wore nothing, the
  * item is simply removed from the bag (net −1). No-op on an out-of-range
- * index. Pure, no rng.
+ * index. No rng draw unless an early-ended Cloak of Ether entombs the hero
+ * (Phase 88, ITEM-02: a swap into a source slot ends the effect linked to it
+ * through endSourceEffects; `rng`/`now` reach an entombment's death).
  *
  * Phase 28 (ARMOR-03): a piece that has been WORN carries `left`/`patches`
  * (set by wornArmorItem above) and comes back at that same durability — a
@@ -815,7 +908,7 @@ export function dropItem(state, i, events = []) {
  * below. It has no effect on the weapon/armor branches above (those stay a
  * single-key direct swap, unchanged).
  */
-export function equipItem(state, i, events = [], target = null) {
+export function equipItem(state, i, events = [], target = null, rng = null, now = Date.now) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
@@ -839,6 +932,7 @@ export function equipItem(state, i, events = [], target = null) {
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    endSourceEffects(state, c, events, { slots: ["weapon"], why: "swap", rng, now });
     return events;
   }
 
@@ -864,6 +958,7 @@ export function equipItem(state, i, events = [], target = null) {
     if (worn) c.items[i] = worn;
     else c.items.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon", ...(worn ? { replaced: worn } : {}) });
+    endSourceEffects(state, c, events, { slots: ["weapon"], why: "swap", rng, now });
     return events;
   }
 
@@ -935,6 +1030,7 @@ export function equipItem(state, i, events = [], target = null) {
     const evt = { type: "itemEquipped", item: it, slot: key };
     if (worn) evt.replaced = worn;
     events.push(evt);
+    endSourceEffects(state, c, events, { slots: [key], why: "swap", rng, now });
     return events;
   }
 
@@ -947,7 +1043,11 @@ export function equipItem(state, i, events = [], target = null) {
  * unequipSlot(state, slot, events) — move the equipped weapon/armor back into
  * the bag (ECON-05), leaving the slot bare (a weapon → bare-handed "Fists",
  * armor → "Nothing"). Needs a free bag slot; on a FULL bag pushes `bagFull` and
- * does nothing. No-op when the slot is already bare. Pure, no rng.
+ * does nothing. No-op when the slot is already bare. No rng draw unless the
+ * Cloak of Ether comes off in rock (Phase 88, ITEM-02: a source slot
+ * (SOURCE_SLOTS, the weapon slot for a wielded staff included) ends the effect
+ * linked to it through endSourceEffects, "off"; `rng`/`now` reach the
+ * entombment's death).
  *
  * Phase 28 (ARMOR-03): a DESTROYED piece (c.armorWP <= 0) needs no slot and
  * leaves no bag copy — wornArmorItem's null-guard already returns null for
@@ -959,7 +1059,7 @@ export function equipItem(state, i, events = [], target = null) {
  * (set true) on the existing itemUnequipped event (Phase 25 additive-payload
  * pattern — not a new event type) so the Oracle can narrate it.
  */
-export function unequipSlot(state, slot, events = []) {
+export function unequipSlot(state, slot, events = [], rng = null, now = Date.now) {
   if (refuseGear(state, "unequipSlot", { slot }, events)) return events;
   const c = state.c;
   const worn =
@@ -1013,6 +1113,7 @@ export function unequipSlot(state, slot, events = []) {
     delete c.worn[slot];
   }
   events.push({ type: "itemUnequipped", item: worn, slot });
+  if (SOURCE_SLOTS.includes(slot)) endSourceEffects(state, c, events, { slots: [slot], why: "off", rng, now });
   return events;
 }
 
@@ -1107,6 +1208,7 @@ export function takeLoot(state, i, equip = false, events = []) {
     delete c.staff;
     pile.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon" });
+    endSourceEffects(state, c, events, { slots: ["weapon"], why: "swap" });
     return events;
   }
 
@@ -1128,6 +1230,7 @@ export function takeLoot(state, i, equip = false, events = []) {
     c.magicWpn = 0;
     pile.splice(i, 1);
     events.push({ type: "itemEquipped", item: it, slot: "weapon", ...(worn ? { replaced: worn } : {}) });
+    endSourceEffects(state, c, events, { slots: ["weapon"], why: "swap" });
     return events;
   }
 
@@ -1268,8 +1371,15 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * character's own `heroSize(c).name` AFTER the record starts — the
  * resulting total, race + every live item step), `step` (this ITEM's own
  * step, always ±1) and `sizeDmg` (SIZE_DAMAGE_PER_STEP × that item step).
+ *
+ * Phase 88 (ITEM-02): `slot` is the source slot the use came through (the
+ * ref's `{ slot }`: cloak, jewelry1, jewelry2, or "weapon" for a wielded
+ * staff), null for a bag use. A started effect record is stamped with
+ * `src: { slot, n }` (endSourceEffects ends it when the item leaves that slot)
+ * only when `slot` is a SOURCE_SLOTS key and the item is not used up on use:
+ * potions and the Torch are consumed, so their effects run their course.
  */
-function applyActivation(state, it, rng, events) {
+function applyActivation(state, it, rng, events, slot = null) {
   const c = state.c;
   const act = activationFor(it);
   if (!act) return;
@@ -1282,7 +1392,10 @@ function applyActivation(state, it, rng, events) {
   const cadence = act.cadence ?? "squares";
   if (left > 0) {
     const opts = act.cd ? { [cadence]: left, cd: act.cd } : { [cadence]: left };
-    startEffect(c, itemTimerId(it), opts);
+    const rec = startEffect(c, itemTimerId(it), opts);
+    if (rec && SOURCE_SLOTS.includes(slot) && it.kind !== "potion" && it.uses !== 1 && it.kind !== "tool") {
+      rec.src = { slot, n: it.n };
+    }
     const started = { type: "itemEffectStarted", item: it.n, kind: act.kind, left, cadence };
     if (act.kind === "might" && typeof act.might === "number") started.might = act.might;
     if (act.eff && typeof act.eff.size === "number") {
@@ -1549,7 +1662,9 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
         ...rollFields(chk),
         dmg,
       });
-      if (c.wp <= 0) die(state, "pilferFumble", it.n, rng, events, now);
+      // Phase 88 (ITEM-02): the destroyed item's linked effect ends with it.
+      endSourceEffects(state, c, events, { slots: slot ? [slot] : [], why: "destroyed", rng, now });
+      if (c.wp <= 0 && !state.dead) die(state, "pilferFumble", it.n, rng, events, now);
       return events;
     }
   }
@@ -1791,7 +1906,7 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
   // effect-or-cooldown c.timers record. A fizzled use (the default branch
   // above) skips it entirely — nothing to start for a kind this switch does
   // not recognize.
-  if (!fizzled) applyActivation(state, it, rng, events);
+  if (!fizzled) applyActivation(state, it, rng, events, slot || null);
 
   if (it.kind === "potion" || it.uses === 1 || it.kind === "tool") {
     if (slot) delete c.worn[slot];

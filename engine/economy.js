@@ -30,6 +30,7 @@ import {
   armorRefusalReason,
   weaponUpgradeDelta,
   armorUpgradeDelta,
+  endSourceEffects,
 } from "./items.js";
 import { clampCarry, slotItems, hasTool, gearCompareParts, wieldedStaff } from "./derived.js";
 import { difficultyCurve } from "./difficulty.js";
@@ -183,7 +184,9 @@ export function sellPriceFor(item, race, sub = null) {
 
 /**
  * sellItem(state, i, events) — sell carried item `i` at a store (ECON-06). Pure,
- * NO rng: splices c.items[i] (freeing a slot), credits c.gold by
+ * NO rng draw of its own (Phase 88, ITEM-02: the ended-effect sweep below runs
+ * after the sale; a bag row is never a source slot, so it ends nothing on a
+ * sane state): splices c.items[i] (freeing a slot), credits c.gold by
  * sellPriceFor(item, race), then runs the Phase-12 GATED clamp (clampCarry — a
  * no-op when the character carries no bag) so the credited gold never exceeds
  * the bag's wilmst cap. No-op on an out-of-range index. Pushes `itemSold`.
@@ -200,6 +203,10 @@ export function sellItem(state, i, events = []) {
   // and is a COMPLETE no-op for a bag-less (parity/test) character.
   clampCarry(c);
   events.push({ type: "itemSold", item: it, price });
+  // Phase 88 (ITEM-02): the sweep (no slots). A sale only addresses a bag row,
+  // so a slotted source is never touched; the helper still runs so every
+  // gear-change path ends a stale linked effect the same way.
+  endSourceEffects(state, c, events);
   return events;
 }
 

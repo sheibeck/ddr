@@ -650,6 +650,41 @@ export function liveItemEffects(c) {
 }
 
 /**
+ * SOURCE_SLOTS — Phase 88 (ITEM-02): the slots a timed item effect can be
+ * started from and is linked to: the three worn keys (WORN_SLOTS) and the
+ * weapon slot, where a Magic User wields a staff. Order is the stable one.
+ */
+export const SOURCE_SLOTS = Object.freeze([...WORN_SLOTS, "weapon"]);
+
+/**
+ * sourceSlotItem(sheet, slot) — Phase 88 (ITEM-02): the item a source slot
+ * holds RIGHT NOW on any character sheet (hero or Joiner): the wielded staff
+ * for "weapon" (wieldedStaff: `c.staff` when it is the wielded weapon), the
+ * worn item for a worn key. `null` for an empty slot, a non-source slot or a
+ * missing sheet. The one place a slot's current item is read. Pure.
+ */
+export function sourceSlotItem(sheet, slot) {
+  if (!sheet || typeof sheet !== "object") return null;
+  if (slot === "weapon") return wieldedStaff(sheet);
+  if (!WORN_SLOTS.includes(slot)) return null;
+  const w = sheet.worn;
+  return w && typeof w === "object" && w[slot] ? w[slot] : null;
+}
+
+/**
+ * effectSourceOf(rec) — Phase 88 (ITEM-02): the validated `{ slot, n }` link
+ * on an item-effect timer record, or `null` (no link, a malformed one, an
+ * unknown slot, an empty name). Never throws on a hostile value. Pure.
+ */
+export function effectSourceOf(rec) {
+  const s = rec && typeof rec === "object" ? rec.src : null;
+  if (!s || typeof s !== "object" || Array.isArray(s)) return null;
+  if (!SOURCE_SLOTS.includes(s.slot)) return null;
+  if (typeof s.n !== "string" || s.n.length === 0) return null;
+  return { slot: s.slot, n: s.n };
+}
+
+/**
  * itemEffectActive(c, kind) — Phase 39 (GEAR-02): is ANY live item effect of
  * activation `kind` (e.g. `"haste"`, `"invis"`, `"ether"`, `"acute"`, `"fly"`)
  * currently active on `c`? The one read every retired-counter consumer

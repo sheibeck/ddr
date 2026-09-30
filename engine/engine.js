@@ -178,13 +178,16 @@ export function applyAction(state, action) {
       break;
     case "equipItem":
       // ECON-05 (Phase 13): equip carried weapon/armor `i` (direct swap; illegal
-      // combos rejected). Pure (no rng). 260918-wy1: forwards the optional
-      // targeted jewelry-swap key.
-      equipItem(next, action.i, events, action.slot ?? null);
+      // combos rejected). No rng draw except an entombment's epitaph pick
+      // (Phase 88: a swap can end a Cloak of Ether in rock). 260918-wy1:
+      // forwards the optional targeted jewelry-swap key.
+      equipItem(next, action.i, events, action.slot ?? null, rng);
       break;
     case "unequipSlot":
-      // ECON-05 (Phase 13): return the equipped weapon/armor to the bag. Pure (no rng).
-      unequipSlot(next, action.slot, events);
+      // ECON-05 (Phase 13): return the equipped weapon/armor to the bag. No rng
+      // draw except an entombment's epitaph pick (Phase 88: taking off a Cloak
+      // of Ether in rock entombs the hero).
+      unequipSlot(next, action.slot, events, rng);
       break;
     case "takeLoot":
       // Phase 29 (LOOT-02): accept pending drop `i` (stow, or equip-now when

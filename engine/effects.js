@@ -43,6 +43,14 @@
 // call), the key stays for the life of the character — an empty map (`{}`)
 // is a legal, expected steady state, exactly like `f.cd` never disappearing
 // once a foe has cast an ability with a cooldown.
+//
+// Phase 88 (ITEM-02): a consumer may annotate an effect record with its own
+// fields (engine/items.js stamps `src: { slot, n }` on an item effect started
+// from a source slot). tick() never reads them, and the effect-to-cooldown
+// flip DROPS every field outside TIMER_KEYS: the link belongs to the effect
+// phase only, so a cooling record is byte-identical to the pre-link shape.
+// endEffectEarly(c, id) is the one early end: the effect becomes the spent
+// cooldown (effect squares left + cd), or is deleted when it has no cd.
 
 /** isPlainObject(v) — true for a non-null, non-array object. */
 function isPlainObject(v) {
@@ -53,6 +61,10 @@ function isPlainObject(v) {
 function isPosInt(v) {
   return Number.isInteger(v) && v > 0;
 }
+
+/** TIMER_KEYS — the four fields the timer shape itself owns. Anything else
+ * on a record is a consumer annotation that the effect-to-cooldown flip drops. */
+const TIMER_KEYS = Object.freeze(new Set(["cadence", "left", "cd", "phase"]));
 
 /**
  * durationOf(opts) — reads exactly one of `opts.rounds` / `opts.squares`
@@ -113,6 +125,7 @@ function tick(c, cadence, n) {
       if (isPosInt(rec.cd)) {
         rec.phase = "cooldown";
         rec.left = rec.cd;
+        for (const k of Object.keys(rec)) if (!TIMER_KEYS.has(k)) delete rec[k];
         transitions.push({ id, from: "effect", to: "cooldown" });
       } else {
         delete c.timers[id];
@@ -168,6 +181,32 @@ export function startCooldown(c, id, opts) {
   const record = { cadence: dur.cadence, left: dur.left, phase: "cooldown" };
   c.timers[id] = record;
   return record;
+}
+
+/**
+ * endEffectEarly(c, id) — Phase 88 (ITEM-02). Ends a LIVE effect record
+ * before it runs out. A record with a positive-integer `cd` becomes the spent
+ * cooldown `{ cadence, left: (effect left) + cd, phase: "cooldown" }` (the
+ * item is ready again exactly when it would have been had the effect run its
+ * full length, and a consumer annotation is dropped like the natural flip
+ * drops it); a record with no `cd` is deleted. Returns `{ id, left, ready }`
+ * (`left` the effect ticks cut short, `ready` the ticks until the item is
+ * ready, 0 when the record was deleted), or `null` and touches nothing when
+ * there is no live effect record for `id` (no map, no record, a cooldown, a
+ * non-object). Never throws, never creates `c.timers`.
+ */
+export function endEffectEarly(c, id) {
+  if (!isPlainObject(c) || !isPlainObject(c.timers)) return null;
+  const rec = c.timers[id];
+  if (!isPlainObject(rec) || rec.phase !== "effect") return null;
+  const left = typeof rec.left === "number" && rec.left > 0 ? rec.left : 0;
+  if (isPosInt(rec.cd)) {
+    const ready = left + rec.cd;
+    c.timers[id] = { cadence: rec.cadence, left: ready, phase: "cooldown" };
+    return { id, left, ready };
+  }
+  delete c.timers[id];
+  return { id, left, ready: 0 };
 }
 
 /**

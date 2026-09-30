@@ -190,7 +190,11 @@ test("useItem on a worn Cloak of Speed starts an effect record and refuses a sec
     events.find((e) => e.type === "itemEffectStarted"),
     { type: "itemEffectStarted", item: "Cloak of Speed", kind: "haste", left: 50, cadence: "squares" },
   );
-  assert.deepStrictEqual(state.c.timers["item:Cloak of Speed"], { cadence: "squares", left: 50, cd: 50, phase: "effect" });
+  // Phase 88 (ITEM-02): a worn use is linked to its slot. Before:
+  // { cadence, left: 50, cd: 50, phase } with no src.
+  assert.deepStrictEqual(state.c.timers["item:Cloak of Speed"], {
+    cadence: "squares", left: 50, cd: 50, phase: "effect", src: { slot: "cloak", n: "Cloak of Speed" },
+  });
 
   const events2 = useItem(state, { slot: "cloak" }, fakeRng([]), []);
   assert.deepStrictEqual(events2, [{ type: "useRefused", item: cloak, reason: "cooldown", left: 50, phase: "effect" }]);
@@ -246,7 +250,11 @@ test("useItem on a Crystal Staff spends a charge, starts the recharge cooldown i
     events.find((e) => e.type === "itemEffectStarted"),
     { type: "itemEffectStarted", item: "Crystal Staff", kind: "invis", left: 15, cadence: "squares" },
   );
-  assert.deepStrictEqual(state.c.timers["item:Crystal Staff"], { cadence: "squares", left: 15, phase: "effect" });
+  // Phase 88 (ITEM-02): the weapon slot is a source slot, so the record now
+  // also carries its source. Before: { cadence, left: 15, phase }.
+  assert.deepStrictEqual(state.c.timers["item:Crystal Staff"], {
+    cadence: "squares", left: 15, phase: "effect", src: { slot: "weapon", n: "Crystal Staff" },
+  });
 });
 
 test("rollStaff assigns a charge pool from content (no every field) with the same single rng.d(8) draw", () => {
