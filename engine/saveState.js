@@ -14,7 +14,7 @@
 
 import { STATE_VERSION } from "./state.js";
 import { makeRng } from "./rng.js";
-import { clearRoundTimers, startEffect, startCooldown } from "./effects.js";
+import { clearRoundTimers, startEffect, startCooldown, endEffectEarly } from "./effects.js";
 import {
   reconcileWorn,
   activationFor,
@@ -24,11 +24,15 @@ import {
   WORN_SLOTS,
   clampCarry,
   freeWornKey,
+  effectSourceOf,
+  sourceSlotItem,
+  SOURCE_SLOTS,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { DIRV } from "./movement.js";
 import { STORE_EFFECTS } from "./economy.js";
-import { ACTIVATION_OF, SPELLS, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
+import { endSourceEffects } from "./items.js";
+import { ACTIVATION_OF, SLOT_OF, SPELLS, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -511,6 +515,58 @@ function sanitizeStaff(c) {
   return c;
 }
 
+/**
+ * reconcileItemSources(sheet) — Phase 88 (ITEM-02): THE one load-time
+ * reconciliation of the effect-source link (CONTEXT: "one mechanism: a single
+ * engine helper ends the effects linked to a slot, called from every gear-change
+ * path, plus one load-time reconciliation"). Runs on the hero's sheet and on
+ * every Joiner sheet, AFTER `reconcileWorn` (a legacy save's worn map is built
+ * there) and after `sanitizeStaff` (which un-wields a stale staff), so both see
+ * the settled gear.
+ *
+ * The old-save rule (CONTEXT): "on load, a live item effect with no recorded
+ * source is linked to the matching worn item if one is there; otherwise it ends
+ * quietly (tolerant load, no event)." A LIVE (`phase: "effect"`, `left > 0`)
+ * `item:<key>` record whose key is a source-slot item (a worn-family row in
+ * SLOT_OF, or a staff name) and whose `src` is missing, malformed (a string, an
+ * array, an unknown slot, an empty name: effectSourceOf reads it as none) or
+ * names another item is linked to the FIRST SOURCE_SLOTS key (jewelry1,
+ * jewelry2, cloak, weapon) whose current item has that activation key. When no
+ * slot holds it the record ends through effects.js#endEffectEarly: the spent
+ * use (`left + cd` as a cooldown, so a load never hands an item back sooner than
+ * play would), or, for the Crystal Staff's cd-less record, removal (its charges
+ * and its `charges:` recharge record are never touched). A wielded Crystal Staff
+ * (the weapon slot, user 2026-09-30) links the same way, so its party-wide read
+ * follows. Then engine/items.js#endSourceEffects ends, quietly, every linked
+ * record whose recorded slot no longer holds that item (a tampered or stale
+ * source, a staff `sanitizeStaff` un-wielded): the same slot rule as play, no
+ * second one.
+ *
+ * Potions, the Torch and every cooldown-phase record are never touched. It only
+ * ever links or removes, never grants, extends or revives an effect. Pushes no
+ * event, draws no rng, is idempotent, never throws on a hostile value, and never
+ * creates `timers` or `worn`. Mutates and returns `sheet`.
+ */
+export function reconcileItemSources(sheet) {
+  const plain = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+  if (!plain(sheet) || !plain(sheet.timers)) return sheet;
+  for (const id of Object.keys(sheet.timers)) {
+    if (!id.startsWith("item:")) continue;
+    const rec = sheet.timers[id];
+    if (!plain(rec) || rec.phase !== "effect" || !(rec.left > 0)) continue;
+    const key = id.slice("item:".length);
+    if (SLOT_OF[key] === undefined && !STAFF_NAMES.includes(key)) continue;
+    const src = effectSourceOf(rec);
+    if (src && src.n === key) continue;
+    delete rec.src;
+    const slot = SOURCE_SLOTS.find((s) => activationKeyFor(sourceSlotItem(sheet, s)) === key);
+    if (slot) rec.src = { slot, n: key };
+    else endEffectEarly(sheet, id);
+  }
+  endSourceEffects(null, sheet, [], { quiet: true });
+  return sheet;
+}
+
 // 260918-wy1 (jewelry-merge, tolerant load): the four pre-wy1 jewelry
 // worn-slot keys, in fold order — ring, then bracelet, then amulet, then
 // helm. This is the ONE place in engine/ those four strings may still
@@ -828,6 +884,9 @@ export function foldLegacyCounters(c, steps) {
  * conditional key: `[]` when nothing was wearable or the save was already
  * migrated, an array of `{ slot, worn, bagged }` entries otherwise.
  *
+ * Phase 88 (ITEM-02): right after reconcileWorn, `reconcileItemSources` links
+ * (or quietly ends) every live item effect on the hero and each Joiner sheet.
+ *
  * @param {string|object} raw
  * @param {{ freshSeed?: number }} [options]
  * @returns {{ ok: true, value: object, wornReport: Array } | { ok: false, reason: string }}
@@ -1001,6 +1060,11 @@ export function validateSave(raw, options = {}) {
   // identical), coalesced to `[]` below. `wornReport` is a return value,
   // never a serialized field — one shape, never a conditional key.
   const wornReport = reconcileWorn(value.c) ?? [];
+  // Phase 88 (ITEM-02): after reconcileWorn (a legacy worn map is built there)
+  // and sanitizeStaff, link or quietly end every live item effect on the hero
+  // and on each Joiner sheet — see reconcileItemSources.
+  reconcileItemSources(value.c);
+  for (const member of value.party) reconcileItemSources(member);
   return { ok: true, value, wornReport };
 }
 
@@ -1019,6 +1083,8 @@ export function validateSave(raw, options = {}) {
  * already has `worn`), one-shot for a direct caller (bypassing validateSave,
  * e.g. a test). The report is discarded — `boot()` reads it from
  * `validateSave`'s own return value instead (`takeBootWornReport`).
+ * Phase 88 (ITEM-02): `reconcileItemSources` then runs on the hero and each
+ * Joiner sheet, exactly as in validateSave (idempotent on its own output).
  *
  * @param {object} obj
  */
@@ -1138,5 +1204,9 @@ export function rehydrate(obj) {
   // The report is discarded — a caller that needs it uses validateSave
   // directly (engineAdapter#boot does exactly that).
   reconcileWorn(state.c);
+  // Phase 88 (ITEM-02): mirrors validateSave — the same link-or-quietly-end
+  // reconciliation for the hero and every Joiner sheet; idempotent after it.
+  reconcileItemSources(state.c);
+  for (const member of state.party) reconcileItemSources(member);
   return state;
 }

@@ -5781,3 +5781,45 @@ staves, so the pinned bot runs were the place to look.
 | `item-activation.test.js`, Cloak of Speed use pin | `{ cadence, left: 50, cd: 50, phase }` → the same plus `src: { slot: "cloak", n: "Cloak of Speed" }` | a worn use is linked to its slot |
 
 No fixture, state pin, save or golden was re-recorded.
+
+### Phase 88 plan 02: effect sources survive save and load (ITEM-02)
+
+Plan 88-02, base `57071921` (gate 8,217 tests, 8,215 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule.** The effect-source link `src { slot, n }` (88-01) persists across
+save, load and relaunch, and `engine/saveState.js#reconcileItemSources` is the
+one load-time reconciliation, run on the hero and every Joiner sheet after
+`reconcileWorn` and `sanitizeStaff` in both load chains (`validateSave`,
+`rehydrate`). A live `item:<name>` record with no (or a malformed) source links
+to the first source slot holding that item (jewelry2 and a wielded Crystal Staff
+included); with none it ends quietly as the spent use (`left + cd`; the Crystal
+Staff's cd-less record is removed, charges untouched). A recorded source whose
+slot no longer holds the item ends the same way through
+`engine/items.js#endSourceEffects` in quiet mode. No event, no rng.
+
+**The predictor.** A replay moves only if it loads a save whose `c.timers` (or a
+party member's) holds a live worn-item or Crystal Staff record: the load would
+then link or end it. The new `src` field itself rides inside `c.timers`, which
+`stripTimersField` removes in `movementComparable`, `combatComparable` and
+`economyComparable` (pinned by `test/unit/item-source-comparables.test.js`; the
+harness doc comment now names the field, no code change).
+
+**The live scan (measured at the base, then with the change).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical to the base
+   (compared against a `git archive` of `57071921` run in a scratch directory).
+   The generated roster block above is not edited.
+2. `node --test "test/parity/**/*.test.js"`: **66 tests, 66 pass, 0 fail**, no
+   carve-out and no declared divergence. `test/parity/prototype-master.js.txt`
+   is untouched; `test/parity/harness/comparables.js` changed by one comment
+   sentence only.
+3. **State pins** (`roll-high-state-pins.test.js`): every label byte-identical.
+   No pinned run loads a save with a live item record.
+4. **The pre-switch save** (`roll-high-save-compat.test.js`): loads, and
+   `expected.hash` is unchanged (it carries no live worn-item record, so the
+   reconciliation touches nothing). The save and its dispatched list were not
+   touched.
+
+**Zero drift.** Nothing was moved, so nothing was re-recorded: no fixture, state
+pin, save, golden or unit pin changed. The 88-02 tests are additions only.
