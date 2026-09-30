@@ -101,7 +101,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. An expanded leaderboard row states the hero's race and sub-class. Long-pressing a row offers "filter by race / sub-class / both", and picking one sets those filters and reloads the board. The long press never also toggles the row.
   5. The RANK BY sheet, and every other leaderboard sheet, shows its last option (WILMST and its description) in full above the navigation bar at the smallest screen and the largest text scale.
 
-**Plans:** 1/10 plans executed
+**Plans:** 2/10 plans executed
 
 Plans:
 **Wave 1**
@@ -110,7 +110,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
+- [x] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -255,7 +255,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 1/10 | In Progress|  |
+| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 2/10 | In Progress|  |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 0/TBD | Not started | - |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
