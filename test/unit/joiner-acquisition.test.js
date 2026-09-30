@@ -162,10 +162,14 @@ test("resolveJoiner: a second accept SWAPS the roster — joinerLeft fires befor
   assert.ok(joined, "joinerJoined emitted");
   assert.ok(events.indexOf(left) < events.indexOf(joined), "joinerLeft precedes joinerJoined");
   assert.ok(!events.some((e) => e.type === "joinerDeclined"), "a swap is not narrated as a decline");
+  // Phase 89 plan 05 (ITEM-07): before, the sheet shape was the pending sheet's
+  // exactly ("no new field"); now every Joiner joins dressed (reconcileWorn), so
+  // the one additive field is `worn` (an empty map when it carries no cloak or
+  // jewel). Nothing else is added.
   assert.deepStrictEqual(
     Object.keys(state.party[0]).sort(),
-    Object.keys(fixedPending({ name: "Bo" })).sort(),
-    "the surviving member's sheet shape is unchanged — no new field",
+    [...Object.keys(fixedPending({ name: "Bo" })), "worn"].sort(),
+    "the surviving member's sheet shape gains only the worn map (Phase 89 ITEM-07)",
   );
 });
 

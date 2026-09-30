@@ -20,7 +20,7 @@ import { move, makeCamp, useTool, resolveHazard, resolvePendingTile } from "./mo
 import { fight, playerStrike, flee, parley, sing, loseTurn } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
-import { useItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
+import { useItem, memberUseItem, takeFind, leaveFind, dropItem, equipItem, unequipSlot, takeLoot, leaveLoot, takeAllLoot, leaveAllLoot } from "./items.js";
 import { buyFrom, leaveStore, sellItem } from "./economy.js";
 import { resolveJoiner, dismissJoiner } from "./encounters.js";
 import { die } from "./death.js";
@@ -162,6 +162,12 @@ export function applyAction(state, action) {
       // Pure data mutation, no rng; refuses in combat / with no party / on a
       // bad index.
       dismissJoiner(next, action.i ?? 0, events);
+      break;
+    case "memberUseItem":
+      // Phase 89 (ITEM-07): the Company panel's USE — party member `i` drinks
+      // one of its own potions or uses its worn item (outside a fight). No
+      // main-rng draw; every refusal is a named useRefused event.
+      memberUseItem(next, action.i, action.potion === true ? { potion: true } : { slot: action.slot }, rng, events);
       break;
     case "takeFind":
       // ECON-03 (Phase 13): accept state.pendingFind into the bag (or bagFull).

@@ -271,6 +271,8 @@ export const FEATURE_EVENTS = [
   "potionDuplicated",
   "rested",
   "potionDrunk",
+  // Phase 89 (ITEM-07): a Joiner's own potion.
+  "memberPotionDrunk",
   "armorPatched",
   "armorSoaked",
   "summonBackfired",
@@ -1474,6 +1476,14 @@ export const LINE_FOR = {
     const g = railGain(e, e?.amount);
     const item = typeof e?.item === "string" && e.item ? e.item : "Cloak";
     const tail = Number.isFinite(e?.tick) && Number.isFinite(e?.ticks) ? ` (${e.tick}/${e.ticks})` : "";
+    // Phase 89 (ITEM-07): a Joiner's own cloak knits the Joiner, by name.
+    if (e?.member) {
+      return {
+        text: g > 0 ? `${e.member} +${g} hp: ${item}${railFull(g, e?.amount)}${tail}.` : `Nothing left to knit on ${e.member}${tail}.`,
+        tone: "hit",
+        priority: PRIORITY.other,
+      };
+    }
     return {
       text: g > 0 ? `+${g} hp: ${item}${railFull(g, e?.amount)}${tail}.` : `Nothing left to knit${tail}.`,
       tone: "hit",
@@ -2303,6 +2313,16 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.you,
   }),
+  // Phase 89 (ITEM-07): a Joiner drinks one of its OWN potions; the rail twin of
+  // the Oracle's memberPotionDrunk (the Joiner named, the hp actually gained).
+  memberPotionDrunk: (e) => ({
+    text:
+      railGain(e, e?.amount) > 0
+        ? `${e?.member ?? "Your companion"} drinks a potion: +${railGain(e, e?.amount)} hp${railFull(railGain(e, e?.amount), e?.amount)} (${e?.remaining ?? 0} left)${e?.doubled ? ` · ${e.doubled}` : ""}`
+        : `${e?.member ?? "Your companion"} drinks a potion and was already at full hp (${e?.remaining ?? 0} left)${e?.doubled ? ` · ${e.doubled}` : ""}`,
+    tone: "hit",
+    priority: PRIORITY.you,
+  }),
   scrollRead: (e) => ({ text: `You unroll: ${e?.spell ?? "something unreadable"}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 25 (FEED-02): a scroll refusal always names its reason; unknown/
   // absent reason still gets a voiced fallback. RULES-10 (Phase 75.1):
@@ -2417,7 +2437,18 @@ export const LINE_FOR = {
   faerieBoon: (e) => ({ text: `+${railGain(e, e?.amount)} base hp.`, tone: "hit", priority: PRIORITY.other }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   faerieBane: (e) => ({ text: `Faerie: −${e?.amount ?? 0} base hp.`, tone: "hurt", priority: PRIORITY.other }),
-  joinerJoined: (e) => ({ text: `${e?.name ?? "Someone"} falls in beside you.`, tone: "hit", priority: PRIORITY.feature }),
+  // Phase 89 (ITEM-07): `wore` (what it put on from its bag) and `scroll` (a
+  // Magic User's starting scroll: the spell it copied, or null for one spent on
+  // nothing) are additive clauses; absent, the line is byte-identical.
+  joinerJoined: (e) => ({
+    text: `${e?.name ?? "Someone"} falls in beside you.${
+      Array.isArray(e?.wore) && e.wore.length ? ` Wears ${e.wore.join(" and ")}.` : ""
+    }${
+      typeof e?.scroll === "string" ? ` Reads its scroll: ${e.scroll} is in its book.` : e?.scroll === null ? " Its scroll held nothing it could learn." : ""
+    }`,
+    tone: "hit",
+    priority: PRIORITY.feature,
+  }),
   // Phase 25.1 (DFB-04): fallback/coverage table text — on the resolveJoiner
   // action the narrative ctx (NARRATIVE_ACTIONS) replaces this with the
   // snark exit sentence from EVENT_NARRATION.joinerLeft instead.
@@ -2524,7 +2555,7 @@ export const LINE_FOR = {
     };
     return block(map[e?.reason] ?? "That does not work here.");
   },
-  itemUsed: (e) => ({ text: `You use ${e?.item?.n ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
+  itemUsed: (e) => ({ text: e?.member ? `${e.member} uses ${e?.item?.n ?? "something"}.` : `You use ${e?.item?.n ?? "something"}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason map with
   // cooldown/wrongClass/combatOnly/exploreOnly/noTarget/notFought — the
   // pilfer text and the generic fallback stay byte-identical.
@@ -2532,6 +2563,23 @@ export const LINE_FOR = {
   // a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e?.item?.n ?? "That";
+    // Phase 89 (ITEM-07): the Company panel's USE on a Joiner: one line per
+    // reason, the Joiner named. leaderOnly is ruling Q2 (docs/ITEM-AUDIT.md).
+    if (e?.reason === "noMember") return block("No such companion. The party is smaller than the menu thought.");
+    if (e?.member) {
+      const m = e.member;
+      const own = `${m}'s`;
+      const memberMap = {
+        inCombat: `${m} is in a fight. Joiners use their things on their own turns.`,
+        noPotions: `${m} has no potions. An empty pack is a poor remedy.`,
+        fullHealth: `${m} is already at full hp. Save the potion for a worse day.`,
+        leaderOnly: `${m} cannot use ${item}. It moves or leads the party, and that is the one in front.`,
+        cooldown: `${own} ${item}: ready again in ${e?.left ?? "?"} squares. It is not a vending machine.`,
+        combatOnly: `${own} ${item} wants a target. Save it for a fight.`,
+      };
+      // Any other reason (a Joiner never reaches one) reads as the hero's line below.
+      if (memberMap[e?.reason]) return block(memberMap[e.reason]);
+    }
     // RULES-09 (Phase 75.1): the Pilfer heal-only "pilfer" reason is
     // retired — its own line is pilferFumbled below.
     const map = {
@@ -2557,7 +2605,7 @@ export const LINE_FOR = {
   },
   // RULES-09 (Phase 75.1, user 2026-09-24/25): a Pilfer's use-activated
   // magic-item fumble — names the item and the hp lost. Never a diagnosis.
-  pilferFumbled: (e) => ({ text: `${e?.item ?? "It"} comes apart (−${e?.dmg ?? 0} hp). Dust now.`, tone: "hurt", priority: PRIORITY.you }),
+  pilferFumbled: (e) => ({ text: `${e?.member ? `${e.member}'s ` : ""}${e?.item ?? "It"} comes apart (−${e?.dmg ?? 0} hp). Dust now.`, tone: "hurt", priority: PRIORITY.you }),
   cured: (e) => ({ text: `Cured of ${e?.kind ?? "it"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 31 (CMB-06): one line naming every stoned foe, ahead of the
   // per-foe foeKilled lines that follow.
@@ -2575,6 +2623,29 @@ export const LINE_FOR = {
   itemEffectStarted: (e) => {
     const n = e?.left;
     const sq = railSquares(n);
+    // Phase 89 (ITEM-07): a Joiner's own item effect, the Oracle twin's
+    // third-person lines in the rail's short form. Leader-only kinds never
+    // reach a Joiner and fall to the plain fallback.
+    if (e?.member) {
+      const m = e.member;
+      const them = {
+        haste: `double attacks for ${sq}.`,
+        invis: `unseen for ${sq}: foes hit only on their die's top face.`,
+        acute: `strikes on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
+        might: `+${e?.might ?? "?"} damage for ${sq}.`,
+        power: `+1 damage for ${sq}.`,
+        giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, one face easier to hit.` : `is one size larger for ${sq}.`,
+        enlarge: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
+        unseen: `unseen for ${sq}: every foe has two fewer faces that hit them.`,
+        critWard: `has ${sq} with nothing critical landing on them.`,
+        plate: `wears ${sq} of weightless plate.`,
+        knit:
+          Number.isFinite(e?.every) && Number.isFinite(e?.ticks) && e?.heal && Number.isFinite(e.heal.sides)
+            ? `is knitting for ${sq}: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+            : `is knitting for ${sq}.`,
+      };
+      return { text: `${m} ${them[e?.kind] ?? `has ${e?.item ?? "an item"} in effect for ${sq}.`}`, tone: "magic", priority: PRIORITY.you };
+    }
     const map = {
       haste: `Double attacks for ${sq}.`,
       invis: `Unseen for ${sq}: foes hit only on their die's top face (top two if insulted).`,
@@ -2612,7 +2683,7 @@ export const LINE_FOR = {
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };
   },
-  itemEffectFaded: (e) => ({ text: `${e?.item ?? "It"} wears off.`, tone: "beat", priority: PRIORITY.other }),
+  itemEffectFaded: (e) => ({ text: `${e?.member ? `${e.member}'s ` : ""}${e?.item ?? "It"} wears off.`, tone: "beat", priority: PRIORITY.other }),
   // Phase 88 (ITEM-02): the rail twin of the Oracle's itemEffectEnded — the
   // item, how it left, what stops, and (only when the use left a cooldown)
   // when it is ready. A minor event, never a decision card.
@@ -2624,7 +2695,7 @@ export const LINE_FOR = {
     const lead = `${e?.member ? `${e.member}'s ` : ""}${railEndedItem(e)} ${how}`;
     return { text: `${lead.charAt(0).toUpperCase()}${lead.slice(1)}: ${clause}${ready}.`, tone: "beat", priority: PRIORITY.other };
   },
-  itemCooled: (e) => ({ text: `${e?.item ?? "It"} is ready again.`, tone: "hit", priority: PRIORITY.other }),
+  itemCooled: (e) => ({ text: `${e?.member ? `${e.member}'s ` : ""}${e?.item ?? "It"} is ready again.`, tone: "hit", priority: PRIORITY.other }),
   // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
   staffRecharged: (e) => ({
     text: `${e?.item ?? "It"} hums: a charge is back${Number.isFinite(e?.charges) && Number.isFinite(e?.max) ? ` (${e.charges}/${e.max})` : ""}.`,

@@ -126,7 +126,12 @@ export const DRAW_INVENTORY = {
   // use-time instant d6 (`rng.d(6)`, tagged roll:amount) is gone; each heal
   // tick rolls through dice.js#rollDice from a derived rng stream (no `.d(`
   // occurrence in items.js, so no tag and no main-stream draw).
-  "engine/items.js": { rollCheck: 1, amount: 7, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  // Phase 89 plan 05 (ITEM-07): amount 7 -> 8. A Joiner's own healing potion
+  // (memberDrinkPotion, `2 * d10 + 5`) is the one new `.d(` tag, drawn from the
+  // DERIVED stream "memberPotion" (never the main rng). The Joiner's Pilfer
+  // fumble shares the hero's roll through rollPilferFumble, so neither its
+  // rollCheck nor its d10 adds a count.
+  "engine/items.js": { rollCheck: 1, amount: 8, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/actions.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/death.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/effects.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

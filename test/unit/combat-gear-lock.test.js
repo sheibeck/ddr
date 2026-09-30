@@ -245,6 +245,10 @@ function payloadTable(c) {
     abandon: [{}],
     resolveJoiner: [{ accept: true }, { accept: false }],
     dismissJoiner: [{}],
+    // Phase 89 (ITEM-07): a Joiner's own potion or worn item, the Company
+    // panel's USE. It touches the JOINER's sheet only (never the hero's worn
+    // gear) and is refused in a fight (inCombat).
+    memberUseItem: [{ i: 0, potion: true }, ...WORN_SLOTS.map((slot) => ({ i: 0, slot }))],
     takeFind: [{}],
     leaveFind: [{}],
     dropItem: [{ i: 0 }],

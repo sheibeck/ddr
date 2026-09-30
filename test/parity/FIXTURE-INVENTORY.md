@@ -6071,3 +6071,106 @@ Joiner's lethal drain, `memberDowned` now precedes `foeDrained` (the helper
 downs the Joiner before the caller heals the foe).
 
 No other fixture, save, golden or state pin was re-recorded.
+
+### Phase 89 plan 05: Joiners wear and use their own items (ITEM-07)
+
+Plan 89-05, base `3d2f5d3b` (gate 8,368 tests, 8,366 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (CONTEXT "Joiners use their items and soak hits", user 2026-09-30:
+"let joiners use items they have ... Just like players.").** (1) A Joiner joins
+dressed: `encounters.js#resolveJoiner` runs `reconcileWorn` on the pending sheet,
+so a cloak or jewel in its bag (the Thief's starting cloak) goes into a free
+worn slot, and every Joiner's sheet gains a worn map (`{}` when it has nothing
+to wear); `joinerJoined.wore` lists what went on. A saved Joiner with no worn
+map is dressed the same way on load (`saveState.js`, both load chains).
+(2) `memberUseItem { i, potion: true }` / `{ i, slot }` (a new action) makes a
+Joiner drink its own healing potion (`2 * d10 + 5`, derived stream
+`memberPotion`) or use a worn item, outside a fight, each refusal its own named
+reason. A worn item's effect starts on the Joiner's own sheet through
+`applyActivation` (same record, cooldown and `src` link). (3) `move` ticks each
+Joiner's item timers and heal-over-time after the hero's. (4) Ruling Q2 = A: the
+Cloak of Flying, Cloak of Ether, Bracelet of Flight, Amulet of Light, Helm of
+Knowledge and Amulet of Stone (kinds fly, ether, glow, tongue, stone) are the
+hero's alone. (5) Ruling Q3 = A: a Magic User Joiner reads its starting scroll
+on joining (derived stream `joinerScroll`).
+
+**The predictor.** (a) parity fixtures: none meets a Joiner, zero drift; (b) any
+hashed bot run or saved run that carries a Joiner, since the Joiner's sheet now
+has a worn map (and a Thief Joiner's cloak moves from its bag to it); (c) unit
+pins that assumed a joined or loaded sheet has exactly the offered keys, and the
+source guard that counted one `tickSquares(` call; (d) the roll-high draw
+inventory for `engine/items.js` (one more `.d(` tag); (e) the narrative corpus,
+whose synthetic events carry `member: "the companion"`; (f) the comparables,
+unmoved (`state.party` is stripped whole from every compared object, and no new
+top-level field was added).
+
+**The live scan (measured with the change).**
+
+1. `node tools/fixture-inventory.mjs --json` read: no parity scenario lists a
+   Joiner.
+2. `node --test "test/parity/**/*.test.js"`: **66 / 66**, zero drift.
+   `test/parity/prototype-master.js.txt`, `test/parity/harness/comparables.js`,
+   `tools/lib/event-variants.mjs` and `docs/narrative-pass/corpus-base.json` are
+   untouched.
+3. `roll-high-state-pins.test.js`: **one label moved** (declared below), seven
+   byte-identical. `roll-high-save-compat.test.js`: **`expected.hash` moved**
+   (declared below; `save` and `dispatched` untouched). `roll-high-baseline.mjs
+   save` was not run; the one moved pin was pasted by hand from `node
+   tools/roll-high-baseline.mjs pins` (hashed identically twice).
+4. `node tools/narrative-review.mjs` then `--check`: in sync (583 rows).
+   `docs/narrative-pass/why/89-05.json` logs the changed corpus keys (see
+   "Narrative corpus" below).
+
+**Moved state pin (before -> after, first divergence traced).** A per-step
+state-hash trace against the base tree (`git archive 3d2f5d3b`) finds the first
+divergence at bot step 249, exactly the `joinerJoined` event. The run recruits
+Cedric Thorne, a Cutthroat, carrying a Cloak of Speed; he now joins wearing it.
+Every step's event list and every party hp line are identical to the base for all
+400 steps, so this is a pure state-shape move; undoing the dressing in the final
+state (the cloak back in `items`, `worn` deleted) re-hashes to the old pin
+exactly.
+
+| Label | Before | After | First divergence |
+|---|---|---|---|
+| `solo-magicuser-sorcerer` | 400 / alive / 5, `565c5fcb...` | 400 / alive / 5, `e457e2c1...` | step 249: Cedric Thorne joins, `wore ["Cloak of Speed"]` |
+
+**Moved save fixture.** `test/unit/fixtures/roll-high/pre-switch-save.json`,
+`expected.hash` only (`dead`/`depth`/`actions` still false / 3 / 300):
+`b390924b...` -> `0e2cc518...`. The save's Joiner, Denn of Ash Alley (a Magic
+User with no cloak or jewel), has no worn map in the saved sheet; the load now
+gives him `worn: {}`. Proven state-only: replaying the continuation and deleting
+that empty map re-hashes to `b390924b...` exactly. The fixture's own `note` and
+the test file's header carry the dated entry.
+
+**Unit pins moved (before -> after).**
+
+| Pin | Before | After | Why |
+|---|---|---|---|
+| `joiner-acquisition.test.js`, "a second accept SWAPS the roster ..." | the joined sheet's keys equal the pending sheet's | the pending keys plus `worn` | a Joiner joins dressed; the one additive field is the worn map |
+| `party-model.test.js`, "round-trip: a non-empty party ..." | the loaded party deep-equals the saved one | deep-equals it plus `worn: {}` on the member | the load dresses a Joiner with no worn map (this Magic User wears nothing) |
+| `party-model.test.js`, "fail-open: malformed members ..." | the valid member loads intact | intact plus `worn: {}` | same |
+| `resume-mid-encounter.test.js`, "SAV-06 ... a pending Joiner offer survives a relaunch" | the party gains exactly the offered sheet | the offered sheet plus `worn: {}` | the accepted Joiner joins dressed (a Fighter, nothing to wear) |
+| `map-until-move.test.js`, "one tick site ..." | one `tickSquares(` call in `movement.js` | two (the hero's and each Joiner's, in the one per-step tick block) | the Joiner twin of the hero tick (still the only file, still a step) |
+| `roll-high-guard.test.js`, `DRAW_INVENTORY` `engine/items.js` | `amount: 7` | `amount: 8` | the Joiner's potion `.d(10)` (derived stream; the Pilfer fumble shares the hero's helper, no count) |
+| `combat-gear-lock.test.js`, `payloadTable` | no `memberUseItem` row | a row (`potion` and each worn slot) | the new action joins `ACTION_TYPES`; it touches only the Joiner's sheet and is refused in a fight |
+
+**Narrative corpus.** The corpus renders every builder with a synthetic event
+that carries `member: "the companion"`, so a builder that gains a Joiner form
+shows that form in place of its hero form for any variant not crossed with the
+`member: null` toggle (`tools/lib/event-variants.mjs` is frozen after Phase 79).
+Changed keys, each with a row in `docs/narrative-pass/why/89-05.json`:
+`oracle:`/`rail:` `healTick`, `itemCooled`, `itemEffectFaded`,
+`itemEffectStarted`, `itemUsed`, `pilferFumbled`, `useRefused`, and the new
+`memberPotionDrunk`. The hero's lines are unchanged in the game (a unit test,
+`joiner-item-lines.test.js`, pins the hero forms byte-for-byte); only the
+corpus's rendering of them changed. Two earlier plans' `after` lines (79-11's
+Unseen line and cooldown refusal, 88-04's full-hp tick, 89-02's Enlarge line)
+are chained to the Joiner forms for the same reason.
+
+Unit pins added, not moved: `joiner-item-use.test.js` (50 tests: potion,
+refusals, worn item and link, Q2, Pendant, Pilfer, the action, wear on join,
+load, ticks, heal-over-time, Q3) and `joiner-item-lines.test.js` (62 tests: both
+surfaces for every Joiner event and refusal, the hero forms, bare payloads).
+
+No other fixture, save, golden or state pin was re-recorded.

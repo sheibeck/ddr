@@ -38,6 +38,11 @@ export const ACTION_TYPES = new Set([
   // Phase 36 (JOIN-01): send a party member away from the Company panel;
   // pure, no rng; optional non-negative integer `i` (default 0).
   "dismissJoiner",
+  // Phase 89 (ITEM-07): the Company panel's USE — make party member `i` drink
+  // one of ITS healing potions (`potion: true`) or use the item it wears
+  // (`slot`), outside a fight. Pure (no main-rng draw); exactly one of
+  // `potion` / `slot`. Every refusal is a named useRefused event.
+  "memberUseItem",
   // ECON-03/04/05 (Phase 13): the player-choice inventory actions. All pure
   // (no rng). takeFind/leaveFind accept/decline the pending find stashed by a
   // find caller (encounters.js#offerFind); dropItem/equipItem carry a
@@ -152,6 +157,25 @@ export function validateAction(action) {
       // non-negative integer (same contract as buyItem.idx/useItem.i above).
       if (action.i !== undefined && (!isInt(action.i) || action.i < 0)) {
         return { ok: false, reason: "dismissJoiner.i must be a non-negative integer when present" };
+      }
+      break;
+    case "memberUseItem":
+      // Phase 89 (ITEM-07): `i` a non-negative integer (the party index, the
+      // dismissJoiner precedent but required here) and EXACTLY ONE of
+      // `potion: true` or `slot` in the three worn keys (a Joiner wields no
+      // staff). An unknown Joiner or slot state is a named engine refusal, not
+      // a validation failure; this only guards the wire shape.
+      if (!isInt(action.i) || action.i < 0) {
+        return { ok: false, reason: "memberUseItem.i must be a non-negative integer" };
+      }
+      if (action.potion !== undefined && action.potion !== true) {
+        return { ok: false, reason: "memberUseItem.potion must be true when present" };
+      }
+      if ((action.potion === true) === (action.slot !== undefined)) {
+        return { ok: false, reason: "memberUseItem needs exactly one of potion or slot" };
+      }
+      if (action.slot !== undefined && !WORN_SLOTS.includes(action.slot)) {
+        return { ok: false, reason: "memberUseItem.slot must be one of jewelry1, jewelry2, cloak" };
       }
       break;
     case "dropItem":

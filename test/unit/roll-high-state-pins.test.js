@@ -255,7 +255,22 @@ const PINNED = {
   // re-measured byte-identical. Only these three labels were pasted, by hand,
   // from `node tools/roll-high-baseline.mjs pins` (each hashed identically
   // twice); `save` was never run.
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "565c5fcb6f3fe69c4576f12920ce89cd97c5297d23ea1df63f3aee9b17f2f89f" },
+  // "solo-magicuser-sorcerer" re-pinned again (Phase 89, Plan 05, 2026-09-30,
+  // ITEM-07: "let joiners use items they have ... Just like players."): a
+  // Joiner now joins dressed (engine/encounters.js#resolveJoiner runs
+  // reconcileWorn), so a carried cloak moves from its bag into its worn map.
+  // The run recruits Cedric Thorne, a Cutthroat, with a Cloak of Speed at bot
+  // step 249 (joinerJoined, wore ["Cloak of Speed"]); the per-step state-hash
+  // trace against the base 3d2f5d3b diverges exactly there and nowhere earlier.
+  // It is a pure state-shape move: every step's event list and every party
+  // hp line are identical to the base for all 400 steps, and undoing the
+  // dressing in the final state (the cloak back in items, `worn` deleted)
+  // re-hashes to the old pin 565c5fcb... exactly. No draw, rule or outcome
+  // moved (400 / alive / 5 unchanged). The bot never uses a Joiner's items.
+  // The other seven labels re-measured byte-identical. Only this label was
+  // pasted, by hand, from `node tools/roll-high-baseline.mjs pins` (hashed
+  // identically twice); `save` was never run.
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "e457e2c1d54be950157272a1eb802b5553aaa12fc3573ed0a2f499c591a17aa5" },
   "party-1": { actions: 372, dead: true, depth: 3, hash: "978f3eb00bb531625e7e6ea9b46b9207e590227257da93177d009b12a6bb310e" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live

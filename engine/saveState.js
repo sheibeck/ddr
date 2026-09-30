@@ -1086,7 +1086,16 @@ export function validateSave(raw, options = {}) {
   // and sanitizeStaff, link or quietly end every live item effect on the hero
   // and on each Joiner sheet — see reconcileItemSources.
   reconcileItemSources(value.c);
-  for (const member of value.party) reconcileItemSources(member);
+  // Phase 89 (ITEM-07, tolerant load): a saved Joiner is dressed the way a new
+  // one is (CONTEXT "Carried gear is worn on joining"): a tampered worn map is
+  // neutralised as the hero's is, then a Joiner with no worn map wears the
+  // cloak or jewel in its bag (reconcileWorn is a no-op on one that already has
+  // a map). Before its effect-source link is reconciled. No event, no rng.
+  for (const member of value.party) {
+    sanitizeWorn(member);
+    reconcileWorn(member);
+    reconcileItemSources(member);
+  }
   return { ok: true, value, wornReport };
 }
 
@@ -1229,6 +1238,13 @@ export function rehydrate(obj) {
   // Phase 88 (ITEM-02): mirrors validateSave — the same link-or-quietly-end
   // reconciliation for the hero and every Joiner sheet; idempotent after it.
   reconcileItemSources(state.c);
-  for (const member of state.party) reconcileItemSources(member);
+  // Phase 89 (ITEM-07): mirrors validateSave's Joiner loop (sanitize the worn
+  // map, dress a Joiner that has none, then link its effects); a no-op on a
+  // Joiner validateSave already dressed.
+  for (const member of state.party) {
+    sanitizeWorn(member);
+    reconcileWorn(member);
+    reconcileItemSources(member);
+  }
   return state;
 }

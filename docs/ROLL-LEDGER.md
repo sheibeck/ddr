@@ -1263,3 +1263,39 @@ adds 1d20+10 WP to 1d6".
 - **The pipeline order moved for a Joiner only.** The round-damage ceiling
   now sits before the Brace (the hero's order) instead of after it: a Brace
   halves the ceilinged blow, and the Pendant halves it first.
+
+## Phase 89 plan 05: Joiners use their own items (ITEM-07, user 2026-09-30)
+
+"Let joiners use items they have ... Just like players."
+
+- **A Joiner's healing potion (`memberPotion`).** `memberDrinkPotion`
+  (engine/items.js) rolls the hero's stock potion, `2 * d10 + 5`, doubled for
+  a heal-twice race (`RACES[race].heal2x`), from `derivedRng(<main rng
+  cursor>, "memberPotion", <state.acts>, <party index>, <potions before the
+  drink>)`. The main rng is only READ for its cursor, never advanced, so no
+  existing draw reorders. A refusal (no such Joiner, in a fight, no potions,
+  full hp) draws nothing.
+- **A Joiner's heal-over-time tick (`healTick`, member form).** The hero's
+  key stays exactly `derivedRng(cursor, "healTick", <item>, <tick>,
+  <state.steps>)`; a Joiner's appends `"member", <party index>`, so a Joiner's
+  Cloak of Regeneration rolls its own d6 and the hero's is not disturbed.
+- **A Joiner's Pilfer fumble (`pilferFumble`, member form).** Keyed
+  `derivedRng(cursor, "pilferFumble", <state.acts>, <item name>, "member",
+  <party index>)`; the hero's key is unchanged. The d20 steady-hands check and
+  the d10 blast are one shared helper (`rollPilferFumble`) for the hero and a
+  Joiner, so neither adds a `rollCheck` or a `.d(` occurrence.
+- **The Magic User Joiner's starting scroll (`joinerScroll`, ruling Q3 = A).**
+  `resolveJoiner` (engine/encounters.js) picks the spell the Joiner copies
+  into its book with `derivedRng(<state.rngState>, "joinerScroll", <name>,
+  <floor depth>).pick(<the spells it can learn at its level that its book
+  lacks>)`. `resolveJoiner` has no rng argument, so the cursor is read off the
+  state. `.pick` is not a `.d(` draw; nothing to tag.
+- **Roll-high draw inventory for `engine/items.js` moves one:** amount 7 -> 8
+  (the `memberPotion` `.d(10)`, tagged `roll:amount`). `rollCheck` stays 1 and
+  `engine/encounters.js` does not move.
+- **No check-direction change.** The Pilfer fumble is the hero's own check
+  (roll-high, only a natural 1 fails); no check or threshold was added or
+  flipped.
+- **Nothing is drawn on the main stream** by any Joiner path: wear-on-join
+  (`reconcileWorn`), the tick loop, the refusals and the effect starts are all
+  bookkeeping or derived.

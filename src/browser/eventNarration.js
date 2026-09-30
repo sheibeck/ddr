@@ -403,6 +403,12 @@ export const EVENT_NARRATION = {
     const g = gainOf(e, e.amount);
     const item = endedItem(e) || "The cloak";
     const tail = Number.isFinite(e?.tick) && Number.isFinite(e?.ticks) ? ` Tick ${e.tick} of ${e.ticks}.` : "";
+    // Phase 89 (ITEM-07): a Joiner's own cloak knits the Joiner, by name.
+    if (e?.member) {
+      return g > 0
+        ? `<span class="hit">${item} knits ${e.member} back: +${g} hp${cappedNote(g, e.amount)}.</span>${tail}`
+        : `<span class="miss">Nothing left to knit.</span> ${item} spends a tick on ${e.member}, already at full hp.${tail}`;
+    }
     return g > 0
       ? `<span class="hit">${item} knits you back: +${g} hp${cappedNote(g, e.amount)}.</span>${tail}`
       : `<span class="miss">Nothing left to knit.</span> ${item} spends a tick on a hero already at full hp.${tail}`;
@@ -1343,6 +1349,19 @@ export const EVENT_NARRATION = {
     const capped = Number.isFinite(e.amount) && g < e.amount ? `${e.amount} rolled, back to full; ` : "";
     return `<span class="hit">+${g} hp</span> (${capped}${left}).${doubled}`;
   },
+  // Phase 89 (ITEM-07, user 2026-09-30: "let joiners use items they have ...
+  // Just like players."): a Joiner drinks one of ITS OWN potions. The hero's
+  // potionDrunk is the hero's; this one names the Joiner, the hp it actually
+  // gained (VOX-05 `gained`), what is left in its pack, and the heal-twice note.
+  memberPotionDrunk: (e) => {
+    const who = e.member ?? "Your companion";
+    const g = gainOf(e, e.amount);
+    const left = `${plural(e.remaining ?? 0, "potion")} left`;
+    const doubled = e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : "";
+    if (g <= 0) return `<span class="miss">${who} drinks a potion and finds nothing to fix.</span> Already at full hp (${left}).${doubled}`;
+    const capped = Number.isFinite(e.amount) && g < e.amount ? `${e.amount} rolled, back to full; ` : "";
+    return `<span class="hit">${who} uncorks a potion: +${g} hp</span> (${capped}${left}). Their own, too. Initiative in a companion.${doubled}`;
+  },
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
   // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
   // never a silent no-op. RULES-10 (Phase 75.1): "pilfer"/"noRunes" are
@@ -1496,8 +1515,20 @@ export const EVENT_NARRATION = {
   // PARTY-01/PARTY-09 (Phase 9): the accept/decline outcome of a recruitment.
   // Deadpan, dark-but-family-friendly — the humor is at everyone's expense,
   // especially the poor soul who just signed on.
+  // Phase 89 (ITEM-07): two additive clauses. `wore` (what the newcomer put on
+  // from its bag) and `scroll` (Magic User: the spell its starting scroll gave
+  // its book, or null when nothing was learnable). Neither present: byte-
+  // identical to before.
   joinerJoined: (e) =>
-    `<span class="hit">${e.name ?? "Someone"} falls in beside you</span>, already quietly revising their life expectancy downward.`,
+    `<span class="hit">${e.name ?? "Someone"} falls in beside you</span>, already quietly revising their life expectancy downward.${
+      Array.isArray(e.wore) && e.wore.length ? ` They pull on ${e.wore.join(" and ")} on the way in, which is optimistic.` : ""
+    }${
+      typeof e.scroll === "string"
+        ? ` Their scroll is read on the spot: ${e.scroll} goes into their book.`
+        : e.scroll === null
+          ? " Their scroll held nothing they could learn. It is spent anyway."
+          : ""
+    }`,
   // Phase 25.1 (DFB-04): fires when accepting a Joiner with a full roster
   // swaps the longest-serving member out (engine/state.js#swapPartyMember).
   // The line is picked WITHOUT rng — index derived from both names' lengths
@@ -1642,7 +1673,8 @@ export const EVENT_NARRATION = {
           ? ` The shopkeeper keeps your old ${e.replaced.n}.`
           : ""
     }`,
-  itemUsed: (e) => `You use ${e.item?.n ?? "something"}.`,
+  // Phase 89 (ITEM-07): a Joiner uses its own item (`member`); the hero's line is unchanged.
+  itemUsed: (e) => (e.member ? `${e.member} uses ${e.item?.n ?? "something"}.` : `You use ${e.item?.n ?? "something"}.`),
   // Phase 24 (IDENT-07): a Pilfer's "cannot use a single magic item that
   // doesn't heal" bad — the refusal fires before any side effect.
   // Phase 31 (CMB-02/CMB-03/CMB-01): extends the pilfer-only reason with
@@ -1652,6 +1684,21 @@ export const EVENT_NARRATION = {
   // below; a NEW "recharging" reason (an empty staff) gets its own line.
   useRefused: (e) => {
     const item = e.item?.n ?? "That";
+    // Phase 89 (ITEM-07): the Company panel's USE on a Joiner. Every refusal is
+    // its own line naming the Joiner (`member`); `noMember` has no one to name.
+    // leaderOnly is ruling Q2 (docs/ITEM-AUDIT.md): the party-moving and leading
+    // items stay with the one in front.
+    if (e.reason === "noMember") return `<span class="miss">No such companion.</span> The party is smaller than the menu thought.`;
+    if (e.member) {
+      const m = e.member;
+      if (e.reason === "inCombat") return `<span class="miss">${m} is in a fight.</span> Joiners use their things on their own turns. You are not in charge of that.`;
+      if (e.reason === "noPotions") return `<span class="miss">${m} has no potions.</span> An empty pack is a poor remedy.`;
+      if (e.reason === "fullHealth") return `<span class="miss">${m} is already at full hp.</span> Save the potion for a worse day.`;
+      if (e.reason === "leaderOnly") return `<span class="miss">${m} cannot use ${item}.</span> It moves or leads the whole party, and only the one in front does that. That is you.`;
+      if (e.reason === "cooldown") return `<span class="miss">${possessive(m, "Their")} ${item}: ready again in ${e.left ?? "?"} squares.</span> It is not a vending machine.`;
+      if (e.reason === "combatOnly") return `<span class="miss">${possessive(m, "Their")} ${item} wants a target.</span> Save it for a fight.`;
+      // Any other reason (a Joiner never reaches one) reads as the hero's line below.
+    }
     // VOX-05 (Phase 79, plan 79-11): "3 squares" of what — until it is ready.
     if (e.reason === "cooldown") return `<span class="miss">${item}: ready again in ${e.left ?? "?"} squares.</span> It is not a vending machine.`;
     if (e.reason === "recharging") return `<span class="miss">${item}: ${e.left ?? "?"} squares to the next charge.</span> Patience is also a spell.`;
@@ -1680,7 +1727,7 @@ export const EVENT_NARRATION = {
   // hands voice. Never names a diagnosis — the fidgeting is voice, not a
   // label.
   pilferFumbled: (e) =>
-    `<span class="hurt">${e.item ?? "It"} comes apart in your hands.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span> −${e.dmg ?? 0} hp, and it is dust now.`,
+    `<span class="hurt">${e.item ?? "It"} comes apart in ${e.member ? possessive(e.member, "their") : "your"} hands.</span> <span class="roll">${rollVsText(e.roll, e.atLeast, e.dieN)}.</span> −${e.dmg ?? 0} hp${e.member ? ` off ${e.member}` : ""}, and it is dust now.`,
   cured: (e) => `<span class="hit">Cured of ${e.kind ?? "it"}.</span>`,
   // VOX-05 (Phase 79, plan 79-11): one foe "turns", two or more "turn".
   foeStoned: (e) => {
@@ -1701,6 +1748,29 @@ export const EVENT_NARRATION = {
   itemEffectStarted: (e) => {
     const n = e.left;
     const sq = squaresText(n);
+    // Phase 89 (ITEM-07): a Joiner's own item effect, told in the third person
+    // from the event's own numbers (leader-only kinds never reach a Joiner, so
+    // they fall to the plain fallback).
+    if (e.member) {
+      const m = e.member;
+      const them = {
+        haste: `double attacks for ${sq}.`,
+        invis: `unseen for ${sq}: foes hit only on their die's top face. They swing at where ${m} was.`,
+        acute: `strikes on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.`,
+        might: `+${e.might ?? "?"} damage for ${sq}. Hit things.`,
+        power: `+1 damage for ${sq}. The ring approves.`,
+        giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
+        enlarge: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit. Nobody said it was free.` : `is one size larger for ${sq}.`,
+        unseen: `unseen for ${sq}: every foe has two fewer faces that hit them.`,
+        critWard: `has ${sq} with nothing critical landing on them.`,
+        plate: `wears ${sq} of weightless plate.`,
+        knit:
+          Number.isFinite(e.every) && Number.isFinite(e.ticks) && e.heal && Number.isFinite(e.heal.sides)
+            ? `is knitting for ${sq}: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+            : `is knitting for ${sq}.`,
+      };
+      return `<span class="hit">${m} ${them[e.kind] ?? `has ${e.item ?? "an item"} in effect for ${sq}.`}</span>`;
+    }
     const map = {
       haste: `<span class="hit">Double attacks for ${sq}.</span>`,
       invis: `<span class="hit">Unseen for ${sq}: foes hit only on their die's top face (the top two if you insulted them). They swing at where you were.</span>`,
@@ -1744,7 +1814,7 @@ export const EVENT_NARRATION = {
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;
   },
-  itemEffectFaded: (e) => `<span class="beat">${e.item ?? "It"} wears off.</span>`,
+  itemEffectFaded: (e) => `<span class="beat">${e.member ? `${possessive(e.member, "Their")} ` : ""}${e.item ?? "It"} wears off.</span>`,
   // Phase 88 (ITEM-02): an item effect ended EARLY because its item left the
   // source slot (take off, swap, destroyed, or found gone by the sweep). The
   // lead names the item by why; the clause says what stops; the ready clause
@@ -1771,7 +1841,7 @@ export const EVENT_NARRATION = {
         : "";
     return `<span class="beat">${lead.charAt(0).toUpperCase()}${lead.slice(1)}</span> — ${clause}.${ready}`;
   },
-  itemCooled: (e) => `<span class="hit">${e.item ?? "It"} is ready again.</span>`,
+  itemCooled: (e) => `<span class="hit">${e.member ? `${possessive(e.member, "Their")} ` : ""}${e.item ?? "It"} is ready again.</span>`,
   // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
   staffRecharged: (e) =>
     `<span class="hit">${e.item ?? "It"} hums: a charge is back${Number.isFinite(e.charges) && Number.isFinite(e.max) ? ` (${e.charges}/${e.max})` : ""}.</span>`,

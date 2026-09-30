@@ -1,0 +1,310 @@
+[
+  {
+    "key": "oracle:memberPotionDrunk",
+    "surface": "oracle",
+    "trigger": "memberPotionDrunk — engine/items.js#memberDrinkPotion (a Joiner drinks one of its own healing potions)",
+    "before": "",
+    "after": "the companion uncorks a potion: +2 hp (1 potion left). Their own, too. Initiative in a companion.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner drinks one of ITS OWN potions, so the hero's potionDrunk (\"+N hp\", \"you were already at full hp\") cannot tell it. The line names the Joiner, leads with the hp it actually gained, says what is left in its pack and, for a heal-twice race, the doubled dose; a full-hp Joiner is told so instead of printing +0. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:memberPotionDrunk",
+    "surface": "rail",
+    "trigger": "memberPotionDrunk — engine/items.js#memberDrinkPotion (a Joiner drinks one of its own healing potions)",
+    "before": "",
+    "after": "the companion drinks a potion: +2 hp (1 left)",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's memberPotionDrunk (ITEM-07): the Joiner named, the hp actually gained, the potions left. A minor event, never a decision card (card-vs-toast ruling). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemUsed",
+    "surface": "oracle",
+    "trigger": "itemUsed — engine/items.js#memberUseWorn (a Joiner uses the item it wears)",
+    "before": "",
+    "after": "the companion uses Dagger.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" The hero's itemUsed line says \"You use X.\"; a Joiner's use names the Joiner (the event carries member). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemUsed",
+    "surface": "rail",
+    "trigger": "itemUsed — engine/items.js#memberUseWorn (a Joiner uses the item it wears)",
+    "before": "",
+    "after": "the companion uses Dagger.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner itemUsed (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "Unseen for 3 squares: every foe has two fewer faces that hit you.",
+    "after": "the companion unseen for 3 squares: every foe has two fewer faces that hit them.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's item effect is told in the third person, from the event's own numbers, so it never says \"you\" about someone else. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "3 squares one size larger: you are Large. +11 damage, and foes +1 to hit you. A bigger stick and a bigger target. Nobody said it was free.",
+    "after": "the companion is one size larger for 3 squares: Large. +2 damage, and foes +1 to hit. Nobody said it was free.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's Enlarge (or Gauntlet) effect states the same two sides as the hero's, in the third person; a real event's damage figure is the event's own dmgTotal (+11 for Enlarge). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "",
+    "after": "the companion double attacks for 3 squares.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's Cloak of Speed: the hero's \"Double attacks for N squares.\" told about the Joiner. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "",
+    "after": "the companion has Cloak of Speed in effect for 3 squares.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" The plain fallback for a Joiner's effect whose kind has no line of its own (leader-only kinds never reach a Joiner, ruling Q2). Ruling Q2 (2026-09-30): a Joiner cannot use the party-moving and leading items (Cloak of Flying, Cloak of Ether, Bracelet of Flight, Amulet of Light, Helm of Knowledge, Amulet of Stone). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "Unseen for 3 squares: every foe has two fewer faces that hit you.",
+    "after": "the companion unseen for 3 squares: every foe has two fewer faces that hit them.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner itemEffectStarted (ITEM-07), in the rail's short form. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "3 squares one size larger: you are Large. +11 damage, foes +1 to hit you.",
+    "after": "the companion is one size larger for 3 squares: Large. +2 damage, foes +1 to hit.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner Enlarge line (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "",
+    "after": "the companion double attacks for 3 squares.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner Cloak of Speed line (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#memberUseWorn (a Joiner's own item effect, member = the Joiner)",
+    "before": "",
+    "after": "the companion has Cloak of Speed in effect for 3 squares.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's plain Joiner fallback (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemEffectFaded",
+    "surface": "oracle",
+    "trigger": "itemEffectFaded — engine/items.js#narrateTimerTransitions (a Joiner's item effect wears off on the walk)",
+    "before": "",
+    "after": "the companion's Cloak of Speed wears off.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" Walking wears a Joiner's effect off exactly as it does the hero's; the line names whose cloak it was. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemEffectFaded",
+    "surface": "rail",
+    "trigger": "itemEffectFaded — engine/items.js#narrateTimerTransitions (a Joiner's item effect wears off on the walk)",
+    "before": "",
+    "after": "the companion's Cloak of Speed wears off.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner wear-off line (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:itemCooled",
+    "surface": "oracle",
+    "trigger": "itemCooled — engine/items.js#narrateTimerTransitions (a Joiner's item is ready again)",
+    "before": "",
+    "after": "the companion's Ring of Power is ready again.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's item comes off cooldown on the walk; the line names whose item is ready again. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:itemCooled",
+    "surface": "rail",
+    "trigger": "itemCooled — engine/items.js#narrateTimerTransitions (a Joiner's item is ready again)",
+    "before": "",
+    "after": "the companion's Ring of Power is ready again.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner ready-again line (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:healTick",
+    "surface": "oracle",
+    "trigger": "healTick — engine/items.js#tickHealOverTime (a Joiner's own Cloak of Regeneration ticks)",
+    "before": "",
+    "after": "Dagger knits the companion back: +8 hp.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's own Cloak of Regeneration heals the Joiner, from its own sheet, every ten squares; the tick line names who was knitted back (the hero's line says \"you\") and what was actually gained. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:healTick",
+    "surface": "oracle",
+    "trigger": "healTick — engine/items.js#tickHealOverTime (a Joiner's own Cloak of Regeneration ticks)",
+    "before": "Nothing left to knit. The cloak spends a tick on a hero already at full hp.",
+    "after": "Nothing left to knit. Dagger spends a tick on the companion, already at full hp.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A full-hp Joiner spends the tick too, and the line says whose it was instead of calling them a hero. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:healTick",
+    "surface": "rail",
+    "trigger": "healTick — engine/items.js#tickHealOverTime (a Joiner's own Cloak of Regeneration ticks)",
+    "before": "",
+    "after": "the companion +8 hp: Cloak.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner healTick (ITEM-07): the Joiner named, the hp actually gained. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:healTick",
+    "surface": "rail",
+    "trigger": "healTick — engine/items.js#tickHealOverTime (a Joiner's own Cloak of Regeneration ticks)",
+    "before": "Nothing left to knit.",
+    "after": "Nothing left to knit on the companion.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's full-hp Joiner tick (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:pilferFumbled",
+    "surface": "oracle",
+    "trigger": "pilferFumbled — engine/items.js#memberUseWorn (a Pilfer Joiner's fumble)",
+    "before": "",
+    "after": "Wand of Sparks comes apart in the companion's hands. 5 vs 12–20. −6 hp off the companion, and it is dust now.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Pilfer Joiner's use of its cloak or jewel runs the same RULES-09 fumble as the hero's; the line says whose hands and whose hp, never \"your\". The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:pilferFumbled",
+    "surface": "rail",
+    "trigger": "pilferFumbled — engine/items.js#memberUseWorn (a Pilfer Joiner's fumble)",
+    "before": "",
+    "after": "the companion's Wand of Sparks comes apart (−6 hp). Dust now.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner fumble line (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "Dagger: ready again in 3 squares. It is not a vending machine.",
+    "after": "the companion's Dagger: ready again in 3 squares. It is not a vending machine.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A Joiner's own item still cooling is refused with the count of squares, naming whose item it is. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "",
+    "after": "the companion's Dagger wants a target. Save it for a fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User, 2026-09-30 (ITEM-07): \"let joiners use items they have ... Just like players.\" A fight-only item a Joiner wears, used outside a fight, says whose it is. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "oracle:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "",
+    "after": "the companion is in a fight. Joiners use their things on their own turns. You are not in charge of that.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The user ruled a Joiner's use in a fight is automatic, on its own turn (89-CONTEXT), so the player's USE is refused in a fight with its own named reason, never a silent no-op. The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "",
+    "after": "the companion's Dagger: ready again in 3 squares. It is not a vending machine.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner cooldown refusal (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "",
+    "after": "the companion's Dagger wants a target. Save it for a fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's Joiner combatOnly refusal (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  },
+  {
+    "key": "rail:useRefused",
+    "surface": "refusals",
+    "trigger": "useRefused — engine/items.js#memberUseItem, memberUseWorn (the Company panel's USE on a Joiner is refused)",
+    "before": "",
+    "after": "the companion is in a fight. Joiners use their things on their own turns.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle's inCombat refusal (ITEM-07). The synthetic corpus event always carries member \"the companion\", so the corpus renders the Joiner's form of this line; the hero's line is unchanged in the game and still prints for a hero's own event."
+  }
+]

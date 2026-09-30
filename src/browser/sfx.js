@@ -179,6 +179,7 @@ export const EVENT_CLIP_GROUP = Object.freeze({
   partyHealed: "heal", // Phase 89: the Poplar Staff's party heal sounds like any other heal
   secondWindHealed: "heal",
   potionDrunk: "drink",
+  memberPotionDrunk: "drink", // Phase 89 (ITEM-07): a Joiner's own potion sounds like the hero's
   chestOpened: "chest",
   goldGained: "gold",
   trapSprung: "trap",

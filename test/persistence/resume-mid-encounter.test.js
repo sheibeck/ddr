@@ -280,7 +280,10 @@ test("SAV-06 (Phase 76, user ruling 2026-09-25): a pending Joiner offer survives
     const { events } = dispatch({ type: "resolveJoiner", accept: true });
     assert.ok(events.some((e) => e.type === "joinerJoined"), "the Joiner joins");
     assert.equal(getState().party.length, partyBefore + 1, "the party gains exactly one member");
-    assert.deepStrictEqual(jsonCopy(getState().party.at(-1)), saved, "the party gains exactly that Joiner");
+    // Phase 89 plan 05 (ITEM-07): a Joiner joins dressed (resolveJoiner runs
+    // reconcileWorn), so the sheet gains its worn map, empty for this Fighter
+    // (no cloak or jewel to put on). Before: exactly the offered sheet.
+    assert.deepStrictEqual(jsonCopy(getState().party.at(-1)), { ...saved, worn: {} }, "the party gains exactly that Joiner, plus its empty worn map");
     assert.equal(getState().pendingJoiner, null, "the offer is resolved");
   });
 });
