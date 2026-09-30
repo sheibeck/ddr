@@ -278,7 +278,17 @@ test("stock-shape pins: potions (Healing fixed + 3 drawn), weapons (2 drawn), no
         if (STATIC_EFFECTS.has(line.effectId)) {
           const match = on.stock.find((l) => l.effectId === line.effectId && l.n === line.n);
           assert.ok(match, `${cls} depth ${depth}: static line ${line.effectId}:${line.n} must still be present flag-on`);
-          assert.deepStrictEqual(match, line, `${cls} depth ${depth}: static line ${line.effectId}:${line.n} must be byte-identical flag-on`);
+          // STORE-04 (Phase 87): the Rations line carries `left`, a d10 rolled from a
+          // stream keyed on the cursor AFTER every openStore draw. Flag-on draws extra,
+          // so its cursor (and so its d10) differs by design; everything else on the
+          // line is still byte-identical, and `left` must be a 1..10 integer on both.
+          const sameButLeft = (l) => {
+            if (l.effectId !== "buyRations") return l;
+            assert.ok(Number.isInteger(l.left) && l.left >= 1 && l.left <= 10, `${cls} depth ${depth}: Rations left ${l.left}`);
+            const { left, ...rest } = l;
+            return rest;
+          };
+          assert.deepStrictEqual(sameButLeft(match), sameButLeft(line), `${cls} depth ${depth}: static line ${line.effectId}:${line.n} must be byte-identical flag-on`);
         }
       }
 

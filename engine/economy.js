@@ -45,7 +45,9 @@ import {
   STORE_PREMIUM_BONUS,
   TOOLS,
   TOOL_ORDER,
+  BAGS,
 } from "../content/index.js";
+import { derivedRng } from "./rng.js";
 
 /**
  * priceFor(base, race, sub = null) — "Costs are triple for trolls, and half
@@ -208,6 +210,37 @@ export function sellItem(state, i, events = []) {
 // deliberate, fixed design value — one ration for 30 gold, race-adjusted via
 // priceFor like every other store price.
 const RATIONS_BASE_PRICE = 30;
+
+// STORE-04 (Phase 87, user 2026-09-28: "They should stock up to d10
+// rations"): a store opens with a d10 of rations on its Rations line, flat at
+// every depth, sold one per BUY until the count is spent.
+export const RATIONS_STOCK_DIE = 10;
+
+/**
+ * rollRationsStock(rng, depth) — STORE-04: the store's ration count, a
+ * d10 (1..10) from a DERIVED stream (greenfield rng discipline). Keyed on the
+ * main rng's cursor AFTER every openStore draw, so it is stable per store
+ * (openStore runs once per store and the count then lives on the line as
+ * `left`) and it NEVER advances `rng`: genFloor, every existing store draw
+ * and the draw-count pins are untouched. An rng without getState reads
+ * cursor 0.
+ */
+export function rollRationsStock(rng, depth) {
+  const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
+  return derivedRng(cursor, "storeRations", depth).d(RATIONS_STOCK_DIE);
+}
+
+/**
+ * rationsLeft(line) — STORE-04: how many rations a Rations stock line still
+ * has. The line's `left` when it is a non-negative integer (capped at the
+ * die, so a tampered save cannot conjure a hoard). TOLERANT LOAD for an old
+ * save: a pre-STORE-04 open store sold exactly one ration, so a line with no
+ * usable `left` reads 1 when unsold and 0 when sold. No migration.
+ */
+export function rationsLeft(line) {
+  if (line && Number.isInteger(line.left) && line.left >= 0) return Math.min(line.left, RATIONS_STOCK_DIE);
+  return line && line.sold ? 0 : 1;
+}
 
 /**
  * STORE_EFFECTS — effectId → (state, params, events) => void. The engine-
@@ -449,7 +482,12 @@ export function openStore(state, rng, events = []) {
   // test/parity/fixtures/action-script.economy.json's buyItem actions
   // reference by hand-verified index against the frozen prototype's stock
   // (which has no Rations line at all — see comparables.js's stripStoreClosures).
+  //
+  // STORE-04 (Phase 87): the line carries `left`, a d10 stock rolled from the
+  // DERIVED "storeRations" stream (zero main-rng draws, so the cursor and every
+  // stock index stay put), sold one per buyFrom until it reaches 0.
   add("Rations (+1 ration)", priceFor(RATIONS_BASE_PRICE, race, c.sub), "buyRations", { amount: 1 });
+  stock[stock.length - 1].left = rollRationsStock(rng, d);
 
   // Phase 39 (GEAR-05): the three one-shot tools, offered like the lockpick
   // line above — flat price (no priceFor route, so a Pickpocket's buy
@@ -528,7 +566,11 @@ function gearUpgrades(c, it) {
  *   (c) for a GEAR_EFFECTS line: a class/race/sub legality refusal
  *       (`weaponRefusalReason`/`armorRefusalReason`) — `{ reason }` — else,
  *       when the item is not an upgrade AND there is no room to bag it, the
- *       same `bagFull` shape as (b).
+ *       same `bagFull` shape as (b);
+ *   (d) STORE-04: a `buyRations` line that would push c.rations past the
+ *       bag's ration cap (BAGS[c.bag].rations) — `{ reason: "rationsFull",
+ *       have, cap }`. A state with no bag (old save, test hero) is never
+ *       cap-refused; the store never charges for what you cannot keep.
  * Plan 04's store row reads this SAME predicate to grey/disable a row and
  * show the reason before the player ever taps BUY.
  */
@@ -543,6 +585,13 @@ export function storeBuyRefusal(c, line) {
     if (legalityReason) return { reason: legalityReason };
     if (!gearUpgrades(c, it) && !canStow(c)) {
       return { reason: "bagFull", have: slotItems(c).length, slots: bagCap(c) };
+    }
+  }
+  if (line.effectId === "buyRations") {
+    const cap = BAGS[c.bag] && BAGS[c.bag].rations;
+    const have = c.rations || 0;
+    if (Number.isFinite(cap) && have + ((line.effectParams && line.effectParams.amount) ?? 1) > cap) {
+      return { reason: "rationsFull", have, cap };
     }
   }
   return null;
@@ -584,26 +633,42 @@ export function deliverGear(state, it, events) {
  * gold moves or the slot is marked sold, closing the hole where a legal buy
  * was charged then silently rejected as "not an upgrade" (the user's Pixel 7
  * report). Each refusal reason still pushes the SAME event shape as before
- * (buyFailed/bagFull/itemRejected) — no new refusal event type.
+ * (buyFailed/bagFull/itemRejected).
+ *
+ * STORE-04 (Phase 87): the Rations line is sold PER RATION. Each buy delivers
+ * one ration, decrements `left` and keeps the line buyable until `left`
+ * reaches 0, when the line is marked sold and `rationsSoldOut` follows
+ * `rationsBought`. A spent line is a silent no-op (no gold moves); a buy that
+ * would overfill the pack pushes `rationsFull` before any gold moves. Every
+ * other line still sells once.
  */
 export function buyFrom(state, idx, events = []) {
   const st = state.store;
   if (!st) return events;
   const item = st.stock[idx];
   if (!item || item.sold) return events;
+  const isRations = item.effectId === "buyRations";
+  if (isRations && rationsLeft(item) <= 0) return events;
   const refusal = storeBuyRefusal(state.c, item);
   if (refusal) {
     if (refusal.reason === "insufficientGold") {
       events.push({ type: "buyFailed", reason: "insufficientGold", short: refusal.short });
     } else if (refusal.reason === "bagFull") {
       events.push({ type: "bagFull", item: item.effectParams && item.effectParams.item, have: refusal.have, slots: refusal.slots });
+    } else if (refusal.reason === "rationsFull") {
+      events.push({ type: "rationsFull", have: refusal.have, cap: refusal.cap });
     } else {
       events.push({ type: "itemRejected", item: item.effectParams.item, reason: refusal.reason });
     }
     return events;
   }
   state.c.gold -= item.cost;
-  item.sold = true;
+  if (isRations) {
+    item.left = rationsLeft(item) - 1;
+    item.sold = item.left <= 0;
+  } else {
+    item.sold = true;
+  }
   const boughtEvent = { type: "bought", item: item.n, cost: item.cost };
   events.push(boughtEvent);
   const effect = STORE_EFFECTS[item.effectId];
@@ -612,6 +677,7 @@ export function buyFrom(state, idx, events = []) {
   // nothing and the event is unchanged.
   const extra = effect ? effect(state, item.effectParams, events) : null;
   if (extra && typeof extra === "object") Object.assign(boughtEvent, extra);
+  if (isRations && item.sold) events.push({ type: "rationsSoldOut" });
   return events;
 }
 
