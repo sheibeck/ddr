@@ -542,6 +542,12 @@ function sanitizeStaff(c) {
  * source, a staff `sanitizeStaff` un-wielded): the same slot rule as play, no
  * second one.
  *
+ * Phase 89 (ITEM-06): it also reconciles the Pendant of Fortitude's armed charge
+ * (`halfNext`), see the comment in the body: a legacy `true` links to the first
+ * worn Pendant or is quietly disarmed, junk is disarmed, and the sweep above
+ * disarms a linked charge whose slot no longer holds the Pendant. This runs on a
+ * sheet with no `timers` too.
+ *
  * Potions, the Torch and every cooldown-phase record are never touched. It only
  * ever links or removes, never grants, extends or revives an effect. Pushes no
  * event, draws no rng, is idempotent, never throws on a hostile value, and never
@@ -549,19 +555,35 @@ function sanitizeStaff(c) {
  */
 export function reconcileItemSources(sheet) {
   const plain = (v) => !!v && typeof v === "object" && !Array.isArray(v);
-  if (!plain(sheet) || !plain(sheet.timers)) return sheet;
-  for (const id of Object.keys(sheet.timers)) {
-    if (!id.startsWith("item:")) continue;
-    const rec = sheet.timers[id];
-    if (!plain(rec) || rec.phase !== "effect" || !(rec.left > 0)) continue;
-    const key = id.slice("item:".length);
-    if (SLOT_OF[key] === undefined && !STAFF_NAMES.includes(key)) continue;
-    const src = effectSourceOf(rec);
-    if (src && src.n === key) continue;
-    delete rec.src;
-    const slot = SOURCE_SLOTS.find((s) => activationKeyFor(sourceSlotItem(sheet, s)) === key);
-    if (slot) rec.src = { slot, n: key };
-    else endEffectEarly(sheet, id);
+  if (!plain(sheet)) return sheet;
+  // Phase 89 (ITEM-06): the Pendant of Fortitude's armed charge is linked like
+  // a timer record, `halfNext = { slot, n }`. An old save's armed Pendant is the
+  // boolean `true`: it links to the FIRST worn key holding a Pendant (an item
+  // whose activation kind is "half"), else it is quietly disarmed. A charge
+  // with no source the engine can read (a string, a number, an array, an object
+  // with no name) is disarmed too; a well-formed object is kept and judged by the
+  // same slot rule below (a stale one is swept).
+  const armed = sheet.halfNext;
+  if (armed === true) {
+    const slot = WORN_SLOTS.find((s) => ACTIVATION_OF[activationKeyFor(sourceSlotItem(sheet, s))]?.kind === "half");
+    sheet.halfNext = slot ? { slot, n: sourceSlotItem(sheet, slot).n } : false;
+  } else if (armed && !(plain(armed) && typeof armed.n === "string" && armed.n.length > 0 && (armed.slot === null || SOURCE_SLOTS.includes(armed.slot)))) {
+    sheet.halfNext = false;
+  }
+  if (plain(sheet.timers)) {
+    for (const id of Object.keys(sheet.timers)) {
+      if (!id.startsWith("item:")) continue;
+      const rec = sheet.timers[id];
+      if (!plain(rec) || rec.phase !== "effect" || !(rec.left > 0)) continue;
+      const key = id.slice("item:".length);
+      if (SLOT_OF[key] === undefined && !STAFF_NAMES.includes(key)) continue;
+      const src = effectSourceOf(rec);
+      if (src && src.n === key) continue;
+      delete rec.src;
+      const slot = SOURCE_SLOTS.find((s) => activationKeyFor(sourceSlotItem(sheet, s)) === key);
+      if (slot) rec.src = { slot, n: key };
+      else endEffectEarly(sheet, id);
+    }
   }
   endSourceEffects(null, sheet, [], { quiet: true });
   return sheet;

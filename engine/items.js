@@ -475,6 +475,14 @@ function refuseGear(state, verb, extra, events) {
  * item (the Crystal Staff); `member` is the sheet's name when it is not the
  * hero (`state.c`).
  *
+ * Phase 89 (ITEM-06): the helper also ends a LINKED ARMED CHARGE, the Pendant
+ * of Fortitude's `sheet.halfNext = { slot, n }`, after the timers walk and by
+ * the same rule (slot touched, or the slot no longer holds an item named `n`):
+ * `halfNext` becomes false and one `itemEffectEnded { item, kind: "half", slot,
+ * why, left: 0, ready, member? }` is pushed (`ready` is the Pendant's own
+ * cooldown, read and never touched, so the use stays spent). A sheet with no
+ * `timers` still reaches this pass.
+ *
  * When an ended record was the hero's Cloak of Ether, the entombment rule
  * runs through movement.js#resolveEtherEnd (itemEffectEnded, then entombed,
  * then died); out of rock that is a no-op. `opts.rng` is the caller's main
@@ -490,14 +498,14 @@ function refuseGear(state, verb, extra, events) {
 export function endSourceEffects(state, sheet, events = [], opts = {}) {
   if (!sheet || typeof sheet !== "object") return events;
   const timers = sheet.timers;
-  if (!timers || typeof timers !== "object" || Array.isArray(timers)) return events;
+  const hasTimers = !!timers && typeof timers === "object" && !Array.isArray(timers);
   const o = opts && typeof opts === "object" ? opts : {};
   const slots = Array.isArray(o.slots) ? o.slots : [];
   const why = o.why ?? "gone";
   const quiet = o.quiet === true;
   const hero = !!state && sheet === state.c;
   let etherEnded = false;
-  for (const id of Object.keys(timers)) {
+  for (const id of hasTimers ? Object.keys(timers) : []) {
     if (!id.startsWith("item:")) continue;
     const rec = timers[id];
     if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
@@ -521,6 +529,24 @@ export function endSourceEffects(state, sheet, events = [], opts = {}) {
     if (state && !hero) evt.member = sheet.name;
     events.push(evt);
     if (kind === "ether") etherEnded = true;
+  }
+  // Phase 89 (ITEM-06): the Pendant of Fortitude's ARMED half-damage charge is
+  // linked like a timer record: `sheet.halfNext = { slot, n }`. It disarms by
+  // the same rule (its slot was touched, or no longer holds the Pendant). Only
+  // the armed charge goes: the Pendant's 100-square cooldown record is never
+  // touched, so the use stays spent and taking it off never readies it sooner.
+  const armedHalf = sheet.halfNext;
+  if (armedHalf && typeof armedHalf === "object" && !Array.isArray(armedHalf) && SOURCE_SLOTS.includes(armedHalf.slot) && typeof armedHalf.n === "string") {
+    const touched = slots.includes(armedHalf.slot);
+    const held = sourceSlotItem(sheet, armedHalf.slot);
+    if (touched || !held || held.n !== armedHalf.n) {
+      sheet.halfNext = false;
+      if (!quiet) {
+        const evt = { type: "itemEffectEnded", item: armedHalf.n, kind: "half", slot: armedHalf.slot, why: touched ? why : "gone", left: 0, ready: remaining(sheet, `item:${armedHalf.n}`) };
+        if (state && !hero) evt.member = sheet.name;
+        events.push(evt);
+      }
+    }
   }
   if (etherEnded && hero) {
     const rng = o.rng ?? derivedRng(Number.isInteger(state.rngState) ? state.rngState : 0, "gearEnd", Number.isInteger(state.acts) ? state.acts : 0);
@@ -1862,7 +1888,12 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
       break;
     }
     case "half": {
-      c.halfNext = true;
+      // Phase 89 (ITEM-06): the armed charge carries its source like a timer
+      // record, `{ slot, n }` (truthy, so every read of `c.halfNext` is
+      // unchanged); endSourceEffects disarms it when the Pendant leaves that
+      // slot. A bag use, reachable only on a test double with no worn map,
+      // carries slot null and is never linked.
+      c.halfNext = { slot: slot || null, n: it.n };
       break;
     }
     case "glow": {
