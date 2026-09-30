@@ -2,6 +2,7 @@
 created: 2026-09-29T01:10:00.000Z
 title: Store can still be bought out at depth 7
 area: engine
+resolves_phase: 92
 files:
   - engine/economy.js
   - content/store-stock.js

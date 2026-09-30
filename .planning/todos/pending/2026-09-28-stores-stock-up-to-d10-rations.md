@@ -2,6 +2,7 @@
 created: 2026-09-29T01:06:29.307Z
 title: Stores stock up to d10 rations
 area: engine
+resolves_phase: 87
 files:
   - engine/economy.js:452
   - engine/economy.js:232
