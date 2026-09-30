@@ -54,13 +54,20 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
-import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions } from "./items.js";
+import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions, memberDrinkPotion, memberUseWorn, MEMBER_LEADER_KINDS } from "./items.js";
+// Phase 89 (ITEM-07, plan 06): alliesTurn's Joiner item policy calls
+// memberDrinkPotion / memberUseWorn and reads MEMBER_LEADER_KINDS from
+// items.js. This is the same runtime-only items.js <-> combat.js cycle the
+// line above already rides on: items.js imports combat.js functions and this
+// module imports items.js ones, and neither reads the other's binding while
+// the modules evaluate (only inside function bodies, alliesTurn and
+// pickMemberItem below), so the cycle is safe.
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
@@ -2014,6 +2021,17 @@ export function allyTurn(state, rng, events = []) {
  * never a `while`; re-checks `liveFoes()` every iteration and BREAKS the
  * instant foes clear; skips a downed member (`wp <= 0`) rather than retrying —
  * so it can never spin.
+ *
+ * Phase 89 (ITEM-07, plan 06) — the Joiner ITEM policy (CONTEXT "In combat
+ * (automatic, on the Joiner's turn)"), for a classed member, before the class
+ * policy: in ROUND 1 pickMemberItem's ready worn item is used as a free use
+ * (memberUseWorn), then the turn goes on; at or below one third of its hp, a
+ * Joiner with potions drinks one (memberDrinkPotion) INSTEAD of swinging,
+ * casting or using an ability. A Joiner under its own live Speed swings twice
+ * on a plain strike at the one target (playerStrike's haste mirror); casts and
+ * abilities are single. The decisions draw ZERO rng; the potion and a Pilfer
+ * fumble roll from derived streams, so a solo fight (no C.allies) and every
+ * Joiner with nothing worn or no potions are byte-identical to before.
  */
 export function alliesTurn(state, rng, events = []) {
   const C = state.combat;
@@ -2081,6 +2099,28 @@ export function alliesTurn(state, rng, events = []) {
 
     const view = memberView(sheet, ally);
 
+    // Phase 89 (ITEM-07, plan 06; user 2026-09-30: "let joiners use items they
+    // have ... Just like players."): the Joiner's own item policy, ahead of the
+    // class policy below. ROUND 1: the first ready worn item with a timed
+    // effect is used as a FREE use (the hero's item uses cost no action), then
+    // the turn goes on. At or below ONE THIRD of its hp (exact integer test,
+    // wp*3 <= maxWP) it drinks one of its own potions INSTEAD of swinging,
+    // casting or using an ability (the hero's potion costs the hero's turn).
+    // Both decisions draw nothing; the potion and a Pilfer fumble roll from
+    // derived streams inside items.js, so the main rng only ever sees strikes.
+    if (C.round === 1) {
+      const slot = pickMemberItem(state, ally.partyIdx);
+      if (slot) {
+        memberUseWorn(state, ally.partyIdx, slot, rng, events);
+        if (ally.wp <= 0) continue; // a Pilfer fumble can drop it: no more turn
+        if (!liveFoes(state).length) break;
+      }
+    }
+    if ((sheet.potions || 0) > 0 && ally.wp * 3 <= ally.maxWP) {
+      memberDrinkPotion(state, ally.partyIdx, rng, events);
+      continue;
+    }
+
     // Phase 38 (ABIL-05) — a classed Fighter/Thief member fights by class
     // AND by kit: a READY ability matching pickMemberAbility's policy
     // (an opener in round 1; else a damage ability against a foe above half
@@ -2109,9 +2149,60 @@ export function alliesTurn(state, rng, events = []) {
       // no castable attack spell or no charge left — fall through to the
       // staff swing below, on the Magic User's own to-hit.
     }
-    memberStrike(state, ally, sheet, view, foes[0], rng, events);
+    // Phase 89 (ITEM-07, plan 06): a Joiner under its OWN live Speed swings
+    // twice on a plain strike, as playerStrike's haste does (`attacks =
+    // max(attacks, 2)`): the loop keeps the one target and skips the second
+    // swing once it has fallen. Casts and abilities above `continue` before
+    // here and stay single, as the hero's are.
+    const swings = itemEffectActive(sheet, "haste") ? 2 : 1;
+    const target = foes[0];
+    for (let s = 0; s < swings && target.alive; s++) {
+      memberStrike(state, ally, sheet, view, target, rng, events);
+    }
   }
   return events;
+}
+
+/**
+ * MEMBER_COMBAT_KINDS — Phase 89 (ITEM-07, plan 06): the worn-item activation
+ * kinds a Joiner uses on its own in round 1 of a fight. It is the bot's own
+ * round-1 buff list (tools/lib/tuning-bot.mjs: haste = Cloak of Speed,
+ * critWard = Cloak of Strength, plate = Cloak of Armor, unseen = Anklet of
+ * Invisibility, power = Ring of Power, giant = Gauntlet of the Giant) plus
+ * invis (Cloak of Invisibility) and half (Pendant of Fortitude). Left out on
+ * purpose: knit (Cloak of Regeneration) heals only by walking, and every
+ * MEMBER_LEADER_KINDS kind (ruling Q2: fly, ether, glow, tongue, stone stay the
+ * leader's, so the Amulet of Stone is not here). Frozen; a test pins the list.
+ */
+export const MEMBER_COMBAT_KINDS = Object.freeze(["haste", "critWard", "plate", "unseen", "power", "giant", "invis", "half"]);
+
+/**
+ * pickMemberItem(state, idx) — Phase 89 (ITEM-07, plan 06; CONTEXT "In combat
+ * (automatic, on the Joiner's turn)": "in round 1 it uses a ready worn item's
+ * timed effect", mirroring pickMemberAbility's round-1 opener): the worn slot
+ * of party member `idx` whose item the Joiner should use now, or null. The
+ * first WORN_SLOTS key (jewelry1, jewelry2, cloak) whose worn item is of a
+ * MEMBER_COMBAT_KINDS kind (never a MEMBER_LEADER_KINDS kind), is READY (its
+ * `item:<key>` record is not cooling or live) and whose effect is not already
+ * live on the Joiner: another item of the same kind counts (a live Speed
+ * potion blocks the Cloak of Speed, as the bot skips an active kind) and an
+ * armed Pendant counts for the Pendant. Every item it could use is one the
+ * player can see the Joiner wear. Pure, no rng, no mutation.
+ */
+export function pickMemberItem(state, idx) {
+  const sheet = state && Array.isArray(state.party) ? state.party[idx] : null;
+  if (!sheet || typeof sheet !== "object" || !sheet.worn || typeof sheet.worn !== "object") return null;
+  for (const slot of WORN_SLOTS) {
+    const it = sheet.worn[slot];
+    if (!it) continue;
+    const act = activationFor(it);
+    if (!act || !MEMBER_COMBAT_KINDS.includes(act.kind) || MEMBER_LEADER_KINDS.includes(act.kind)) continue;
+    const id = itemTimerId(it);
+    if (!id || !isReady(sheet, id)) continue;
+    if (act.kind === "half" ? sheet.halfNext : itemEffectActive(sheet, act.kind)) continue;
+    return slot;
+  }
+  return null;
 }
 
 /**
