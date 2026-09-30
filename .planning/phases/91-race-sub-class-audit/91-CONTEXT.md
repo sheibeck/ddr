@@ -38,6 +38,7 @@ Requirements: IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-
 - **Map pick:** stepping on a teleport highlights every floor square the teleport can reach (up to 12 squares in any of the 8 directions, landing on floor only) and the player taps one on the map. Works in both movement modes: while the pick is open the map takes the tap even in ARROWS mode (the arrow-pad default must not block it).
 - **LET IT CHOOSE:** a button takes today's automatic best direction (`engine/movement.js#bestTeleportDir`, fixed 12).
 - **Reach stays 12 squares.**
+- **Explored squares only (user, 2026-09-30, after planning):** the highlight lights only reachable floor squares the hero has already explored; fog stays fog and nothing is revealed by the pick (this overrides the 91-03/91-04 plans' "every floor square, fog included" reading). If no explored square is reachable, the card offers only LET IT CHOOSE.
 - **A decision card** (it is a choice) that holds input until the player picks. The engine holds a pending teleport decision (no rng until the pick commits); save/quit mid-pick restores the pending pick.
 - Today: `teleport()` picks `bestTeleportDir` for an Illusionist with no player input.
 

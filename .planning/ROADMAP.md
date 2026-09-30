@@ -238,7 +238,53 @@ Plans:
   3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
   4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
 
-**Plans**: TBD
+**Plans:** 12 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 90-01-PLAN.md — SPELL-08/ABIL-06: docs/SPELL-AUDIT.md and docs/SKILL-AUDIT.md (text / engine / rolls / canon / verdict, school gates, who can use it), ONE batched balance checkpoint (Q1 Strength's reach, Q2 Petrify's experience, Q3 which sleeps wake, Q4 Doze's reach, Q5 Ice's shape, Q6 the school square step, Q7+ audit finds); rulings recorded (autonomous: false)
+- [ ] 90-02-PLAN.md — ABIL-07: Pommel Strike is a normal strike and a landed blow stuns (cd 4), for the hero and Joiner Fighters
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 90-03-PLAN.md — SPELL-09: Strength adds a derived d10 per damage roll (Q1 reach) for 100 squares, recast restarts, no hp; spell-sourced timed effects (SPELL_ACT_OF, startSpellEffect, spellEffectFaded)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 90-04-PLAN.md — SPELL-12: one depth-rising resist for every spell (Phase 89's shared helper), no floor-12 extras; Petrify kills with no loot, Stupidity drops intelligence to 1, Blind is top-face-only with no crits
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 90-05-PLAN.md — SPELL-11 + Ice: Doze sleeps d4 foes and wakes on a hit, Stun holds one foe d4 rounds, Ice damages the room and may freeze each survivor; shared tails for hero and Joiner
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 90-06-PLAN.md — SPELL-12 removals + SPELL-10 gates: Lesser Summon and Phantom Host gone (tolerant load), the Summoner's Summon from level 1 as a named exception, Wizards lose Illusion, canCast checks the school, the seed-sweep school-gate test and content guard
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 90-07-PLAN.md — SPELL-10: Open/Lock, Fly, Enchant Character, Speed of Sound; the school-bonus stretch; the utility niche; Fly through both movement modes
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 90-08-PLAN.md — SPELL-10: Stop Time (time hold), Senseless and Duplicate Foe (misdirected swings)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 90-09-PLAN.md — SPELL-10: Door Illusion, Chameleon Tongue (+4 parley), Size of the Behemoth; the Illusionist's three starting illusions; the scroll roll table pinned per depth band
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 90-10-PLAN.md — Joiner Magic Users cast buffs, heals and controls from their own book; every remaining audit engine fix (Joiner skill use included); the bot plays the new spells
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 90-11-PLAN.md — TEXT-01 for every spell and skill row, line, chip and menu row ("+/− to hit", d20 ranges, foe counts, the resist stated), with the wording guard
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 90-12-PLAN.md — the text-vs-engine guard, both audits closed with a pin per row, the spell / ability / roll ledgers, the phase gate and the hand-offs to Phases 91 and 92
 
 ### Phase 91: Race & Sub-class Audit
 
