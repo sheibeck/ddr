@@ -100,17 +100,19 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. An expanded leaderboard row states the hero's race and sub-class. Long-pressing a row offers "filter by race / sub-class / both", and picking one sets those filters and reloads the board. The long press never also toggles the row.
   5. The RANK BY sheet, and every other leaderboard sheet, shows its last option (WILMST and its description) in full above the navigation bar at the smallest screen and the largest text scale.
 
-**Plans:** 8 plans
+**Plans:** 10 plans (waves 1–10, run in order; 87-08's user-gated deploy runs last)
 
 Plans:
 - [ ] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
 - [ ] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
-- [ ] 87-03-PLAN.md — STORE-04 UI + bot: "N left" on the Rations row, pack-full reason, hoarder buys per ration up to its cap, store snapshots declared
+- [ ] 87-03-PLAN.md — STORE-04 UI + bots: "N left" on the Rations row, pack-full reason; fair bot tops up 3 days of party ration upkeep, hoarder buys per ration to its cap; snapshots and bot pins declared
 - [ ] 87-04-PLAN.md — BOARD-28 local: records.js DEPTH/LINEAGE/GRAVEYARD ties by most steps, re-rank on load, DEPTH rule copy (only BOARD-28 engine bytes; no server files)
 - [ ] 87-05-PLAN.md — BOARD-28 contract: deepKey = floor*1e6 + steps in runDoc.js and the final rules; transition rules + config + proof test (vc12 checked)
 - [ ] 87-06-PLAN.md — BOARD-28 tooling: fake transition mode + admin deepKey patch; boards-admin rekey-deep (dry run, idempotent, count report)
 - [ ] 87-07-PLAN.md — BOARD-28 proof + release steps: boards-smoke --transition probe; RELEASING.md Release 2.3.0 DEPTH-key steps
-- [ ] 87-08-PLAN.md — BOARD-28 live: checkpoint for the user's go to deploy the transition rules, then the live probe and the section-14 record
+- [ ] 87-09-PLAN.md — BOARD-29: race and sub-class in the expanded row detail; long-press (and FILTER LIKE THIS) row menu filters by race / sub-class / both
+- [ ] 87-10-PLAN.md — BOARD-30: every leaderboard sheet clears the bottom system inset (RANK BY's WILMST fully visible)
+- [ ] 87-08-PLAN.md — BOARD-28 live (runs last): checkpoint for the user's go to deploy the transition rules, then the live probe and the section-14 record
 
 **UI hint**: yes
 
