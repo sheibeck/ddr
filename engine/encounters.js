@@ -26,7 +26,7 @@
 // declaration, and each only touches the other module's binding from inside
 // a function body invoked at runtime, never at module-evaluation time.
 
-import { skill, skillTier, canLearn, intelBonus, itemEffectActive } from "./derived.js";
+import { skill, skillTier, canLearn, intelBonus, itemEffectActive, reconcileWorn, spellLevelFor } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
@@ -36,6 +36,7 @@ import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
 import { swapPartyMember } from "./state.js";
+import { derivedRng } from "./rng.js";
 import {
   TRAPS,
   AFFLICTIONS,
@@ -608,6 +609,37 @@ export function meetJoiner(state, rng, events = []) {
 }
 
 /**
+ * readJoinerScroll(state, pending) — Phase 89 (ITEM-07, ruling Q3 = A, 2026-09-30:
+ * "A Magic User Joiner reads its starting scroll on joining: a spell it can
+ * learn at its level, rolled from a derived stream, goes into its book and the
+ * scroll is spent."). Module-private. For a pending Magic User sheet with
+ * `scrolls > 0`: the candidates are the SPELLS its sub can learn
+ * (grantableAt: the school is allowed and its gate is met at its level) whose
+ * spell level is also within its level (spellLevelFor, the same bar
+ * magic.js#readScroll applies before it scribes, so the copy is castable at
+ * once) and that its grimoire lacks; one is picked with `derivedRng(<state.rngState>,
+ * joinerScroll, <name>, <floor depth>).pick(...)` (resolveJoiner has no rng
+ * argument, so the cursor is read off the state), pushed onto its grimoire,
+ * and `scrolls` becomes 0. With nothing learnable the scroll is still spent.
+ * Returns the spell name, null for a spent-on-nothing scroll, or undefined when
+ * there was no scroll to read (any other class, or none left). Never touches
+ * the main rng.
+ */
+function readJoinerScroll(state, pending) {
+  if (pending.cls !== "Magic User" || !(pending.scrolls > 0)) return undefined;
+  const level = pending.level ?? pending.lvl ?? 1;
+  const book = Array.isArray(pending.grimoire) ? pending.grimoire : (pending.grimoire = []);
+  const options = SPELLS.filter((sp) => grantableAt(pending.sub, sp, level) && spellLevelFor(pending.sub, sp) <= level && !book.includes(sp.n));
+  pending.scrolls = 0;
+  if (!options.length) return null;
+  const cursor = Number.isInteger(state.rngState) ? state.rngState : 0;
+  const depth = Number.isInteger(state.floor?.depth) ? state.floor.depth : 0;
+  const sp = derivedRng(cursor, "joinerScroll", pending.name, depth).pick(options);
+  book.push(sp.n);
+  return sp.n;
+}
+
+/**
  * resolveJoiner(state, accept, events) — the pure (NO rng) accept/decline of a
  * pending recruitment stashed by meetJoiner (PARTY-01, Phase 9). DELIBERATE
  * RULES CHANGE, Phase 25.1, 2026-09-15 (DFB-04): on accept with a candidate,
@@ -617,18 +649,39 @@ export function meetJoiner(state, rng, events = []) {
  * event (`{ name, sub, replacedBy }`) is pushed BEFORE `joinerJoined` so the
  * presentation layer can narrate the exit first. Declining (or no candidate)
  * pushes `joinerDeclined` and leaves the roster untouched. `state.pendingJoiner`
- * is ALWAYS cleared. Still draws zero rng — plain data bookkeeping — so it
+ * is ALWAYS cleared. Still draws zero MAIN rng — plain data bookkeeping — so it
  * never shifts the seeded cursor; it is not part of any parity fixture (no
  * fixture ever meets a Joiner).
+ *
+ * Phase 89 (ITEM-07, user 2026-09-30: "let joiners use items they have ...
+ * Just like players."): on accept the Joiner joins DRESSED. reconcileWorn
+ * moves a cloak or jewel in its bag (the Thief's starting cloak) into a free
+ * worn slot, the same object, so it can be used; `joinerJoined.wore` (additive,
+ * only when something was put on) lists what it wore. A Joiner with nothing to
+ * wear joins with `worn: {}` and no `wore` key. The Magic User Joiner's starting
+ * scroll is read on joining (ruling Q3 = A, docs/ITEM-AUDIT.md): see
+ * readJoinerScroll; `joinerJoined.scroll` (additive, only for a Magic User that
+ * had a scroll) names the spell it copied into its book, or is null when
+ * nothing was learnable (the scroll is spent either way). Neither step draws
+ * the main rng; the scroll pick uses a derived stream.
  */
 export function resolveJoiner(state, accept, events = []) {
   const pending = state.pendingJoiner;
   if (accept && pending) {
+    const wore = (reconcileWorn(pending) ?? []).flatMap((r) => r.worn);
+    const scroll = readJoinerScroll(state, pending);
     const { left } = swapPartyMember(state, pending);
     if (left) {
       events.push({ type: "joinerLeft", name: left.name, sub: left.sub, replacedBy: pending.name });
     }
-    events.push({ type: "joinerJoined", name: pending.name, sub: pending.sub, lvl: pending.lvl });
+    events.push({
+      type: "joinerJoined",
+      name: pending.name,
+      sub: pending.sub,
+      lvl: pending.lvl,
+      ...(wore.length ? { wore } : {}),
+      ...(scroll !== undefined ? { scroll } : {}),
+    });
   } else {
     events.push({ type: "joinerDeclined", name: pending ? pending.name : undefined });
   }

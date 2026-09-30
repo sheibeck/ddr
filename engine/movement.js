@@ -611,6 +611,22 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
     );
     if (etherEnded) resolveEtherEnd(state, rng, events, now);
   }
+  // Phase 89 (ITEM-07): the Joiner twin of the hero tick above. Every Joiner's
+  // own item timers tick by the step's cost, after the hero's (so the hero's
+  // item lines come first, then each Joiner's in party order), and a Joiner's
+  // heal-over-time (the Cloak of Regeneration on a Joiner) heals that Joiner
+  // first, exactly as the hero's does. Wear-off, ready-again and heal lines
+  // carry the Joiner's name (`member`). A solo run has no party and a Joiner
+  // with no timers map is skipped, so neither enters the loop (byte-identical
+  // draws and events). A Joiner's Cloak of Ether is leader-only (ruling Q2 =
+  // A), so there is no Joiner entombment to resolve here.
+  if (!state.dead && Array.isArray(state.party)) {
+    for (const m of state.party) {
+      if (!m || typeof m !== "object" || !m.timers || typeof m.timers !== "object" || Array.isArray(m.timers)) continue;
+      tickHealOverTime(state, cost, rng, events, m);
+      narrateTimerTransitions(state, tickSquares(m, cost), events, m);
+    }
+  }
   // Mirrors the fall/gorge death path's own early return immediately after
   // the hazard that could have killed — the spell-charge recovery, newDay
   // and feature dispatch below must never run against a state die() has
