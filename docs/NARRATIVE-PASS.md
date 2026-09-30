@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -40,8 +40,8 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | Surface | Keys judged | Changed | Kept word for word | New | Rows on this page | Lines removed |
 |---|---:|---:|---:|---:|---:|---:|
 | blurbs (class and race blurbs, and their mechanical footers) | 39 | 21 | 18 | 100 | 121 | 0 |
-| oracle (the Oracle log) | 327 | 94 | 233 | 3 | 107 | 2 |
-| rail (rail lines and the fight log) | 287 | 79 | 208 | 3 | 86 | 2 |
+| oracle (the Oracle log) | 327 | 94 | 233 | 4 | 108 | 2 |
+| rail (rail lines and the fight log) | 287 | 79 | 208 | 4 | 87 | 2 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 0 | 17 | 0 |
 | rail-cards (rail cards and decision cards) | 140 | 1 | 139 | 0 | 1 | 0 |
 | combat-screen (the combat screen and its chips) | 203 | 11 | 192 | 4 | 25 | 1 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 73 | 55 |
 | other (everything else) | 32 | 5 | 27 | 9 | 14 | 0 |
-| **Total** | **1871** | **326** | **1545** | **136** | **551** | **85** |
+| **Total** | **1871** | **326** | **1545** | **138** | **553** | **85** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -186,7 +186,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## oracle — the Oracle log
 
-107 changed lines.
+108 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -241,6 +241,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `oracle:insaneRolled`<br>insaneRolled — the hero's Insanity rolls its d6 on a foe | Insanity takes Viper: 5. | Insanity takes Viper: 5, and it flies into a frenzy: twice the swings from here on. | **79-08** (what happened, to whom): The d6 face was printed with no meaning, and a 1, 4 or 5 has no line of its own; each now says what it did (a 2, 3 or 6 has its own line after). |
 | `oracle:insanityRage`<br>insanityRage — the hero's insanity rolls a rage | Rage: +2 might. | Rage: +2 damage on every blow until the day ends. | **79-11** (what happened, to whom): "Might" is engine vocabulary; the line now says it is damage on every blow and lasts until the new day clears it. |
 | `oracle:insanityRolled`<br>insanityRolled — an Insanity result on the dot rolls the hero's d6 | Insanity. It comes apart at the seams. | Insanity takes hold of you. | **79-11** (what happened, to whom, accurate to the engine): The line printed the INSANITY table's foe-side row ("It strikes the nearest of its own") for the hero's own insanity; it now says it is yours, and faces 2, 4 and 6, which do nothing, say so. |
+| `oracle:itemEffectEnded`<br>itemEffectEnded — engine/items.js#endSourceEffects (an item effect ended early: its item left the source slot) | *(new line)* | The item is gone — its magic stops. | **88-01** (what happened, to whom): User ruling (backlog 999.16, 2026-09-28): "when you use an item and then take that item off, you should lose the items benefit ... if I wear the cloak of flying and use it, I gain flying, and then if I take it off, I should lose that flying condition." Rulings 2026-09-30: every item effect started from a worn slot, and the Crystal Staff's party invisibility from the weapon slot, ends the moment the item leaves that slot; the use is spent (ready again exactly when a full run would have been); narrated on the Oracle and the rail, naming the item and what stops. The line leads with the item and how it left (comes off, is swapped out, is dust, is gone), then says what stops per kind (flying, solid again, critical hits, visible again, the light, the fluency; the whole party is seen again for the Crystal Staff), then, when the use left a cooldown, when it is ready. The synthetic corpus event carries no item name, so it renders the bare form shown here. |
 | `oracle:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | Unseen for 3 squares. They need two better. | Unseen for 3 squares: every foe has two fewer faces that hit you. | **79-11** (roll-high (ROLL-04), what happened, to whom, hygiene): The Anklet's "need two better" was roll-under and the Cloak's line never said what being unseen does; both now use their item text's roll-high words, a count of one reads "1 square", and a bare event no longer leaks "undefined squares". |
 | `oracle:itemUnequipped`<br>itemUnequipped — engine/items.js#unequipSlot | You peel off what is left of your Dagger and leave it where it falls. The bag declines the honor. | You peel off what is left of your Dagger and leave it where it falls. The bag declines the honour. | **79-12** (naming ruling): House spelling: the player reads British spellings ("armour", "honour", "rumour"), 79-12's decision by the corpus majority; the line is otherwise word for word. |
 | `oracle:joinerMet`<br>joinerMet — a Joiner is met on the dot | Viper, a Apprentice, joins you for a while. | Viper, an Apprentice, offers to travel with you for a while. | **79-11** (accurate to the engine, reads aloud): The meeting is an offer that the accept, decline or refusal follows, so "joins you" contradicted a decline; the article agrees, and a real event states the Joiner's level. |
@@ -300,7 +301,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail — rail lines and the fight log
 
-86 changed lines.
+87 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -350,6 +351,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `rail:insaneRolled`<br>insaneRolled — the hero's Insanity rolls its d6 on a foe | Insanity takes Viper. | Insanity takes Viper (5): frenzy, twice the swings. | **79-08** (what happened, to whom): The rail twin of the Oracle line, which now says what the face did. |
 | `rail:insanityRage`<br>insanityRage — the hero's insanity rolls a rage | Rage: +2 might. | Rage: +2 damage on every blow until the day ends. | **79-11** (what happened, to whom): The rail twin of the Oracle fix. |
 | `rail:insanityRolled`<br>insanityRolled — an Insanity result on the dot rolls the hero's d6 | Insanity — it comes apart. | Insanity takes hold of you. | **79-11** (what happened, to whom, accurate to the engine): The rail twin of the Oracle fix. |
+| `rail:itemEffectEnded`<br>itemEffectEnded — engine/items.js#endSourceEffects | *(new line)* | Item gone: its magic stops. | **88-01** (what happened, to whom): The rail twin of the Oracle line (Phase 88 plan 01, ITEM-02; user words 999.16 and the 2026-09-30 rulings, the Crystal Staff included): the item, how it left, what stops, and when it is ready. A real event names the item and the wearer, for example "Cloak of Flying off: flying stops (ready in 65 squares)." |
 | `rail:itemEffectStarted`<br>itemEffectStarted — a worn or drunk item's timed effect starts | Unseen for 3 squares. They need two better. | Unseen for 3 squares: every foe has two fewer faces that hit you. | **79-11** (roll-high (ROLL-04), what happened, to whom, hygiene): The rail twin of the Oracle fix, the Cloak of Invisibility's effect in the rail's short form. |
 | `rail:leveled`<br>leveled — engine/character.js#checkLevel (synthetic { wpGain 3, gained 8 }; in play \`gained\` equals \`wpGain\`) | Skill level 2 (+3 hp). | Skill level 2 (+8 hp). | **79-02** (honest number): The level-up line now prints \`gained\`, the HP the engine says it really added, instead of \`wpGain\`; 79-02 stamps \`gained\` on every gain event and here it always equals \`wpGain\`, so the number a player sees does not change (the synthetic event, whose two fields differ, shows the new source). |
 | `rail:lullabyRolled`<br>lullabyRolled { n 2 } — a Bard's Lullaby rolls how many foes it can reach | 2 nod off. | Lullaby: up to 2 nod off. | **79-04** (accurate to the engine): The roll is a ceiling, not a count of foes that slept. |

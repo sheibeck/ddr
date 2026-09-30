@@ -72,6 +72,31 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 // count.
 const squaresText = (n) => (Number.isFinite(n) ? plural(n, "square") : "a few squares");
 
+// Phase 88 (ITEM-02): itemEffectEnded's what-stops clauses, one per linked
+// activation kind (engine/items.js#endSourceEffects). Each names what stops;
+// `who` is the wearer, "you" for the hero or the Joiner's name, so a Joiner's
+// line never says "you". A PARTY_WIDE row (the Crystal Staff, `e.party`)
+// speaks for the whole party. An unknown kind falls back to "its magic stops".
+const endedWho = (e) =>
+  e?.member
+    ? { name: e.member, be: "is", own: "their" }
+    : { name: "you", be: "are", own: "your" };
+/** endedItem(e) — the ended item's display name: the engine's own string, an item object's `n`, or "" when the event names none. */
+const endedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : typeof e?.item?.n === "string" && e.item.n ? e.item.n : "");
+const ENDED_CLAUSE = Object.freeze({
+  fly: () => "the flying stops, right where things stand. No falling, no fuss",
+  ether: () => "solid again, and the walls are walls once more",
+  critWard: (e) => `critical hits can find ${endedWho(e).name} again`,
+  invis: (e) => (e?.party ? "the whole party is plainly visible again. So much for sneaking" : `${endedWho(e).name} ${endedWho(e).be} plainly visible again`),
+  unseen: (e) => `foes see ${endedWho(e).name} plainly again`,
+  haste: () => "the second swing goes with it",
+  plate: () => "the weightless plate goes with it",
+  power: () => "the extra damage goes with it",
+  giant: (e) => `${endedWho(e).name} ${endedWho(e).be} back to ${endedWho(e).own} own size`,
+  glow: () => "the light goes out",
+  tongue: () => "the fluency goes with it",
+});
+
 // VOX-05 (Phase 79, plan 79-11): "an Apprentice", never "a Apprentice".
 const withArticle = (word) => `${/^[aeiou]/i.test(String(word)) ? "an" : "a"} ${word}`;
 
@@ -1662,6 +1687,32 @@ export const EVENT_NARRATION = {
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;
   },
   itemEffectFaded: (e) => `<span class="beat">${e.item ?? "It"} wears off.</span>`,
+  // Phase 88 (ITEM-02): an item effect ended EARLY because its item left the
+  // source slot (take off, swap, destroyed, or found gone by the sweep). The
+  // lead names the item by why; the clause says what stops; the ready clause
+  // (only when the use left a cooldown) says when it is usable again, exactly
+  // when a full run would have had it ready. A bare payload renders plain.
+  itemEffectEnded: (e) => {
+    const name = endedItem(e);
+    // "Your Cloak of Flying" / "Joiny's Cloak of Flying"; a bare event says "The item".
+    const ref = name ? `${e?.member ? `${e.member}'s` : "Your"} ${name}` : "The item";
+    const lead =
+      e?.why === "off"
+        ? e?.slot === "weapon"
+          ? `${name || "The item"} leaves ${e?.member ? "their" : "your"} hands`
+          : `${ref} comes off`
+        : e?.why === "swap"
+          ? `${ref} is swapped out`
+          : e?.why === "destroyed"
+            ? `${ref} is dust`
+            : `${ref} is gone`;
+    const clause = (ENDED_CLAUSE[e?.kind] ?? (() => "its magic stops"))(e);
+    const ready =
+      Number.isFinite(e?.ready) && e.ready > 0
+        ? ` Ready again in ${squaresText(e.ready)}, exactly when it would have been had it stayed on.`
+        : "";
+    return `<span class="beat">${lead.charAt(0).toUpperCase()}${lead.slice(1)}</span> — ${clause}.${ready}`;
+  },
   itemCooled: (e) => `<span class="hit">${e.item ?? "It"} is ready again.</span>`,
   // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
   staffRecharged: (e) =>

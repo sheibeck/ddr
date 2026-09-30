@@ -1,0 +1,24 @@
+[
+  {
+    "key": "oracle:itemEffectEnded",
+    "surface": "oracle",
+    "trigger": "itemEffectEnded — engine/items.js#endSourceEffects (an item effect ended early: its item left the source slot)",
+    "before": "",
+    "after": "The item is gone — its magic stops.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "User ruling (backlog 999.16, 2026-09-28): \"when you use an item and then take that item off, you should lose the items benefit ... if I wear the cloak of flying and use it, I gain flying, and then if I take it off, I should lose that flying condition.\" Rulings 2026-09-30: every item effect started from a worn slot, and the Crystal Staff's party invisibility from the weapon slot, ends the moment the item leaves that slot; the use is spent (ready again exactly when a full run would have been); narrated on the Oracle and the rail, naming the item and what stops. The line leads with the item and how it left (comes off, is swapped out, is dust, is gone), then says what stops per kind (flying, solid again, critical hits, visible again, the light, the fluency; the whole party is seen again for the Crystal Staff), then, when the use left a cooldown, when it is ready. The synthetic corpus event carries no item name, so it renders the bare form shown here."
+  },
+  {
+    "key": "rail:itemEffectEnded",
+    "surface": "rail",
+    "trigger": "itemEffectEnded — engine/items.js#endSourceEffects",
+    "before": "",
+    "after": "Item gone: its magic stops.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line (Phase 88 plan 01, ITEM-02; user words 999.16 and the 2026-09-30 rulings, the Crystal Staff included): the item, how it left, what stops, and when it is ready. A real event names the item and the wearer, for example \"Cloak of Flying off: flying stops (ready in 65 squares).\""
+  }
+]

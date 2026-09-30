@@ -370,6 +370,26 @@ const railWardName = (item) => (typeof item === "string" && item ? item : typeof
 // squaresText — "1 square", and no leaked "undefined squares".
 const railSquares = (n) => (Number.isFinite(n) ? railPlural(n, "square") : "a few squares");
 
+// Phase 88 (ITEM-02): the rail twin of eventNarration.js's ENDED_CLAUSE —
+// what stops when an item effect ends early, in the rail's short form, one per
+// linked activation kind. A PARTY_WIDE row (`e.party`, the Crystal Staff)
+// says the party is seen again. An unknown kind falls back to "its magic stops".
+/** railEndedItem(e) — eventNarration.js's endedItem twin: the string, an item object's `n`, or "It". */
+const railEndedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : typeof e?.item?.n === "string" && e.item.n ? e.item.n : "Item");
+const RAIL_ENDED_CLAUSE = Object.freeze({
+  fly: "flying stops",
+  ether: "solid again",
+  critWard: "crits can land again",
+  invis: "visible again",
+  unseen: "seen again",
+  haste: "the second swing goes",
+  plate: "the plate goes",
+  power: "the extra damage goes",
+  giant: "back to normal size",
+  glow: "the light goes out",
+  tongue: "the fluency goes",
+});
+
 /** railTableFourTail(e) — todo 2026-09-26: the signed amount a Table 4 row actually made (rollRange.js#signedText). */
 function railTableFourTail(e) {
   if (!Number.isFinite(e?.amount)) return "";
@@ -2543,6 +2563,16 @@ export const LINE_FOR = {
     return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };
   },
   itemEffectFaded: (e) => ({ text: `${e?.item ?? "It"} wears off.`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 88 (ITEM-02): the rail twin of the Oracle's itemEffectEnded — the
+  // item, how it left, what stops, and (only when the use left a cooldown)
+  // when it is ready. A minor event, never a decision card.
+  itemEffectEnded: (e) => {
+    const how = e?.why === "off" ? (e?.slot === "weapon" ? "unwielded" : "off") : e?.why === "swap" ? "swapped out" : "gone";
+    const clause = e?.party && e?.kind === "invis" ? "party seen again" : (RAIL_ENDED_CLAUSE[e?.kind] ?? "its magic stops");
+    const ready = Number.isFinite(e?.ready) && e.ready > 0 ? ` (ready in ${railSquares(e.ready)})` : "";
+    const lead = `${e?.member ? `${e.member}'s ` : ""}${railEndedItem(e)} ${how}`;
+    return { text: `${lead.charAt(0).toUpperCase()}${lead.slice(1)}: ${clause}${ready}.`, tone: "beat", priority: PRIORITY.other };
+  },
   itemCooled: (e) => ({ text: `${e?.item ?? "It"} is ready again.`, tone: "hit", priority: PRIORITY.other }),
   // VOX-05 (Phase 79, plan 79-11): the bare "2/5" now says what it counts.
   staffRecharged: (e) => ({
