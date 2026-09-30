@@ -85,6 +85,10 @@
 - [ ] **Pixel 7 UAT batches** — `docs/UAT-v2.1.md` (108 phase + 12 quick-task checks open, on the 2.1.0 build), `docs/UAT-v2.0.md` (142 open; the user walks it over play sessions on the published 2.0.0 build), `docs/UAT-v1.9.md` (21 of 24 open), `docs/UAT-v1.8.md` (30 of 31 open), `docs/UAT-v1.7.md` (25 + the four-run DR bar), `docs/UAT-v1.6.md` (26), `docs/UAT-v1.5.md` (140); findings → todos / quick tasks
 - ✓ **Gear screen UX redo** — v1.9 (Phases 62–63): slim AR/WILMST header, five fixed WORN rows, bag meter + tagged cards, per-type consumables, ALSO ON YOU, and one bottom action sheet for every equip/swap/unequip/use/drop (engine-true reasons, combat greying, back/TalkBack/reduced motion). Device batch `docs/UAT-v1.9.md`: 3/24 walked
 - ✓ **No gear changes mid-fight** — v1.9: engine ✓ Phase 61 (`gearLockReason` + `gearRefused`, zero fixture moves; also covers the loot/find take verbs); sheet ✓ Phase 63 (GRULE-02: EQUIP / SWAP / UNEQUIP / DISCARD greyed in a fight, USE and DROP live, re-greys in place)
+- [ ] **Truth in advertising** (v2.3): every item, race, sub-class, spell and skill does what its text says, and has the systems it needs
+- [ ] **Wizard day-one direct-damage spell, always** (v2.3)
+- [ ] **Player reports #3, #4, #5, #6, #8, #9 fixed** (v2.3)
+- [ ] **Stores stock d10 rations; a store can't be bought out by depth 7** (v2.3)
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 
 ### Out of Scope
@@ -95,6 +99,17 @@
 - **Ads and in-app purchases** — v1 is paid-upfront only.
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
+
+## Current Milestone: v2.3 Truth in Advertising
+
+**Goal:** every item, race, sub-class, spell and skill has the systems it needs and does exactly what its text says, and the open player reports and pending todos are fixed.
+
+**Target features:**
+- **Itemization pass** (backlog 999.16): an audit table covering every item's text, engine behaviour and canon, with the fixes. It adds the systems items are missing: heal-over-time (the Cloak of Regeneration heals every 10 steps for 30 steps), benefits that end when the item comes off (a link from each timed effect to its source item, cleared on unequip, drop, sell or swap), and a Cloak of Strength that blocks foe crits against the wearer instead of the wearer's own crits.
+- **Race and sub-class pass:** all 6 races and all 24 sub-classes. Every trait in `content/identity.js` and every blurb is checked against the engine and fixed. The Wizard always starts with a direct-damage level-1 spell, drawn from the full level-1 pool rather than only the spells it rolled, because it refuses to swing while a spell is left to cast (user, 2026-09-29).
+- **Spell and skill pass** (backlog 999.15): to-hit, damage, duration, resist and cooldown text agree with the engine and canon. This covers player reports #8 (Strength) and #4 (Pommel Strike).
+- **Player reports:** #3 (the Illusionist's teleport choice), #5 (a Joiner's hp display after a hit), #6 (the Enlarge potion rebalance) and #9 (DEPTH ties go to the MOST steps, reversing v2.1 BOARD-17; server and shipped 2.2.0 client compatibility checked).
+- **Store:** each store stocks d10 rations, and gold income vs store prices gets retuned so a depth-7 hero can't buy out a whole store (measured in the milestone-end bot pass).
 
 ## Last Milestone: v2.2 Our Own Leaderboards (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track)
 
@@ -471,4 +486,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-29 after the v2.2 Our Own Leaderboards release (Play 2.2.0 / vc12)*
+*Last updated: 2026-09-29 at the start of milestone v2.3 Truth in Advertising*

@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Our Own Leaderboards
-status: Awaiting next milestone
-stopped_at: Completed 86-05-PLAN.md
-last_updated: "2026-09-29T20:05:52.713Z"
+milestone: v2.3
+milestone_name: Truth in Advertising
+status: planning
+last_updated: "2026-09-30T00:45:21.406Z"
 last_activity: 2026-09-29
-last_activity_desc: Milestone v2.2 completed and archived
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 34
-  completed_plans: 34
-  percent: 100
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,14 +20,14 @@ current_phase_name: PROMOTED → Phases 56 / 58 / 59
 See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`); v2.2 is released — the Data safety form, the Play Games console cleanup and the upgrade-path rows are the user's
+**Current focus:** Milestone v2.3 Truth in Advertising — defining requirements (itemization, race and sub-class, spell and skill passes; player reports #3–#9; store rations and retune)
 
 ## Current Position
 
-Phase: Milestone v2.2 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-29 — Milestone v2.2 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-29 — Milestone v2.3 started
 
 ## Ground Truth (durable facts every session needs)
 
