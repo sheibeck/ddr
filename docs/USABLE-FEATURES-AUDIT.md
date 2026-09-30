@@ -168,7 +168,7 @@ are `TARGETED_KINDS`); on cooldown, `useRefused cooldown {left}`:
 - Cloak of Strength (`brace`, effect 50 / cd 50 — no critical lands on you)
 - Cloak of Invisibility (`invis`, every 100)
 - Cloak of Speed (`haste`, every 50)
-- Cloak of Regeneration (`knit`, effect 0 / cd 20 — a flat d6 hp back on use)
+- Cloak of Regeneration (`knit`, effect 30 / cd 50: a d6 every ten squares, three times)
 - Cloak of Armor (`plate`, effect 50 / cd 50 — soaks as Plate while live)
 - Cloak of Flying (`fly`, effect 20 / cd 50 — the old climb/gorge
   auto-activation is REMOVED; only `useItem` on the worn cloak starts flight)

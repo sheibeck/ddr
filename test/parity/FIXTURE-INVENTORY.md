@@ -5823,3 +5823,58 @@ harness doc comment now names the field, no code change).
 
 **Zero drift.** Nothing was moved, so nothing was re-recorded: no fixture, state
 pin, save, golden or unit pin changed. The 88-02 tests are additions only.
+
+### Phase 88 plan 04: the Cloak of Regeneration heals over time (ITEM-03)
+
+Plan 88-04, base `3cce3352` (gate 8,250 tests, 8,248 pass, 0 fail, 2 skipped;
+parity 66/66).
+
+**The rule (user, 2026-09-30).** "The cloak should be active for 30 squares,
+healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." Using
+the worn Cloak of Regeneration starts a 30-square window (no instant heal); a d6
+comes back 10, 20 and 30 squares after the use, each die rolled from
+`derivedRng(<main rng cursor>, "healTick", <item>, <tick>, <state.steps>)`, never
+the main stream; every tick is narrated (`healTick`), the full-hp one included.
+The heal is activation data (`act.hot { every, ticks, heal }`), read by
+`engine/items.js#tickHealOverTime`, called once per step from `move` before
+`tickSquares`.
+
+**The predictor.** Three things can move a recorded artefact: (a) the cloak's
+item TEXT is rewritten and the text rides on every rolled item, so any record or
+hashed state that carries a Cloak of Regeneration object moves; (b) the
+roll-high draw inventory, because the use-time `rng.d(6)` (tagged `roll:amount`)
+is gone; (c) a replay or pinned run that uses the cloak (its use no longer draws
+the main d6, and hp now returns over time). No new serialized field exists (tick
+progress is read from the record's own `left`), so no comparable carve-out is
+needed; `src` and `c.timers` were already stripped (88-01, 88-02).
+
+**The live scan (measured at the base, then with the change).**
+
+1. `node tools/fixture-inventory.mjs --json`: byte-identical to a `git archive`
+   of the base run in a scratch directory. The generated roster block above is
+   not edited.
+2. `node --test "test/parity/**/*.test.js"`: before the declaration **63 / 66**
+   (chargen seed 4's declared record, and the two suites that include it), after
+   it **66 / 66**. `test/parity/prototype-master.js.txt` is untouched;
+   `test/parity/harness/comparables.js` is untouched.
+3. `roll-high-guard.test.js`, `roll-high-state-pins.test.js`,
+   `roll-high-save-compat.test.js`: two moved, declared below; the save-compat
+   `expected.hash` did not move (the pre-switch save carries no Cloak of
+   Regeneration).
+
+**Moved (each measured, declared, regenerated alone).**
+
+| Entry | before | after | rationale |
+|---|---|---|---|
+| chargen seed 4, `after.worn.cloak.txt` (`action-script.chargen.json`) | "used, a d6 hp back at once; then twenty squares of rest before it works again" | "used, a d6 hp back every ten squares you walk, three times; then fifty squares before it will do it again" | the rolled starting cloak is a Cloak of Regeneration and its text was rewritten to match the rule; display text only, zero draws, the item is never used in the script. One sentence appended to that record's rationale. |
+| `roll-high-guard` DRAW_INVENTORY `engine/items.js` `amount` | 8 | 7 | the use-time instant d6 (`rng.d(6)`, tagged `roll:amount`) is gone; the tick rolls through `rollDice` on a derived stream (no `.d(` in items.js, so no tag and no main-stream draw). |
+| `roll-high-state-pins` `deep-14` | `20cec0b2...8d75` | `fe2e796a...2f1` (35 / dead / 14 unchanged) | this Thief's starting cloak is a Cloak of Regeneration; its `txt` rides the hashed state. Traced against a `git archive` of the base with a per-step wp / steps / event trace: all 35 steps identical (the bot never uses the cloak here, so no tick fires and no draw differs). Proven text-only: swapping the old text back into the new run's final state re-hashes to the old pin. Only this label was pasted by hand; `roll-high-baseline.mjs save` was not run. |
+
+Unit pins moved with the rule (declared in the SUMMARY): the `ACTIVATION_OF`
+Cloak of Regeneration pin (`item-activation.test.js`), the use-time d6 tests
+(`item-wiring.test.js` section 6), the cloak's `gained` test
+(`honest-gains.test.js`), the linked-worn set 12 -> 13 (`item-effect-source.test.js`) and the linked
+list of the ended lines 13 -> 14 with a `knit` phrase (`item-effect-ended-lines.test.js`),
+and the knit chip lists (`hero-conditions.test.js`, `status-chit-combat.test.js`).
+
+No other fixture, save, golden or state pin was re-recorded.

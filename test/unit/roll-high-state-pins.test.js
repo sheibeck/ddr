@@ -389,7 +389,21 @@ const PINNED = {
   // its d8) and now lands against 5-or-better (top four) for 21, so the
   // fight plays out differently from there. 50/dead/14 -> 35/dead/14.
   // Regenerated via `node tools/roll-high-baseline.mjs pins`.
-  "deep-14": { actions: 35, dead: true, depth: 14, hash: "20cec0b202a6c373cb6eff068d72045cd43c0524ac492e75bcdc2e2c01ed8d75" },
+  //
+  // "deep-14" re-recorded (Phase 88 plan 04, ITEM-03, 2026-09-30): this Thief's
+  // starting cloak is a Cloak of Regeneration, and its item TEXT changed ("used,
+  // a d6 hp back at once; then twenty squares of rest before it works again" ->
+  // "used, a d6 hp back every ten squares you walk, three times; then fifty
+  // squares before it will do it again"). The item object rides the hashed
+  // state, so the hash moves from step 0. Traced against a `git archive` of the
+  // base (3cce3352) with a per-step wp/steps/event trace: all 35 steps are
+  // identical (the bot never uses the cloak in this run, so no heal tick fires
+  // and no rng draw differs). Proven text-only: swapping the old text back into
+  // the new run's final state re-hashes to the old pin
+  // 20cec0b202a6c373cb6eff068d72045cd43c0524ac492e75bcdc2e2c01ed8d75. Only this
+  // label was re-recorded (pasted by hand; `roll-high-baseline.mjs save` was not
+  // run). 35 / dead / 14 unchanged.
+  "deep-14": { actions: 35, dead: true, depth: 14, hash: "fe2e796aa947d051f39955a2534b9dc0af989fc2af5dbc6da0cd956dc70792f1" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

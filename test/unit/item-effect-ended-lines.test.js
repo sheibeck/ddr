@@ -31,6 +31,8 @@ const STOPS = Object.freeze({
   giant: { oracle: /back to your own size/, rail: /back to normal size/ },
   glow: { oracle: /the light goes out/, rail: /light goes out/ },
   tongue: { oracle: /the fluency goes with it/, rail: /fluency goes/ },
+  // Phase 88 plan 04 (ITEM-03): the Cloak of Regeneration's window is linked too.
+  knit: { oracle: /the knitting stops/, rail: /the knitting stops/ },
 });
 
 /** Every linked item, derived from content: a worn row with a positive numeric
@@ -40,8 +42,11 @@ const LINKED = [
   ...STAFF_NAMES.filter((k) => ACTIVATION_OF[k] && ACTIVATION_OF[k].effect !== undefined),
 ].map((item) => ({ item, kind: ACTIVATION_OF[item].kind }));
 
-test("the linked list is the twelve worn items plus the Crystal Staff", () => {
-  assert.equal(LINKED.length, 13);
+// Phase 88 plan 04 (ITEM-03): the Cloak of Regeneration's effect went 0 -> 30,
+// so it joins the linked list. Before: 12 worn + the staff = 13; after: 14.
+test("the linked list is the twelve worn items, the Cloak of Regeneration's window and the Crystal Staff", () => {
+  assert.equal(LINKED.length, 14);
+  assert.ok(LINKED.some((l) => l.item === "Cloak of Regeneration" && l.kind === "knit"));
   assert.ok(LINKED.some((l) => l.item === "Crystal Staff" && l.kind === "invis"));
 });
 

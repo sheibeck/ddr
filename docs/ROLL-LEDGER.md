@@ -1197,3 +1197,21 @@ is still possible) and `[resist:member-intel]` are new rows in
 `test/unit/rollDirection.test.js` / `rollDirection-checks.test.js`;
 `[flee:thief]` and the two Acrobat rows keep their direction and change only
 their numbers.
+
+## Phase 88 plan 04: heal-over-time and the Cloak of Regeneration (ITEM-03, user 2026-09-30)
+
+"The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then
+it goes on cooldown for 50 squares."
+
+- **The use-time main d6 is gone.** `useItem`'s `knit` case used to roll
+  `rng.d(6)` (tagged `roll:amount`) from the main stream and heal at once.
+  Using the cloak now only starts the 30-square window, with zero draws. The
+  roll-high draw inventory for `engine/items.js` drops one `amount` (8 to 7).
+- **Each heal tick is a derived-stream d6.** `tickHealOverTime` rolls
+  `rollDice(derivedRng(<main rng cursor>, "healTick", <item>, <tick>,
+  <state.steps>), { n: 1, sides: 6, bonus: 0 })`, so it is an amount roll by
+  construction (`rollDice`), reads the main cursor without advancing it, and
+  reorders no existing draw or floor.
+- **No check-direction change.** No check or threshold was added or flipped;
+  the tick is a plain heal die, clamped to max hp, and a tick at full hp is
+  narrated and spent.
