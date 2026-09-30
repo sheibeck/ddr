@@ -158,7 +158,7 @@ Plans:
   3. Once the Cloak of Regeneration is used, its wearer heals on each of the next three 10-step marks (30 steps in all) with a narrated line for each tick, and taking the cloak off stops the ticks that are left.
   4. A hero or Joiner wearing the Cloak of Strength takes no critical hits from foes and still lands their own crits, and its activation shows its own chip and name, not the Fighter's Braced.
 
-**Plans:** 1/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -167,8 +167,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 88-02-PLAN.md — ITEM-02 persistence: the link survives save/load/relaunch; old and tampered saves link or end quietly (a live Crystal Staff record links to the wielded staff or ends); Joiner sheets reconciled; src proven stripped by all three comparables
-- [ ] 88-03-PLAN.md — ITEM-04 close: every Cloak of Strength clause pinned (Joiner own crits, chip name vs Braced, exact-name identity) and its ward ending with the cloak
+- [x] 88-02-PLAN.md — ITEM-02 persistence: the link survives save/load/relaunch; old and tampered saves link or end quietly (a live Crystal Staff record links to the wielded staff or ends); Joiner sheets reconciled; src proven stripped by all three comparables
+- [x] 88-03-PLAN.md — ITEM-04 close: every Cloak of Strength clause pinned (Joiner own crits, chip name vs Braced, exact-name identity) and its ward ending with the cloak
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -270,7 +270,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
-| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 1/4 | In Progress|  |
+| 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 3/4 | In Progress|  |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |

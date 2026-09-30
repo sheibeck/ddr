@@ -5,15 +5,15 @@ milestone_name: Truth in Advertising
 current_phase: 88
 current_phase_name: "Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak"
 status: executing
-stopped_at: Completed 88-01-PLAN.md (closed out after the session restart; full suite 8215/0 on 9f99c958)
-last_updated: "2026-09-30T14:42:06.871Z"
+stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
+last_updated: "2026-09-30T15:00:16.703Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 88 execution started
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 13
   percent: 14
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 87; v2.2 Our Own Leade
 ## Current Position
 
 Phase: 88 (Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 88 execution started
 
-Progress: [████████░░] 79% (1/7 phases)
+Progress: [█████████░] 93% (1/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
@@ -272,8 +272,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T14:42:06.829Z
-Stopped at: Completed 88-01-PLAN.md (closed out after the session restart; full suite 8215/0 on 9f99c958). Next: wave 2 (88-02 save/load + 88-03 crit-ward pins, parallel worktrees, no file overlap), then wave 3 (88-04 heal-over-time), then orchestrator verification. The user rulings of 2026-09-30 are in .planning/notes/v2.3-user-rulings-2026-09-30.md and .planning/notes/v2.3-item-audit-findings.md (Phases 89-91).
+Last session: 2026-09-30T15:00:16.664Z
+Stopped at: Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04
 
 - (history below is the pre-close record)
 
@@ -480,6 +480,8 @@ Resume file: None
 | Phase 87 P10 | 15min | 1 tasks | 2 files |
 | Phase 87 P08 | 15min | 3 tasks | 2 files |
 | Phase 88 P01 | 22 min | 3 tasks | 15 files |
+| Phase 88 P02 | 11 min | 2 tasks | 5 files |
+| Phase 88 P03 | 6 min | 2 tasks | 1 files |
 
 ## Decisions
 
