@@ -98,7 +98,18 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   2. Opening a store rolls its ration stock (1–10). The store shows how many are left, the player can buy them one at a time until none remain, the count left survives save and load, and the fair bot buys them the same way.
   3. On the DEPTH board, runs that reached the same depth rank with the most steps first. Runs already on the server re-rank under the new order without being resubmitted, and a run submitted by a shipped 2.2.0 client ranks correctly too.
 
-**Plans**: TBD
+**Plans:** 8 plans
+
+Plans:
+- [ ] 87-01-PLAN.md — PARTY-11: memberLiveWp view helper; YOUR LOT and the Hero Company panel show a Joiner's live fight hp (report #5 scene pinned)
+- [ ] 87-02-PLAN.md — STORE-04 engine: d10 ration stock on a derived stream, one ration per buy, sell-out and pack-cap refusals, narrated events, measured fixture drift
+- [ ] 87-03-PLAN.md — STORE-04 UI + bot: "N left" on the Rations row, pack-full reason, hoarder buys per ration up to its cap, store snapshots declared
+- [ ] 87-04-PLAN.md — BOARD-28 local: records.js DEPTH/LINEAGE/GRAVEYARD ties by most steps, re-rank on load, DEPTH rule copy (only BOARD-28 engine bytes; no server files)
+- [ ] 87-05-PLAN.md — BOARD-28 contract: deepKey = floor*1e6 + steps in runDoc.js and the final rules; transition rules + config + proof test (vc12 checked)
+- [ ] 87-06-PLAN.md — BOARD-28 tooling: fake transition mode + admin deepKey patch; boards-admin rekey-deep (dry run, idempotent, count report)
+- [ ] 87-07-PLAN.md — BOARD-28 proof + release steps: boards-smoke --transition probe; RELEASING.md Release 2.3.0 DEPTH-key steps
+- [ ] 87-08-PLAN.md — BOARD-28 live: checkpoint for the user's go to deploy the transition rules, then the live probe and the section-14 record
+
 **UI hint**: yes
 
 ### Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
