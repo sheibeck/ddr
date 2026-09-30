@@ -29,7 +29,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
+import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
 import { maxCharges, nightlyEats } from "../../engine/movement.js";
 import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
@@ -1023,6 +1023,42 @@ export function chooseFieldItem(state, ctx) {
 }
 
 /**
+ * chooseMemberItem(state, ctx) — Phase 89 (ITEM-07, plan 07; "the bot always
+ * plays the new rules"): the bot's out-of-fight Joiner item policy, the
+ * player-directed half of ITEM-07 (a DRINK / USE on the Company panel) played
+ * by the bot. Walks `state.party` in order and, for the first standing Joiner
+ * that needs one, returns the engine action `memberUseItem`:
+ *   (1) a potion: at or below ONE THIRD of its HP (exact integer test, the same
+ *       line engine/combat.js#alliesTurn uses in a fight) with `potions > 0`
+ *       -> `{ type: "memberUseItem", i, potion: true }`;
+ *   (2) else a ready worn Cloak of Regeneration (activation kind `knit`) while
+ *       its HP ratio is below `ctx.opts.potionThreshold`, skipping an item
+ *       `ctx.itemBlocked` carries -> `{ type: "memberUseItem", i, slot }`.
+ * Only what the engine will not refuse is proposed (a downed Joiner, a full
+ * heart, a cooling or live cloak are all skipped), so the bot never loops on a
+ * refusal. `null` in a fight (a Joiner's own turn handles its items there), with
+ * no party, or when nothing qualifies. Pure: no rng, no mutation.
+ */
+export function chooseMemberItem(state, ctx) {
+  if (!state || state.combat || !Array.isArray(state.party)) return null;
+  for (let i = 0; i < state.party.length; i++) {
+    const m = state.party[i];
+    if (!m || typeof m !== "object" || m.status === "downed") continue;
+    if (!(m.maxWP > 0) || !(m.wp < m.maxWP)) continue;
+    if (m.potions > 0 && m.wp * 3 <= m.maxWP) return { type: "memberUseItem", i, potion: true };
+    if (m.wp / m.maxWP < ctx.opts.potionThreshold && m.worn && typeof m.worn === "object") {
+      for (const slot of WORN_SLOTS) {
+        const it = m.worn[slot];
+        if (!it || activationFor(it)?.kind !== "knit") continue;
+        if (ctx.itemBlocked.has(itemLabel(it))) continue;
+        if (isReady(m, itemTimerId(it))) return { type: "memberUseItem", i, slot };
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * preHazardFlight(state, dir) — 260918-w4n (use-activated-only), rewritten
  * 260918-wy1 (jewelry-merge): when the chosen movement direction `dir`
  * targets a climb/gorge tile, no `fly`-kind effect is currently live, and a
@@ -1268,6 +1304,10 @@ export function decideAction(state, policyRng, ctx) {
   // drinkPotion/camp checks below so the free heal is tried first.
   const field = chooseFieldItem(state, ctx);
   if (field) return field;
+  // Phase 89 (ITEM-07, plan 07): a low Joiner drinks, a hurt one uses its ready
+  // Cloak of Regeneration (memberUseItem), right after the hero's own field
+  // item and before the hero's potion and the camp gate below.
+  const memberItem = chooseMemberItem(state, ctx);  if (memberItem) return memberItem;
   if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
   if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
 
