@@ -22,7 +22,7 @@
 
 ### v2.3 Truth in Advertising (Phases 87–92) — IN PROGRESS
 
-- [ ] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps.
+- [x] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps. (completed 2026-09-30)
 - [ ] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits.
 - [ ] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled.
 - [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
@@ -101,7 +101,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. An expanded leaderboard row states the hero's race and sub-class. Long-pressing a row offers "filter by race / sub-class / both", and picking one sets those filters and reloads the board. The long press never also toggles the row.
   5. The RANK BY sheet, and every other leaderboard sheet, shows its last option (WILMST and its description) in full above the navigation bar at the smallest screen and the largest text scale.
 
-**Plans:** 10/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -255,7 +255,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | In Progress|  |
+| 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 0/TBD | Not started | - |
 | 89. Item Audit & Fixes | 0/TBD | Not started | - |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |

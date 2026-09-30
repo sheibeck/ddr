@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 87
-current_phase_name: "Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties"
-status: verifying
-stopped_at: Completed 87-08-PLAN.md
-last_updated: "2026-09-30T09:52:46.961Z"
-last_activity: 2026-09-29
-last_activity_desc: Phase 87 execution started
+current_phase: 88
+current_phase_name: "Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak"
+status: planning
+stopped_at: Phase 87 verified (passed) and complete
+last_updated: "2026-09-30T12:41:20.182Z"
+last_activity: 2026-09-30
+last_activity_desc: Phase 87 complete, transitioned to Phase 88
 progress:
   total_phases: 7
   completed_phases: 1
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-29 — v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 87 — Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties
+**Current focus:** Phase 88 — Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
 
 ## Current Position
 
-Phase: 87 (Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties) — EXECUTING
-Plan: 10 of 10
-Status: Phase complete — ready for verification
-Last activity: 2026-09-29 — Phase 87 execution started
+Phase: 88 — Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-30 — Phase 87 complete, transitioned to Phase 88
 
-Progress: [██████████] 100% (0/6 phases)
+Progress: [█░░░░░░░░░] 14% (1/7 phases)
 
 ## Ground Truth (durable facts every session needs)
 
