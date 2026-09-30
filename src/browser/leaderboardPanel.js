@@ -36,6 +36,10 @@
 // content/classes.js directly) so this file's own source-pin test (below,
 // "no import from content/") keeps holding — board rows carry untrusted
 // text, and that pin keeps the import surface auditable at a glance.
+//
+// Phase 87 (BOARD-29): the controller's openRowMenu(key) opens the FILTER LIKE
+// THIS sheet (filter by a row's race, sub-class or both) for a rendered row;
+// the shell's long press and the detail's FILTER LIKE THIS button both reach it.
 
 import { BOARD_STATS } from "./runDoc.js";
 import { RACE_IDS, SUB_IDS } from "./leaderboardView.js";

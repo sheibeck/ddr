@@ -1446,7 +1446,7 @@ html,body{height:100%}
 .mw-lb-divider{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#100e0a;box-shadow:inset 0 -1px 0 #241f16, inset 0 1px 0 #241f16}
 .mw-lb-divider-dots{font-family:var(--mono);font-weight:700;font-size:calc(0.9375rem * var(--mw-text-scale));color:#4a3f2c;letter-spacing:.2em}
 .mw-lb-divider-label{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));line-height:1.5;color:#8e8369}
-.mw-lb-row{display:flex;gap:10px;align-items:flex-start;padding:10px 14px 11px;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -1px 0 #241f16}
+.mw-lb-row{display:flex;gap:10px;align-items:flex-start;padding:10px 14px 11px;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 -1px 0 #241f16;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .mw-lb-row[data-top="1"]{background:#191509}
 .mw-lb-row[data-you="1"]{background:#1d1810;box-shadow:inset 0 -1px 0 #241f16, inset 3px 0 0 #e8c97a}
 .mw-lb-rank{flex:none;width:24px;padding-top:1px;text-align:center;font-family:var(--mono);font-weight:700;font-size:calc(1rem * var(--mw-text-scale));line-height:1;color:#8e8369}
@@ -7538,6 +7538,59 @@ window.__mzClassicBoot = async function classicBoot() {
   }, true);
   document.getElementById("enc-panel")?.addEventListener("contextmenu", (e) => {
     if (pressedFoe(e) !== null) e.preventDefault();
+  });
+
+  // Phase 87 (BOARD-29) — the long-press gesture on a leaderboard row, reusing
+  // the Phase 71 recognizer (src/browser/longPress.js: HOLD_MS, the travel
+  // cancel, one-shot click suppression). It opens the FILTER LIKE THIS menu
+  // (filter by the hero's race, sub-class or both) over YOUR DEAD and
+  // LEADERBOARD alike.
+  // - pointerdown sits on #screen-dead (the panel's host) and arms only when
+  //   the press starts on a .mw-lb-row[data-key]; a press anywhere else in the
+  //   host is a new gesture, so it cancels. The row key rides in the
+  //   recognizer's opaque payload.
+  // - move/up/cancel and scroll listen on document in the capture phase, so a
+  //   re-render that replaces the pressed row mid-hold still reports the
+  //   pointer and a scroll of the list cancels the press.
+  // - The click suppressor listens on WINDOW in the capture phase: after a
+  //   fired long press it swallows the trailing click exactly once, before the
+  //   row's own onclick, so the press never also opens or closes the row.
+  // - contextmenu is prevented on a row (with the .mw-lb-row CSS, no text
+  //   selection or callout either).
+  // None of these is a click listener on the row or its host, so the row's
+  // own tap keeps working, and no new window.__mz name is added.
+  const boardRowLongPress = createLongPress({
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
+    clearTimeout: (id) => clearTimeout(id),
+    now: () => Date.now(),
+    onLongPress: (key) => {
+      maybeHaptic(currentSettings, "Light");
+      boardsPanel.openRowMenu(key);
+    },
+  });
+  const pressedBoardRow = (e) => {
+    const t = e && e.target;
+    const row = t && typeof t.closest === "function" ? t.closest(".mw-lb-row[data-key]") : null;
+    if (!row) return null;
+    const key = row.dataset.key;
+    return typeof key === "string" && key.length > 0 ? key : null;
+  };
+  document.getElementById("screen-dead")?.addEventListener("pointerdown", (e) => {
+    const key = pressedBoardRow(e);
+    if (key === null) { boardRowLongPress.cancel(); return; }
+    boardRowLongPress.down({ id: e.pointerId, x: e.clientX, y: e.clientY, foe: key });
+  });
+  document.addEventListener("pointermove", (e) => boardRowLongPress.move({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
+  document.addEventListener("pointerup", (e) => boardRowLongPress.up({ id: e.pointerId, x: e.clientX, y: e.clientY }), true);
+  document.addEventListener("pointercancel", () => boardRowLongPress.cancel(), true);
+  document.addEventListener("scroll", () => boardRowLongPress.cancel(), true);
+  window.addEventListener("click", (e) => {
+    if (!boardRowLongPress.consumeClick()) return;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+  document.getElementById("screen-dead")?.addEventListener("contextmenu", (e) => {
+    if (pressedBoardRow(e) !== null) e.preventDefault();
   });
 
   // Phase 34 (CSCR-01/02/03/06) — the ONE bridge renderEncounter's combat
