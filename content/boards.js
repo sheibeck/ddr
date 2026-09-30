@@ -180,6 +180,20 @@ export const LEADERBOARD_COPY = Object.freeze({
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ]),
   foe: "foe",
+  who: "{race} · {sub} ({cls})",
+  // Phase 87 (BOARD-29): the long-press / FILTER LIKE THIS menu on a board row.
+  rowMenu: Object.freeze({
+    title: "FILTER LIKE THIS",
+    open: "FILTER LIKE THIS",
+    race: "FILTER BY {race}",
+    sub: "FILTER BY {sub}",
+    both: "FILTER BY {race} {sub}",
+    cancel: "CANCEL",
+    raceLine: "Only {race} heroes, whatever their calling.",
+    subLine: "Only the {sub} calling, any race.",
+    bothLine: "Exactly this flavour of doomed.",
+    cancelLine: "Leave the filters as they are.",
+  }),
   sep: " · ",
   dock: Object.freeze({
     title: "BACK TO TITLE",

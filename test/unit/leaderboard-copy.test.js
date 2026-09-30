@@ -30,6 +30,9 @@ const TOKEN_PATHS = new Set([
   "state.stale", "state.ageMinutes", "state.ageHours",
   "died",
   "seasonFallback",
+  "who",
+  "rowMenu.race", "rowMenu.sub", "rowMenu.both",
+  "rowMenu.raceLine", "rowMenu.subLine",
 ]);
 
 /** Every `{token}` in a string, without the braces. */
@@ -199,6 +202,27 @@ test("LEADERBOARD_COPY.chips has exactly floor/days/squares/kills/exp/wilmst, mo
   assert.equal(LEADERBOARD_COPY.chips.kills, "KILLS");
   assert.equal(LEADERBOARD_COPY.chips.exp, "EXP");
   assert.equal(LEADERBOARD_COPY.chips.wilmst, "WILMST");
+});
+
+// ─── Phase 87 (BOARD-29): the row detail's who line and the long-press menu ───
+
+test("LEADERBOARD_COPY.who and rowMenu pin the BOARD-29 copy", () => {
+  assert.equal(LEADERBOARD_COPY.who, "{race} · {sub} ({cls})");
+  assert.deepStrictEqual(tokensIn(LEADERBOARD_COPY.who), ["race", "sub", "cls"]);
+  const m = LEADERBOARD_COPY.rowMenu;
+  assert.deepStrictEqual(Object.keys(m), [
+    "title", "open", "race", "sub", "both", "cancel", "raceLine", "subLine", "bothLine", "cancelLine",
+  ]);
+  assert.equal(m.title, "FILTER LIKE THIS");
+  assert.equal(m.open, "FILTER LIKE THIS");
+  assert.equal(m.race, "FILTER BY {race}");
+  assert.equal(m.sub, "FILTER BY {sub}");
+  assert.equal(m.both, "FILTER BY {race} {sub}");
+  assert.equal(m.cancel, "CANCEL");
+  assert.deepStrictEqual(tokensIn(m.raceLine), ["race"]);
+  assert.deepStrictEqual(tokensIn(m.subLine), ["sub"]);
+  assert.deepStrictEqual(tokensIn(m.bothLine), []);
+  assert.deepStrictEqual(tokensIn(m.cancelLine), []);
 });
 
 // ─── Token rules ─────────────────────────────────────────────────────────────

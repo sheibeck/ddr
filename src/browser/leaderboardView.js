@@ -33,6 +33,14 @@
 // the handle against content/handles.js's HANDLE_FIRST/HANDLE_SECOND tables
 // (one initial per handle word), falling back to the first two letters when
 // a handle does not split.
+//
+// Phase 87 (BOARD-29): every row also carries `who` (the expanded detail's
+// plain-text "Dwarven · Wizard (Magic User)"), `race` / `sub` (a known
+// content id or null — never untrusted text) and `filterLabel` (the FILTER
+// LIKE THIS button's label, "" when the row has nothing to filter by). The
+// "row" sheet is the long-press menu: input.sheet "row" plus input.menu
+// { race, sub } builds FILTER BY race / sub-class / both and CANCEL from the
+// validated values only.
 
 import { LEADERBOARD_COPY } from "../../content/boards.js";
 import { SEASON, SEASON_NAMES } from "../../content/season.js";
@@ -157,6 +165,26 @@ function normSub(v) {
 /** lineNameOf(race, sub) — "{race}, {sub}" with the any-race/any-sub words filled in. */
 function lineNameOf(race, sub) {
   return fill(C.line.both, { race: race === null ? C.line.anyRace : race, sub: sub === null ? C.line.anySub : sub });
+}
+
+/**
+ * whoOf(run) — the expanded row's plain-text race and sub-class line
+ * ("Dwarven · Wizard (Magic User)"), from content-validated ids only: an
+ * unknown race or sub-class (an untrusted board doc) is left out, "" when
+ * neither is known. Phase 87 (BOARD-29).
+ */
+function whoOf(run) {
+  const race = normRace(run.race);
+  const sub = normSub(run.sub);
+  if (race !== null && sub !== null) return fill(C.who, { race, sub, cls: SUB_CLASS_OF[sub] });
+  if (sub !== null) return `${sub} (${SUB_CLASS_OF[sub]})`;
+  if (race !== null) return race;
+  return "";
+}
+
+/** filterLabelOf(run) — the FILTER LIKE THIS button's label, "" when the row has nothing to filter by. */
+function filterLabelOf(run) {
+  return normRace(run.race) !== null || normSub(run.sub) !== null ? C.rowMenu.open : "";
 }
 
 /** levelPart(run) — "RACE SUB · ROMAN" upper-cased; a level past ROMAN's range renders as its number. */
@@ -308,6 +336,10 @@ function buildMineRow(run, i, stat, openKey, tzOffsetMinutes) {
     unit: C.stats[stat].unit,
     open: run.hash === openKey,
     detail: detailOf(run),
+    who: whoOf(run),
+    race: normRace(run.race),
+    sub: normSub(run.sub),
+    filterLabel: filterLabelOf(run),
     stats: statChips(run),
     dateLine: dateLineOf(run, tzOffsetMinutes),
     avatar: { initials: initialsOf(run.name), bg: avatarColour(run.name), on: false },
@@ -359,6 +391,10 @@ function buildBoardRow(doc, index, isPinned, uid, stat, openKey, pinnedRank, tzO
     unit: C.stats[stat].unit,
     open: doc.id === openKey,
     detail: detailOf(doc),
+    who: whoOf(doc),
+    race: normRace(doc.race),
+    sub: normSub(doc.sub),
+    filterLabel: filterLabelOf(doc),
     stats: statChips(doc),
     dateLine: dateLineOf(doc, tzOffsetMinutes),
     avatar: { initials: handleInitials(doc.handle), bg: avatarColour(doc.handle), on: you },
@@ -497,8 +533,31 @@ function statSheetOptions(stat) {
   });
 }
 
-/** buildSheet(sheetId, mode, history, race, sub, stat) — null when no sheet is open. */
-function buildSheet(sheetId, mode, history, race, sub, stat) {
+/**
+ * rowMenuOptions(menu) — the long-press menu's options in the order race,
+ * sub, both, cancel. Race is offered only when menu.race is a known race id,
+ * sub only when menu.sub is a known sub-class id, both only when both are;
+ * CANCEL always. Labels are upper-cased from the copy templates.
+ */
+function rowMenuOptions(menu) {
+  const race = normRace(menu.race);
+  const sub = normSub(menu.sub);
+  const M = C.rowMenu;
+  const opt = (value, label, line) => ({ value, label: label.toUpperCase(), sub: line, n: "", dim: false, on: false, col: "" });
+  const opts = [];
+  if (race !== null) opts.push(opt("race", fill(M.race, { race }), fill(M.raceLine, { race })));
+  if (sub !== null) opts.push(opt("sub", fill(M.sub, { sub }), fill(M.subLine, { sub })));
+  if (race !== null && sub !== null) opts.push(opt("both", fill(M.both, { race, sub }), M.bothLine));
+  opts.push(opt("cancel", M.cancel, M.cancelLine));
+  return opts;
+}
+
+/** buildSheet(sheetId, mode, history, race, sub, stat, menu) — null when no sheet is open. */
+function buildSheet(sheetId, mode, history, race, sub, stat, menu) {
+  if (sheetId === "row") {
+    if (menu === null || (normRace(menu.race) === null && normSub(menu.sub) === null)) return null;
+    return { id: "row", title: C.rowMenu.title, done: C.rowMenu.cancel, opts: rowMenuOptions(menu) };
+  }
   if (sheetId === "stat") return { id: "stat", title: C.pick.stat, done: C.sheet.done, opts: statSheetOptions(stat) };
   if (sheetId === "race")
     return { id: "race", title: C.pick.race, done: C.sheet.done, opts: raceSheetOptions(mode, history, race, sub) };
@@ -549,7 +608,8 @@ export function leaderboardView(input = {}) {
   const race = normRace(raw.race);
   const sub = normSub(raw.sub);
   const openKey = raw.open ?? null;
-  const sheetId = ["stat", "race", "sub"].includes(raw.sheet) ? raw.sheet : null;
+  const sheetId = ["stat", "race", "sub", "row"].includes(raw.sheet) ? raw.sheet : null;
+  const menu = raw.menu && typeof raw.menu === "object" ? raw.menu : null;
 
   const history = Array.isArray(raw.history) ? raw.history : [];
   const board = raw.board && typeof raw.board === "object" ? raw.board : null;
@@ -561,7 +621,7 @@ export function leaderboardView(input = {}) {
   const header = buildHeader({ mode, compete, entry, historyLen: history.length, board, season });
   const pickers = buildPickers(stat, race, sub);
   const dock = buildDock(entry, hasHero, dead);
-  const sheet = buildSheet(sheetId, mode, history, race, sub, stat);
+  const sheet = buildSheet(sheetId, mode, history, race, sub, stat, menu);
 
   const result =
     mode === "mine"

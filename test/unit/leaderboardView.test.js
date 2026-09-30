@@ -570,6 +570,76 @@ test("every stat shows its own colour in view.col and on the stat picker", () =>
 
 // ─── purity ────────────────────────────────────────────────────────────────
 
+// ─── Phase 87 (BOARD-29): race/sub-class in the detail, and the row filter menu ─
+
+test("BOARD-29: YOUR DEAD and LEADERBOARD rows carry who/race/sub/filterLabel", () => {
+  const run = historyRun({ race: "Dwarven", sub: "Wizard", cls: "Magic User" });
+  const mine = leaderboardView({ history: [run] }).body.rows[0];
+  assert.equal(mine.who, "Dwarven · Wizard (Magic User)");
+  assert.equal(mine.race, "Dwarven");
+  assert.equal(mine.sub, "Wizard");
+  assert.equal(mine.filterLabel, "FILTER LIKE THIS");
+
+  const board = { status: "ready", rows: [boardDoc({ race: "Dwarven", sub: "Wizard", cls: "Magic User" })], total: 1, filteredTotal: 1, you: null, youKnown: true, uid: null, stale: false, fetchedAt: null };
+  const row = leaderboardView({ compete: true, mode: "board", board }).body.rows[0];
+  assert.equal(row.who, "Dwarven · Wizard (Magic User)");
+  assert.equal(row.race, "Dwarven");
+  assert.equal(row.sub, "Wizard");
+  assert.equal(row.filterLabel, "FILTER LIKE THIS");
+});
+
+test("BOARD-29: an unknown race or sub-class is dropped from who and never offered", () => {
+  const rowOf = (over) => leaderboardView({ history: [historyRun(over)] }).body.rows[0];
+  const noRace = rowOf({ race: "<b>Elf</b>", sub: "Wizard" });
+  assert.equal(noRace.race, null);
+  assert.equal(noRace.sub, "Wizard");
+  assert.equal(noRace.who, "Wizard (Magic User)");
+  assert.equal(noRace.filterLabel, "FILTER LIKE THIS");
+
+  const noSub = rowOf({ race: "Dwarven", sub: "Grand Poobah" });
+  assert.equal(noSub.race, "Dwarven");
+  assert.equal(noSub.sub, null);
+  assert.equal(noSub.who, "Dwarven");
+
+  const neither = rowOf({ race: 42, sub: undefined });
+  assert.equal(neither.race, null);
+  assert.equal(neither.sub, null);
+  assert.equal(neither.who, "");
+  assert.equal(neither.filterLabel, "");
+});
+
+test("BOARD-29: the row sheet has FILTER BY race / sub-class / both and CANCEL", () => {
+  const sheet = leaderboardView({ sheet: "row", menu: { race: "Dwarven", sub: "Wizard" } }).sheet;
+  assert.equal(sheet.id, "row");
+  assert.equal(sheet.title, "FILTER LIKE THIS");
+  assert.equal(sheet.done, "CANCEL");
+  assert.deepEqual(sheet.opts.map((o) => o.value), ["race", "sub", "both", "cancel"]);
+  assert.deepEqual(sheet.opts.map((o) => o.label), ["FILTER BY DWARVEN", "FILTER BY WIZARD", "FILTER BY DWARVEN WIZARD", "CANCEL"]);
+  for (const o of sheet.opts) {
+    assert.equal(typeof o.sub, "string");
+    assert.ok(o.sub.length > 0);
+    assert.equal(o.on, false);
+    assert.equal(o.dim, false);
+  }
+});
+
+test("BOARD-29: the row sheet offers only what validates; none when nothing does", () => {
+  const raceOnly = leaderboardView({ sheet: "row", menu: { race: "Dwarven", sub: null } }).sheet;
+  assert.deepEqual(raceOnly.opts.map((o) => o.value), ["race", "cancel"]);
+  const subOnly = leaderboardView({ sheet: "row", menu: { race: "Nope", sub: "Wizard" } }).sheet;
+  assert.deepEqual(subOnly.opts.map((o) => o.value), ["sub", "cancel"]);
+  assert.equal(leaderboardView({ sheet: "row", menu: { race: null, sub: null } }).sheet, null);
+  assert.equal(leaderboardView({ sheet: "row", menu: { race: "<img>", sub: "x" } }).sheet, null);
+  assert.equal(leaderboardView({ sheet: "row" }).sheet, null);
+  assert.equal(leaderboardView({ sheet: "row", menu: "Dwarven" }).sheet, null);
+});
+
+test("BOARD-29: the stat, race and sub sheets are unchanged by a menu input", () => {
+  const a = leaderboardView({ sheet: "race", history: [historyRun()] }).sheet;
+  const b = leaderboardView({ sheet: "race", history: [historyRun()], menu: { race: "Dwarven", sub: "Wizard" } }).sheet;
+  assert.deepEqual(a, b);
+});
+
 test("purity: leaderboardView(input) never mutates its input", () => {
   const history = Object.freeze([Object.freeze(historyRun({ hash: "00000001" }))]);
   const board = Object.freeze({
