@@ -827,10 +827,27 @@ export const EVENT_NARRATION = {
   // currency also reads "wilmst" now, the game's canonical spelling, not "wm".
   // Phase 20 (D-14): the parley wilmst payout is rare now (d6===6, D-03) —
   // the success line reflects that it is a windfall, not the routine cut.
+  // Phase 91 plan 05 (PARLEY-01): why "parley spoils" is a talked-down foe's purse, the
+  // same coin a kill of it would have rolled.
   goldGained: (e) =>
     e.why === "parley"
       ? `One of them, against the odds, pays you to forget the whole thing. <span class="hit">+${e.amount ?? 0} wilmst.</span>`
-      : `<span class="hit">+${e.amount ?? 0} wilmst.</span>`,
+      : e.why === "parley spoils"
+        ? `They empty their purses on the way out, as if you had earned it the hard way. <span class="hit">+${e.amount ?? 0} wilmst.</span>`
+        : `<span class="hit">+${e.amount ?? 0} wilmst.</span>`,
+  // Phase 91 plan 05 (PARLEY-01): a won parley pays what winning the fight would (full
+  // experience, every live foe's spoils, the Humans tip on top), and this line says
+  // so in one place. Safe on a bare payload (the coverage guard): every number
+  // defaults to 0 and a zero part is left out.
+  parleyWon: (e) => {
+    const n = Number.isFinite(e.count) ? e.count : 0;
+    const items = Number.isFinite(e.items) ? e.items : 0;
+    const gold = Number.isFinite(e.gold) ? e.gold : 0;
+    const parts = [`<span class="hit">+${Number.isFinite(e.sp) ? e.sp : 0} XP</span>`];
+    if (gold > 0) parts.push(`<span class="hit">+${gold} wilmst</span>`);
+    if (items > 0) parts.push(`${items} ${items === 1 ? "item" : "items"} left on the pile for you`);
+    return `<span class="hit">Talked down.</span> ${n === 1 ? "1 foe" : `${n} foes`} agreed the fight is over, and it pays as if you had won it: ${parts.join(", ")}.`;
+  },
   parleyFailed: () => `<span class="miss">They are not buying it.</span>`,
   sang: (e) => `You strike up "${e.song ?? "a tune"}".`,
   // VOX-05 (Phase 79, plan 79-04): the three song lines name who the song

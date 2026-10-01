@@ -114,7 +114,10 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // VOX-05 (79-07): one attempt per encounter (C.parleyTried); a failure
   // insults the group for the rest of the fight (C.parleyInsulted, +1 face
   // to every foe swing at the hero and the party), not permanently.
-  parleyDesc: "One try per fight. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
+  // Phase 91 plan 05 (PARLEY-01, user: "the parley card states what a parley is and what it pays"):
+  // what a parley is (one try, talk them down), what winning pays (the fight ends as if won:
+  // full experience and its spoils, the Humans tip on top) and what failing costs.
+  parleyDesc: "One try per fight. Talk them down and the fight ends as if you had won it, with its full experience and its spoils, and Humans sometimes tip on top. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
   // Phase 90 plan 09 (SPELL-10): why a Chameleon Tongue or Door Illusion row is greyed
   // (engine/combat.js#parleyBlockedReason and #fleeRefusal, the same predicates castSpell
   // refuses on BEFORE any charge is spent). One line per reason, in the player's terms.
