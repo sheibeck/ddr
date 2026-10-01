@@ -105,7 +105,11 @@ export const DRAW_INVENTORY = {
   // Illusion spell (rollGrimoire's `dr.d(rest.length)`) is a selection draw on the
   // call's DERIVED stream `dr`, never the main rng: it picks which spell, so it is
   // tagged selection, and the main-rng draw counts (chargen-rng-pin) do not move.
-  "engine/character.js": { rollCheck: 0, amount: 3, selection: 14, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
+  // Phase 91 plan 02 (IDENT-13): selection 14 -> 15. topUpWizardDamage's one
+  // `dr.d(pool.length)` picks WHICH level-1 direct-damage spell a damage-less
+  // Wizard book gets: a selection draw on the grimoire DERIVED stream, never the
+  // main rng (the Wizard's main-rng count stays 36, chargen-rng-pin).
+  "engine/character.js": { rollCheck: 0, amount: 3, selection: 15, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
   // User rulings 2026-09-28 (plan 79.2-01): freezeFoe's rng.d(FREEZE_HOLD_DIE)
   // adds one amount draw (a Freeze's d4 hold, drawn whenever a hit foe survives).
   // Phase 89 plan 04 (ITEM-07): applyFoeDamageToMember adds one rollCheck call

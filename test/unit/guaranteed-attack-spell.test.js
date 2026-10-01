@@ -71,10 +71,12 @@ function countingRng(inner) {
 // — see test/unit/chargen-rng-pin.test.js's own comment on this constant
 // for the full cause (the offense gate's removal widens the day-one `spare`
 // pool). Phase 90 plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33,
-// Apprentice 38 -> 37, measured live — see that file's declaration.
+// Apprentice 38 -> 37, measured live — see that file's declaration. Phase 91 plan 02
+// (IDENT-15): Cleric 34 -> 10, measured live (the offense school left both pool
+// shuffles) — same declaration.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
   Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 const spellByName = (n) => SPELLS.find((sp) => sp.n === n);
@@ -117,8 +119,16 @@ function oldRollGrimoire(rng, sub) {
 // the Summoner gets its damage spell from the same top-up as everyone. See also
 // test/unit/day-one-damage.test.js for the primary, fuller-coverage proof;
 // this file's copy stays for IDENT-02's own historical name/continuity.
-test("SPELL-04 (was IDENT-02): every Magic User sub, including the Summoner, has a castable damage-dealing spell at level 1", () => {
-  for (const sub of MU_SUBS) {
+test("SPELL-04 (was IDENT-02): every Magic User sub but the Cleric, including the Summoner, has a castable damage-dealing spell at level 1", () => {
+  // Phase 91 plan 02 (IDENT-15, user 2026-09-30): the Cleric never learns the
+  // offense school, so it holds no damage spell by ruling (a test-side
+  // exclusion only; the engine has no Cleric check). Pinned in
+  // test/unit/cleric-offense-ban.test.js and test/unit/day-one-damage.test.js.
+  for (const seed of SEEDS) {
+    const state = newRun(seed, [], { force: { sub: "Cleric" } });
+    assert.ok(!state.c.grimoire.some((n) => dealsDamage(spellByName(n))), `Cleric seed ${seed}: holds a damage spell (${JSON.stringify(state.c.grimoire)})`);
+  }
+  for (const sub of MU_SUBS.filter((s) => s !== "Cleric")) {
     for (const seed of SEEDS) {
       const state = newRun(seed, [], { force: { sub } });
       const has = state.c.grimoire.some((n) => dealsDamage(spellByName(n)) && canCast(state, spellByName(n)));
