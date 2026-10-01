@@ -53,17 +53,17 @@ function mutations(stub) {
 
 test("sanitizeName: NFC, control and format characters dropped, whitespace collapsed, trimmed", () => {
   assert.equal(sanitizeName("  Moss   Knuckle  "), "Moss Knuckle");
-  assert.equal(sanitizeName("Mo\u0007ss​ Knuckle"), "Moss Knuckle");
-  assert.equal(sanitizeName("A  B"), "A B");
+  assert.equal(sanitizeName("Mo\u0007ss\u200B Knuckle"), "Moss Knuckle");
+  assert.equal(sanitizeName("A\u00A0\u2003B"), "A B");
   assert.equal(sanitizeName("é"), "é"); // NFC composes
-  assert.equal(sanitizeName("‮gnirts"), "gnirts"); // bidi override is a format char
+  assert.equal(sanitizeName("\u202Egnirts"), "gnirts"); // bidi override is a format char
 });
 
 test("sanitizeName: null for non-strings and empty results", () => {
   for (const bad of [null, undefined, 42, {}, [], true]) assert.equal(sanitizeName(bad), null);
   assert.equal(sanitizeName(""), null);
   assert.equal(sanitizeName("   "), null);
-  assert.equal(sanitizeName("​\u0007"), null);
+  assert.equal(sanitizeName("\u200B\u0007"), null);
 });
 
 test("sanitizeName: cut at 64 UTF-16 units without splitting a surrogate pair", () => {
@@ -239,7 +239,7 @@ test("claim: nameOverrides/{uid} wins over the Play Games name and is reported a
 });
 
 test("claim: a provider displayName that sanitizes to nothing is 422 NO_NAME, with zero writes", async () => {
-  for (const displayName of ["​\u0007", "   ", undefined]) {
+  for (const displayName of ["\u200B\u0007", "   ", null]) {
     const stub = linkedStub({ displayName });
     const r = await makeCore(stub).claim({ idToken: "tokA" });
     assert.equal(r.status, 422);
