@@ -178,11 +178,16 @@ export function applyPommel(t) {
  * foeTurn ticks and clears (Task 2), restoring sight. Shared with Plan 04.
  * Phase 90 plan 04 (SPELL-12): a foe already blind with NO countdown (the
  * Blind spell's fight-long blindness) gets no countdown from a Dirty Trick,
- * so the trick can never restore its sight. */
+ * so the trick can never restore its sight.
+ * Phase 90 plan 10 (ABIL-06): returns the rounds the trick put on the foe: 2, or
+ * 0 for a foe already blind for the fight (the trick adds nothing, so the
+ * `dirtyTrickLanded` line says so instead of promising "two rounds"; the
+ * countdown itself is combat.js#tickBlindFor). */
 export function applyDirtyTrick(t) {
   const fightLong = t.blind === true && !t.blindFor;
   t.blind = true;
   if (!fightLong) t.blindFor = 2;
+  return fightLong ? 0 : 2;
 }
 
 /** applyPoison(t, dot) — Poisoned Edge: a generic per-foe DOT record
@@ -302,8 +307,7 @@ export function useAbility(state, key, rng, events = []) {
       return events;
     case "dirtyTrick": {
       const t = C.foes[C.target];
-      applyDirtyTrick(t);
-      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: 2 });
+      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: applyDirtyTrick(t) });
       break;
     }
     case "poisonedEdge": {

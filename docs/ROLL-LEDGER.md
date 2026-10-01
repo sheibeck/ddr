@@ -1556,3 +1556,37 @@ anywhere in the three spells.
 - **DRAW_INVENTORY** (`test/unit/roll-high-guard.test.js`): `engine/character.js` `selection` 13 -> 14.
 - **Check direction.** The Tongue's parley check is the existing roll-high parley; nothing flipped. Every
   resist is the one shared rising resist, no floor-12 extras.
+
+## Phase 90 plan 10: Joiner casters and the audit's engine fixes (SPELL-10, ABIL-06, SPELL-08)
+
+- **A Joiner's healing spell (`memberHeal`).** `combat.js#allyCast`'s `heal` branch
+  rolls the spell's dice (`rollDice`, the Cleric's +3, doubled for a heal-twice
+  race, then the sub-class's healMul) from `derivedRng(<main rng cursor>,
+  "memberHeal", <combat round>, <party index>, <the Joiner's charges spent>)`.
+  The main rng is only READ for its cursor, never advanced, so no existing
+  draw reorders. The policy itself (`pickMemberSpell`) is pure and draws
+  nothing.
+- **The other Joiner casts draw what the hero's draw, through the same shared
+  tails.** Stop Time and Size of the Behemoth draw nothing on the main rng
+  (their resists are derived); Duplicate Foe and Senseless draw their duration
+  dice once (`misdirectFoe`); Stun draws one d4 and Doze its reach d4 and a d4
+  per foe; Speed of Sound and Enchant Character draw nothing. Declared
+  exception to "new rolls come from derived streams": these main-rng draws sit
+  in tails shared with the hero's cast (Phase 90 plans 05 and 08), and a Joiner
+  reaches them only through the new policy, so no existing fight's draws move.
+- **A Joiner's Lightning (Q8 A)** is `allyThrow` once per live foe: the same
+  three draws per foe (resist derived, the d8 to-hit on the main rng, the damage
+  dice on a hit) the hero's cast takes, in `C.foes` order. No new call site:
+  the throw code moved out of `allyCast` unchanged.
+- **Death (Q7 A)** draws nothing new: the same derived resist, now rolled on the
+  picked foe.
+- **`pickFoeTarget` (Q9 B)** draws exactly what it drew (no draw under a Taunt,
+  the one pick die otherwise); a fixated foe only overrides the result.
+- **Stealth, Hardiness and Ambidextrous (Q10 A) draw nothing new**; a Joiner's
+  second Ambidextrous swing is one more strike die and damage dice through the
+  existing `memberStrike`, in the same positions a Joiner's hasted second swing
+  takes.
+- **Dirty Trick's countdown (`tickBlindFor`)** is bookkeeping, no draw.
+- **Roll-high draw inventory** does not move: no `.d(` or `rollCheck(` call site
+  was added to a guarded engine file (the throw code moved within combat.js).
+

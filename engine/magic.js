@@ -74,7 +74,7 @@ import { spellDamageFor } from "./difficulty.js";
 const SINGLE_TARGET_KINDS = Object.freeze({
   stupid: "target", // Phase 90 plan 04 (Q7 A): the picked foe; a dead pick falls to the first live foe
   stun: "target",
-  death: "first",
+  death: "target", // Phase 90 plan 10 (Q7 A): the picked foe; a dead pick falls to the first live foe
   blind: "target",
   acid: "target",
   petrify: "target",
@@ -691,7 +691,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       return events;
     }
     c.wp -= DEATH_SPELL_FEE;
-    const t = liveFoes(state)[0];
+    // Phase 90 plan 10 (SPELL-08, Q7 A, user 2026-09-30): Death kills the foe you
+    // PICKED (the same foe whose resist was rolled up front), a dead pick falling
+    // to the first live foe, like Stupidity, Blind, Acid and Petrify.
+    const aimedFoe = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+    const t = aimedFoe || liveFoes(state)[0];
     events.push({ type: "deathCast", cost: DEATH_SPELL_FEE });
     if (t) {
       t.wp = 0;

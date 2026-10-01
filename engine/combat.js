@@ -2609,7 +2609,12 @@ export function alliesTurn(state, rng, events = []) {
     // max(attacks, 2)`): the loop keeps the one target and skips the second
     // swing once it has fallen. Casts and abilities above `continue` before
     // here and stay single, as the hero's are.
-    const swings = itemEffectActive(sheet, "haste") ? 2 : 1;
+    // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30: "Joiners use ...
+    // Ambidextrous ... as the text describes"): a Joiner Fighter with
+    // Ambidextrous swings twice on a plain strike, the hero's rule
+    // (playerStrike: `attacks = max(attacks, 2)`), the same two-swing loop as
+    // its Speed (the two do not stack). Abilities and casts stay single.
+    const swings = itemEffectActive(sheet, "haste") || skill(view, "Ambidextrous") ? 2 : 1;
     const target = foes[0];
     for (let s = 0; s < swings && target.alive; s++) {
       memberStrike(state, ally, sheet, view, target, rng, events);
@@ -2929,8 +2934,7 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, stunOnHit: true });
       return;
     case "dirtyTrick":
-      applyDirtyTrick(t);
-      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: 2, member: ally.name });
+      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: applyDirtyTrick(t), member: ally.name });
       return;
     case "poisonedEdge":
       applyPoison(t, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
@@ -3083,10 +3087,18 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 72 (ROLL-01 (c)): a landed member strike on its die's best face
   // shatters a shatter-flagged foe (the Skeleton) outright — skip the
   // damage roll.
-  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) return;
+  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) {
+    ally.opened = true;
+    return;
+  }
   let dmg = weaponDamage(view, rng);
   if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";
+  // Phase 90 plan 10 (ABIL-06, Q10 A): the Joiner's OWN opening landed blow, the
+  // transient combat entry's `opened` flag (like `backstabUsed`, never synced
+  // to the sheet), read by Stealth below. A flag, no draw.
+  const opening = !ally.opened;
+  ally.opened = true;
   // Phase 73 (ROLL-05): a member's natural-best crit is the die's top face
   // (isBestFace), not a fixed "natural 1" — byte-identical odds, mirrored.
   let crit = isBestFace(roll, dieN) && !noCrit;
@@ -3119,6 +3131,19 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
     critAtLeast = undefined;
     backstab = true;
     ally.backstabUsed = true; // the transient combat entry, not the sheet
+  }
+  // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30): a Joiner's Stealth, the
+  // hero's rule (playerStrike): the Joiner's OPENING landed blow of the fight
+  // crits on a roll in its die's top two numbers, never in plate (armorBulk) and
+  // never in the dark (the party's light is the leader's, darkLimited, unless
+  // the leader's Sense Presence is up), and never for a Guard or Soldier (their
+  // blows never crit). A pure read of the roll already made, zero draws; the
+  // doubling below is the one every crit takes (a natural crit never doubles
+  // twice).
+  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses) && roll >= atLeastFor(2, dieN)) {
+    crit = true;
+    critAtLeast = atLeastFor(2, dieN);
+    events.push({ type: "stealthStrike", member: ally.name });
   }
   if (crit) dmg *= 2;
   if (mod && mod.dmgMul) dmg *= mod.dmgMul;
@@ -3190,7 +3215,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   if (sp.kind === "heal") {
     const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
     const healRng = derivedRng(cursor, "memberHeal", state.combat ? state.combat.round : 0, ally.partyIdx, sheet.spellsUsed);
-    let amt = rollDice(healRng, sp.dmg) + (view.sub === "Cleric" ? 3 : 0); // roll:amount
+    let amt = rollDice(healRng, sp.dmg) + (view.sub === "Cleric" ? 3 : 0);
     if (RACES[view.race] && RACES[view.race].heal2x) amt *= 2;
     const healed = applyCasterHealMul(view.sub, amt);
     const before = ally.wp;
@@ -3434,8 +3459,17 @@ export function pickFoeTarget(state, rng, foe = null) {
     const s = state.party?.[m.partyIdx];
     return s && abilityEffectActive(s, "taunt");
   });
-  if (taunter) return taunter;
+  // Phase 90 plan 10 (SPELL-08, Q9 B, user 2026-09-30, canon against the
+  // recommended default; rulebook p.30 Turn Walking Dead): a Walking Dead the
+  // spell failed to turn is FIXATED (`foe.fixated`) and swings only at the
+  // caster, the hero, for the rest of the fight: a Joiner is never picked while
+  // one lives, not even by its own Taunt. The draws are exactly as before (no
+  // draw under a Taunt, the pick die otherwise), so the party-mode rng stream
+  // does not move; only the result is overridden, as the Bard clause below does.
+  const fixated = !!(foe && foe.fixated);
+  if (taunter) return fixated ? null : taunter;
   const pick = rng.d(liveMembers.length + 1); // roll:selection
+  if (fixated) return null;
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
 }
@@ -3751,10 +3785,11 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
  * round, the foe's index, the swing and the Joiner's party index, so the
  * main stream never moves (a solo fight draws exactly what it drew before).
  *
- * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward,
- * Hardiness and the Fridgian hide (not armour, not items; Phase 91's to
- * decide for a Joiner). A missing sheet reads as a blank body (no Pendant,
- * no armour).
+ * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward
+ * and the Fridgian hide (not armour, not items; Phase 91's to decide for a
+ * Joiner). Since Phase 90 plan 10 (Q10 A) Hardiness IS part of it: -3 per
+ * landed blow, floor 1, ahead of the Pendant. A missing sheet reads as a blank
+ * body (no Pendant, no armour).
  *
  * Events carry the Joiner's name in `member` (additive), so the Oracle and
  * rail lines can name it. An unsoaked blow pushes `memberStruck` (or
@@ -3768,6 +3803,15 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
   const C = state.combat;
   const sheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
   const body = sheet || {};
+
+  // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30: "Joiners use ...
+  // Hardiness ... as the text describes"): a Joiner with Hardiness takes 3 less
+  // from every landed blow that reaches this pipeline (a swing or a foe
+  // ability's bolt), floor 1, BEFORE its Pendant and Brace, the hero's order
+  // (applyFoeDamageToPlayer). A zero-damage blow (the round ceiling spent) stays
+  // zero. The Fridgian hide for a Joiner stays Phase 91's (IDENT-20). Pure, no
+  // draw.
+  if (sheet && dmg > 0 && skill(sheet, "Hardiness")) dmg = Math.max(1, dmg - 3);
 
   // The Joiner's own armed Pendant of Fortitude: one landed blow, halved.
   if (body.halfNext && dmg > 0) {
@@ -3944,6 +3988,28 @@ export function loseTurn(state, rng, events = []) {
 }
 
 /**
+ * tickBlindFor(f, events) — Phase 90 plan 10 (ABIL-06, docs/SKILL-AUDIT.md Dirty
+ * Trick row, "fix engine"): the Dirty Trick's two-round blindness (`f.blindFor`,
+ * set by abilities.js#applyDirtyTrick) counts down once per foe VISIT, at the
+ * end of every visit a LIVE foe's turn takes, whatever the foe did with it:
+ * swung, or lost it to a hold, a sleep, a stun, a misdirection, a cast ability
+ * or an empty spell kit. (Before this, only a visit that reached its swings
+ * counted, so a blinded foe that lost turns stayed blind longer than the two
+ * rounds the text promises.) At 0 the foe sees again (`foeSightReturned`). A
+ * spell-blinded foe has no `blindFor` and stays blind for the fight; a dead foe
+ * counts nothing. Pure bookkeeping, zero rng.
+ */
+function tickBlindFor(f, events) {
+  if (!f.alive || !f.blindFor) return;
+  f.blindFor--;
+  if (f.blindFor <= 0) {
+    delete f.blindFor;
+    f.blind = false;
+    events.push({ type: "foeSightReturned", name: f.name });
+  }
+}
+
+/**
  * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
  * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*, Phase 40
  * additions marked *SPELL*): *NEW* a queued summon joins C.foes -> regen tick
@@ -4102,6 +4168,7 @@ export function foeTurn(state, rng, events = []) {
         events.push({ type: "foeHoldBroken", name: f.name, kind: f.held.kind });
         delete f.held;
       }
+      tickBlindFor(f, events);
       continue;
     }
     // RULES-10 (Phase 75.1, foe Regeneration): a live foe carrying `regen`
@@ -4124,6 +4191,7 @@ export function foeTurn(state, rng, events = []) {
       // Phase 90 plan 05: the dozing mark goes with the sleep when it runs out.
       if (f.asleep <= 0) delete f.dozing;
       events.push({ type: "foeSlept", name: f.name });
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 90 plan 04 (SPELL-12, user 2026-09-30): Stupidity no longer
@@ -4137,6 +4205,7 @@ export function foeTurn(state, rng, events = []) {
     if (f.stunned) {
       f.stunned = false;
       events.push({ type: "foeStunned", name: f.name });
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 90 plan 08 (SPELL-10, Senseless and Duplicate Foe): a misdirected
@@ -4146,6 +4215,7 @@ export function foeTurn(state, rng, events = []) {
     // takes counts against `misdirect.left`.
     if (f.misdirect && f.misdirect.left > 0) {
       resolveMisdirectedTurn(state, f, rng, events, curve);
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 19 (CANON-02/D-03): a caster that has dropped below its own
@@ -4181,10 +4251,12 @@ export function foeTurn(state, rng, events = []) {
       const gate = ready && !neverMelee ? rollCheck(rng, 6, atLeastFor(4, 6)) : null;
       if (ready && (neverMelee || gate.ok)) {
         if (resolveFoeAbility(state, f, ready, rng, events, gate).died) return events;
+        tickBlindFor(f, events);
         continue;
       }
       if (neverMelee) {
         events.push({ type: "foeOutOfSpells", name: f.name });
+        tickBlindFor(f, events);
         continue;
       }
     }
@@ -4392,17 +4464,12 @@ export function foeTurn(state, rng, events = []) {
       if (hit.died) return events;
     }
     // Phase 38 (ABIL-01, Dirty Trick) — the blindFor countdown, at the END
-    // of this foe's own visit (after its swings, whether it swung or was
-    // asleep/stunned/dot-killed above): a spell-blinded foe (no blindFor)
-    // stays blind indefinitely, exactly as before. Absent on every fixture.
-    if (f.blindFor) {
-      f.blindFor--;
-      if (f.blindFor <= 0) {
-        delete f.blindFor;
-        f.blind = false;
-        events.push({ type: "foeSightReturned", name: f.name });
-      }
-    }
+    // of this foe's own visit (after its swings): a spell-blinded foe (no
+    // blindFor) stays blind indefinitely, exactly as before. Absent on every
+    // fixture. Phase 90 plan 10: every other way a live foe's visit can end
+    // (held, asleep, stunned, misdirected, a cast ability, out of spells)
+    // counts it down too, through the same helper (tickBlindFor).
+    tickBlindFor(f, events);
   }
   // RULES-14 (Phase 75): an ARMED mirror carries `rounds: null` and never
   // ticks here — it stays armed until a blow lands (see the mirror branch in

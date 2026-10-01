@@ -1682,3 +1682,10 @@ table now includes the two new schools of spell as options").
 "Phase 90 plan 09"): the rows are `roll: "derived"`, so no chargen cursor moved; chargen seed 8 (an
 Illusionist), two roll-high state pins (`solo-magicuser-sorcerer`, `deep-8`) and one bot pin (the Pilfer
 trio's seed 2) moved, and `roll-high-guard` gained one derived `selection` draw.
+
+## Phase 90 plan 10: Joiner Magic Users cast from their own book, and three audit fixes (SPELL-10, SPELL-08)
+
+- **The Joiner caster policy** (`engine/combat.js#pickMemberSpell`, pure, no rng): see docs/SPELL-AUDIT.md "Joiner casters" for the order (a heal at or below half hit points; a room control against three or more foes; a round-1 buff; a single control on a strong foe; else the best attack spell, Ice included; else the staff) and the per-spell casts-or-never table. A pick resolves through the hero's own shared tails with the Joiner's name on every event and the charge paid from the Joiner's own sheet. The Joiner heal's dice come from a derived stream (`derivedRng(cursor, "memberHeal", round, partyIdx, charges)`), so it adds no main-rng draw; the shared tails draw what they always drew (Stop Time and Behemoth none, Duplicate Foe and Senseless their duration dice, Stun and Doze their d4s).
+- **Lightning for a Joiner** (Q8 A): `allyCast`'s `aoe: "all"` branch reaches every live foe, each its own resist, to-hit roll and damage (`allyThrow`).
+- **Death** (Q7 A): kills the foe you picked; a dead pick falls to the first live foe (`SINGLE_TARGET_KINDS` death is `"target"`).
+- **Turn Walking Dead** (Q9 B, canon): `pickFoeTarget` reads a foe's `fixated` flag; a fixated Walking Dead swings only at the caster, a Joiner is never picked while one lives (the pick die is still drawn, so the party-mode stream does not move).
