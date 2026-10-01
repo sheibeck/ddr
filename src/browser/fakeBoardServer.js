@@ -55,11 +55,20 @@
 //   nameSource         "games" -> the boardName emulation asks for a Games
 //                      auth code (G1/A4 fallback)
 //
+// The boardName Cloud Function is emulated at BOARD_NAME_FN.url (any path
+// match, no API-key check, CORS headers on every answer). That emulation is a
+// hand-written MIRROR of functions/board-names/core.js and index.js, kept
+// equal by test/unit/board-names-contract.test.js, which runs one scenario
+// table through the real core (pointed at this fake as its Google: Identity
+// Toolkit, Firestore REST, plus the OAuth token and Games players/me stand-ins
+// below) and through this endpoint. Update both together.
+//
 // Pure, DOM-free: never calls a bare global fetch and never reads window,
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
 
-import { RUN_COLLECTION, validateRunDoc, runDocId, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
+import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
+import { sanitizeBoardName } from "./boardName.js";
 import { validateReport } from "./bugReport.js";
 import { REPORT_LIMITS_COLLECTION, validateLimitStep, decodeLimitDoc } from "./reportLimits.js";
 import { isValidHandle } from "./handles.js";
@@ -73,7 +82,7 @@ import {
   fromFirestoreFields,
   fromFirestoreValue,
 } from "./firestoreRest.js";
-import { FIREBASE_CONFIG } from "./firebaseConfig.js";
+import { FIREBASE_CONFIG, BOARD_NAME_FN } from "./firebaseConfig.js";
 
 export const FAKE_ADMIN_TOKEN = "fake-admin-token";
 
@@ -85,12 +94,40 @@ const NAME_COLLECTIONS = [NAMES_COLLECTION, NAME_OVERRIDES_COLLECTION];
 const PLAY_GAMES_PROVIDER = "playgames.google.com";
 const ADMIN_COMMIT_MAX_WRITES = 500;
 
+// The Google endpoints the boardName function core calls when NAME_SOURCE is
+// "games" (the G1/A4 fallback): the OAuth token exchange and the Games API.
+const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GAMES_PLAYER_URL = "https://games.googleapis.com/games/v1/players/me";
+
+// The boardName emulation's HTTP surface (functions/board-names/index.js).
+const NAME_FN_MAX_FIELD_CHARS = 8192;
+const NAME_FN_HASH_RE = /^[A-Za-z0-9]{1,64}$/;
+const CORS_ORIGIN = { "Access-Control-Allow-Origin": "*" };
+const CORS_PREFLIGHT = {
+  ...CORS_ORIGIN,
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "3600",
+};
+
 function errorBody(code, status) {
   return { error: { code, message: status, status } };
 }
 
-function jsonResponse(status, body) {
-  return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) };
+function jsonResponse(status, body, headers) {
+  const lower = {};
+  for (const [k, v] of Object.entries(headers ?? {})) lower[k.toLowerCase()] = v;
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: (k) => lower[String(k).toLowerCase()] ?? null },
+    // An empty body (a 204) rejects in json() like a real Response.
+    json: async () => {
+      if (body === undefined) throw new SyntaxError("Unexpected end of JSON input");
+      return body;
+    },
+    text: async () => (body === undefined ? "" : JSON.stringify(body)),
+  };
 }
 
 function parseUrl(rawUrl) {
@@ -887,9 +924,184 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: { name: docName(config, BUG_REPORTS_COLLECTION, id), fields: toFirestoreFields(rec), createTime: timeIso, updateTime: timeIso } };
   }
 
+  // --- the Games API stand-ins (OAuth token exchange, players/me) -------------
+
+  // Exchanges a fake Play Games auth code once: the player it names, or null
+  // for a code that is not a fake code or has already been spent.
+  function exchangeFakeCode(authCode) {
+    const player = parseFakeCode(authCode);
+    if (!player || usedCodes.has(authCode)) return null;
+    usedCodes.add(authCode);
+    return player;
+  }
+
+  function handleOauthToken(init) {
+    const form = new URLSearchParams(typeof init.body === "string" ? init.body : "");
+    const player = exchangeFakeCode(form.get("code"));
+    if (!player) return { status: 400, body: { error: "invalid_grant" } };
+    const accessToken = nextToken("gtok");
+    gamesTokens.set(accessToken, player);
+    return { status: 200, body: { access_token: accessToken, expires_in: 3600, token_type: "Bearer" } };
+  }
+
+  function handleGamesPlayer(init) {
+    const header = findAuthHeader(init);
+    const m = typeof header === "string" ? /^Bearer\s+(.+)$/.exec(header) : null;
+    const player = m ? gamesTokens.get(m[1]) : undefined;
+    if (!player) return { status: 401, body: errorBody(401, "UNAUTHENTICATED") };
+    return { status: 200, body: { kind: "games#player", playerId: player.playerId, displayName: player.displayName } };
+  }
+
+  // --- the boardName function, emulated ---------------------------------------
+  //
+  // A hand-written MIRROR of functions/board-names/index.js (the HTTP surface)
+  // and functions/board-names/core.js (the decisions: verify the caller, the
+  // provider, the name source, the override, adopt, write the name only if it
+  // changed, then stamp), run straight against this fake's own stores.
+  // test/unit/board-names-contract.test.js keeps it equal to the real function:
+  // it runs one scenario table through the real core (pointed at this fake as
+  // its Google) and through this endpoint and compares status, body and stored
+  // state. Update both together.
+
+  function nameReply(status, body, headers = CORS_ORIGIN) {
+    return { status, body, headers };
+  }
+
+  function nameFail(status, error) {
+    return nameReply(status, { ok: false, error });
+  }
+
+  // core.lookup: { ok, uid, providers, playGames } or { ok: false, status, error }.
+  function nameLookup(idToken) {
+    if (typeof idToken !== "string" || idToken === "") return { ok: false, status: 401, error: "UNAUTHENTICATED" };
+    const who = resolveIdToken(idToken);
+    if (!who.ok) return { ok: false, status: 401, error: "UNAUTHENTICATED" };
+    const providers = who.account.providers;
+    return { ok: true, uid: who.uid, providers, playGames: providers.find((p) => p.providerId === PLAY_GAMES_PROVIDER) ?? null };
+  }
+
+  function nameClaim({ idToken, adoptIdToken, gamesAuthCode }) {
+    const who = nameLookup(idToken);
+    if (!who.ok) return nameFail(who.status, who.error);
+    if (!who.playGames) return nameFail(403, "NOT_LINKED");
+    const uid = who.uid;
+
+    // Validate the adopt request before anything is written.
+    let adoptUid = null;
+    if (adoptIdToken !== undefined && adoptIdToken !== null && adoptIdToken !== "") {
+      const anon = nameLookup(adoptIdToken);
+      if (!anon.ok) return nameFail(403, "ADOPT_REFUSED");
+      if (anon.uid === uid || anon.providers.length > 0) return nameFail(403, "ADOPT_REFUSED");
+      adoptUid = anon.uid;
+    }
+
+    // The name: an admin override wins, then the configured source.
+    let name = null;
+    let overridden = false;
+    const override = nameDocs.nameOverrides.get(uid);
+    if (override) {
+      name = sanitizeBoardName(override.fields.name?.stringValue);
+      overridden = name !== null;
+    }
+    if (name === null) {
+      let raw;
+      if (nameSource === "games") {
+        if (typeof gamesAuthCode !== "string" || gamesAuthCode === "") return nameFail(409, "NEEDS_GAMES_CODE");
+        const player = exchangeFakeCode(gamesAuthCode);
+        if (!player) return nameFail(409, "NEEDS_GAMES_CODE");
+        if (player.playerId !== (who.playGames.rawId ?? who.playGames.federatedId)) return nameFail(403, "GAMES_MISMATCH");
+        raw = player.displayName;
+      } else {
+        raw = who.playGames.displayName;
+      }
+      name = sanitizeBoardName(raw);
+      if (name === null) return nameFail(422, "NO_NAME");
+    }
+
+    // Write names/{uid} only when it changed.
+    const current = nameDocs.names.get(uid);
+    if (!current || current.fields.name?.stringValue !== name) {
+      putNameDoc(NAMES_COLLECTION, uid, { name: { stringValue: name }, updatedAt: { timestampValue: nowIso() } });
+    }
+
+    // Adopt first, so the stamp pass sees (and skips) the moved runs: every run
+    // of the anonymous uid moves to <uid>_<hash> with uid, handle and deepKey
+    // replaced and everything else (createdAt included) kept.
+    let adopted = 0;
+    if (adoptUid !== null) {
+      const moves = [];
+      for (const rec of [...runStore.values()]) {
+        if (rec.doc.uid !== adoptUid) continue;
+        const hash = rec.doc.hash;
+        if (typeof hash !== "string" || !NAME_FN_HASH_RE.test(hash)) continue;
+        const doc = { ...rec.doc, uid, handle: name };
+        const floor = Number(rec.doc.floor);
+        const steps = Number(rec.doc.steps);
+        if (Number.isFinite(floor) && Number.isFinite(steps)) doc.deepKey = deepKeyOf({ floor, steps });
+        moves.push({ rec, to: runDocId(uid, hash), doc });
+      }
+      for (const m of moves) {
+        runStore.set(m.to, {
+          id: m.to,
+          doc: Object.freeze(m.doc),
+          createdAtIso: m.rec.createdAtIso,
+          name: docName(config, RUN_COLLECTION, m.to),
+          createTimeIso: m.rec.createTimeIso,
+          updateTimeIso: nowIso(),
+        });
+        runStore.delete(m.rec.id);
+      }
+      adopted = moves.length;
+    }
+
+    // Stamp: handle := name on every run of the uid whose handle differs.
+    let stamped = 0;
+    for (const rec of [...runStore.values()]) {
+      if (rec.doc.uid !== uid || rec.doc.handle === name) continue;
+      runStore.set(rec.id, { ...rec, doc: Object.freeze({ ...rec.doc, handle: name }), updateTimeIso: nowIso() });
+      stamped += 1;
+    }
+    return nameReply(200, { ok: true, name, overridden, stamped, adopted });
+  }
+
+  function nameRelease({ idToken }) {
+    const who = nameLookup(idToken);
+    if (!who.ok) return nameFail(who.status, who.error);
+    nameDocs.names.delete(who.uid);
+    return nameReply(200, { ok: true, released: true });
+  }
+
+  function optionalNameString(value) {
+    if (value === undefined || value === null) return { ok: true, value: undefined };
+    if (typeof value === "string" && value.length <= NAME_FN_MAX_FIELD_CHARS) return { ok: true, value };
+    return { ok: false };
+  }
+
+  function handleBoardName(method, init) {
+    if (method === "OPTIONS") return nameReply(204, undefined, CORS_PREFLIGHT);
+    if (method !== "POST") return nameFail(405, "METHOD_NOT_ALLOWED");
+    const header = findAuthHeader(init);
+    const m = typeof header === "string" ? /^Bearer\s+(\S+)\s*$/i.exec(header) : null;
+    const idToken = m && m[1].length <= NAME_FN_MAX_FIELD_CHARS ? m[1] : null;
+    if (idToken === null) return nameFail(401, "UNAUTHENTICATED");
+    const body = parseJsonBody(init.body);
+    if (body === null || typeof body !== "object" || Array.isArray(body)) return nameFail(400, "BAD_REQUEST");
+    if (body.op === "release") return nameRelease({ idToken });
+    if (body.op === "claim") {
+      const adopt = optionalNameString(body.adoptIdToken);
+      const code = optionalNameString(body.gamesAuthCode);
+      if (!adopt.ok || !code.ok) return nameFail(400, "BAD_REQUEST");
+      return nameClaim({ idToken, adoptIdToken: adopt.value, gamesAuthCode: code.value });
+    }
+    return nameFail(400, "BAD_REQUEST");
+  }
+
   // --- routing --------------------------------------------------------------
 
   function route(path, method, init, auth, query) {
+    if (path === BOARD_NAME_FN.url) return handleBoardName(method, init);
+    if (path === OAUTH_TOKEN_URL && method === "POST") return handleOauthToken(init);
+    if (path === GAMES_PLAYER_URL && method === "GET") return handleGamesPlayer(init);
     if (path === `${IDENTITY_BASE}/accounts:signUp` && method === "POST") return handleSignUp();
     if (path === `${IDENTITY_BASE}/accounts:delete` && method === "POST") return handleAccountDelete(init);
     if (path === `${IDENTITY_BASE}/accounts:signInWithIdp` && method === "POST") return handleSignInWithIdp(init);
@@ -975,13 +1187,16 @@ export function createFakeBoardFetch(opts = {}) {
         calls.push(Object.freeze({ method, url: rawUrl, auth: auth.kind === "admin" ? "admin" : auth.kind === "user" ? "user" : "none" }));
 
         const { path, query } = parseUrl(rawUrl);
-        if (auth.kind !== "admin" && query.get("key") !== config.apiKey) {
+        // The function endpoint and the Google OAuth / Games hosts are not
+        // key-checked REST calls (the function checks the caller's own token).
+        const keyless = path === BOARD_NAME_FN.url || path === OAUTH_TOKEN_URL || path === GAMES_PLAYER_URL;
+        if (!keyless && auth.kind !== "admin" && query.get("key") !== config.apiKey) {
           resolve(jsonResponse(400, errorBody(400, "INVALID_ARGUMENT")));
           return;
         }
 
         const result = route(path, method, init, auth, query);
-        resolve(jsonResponse(result.status, result.body));
+        resolve(jsonResponse(result.status, result.body, result.headers));
       } catch (err) {
         resolve(jsonResponse(500, errorBody(500, "INTERNAL")));
       }
