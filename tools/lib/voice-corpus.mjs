@@ -172,6 +172,7 @@ export const BANK_REGISTRY = Object.freeze([
   bank("src/browser/rollRange.js", "ROLL_COPY", "other", "the signed to-hit template every roll line shares"),
   bank("src/browser/roller.js", "ROLLER_COPY", "title", "the character roller"),
   bank("src/browser/storeScreen.js", "STORE_ROLL_COPY", "panels", "the store screen"),
+  bank("src/browser/teleportCard.js", "TELEPORT_CARD_COPY", "rail-cards", "the Illusionist's teleport decision card"),
   bank("src/browser/upgradeWhy.js", "UPGRADE_WHY_COPY", "items", "why a store or loot item is, or is not, an upgrade"),
   bank("src/browser/viewModels.js", "ITEM_STAT_COPY", "items", "an item's stat line"),
   bank("src/browser/viewModels.js", "STORE_ROW_COPY", "items", "a store row's reason"),
