@@ -7220,3 +7220,58 @@ Joiner, Hilda Stonecut, a Woodsman, carries Hardiness). Solo runs never take the
 `control-at-depth-rules.test.js` needed no edit (the Weaken assignment stays in `combat.js#allyCast`),
 `tuning-bot.test.js` (the new spell pins), and the new `joiner-casters.test.js` and
 `spell-skill-audit-fixes.test.js`.
+
+### Phase 90 plan 11: plain-language spell and skill text (TEXT-01)
+
+**The change (words only).** Every spell, ability and skill row, Oracle and rail line, chip sentence and menu row
+that stated a to-hit shift or a hard cap in "faces" now states it as a signed to-hit ("+3 to hit", "foes −2 to hit
+you") or as a range on a d20 ("20 on a d20; 19–20 if you insulted them", "18–20 on a d20; 17–20 if you insulted
+them"), each computed from the engine's own winning faces through `rollRange.js`. Noxious Vapor and Insane list
+their tables, Chameleon Tongue says what a parley is, Stupidity and Death say "the foe you picked" (Q7), the
+Fixated chip and Turn Walking Dead say the dead swing only at the caster (Q9), Stealth, Hardiness and Ambidextrous
+say a Joiner uses them (Q10), Death Touch is "one swing" (Q11, engine unchanged), every once-per-fight ability says
+so, and every spell cast on a foe carries one resist sentence (`heroTab.js#GRIMOIRE_COPY.resistNote`) on its
+Grimoire row and its combat menu row. No engine file was edited. `test/parity/prototype-master.js.txt` is untouched;
+`roll-high-baseline.mjs save` was never run.
+
+**New fields and draws (declared).** None. No serialized field, no roll, no `.d(` or `rollCheck(` call site, so
+no `*Comparable()` carve-out and no `roll-high-guard` DRAW_INVENTORY change. Spell and skill text is never stored in
+a save (books hold names, abilities hold ids, `c.skills` is a name -> tier map), so no load refresh was needed.
+
+**The predictor.** Text only: zero parity drift and zero state-pin drift (the state pins hash game state, not
+content text). The shell snapshots move wherever a rendered Hero tab prints a reworded row.
+
+**The live scan (measured at the plan's end, against the base 09db3fbf).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass with no declaration needed: nothing moved.
+- `node tools/fixture-inventory.mjs --json`: byte-identical to the same command run on an extracted tree of 09db3fbf
+  (the fixture roster did not move).
+- `node --test test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js
+  test/unit/roll-high-guard.test.js`: 24 tests, 24 pass with every pin as 90-10 left it: **0 of 8 labels moved**
+  (solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1, party-fighter-knight, deep-8, deep-14).
+  Proven by the unmoved pins, not re-recorded.
+
+**Shell snapshots (2 of 8 moved, regenerated alone with `MZ_SNAPSHOT_UPDATE=1`; the other six re-wrote
+byte-identical and were restored).**
+
+- `thief.hero`: two special-skill rows. Dirty Trick "sand, thumb, elbow: the target is blinded for two rounds" ->
+  "...two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical"; Smoke "gone: for two
+  rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it
+  just works" -> "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted
+  them), and a flee during it just works; once per fight".
+- `mu.hero`: four Grimoire rows (Doze, Freeze, Stun, Earthquake) each gain the resist sentence after their text:
+  "· a foe may resist this on its intelligence, and the deeper the floor, the likelier it does".
+
+**Unit pins moved (words only; each before/after is in its test).** `authored-ranges` (the Mirror Self, Smoke,
+Weaken, Battle Roar, Sidestep, Overhead Blow and Stealth rows now assert signed to-hits and d20 ranges computed from
+the engine; the Locks rows also assert the lockpick and intelligence terms; two coverage pins added, two rotted ones
+removed; the header's phrasing rule rewritten), `roll-sign-consistency` (Smoke, Mirror Self and Weaken compare the
+stated d20 range with the foe card's measured faces, plain and insulted; the rail's Mirror Self line now states both
+cases), `abilities-catalog` (the catalog and kept-passive literals), `class-trims-nrf-copy` (Kata and Feint "+3 to
+hit"), `combatMenu` (a foe-targeted spell's row carries the resist sentence), `foe-conditions` (blind, weakened
+and cowering chips; the hidden-number rule exempts a stated d20 range), `escape-talk-rout-spells` (the Behemoth's
+row and cower line), `petrify-blind-stupidity` (Blind's row, chip and lines), `mapMarks` ("a wider range with
+practice or wits"). The new guard is `spell-skill-text-wording.test.js`. `docs/narrative-pass/why/90-11.json` holds
+63 rows from a corpus diff of the plan base against the change (and folds the nine `q-260927-opf`, four
+`q-260928-z4-nrf` and two `q-260927-rsx` rows it supersedes, the 89-09 precedent: 90-11 sorts before `q-`).
+`node tools/narrative-review.mjs` regenerated the review pages (744 rows) and `--check` is in sync.

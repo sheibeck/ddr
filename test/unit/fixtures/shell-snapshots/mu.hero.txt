@@ -71,12 +71,12 @@
   html=""
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does</i>"
     <span class="grim-hint">
       text="Combat only"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Freeze</b><i>burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Freeze</b><i>burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does</i>"
     <span class="grim-hint">
       text="Combat only"
   <li>
@@ -91,7 +91,7 @@
       text="Cast"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Stun</b><i>control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Stun</b><i>control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does</i>"
     <span class="grim-hint">
       text="Combat only"
   <li>
@@ -110,7 +110,7 @@
       text="Needs level 2"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L4</span>Earthquake</b><i>multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides</i>"
+      html="<b><span class=\"grim-lvl\">L4</span>Earthquake</b><i>multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does</i>"
     <span class="grim-hint">
       text="Combat only"
 ## #doss-who

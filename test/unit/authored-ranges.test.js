@@ -989,9 +989,6 @@ const PINNED_OUTSIDE_CONTENT = Object.freeze([
   // Phase 90 plan 11 (TEXT-01): the Behemoth's cower names its range on a d20, plain and insulted, measured in the wording guard.
   { match: "oracle:foeCowers", proof: "test/unit/spell-skill-text-wording.test.js", token: "foeCowers" },
   { match: "bank:FOE_CONDITION_DESC.cowering", proof: "test/unit/spell-skill-text-wording.test.js", token: "FOE_CONDITION_DESC.cowering" },
-  // The two range constants the foe chips are built from (src/browser/foeConditions.js), measured as BLIND and WEAKEN/COWER there.
-  { match: "raw:src/browser/foeConditions.js#BLIND_RANGE", proof: "test/unit/spell-skill-text-wording.test.js", token: "const BLIND = foeFaces" },
-  { match: "raw:src/browser/foeConditions.js#WEAKEN_RANGE", proof: "test/unit/spell-skill-text-wording.test.js", token: "const WEAKEN = foeFaces" },
   { match: "oracle:struck", proof: "here" },
   { match: "bank:COMBAT_MENU_COPY.parleyDesc", proof: "here" },
   { match: "bank:GEAR_COPY.healingDesc", proof: "here" },
