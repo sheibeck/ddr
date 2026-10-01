@@ -140,7 +140,8 @@ export const DRAW_INVENTORY = {
   // selection +2, mishap +1). All of them run on the Joiner song's DERIVED stream
   // (derivedRng(cursor, "memberSong", ...)); none is the main rng. pickSong replaces the
   // two selection draws sing() made (they moved, not added). rollDice-based damage adds none.
-  "engine/combat.js": { rollCheck: 24, amount: 27, selection: 7, "mishap-on-1": 1, "already-high": 5, primitive: 0 },
+  // Phase 91.1 plan 02 (V11): a Joiner's Cutpurse is a memberStrike now; its gold d10 moved to abilities.js#cutpurseGold (same count there), so combat.js loses one amount draw.
+  "engine/combat.js": { rollCheck: 24, amount: 26, selection: 7, "mishap-on-1": 1, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one
@@ -183,7 +184,8 @@ export const DRAW_INVENTORY = {
   // Phase 90 plan 06 (SPELL-12): amount 13 -> 12. The summon branch's rounds line
   // read `lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2`: Lesser Summon is
   // gone, so the lesser d4 (one `.d(` occurrence on that tagged line) went with it.
-  "engine/magic.js": { rollCheck: 2, amount: 12, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
+  // Phase 91.1 plan 02 (V14): one more roll-high check, the Runes/Signs keep (a d6 winning on 1 face, derived scrollKeep stream).
+  "engine/magic.js": { rollCheck: 3, amount: 12, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/movement.js": { rollCheck: 3, amount: 7, selection: 4, "mishap-on-1": 1, "already-high": 2, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

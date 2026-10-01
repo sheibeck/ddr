@@ -1214,11 +1214,12 @@ export const EVENT_NARRATION = {
       : `<span class="hit">You remember why you came.</span> You were already at full hp, so it is mostly a mood.`,
   swept: (e) => `<span class="hit">One wide arc — ${e.dmg ?? 0} to everything still standing.</span>`,
   sweptFoe: (e) => `${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span>.`,
-  braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next blow that lands on ${e.member ? "them" : "you"} does half damage.</span>`,
+  // Phase 91.1 plan 02 (V8): Brace holds the next `blows` blows (two); the count comes from the event.
+  braced: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced. The next ${e.blows > 1 ? `${e.blows} blows` : "blow"} that land${e.blows > 1 ? "" : "s"} on ${e.member ? "them" : "you"} do${e.blows > 1 ? "" : "es"} half damage.</span>`,
   // `soaked` is the hp the brace took off the blow — a saving, so it no
   // longer prints as a signed cost ("(−3)").
   braceHeld: (e) =>
-    `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced — ${possessive(e.name, "the")} blow lands half as hard${Number.isFinite(e.soaked) ? `, ${e.soaked} hp lighter` : ""}.</span>`,
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}Braced — ${possessive(e.name, "the")} blow lands half as hard${Number.isFinite(e.soaked) ? `, ${e.soaked} hp lighter` : ""}${e.left > 0 ? `; ${plural(e.left, "more blow")} to go` : ""}.</span>`,
   riposteReady: (e) =>
     `<span class="hit">${e.member ? `${e.member}: ` : ""}For one round every foe that misses ${e.member ? "them" : "you"} takes ${e.member ? "their" : "your"} weapon's damage. Every miss is an invitation.</span>`,
   riposted: (e) => `${e.target ?? "It"} misses, and pays <span class="roll">${e.dmg ?? 0}</span> for it.`,
@@ -1226,8 +1227,8 @@ export const EVENT_NARRATION = {
   // is the hero's own (engine/combat.js#applyFoeDamageToPlayer).
   taunted: (e) =>
     e.member
-      ? `<span class="hit">${e.member}: Every foe swings at them this round. Good luck to them.</span>`
-      : `<span class="hit">Every foe looks at you. Armour doubles. Good luck.</span>`,
+      ? `<span class="hit">${e.member}: Every foe swings at them for ${plural(e.rounds ?? 2, "round")}. Good luck to them.</span>`
+      : `<span class="hit">Every foe looks at you for ${plural(e.rounds ?? 2, "round")}. Armour doubles. Good luck.</span>`,
   lastStandCalled: (e) => `<span class="beat">${e.member ? `${e.member}: ` : ""}Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
   // Phase 90 plan 10: `rounds` 0 is a foe already blind for the fight (a Blind spell): the sand adds nothing.
   dirtyTrickLanded: (e) =>
@@ -1248,13 +1249,13 @@ export const EVENT_NARRATION = {
       ? `<span class="hit">${e.member} lifts ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight, into your purse. It has other problems.</span>`
       : `<span class="hit">You lift ${e.amount ?? 0} wilmst off ${e.target ?? "it"} mid-fight. It has other problems.</span>`,
   poisonedEdgeApplied: (e) =>
-    `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is poisoned for ${plural(e.rounds ?? 3, "round")}. The blade weeps into it.</span>`,
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is poisoned for ${plural(e.rounds ?? 3, "round")}${Number.isFinite(e.bonus) ? ` (d4 + ${e.bonus} a round)` : ""}. The blade weeps into it.</span>`,
   // dotTick is generic on `by` — Phase 40 (SPELL-01, Ice) is the first spell
   // to share this event shape with Poisoned Edge; the line names the source.
   dotTick: (e) => `${e.target ?? "It"} takes <span class="hurt">${e.dmg ?? 0}</span> from ${e.by === "ice" ? "the ice" : "the poison"}.`,
   hamstrung: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Tendon cut. ${e.target ?? "It"} hits half as hard from here on.</span>`,
-  // Mark's +2 is damage, on every blow from anyone (engine/combat.js).
-  marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} does +2 damage from here on.</span>`,
+  // Mark's bonus (the marker's level, Phase 91.1 plan 02 V10) is damage, on every blow from anyone (engine/combat.js).
+  marked: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}Studied. Every blow on ${e.target ?? "it"} does +${e.bonus ?? 2} damage from here on.</span>`,
   // Plan 04 (ABIL-05): a Joiner's own ability use — the four new member-only
   // events (no hero equivalent exists for these; a hero's own equivalent use
   // reads "abilityUsed"/"secondWindHealed"/"swept"/"riposted" above).
@@ -1644,6 +1645,8 @@ export const EVENT_NARRATION = {
     return `<span class="hit">${who} uncorks a potion: +${g} hp</span> (${capped}${left}). Their own, too. Initiative in a companion.${doubled}`;
   },
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
+  // Phase 91.1 plan 02 (V14): a Runes/Signs read that does not use the scroll up (one in six); comes before the cast it precedes.
+  scrollKept: (e) => `<span class="hit">The runes behave: the scroll is still whole after that.</span> A one-in-six courtesy${e.spell ? ` (${e.spell}, no charge)` : ""}.`,
   // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
   // never a silent no-op. RULES-10 (Phase 75.1): "pilfer"/"noRunes" are
   // retired — canRead is gone, and a Pilfer/no-Runes reader now READS

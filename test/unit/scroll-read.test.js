@@ -18,9 +18,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { readScroll, castSpell, scrollReadRng } from "../../engine/magic.js";
+import { readScroll, castSpell, scrollReadRng, scrollKeepRng, RUNES_KEEP_DIE, RUNES_KEEP_FACES } from "../../engine/magic.js";
 import { scrollReaderOf, scrollReadBands, scrollReadOutcome } from "../../engine/derived.js";
-import { rollCheck } from "../../engine/dice.js";
+import { rollCheck, atLeastFor } from "../../engine/dice.js";
 import { makeRng } from "../../engine/rng.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
@@ -188,6 +188,9 @@ test("readScroll: a Wizard's read carries reader 'magicUser' on scrollRead — t
 
 test("readScroll: a Runes/Signs Fighter reads automatically — scrollRead then scrollCast, no grimoire copy, no roll", () => {
   const state = fixedState({ c: { cls: "Fighter", sub: "Soldier", skills: { "Runes/Signs": 1 }, intel: 14, scrolls: 1, grimoire: [], wp: 10, maxWP: 40 } });
+  // Phase 91.1 plan 02 (V14): one read in six keeps the scroll (the derived scrollKeep stream); this read is a
+  // spent one, found by searching state.acts, so the count of 0 below is the plain 5-in-6 case.
+  state.acts = [...Array(200).keys()].find((acts) => !rollCheck(scrollKeepRng({ acts }, {}), RUNES_KEEP_DIE, atLeastFor(RUNES_KEEP_FACES, RUNES_KEEP_DIE)).ok);
   const events = readScroll(state, fakeRng([10], { pick: (arr) => arr.find((sp) => sp.n === "Heal") }), []);
   assert.equal(state.c.scrolls, 0);
   assert.ok(events.some((e) => e.type === "scrollRead" && e.reader === "runes"));

@@ -20,9 +20,9 @@
 //
 // Round economy (CONTEXT "Action economy: using an ability is the round's
 // action"): a success resolves in the SAME dispatch and ends the round
-// exactly once. The seven strike-modifying abilities (kata/feint/deathTouch/
-// silentStep/overheadBlow/lastStand, and since Phase 90 pommelStrike)
-// delegate ENTIRELY to
+// exactly once. The eight strike-modifying abilities (kata/feint/deathTouch/
+// silentStep/overheadBlow/lastStand, since Phase 90 pommelStrike, and since
+// Phase 91.1 plan 02 cutpurse) delegate ENTIRELY to
 // combat.js#playerStrike — which already tail-calls afterPlayerAction — so
 // this module must NEVER also call afterPlayerAction on that branch (a
 // double call would double-run the foe's turn, RESEARCH's own named
@@ -50,6 +50,7 @@
 // exact same foe object shape.
 
 import { ABILITY_BY_ID, ONCE_A_FIGHT } from "../content/index.js";
+import { derivedRng } from "./rng.js";
 import { startEffect, startCooldown, isReady } from "./effects.js";
 import { refuseIfPending, normalizeTarget, playerStrike, afterPlayerAction, liveFoes, killFoe } from "./combat.js";
 import { damageFoe } from "./foeDamage.js";
@@ -64,15 +65,36 @@ import { gainWilmst } from "./items.js";
  * startMemberAbilityTimer can apply the EXACT SAME mapping to a Joiner's own
  * sheet.timers, rather than duplicating the table.
  */
-export const DURATION_ROUNDS = { sidestep: 2, battleRoar: 2, riposte: 1, taunt: 1, smoke: 2 };
+export const DURATION_ROUNDS = { sidestep: 2, battleRoar: 2, riposte: 1, taunt: 2, smoke: 2 };
 
 /**
- * THIS_ROUND_ABILITIES — the duration abilities whose text promises THIS
- * round, the one they are used in: Taunt ("every foe swings at you this
- * round"). Their one round is the foe turn that follows the use in the same
- * dispatch, and they are spent by the time the player looks again.
+ * THIS_ROUND_ABILITIES — the duration abilities whose text counts the round
+ * they are used in as the first of their rounds: Taunt ("every foe swings at
+ * you this round and the next"). Phase 91.1 plan 02 (user ruling V8 B, 2026-10-01):
+ * Taunt lasts two rounds, so its timer starts at DURATION_ROUNDS.taunt (2): the
+ * foe turn that follows the use in the same dispatch, then the next one, and
+ * the chip reads 1 right after the use.
  */
 export const THIS_ROUND_ABILITIES = Object.freeze(new Set(["taunt"]));
+
+/**
+ * BRACE_BLOWS — Phase 91.1 plan 02 (user ruling V8 B, 2026-10-01): the landed
+ * blows one Brace halves (was one). The count rides on the existing `braced`
+ * combat flag (hero) and `ally.braced` (a Joiner): a number of blows left,
+ * decremented by each blow that lands, gone at 0. A flag saved as `true` by an
+ * older build reads as one blow left (Number(true) is 1).
+ */
+export const BRACE_BLOWS = 2;
+
+/**
+ * POISON_ROUNDS and POISON_DIE — Phase 91.1 plan 02 (user ruling V9 B,
+ * 2026-10-01): Poisoned Edge ticks d4 + the user's level a round for three
+ * rounds, no roll to hit. The die and the rounds are unchanged; the level
+ * (the hero's `c.level`, a Joiner's own level) is stamped into the record's
+ * `dmg.bonus` when the edge is applied, so rollDice adds it with no new draw.
+ */
+export const POISON_ROUNDS = 3;
+export const POISON_DIE = 4;
 
 /**
  * abilityEffectTicks(key) — quick 260928-hrs (user ruling 2026-09-28: "Smoke
@@ -234,6 +256,16 @@ export function applyPoison(t, dot) {
   t.dot = dot;
 }
 
+/**
+ * poisonedEdgeDot(level) — Phase 91.1 plan 02 (V9): the DOT record Poisoned
+ * Edge lays on a foe for a user of this level: POISON_ROUNDS ticks of d4 +
+ * level. The ONE builder the hero (useAbility) and a Joiner
+ * (combat.js#resolveMemberAbility) share. Pure, no rng.
+ */
+export function poisonedEdgeDot(level) {
+  return { left: POISON_ROUNDS, dmg: { n: 1, sides: POISON_DIE, bonus: level }, by: "poisonedEdge" };
+}
+
 /** applyHamstring(t) — Hamstring: the target's own blows do half damage for
  * the rest of the fight (foeTurn's damage sites, Task 2). Shared with
  * Plan 04. */
@@ -241,10 +273,41 @@ export function applyHamstring(t) {
   t.hamstrung = true;
 }
 
-/** applyMark(t) — Mark: every hero strike on this target adds +2 (already
- * read by playerStrike since Plan 02). Shared with Plan 04. */
-export function applyMark(t) {
-  t.marked = true;
+/**
+ * applyMark(t, level) — Mark: every strike on this target adds the marker's
+ * level in damage (was +2; Phase 91.1 plan 02, user ruling V10 B, 2026-10-01).
+ * The flag carries the level (a number >= 1) so a Joiner's strike on a foe the
+ * hero marked, and the hero's on a foe a Joiner marked, adds the level of
+ * whoever laid the Mark. Shared with Plan 04. markBonus reads it back.
+ */
+export function applyMark(t, level) {
+  t.marked = Math.max(1, Math.floor(level) || 1);
+}
+
+/**
+ * markBonus(t) — the damage a Mark adds to a strike on `t`: the marker's
+ * level, 0 for an unmarked foe. A flag saved as `true` by an older build reads
+ * as the old +2. Pure, no rng; the ONE read both playerStrike and memberStrike
+ * use.
+ */
+export function markBonus(t) {
+  if (!t || !t.marked) return 0;
+  return typeof t.marked === "number" ? t.marked : 2;
+}
+
+/**
+ * cutpurseGold(state, rng, level, who) — Phase 91.1 plan 02 (V11): the gold a
+ * landed Cutpurse strike lifts, d10 x the user's level, rolled ONLY when the
+ * blow lands and from its own derived stream (`derivedRng(<main cursor>,
+ * "cutpurse", <state.acts>, <who>)`), so the strike's own draws stay exactly
+ * the plain strike's and the main cursor never moves for the gold. Pure of the
+ * main rng.
+ */
+export function cutpurseGold(state, rng, level, who) {
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const stream = derivedRng(cursor, "cutpurse", acts, who);
+  return stream.d(10) * level; // roll:amount
 }
 
 /**
@@ -351,6 +414,14 @@ export function useAbility(state, key, rng, events = []) {
       C.abilityStrike = { key, stunOnHit: true };
       playerStrike(state, rng, events);
       return events;
+    // Phase 91.1 plan 02 (V11): Cutpurse is a normal strike (the plain
+    // strike's roll and damage) that also lifts d10 x level gold when a blow
+    // lands, the way Pommel Strike also stuns; playerStrike pays the gold after
+    // the blow's own events (cutpurseGold, a derived stream). Still once a fight.
+    case "cutpurse":
+      C.abilityStrike = { key, liftGold: true };
+      playerStrike(state, rng, events);
+      return events;
     case "dirtyTrick": {
       const t = C.foes[C.target];
       events.push({ type: "dirtyTrickLanded", target: t.name, rounds: applyDirtyTrick(t) });
@@ -358,8 +429,8 @@ export function useAbility(state, key, rng, events = []) {
     }
     case "poisonedEdge": {
       const t = C.foes[C.target];
-      applyPoison(t, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
-      events.push({ type: "poisonedEdgeApplied", target: t.name, rounds: 3 });
+      applyPoison(t, poisonedEdgeDot(c.level));
+      events.push({ type: "poisonedEdgeApplied", target: t.name, rounds: POISON_ROUNDS, bonus: c.level });
       break;
     }
     case "hamstring": {
@@ -370,15 +441,8 @@ export function useAbility(state, key, rng, events = []) {
     }
     case "mark": {
       const t = C.foes[C.target];
-      applyMark(t);
-      events.push({ type: "marked", target: t.name });
-      break;
-    }
-    case "cutpurse": {
-      const t = C.foes[C.target];
-      const amount = rng.d(10) * c.level; // roll:amount
-      events.push({ type: "cutpursed", target: t.name, amount });
-      gainWilmst(state, amount, "cutpurse", rng, events);
+      applyMark(t, c.level);
+      events.push({ type: "marked", target: t.name, bonus: c.level });
       break;
     }
     case "secondWind": {
@@ -401,14 +465,14 @@ export function useAbility(state, key, rng, events = []) {
       break;
     }
     case "brace":
-      C.braced = true;
-      events.push({ type: "braced" });
+      C.braced = BRACE_BLOWS;
+      events.push({ type: "braced", blows: BRACE_BLOWS });
       break;
     case "riposte":
       events.push({ type: "riposteReady", rounds: 1 });
       break;
     case "taunt":
-      events.push({ type: "taunted", rounds: 1 });
+      events.push({ type: "taunted", rounds: DURATION_ROUNDS.taunt });
       break;
     case "sidestep":
       events.push({ type: "sidestepped", rounds: 2 });

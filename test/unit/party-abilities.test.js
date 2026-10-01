@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import { startCombat, alliesTurn, foeTurn, endCombat, pickFoeTarget, pickMemberAbility } from "../../engine/combat.js";
 import { isReady, remaining, startEffect, startCooldown, clearRoundTimers } from "../../engine/effects.js";
 import { abilityEffectActive, partyEffectActive, foeToHitVs, foeToHitBreakdown, DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
+import { derivedRng } from "../../engine/rng.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 // Phase 54-07 (USER RULING G cycle 3): DIALS ships FITTED, not identity —
@@ -359,9 +360,9 @@ test("lastStand: stops early once the foe dies", () => {
 test("dirtyTrick/poisonedEdge/hamstring/mark: set the shared foe flags and narrate with `member`", () => {
   const cases = [
     { id: "dirtyTrick", cls: "Thief", type: "dirtyTrickLanded", check: (f) => f.blind === true && f.blindFor === 2 },
-    { id: "poisonedEdge", cls: "Thief", type: "poisonedEdgeApplied", check: (f) => f.dot && f.dot.left === 3 },
+    { id: "poisonedEdge", cls: "Thief", type: "poisonedEdgeApplied", check: (f) => f.dot && f.dot.left === 3 && f.dot.dmg.bonus === 1 },
     { id: "hamstring", cls: "Thief", type: "hamstrung", check: (f) => f.hamstrung === true },
-    { id: "mark", cls: "Thief", type: "marked", check: (f) => f.marked === true },
+    { id: "mark", cls: "Thief", type: "marked", check: (f) => f.marked === 1 },
   ];
   for (const { id, cls, type, check } of cases) {
     const foe = fixedFoe({ wp: 30, maxWP: 30 });
@@ -391,17 +392,21 @@ test("pommelStrike: a Joiner's round-1 opener strikes (two draws), then stuns an
   assert.equal(foe.wp, 30 - 7);
 });
 
-test("cutpurse: rng.d(10) * level gold, paid to the HERO via gainWilmst", () => {
+// Phase 91.1 plan 02 (V11 B): a Joiner's Cutpurse is a normal strike that also lifts d10 x level gold when it
+// lands (a derived stream), paid to the HERO via gainWilmst.
+test("cutpurse: a landed strike, then d10 x level gold from a derived stream, paid to the HERO via gainWilmst", () => {
   const foe = fixedFoe({ wp: 30, maxWP: 30 });
   const sheet = classedMember({ cls: "Thief", abilities: ["cutpurse"] });
   const state = fixedState({ party: [sheet] });
   const goldBefore = state.c.gold;
   state.combat = fixedCombat([foe], { allies: [fixedAlly()], round: 2 });
-  const events = alliesTurn(state, fakeRng([7]), []); // d10 -> 7 * level 1 = 7
+  const gold = derivedRng(0, "cutpurse", 0, "Ada").d(10) * 1; // level 1
+  const events = alliesTurn(state, fakeRng([3, 4]), []); // lands (need 5), then d6 = 4
   const ev = events.find((e) => e.type === "cutpursed");
-  assert.equal(ev.amount, 7);
+  assert.equal(ev.amount, gold);
   assert.equal(ev.member, "Ada");
-  assert.equal(state.c.gold, goldBefore + 7);
+  assert.ok(events.findIndex((e) => e.type === "allyStruck") < events.findIndex((e) => e.type === "cutpursed"), "the blow, then the gold");
+  assert.equal(state.c.gold, goldBefore + gold);
 });
 
 test("secondWind: heals rng.d(8)+level, capped at maxWP, memberSecondWind names amount", () => {
@@ -437,9 +442,10 @@ test("brace: sets ally.braced, braced event carries member", () => {
   const ally = fixedAlly({ wp: 5, maxWP: 20 }); // below half -> defensive picked
   state.combat = fixedCombat([foe], { allies: [ally], round: 2 });
   const events = alliesTurn(state, fakeRng([]), []);
-  assert.equal(ally.braced, true);
+  assert.equal(ally.braced, 2, "V8 B: two blows");
   const ev = events.find((e) => e.type === "braced");
   assert.equal(ev.member, "Ada");
+  assert.equal(ev.blows, 2);
 });
 
 // riposte/taunt/sidestep/smoke are tag: "defensive" — picked with a

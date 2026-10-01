@@ -103,19 +103,20 @@ function chipRounds(state, key) {
   return chip ? chip.remaining : 0;
 }
 
-/** Stated rounds AFTER the use round (the chip's first reading). */
+/** Stated rounds AFTER the use round (the chip's first reading). A THIS_ROUND ability counts the use round as
+ * its first: Taunt's two rounds (Phase 91.1 plan 02, V8 B) are the use round and one more, so it reads 1. */
 function statedAfter(key) {
-  return THIS_ROUND_ABILITIES.has(key) ? 0 : DURATION_ROUNDS[key];
+  return THIS_ROUND_ABILITIES.has(key) ? DURATION_ROUNDS[key] - 1 : DURATION_ROUNDS[key];
 }
 
 // ---------------------------------------------------------------------------
 // The mapping.
 // ---------------------------------------------------------------------------
 
-test("abilityEffectTicks: a 'for N rounds' ability starts at N + 1 (the use round's tick, then N); Taunt ('this round') at 1; a non-duration ability at 0", () => {
+test("abilityEffectTicks: a 'for N rounds' ability starts at N + 1 (the use round's tick, then N); Taunt ('this round and the next') at 2; a non-duration ability at 0", () => {
   assert.deepEqual(
     Object.fromEntries(Object.keys(DURATION_ROUNDS).map((k) => [k, abilityEffectTicks(k)])),
-    { sidestep: 3, battleRoar: 3, riposte: 2, taunt: 1, smoke: 3 },
+    { sidestep: 3, battleRoar: 3, riposte: 2, taunt: 2, smoke: 3 },
   );
   assert.equal(abilityEffectTicks("kata"), 0);
   assert.equal(abilityEffectTicks("nope"), 0);

@@ -17,7 +17,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { useAbility, abilityRoundsLeft, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "../../engine/abilities.js";
+import { useAbility, abilityRoundsLeft, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark, markBonus } from "../../engine/abilities.js";
+import { derivedRng } from "../../engine/rng.js";
 import { isReady, remaining, startEffect } from "../../engine/effects.js";
 import { abilityEffectActive, foeToHitVs, DEATH_PANIC_THRESHOLD, strikeDie, toHit } from "../../engine/derived.js";
 import { endCombat, foeTurn, pickFoeTarget, applyFoeDamageToPlayer, flee } from "../../engine/combat.js";
@@ -452,9 +453,10 @@ test("poisonedEdge: sets t.dot shape and pushes poisonedEdgeApplied", () => {
   // hook, exercised in full in the section below) — left starts at 3 but
   // reads 2 by the time useAbility returns.
   assert.equal(foe.dot.left, 2);
-  assert.deepEqual(foe.dot.dmg, { n: 1, sides: 4, bonus: 0 });
+  // Phase 91.1 plan 02 (V9 B): d4 + the user's level a round (a level 1 fighter here: bonus 1).
+  assert.deepEqual(foe.dot.dmg, { n: 1, sides: 4, bonus: 1 });
   assert.equal(foe.dot.by, "poisonedEdge");
-  assert.ok(events.some((e) => e.type === "poisonedEdgeApplied" && e.target === "Rat" && e.rounds === 3));
+  assert.ok(events.some((e) => e.type === "poisonedEdgeApplied" && e.target === "Rat" && e.rounds === 3 && e.bonus === 1));
 });
 
 test("applyPoison(t, dot) is a pure setter — Plan 04 reuses it directly", () => {
@@ -478,30 +480,37 @@ test("applyHamstring(t) is a pure setter — Plan 04 reuses it directly", () => 
   assert.equal(t.hamstrung, true);
 });
 
-test("mark: sets f.marked (already read by playerStrike's +2 since Plan 02) and pushes marked", () => {
+test("mark: sets f.marked to the marker's level (read by playerStrike's markBonus; was +2 until Phase 91.1 plan 02, V10) and pushes marked", () => {
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["mark"], cls: "Thief", sub: "Pilfer", wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
   const events = useAbility(state, "mark", fakeRng([...FILL]), []);
-  assert.equal(foe.marked, true);
-  assert.ok(events.some((e) => e.type === "marked" && e.target === "Rat"));
+  assert.equal(foe.marked, 1, "a level 1 marker");
+  assert.ok(events.some((e) => e.type === "marked" && e.target === "Rat" && e.bonus === 1));
 });
 
 test("applyMark(t) is a pure setter — Plan 04 reuses it directly", () => {
   const t = fixedFoe();
-  applyMark(t);
-  assert.equal(t.marked, true);
+  applyMark(t, 4);
+  assert.equal(t.marked, 4);
+  assert.equal(markBonus(t), 4);
+  assert.equal(markBonus({}), 0);
+  assert.equal(markBonus({ marked: true }), 2, "a flag an older build saved as true keeps the old +2");
 });
 
-test("cutpurse: d10 x level gold, cutpursed + goldGained events, exactly one draw for a non-Pickpocket", () => {
+// Phase 91.1 plan 02 (V11 B): Cutpurse is a normal strike that also lifts d10 x level gold when it lands; the d10
+// comes from a derived stream (a double with no getState reads cursor 0), so the strike's own draws are the plain
+// strike's. Pinned in full in test/unit/value-abilities.test.js.
+test("cutpurse: a landed strike, then d10 x level gold from a derived stream (cutpursed + goldGained events)", () => {
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["cutpurse"], cls: "Thief", sub: "Pilfer", level: 3, gold: 0, wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
-  const rng = countingRng(fakeRng([7, ...FILL]));
-  const events = useAbility(state, "cutpurse", rng, []);
-  assert.equal(state.c.gold, 21); // 7 * level 3
-  assert.ok(events.some((e) => e.type === "cutpursed" && e.target === "Rat" && e.amount === 21));
-  assert.ok(events.some((e) => e.type === "goldGained" && e.amount === 21 && e.why === "cutpurse"));
+  const gold = derivedRng(0, "cutpurse", 0, "you").d(10) * 3;
+  const events = useAbility(state, "cutpurse", fakeRng([1, 3, ...FILL]), []); // a raw 1 is the best roll: it lands
+  assert.equal(state.c.gold, gold);
+  assert.ok(events.some((e) => e.type === "struck" && e.via === "cutpurse"));
+  assert.ok(events.some((e) => e.type === "cutpursed" && e.target === "Rat" && e.amount === gold));
+  assert.ok(events.some((e) => e.type === "goldGained" && e.amount === gold && e.why === "cutpurse"));
 });
 
 test("secondWind: heals d8 + level, capped at maxWP, reports the capped amount", () => {
@@ -546,12 +555,12 @@ test("sweep: a foe with sp.ar draws its own armour d20 (damageFoe's own gate, un
   assert.ok(events.some((e) => e.type === "sweptFoe" && e.target === "B"), "the unarmoured foe still takes it");
 });
 
-test("brace: sets C.braced and pushes braced", () => {
+test("brace: sets C.braced to the two blows it halves (V8 B) and pushes braced", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["brace"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   const events = useAbility(state, "brace", fakeRng([...FILL]), []);
-  assert.equal(state.combat.braced, true);
-  assert.ok(events.some((e) => e.type === "braced"));
+  assert.equal(state.combat.braced, 2);
+  assert.ok(events.some((e) => e.type === "braced" && e.blows === 2));
 });
 
 // Quick 260928-hrs (user ruling 2026-09-28): a "for N rounds" ability covers
@@ -571,16 +580,20 @@ test("riposte: pushes riposteReady; it covers this dispatch's own foeTurn and st
   assert.equal(remaining(state.c, "ability:riposte"), 4);
 });
 
-// Taunt is a THIS-round ability ("every foe swings at you this round"): its
-// one round is this dispatch's own foeTurn, so it is already in cooldown when
-// useAbility returns (unchanged by quick 260928-hrs).
-test("taunt: pushes taunted; its one round is this dispatch's own foeTurn, so it is already cooling when useAbility returns", () => {
+// Taunt is a THIS-round ability ("every foe swings at you this round and the next"): Phase 91.1 plan 02 (V8 B)
+// made it two rounds, so after this dispatch's own foeTurn it still has the next round to run (it reads 1),
+// then flips into its 4-round cooldown after that round's foe turn.
+test("taunt: pushes taunted for two rounds; this dispatch's own foeTurn is the first, the next foeTurn the second, then it cools", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["taunt"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   const events = useAbility(state, "taunt", fakeRng([...FILL]), []);
   assert.equal(isReady(state.c, "ability:taunt"), false);
+  assert.equal(abilityEffectActive(state.c, "taunt"), true, "still live for the next round");
+  assert.equal(remaining(state.c, "ability:taunt"), 1);
+  assert.ok(events.some((e) => e.type === "taunted" && e.rounds === 2));
+  foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(abilityEffectActive(state.c, "taunt"), false);
   assert.equal(remaining(state.c, "ability:taunt"), 4);
-  assert.ok(events.some((e) => e.type === "taunted" && e.rounds === 1));
 });
 
 test("sidestep/battleRoar/smoke: already shift foeToHitVs the instant the effect starts (Plan 02's wiring)", () => {
@@ -671,7 +684,7 @@ test("Task 2: poisonedEdge ticks a d4 three times total (one already inside its 
   const events0 = useAbility(state, "poisonedEdge", fakeRng([2, ...FILL]), []);
   const tick0 = events0.find((e) => e.type === "dotTick");
   assert.ok(tick0);
-  assert.equal(tick0.dmg, 2);
+  assert.equal(tick0.dmg, 2 + 1, "d4 + the level 1 user's level (Phase 91.1 plan 02, V9)");
   assert.equal(tick0.by, "poisonedEdge");
   assert.equal(tick0.left, 2);
   assert.equal(foe.dot.left, 2);

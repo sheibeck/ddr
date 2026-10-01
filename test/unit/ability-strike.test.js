@@ -346,7 +346,8 @@ test("abilityStrike: a marked foe takes control damage + 2 on a landed non-crit 
   const controlStruck = playerStrike(control, fakeRng([3, 4, ...FILL]), []).find((e) => e.type === "struck");
 
   const state = fixedState({ c: fixedFighter({ sub: "Soldier" }) });
-  state.combat = fixedCombat([fixedFoe({ marked: true })]);
+  // Phase 91.1 plan 02 (V10): the flag carries the marker's level; a level 2 Mark adds 2.
+  state.combat = fixedCombat([fixedFoe({ marked: 2 })]);
   const struck = playerStrike(state, fakeRng([3, 4, ...FILL]), []).find((e) => e.type === "struck");
   assert.equal(struck.dmg, controlStruck.dmg + 2);
 });
@@ -357,7 +358,7 @@ test("abilityStrike: a marked foe takes control damage x2 + 2 on a critical stri
   const controlStruck = playerStrike(control, fakeRng([1, 4, ...FILL]), []).find((e) => e.type === "struck");
 
   const state = fixedState({ c: fixedFighter({ sub: "Knight" }) });
-  state.combat = fixedCombat([fixedFoe({ marked: true })]);
+  state.combat = fixedCombat([fixedFoe({ marked: 2 })]);
   const struck = playerStrike(state, fakeRng([1, 4, ...FILL]), []).find((e) => e.type === "struck");
   assert.equal(struck.critical, true);
   // controlStruck.dmg is ALREADY crit-doubled (same roll, same weapon draw);

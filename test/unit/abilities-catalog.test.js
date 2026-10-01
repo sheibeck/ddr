@@ -67,16 +67,16 @@ test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their e
 
   const KEPT_TXT = {
     // VOX-05/ROLL-04 (79-05): Stealth and Locks read roll-high.
-    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "your first landed blow of a fight crits on the top two numbers of your die (19–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate"],
+    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "your first landed blow of a fight crits on the top three numbers of your die (18–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate"],
     "FIGHTER_SKILLS.Hardiness": [FIGHTER_SKILLS, "Hardiness", "−3 to every blow, bolt and trap that hurts you (never below 1), and a Joiner with it takes 3 less from each blow; phobias halved"],
     "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "two swings every time you strike, each rolling to hit and for damage, and a Joiner with it swings twice on a plain strike; it does not stack with Speed"],
     // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp.
     "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "every beast you kill feeds you: you heal a quarter of its max hp (at least 1) and pocket a ration"],
     // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — canRead is gone, so
     // Runes/Signs is the automatic-read guarantee, not the gate.
-    "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire"],
+    "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "reads any scroll without fail, and one read in six does not use the scroll up; without it, a scroll is an intelligence roll that can backfire"],
     "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "6–10 on d10 to open a lock, 4–10 with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest"],
-    "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "once on each fed day's rest, patch hurt armour: d6 hp back, 4 times in all"],
+    "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "once on each fed day's rest, patch hurt armour: d6 hp back, 6 times in all"],
     "THIEF_SKILLS.Night Vision": [THIEF_SKILLS, "Night Vision", "darkness costs you nothing"],
     "THIEF_SKILLS.Heft": [THIEF_SKILLS, "Heft", "+2 damage, mail armour, half upkeep"],
     // Phase 72 (ROLL-01, finding F2): the dead "3 to hit the unseen" clause
@@ -149,19 +149,19 @@ const CATALOG_TXT = {
   battleRoar: "loud enough to matter: for two rounds foes −2 to hit anyone on your side",
   secondWind: "remember why you came: heal d8 + level; ready again 5 rounds after you use it",
   sweep: "one wide arc: every living foe takes half damage; needs two or more foes",
-  brace: "halve the next blow that lands on you",
+  brace: "halve the next two blows that land on you",
   riposte: "for one round every foe that misses you eats your weapon damage",
-  taunt: "every foe swings at you this round and your armour soaks double",
+  taunt: "every foe swings at you this round and the next, and your armour soaks double both times",
   overheadBlow: "everything into one swing: double damage, but −2 to hit; ready again 4 rounds after you use it",
   lastStand: "under a quarter hp: three attacks this round; ready again 4 rounds after you use it",
   silentStep: "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling",
   feint: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
   dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical",
   smoke: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it",
-  cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems; once per fight",
-  poisonedEdge: "the blade weeps: d4 a round to the target for three rounds",
+  cutpurse: "a normal strike that also lifts d10 × level gold off the target when it lands; it has other problems; once per fight",
+  poisonedEdge: "the blade weeps: d4 + your level a round to the target for three rounds",
   hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already hamstrung",
-  mark: "study it: every strike on the target adds +2 damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
+  mark: "study it: every strike on the target adds your level in damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
 };
 
 test("ABILITIES: 20 unique entries, valid shape/enums, canon txt lines pinned", () => {

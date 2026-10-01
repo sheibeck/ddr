@@ -2085,12 +2085,12 @@ export const LINE_FOR = {
   swept: (e) => ({ text: `One wide arc — ${e?.dmg ?? 0} to everything standing.`, tone: "hit", priority: PRIORITY.feature }),
   sweptFoe: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0}.`, tone: "hit", priority: PRIORITY.them }),
   braced: (e) => ({
-    text: `${e?.member ? `${e.member}: ` : ""}Braced. The next blow that lands on ${e?.member ? "them" : "you"} does half damage.`,
+    text: `${e?.member ? `${e.member}: ` : ""}Braced. The next ${e?.blows > 1 ? `${e.blows} blows` : "blow"} that land${e?.blows > 1 ? "" : "s"} on ${e?.member ? "them" : "you"} do${e?.blows > 1 ? "" : "es"} half damage.`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
   braceHeld: (e) => ({
-    text: `${e?.member ? `${e.member}: ` : ""}Braced — ${railPossessive(e?.name, "the")} blow lands half as hard${Number.isFinite(e?.soaked) ? `, ${e.soaked} hp lighter` : ""}.`,
+    text: `${e?.member ? `${e.member}: ` : ""}Braced — ${railPossessive(e?.name, "the")} blow lands half as hard${Number.isFinite(e?.soaked) ? `, ${e.soaked} hp lighter` : ""}${e?.left > 0 ? `; ${e.left} more to go` : ""}.`,
     tone: "hit",
     priority: PRIORITY.you,
   }),
@@ -2101,7 +2101,7 @@ export const LINE_FOR = {
   }),
   riposted: (e) => ({ text: `${e?.target ?? "It"} misses, and pays ${e?.dmg ?? 0} for it.`, tone: "hit", priority: PRIORITY.them }),
   taunted: (e) => ({
-    text: e?.member ? `${e.member}: Every foe swings at them this round.` : "Every foe looks at you. Armour doubles.",
+    text: e?.member ? `${e.member}: Every foe swings at them for ${e?.rounds ?? 2} rounds.` : `Every foe looks at you for ${e?.rounds ?? 2} rounds. Armour doubles.`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
@@ -2125,12 +2125,12 @@ export const LINE_FOR = {
     tone: "hit",
     priority: PRIORITY.them,
   }),
-  poisonedEdgeApplied: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  poisonedEdgeApplied: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is poisoned for ${e?.rounds ?? 3} rounds${Number.isFinite(e?.bonus) ? ` (d4 + ${e.bonus} a round)` : ""}.`, tone: "hit", priority: PRIORITY.them }),
   // Phase 40 (SPELL-01, Ice) — the generic-on-`by` shape now covers two
   // sources; the short form names whichever one this tick came from.
   dotTick: (e) => ({ text: `${e?.target ?? "It"} takes ${e?.dmg ?? 0} from ${e?.by === "ice" ? "the ice" : "the poison"}.`, tone: "hurt", priority: PRIORITY.them }),
   hamstrung: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} hits half as hard from here on.`, tone: "hit", priority: PRIORITY.them }),
-  marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} does +2 damage.`, tone: "hit", priority: PRIORITY.them }),
+  marked: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Every blow on ${e?.target ?? "it"} does +${e?.bonus ?? 2} damage.`, tone: "hit", priority: PRIORITY.them }),
   // Plan 04 (ABIL-05): a Joiner's own ability use — four new member-only
   // events (no hero equivalent; a hero's own equivalent reads
   // abilityUsed/secondWindHealed/swept/riposted above).
@@ -2494,6 +2494,8 @@ export const LINE_FOR = {
     priority: PRIORITY.you,
   }),
   scrollRead: (e) => ({ text: `You unroll: ${e?.spell ?? "something unreadable"}.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 91.1 plan 02 (V14): the rail twin of the Oracle's scrollKept line.
+  scrollKept: (e) => ({ text: `The scroll is still whole${e?.spell ? ` (${e.spell})` : ""}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 25 (FEED-02): a scroll refusal always names its reason; unknown/
   // absent reason still gets a voiced fallback. RULES-10 (Phase 75.1):
   // "pilfer"/"noRunes" are retired — canRead is gone, and that reader now

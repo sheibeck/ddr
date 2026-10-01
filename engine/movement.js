@@ -43,6 +43,14 @@ import { isDeadEnd, checkTerrainPhobias, noteHeightsAttempt, resetFloorPhobiaReg
 /** DIRV — the four cardinal direction vectors. Ports mazeworld.html line 1615. */
 export const DIRV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
 
+/**
+ * SEWING_PATCHES — Phase 91.1 plan 02 (user ruling V13 B, 2026-10-01): how many
+ * nightly patches a worn piece of armour takes from a Sewing thief, by Sewing
+ * tier: 6 for the first tier (d6 each; was 4) and 6 for the second (d6+3 each,
+ * unchanged). A piece's own `patches` count is compared to it in newDay.
+ */
+export const SEWING_PATCHES = Object.freeze({ 1: 6, 2: 6 });
+
 // DELIBERATE RULES CHANGE (04.1-06, 2026-09-09, PHOBIA-01): the Heights and
 // Bodies-of-water phobias (both `t: null` in content/flavor.js's PHOBIAS
 // catalog — inert per 04.1-RESEARCH.md's audit) get a documented, DETERMINISTIC
@@ -1001,7 +1009,10 @@ export function newDay(state, camped, rng, events = [], now = Date.now) {
     // determinism/parity are unaffected.
     if (c.armorWP < c.armorMax && (skillTier(c, "Sewing") || c.sub === "Master of Arms")) {
       const tier = skillTier(c, "Sewing");
-      const maxPatch = tier === 2 ? 6 : 4;
+      // Phase 91.1 plan 02 (user ruling V13 B, 2026-10-01): the first tier patches
+      // 6 times in all instead of 4 (21 armour hit points on a piece); the second
+      // tier is unchanged at 6 (d6+3 each).
+      const maxPatch = SEWING_PATCHES[tier] ?? SEWING_PATCHES[1];
       if (tier && c.patches < maxPatch) {
         const amt = tier === 2 ? rng.d(6) + 3 : rng.d(6); // roll:amount
         c.armorWP = Math.min(c.armorMax, c.armorWP + amt);

@@ -84,7 +84,16 @@ import { castSpell } from "./magic.js";
 // (abilities.js imports several combat.js functions; neither module reads
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
-import { abilityEffectTicks, abilityShortfall, abilityTargetShortfall, KATA_FEINT_NEED_SHIFT, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { abilityEffectTicks, abilityShortfall, abilityTargetShortfall, KATA_FEINT_NEED_SHIFT, BRACE_BLOWS, DURATION_ROUNDS, POISON_ROUNDS, poisonedEdgeDot, markBonus, cutpurseGold, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+
+/**
+ * STEALTH_CRIT_FACES — Phase 91.1 plan 02 (user ruling V12 B, 2026-10-01): the
+ * top numbers of the strike die the Stealth skill crits on, on the first landed
+ * blow of a fight (was two): the top three, 18–20 on a d20. Never in plate, in
+ * the dark or for a Guard or Soldier. The hero's strike and a Joiner's own both
+ * read it; the text guard reads it too.
+ */
+export const STEALTH_CRIT_FACES = 3;
 import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -937,10 +946,10 @@ export function playerStrike(state, rng, events = []) {
     // opener event. No rng change (crit only doubles already-rolled damage
     // that is then discarded by the bail), so determinism/parity are intact.
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
-      if (skill(c, "Stealth") && roll >= atLeastFor(2, dieN) && armorBulk(c) < 2) {
+      if (skill(c, "Stealth") && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN) && armorBulk(c) < 2) {
         crit = true;
         critBy = "stealth";
-        critAtLeast = atLeastFor(2, dieN);
+        critAtLeast = atLeastFor(STEALTH_CRIT_FACES, dieN);
         events.push({ type: "stealthStrike" });
       } else if (c.cls === "Thief") {
         crit = true;
@@ -1002,7 +1011,8 @@ export function playerStrike(state, rng, events = []) {
     const killSpeed = classKillSpeedFor(c, { opener: critBy === "backstab" });
     if (killSpeed !== 1) dmg = Math.max(1, Math.round(dmg * killSpeed));
     if (AS && AS.dmgMul) dmg *= AS.dmgMul;
-    if (t.marked) dmg += 2;
+    // Phase 91.1 plan 02 (V10): a Mark adds its marker's level, not +2.
+    dmg += markBonus(t);
     // Phase 19 D-10: weakened is the hero-side mirror of the foe-side
     // C.weakened halving below (same ceil rounding, opposite direction) —
     // pure read, 0 draws, false for every fixture.
@@ -1048,6 +1058,16 @@ export function playerStrike(state, rng, events = []) {
   if (AS && AS.stunOnHit && blowLanded && t.alive) {
     applyPommel(t);
     events.push({ type: "pommelStruck", target: t.name });
+  }
+  // Phase 91.1 plan 02 (V11, user 2026-10-01): Cutpurse is a normal strike that
+  // also lifts d10 x level gold when a blow lands, once however many blows
+  // landed, after the blow's own events. The d10 is rolled only on a landed
+  // blow and from a derived stream (cutpurseGold), so the strike's own draws
+  // are exactly the plain strike's. A miss lifts nothing.
+  if (AS && AS.liftGold && blowLanded) {
+    const amount = cutpurseGold(state, rng, c.level, "you");
+    events.push({ type: "cutpursed", target: t.name, amount });
+    gainWilmst(state, amount, "cutpurse", rng, events);
   }
   // Phase 38 (ABIL-02, strike_descriptor_spec item 8): the descriptor is
   // transient — never present on state.combat once this function returns,
@@ -3066,23 +3086,22 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       events.push({ type: "dirtyTrickLanded", target: t.name, rounds: applyDirtyTrick(t), member: ally.name });
       return;
     case "poisonedEdge":
-      applyPoison(t, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
-      events.push({ type: "poisonedEdgeApplied", target: t.name, rounds: 3, member: ally.name });
+      applyPoison(t, poisonedEdgeDot(ally.lvl));
+      events.push({ type: "poisonedEdgeApplied", target: t.name, rounds: POISON_ROUNDS, bonus: ally.lvl, member: ally.name });
       return;
     case "hamstring":
       applyHamstring(t);
       events.push({ type: "hamstrung", target: t.name, member: ally.name });
       return;
     case "mark":
-      applyMark(t);
-      events.push({ type: "marked", target: t.name, member: ally.name });
+      applyMark(t, ally.lvl);
+      events.push({ type: "marked", target: t.name, bonus: ally.lvl, member: ally.name });
       return;
-    case "cutpurse": {
-      const amount = rng.d(10) * ally.lvl; // roll:amount
-      events.push({ type: "cutpursed", target: t.name, amount, member: ally.name });
-      gainWilmst(state, amount, "cutpurse", rng, events);
+    // Phase 91.1 plan 02 (V11): a normal strike that also lifts d10 x level gold
+    // into the hero's purse when a blow lands (memberStrike's `liftGold`).
+    case "cutpurse":
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, liftGold: true });
       return;
-    }
     case "secondWind": {
       const heal = rng.d(8) + ally.lvl; // roll:amount
       const before = ally.wp;
@@ -3107,14 +3126,14 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
     case "brace":
       // Phase 38 (ABIL-05): a transient combat-entry flag, exactly like
       // `ally.backstabUsed` — never synced to the sheet, rebuilt per fight.
-      ally.braced = true;
-      events.push({ type: "braced", member: ally.name });
+      ally.braced = BRACE_BLOWS;
+      events.push({ type: "braced", blows: BRACE_BLOWS, member: ally.name });
       return;
     case "riposte":
       events.push({ type: "riposteReady", rounds: 1, member: ally.name });
       return;
     case "taunt":
-      events.push({ type: "taunted", rounds: 1, member: ally.name });
+      events.push({ type: "taunted", rounds: DURATION_ROUNDS.taunt, member: ally.name });
       return;
     case "sidestep":
       events.push({ type: "sidestepped", rounds: 2, member: ally.name });
@@ -3162,10 +3181,11 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
  * member's own Guard/Soldier `noCrit` rule, with Silent Step specifically
  * denied by the heavy-armor list (mirrors `AS.forceCrit`'s `deniedByHeavy`);
  * `dmgMul` applies after the crit doubling; `allyMissed`/`allyStruck` gain
- * an additive `via: mod.key`. `t.marked`'s +2 (playerStrike's own rule)
- * applies UNCONDITIONALLY, `mod` or not — a marked foe takes +2 from every
- * striker, hero or member alike; false on every fixture (no foe is ever
- * marked before this plan's Mark ability exists).
+ * an additive `via: mod.key`. `t.marked`'s bonus (markBonus: the marker's
+ * level since Phase 91.1 plan 02, V10; was +2) applies UNCONDITIONALLY, `mod`
+ * or not — a marked foe takes it from every striker, hero or member alike;
+ * Phase 91.1 plan 02 (V11): `liftGold` (Cutpurse) lifts d10 x level gold after
+ * a landed blow, from a derived stream.
  */
 function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   const dieN = strikeDie(view);
@@ -3263,20 +3283,21 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   }
   // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30): a Joiner's Stealth, the
   // hero's rule (playerStrike): the Joiner's OPENING landed blow of the fight
-  // crits on a roll in its die's top two numbers, never in plate (armorBulk) and
+  // crits on a roll in its die's top STEALTH_CRIT_FACES numbers (three since
+  // Phase 91.1 plan 02, V12), never in plate (armorBulk) and
   // never in the dark (the party's light is the leader's, darkLimited, unless
   // the leader's Sense Presence is up), and never for a Guard or Soldier (their
   // blows never crit). A pure read of the roll already made, zero draws; the
   // doubling below is the one every crit takes (a natural crit never doubles
   // twice).
-  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses && !ally.senses) && roll >= atLeastFor(2, dieN)) {
+  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses && !ally.senses) && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN)) {
     crit = true;
-    critAtLeast = atLeastFor(2, dieN);
+    critAtLeast = atLeastFor(STEALTH_CRIT_FACES, dieN);
     events.push({ type: "stealthStrike", member: ally.name });
   }
   if (crit) dmg *= 2;
   if (mod && mod.dmgMul) dmg *= mod.dmgMul;
-  if (t.marked) dmg += 2;
+  dmg += markBonus(t); // Phase 91.1 plan 02 (V10): the marker's level, whoever swings
   const hit = damageFoe(state, t, dmg, { kind: "ally", crit, by: ally.name }, rng, events);
   if (!hit.soaked)
     events.push({
@@ -3300,6 +3321,14 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   if (mod && mod.stunOnHit && t.alive) {
     applyPommel(t);
     events.push({ type: "pommelStruck", target: t.name, member: ally.name });
+  }
+  // Phase 91.1 plan 02 (V11): Cutpurse's gold, the hero's rule (playerStrike):
+  // a landed blow lifts d10 x the Joiner's level, after the blow's own events,
+  // rolled on a derived stream (no draw on the main rng), into the hero's purse.
+  if (mod && mod.liftGold) {
+    const amount = cutpurseGold(state, rng, ally.lvl, ally.name);
+    events.push({ type: "cutpursed", target: t.name, amount, member: ally.name });
+    gainWilmst(state, amount, "cutpurse", rng, events);
   }
 }
 
@@ -3934,12 +3963,16 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
   // clears — mirrors the Pendant of Fortitude's c.halfNext pattern exactly.
   // Pure (no rng); false on every fixture (only useAbility's "brace" case
   // ever sets it).
+  // Phase 91.1 plan 02 (V8 B): Brace now halves the next TWO blows that land
+  // (BRACE_BLOWS): `braced` is the number of blows left, a flag saved as true by
+  // an older build reads as one.
   if (state.combat && state.combat.braced && dmg > 0) {
     const before = dmg;
     dmg = Math.ceil(dmg / 2);
-    state.combat.braced = false;
+    const left = Math.max(0, Number(state.combat.braced) - 1);
+    state.combat.braced = left > 0 ? left : false;
     soaked.brace = before - dmg;
-    events.push({ type: "braceHeld", name: foe.name, soaked: before - dmg });
+    events.push({ type: "braceHeld", name: foe.name, soaked: before - dmg, left });
   }
 
   // a ward eats the blow before armour or flesh does. RULES-14 (Phase 75):
@@ -4184,8 +4217,9 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
   if (member.braced && dmg > 0) {
     const before = dmg;
     dmg = Math.ceil(dmg / 2);
-    member.braced = false;
-    events.push({ type: "braceHeld", name: foe.name, member: member.name, soaked: before - dmg });
+    const left = Math.max(0, Number(member.braced) - 1);
+    member.braced = left > 0 ? left : false;
+    events.push({ type: "braceHeld", name: foe.name, member: member.name, soaked: before - dmg, left });
   }
 
   // Phase 91 plan 07 (IDENT-17): a Joiner's own Shield (a Bard's sung ward) eats the blow

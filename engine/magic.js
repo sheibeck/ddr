@@ -877,6 +877,27 @@ export function scrollReadRng(state, rng) {
 }
 
 /**
+ * RUNES_KEEP_FACES / RUNES_KEEP_DIE — Phase 91.1 plan 02 (user ruling V14 B,
+ * 2026-10-01): a scroll read through Runes/Signs is spent only 5 times in 6. The
+ * keep is one winning face of a d6 (roll-high: atLeastFor(1, 6)), rolled on its
+ * own derived stream, so a Runes reader's main-rng draws never move.
+ */
+export const RUNES_KEEP_FACES = 1;
+export const RUNES_KEEP_DIE = 6;
+
+/**
+ * scrollKeepRng(state, rng) — the ONE derived stream the Runes/Signs keep roll
+ * draws from: `derivedRng(<main cursor, or 0 for a test double>, "scrollKeep",
+ * <state.acts>)`. Mirrors scrollReadRng (own purpose, so the two never share a
+ * draw); never touches the caller's main `rng`.
+ */
+export function scrollKeepRng(state, rng) {
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  return derivedRng(cursor, "scrollKeep", acts);
+}
+
+/**
  * scrollFreeCast(state, sp, rng, events, now) — the "pays for itself and
  * ignores your book" free cast every successful scroll read takes, shared by
  * all three readers (magicUser/runes/a successful intel roll). Pushes
@@ -978,6 +999,13 @@ export function readScroll(state, rng, events = [], now = Date.now) {
 
   if (reader === "runes") {
     events.push({ type: "scrollRead", spell: sp.n, reader });
+    // Phase 91.1 plan 02 (V14): one read in six keeps the scroll (the d6 on its
+    // own derived stream), put back before the free cast so the cast sees the
+    // scroll it did not spend. The event comes before the cast it precedes.
+    if (rollCheck(scrollKeepRng(state, rng), RUNES_KEEP_DIE, atLeastFor(RUNES_KEEP_FACES, RUNES_KEEP_DIE)).ok) {
+      c.scrolls++;
+      events.push({ type: "scrollKept", spell: sp.n });
+    }
     scrollFreeCast(state, sp, rng, events, now);
     return events;
   }
