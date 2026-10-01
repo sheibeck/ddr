@@ -12,7 +12,6 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { rollHandle } from "../../src/browser/handles.js";
 import { SEASON } from "../../content/season.js";
 import { buildRunDoc, rankKeyOf } from "../../src/browser/runDoc.js";
 import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
@@ -33,8 +32,11 @@ function nextHash() {
   return hashCounter.toString(16).padStart(8, "0");
 }
 
+// Poster names: Play Games-style literals (Phase 91.2); 0.1 is a 2.2.0-style
+// "@" handle so a legacy row is covered too.
 function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
+  if (seed < 0.15) return "@lanternjaw";
+  return seed < 0.5 ? "Dev Delver" : "Moss Knuckle";
 }
 
 function makeSummary(overrides = {}) {

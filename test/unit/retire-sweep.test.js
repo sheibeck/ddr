@@ -138,6 +138,10 @@ test("the retired module files and their test files do not exist", () => {
     "test/unit/scoreTag.test.js",
     "test/unit/play-games-intake.test.js",
     "test/unit/board-global-trace.test.js",
+    // Phase 91.2 (D-10/D-11): the rolled @handle modules and their test.
+    "src/browser/handles.js",
+    "content/handles.js",
+    "test/unit/handles.test.js",
   ];
   for (const p of gone) {
     assert.equal(existsSync(path.join(REPO_ROOT, p)), false, `${p} must not exist`);
