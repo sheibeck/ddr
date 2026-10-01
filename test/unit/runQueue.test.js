@@ -118,7 +118,7 @@ function stubWrites(sequence) {
 
 function makeFullStack({ competeOn = true, online = true, fakeOpts = {} } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, ...fakeOpts });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
   const idStorage = makeStorage();
   let competing = competeOn;
   const identity = createIdentity({

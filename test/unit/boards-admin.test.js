@@ -454,7 +454,7 @@ test("delete-run: an id that does not exist prints a not-found line and exits 0"
 // --- ban / unban -----------------------------------------------------------
 
 test("ban --yes writes banned/<uid>, deletes every run of that uid, refuses a further create; unban restores", async () => {
-  const fake = createFakeBoardFetch({ now: () => NOW_MS });
+  const fake = createFakeBoardFetch({ transition: true, now: () => NOW_MS });
   const { uid, idToken } = await signUp(fake);
 
   const first = await submitRun(fake, uid, idToken, { hash: "0a1b2c3d" });
@@ -744,7 +744,7 @@ test("toCsv: header then RFC 4180-escaped rows", () => {
 // --- createAdminApi (direct) --------------------------------------------------
 
 test("createAdminApi: query/getRun/deleteRun/runsOf/deleteRunsOf/setBan/clearBan round-trip", async () => {
-  const fake = createFakeBoardFetch({ now: () => NOW_MS });
+  const fake = createFakeBoardFetch({ transition: true, now: () => NOW_MS });
   const api = createAdminApi({ projectId: FIREBASE_CONFIG.projectId, fetchFn: fake.fetchFn, headers: { Authorization: `Bearer ${FAKE_ADMIN_TOKEN}` } });
 
   const { uid, idToken } = await signUp(fake);

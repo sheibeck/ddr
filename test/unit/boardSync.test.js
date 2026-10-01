@@ -158,7 +158,7 @@ function makeStack({
   liveHash = () => null,
 } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, ...fakeOpts });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
   const idStorage = makeStorage();
   const syncStorage = makeStorage();
   let competing = competeOn;
@@ -311,7 +311,7 @@ test("flush: two runs acknowledged together report rest.count 2 with the deeper 
 test("settleAcks: a failed rank read reports null; onPlacement never fires when both parts are null", async () => {
   const s = baseSummary();
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock });
   const idStorage = makeStorage();
   const identity = createIdentity({ storage: idStorage, fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => true, now: clock, random: () => 0.42 });
   const failingClient = {
@@ -508,7 +508,7 @@ test("erase: a mid-way network failure resolves {ok:false, reason:'offline', del
   const mine = [];
   for (let i = 0; i < 60; i++) mine.push(seedFor({ uid: "fakeuid000001", hash: hexHash(i + 1) }));
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, runs: mine });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, runs: mine });
   const idStorage = makeStorage();
   const identity = createIdentity({ storage: idStorage, fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => true, now: clock, random: () => 0.42 });
   await identity.getToken(); // signs up as fakeuid000001, caches the token — not counted below

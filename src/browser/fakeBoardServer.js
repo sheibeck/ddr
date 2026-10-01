@@ -28,15 +28,21 @@
 // actually returns; every later module that reads this fake's answer should
 // treat all three as "already there, acknowledged".
 //
-// Phase 87 (BOARD-28): `acceptLegacyDeepKey` (default false) is the DEPTH-key
-// transition mode. The default mirrors the FINAL rules (firebase/
-// firestore.rules: deepKey = floor * 1,000,000 + steps only); with it true the
-// fake mirrors firebase/firestore.transition.rules (the new formula or the
-// shipped 2.2.0 one, floor * 1,000,000 + (999999 - steps), nothing else).
-// Delete the option with the transition files at the 2.3 cutover. The fake
-// also accepts an admin single-field PATCH of a run's deepKey (the way
-// Firestore's IAM-level admin access does), which is what tools/
-// boards-admin.mjs's rekey-deep uses.
+// Phase 87 (BOARD-28) + Phase 91.2 (BOARD-31, BOARD-33, D-11, D-13): two modes.
+// The DEFAULT mirrors the FINAL rules (firebase/firestore.rules): a client run
+// create lands only when names/{uid} exists for the poster and the run's handle
+// equals its name (the verified Play Games name; deepKey = floor * 1,000,000 +
+// steps only), and a client NEVER updates a run (no rename path). With
+// `transition: true` the fake mirrors firebase/firestore.transition.rules
+// instead: the same, plus a deepKey in either formula (the new one or the
+// shipped 2.2.0 one, floor * 1,000,000 + (999999 - steps)), a 2.2.0 @handle
+// create from a uid with NO names entry (runDoc.js's isLegacyHandle), and the
+// 2.2.0 handle-only re-roll update for an owner with NO names entry. A named
+// uid can never use a legacy branch. Delete the option, the legacy branches
+// and the mode with the transition files at the 2.3 cutover. The fake also
+// accepts an admin single-field PATCH of a run's deepKey (the way Firestore's
+// IAM-level admin access does), which is what tools/boards-admin.mjs's
+// rekey-deep uses; no admin path ever reaches a client rule.
 //
 // Phase 91.2 (BOARD-31, BOARD-32): the Play Games identity mirror and the
 // admin-only names collections. accounts:signInWithIdp (create, sign in or
@@ -47,8 +53,8 @@
 // (clients are denied read, write and query); admin :runQuery reads them and
 // runs, and admin :commit applies run updates (with or without an updateMask),
 // deletes and creates with no client rule, all-or-nothing, which is how the
-// boardName function and tools/boards-admin.mjs write. No client create or
-// update rule changed here. Options, each modelling one spike gate offline:
+// boardName function and tools/boards-admin.mjs write. Options, each modelling
+// one spike gate offline:
 //   playGamesEnabled   false -> OPERATION_NOT_ALLOWED (G4: provider not enabled)
 //   linkKeepsUid       false -> a link answers a new uid (G3: uid not kept)
 //   refreshProviderName false -> the provider name never refreshes (G2)
@@ -67,11 +73,10 @@
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
 
-import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
+import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, legacyDeepKeyOf, isLegacyHandle, LIST_LIMIT_MAX } from "./runDoc.js";
 import { sanitizeBoardName } from "./boardName.js";
 import { validateReport } from "./bugReport.js";
 import { REPORT_LIMITS_COLLECTION, validateLimitStep, decodeLimitDoc } from "./reportLimits.js";
-import { isValidHandle } from "./handles.js";
 import {
   FIRESTORE_BASE,
   IDENTITY_BASE,
@@ -203,8 +208,9 @@ function sortRecords(records, orderBy) {
 
 /**
  * createFakeBoardFetch({ config, now, online, existsResponse,
- * anonymousEnabled, runs, tokenTtlMs, acceptLegacyDeepKey }) — the in-memory
- * fetchFn factory.
+ * anonymousEnabled, runs, tokenTtlMs, transition }) — the in-memory
+ * fetchFn factory (final rules by default, the transition rules with
+ * transition: true).
  * Returns { fetchFn, calls, docs, reports, limits, users, banned, setOnline,
  * ban, unban }. Never throws.
  */
@@ -217,7 +223,7 @@ export function createFakeBoardFetch(opts = {}) {
     anonymousEnabled = true,
     runs: seedRuns = [],
     tokenTtlMs = 3600000,
-    acceptLegacyDeepKey = false,
+    transition = false,
     playGamesEnabled = true,
     linkKeepsUid = true,
     refreshProviderName = true,
@@ -602,14 +608,18 @@ export function createFakeBoardFetch(opts = {}) {
     return { apply: () => runStore.delete(c.id) };
   }
 
+  // The one client update the transition rules keep: the 2.2.0 handle-only
+  // re-roll, for an owner with NO names entry. The final rules refuse every
+  // client update (D-11).
   function validateHandleUpdateWrite(c, authKind, authUid) {
+    if (transition !== true) return null;
     const rec = runStore.get(c.id);
     const fieldPaths = c.write.updateMask?.fieldPaths;
     const validMask = Array.isArray(fieldPaths) && fieldPaths.length === 1 && fieldPaths[0] === "handle";
     const fields = fromFirestoreFields(c.write.update.fields);
     const ownerOk = !!rec && authKind === "user" && rec.doc.uid === authUid;
-    const handleOk = isValidHandle(fields.handle);
-    if (!validMask || !ownerOk || !handleOk) return null;
+    const handleOk = isLegacyHandle(fields.handle);
+    if (!validMask || !ownerOk || !handleOk || isNamed(authUid)) return null;
     return {
       apply: () => {
         const updateTimeIso = nowIso();
@@ -629,18 +639,45 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: commitOkBody(classified.length, nowIso()) };
   }
 
-  // Transition mode (Phase 87 BOARD-28): the one failure the transition rules
-  // forgive is a deepKey equal to the 2.2.0 formula; anything else denies.
+  // Transition mode (Phase 87 BOARD-28): the one shape failure the transition
+  // rules forgive is a deepKey equal to the 2.2.0 formula; anything else denies.
   function runDocValid(clientDoc, validateOpts) {
     const fails = validateRunDoc(clientDoc, validateOpts);
     if (fails.length === 0) return true;
     return (
-      acceptLegacyDeepKey === true &&
+      transition === true &&
       fails.length === 1 &&
       fails[0] === "deepkey" &&
       Number.isInteger(clientDoc.deepKey) &&
       clientDoc.deepKey === legacyDeepKeyOf(clientDoc)
     );
+  }
+
+  // names/{uid} (Phase 91.2): isNamed is exists(), verifiedNameOf is
+  // get().data.name (null when the entry has no string name, which makes the
+  // run's handle comparison fail, as in the rules).
+  function isNamed(uid) {
+    return nameDocs.names.has(uid);
+  }
+
+  function verifiedNameOf(uid) {
+    const rec = nameDocs.names.get(uid);
+    const name = rec?.fields?.name?.stringValue;
+    return typeof name === "string" ? name : null;
+  }
+
+  // The runs create rule for a client: a named uid's run must carry its
+  // verified name as the handle; only in transition mode may an UNNAMED uid
+  // post a 2.2.0 @handle (the legacy create branch).
+  function userRunAllowed(clientDoc, authUid) {
+    const validateOpts = { uid: authUid, now: now() };
+    if (isNamed(authUid)) {
+      const name = verifiedNameOf(authUid);
+      if (name === null) return false;
+      return runDocValid(clientDoc, { ...validateOpts, name });
+    }
+    if (transition === true && isLegacyHandle(clientDoc.handle)) return runDocValid(clientDoc, validateOpts);
+    return false;
   }
 
   function commitRunCreate(id, write, authKind, authUid) {
@@ -649,7 +686,7 @@ export function createFakeBoardFetch(opts = {}) {
       if (clientDoc.uid !== authUid) return denied();
       if (id !== runDocId(authUid, clientDoc.hash)) return denied();
       if (banned.has(authUid)) return denied();
-      if (!runDocValid(clientDoc, { uid: authUid, now: now() })) return denied();
+      if (!userRunAllowed(clientDoc, authUid)) return denied();
     } else if (authKind === "admin") {
       if (!runDocValid(clientDoc, { now: now() })) return denied();
     } else {

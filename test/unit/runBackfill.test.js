@@ -105,7 +105,7 @@ function foldBests(summaries) {
 
 function makeFullStack({ competeOn = true } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock });
   const idStorage = makeStorage();
   let competing = competeOn;
   const identity = createIdentity({
