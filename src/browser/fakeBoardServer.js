@@ -38,6 +38,23 @@
 // Firestore's IAM-level admin access does), which is what tools/
 // boards-admin.mjs's rekey-deep uses.
 //
+// Phase 91.2 (BOARD-31, BOARD-32): the Play Games identity mirror and the
+// admin-only names collections. accounts:signInWithIdp (create, sign in or
+// link with an idToken, single-use fake codes `fake:<pid>:<name>:<n>`),
+// accounts:lookup (providerUserInfo), accounts:update (unlink, top-level
+// displayName only; linkProviderUserInfo is refused), accounts:delete frees
+// the player. names/{uid} and nameOverrides/{uid} answer only the admin token
+// (clients are denied read, write and query); admin :runQuery reads them and
+// runs, and admin :commit applies run updates (with or without an updateMask),
+// deletes and creates with no client rule, all-or-nothing, which is how the
+// boardName function and tools/boards-admin.mjs write. No client create or
+// update rule changed here. Options, each modelling one spike gate offline:
+//   playGamesEnabled   false -> OPERATION_NOT_ALLOWED (G4: provider not enabled)
+//   linkKeepsUid       false -> a link answers a new uid (G3: uid not kept)
+//   refreshProviderName false -> the provider name never refreshes (G2)
+//   nameSource         "games" -> the boardName emulation asks for a Games
+//                      auth code (G1/A4 fallback)
+//
 // Pure, DOM-free: never calls a bare global fetch and never reads window,
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
@@ -62,6 +79,11 @@ export const FAKE_ADMIN_TOKEN = "fake-admin-token";
 
 const BUG_REPORTS_COLLECTION = "bugReports";
 const BANNED_COLLECTION = "banned";
+const NAMES_COLLECTION = "names";
+const NAME_OVERRIDES_COLLECTION = "nameOverrides";
+const NAME_COLLECTIONS = [NAMES_COLLECTION, NAME_OVERRIDES_COLLECTION];
+const PLAY_GAMES_PROVIDER = "playgames.google.com";
+const ADMIN_COMMIT_MAX_WRITES = 500;
 
 function errorBody(code, status) {
   return { error: { code, message: status, status } };
@@ -159,6 +181,10 @@ export function createFakeBoardFetch(opts = {}) {
     runs: seedRuns = [],
     tokenTtlMs = 3600000,
     acceptLegacyDeepKey = false,
+    playGamesEnabled = true,
+    linkKeepsUid = true,
+    refreshProviderName = true,
+    nameSource = "provider",
   } = opts;
 
   let online = initialOnline !== false;
@@ -167,7 +193,11 @@ export function createFakeBoardFetch(opts = {}) {
   const reports = new Map(); // id -> report fields (no uid)
   const limits = new Map(); // uid -> { lastMs, dayMs, count }
   const banned = new Set();
-  const users = new Set();
+  const accounts = new Map(); // uid -> { uid, displayName?, providers: [{ providerId, rawId, federatedId, displayName }] }
+  const linkedPlayers = new Map(); // Play Games playerId -> uid
+  const usedCodes = new Set(); // fake Play Games auth codes already exchanged (single-use)
+  const gamesTokens = new Map(); // fake Games API access token -> { playerId, displayName }
+  const nameDocs = { names: new Map(), nameOverrides: new Map() }; // collection -> uid -> { fields (typed), createTimeIso, updateTimeIso }
   const idTokens = new Map(); // idToken -> { uid, issuedAtMs }
   const refreshTokens = new Map(); // refreshToken -> uid
   const calls = [];
@@ -248,15 +278,46 @@ export function createFakeBoardFetch(opts = {}) {
 
   // --- identity: accounts:signUp / accounts:delete, securetoken:token ----
 
-  function handleSignUp() {
-    if (anonymousEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+  function createAccount() {
     const uid = nextUid();
+    accounts.set(uid, { uid, displayName: undefined, providers: [] });
+    return accounts.get(uid);
+  }
+
+  function mintTokens(uid) {
     const idToken = nextToken("idtok");
     const refreshToken = nextToken("rtok");
     idTokens.set(idToken, { uid, issuedAtMs: now() });
     refreshTokens.set(refreshToken, uid);
-    users.add(uid);
+    return { idToken, refreshToken };
+  }
+
+  function handleSignUp() {
+    if (anonymousEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+    const { uid } = createAccount();
+    const { idToken, refreshToken } = mintTokens(uid);
     return { status: 200, body: { idToken, refreshToken, expiresIn: "3600", localId: uid } };
+  }
+
+  // Resolves the idToken in an Identity Toolkit body to a live account:
+  // { ok: true, uid, account } or { ok: false, result } carrying the 400 answer.
+  function resolveIdToken(idToken) {
+    const rec = typeof idToken === "string" ? idTokens.get(idToken) : undefined;
+    if (!rec) return { ok: false, result: { status: 400, body: errorBody(400, "INVALID_ID_TOKEN") } };
+    if (now() > rec.issuedAtMs + tokenTtlMs) return { ok: false, result: { status: 400, body: errorBody(400, "TOKEN_EXPIRED") } };
+    const account = accounts.get(rec.uid);
+    if (!account) return { ok: false, result: { status: 400, body: errorBody(400, "USER_NOT_FOUND") } };
+    return { ok: true, uid: rec.uid, account };
+  }
+
+  function providerInfoOf(account) {
+    return Object.freeze(account.providers.map((p) => Object.freeze({ ...p })));
+  }
+
+  function freePlayersOf(account) {
+    for (const p of account.providers) {
+      if (linkedPlayers.get(p.rawId) === account.uid) linkedPlayers.delete(p.rawId);
+    }
   }
 
   function handleAccountDelete(init) {
@@ -265,10 +326,145 @@ export function createFakeBoardFetch(opts = {}) {
     const rec = typeof idToken === "string" ? idTokens.get(idToken) : undefined;
     if (!rec) return { status: 400, body: errorBody(400, "INVALID_ID_TOKEN") };
     const { uid } = rec;
+    const account = accounts.get(uid);
+    if (account) freePlayersOf(account);
     for (const [tok, r] of [...idTokens]) if (r.uid === uid) idTokens.delete(tok);
     for (const [tok, u] of [...refreshTokens]) if (u === uid) refreshTokens.delete(tok);
-    users.delete(uid);
+    accounts.delete(uid);
     return { status: 200, body: {} };
+  }
+
+  // --- Play Games: accounts:signInWithIdp / lookup / update ------------------
+  //
+  // Fake Play Games auth codes are `fake:<pid>:<name>:<n>` (percent-encoded
+  // parts; src/browser/playIdentity.js#createFakePlayIdentity mints them).
+  // Every code is single-use. `playGamesEnabled` false models spike gate G4
+  // failing (the provider is not enabled on the project); `linkKeepsUid` false
+  // models G3 failing (a link answers a different uid); `refreshProviderName`
+  // false models G2 failing (the provider's name never changes after the first
+  // sign-in).
+
+  const FAKE_CODE_RE = /^fake:([^:]*):([^:]*):(\d+)$/;
+
+  function parseFakeCode(authCode) {
+    const m = typeof authCode === "string" ? FAKE_CODE_RE.exec(authCode) : null;
+    if (!m) return null;
+    try {
+      const playerId = decodeURIComponent(m[1]);
+      if (playerId === "") return null;
+      return { playerId, displayName: decodeURIComponent(m[2]) };
+    } catch {
+      return null;
+    }
+  }
+
+  function linkProvider(account, player) {
+    account.providers.push({
+      providerId: PLAY_GAMES_PROVIDER,
+      rawId: player.playerId,
+      federatedId: player.playerId,
+      displayName: player.displayName,
+    });
+    linkedPlayers.set(player.playerId, account.uid);
+  }
+
+  function signedInBody(account, provider, isNewUser) {
+    const { idToken, refreshToken } = mintTokens(account.uid);
+    return {
+      status: 200,
+      body: {
+        kind: "identitytoolkit#VerifyAssertionResponse",
+        localId: account.uid,
+        idToken,
+        refreshToken,
+        expiresIn: "3600",
+        providerId: PLAY_GAMES_PROVIDER,
+        federatedId: provider.federatedId,
+        displayName: provider.displayName,
+        isNewUser,
+      },
+    };
+  }
+
+  function handleSignInWithIdp(init) {
+    if (playGamesEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+    const body = parseJsonBody(init.body) || {};
+    const post = new URLSearchParams(typeof body.postBody === "string" ? body.postBody : "");
+    if (post.get("providerId") !== PLAY_GAMES_PROVIDER) return { status: 400, body: errorBody(400, "INVALID_IDP_RESPONSE") };
+    const authCode = post.get("code");
+    const player = parseFakeCode(authCode);
+    if (!player || usedCodes.has(authCode)) return { status: 400, body: errorBody(400, "INVALID_IDP_RESPONSE") };
+
+    let caller = null;
+    if (body.idToken !== undefined && body.idToken !== null && body.idToken !== "") {
+      const who = resolveIdToken(body.idToken);
+      if (!who.ok) return who.result;
+      caller = who.account;
+    }
+    usedCodes.add(authCode);
+
+    const linkedUid = linkedPlayers.get(player.playerId);
+    const linked = linkedUid !== undefined ? accounts.get(linkedUid) : undefined;
+
+    // The same account (or a plain sign-in): refresh the provider's name, answer its uid.
+    if (linked && (caller === null || caller.uid === linked.uid)) {
+      const provider = linked.providers.find((p) => p.rawId === player.playerId);
+      if (refreshProviderName !== false) provider.displayName = player.displayName;
+      return signedInBody(linked, provider, false);
+    }
+
+    // The player is linked to another uid: the credential cannot be linked here.
+    if (linked) {
+      if (body.returnIdpCredential === true) {
+        return { status: 200, body: { kind: "identitytoolkit#VerifyAssertionResponse", errorMessage: "FEDERATED_USER_ID_ALREADY_LINKED", providerId: PLAY_GAMES_PROVIDER, federatedId: player.playerId } };
+      }
+      return { status: 400, body: errorBody(400, "FEDERATED_USER_ID_ALREADY_LINKED") };
+    }
+
+    // An unlinked player. With a caller that is a link (the uid is kept unless
+    // linkKeepsUid is false); without one, or when the uid is not kept, a new account.
+    if (caller && caller.providers.some((p) => p.providerId === PLAY_GAMES_PROVIDER)) {
+      return { status: 400, body: errorBody(400, "PROVIDER_ALREADY_LINKED") };
+    }
+    if (caller && linkKeepsUid !== false) {
+      linkProvider(caller, player);
+      return signedInBody(caller, caller.providers[caller.providers.length - 1], false);
+    }
+    const fresh = createAccount();
+    linkProvider(fresh, player);
+    return signedInBody(fresh, fresh.providers[0], true);
+  }
+
+  function handleLookup(init) {
+    const body = parseJsonBody(init.body);
+    const who = resolveIdToken(body?.idToken);
+    if (!who.ok) return who.result;
+    const user = { localId: who.uid, providerUserInfo: providerInfoOf(who.account).map((p) => ({ ...p })) };
+    if (who.account.displayName !== undefined) user.displayName = who.account.displayName;
+    return { status: 200, body: { kind: "identitytoolkit#GetAccountInfoResponse", users: [user] } };
+  }
+
+  // A signed-in user may unlink a provider and change the TOP-LEVEL displayName;
+  // they cannot write a provider's entry (linkProviderUserInfo is admin-only),
+  // which is what spike gate A4 relies on.
+  function handleUpdate(init) {
+    const body = parseJsonBody(init.body);
+    const who = resolveIdToken(body?.idToken);
+    if (!who.ok) return who.result;
+    if (body.linkProviderUserInfo !== undefined) return { status: 400, body: errorBody(400, "ADMIN_ONLY_OPERATION") };
+    const account = who.account;
+    if (Array.isArray(body.deleteProvider)) {
+      const gone = account.providers.filter((p) => body.deleteProvider.includes(p.providerId));
+      for (const p of gone) {
+        if (linkedPlayers.get(p.rawId) === account.uid) linkedPlayers.delete(p.rawId);
+      }
+      account.providers = account.providers.filter((p) => !body.deleteProvider.includes(p.providerId));
+    }
+    if (Array.isArray(body.deleteAttribute) && body.deleteAttribute.includes("DISPLAY_NAME")) account.displayName = undefined;
+    if (typeof body.displayName === "string") account.displayName = body.displayName;
+    const out = { kind: "identitytoolkit#SetAccountInfoResponse", localId: account.uid, providerUserInfo: providerInfoOf(account).map((p) => ({ ...p })) };
+    if (account.displayName !== undefined) out.displayName = account.displayName;
+    return { status: 200, body: out };
   }
 
   function handleRefresh(init) {
@@ -298,11 +494,21 @@ export function createFakeBoardFetch(opts = {}) {
     if (!structuredQuery) return denied();
     const { from, where, orderBy = [], limit, startAt } = structuredQuery;
     const collectionId = from?.[0]?.collectionId;
-    if (collectionId !== RUN_COLLECTION) return denied();
+    // names / nameOverrides are closed to clients: only an admin query reads them.
+    const isNameCollection = NAME_COLLECTIONS.includes(collectionId);
+    if (collectionId !== RUN_COLLECTION && !(isNameCollection && authKind === "admin")) return denied();
     if (authKind !== "admin") {
       if (!Number.isInteger(limit) || limit > LIST_LIMIT_MAX) return denied();
     }
-    let records = [...runStore.values()];
+    let records = isNameCollection
+      ? [...nameDocs[collectionId]].map(([uid, rec]) => ({
+          name: docName(config, collectionId, uid),
+          doc: fromFirestoreFields(rec.fields),
+          fieldsTyped: rec.fields,
+          createTimeIso: rec.createTimeIso,
+          updateTimeIso: rec.updateTimeIso,
+        }))
+      : [...runStore.values()];
     if (where) records = records.filter((r) => matchesFilter(r.doc, where));
     records = sortRecords(records, orderBy);
     if (startAt) {
@@ -311,7 +517,7 @@ export function createFakeBoardFetch(opts = {}) {
     }
     if (Number.isInteger(limit)) records = records.slice(0, limit);
     const hits = records.map((r) => ({
-      document: { name: r.name, fields: encodeRunDocFields(r.doc, r.createdAtIso), createTime: r.createTimeIso, updateTime: r.updateTimeIso },
+      document: { name: r.name, fields: r.fieldsTyped ?? encodeRunDocFields(r.doc, r.createdAtIso), createTime: r.createTimeIso, updateTime: r.updateTimeIso },
       readTime: nowIso(),
     }));
     return { status: 200, body: hits.length ? hits : [{ readTime: nowIso() }] };
@@ -348,6 +554,7 @@ export function createFakeBoardFetch(opts = {}) {
       if (hasTransform(write, "createdAt")) return { kind: "runCreate", collection, id, write };
       if (hasTransform(write, "last")) return { kind: "limitWrite", collection, id, write };
       if (write.currentDocument?.exists === false && !(write.updateTransforms?.length > 0)) return { kind: "reportCreate", collection, id, write };
+      return { kind: "unknown", collection, id, write };
     }
     return { kind: "unknown", collection: null, id: null, write };
   }
@@ -451,10 +658,67 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: commitOkBody(2, nowIso()) };
   }
 
+  // Admin :commit over runs (the boardName function and tools/boards-admin.mjs
+  // run as the service account, which bypasses the rules): updates with or
+  // without an updateMask, deletes and creates, applied in order with the
+  // currentDocument.exists preconditions and all-or-nothing, with no client
+  // rule applied. Firestore's 500-writes-per-commit ceiling applies.
+  function adminRunCommit(writes) {
+    if (writes.length > ADMIN_COMMIT_MAX_WRITES) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const staged = new Map(runStore);
+    const timeIso = nowIso();
+    for (const write of writes) {
+      if (write.delete) {
+        staged.delete(splitName(write.delete).id);
+        continue;
+      }
+      const id = splitName(write.update.name).id;
+      const have = staged.get(id);
+      const wantExists = write.currentDocument?.exists;
+      if (wantExists === true && !have) return notFound();
+      if (wantExists === false && have) return existsError();
+      const { createdAt, ...clientFields } = fromFirestoreFields(write.update.fields);
+      const maskPaths = write.updateMask?.fieldPaths;
+      let doc;
+      if (Array.isArray(maskPaths)) {
+        doc = { ...(have ? have.doc : {}) };
+        for (const fp of maskPaths) {
+          if (fp in clientFields) doc[fp] = clientFields[fp];
+          else delete doc[fp];
+        }
+      } else {
+        doc = clientFields;
+      }
+      let createdAtIso = have ? have.createdAtIso : timeIso;
+      if (!Array.isArray(maskPaths) && !hasTransform(write, "createdAt") && typeof createdAt === "string") createdAtIso = createdAt;
+      staged.set(id, {
+        id,
+        doc: Object.freeze(doc),
+        createdAtIso,
+        name: docName(config, RUN_COLLECTION, id),
+        createTimeIso: have ? have.createTimeIso : createdAtIso,
+        updateTimeIso: timeIso,
+      });
+    }
+    runStore.clear();
+    for (const [id, rec] of staged) runStore.set(id, rec);
+    return { status: 200, body: commitOkBody(writes.length, timeIso) };
+  }
+
   function commitDispatch(body, authKind, authUid) {
     const writes = Array.isArray(body?.writes) ? body.writes : [];
     if (writes.length === 0) return denied();
     const classified = writes.map(classifyWrite);
+
+    // A lone admin run create keeps its shape check below; every other
+    // all-runs admin commit skips the client rules.
+    if (
+      authKind === "admin" &&
+      classified.every((c) => c.collection === RUN_COLLECTION) &&
+      !(writes.length === 1 && classified[0].kind === "runCreate")
+    ) {
+      return adminRunCommit(writes);
+    }
 
     if (classified.every((c) => c.kind === "delete" && c.collection === RUN_COLLECTION)) {
       return applyAtomic(classified, (c) => validateRunDeleteWrite(c, authKind, authUid));
@@ -559,6 +823,62 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: {} };
   }
 
+  // --- names / nameOverrides: admin-only (clients cannot read or write) ------
+
+  function nameDocBody(collection, uid, rec) {
+    return { name: docName(config, collection, uid), fields: rec.fields, createTime: rec.createTimeIso, updateTime: rec.updateTimeIso };
+  }
+
+  function putNameDoc(collection, uid, fields) {
+    const have = nameDocs[collection].get(uid);
+    const timeIso = nowIso();
+    nameDocs[collection].set(uid, { fields, createTimeIso: have ? have.createTimeIso : timeIso, updateTimeIso: timeIso });
+  }
+
+  function handleNameDocGet(collection, uid, authKind) {
+    if (authKind !== "admin") return denied();
+    const rec = nameDocs[collection].get(uid);
+    if (!rec) return notFound();
+    return { status: 200, body: nameDocBody(collection, uid, rec) };
+  }
+
+  function handleNameDocList(collection, authKind) {
+    if (authKind !== "admin") return denied();
+    const documents = [...nameDocs[collection]].map(([uid, rec]) => nameDocBody(collection, uid, rec));
+    return { status: 200, body: documents.length ? { documents } : {} };
+  }
+
+  // PATCH replaces the document; with updateMask.fieldPaths it merges only the
+  // masked fields. The stored name must be a string.
+  function handleNameDocPatch(collection, uid, init, query, authKind) {
+    if (authKind !== "admin") return denied();
+    const body = parseJsonBody(init.body);
+    const incoming = body && typeof body.fields === "object" && body.fields !== null ? body.fields : null;
+    if (!incoming) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const have = nameDocs[collection].get(uid);
+    const wantExists = query.get("currentDocument.exists");
+    if (wantExists === "true" && !have) return notFound();
+    if (wantExists === "false" && have) return existsError();
+    const masks = query.getAll("updateMask.fieldPaths");
+    let fields = incoming;
+    if (masks.length > 0) {
+      fields = { ...(have ? have.fields : {}) };
+      for (const fp of masks) {
+        if (fp in incoming) fields[fp] = incoming[fp];
+        else delete fields[fp];
+      }
+    }
+    if (typeof fields.name?.stringValue !== "string") return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    putNameDoc(collection, uid, fields);
+    return { status: 200, body: nameDocBody(collection, uid, nameDocs[collection].get(uid)) };
+  }
+
+  function handleNameDocDelete(collection, uid, authKind) {
+    if (authKind !== "admin") return denied();
+    nameDocs[collection].delete(uid);
+    return { status: 200, body: {} };
+  }
+
   function handleBugReportGet(id, authKind) {
     if (authKind !== "admin") return denied();
     const rec = reports.get(id);
@@ -572,6 +892,9 @@ export function createFakeBoardFetch(opts = {}) {
   function route(path, method, init, auth, query) {
     if (path === `${IDENTITY_BASE}/accounts:signUp` && method === "POST") return handleSignUp();
     if (path === `${IDENTITY_BASE}/accounts:delete` && method === "POST") return handleAccountDelete(init);
+    if (path === `${IDENTITY_BASE}/accounts:signInWithIdp` && method === "POST") return handleSignInWithIdp(init);
+    if (path === `${IDENTITY_BASE}/accounts:lookup` && method === "POST") return handleLookup(init);
+    if (path === `${IDENTITY_BASE}/accounts:update` && method === "POST") return handleUpdate(init);
     if (path === `${SECURETOKEN_BASE}/token` && method === "POST") return handleRefresh(init);
 
     const firestorePrefix = `${FIRESTORE_BASE}/${documentsPath(config)}`;
@@ -598,6 +921,20 @@ export function createFakeBoardFetch(opts = {}) {
       // list-limits probes can prove the same deny against this fake.
       if (method === "GET" && (suffix === `/${BUG_REPORTS_COLLECTION}` || suffix === `/${REPORT_LIMITS_COLLECTION}`)) {
         return denied();
+      }
+      for (const collection of NAME_COLLECTIONS) {
+        if (suffix === `/${collection}` && method === "GET") return handleNameDocList(collection, auth.kind);
+        if (suffix.startsWith(`/${collection}/`)) {
+          let uid;
+          try {
+            uid = decodeURIComponent(suffix.slice(collection.length + 2));
+          } catch {
+            return notFound();
+          }
+          if (method === "GET") return handleNameDocGet(collection, uid, auth.kind);
+          if (method === "PATCH") return handleNameDocPatch(collection, uid, init, query, auth.kind);
+          if (method === "DELETE") return handleNameDocDelete(collection, uid, auth.kind);
+        }
       }
       if (suffix.startsWith("/runs/")) {
         const id = suffix.slice("/runs/".length);
@@ -670,7 +1007,22 @@ export function createFakeBoardFetch(opts = {}) {
   }
 
   function usersInspector() {
-    return Object.freeze([...users]);
+    return Object.freeze([...accounts.keys()]);
+  }
+
+  function providersInspector(uid) {
+    const account = accounts.get(uid);
+    return account ? providerInfoOf(account) : Object.freeze([]);
+  }
+
+  function nameDocsInspector(collection) {
+    return Object.freeze(
+      [...nameDocs[collection]].map(([uid, rec]) => Object.freeze({ uid, name: rec.fields.name?.stringValue })),
+    );
+  }
+
+  function setNameDoc(collection, uid, name, stampField) {
+    putNameDoc(collection, uid, { name: { stringValue: name }, [stampField]: { timestampValue: nowIso() } });
   }
 
   function bannedInspector() {
@@ -696,6 +1048,11 @@ export function createFakeBoardFetch(opts = {}) {
     reports: reportsInspector,
     limits: limitsInspector,
     users: usersInspector,
+    providers: providersInspector,
+    names: () => nameDocsInspector(NAMES_COLLECTION),
+    overrides: () => nameDocsInspector(NAME_OVERRIDES_COLLECTION),
+    setName: (uid, name) => setNameDoc(NAMES_COLLECTION, uid, name, "updatedAt"),
+    setOverride: (uid, name) => setNameDoc(NAME_OVERRIDES_COLLECTION, uid, name, "at"),
     banned: bannedInspector,
     setOnline,
     ban,
