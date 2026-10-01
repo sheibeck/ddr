@@ -1,0 +1,191 @@
+[
+  {
+    "key": "oracle:blinded",
+    "surface": "oracle",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper cannot see a thing for 1 round: it hits only on its die's top face.",
+    "after": "Viper cannot see a thing for the rest of the fight: it hits only on its die's top face and never lands a critical.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Blind is now blindness for the fight at every depth (the three-round timer past floor 12 is gone) and a blind foe never lands a critical, so the line says both and drops the rounds."
+  },
+  {
+    "key": "rail:blinded",
+    "surface": "rail",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper is blind for 3 rounds: it hits only on its top face.",
+    "after": "Viper is blind for the fight: it hits only on its top face and never crits.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: for the fight, top face only, never a critical; no rounds."
+  },
+  {
+    "key": "oracle:petrified",
+    "surface": "oracle",
+    "trigger": "petrified — the hero's Petrify lands on a foe",
+    "before": "Viper turns to stone.",
+    "after": "Viper turns to stone and does not get back up. A statue carries no spoils.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Petrify now kills (experience paid by the kill line after it, Q2 A), so the line says the foe does not get back up, and that a statue drops nothing."
+  },
+  {
+    "key": "rail:petrified",
+    "surface": "rail",
+    "trigger": "petrified — the hero's Petrify lands on a foe",
+    "before": "Viper turns to stone.",
+    "after": "Viper turns to stone and dies. No spoils from a statue.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: stone, dead, no spoils."
+  },
+  {
+    "key": "oracle:stupefied",
+    "surface": "oracle",
+    "trigger": "stupefied — the hero's Stupidity lands on a foe",
+    "before": "Viper forgets what it is doing, for the rest of the fight.",
+    "after": "Viper forgets most of what it knew: its intelligence is down to 1 for the rest of the fight. It still swings, but it resists almost nothing now.",
+    "reasons": [
+      "fact",
+      "number",
+      "accurate"
+    ],
+    "why": "Stupidity now drops the foe's intelligence to 1 for the fight and the foe keeps swinging, so the line names the intelligence it had (the event's `was`), the 1 it has, and that it still swings; the frozen voice variants carry no `was`, so the corpus reads the plain form."
+  },
+  {
+    "key": "rail:stupefied",
+    "surface": "rail",
+    "trigger": "stupefied — the hero's Stupidity lands on a foe",
+    "before": "Viper forgets what it is doing, for the fight.",
+    "after": "Viper forgets most of it: intelligence down to 1 for the fight.",
+    "reasons": [
+      "fact",
+      "number",
+      "accurate"
+    ],
+    "why": "The rail twin: the intelligence it dropped to, for the fight."
+  },
+  {
+    "key": "oracle:foeStupefied",
+    "surface": "oracle",
+    "trigger": "foeStupefied — removed: a stupid foe no longer skips its turns (engine/combat.js#foeTurn)",
+    "before": "Viper stands there, thinking about nothing.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Stupidity no longer skips the foe's turns, so \"stands there, thinking about nothing\" would be false and the event is not emitted any more."
+  },
+  {
+    "key": "rail:foeStupefied",
+    "surface": "rail",
+    "trigger": "foeStupefied — removed: a stupid foe no longer skips its turns",
+    "before": "Viper stands there, thinking about nothing.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the removed per-turn skip line."
+  },
+  {
+    "key": "bank:RAIL_FAMILY.foeStupefied.title",
+    "surface": "rail-cards",
+    "trigger": "the out-of-combat rail family title for foeStupefied (removed with the event)",
+    "before": "STUPEFIED",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The foeStupefied event is gone, so its rail family title goes with it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.blind",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "It hits only on its die's top face until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+    "after": "It hits only on its die's top face and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "A blind foe also never lands a critical now, so the card says so beside the top-face cap."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stupid",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "It does nothing at all for the rest of the fight, and it is easier to hit. Nobody is home.",
+    "after": "Its intelligence is down to 1 for the rest of the fight, so it shrugs off almost nothing you cast on it. It is still swinging, which is the worrying part.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "A stupid foe is no longer skipped or easier to hit: its intelligence is 1 for the fight and it keeps swinging, so the old \"does nothing at all\" line was false."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.stone",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip label (removed: no Stone hold exists)",
+    "before": "Stone",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Petrify kills instead of holding, so the reserved Stone chip label is never shown."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stone",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card (removed: no Stone hold exists)",
+    "before": "Turned to stone. As conditions go, this one is fairly permanent.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Petrify kills instead of holding, so the reserved Stone description is never shown."
+  },
+  {
+    "key": "content:SPELLS.Stupidity.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · does nothing at all for the rest of the fight; past floor 12, only for three rounds",
+    "after": "control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Stupidity drops the foe's intelligence to 1 for the fight (so it resists almost nothing) and the foe keeps swinging; the floor-12 three-round clause is gone with the cap."
+  },
+  {
+    "key": "content:SPELLS.Blind.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · blind for life, which in here means the fight; past floor 12, life lasts three rounds",
+    "after": "control · one foe · blind for the fight: it hits only on its die's top face and never lands a critical",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Blind lasts the fight at every depth, hits only on the die's top face and never crits; the floor-12 three-round clause is gone."
+  },
+  {
+    "key": "content:SPELLS.Petrify.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · stone for five days; no spoils; past floor 12, five days shrink to three rounds",
+    "after": "control · one foe · turns to stone and dies; you get the experience and none of the spoils, because statues carry nothing",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Petrify turns the foe to stone and it dies (Q2 A: you get the experience, no spoils); \"five days\" and the floor-12 three-round clause are gone."
+  }
+]

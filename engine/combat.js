@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1047,8 +1047,15 @@ export function playerStrike(state, rng, events = []) {
  * into the pending loot pile (Phase 29, LOOT-01 — replaces the legacy
  * auto-take), cooking, and checkLevel. Ports mazeworld.html killFoe() (lines
  * 2410-2443).
+ *
+ * Phase 90 plan 04 (SPELL-12, Q2 A, user 2026-09-30): `opts.spoils === false`
+ * is a kill that pays its experience (the d6, the party split, checkLevel)
+ * and nothing else: no coin, no treasure gate or bag gate, no cooking. Only
+ * Petrify passes it ("a statue carries nothing"); the skipped draws (the coin
+ * d10, the treasure d20, the bag d20, the cooking d6) are not taken, so a
+ * Petrify's main-rng cursor moves less than a normal kill's.
  */
-export function killFoe(state, f, rng, events = []) {
+export function killFoe(state, f, rng, events = [], opts = {}) {
   const c = state.c;
   if (f.lives > 1) {
     f.lives--;
@@ -1083,6 +1090,13 @@ export function killFoe(state, f, rng, events = []) {
   const spGained = heroSpFor(heroShare);
   c.sp += spGained;
   events.push({ type: "foeKilled", name: f.name, spGained });
+
+  // Phase 90 plan 04 (Q2 A): a kill with no spoils (Petrify) stops here, after
+  // the experience and before the coin, treasure, bag and cooking steps.
+  if (opts.spoils === false) {
+    checkLevel(state, rng, events);
+    return events;
+  }
 
   // creatures carry things, and the things are worth wilmst
   const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
@@ -1131,12 +1145,13 @@ export function killFoe(state, f, rng, events = []) {
 
 /**
  * resistControl(state, foe, effect, source, idx, rng, events) — RULES-18
- * (Phase 75.3, user ruling 2026-09-25): the ONE resist gate every past-the-
- * knee control site in this file (audit ids C3, C9, C13) calls before
- * landing Ice, Doze/Stun or a Bard song's sleep (Phase 89 plan 08 moved C2 and
- * C15, the Freeze and Weaken tails `freezeFoe` and `roomWeakenResists`, and
- * every item effect onto `foeResistsEffect`, the depth-rising resist; Phase 90
- * moves the rest of the spells). Reads
+ * (Phase 75.3, user ruling 2026-09-25): the past-the-knee control resist.
+ * Phase 89 plan 08 moved every item effect and the Freeze and Weaken tails
+ * onto `foeResistsEffect`, the depth-rising resist, and Phase 90 plan 04 moved
+ * every spell (the hero's, a scroll's, a Joiner's) onto it too; the ONLY
+ * caller left is the Bard's `sing` (two sleeps, audit id C13), which Phase 91
+ * (IDENT-17) rebuilds as spell echoes and then moves onto the shared helper.
+ * Reads
  * `engine/derived.js#controlResistCheck` — a derived-stream, roll-high check
  * that draws NOTHING from the caller's own `rng` (the main cursor is
  * untouched either way) and returns `false` with no roll and no event at or
@@ -1171,21 +1186,25 @@ export function resistControl(state, foe, effect, source, idx, rng, events) {
  * foe: the hero's castSpell (every kind except derived.js#SPELL_SELF_KINDS,
  * which includes a scroll's free cast), a Joiner's allyCast, and a staff or
  * amulet activation that lays a spell on foes (engine/items.js). Rolls
- * derived.js#foeSpellResistCheck (a derived stream, so the check never moves
+ * derived.js#foeRisingResistCheck (a derived stream, so the check never moves
  * the main rng) and ALWAYS narrates: `spellResisted` on a resist (the
  * caller then gives that foe NO effect — damage included) or
  * `resistFailed` on a miss, each carrying `{ target, spell, roll, atLeast,
  * dieN, intel, faces }` plus `by` (the caster's name) when a Joiner cast
- * it. Returns `true` when the foe resisted. The RULES-18 depth resist
- * (`resistControl` above) is a separate, later check for controls only —
- * reached only when this one returns false.
+ * it. Returns `true` when the foe resisted.
+ *
+ * Phase 90 plan 04 (SPELL-12, user ruling at the Phase 89 checkpoint, 2026-09-30:
+ * "rising resists on higher floors should apply to ALL spells ... remove the
+ * floor-12 special effects only"): this IS `foeResistsEffect` below, the ONE
+ * depth-rising resist (`derived.js#risingResistFaces`). Every spell a foe can
+ * resist rolls it once per targeted foe; there is no second, separate control
+ * resist after it and no hold, cap or three-round limit on a landed spell.
+ * At or below floor 12 the rising faces ARE the half-intelligence faces, byte
+ * for byte, so nothing at those depths moves. (`resistControl` above survives
+ * only for the Bard's songs, which Phase 91 reworks.)
  */
 export function foeResistsSpell(state, foe, spell, rng, events, by, extra) {
-  const C = state.combat;
-  const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
-  const intel = Number.isFinite(foe.intel) ? foe.intel : 0;
-  const res = foeSpellResistCheck(state, rng, spell, idx, intel, by || "you");
-  return pushResist(res, foe, spell, events, by, intel, extra);
+  return foeResistsEffect(state, foe, spell, rng, events, by, extra);
 }
 
 /**
@@ -1202,7 +1221,8 @@ export function foeResistsSpell(state, foe, spell, rng, events, by, extra) {
  * Every item and staff effect a foe can resist goes through here (the Birch
  * Staff's freeze via `freezeFoe`, the Walnut Staff's weaken via
  * `roomWeakenResists`, the Oak Staff and Amulet of Stone's stone, the Pine
- * Staff's fire, the Cedar Staff's gas); Phase 90 moves the spells onto it.
+ * Staff's fire, the Cedar Staff's gas), and since Phase 90 plan 04 every
+ * spell too (`foeResistsSpell` above is this gate under its spell name).
  */
 export function foeResistsEffect(state, foe, source, rng, events, by, extra) {
   const C = state.combat;
@@ -1271,13 +1291,14 @@ export function roomWeakenResists(state, spell, rng, events, by) {
  * holdFoe(state, foe, kind, source, events) — RULES-18: the "hold instead of
  * a kill/lock forever" half of the control audit's past-the-knee rule. Sets
  * `foe.held = { kind, left: controlHoldRoundsFor(depth) }` — `kind` one of
- * "frozen"/"stone"/"stupid" (src/browser/foeConditions.js's Held chip reads
+ * "frozen" (src/browser/foeConditions.js's Held chip reads
  * it, `foeTurn`'s own held-skip below counts it down) — and pushes `{ type:
- * "controlHeld", target: foe.name, kind, rounds: left, source }`. The caller
- * MUST have already confirmed `resistControl` missed and
- * `controlHoldRoundsFor(depth) > 0` (never called at or below the knee,
- * where the cap is 0 and the old "lasts forever"/"kills outright" behavior
- * still applies).
+ * "controlHeld", target: foe.name, kind, rounds: left, source }`.
+ * Phase 90 plan 04 (SPELL-12): no spell or item calls this without `freeze`
+ * any more (Petrify and Stupidity no longer hold, the Ice payoff no longer
+ * holds), so the `controlHoldRoundsFor` default below has no live caller; it
+ * stays only for the unit pins of the held skip, and 90-08 (Stop Time) passes
+ * its own rounds.
  *
  * User ruling 2026-09-28 (Freeze): `freeze` (optional) is freezeFoe's own
  * rolled hold, `{ rounds, dmg }` — the hold lasts the rolled `rounds` (a
@@ -1441,7 +1462,10 @@ function pursuitStrike(state, rng, events) {
   // Quick 260928-cos: a live Cloak of Strength (critWardOf) turns the crit
   // into an ordinary hit — the roll and the dice draw are unchanged, only
   // the doubling is dropped (see foeTurn's hero branch).
-  const rolledCrit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+  // Phase 90 plan 04 (SPELL-12): a blind foe never lands a critical — its one
+  // winning face (foeSwingChain) is an ordinary hit (the Dirty Trick's
+  // blindness included: it is the same flag).
+  const rolledCrit = !pursuer.blind && roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
   const critWarded = rolledCrit && wardCrit(c, pursuer, roll, dieN, events);
   const crit = rolledCrit && !critWarded;
   const dice = pursuer.sp && pursuer.sp.dmg ? rollDice(rng, pursuer.sp.dmg) : rng.d(6); // roll:amount
@@ -2001,7 +2025,7 @@ export function allyTurn(state, rng, events = []) {
   // sits above the strike draw, since atLeastFor(faces, dieN) must be ready
   // before rollCheck fires. `need` -> `faces`.
   let faces = 5;
-  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
+  if (t.asleep > 0 || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or held — a Freeze) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
@@ -2116,7 +2140,7 @@ export function alliesTurn(state, rng, events = []) {
       // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
       // now sits above the strike draw. `need` -> `faces`.
       let faces = 5;
-      if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
+      if (t.asleep > 0 || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or held — a Freeze) creature
       if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
       if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
       if (t.sp && t.sp.magicOnly) faces = 0; // only magic touches it
@@ -2543,7 +2567,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and now
   // sits above the strike draw. `need` -> `faces`.
   let faces = memberToHit(view);
-  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (stupid, or held — RULES-18) creature
+  if (t.asleep > 0 || t.held) faces = Math.max(faces, 5); // p.27: 5 to hit a dozing (or held — a Freeze) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // "roll 1 higher to strike"
   if (t.sp && t.sp.magicOnly && !view.magicWpn) faces = 0; // only magic touches it
@@ -2727,13 +2751,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   }
   // status / stun / weaken — the only other ATTACK_SPELL_KINDS.
   events.push({ type: "allyCast", ...base });
-  // RULES-18 (Phase 75.3, audit C9/C15): the d4 (or d4+1) is drawn in its
-  // existing position, whether or not the target resists the depth check —
-  // the control resist check itself is a derived stream and never touches
-  // this draw. Quick 260927-rsx: the intel resist (also a derived stream)
-  // comes first, per targeted foe; a Doze/Stun that the target resists
-  // draws nothing more.
-  const idx = state.combat.foes.indexOf(t);
+  // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
+  // plan 04 the one depth-rising resist, with no second control resist after
+  // it) comes first, per targeted foe; a Doze/Stun that the target resists
+  // draws nothing more. A Weaken's d4+1 is drawn before its room resists.
   if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
     // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
@@ -2751,9 +2772,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     }
     events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   } else {
+    // Phase 90 plan 04 (SPELL-12): the one depth-rising resist (inside
+    // foeResistsSpell); the second RULES-18 control resist is gone.
     if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
     const rolled = rng.d(4); // roll:amount
-    if (resistControl(state, t, "sleep", sp.n, idx, rng, events)) return;
     t.asleep = Math.max(t.asleep || 0, rolled);
     events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
   }
@@ -3094,8 +3116,10 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
     // Quick 260928-cos: a crit the caller's wardCrit turned aside (a live
     // Cloak of Strength) is an ordinary hit — neither flag fires, and the
     // line carries `critWarded: true` instead (additive; absent otherwise).
-    const critical = !critWarded && isBestFace(roll, dieN);
-    const soldierCrit = !critWarded && roll === dieN - 1 && c.sub === "Soldier";
+    // Phase 90 plan 04 (SPELL-12): a blind foe never crits, so its top-face hit
+    // is an ordinary hit on the line too (the damage was never doubled).
+    const critical = !critWarded && !foe.blind && isBestFace(roll, dieN);
+    const soldierCrit = !critWarded && !foe.blind && roll === dieN - 1 && c.sub === "Soldier";
     events.push({
       type: "struckByFoe",
       name: foe.name,
@@ -3503,29 +3527,24 @@ export function foeTurn(state, rng, events = []) {
       // and dies through killFoe (pays like any other kill), mirroring the
       // thrown Freeze branch's own frozen/killFoe/revive lines exactly.
       // Zero extra draws before killFoe's own.
-      // RULES-18 (Phase 75.3, audit C3): past the knee, a resist lets the
-      // foe fall through to its normal turn below; a miss holds it instead
-      // of killing it (the held skip, just past the dead-foe check, takes
-      // this turn); at or below the knee (controlHoldRoundsFor 0) this falls
-      // through to the frozen-solid kill exactly as before this plan.
+      // Phase 90 plan 04 (SPELL-12, user 2026-09-30: no floor-12 special
+      // effects): the RULES-18 knee branches (a control resist, then a
+      // three-round hold) are gone. An iced foe that survives its last tick
+      // freezes solid and dies at every depth, as it did below the knee; the
+      // one resist it rolled was the cast's own (magic.js). Plan 90-05
+      // replaces Ice with its area form.
       if (dotRanOut && by === "ice" && f.alive) {
-        const idx = C.foes.indexOf(f);
-        if (resistControl(state, f, "freeze", "Ice", idx, rng, events)) {
-          // resisted: fall through to the foe's normal turn below.
-        } else if (controlHoldRoundsFor(state.floor.depth) > 0) {
-          holdFoe(state, f, "frozen", "Ice", events); // the held skip below takes this turn
-        } else {
-          f.frozen = true;
-          events.push({ type: "frozenSolid", target: f.name });
-          killFoe(state, f, rng, events);
-          if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
-          continue;
-        }
+        f.frozen = true;
+        events.push({ type: "frozenSolid", target: f.name });
+        killFoe(state, f, rng, events);
+        if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
+        continue;
       }
     }
     if (!f.alive) continue;
-    // RULES-18 (Phase 75.3): a held foe (holdFoe, past-the-knee Freeze/
-    // Stone/Stupidity) skips exactly `left` of its own visits, its asleep
+    // RULES-18 (Phase 75.3): a held foe (holdFoe: a Freeze's rolled hold
+    // since Phase 90 plan 04 — Petrify and Stupidity no longer hold) skips
+    // exactly `left` of its own visits, its asleep
     // count running down alongside so two controls never stack end to end
     // (checked after the dead-foe skip, before the asleep skip below).
     if (f.held) {
@@ -3559,16 +3578,10 @@ export function foeTurn(state, rng, events = []) {
       events.push({ type: "foeSlept", name: f.name });
       continue;
     }
-    // Phase 40 (SPELL-01, Stupidity) — a stupid foe skips EVERY turn for the
-    // rest of the fight: no counter (f.stupid never clears itself — only the
-    // foe's own death or the fight's end retires it), placed directly after
-    // the asleep block, mirroring Pommel Strike's f.stunned skip immediately
-    // below. A foe cannot be both asleep and stupid-skipped the same turn
-    // (the asleep branch's own `continue` already exited).
-    if (f.stupid) {
-      events.push({ type: "foeStupefied", name: f.name });
-      continue;
-    }
+    // Phase 90 plan 04 (SPELL-12, user 2026-09-30): Stupidity no longer
+    // skips the foe's turns. It drops the foe's intelligence to 1 for the
+    // fight (magic.js), so it keeps swinging and only resists almost nothing;
+    // the `f.stupid` flag is the chip's mark and nothing in a turn reads it.
     // Phase 38 (ABIL-01, Pommel Strike) — f.asleep's own skip-turn pattern,
     // reused verbatim: a stunned foe loses this ONE turn, then the flag
     // clears (no counter needed — a single stun, not a duration). Absent on
@@ -3707,7 +3720,8 @@ export function foeTurn(state, rng, events = []) {
         // Quick 260928-cos: the Joiner's OWN live Cloak of Strength (its own
         // sheet's timers — never the hero's) turns the crit aside, exactly
         // like the hero branch below; same draws.
-        const mRolledCrit = isBestFace(mRoll, mDieN);
+        // Phase 90 plan 04 (SPELL-12): a blind foe never crits, Joiner side too.
+        const mRolledCrit = !f.blind && isBestFace(mRoll, mDieN);
         const mCritWarded = mRolledCrit && !!mSheet && wardCrit(mSheet, f, mRoll, mDieN, events, member.name);
         const mCritical = mRolledCrit && !mCritWarded;
         const mDice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
@@ -3794,7 +3808,8 @@ export function foeTurn(state, rng, events = []) {
       // Strength on the hero turns a rolled crit into an ordinary hit
       // (wardCrit narrates it). The crit roll is the to-hit roll above and
       // the dice draw below is unchanged — only the doubling is dropped.
-      const rolledCrit = roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
+      // Phase 90 plan 04 (SPELL-12): a blind foe never crits (see pursuitStrike).
+      const rolledCrit = !f.blind && roll >= atLeastFor(c.sub === "Soldier" ? 2 : 1, dieN);
       const critWarded = rolledCrit && wardCrit(c, f, roll, dieN, events);
       const crit = rolledCrit && !critWarded;
       const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount

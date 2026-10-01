@@ -60,13 +60,11 @@ export const FOE_CONDITION_COPY = Object.freeze({
   fixated: "Fixated",
   frenzied: "Frenzied",
   weakened: "Weakened",
-  // RULES-18 (Phase 75.3, Plan 04): past floor 12, a landed Freeze/Stone/
-  // Stupidity HOLDS the foe a few rounds instead of ending it outright (or
-  // locking it forever) — the Held chip (labelFor picks this, "Frozen" or
-  // "Stupefied" by kind); a foe that shakes a control off entirely shows
-  // Unmoved instead. `held` is this table's own generic fallback label
+  // RULES-18 (Phase 75.3, Plan 04): a landed Freeze HOLDS the foe its rolled
+  // d4 rounds — the Held chip (labelFor picks "Frozen"); since Phase 90 plan
+  // 04 no Petrify or Stupidity holds. A foe that shakes a Bard's song off
+  // shows Unmoved. `held` is this table's own generic fallback label
   // (labelFor always overrides it in practice).
-  stone: "Stone",
   held: "Held",
   unmoved: "Unmoved",
   // Phase 77 (CMBUI-13): the gifts a fumbled helpful scroll hands the
@@ -86,18 +84,19 @@ export const FOE_CONDITION_COPY = Object.freeze({
 export const FOE_CONDITION_DESC = Object.freeze({
   // engine/abilities.js applyPommel; engine/combat.js foeTurn skips one turn, then clears it.
   stunned: "Seeing stars. It loses its next turn, then remembers where it is.",
-  // foeTurn sets a blind foe's need to its worst; Dirty Trick's blindFor counts down and restores sight.
+  // Dirty Trick's blindFor counts down and restores sight.
   // VOX-05 (79-07): derived.js#foeSwingChain sets a blind foe's swing to one
   // face (its die's top face); the Blind spell sets no count, so that
-  // blindness lasts the fight.
-  blind: "It hits only on its die's top face until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+  // blindness lasts the fight. Phase 90 plan 04 (SPELL-12): the cap is the
+  // last term of the swing and a blind foe never lands a critical.
+  blind: "It hits only on its die's top face and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
   // applyHamstring; foeTurn halves its blows (hero and party alike).
   hamstrung: "Its blows do half damage for the rest of the fight. It is limping about it.",
   // applyMark; playerStrike and the party's strikes add 2 damage on a marked target.
   marked: "Every blow that lands on it does 2 more damage for the rest of the fight. It has been studied, and it shows.",
   // foeTurn skips and counts it down; playerStrike's need rises to 5 against a dozing foe.
   asleep: "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps.",
-  // Freeze, Ice's last tick and Petrify; a foe that stands back up is cleared.
+  // Ice's last tick and Petrify (both end the foe); a foe that stands back up is cleared.
   frozen: "Frozen solid. As conditions go, this one is fairly final.",
   // foeTurn's acid tick: spell damage each round, past armour, until rounds reach 0.
   acid: "Acid eats at it every round until the count runs out. Its armour is no help to it.",
@@ -105,8 +104,10 @@ export const FOE_CONDITION_DESC = Object.freeze({
   poison: "Poison works on it every round until the count runs out. Its armour is no help to it.",
   // Ice's f.dot tick; when it runs out on a standing foe, it freezes solid and falls.
   ice: "The cold bites every round, and if it is still standing when the count runs out, it freezes solid.",
-  // foeTurn skips every turn for the fight; playerStrike treats it like a dozing foe.
-  stupid: "It does nothing at all for the rest of the fight, and it is easier to hit. Nobody is home.",
+  // Phase 90 plan 04 (SPELL-12): magic.js sets the foe's intelligence to 1 for
+  // the fight; it keeps acting and is no easier to hit, and every later resist
+  // it rolls is on that 1.
+  stupid: "Its intelligence is down to 1 for the rest of the fight, so it shrugs off almost nothing you cast on it. It is still swinging, which is the worrying part.",
   // magic.js halves its hit points on the cast; foeTurn halves its blows.
   shrunk: "Cut down to size: half the hit points and half the damage it had, for the rest of the fight.",
   // Turn Walking Dead: the dead it could not send back are fixated; nothing in the engine reads it.
@@ -118,17 +119,12 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // derived.js#foeSwingChain reads as a cap of three winning faces; the old
   // line left that half of the spell out.
   weakened: "Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well.",
-  // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a control
-  // that would have lasted the whole fight (or ended it outright) past floor
-  // 12; the foe's own turn skips run down alongside the chip's count. Kept
-  // generic across kind (frozen/stone/stupid all read the same rule) so this
-  // never contradicts the permanent "Frozen"/"Stupefied" chips' own text.
+  // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a Freeze's
+  // rolled hold (the only hold left after Phase 90 plan 04); the foe's own
+  // turn skips run down alongside the chip's count.
   held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers.",
-  // Reserved for a future permanent Stone/Petrify chip (mirrors Frozen's own
-  // "fairly final" phrasing); not yet read by any chip this plan lands.
-  stone: "Turned to stone. As conditions go, this one is fairly permanent.",
-  // resistControl (engine/combat.js) — a control shaken off outright; %s is
-  // filled in by descFor with the effect's own word.
+  // resistControl (engine/combat.js) — a control shaken off outright (today
+  // only a Bard's song); %s is filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",
   // Phase 77 (CMBUI-13) — the fumble gifts. Each line was written from the
   // resolver that applies it (engine/scrollFumble.js#resolveHelpful) and the
@@ -215,12 +211,11 @@ export const FOE_CONDITIONS = Object.freeze(
     // Sleep/Doze spells, Sing, items: a countdown decremented each foe turn.
     { key: "asleep", label: C.asleep, desc: D.asleep, tone: "good", fields: ["asleep"], when: (f) => f.asleep === true || posInt(f.asleep) !== null, rounds: (f) => posInt(f.asleep) },
     // RULES-18 (Phase 75.3, Plan 04): holdFoe's `{ kind, left }` record — a
-    // past-the-knee Freeze/Stone/Stupidity holds instead of ending the foe
-    // outright; the label reuses the matching permanent condition's own
-    // house label (kind "stone" is new — no permanent Stone chip exists yet).
+    // Freeze's rolled hold (the only one since Phase 90 plan 04, kind
+    // "frozen"); the label is the matching permanent condition's own house label.
     {
       key: "held", label: C.held, desc: D.held, tone: "good", fields: ["held"],
-      labelFor: (f) => (f.held.kind === "stone" ? C.stone : f.held.kind === "stupid" ? C.stupid : C.frozen),
+      labelFor: () => C.frozen,
       when: (f) => !!f.held && posInt(f.held.left) !== null,
       rounds: (f) => posInt(f.held.left),
     },

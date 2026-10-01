@@ -319,12 +319,12 @@ test("order: chips come out in table order — Stunned … Frenzied, the Phase 7
   const everything = fixedFoe({
     frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "poison" }, acid: { rounds: 1 },
     frozen: true, asleep: 2, marked: true, hamstrung: true, blind: true, blindFor: 1, stunned: true,
-    held: { kind: "stone", left: 2 }, resisted: "sleep",
+    held: { kind: "frozen", left: 2 }, resisted: "sleep",
     ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, regen: true, senses: 1,
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   assert.deepEqual(texts(everything, state), [
-    "Stunned", "Blind · 1", "Hamstrung", "Marked", "Asleep · 2", "Stone · 2", "Frozen", "Acid · 1", "Poison · 2",
+    "Stunned", "Blind · 1", "Hamstrung", "Marked", "Asleep · 2", "Frozen · 2", "Frozen", "Acid · 1", "Poison · 2",
     "Stupefied", "Shrunk", "Fixated", "Frenzied",
     "Shielded · 3", "Rebound", "Mirrored · 2", "Strong", "Regenerating", "Senses",
     "Weakened · 3", "Unmoved",
@@ -419,6 +419,7 @@ const NOT_A_CONDITION = Object.freeze({
   fled: "set together with alive = false: the foe has left the fight",
   lives: "kill-twice bookkeeping, not a status the player applied",
   turned: "R-12: Turn Undead and Gate set it together with alive = false, so the card reads DOWN",
+  intel: "Phase 90 plan 04: Stupidity sets the foe's intelligence to 1; the Stupefied chip (stupid) is the mark, and the card's INT line shows the number",
   cd: "the foe's own ability cooldowns (engine/foeAbilities.js), not a condition on it",
   uses: "the foe's own ability use counts (engine/foeAbilities.js), not a condition on it",
   weakenResisted: "quick 260927-rsx: the foe resisted the room's Weaken, so its Weakened chip is simply absent (the when() reads this flag)",
@@ -580,7 +581,7 @@ test("FOE_CONDITION_COPY: frozen, the house labels, every leaf non-empty and cle
   assert.ok(Object.isFrozen(FOE_CONDITION_COPY));
   assert.deepEqual(Object.values(FOE_CONDITION_COPY).sort(), [
     "Acid", "Asleep", "Blind", "Bubbled", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Ice", "Marked", "Mirrored", "Poison",
-    "Rebound", "Regenerating", "Senses", "Shielded", "Shrunk", "Stone", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
+    "Rebound", "Regenerating", "Senses", "Shielded", "Shrunk", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
   ]);
   // House style: one capitalised word.
   for (const value of Object.values(FOE_CONDITION_COPY)) assert.match(value, /^[A-Z][a-z]+$/, `${value} is one capitalised word`);
@@ -603,7 +604,7 @@ test("FOE_CONDITION_COPY: frozen, the house labels, every leaf non-empty and cle
 // The hp-not-wp guard's own regex, verbatim (test/unit/hp-not-wp.test.js).
 const PLAYER_WP_RULE = /(?<![\w.$-])(wp|WP)(?![\w:])/;
 
-test("FOE_CONDITION_DESC: exported, frozen, one sentence per FOE_CONDITIONS key plus poison/ice for the dot and stone/unmoved for held/resisted", () => {
+test("FOE_CONDITION_DESC: exported, frozen, one sentence per FOE_CONDITIONS key plus poison/ice for the dot and unmoved for resisted", () => {
   assert.ok(foeCondNS.FOE_CONDITION_DESC, "FOE_CONDITION_DESC must be exported");
   assert.ok(Object.isFrozen(FOE_CONDITION_DESC));
   // RULES-18 (Phase 75.3, Plan 04): "held"'s own key covers every kind
@@ -613,7 +614,7 @@ test("FOE_CONDITION_DESC: exported, frozen, one sentence per FOE_CONDITIONS key 
   // key is "unmoved", not its own FOE_CONDITIONS key.
   const want = new Set([
     ...FOE_CONDITIONS.map((e) => e.key).filter((k) => k !== "dot" && k !== "resisted"),
-    "poison", "ice", "stone", "unmoved",
+    "poison", "ice", "unmoved",
   ]);
   assert.deepEqual(Object.keys(FOE_CONDITION_DESC).sort(), [...want].sort());
   // The desc keys are the label keys: each label has exactly one description.
@@ -634,10 +635,10 @@ test("FOE_CONDITION_DESC: every sentence is non-empty, one line, clear of BANNED
   }
 });
 
-test("FOE_CONDITION_DESC: never states a hidden rule number (only the +2 and the 3 the ability and spell text already show)", () => {
+test("FOE_CONDITION_DESC: never states a hidden rule number (only the +2, the 3 and the Stupidity spell's own intelligence 1, which the ability and spell text already show)", () => {
   for (const [key, value] of Object.entries(FOE_CONDITION_DESC)) {
     const numbers = value.match(/\d+/g) || [];
-    for (const n of numbers) assert.ok(["2", "3"].includes(n), `${key} states ${n}, which the player cannot see`);
+    for (const n of numbers) assert.ok(["1", "2", "3"].includes(n), `${key} states ${n}, which the player cannot see`);
   }
 });
 
@@ -645,7 +646,7 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
   const everything = fixedFoe({
     frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "poison" }, acid: { rounds: 1 },
     frozen: true, asleep: 2, marked: true, hamstrung: true, blind: true, blindFor: 1, stunned: true,
-    held: { kind: "stone", left: 2 }, resisted: "sleep",
+    held: { kind: "frozen", left: 2 }, resisted: "sleep",
     ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, regen: true, senses: 1,
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
@@ -676,10 +677,8 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
 // RULES-18 (Phase 75.3, Plan 04): held/resisted chip specifics — the label
 // varies by kind (held) or is always Unmoved (resisted), a dead foe still
 // returns [], and both are absent from a live foe carrying neither field.
-test("Held: labelFor picks Frozen/Stone/Stupefied by kind; a dead foe returns []", () => {
+test("Held: labelFor is Frozen (a Freeze is the only hold left, Phase 90 plan 04); a dead foe returns []", () => {
   assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 3 } })), ["Frozen · 3"]);
-  assert.deepEqual(texts(fixedFoe({ held: { kind: "stone", left: 2 } })), ["Stone · 2"]);
-  assert.deepEqual(texts(fixedFoe({ held: { kind: "stupid", left: 1 } })), ["Stupefied · 1"]);
   assert.deepEqual(texts(fixedFoe({ alive: false, held: { kind: "frozen", left: 3 } })), []);
   assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 0 } })), [], "left 0 is not a live hold");
 });

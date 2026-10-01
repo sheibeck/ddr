@@ -156,7 +156,7 @@ test("depth-rising resist: one roll on the spell-resist stream, the same die as 
   }
 });
 
-test("depth-rising resist: a resist line carries depthFaces only when the floor added faces, and foeResistsSpell is unchanged", () => {
+test("depth-rising resist: a resist line carries depthFaces only when the floor added faces, and foeResistsSpell is the same gate (Phase 90 plan 04)", () => {
   const shallow = fixedState({ floor: { depth: 5 } });
   shallow.combat = fixedCombat([fixedFoe()]);
   const events = [];
@@ -169,11 +169,18 @@ test("depth-rising resist: a resist line carries depthFaces only when the floor 
   foeResistsEffect(deep, deep.combat.foes[0], "Oak Staff", makeRng(3), e2);
   assert.equal(e2[0].depthFaces, 8);
   assert.equal(e2[0].faces, 9);
-  // The spell gate (Phase 90 moves it) still rolls the half-intel faces alone.
+  // Phase 90 plan 04 (SPELL-12): the spell gate IS the same rising gate now (it
+  // used to roll the half-intel faces alone). Before: faces resistFaces(1) = 1
+  // and no depthFaces at floor 20; after: the floor's faces, like the item gate.
   const e3 = [];
   foeResistsSpell(deep, deep.combat.foes[0], "Oak Staff", makeRng(3), e3);
-  assert.equal(e3[0].faces, resistFaces(1));
-  assert.equal("depthFaces" in e3[0], false);
+  assert.equal(e3[0].faces, risingResistFaces(20, 1));
+  assert.equal(e3[0].depthFaces, 8);
+  assert.deepEqual(e3, e2, "the same roll, the same line");
+  const shallowSpell = [];
+  foeResistsSpell(shallow, shallow.combat.foes[0], "Oak Staff", makeRng(3), shallowSpell);
+  assert.equal(shallowSpell[0].faces, resistFaces(1));
+  assert.equal("depthFaces" in shallowSpell[0], false);
 });
 
 test("depth-rising resist: no item effect keeps a floor-12 cap, hold or extra control resist in useItem", () => {

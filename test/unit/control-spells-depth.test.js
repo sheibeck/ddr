@@ -37,6 +37,18 @@
 // (`findRisingActs`), the way the RULES-18 rows were found against
 // controlResistCheck.
 
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30, "rising resists ... should apply
+// to ALL spells ... remove the floor-12 special effects only"): the same rule now
+// holds for every SPELL. The rows this file pinned for Doze (C7), Stun (C8),
+// Stupidity (C17), Blind (C18), Shrink (C19), Petrify (C5), Noxious Vapor (C10) and
+// Insane (C11), the main-draw parity row, the held-dial row and the texts row are
+// re-pinned below to the new rule (each says so): one depth-rising resist
+// (`findRisingActs`), no controlResisted, no Unmoved mark, no hold, no blindFor,
+// and a resisted foe draws nothing for the effect (the resist comes first).
+// test/unit/spell-depth-resist.test.js and test/unit/petrify-blind-stupidity.test.js
+// pin the rule and the three reworks in full. The floor-12 digest rows are
+// unchanged except Stupidity, Blind's and Petrify's (declared there).
+
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -112,25 +124,6 @@ function spellState(depth, spellName, level, nFoes, foeOverrides = {}) {
       type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false,
     },
   };
-}
-
-/** findActs(depth, wants) — the first state.acts (0..5000) whose REAL
- * controlResistCheck gives every `[purpose, idx, resisted]` in `wants`, off
- * cursor 0, round 1 (every cast-time resist happens before the round ticks). */
-function findActs(depth, wants) {
-  const probe = { getState: () => 0 };
-  // Quick 260927-rsx: this file pins the RULES-18 depth resist, so the acts
-  // it picks must also leave every foe failing the (earlier, separate) intel
-  // resist for the same source — see intelQuiet below.
-  const source = wants.length ? wants[0][0].slice(wants[0][0].indexOf(":") + 1) : "";
-  for (let acts = 0; acts <= 20000; acts++) {
-    const ok = wants.every(([purpose, idx, resisted]) => {
-      const r = controlResistCheck({ floor: { depth }, acts, combat: { round: 1 } }, probe, purpose, idx);
-      return r.rolled && r.resisted === resisted;
-    });
-    if (ok && intelQuiet(acts, source)) return acts;
-  }
-  throw new Error(`findActs: nothing for ${JSON.stringify(wants)} at depth ${depth}`);
 }
 
 /** findRisingActs(depth, wants) — Phase 89 plan 08: the first state.acts
@@ -228,10 +221,12 @@ const PRE_PLAN_FLOOR_12 = {
   Doze: { n: 1, ev: ["dozed", "foeSlept"], cast: [{ type: "dozed", target: "F1", rounds: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 2 }], weakened: false, timers: [] },
   Stun: { n: 4, ev: ["stunned", "foeSlept", "foeSlept", "foeSlept"], cast: [{ type: "stunned", count: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 1 }, { wp: 30, maxWP: 30, alive: true, asleep: 2 }, { wp: 30, maxWP: 30, alive: true, asleep: 3 }], weakened: false, timers: [] },
   Weaken: { n: 3, ev: ["weakened", "foeMissed", "foeMissed"], cast: [{ type: "weakened", rounds: 4 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: true, timers: ["spell:weaken"] },
-  Stupidity: { n: 0, ev: ["stupefied", "foeStupefied"], cast: [{ type: "stupefied", target: "F1" }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0, stupid: true }], weakened: false, timers: [] },
+  // Phase 90 plan 04 (SPELL-12, declared): Stupidity no longer skips the foe's turns (it acts: foeMissed, one to-hit draw) and its line carries `intel` 1 and `was`.
+  Stupidity: { n: 1, ev: ["stupefied", "foeMissed"], cast: [{ type: "stupefied", target: "F1", intel: 1, was: 1 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0, stupid: true }], weakened: false, timers: [] },
   Blind: { n: 1, ev: ["blinded", "foeMissed"], cast: [{ type: "blinded", target: "F1" }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0, blind: true }], weakened: false, timers: [] },
   Shrink: { n: 4, ev: ["shrunk", "foeMissed", "foeMissed", "foeMissed"], cast: [{ type: "shrunk", count: 3 }], foes: [{ wp: 15, maxWP: 15, alive: true, asleep: 0, shrunk: true }, { wp: 15, maxWP: 15, alive: true, asleep: 0, shrunk: true }, { wp: 15, maxWP: 15, alive: true, asleep: 0, shrunk: true }], weakened: false, timers: [] },
-  Petrify: { n: 1, ev: ["petrified", "foeMissed"], cast: [{ type: "petrified", target: "F1" }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0, frozen: true }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: [] },
+  // Phase 90 plan 04 (SPELL-12, Q2 A, declared): Petrify kills through killFoe with spoils off: petrified, then foeKilled (experience paid), and only the experience d6 is drawn, then the other foe's to-hit.
+  Petrify: { n: 2, ev: ["petrified", "foeKilled", "foeMissed"], cast: [{ type: "petrified", target: "F1" }], foes: [{ wp: 0, maxWP: 30, alive: false, asleep: 0, frozen: true }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: [] },
   Vapor: { n: 3, ev: ["vaporRolled", "foeSlept", "foeSlept"], cast: [{ type: "vaporRolled", roll: 2 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 4 }, { wp: 30, maxWP: 30, alive: true, asleep: 6 }], weakened: false, timers: [] },
   Insane: { n: 2, ev: ["insaneRolled", "foeSlept"], cast: [{ type: "insaneRolled", target: "F1", roll: 4 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 1 }], weakened: false, timers: [] },
 };
@@ -305,36 +300,44 @@ test("Freeze (C1): a blow that drops the foe to 0 hp is a normal kill (no frozen
   }
 });
 
-test("Doze (C7) floor 20: resisted -> no dozed, awake, Unmoved; landed -> asleep the rolled d4; the d4 is drawn either way", () => {
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30: one depth-rising resist for every
+// spell, no floor-12 extras): re-pinned. Doze and Stun roll the one resist
+// (`spellResisted` / `resistFailed` with depthFaces), no second control resist, no
+// Unmoved mark. The resist now comes BEFORE the d4, so a resisted foe draws no d4
+// (before: the d4 was drawn first and a control resist followed it).
+test("Doze (C7) floor 20: resisted -> one rising spellResisted, awake, no d4 drawn, no Unmoved mark; landed -> asleep the rolled d4 (never capped)", () => {
   const r = spellState(20, "Doze", 1, 1);
-  r.acts = findActs(20, [["sleep:Doze", 0, true]]);
+  r.acts = findRisingActs(20, [["Doze", 0, true]]);
   const rngR = fakeRng([3, ...PAD(10)]);
   const evR = castSpell(r, IDX.Doze, rngR, []);
   assert.equal(r.combat.foes[0].asleep, 0);
-  assert.equal(r.combat.foes[0].resisted, "sleep");
+  assert.equal("resisted" in r.combat.foes[0], false);
   assert.equal(evR.some((e) => e.type === "dozed"), false);
-  assert.ok(evR.some((e) => e.type === "controlResisted"));
+  assert.equal(evR.filter((e) => e.type === "spellResisted").length, 1);
+  assert.equal(evR.find((e) => e.type === "spellResisted").depthFaces, 8);
+  assert.equal(evR.some((e) => e.type === "controlResisted"), false);
 
   const l = spellState(20, "Doze", 1, 1);
-  l.acts = findActs(20, [["sleep:Doze", 0, false]]);
+  l.acts = findRisingActs(20, [["Doze", 0, false]]);
   const evL = castSpell(l, IDX.Doze, fakeRng([3, ...PAD(10)]), []);
   assert.equal(evL.find((e) => e.type === "dozed").rounds, 3, "the rolled d4, never capped");
   assert.equal(l.combat.foes[0].asleep, 2, "one visit already spent this dispatch");
   assert.equal("resisted" in l.combat.foes[0], false);
 });
 
-test("Stun (C8) floor 20: three affected foes, the second resists — 1 and 3 asleep, 2 awake and Unmoved; count 2; one d4 per foe", () => {
+test("Stun (C8) floor 20: three affected foes, the second resists — 1 and 3 asleep, 2 awake (no mark, no d4); count 2; one d4 per foe that failed its resist", () => {
   const s = spellState(20, "Stun", 1, 3);
-  s.acts = findActs(20, [["sleep:Stun", 0, false], ["sleep:Stun", 1, true], ["sleep:Stun", 2, false]]);
-  const rng = fakeRng([6, 2, 3, 4, ...PAD(10)]);
+  s.acts = findRisingActs(20, [["Stun", 0, false], ["Stun", 1, true], ["Stun", 2, false]]);
+  const rng = fakeRng([6, 2, 4, ...PAD(10)]);
   const events = castSpell(s, IDX.Stun, rng, []);
   const [f1, f2, f3] = s.combat.foes;
   assert.equal(f1.asleep, 1); // d4 2, one visit spent
   assert.equal(f2.asleep, 0);
-  assert.equal(f2.resisted, "sleep");
+  assert.equal("resisted" in f2, false);
   assert.equal(f3.asleep, 3); // d4 4, one visit spent
   assert.equal(events.find((e) => e.type === "stunned").count, 2);
-  assert.equal(events.filter((e) => e.type === "controlResisted").length, 1);
+  assert.equal(events.filter((e) => e.type === "spellResisted").length, 1);
+  assert.equal(events.some((e) => e.type === "controlResisted"), false);
 });
 
 // Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The room has no extra resist past
@@ -360,20 +363,26 @@ test("Weaken (C14) floor 20: every foe resisting -> no weakened flag, no timer; 
   assert.ok(l.c.timers["spell:weaken"]);
 });
 
-test("Stupidity (C17): floor 20 landed -> a stupid hold of 3, no fight-long flag; floor 12 -> today's flag", () => {
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30): re-pinned. Stupidity, Blind and
+// Petrify were reworked as ruled (test/unit/petrify-blind-stupidity.test.js
+// pins the new rules in full); at floor 20 each is now its floor-1 effect after
+// the one depth-rising resist, with no hold, no blindFor and no Unmoved mark.
+// Before: Stupidity held 3 rounds, Blind set blindFor 3 and rounds 3 on its line,
+// Petrify held the foe in stone for 3 rounds and kept it in the fight.
+test("Stupidity (C17): floor 20 landed -> intelligence 1 for the fight, no hold, no extra resist; resisted -> unchanged, no Unmoved mark", () => {
   const s = spellState(20, "Stupidity", 2, 1);
-  s.acts = findActs(20, [["stupid:Stupidity", 0, false]]);
+  s.acts = findRisingActs(20, [["Stupidity", 0, false]]);
   const events = castSpell(s, IDX.Stupidity, fakeRng(PAD(10)), []);
   const f = s.combat.foes[0];
-  assert.equal("stupid" in f, false);
-  const held = events.find((e) => e.type === "controlHeld");
-  assert.deepEqual({ kind: held.kind, rounds: held.rounds }, { kind: "stupid", rounds: 3 });
-  assert.deepEqual(f.held, { kind: "stupid", left: 2 });
+  assert.equal(f.stupid, true);
+  assert.equal(f.intel, 1);
+  assert.equal("held" in f, false);
+  assert.equal(events.some((e) => e.type === "controlHeld" || e.type === "controlResisted"), false);
 
   const r = spellState(20, "Stupidity", 2, 1);
-  r.acts = findActs(20, [["stupid:Stupidity", 0, true]]);
+  r.acts = findRisingActs(20, [["Stupidity", 0, true]]);
   castSpell(r, IDX.Stupidity, fakeRng(PAD(10)), []);
-  assert.equal(r.combat.foes[0].resisted, "stupid");
+  assert.equal("resisted" in r.combat.foes[0], false);
   assert.equal("held" in r.combat.foes[0], false);
   assert.equal("stupid" in r.combat.foes[0], false);
 
@@ -381,21 +390,21 @@ test("Stupidity (C17): floor 20 landed -> a stupid hold of 3, no fight-long flag
   assert.equal(t.combat.foes[0].stupid, true);
 });
 
-test("Blind (C18): floor 20 landed -> blind with blindFor 3 and blinded.rounds 3; floor 12 -> blind for the fight, no blindFor", () => {
+test("Blind (C18): floor 20 landed -> blind for the fight, no blindFor, no rounds on the line; resisted -> not blind; floor 12 the same", () => {
   const s = spellState(20, "Blind", 3, 1);
-  s.acts = findActs(20, [["blind:Blind", 0, false]]);
+  s.acts = findRisingActs(20, [["Blind", 0, false]]);
   const events = castSpell(s, IDX.Blind, fakeRng(PAD(10)), []);
   const f = s.combat.foes[0];
   assert.equal(f.blind, true);
-  assert.equal(events.find((e) => e.type === "blinded").rounds, 3);
-  assert.equal(f.blindFor, 2, "the foe's own visit this dispatch ticks the countdown once");
+  assert.equal("rounds" in events.find((e) => e.type === "blinded"), false);
+  assert.equal("blindFor" in f, false);
 
   const r = spellState(20, "Blind", 3, 1);
-  r.acts = findActs(20, [["blind:Blind", 0, true]]);
+  r.acts = findRisingActs(20, [["Blind", 0, true]]);
   const evR = castSpell(r, IDX.Blind, fakeRng(PAD(10)), []);
   assert.equal(!!r.combat.foes[0].blind, false);
   assert.equal(evR.some((e) => e.type === "blinded"), false);
-  assert.equal(r.combat.foes[0].resisted, "blind");
+  assert.equal("resisted" in r.combat.foes[0], false);
 
   const { s: t, events: evT } = castScenario("Blind", 12);
   assert.equal(t.combat.foes[0].blind, true);
@@ -403,36 +412,35 @@ test("Blind (C18): floor 20 landed -> blind with blindFor 3 and blinded.rounds 3
   assert.equal("rounds" in evT.find((e) => e.type === "blinded"), false);
 });
 
-test("Shrink (C19) floor 20: a resisting foe keeps its hp; the others halve; shrunk.count counts the halved", () => {
+test("Shrink (C19) floor 20: a resisting foe keeps its hp (no mark); the others halve; shrunk.count counts the halved", () => {
   const s = spellState(20, "Shrink", 3, 3);
-  s.acts = findActs(20, [["shrink:Shrink", 0, false], ["shrink:Shrink", 1, true], ["shrink:Shrink", 2, false]]);
+  s.acts = findRisingActs(20, [["Shrink", 0, false], ["Shrink", 1, true], ["Shrink", 2, false]]);
   const events = castSpell(s, IDX.Shrink, fakeRng([6, ...PAD(10)]), []);
   const [f1, f2, f3] = s.combat.foes;
   assert.equal(f1.wp, 15);
   assert.equal(f2.wp, 30);
   assert.equal(f2.maxWP, 30);
   assert.equal("shrunk" in f2, false);
-  assert.equal(f2.resisted, "shrink");
+  assert.equal("resisted" in f2, false);
   assert.equal(f3.wp, 15);
   assert.equal(events.find((e) => e.type === "shrunk").count, 2);
 });
 
-test("Petrify (C5): floor 20 landed -> a stone hold of 3, the foe alive; resisted -> flesh, Unmoved; floor 12 -> today's removal", () => {
+test("Petrify (C5): floor 20 landed -> the foe dies (no stone hold), at floor 12 the same; resisted -> flesh, no mark", () => {
   const s = spellState(20, "Petrify", 5, 2);
-  s.acts = findActs(20, [["stone:Petrify", 0, false]]);
+  s.acts = findRisingActs(20, [["Petrify", 0, false]]);
   const events = castSpell(s, IDX.Petrify, fakeRng(PAD(10)), []);
   const f = s.combat.foes[0];
-  assert.equal(f.alive, true);
-  assert.equal(f.wp, 30);
-  assert.deepEqual(f.held, { kind: "stone", left: 2 });
-  assert.equal(events.find((e) => e.type === "controlHeld").rounds, 3);
-  assert.equal(events.some((e) => e.type === "petrified"), false);
+  assert.equal(f.alive, false);
+  assert.equal("held" in f, false);
+  assert.ok(events.some((e) => e.type === "petrified"));
+  assert.equal(events.some((e) => e.type === "controlHeld"), false);
 
   const r = spellState(20, "Petrify", 5, 2);
-  r.acts = findActs(20, [["stone:Petrify", 0, true]]);
+  r.acts = findRisingActs(20, [["Petrify", 0, true]]);
   castSpell(r, IDX.Petrify, fakeRng(PAD(10)), []);
   assert.equal(r.combat.foes[0].alive, true);
-  assert.equal(r.combat.foes[0].resisted, "stone");
+  assert.equal("resisted" in r.combat.foes[0], false);
   assert.equal("held" in r.combat.foes[0], false);
 
   const { s: t } = castScenario("Petrify", 12);
@@ -440,68 +448,66 @@ test("Petrify (C5): floor 20 landed -> a stone hold of 3, the foe alive; resiste
   assert.equal(t.combat.foes[0].frozen, true);
 });
 
-test("Noxious Vapor's sleep (C10) and Insane's sleep face (C11) floor 20: a resisting foe stays awake; the d6 / d4 draws happen as today", () => {
+// Re-pinned (90-04): the one resist comes before each foe's draws, so a resisting
+// foe draws no d6 (before: the d6 was drawn first, the control resist after).
+test("Noxious Vapor's sleep (C10) and Insane's nap (C11) floor 20: a resisting foe stays awake and draws nothing; a landed sleep is its own d6+2 / d4", () => {
   const v = spellState(20, "Noxious Vapor", 4, 2);
-  v.acts = findActs(20, [["sleep:Noxious Vapor", 0, true], ["sleep:Noxious Vapor", 1, false]]);
+  v.acts = findRisingActs(20, [["Noxious Vapor", 0, true], ["Noxious Vapor", 1, false]]);
   const vRng = fakeRng([2, 3, 5, ...PAD(10)]);
   castSpell(v, IDX["Noxious Vapor"], vRng, []);
   assert.equal(v.combat.foes[0].asleep, 0);
-  assert.equal(v.combat.foes[0].resisted, "sleep");
-  assert.equal(v.combat.foes[1].asleep, 6); // d6 5 + 2 = 7, one visit spent
+  assert.equal("resisted" in v.combat.foes[0], false);
+  assert.equal(v.combat.foes[1].asleep, 4); // its own d6 3 + 2 = 5, one visit spent
 
   const i = spellState(20, "Insane", 2, 1);
-  i.acts = findActs(20, [["sleep:Insane", 0, true]]);
+  i.acts = findRisingActs(20, [["Insane", 0, true]]);
   castSpell(i, IDX.Insane, fakeRng([4, 2, ...PAD(10)]), []);
   assert.equal(i.combat.foes[0].asleep, 0);
-  assert.equal(i.combat.foes[0].resisted, "sleep");
+  assert.equal("resisted" in i.combat.foes[0], false);
 
   const j = spellState(20, "Insane", 2, 1);
-  j.acts = findActs(20, [["sleep:Insane", 0, false]]);
+  j.acts = findRisingActs(20, [["Insane", 0, false]]);
   castSpell(j, IDX.Insane, fakeRng([4, 2, ...PAD(10)]), []);
   assert.equal(j.combat.foes[0].asleep, 1);
 });
 
-test("main-draw parity: for every control spell on floor 20, a resisted and a landed cast from the same main sequence take the same main draws", () => {
-  // [scenario key, purpose, foe idx list] — every affected foe resists in one
-  // run and none in the other (Freeze: resisted vs held). The last column is
-  // the cast's own main draws in the pre-plan code (Freeze: to-hit + damage,
-  // before any kill; Stun: d6 + a d4 per foe; Vapor: d6 + a d6 per foe; ...).
-  // User rulings 2026-09-28 (re-pinned): Freeze's cast now takes 3 main
-  // draws either way — to-hit, damage and the hold's d4 (drawn resisted or
-  // not, like Doze's d4).
-  // Phase 89 plan 08: Freeze and Weaken ("rising" rows) resist through the one
-  // depth-rising resist now (a `spellResisted` line, found by findRisingActs;
-  // Weaken needs BOTH foes resisting for nothing to land); the rest still
-  // resist through the RULES-18 control resist until Phase 90.
-  const RISING = new Set(["Freeze", "Weaken"]);
+// Phase 90 plan 04 (SPELL-12): re-pinned. There is ONE resist per foe and it
+// comes before that foe's own draws, so a foe that resists draws nothing for the
+// spell's effect, and a resisted and a landed cast no longer take the same main
+// draws (before, at floor 20, the d4 / d6 was drawn first and a second control
+// resist followed, so both took the same draws). Floor 12 and below is unchanged:
+// the intel resist already came first there.
+test("main draws at floor 20: a foe that resists draws nothing for the spell's effect (the one resist comes first); Freeze and Weaken still draw their d4 / d4+1 either way", () => {
+  // [scenario key, spell source, foe idx list, draws when every foe resists,
+  // draws when none does] — the cast's own main draws, then the regen d8.
   const CASES = [
-    ["Freeze", "Freeze", [0], 3],
-    ["Doze", "sleep:Doze", [0], 1],
-    ["Stun", "sleep:Stun", [0, 1, 2], 4],
-    ["Weaken", "Weaken", [0, 1], 1],
-    ["Stupidity", "stupid:Stupidity", [0], 0],
-    ["Blind", "blind:Blind", [0], 0],
-    ["Shrink", "shrink:Shrink", [0, 1, 2], 1],
-    ["Petrify", "stone:Petrify", [0], 0],
-    ["Vapor", "sleep:Noxious Vapor", [0, 1], 3],
-    ["Insane", "sleep:Insane", [0], 2],
+    ["Freeze", "Freeze", [0], 3, 3], // to-hit, damage, then the hold's d4 (resisted or not)
+    ["Doze", "Doze", [0], 0, 1],
+    ["Stun", "Stun", [0, 1, 2], 1, 4], // the d6 count, then a d4 per foe that failed
+    ["Weaken", "Weaken", [0, 1], 1, 1], // the d4 + 1 is drawn before the room resists
+    ["Stupidity", "Stupidity", [0], 0, 0],
+    ["Blind", "Blind", [0], 0, 0],
+    ["Shrink", "Shrink", [0, 1, 2], 1, 1],
+    ["Petrify", "Petrify", [0], 0, 1], // a landed Petrify takes killFoe's experience d6 and nothing more
+    ["Vapor", "Noxious Vapor", [0, 1], 1, 3], // the table d6, then a d6 per foe that failed
+    ["Insane", "Insane", [0], 0, 2], // the madness d6, then the nap's d4
   ];
-  for (const [key, purpose, idxs, castDraws] of CASES) {
+  for (const [key, source, idxs, resistedDraws, landedDraws] of CASES) {
     const marks = [true, false].map((resisted) => {
       const [name, level, nFoes, seq] = SPELL_SCENARIOS[key];
       const s = spellState(20, name, level, nFoes);
       s.c.regen = true;
       s.c.wp = 20;
-      s.acts = RISING.has(key) ? findRisingActs(20, idxs.map((i) => [purpose, i, resisted])) : findActs(20, idxs.map((i) => [purpose, i, resisted]));
+      s.acts = findRisingActs(20, idxs.map((i) => [source, i, resisted]));
       const rng = fakeRng([...seq, ...PAD(20)]);
       const events = markingEvents(rng, "regenerated");
       castSpell(s, IDX[name], rng, events);
-      assert.equal(events.some((e) => e.type === (RISING.has(key) ? "spellResisted" : "controlResisted")), resisted, `${key} resisted=${resisted}`);
+      assert.equal(events.some((e) => e.type === "controlResisted"), false, `${key}: no controlResisted`);
       assert.equal(events.marks.length, 1, `${key}: the regen marker fired once`);
       return events.marks[0];
     });
-    assert.equal(marks[0], marks[1], `${key}: the main rng stands at the same draw either way`);
-    assert.equal(marks[0], castDraws + 1,`${key}: exactly the pre-plan cast's own draws, then the regen d8`);
+    assert.equal(marks[0], resistedDraws + 1, `${key}: every foe resists, then the regen d8`);
+    assert.equal(marks[1], landedDraws + 1, `${key}: no foe resists, then the regen d8`);
   }
 });
 
@@ -518,9 +524,16 @@ test("a scroll of Freeze read in combat on floor 20 meets the same rule (castSpe
   assert.equal(events.some((e) => e.type === "foeKilled"), false);
 });
 
-test("the held dial is what the spells read: controlHoldRoundsFor(20) is CONTROL_AT_DEPTH.holdRounds, and 0 through floor 12", () => {
+// Phase 90 plan 04 (SPELL-12): re-pinned. No spell reads the hold dial any more
+// (the Bard's sing is the one caller of the RULES-18 helpers left); the dial
+// itself is unchanged, so its own values stay pinned here.
+test("the hold dial is untouched (controlHoldRoundsFor(20) is CONTROL_AT_DEPTH.holdRounds, 0 through floor 12), but castSpell never reads it: a landed Blind at floor 20 has no countdown", () => {
   assert.equal(controlHoldRoundsFor(20), DIALS.CONTROL_AT_DEPTH.holdRounds);
   for (let d = 1; d <= DIALS.CONTROL_AT_DEPTH.kneeDepth; d++) assert.equal(controlHoldRoundsFor(d), 0);
+  const s = spellState(20, "Blind", 3, 1);
+  s.acts = findRisingActs(20, [["Blind", 0, false]]);
+  castSpell(s, IDX.Blind, fakeRng(PAD(10)), []);
+  assert.equal("blindFor" in s.combat.foes[0], false);
 });
 
 // ---------------------------------------------------------------------------
@@ -656,7 +669,10 @@ test("Walnut Staff (C16): floor 20 every foe resisting -> no weakened flag; a fo
 
 // User rulings 2026-09-28 (re-pinned): Freeze left this list — it never
 // kills outright at any depth now (freeze-rule.test.js).
-test("floors 1-12: a Petrify and an Oak Staff stone are today's kill / removal on every floor — no resist roll, no hold", () => {
+// Phase 90 plan 04 (SPELL-12): Petrify's kill now pays its experience (Q2 A) and
+// has no spoils; this test keeps its floors 1-12 reading (a kill on every floor,
+// no control resist roll, no hold).
+test("floors 1-12: a Petrify and an Oak Staff stone are a kill on every floor — no control resist roll, no hold", () => {
   for (let depth = 1; depth <= 12; depth++) {
     const pe = castScenario("Petrify", depth);
     assert.equal(pe.s.combat.foes[0].alive, false, `Petrify depth ${depth}`);
@@ -675,24 +691,22 @@ test("floors 1-12: a Petrify and an Oak Staff stone are today's kill / removal o
 
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 
-test("texts: every spell whose promise changes past the knee names floor kneeDepth and holdRounds (as a word), from the dial itself", () => {
+test("texts: no spell and no control item names floor kneeDepth or holdRounds (as a word): the floor-12 special effects are gone from every text", () => {
   const { kneeDepth, holdRounds } = DIALS.CONTROL_AT_DEPTH;
   const floorWords = `past floor ${kneeDepth}`;
   const roundWords = `${NUMBER_WORDS[holdRounds]} rounds`;
-  // Quick 260928-tsx (user ruling 2026-09-28): Freeze no longer kills at any
-  // depth (d6 damage, then a d4-round freeze unless the foe resists), so its
-  // text carries no past-the-knee clause; authored-ranges.test.js pins it.
-  for (const n of ["Ice", "Stupidity", "Blind", "Petrify"]) {
-    const sp = SPELLS.find((x) => x.n === n);
-    assert.ok(sp.txt.includes(floorWords), `${n}: "${sp.txt}" names ${floorWords}`);
-    assert.ok(sp.txt.includes(roundWords), `${n}: "${sp.txt}" names ${roundWords}`);
+  // Phase 90 plan 04 (SPELL-12, user 2026-09-30): the SPELL half of this test used
+  // to assert that Ice, Stupidity, Blind and Petrify NAME the floor-12 hold; no spell
+  // has one now, so it asserts the opposite for every spell (Ice's own text is
+  // replaced wholesale by 90-05; its floor-12 clause went with the cap).
+  for (const sp of SPELLS) {
+    assert.ok(!sp.txt.includes(floorWords) && !sp.txt.includes(roundWords), `${sp.n}: "${sp.txt}" no longer names the floor-12 hold`);
   }
   // Phase 89 plan 09 (89-08 hand-off, docs/ITEM-AUDIT.md Q1): the ITEM half of
   // this test is gone. The Amulet of Stone, the Oak and Cedar Staves no longer
   // have a floor-12 hold, so their texts no longer name floor ${kneeDepth} or a
   // hold of ${holdRounds} rounds; they say each foe may resist and the deeper the
-  // floor the likelier it does (pinned by item-text-wording.test.js). The spell
-  // half above stays until Phase 90 moves the spells.
+  // floor the likelier it does (pinned by item-text-wording.test.js).
   for (const n of ["Amulet of Stone", "Oak Staff", "Cedar Staff"]) {
     const it = [...STAVES, ...JEWELRY].find((x) => x.n === n);
     assert.ok(!it.txt.includes(floorWords) && !it.txt.includes(roundWords), `${n}: "${it.txt}" no longer names the floor-12 hold`);

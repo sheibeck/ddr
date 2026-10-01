@@ -349,7 +349,6 @@ export const RAIL_FAMILY = Object.freeze({
   // this out-of-combat rail, is their real destination).
   iceApplied: { icon: "·", title: "ICE", tone: "odd" },
   weakenFaded: { icon: "·", title: "WEAKEN FADES", tone: "dull" },
-  foeStupefied: { icon: "·", title: "STUPEFIED", tone: "odd" },
   // Phase 42 (FLEE-02) — another combat-only event, given a family entry for
   // completeness — the fight log is the real destination.
   fleeRolled: { icon: "·", title: "FLEE", tone: "info" },

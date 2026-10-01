@@ -409,39 +409,48 @@ test("Weaken (member cast, DFB-05 precedent): allyCast draws one extra d4 and st
   assert.equal(state.c.timers["spell:weaken"].left, 4, "the ally's own cast draws no trailing tick of its own");
 });
 
-test("Stupidity: casting draws zero dice (the old rng.d(10) nap is retired) and sets the fight-long flag", () => {
-  const foe = fixedFoe({ intel: 1 });
-  const state = fixedState({ c: fixedCaster({ sub: "Wizard", grimoire: ["Stupidity"], level: 2 }), combat: fixedCombat([foe]) });
-  const events = castSpell(state, SPELL_IDX.Stupidity, looseRng([], 20), []);
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30): re-pinned. Stupidity drops the
+// foe's intelligence to 1 for the fight; it no longer skips the foe's turns or
+// floors the strike need (test/unit/petrify-blind-stupidity.test.js pins the
+// rework in full). Before: it set the fight-long skip flag only.
+test("Stupidity: casting draws zero dice (the old rng.d(10) nap is retired), sets the chip flag and drops the foe's intelligence to 1", () => {
+  let foe, state, events;
+  for (let acts = 0; acts < 200; acts++) { // the first acts where the intelligence-12 foe fails its one resist
+    foe = fixedFoe({ intel: 12 });
+    state = fixedState({ c: fixedCaster({ sub: "Wizard", grimoire: ["Stupidity"], level: 2 }), combat: fixedCombat([foe]) });
+    state.acts = acts;
+    events = castSpell(state, SPELL_IDX.Stupidity, looseRng([], 20), []);
+    if (events.some((e) => e.type === "stupefied")) break;
+  }
   assert.equal(foe.stupid, true);
+  assert.equal(foe.intel, 1);
   assert.equal(foe.asleep, 0, "the retired nap line never runs — asleep stays untouched");
-  assert.ok(events.some((e) => e.type === "stupefied" && e.target === foe.name));
+  assert.ok(events.some((e) => e.type === "stupefied" && e.target === foe.name && e.was === 12 && e.intel === 1));
 });
 
-test("Stupidity: foeTurn skips a stupid foe's ENTIRE turn every round (no counter, lasts the fight)", () => {
-  const foe = fixedFoe({ stupid: true });
+test("Stupidity: foeTurn no longer skips a stupid foe — it takes its turn (a to-hit draw) every round and says no foeStupefied", () => {
+  const foe = fixedFoe({ stupid: true, intel: 1 });
   const state = fixedState({ combat: fixedCombat([foe]) });
-  // An empty sequence throws on ANY draw — proving the stupid foe neither
-  // rolls to-hit nor casts; it just skips.
-  const events = foeTurn(state, fakeRng([]), []);
-  assert.deepStrictEqual(events.map((e) => e.type), ["foeStupefied"]);
+  const events = foeTurn(state, fakeRng([3, 3]), []);
+  assert.equal(events.some((e) => e.type === "foeStupefied"), false);
+  assert.ok(events.some((e) => e.type === "struckByFoe" || e.type === "foeMissed"), "it swung");
   assert.equal(foe.stupid, true, "the flag never clears itself");
-  // A second call proves it is not a one-shot skip.
-  const events2 = foeTurn(state, fakeRng([]), []);
-  assert.deepStrictEqual(events2.map((e) => e.type), ["foeStupefied"]);
+  const events2 = foeTurn(state, fakeRng([3, 3]), []);
+  assert.ok(events2.some((e) => e.type === "struckByFoe" || e.type === "foeMissed"), "and again the next round");
 });
 
-test("Stupidity: playerStrike floors need at 5 vs a stupid foe (the same floor a dozing foe gets)", () => {
-  const foe = fixedFoe({ stupid: true, wp: 50, maxWP: 50 });
-  const state = fixedState({ combat: fixedCombat([foe]) });
-  // The strike roll (5) is the only pinned value; the trailing tail (the
-  // stupid foe's own turn skips at 0 draws — proven separately above — plus
-  // the round's fresh initiative) is not this test's claim.
-  const events = playerStrike(state, looseRng([5], 20), []);
-  const struck = events.find((e) => e.type === "struck");
-  assert.ok(struck, "a stupid foe is struck at the floored need");
-  assert.equal(struck.atLeast, 16);
-  assert.equal(struck.dieN, 20);
+// Phase 90 plan 04 (SPELL-12): re-pinned. A stupid foe is NO LONGER struck at the
+// dozing foe's floor of 5 faces: it is hit exactly like the same foe not stupid.
+test("Stupidity: playerStrike gives a stupid foe no floor — the same need as the same foe not stupid", () => {
+  const strikeNeed = (foeOver) => {
+    const foe = fixedFoe({ wp: 50, maxWP: 50, ...foeOver });
+    const state = fixedState({ combat: fixedCombat([foe]) });
+    const events = playerStrike(state, looseRng([5], 20), []);
+    const struck = events.find((e) => e.type === "struck");
+    assert.ok(struck);
+    return struck.atLeast;
+  };
+  assert.equal(strikeNeed({ stupid: true, intel: 1 }), strikeNeed({}));
 });
 
 test("Shrink: a shrunk foe's hero-target melee damage is halved, and quartered when also weakened", () => {
@@ -486,13 +495,14 @@ test("Shrink: pursuitStrike halves a shrunk pursuer's parting blow", () => {
   assert.equal(struck.dmg, 8, "ceil(15/2)");
 });
 
-test("Narration: weakenFaded/foeStupefied render through EVENT_NARRATION and LINE_FOR", () => {
+// Phase 90 plan 04: foeStupefied (the per-turn skip line) is gone with the skip.
+test("Narration: weakenFaded renders through EVENT_NARRATION and LINE_FOR; the foeStupefied entries are gone", () => {
   assert.match(EVENT_NARRATION.weakenFaded({}), /remember/);
   assert.match(EVENT_NARRATION.weakened({ rounds: 3 }), /3 rounds/);
   assert.match(EVENT_NARRATION.weakened({}), /softer now\./);
-  assert.match(EVENT_NARRATION.foeStupefied({ name: "Ogre" }), /thinking about nothing/);
+  assert.equal(EVENT_NARRATION.foeStupefied, undefined);
   assert.equal(typeof LINE_FOR.weakenFaded({ type: "weakenFaded" }).text, "string");
-  assert.equal(typeof LINE_FOR.foeStupefied({ type: "foeStupefied", name: "Ogre" }).text, "string");
+  assert.equal(LINE_FOR.foeStupefied, undefined);
 });
 
 // VOX-05 (Phase 79, plan 79-08) made Strength's HP boost non-silent; Phase 90

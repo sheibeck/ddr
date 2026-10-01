@@ -175,10 +175,14 @@ export function applyPommel(t) {
 
 /** applyDirtyTrick(t) — Dirty Trick: blinded for two rounds. Reuses the
  * EXISTING f.blind foeToHitVs/foeTurn hooks; f.blindFor is the NEW countdown
- * foeTurn ticks and clears (Task 2), restoring sight. Shared with Plan 04. */
+ * foeTurn ticks and clears (Task 2), restoring sight. Shared with Plan 04.
+ * Phase 90 plan 04 (SPELL-12): a foe already blind with NO countdown (the
+ * Blind spell's fight-long blindness) gets no countdown from a Dirty Trick,
+ * so the trick can never restore its sight. */
 export function applyDirtyTrick(t) {
+  const fightLong = t.blind === true && !t.blindFor;
   t.blind = true;
-  t.blindFor = 2;
+  if (!fightLong) t.blindFor = 2;
 }
 
 /** applyPoison(t, dot) — Poisoned Edge: a generic per-foe DOT record

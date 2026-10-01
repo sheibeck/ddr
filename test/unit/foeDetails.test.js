@@ -442,7 +442,8 @@ test("(Phase 74) foeConditionEffect: weakened states its effect and range from t
   assert.equal(foeConditionEffect({ key: "weakened" }, ned2, insultedState), "it hits you only on 17–20 (d20)");
 });
 
-test("(Phase 74) foeConditionEffect: a blind foe reads its plain range; insulted stacks on top", () => {
+// Phase 90 plan 04 (SPELL-12): the blind cap is the LAST term of the swing, so an insult no longer stacks on top of it (before: 19–20).
+test("(Phase 74) foeConditionEffect: a blind foe reads its plain range; an insult cannot raise it (Phase 90 plan 04)", () => {
   const ned = pick("Humans", "Ned");
   ned.blind = true;
   const state = fullHeroState(ned);
@@ -451,10 +452,11 @@ test("(Phase 74) foeConditionEffect: a blind foe reads its plain range; insulted
   const ned2 = pick("Humans", "Ned");
   ned2.blind = true;
   const insultedState = fullHeroState(ned2, { combat: { parleyInsulted: true } });
-  assert.equal(foeConditionEffect({ key: "blind" }, ned2, insultedState), "it hits you only on 19–20 (d20)");
+  assert.equal(foeConditionEffect({ key: "blind" }, ned2, insultedState), "it hits you only on 20 (d20)");
 });
 
-test("(Phase 74) foeConditionEffect: asleep and stupid read the hero's own floored-at-5 odds (a level-1 Magic User)", () => {
+// Phase 90 plan 04 (SPELL-12): a stupid foe is no longer floored at 5 faces, so its chip has no to-hit effect (before: "you hit it on 16–20").
+test("(Phase 74) foeConditionEffect: asleep reads the hero's own floored-at-5 odds (a level-1 Magic User); stupid reads nothing (Phase 90 plan 04)", () => {
   const asleepFoe = pick("Humans", "Ned");
   asleepFoe.asleep = 2;
   const asleepState = fullHeroState(asleepFoe, { c: { cls: "Magic User", sub: "Wizard" } });
@@ -463,7 +465,7 @@ test("(Phase 74) foeConditionEffect: asleep and stupid read the hero's own floor
   const stupidFoe = pick("Humans", "Ned");
   stupidFoe.stupid = true;
   const stupidState = fullHeroState(stupidFoe, { c: { cls: "Magic User", sub: "Wizard" } });
-  assert.equal(foeConditionEffect({ key: "stupid" }, stupidFoe, stupidState), "you hit it on 16–20 (d20)");
+  assert.equal(foeConditionEffect({ key: "stupid" }, stupidFoe, stupidState), null);
 });
 
 test("(Phase 74) foeConditionEffect: every other chip key has no to-hit effect", () => {
@@ -644,4 +646,23 @@ test("(g) detailsLabel fills the D-11 accessible name", () => {
   assert.equal(detailsLabel("DRAKE"), "Details: DRAKE");
   assert.equal(detailsLabel(""), "Details: " + FOE_DETAILS_COPY.something);
   assert.equal(detailsLabel(undefined), "Details: " + FOE_DETAILS_COPY.something);
+});
+
+// Phase 90 plan 04 (SPELL-12): the foe card's spell-resist odds read the same
+// depth-rising faces the engine rolls (engine/derived.js#risingResistFaces), so
+// they show the real odds at the current floor: intelligence 10 is 16–20 up to
+// floor 12, 15–20 at floor 13 and 10–20 at floor 20.
+test("(Phase 90 plan 04) the resistances line shows the depth-rising resist range for the current floor", () => {
+  const want = { 1: "16–20 (d20)", 12: "16–20 (d20)", 13: "15–20 (d20)", 20: "10–20 (d20)" };
+  for (const [depth, range] of Object.entries(want)) {
+    const foe = pick("Humans", "Ned");
+    foe.intel = 10;
+    const state = fullHeroState(foe, { floor: { depth: Number(depth) } });
+    const line = foeDetailsCard(0, state).lines.map((l) => l.text).find((t) => t.includes("resists your spells on"));
+    assert.ok(line.includes(`resists your spells on ${range}`), `floor ${depth}: ${line}`);
+  }
+  const foe = pick("Humans", "Ned");
+  foe.intel = 10;
+  const noFloor = foeDetailsCard(0, { combat: { foes: [foe] } }).lines.map((l) => l.text).find((t) => t.includes("resists your spells on"));
+  assert.ok(noFloor.includes("resists your spells on 16–20 (d20)"), "a state with no floor reads the shallow range");
 });

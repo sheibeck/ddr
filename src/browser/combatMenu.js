@@ -15,7 +15,7 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, resistFaces } from "../../engine/derived.js";
+import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley } from "../../engine/combat.js";
@@ -268,11 +268,11 @@ function combatMenuViewModelUnlocked(state) {
       .sort((a, b) => a.lvl - b.lvl || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) || a.idx - b.idx);
     // Quick 260927-rsx (user ruling 2026-09-27): a spell cast on a foe can be
     // resisted, so its row states the current target's resist range, read
-    // from engine/derived.js#resistFaces (the number the engine rolls
+    // from engine/derived.js#risingResistFaces at the current depth (Phase 90 plan 04, the number the engine rolls
     // against) and printed through rollRange.js's one range formatter.
     const liveTarget = Array.isArray(C.foes) ? (C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : C.foes.find((f) => f && f.alive)) : null;
     const resistHint = liveTarget
-      ? COMBAT_MENU_COPY.spellResist.replace("{target}", liveTarget.name).replace("{range}", hitRangeText(resistFaces(liveTarget.intel), 20))
+      ? COMBAT_MENU_COPY.spellResist.replace("{target}", liveTarget.name).replace("{range}", hitRangeText(risingResistFaces(state.floor?.depth, liveTarget.intel), 20))
       : "";
     const spellRows = castableSpells.map(({ sp, idx }) => {
       return {

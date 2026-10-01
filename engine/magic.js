@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -37,7 +37,7 @@ import { startEffect } from "./effects.js";
 // Phase 18 (D-09/CANON-01/03/04): every damage-to-foe site below routes
 // through the shared seam instead of decrementing foe.wp directly.
 import { damageFoe } from "./foeDamage.js";
-import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
+import { spellDamageFor } from "./difficulty.js";
 
 // DELIBERATE RULES CHANGE (quick 260927-rsx, user ruling 2026-09-27: "Every
 // spell cast on an enemy should have a chance to be resisted based on their
@@ -47,6 +47,16 @@ import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
 // faces on a d20 — the hero's own scale too since quick 260928-hrs), thrown damage included; a resisted spell has
 // no effect on that foe. Only derived.js#SPELL_SELF_KINDS (the caster's own
 // body, side or map) is never resisted.
+//
+// Phase 90 plan 04 (SPELL-12, user ruling at the Phase 89 checkpoint,
+// 2026-09-30: "rising resists on higher floors should apply to ALL spells ...
+// remove the floor-12 special effects only"): that ONE resist is the
+// depth-rising one (derived.js#risingResistFaces, rolled through
+// foeResistsSpell = combat.js#foeResistsEffect). Its faces are the half-
+// intelligence faces up to floor 12 and rise a floor at a time after it. It is
+// the ONLY resist a spell rolls: the separate RULES-18 control resist
+// (resistControl) and the three-round hold or cap past floor 12 are gone from
+// every branch below, so a landed spell is its floor-1 effect at every depth.
 //
 // SINGLE_TARGET_KINDS — the foe-targeted kinds that land on ONE foe: its
 // resist is rolled up front, before the kind branch, and a resist ends the
@@ -58,7 +68,7 @@ import { spellDamageFor, controlHoldRoundsFor } from "./difficulty.js";
 // vapor, volley, turn, gate, and a thrown `aoe: "all"`) resists per foe
 // inside its own branch.
 const SINGLE_TARGET_KINDS = Object.freeze({
-  stupid: "first",
+  stupid: "target", // Phase 90 plan 04 (Q7 A): the picked foe; a dead pick falls to the first live foe
   status: "first",
   death: "first",
   blind: "target",
@@ -244,18 +254,15 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // damage), so this count is untouched by the level² damage ruling.
     const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c); // roll:amount
     const affected = liveFoes(state).slice(0, n);
-    // RULES-18 (Phase 75.3, audit C8): past the knee each affected foe gets
-    // its own resist; its d4 is drawn in the same position either way, and
-    // `count` is the number that actually slept (every affected foe at or
-    // below the knee, exactly as before).
-    // Quick 260927-rsx: each affected foe first rolls its own intel resist
-    // (a derived stream); a foe that resists sleeps not at all and draws no
-    // d4. The foe count (the d6 above) is the cast's own and is drawn first.
+    // Quick 260927-rsx: each affected foe first rolls its own resist (a
+    // derived stream; since Phase 90 plan 04 the one depth-rising resist, with
+    // no second control resist after it); a foe that resists sleeps not at all
+    // and draws no d4. The foe count (the d6 above) is the cast's own and is
+    // drawn first; `count` is the number that actually slept.
     let slept = 0;
     affected.forEach((f) => {
       if (foeResistsSpell(state, f, sp.n, rng, events)) return;
       const rolled = rng.d(4); // roll:amount
-      if (resistControl(state, f, "sleep", sp.n, C.foes.indexOf(f), rng, events)) return;
       f.asleep = Math.max(f.asleep, rolled);
       slept++;
     });
@@ -295,50 +302,48 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       events.push({ type: "weakened", rounds, ...(spared ? { spared } : {}) });
     }
   } else if (sp.kind === "stupid") {
-    const t = C && liveFoes(state)[0];
-    // RULES-18 (Phase 75.3, audit C17): past the knee a resist first, then a
-    // stupid HOLD for controlHoldRoundsFor(depth) rounds instead of the
-    // fight-long flag; at or below the knee exactly as before.
-    if (t && resistControl(state, t, "stupid", sp.n, C.foes.indexOf(t), rng, events)) {
-      // shaken off: the foe keeps its wits (resistControl narrated it)
-    } else if (t && controlHoldRoundsFor(state.floor.depth) > 0) {
-      holdFoe(state, t, "stupid", sp.n, events);
-    } else if (t) {
+    // DELIBERATE RULES CHANGE (Phase 90 plan 04, SPELL-12, user 2026-09-30,
+    // "Stupidity drops a foe's intelligence to 1 for the fight, weakening its
+    // resists", and Q7 A: it aims at the foe you picked, a dead pick falling to
+    // the first live foe). The one resist was rolled up front on the foe's OLD
+    // intelligence (SINGLE_TARGET_KINDS); a landed Stupidity then sets the
+    // foe's intelligence to 1, so every later resist it rolls is on 1 face (a
+    // 20 on a d20 before the depth rise). The foe keeps acting and is no
+    // easier to hit (no turn skip, no strike floor); `f.stupid` is the chip's
+    // mark. A foe already at intelligence 1 still lands it and the line says
+    // so (`was` 1). Zero draws.
+    const aimedFoe = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+    const t = C && (aimedFoe || liveFoes(state)[0]);
+    if (t) {
+      const was = Number.isFinite(t.intel) ? t.intel : 0;
+      t.intel = 1;
       t.stupid = true;
-      // DELIBERATE RULES CHANGE (Phase 40, SPELL-01, CONTEXT "Stupidity
-      // (single, the fight)"): the old rng.d(10) nap is retired — Stupidity
-      // now disables the target for the REST OF THE FIGHT via
-      // combat.js#foeTurn's f.stupid skip (it never reaches its own melee/
-      // ability turn again) instead of a timed sleep. Zero draws.
-      events.push({ type: "stupefied", target: t.name });
+      events.push({ type: "stupefied", target: t.name, intel: 1, was });
     }
   } else if (sp.kind === "blind") {
+    // DELIBERATE RULES CHANGE (Phase 90 plan 04, SPELL-12, user 2026-09-30:
+    // "Blind limits a foe to its to-hit die's maximum roll and no crits, no
+    // floor-12 language"): after the one resist, the target is blind for the
+    // fight at EVERY depth (no three-round blindFor, no rounds on the event).
+    // derived.js#foeSwingChain holds its winning faces to 1 as the LAST term
+    // of a swing and combat.js never lets a blind foe crit. A Dirty Trick's
+    // two-round countdown on the same foe is deleted (the blindness is now
+    // fight-long). Zero draws.
     const t = C && C.foes[C.target];
-    // RULES-18 (Phase 75.3, audit C18): past the knee a resist first, then a
-    // timed blind (the existing blindFor countdown, controlHoldRoundsFor
-    // rounds) instead of blind for the whole fight; at or below the knee
-    // exactly as before.
-    if (t && t.alive && !resistControl(state, t, "blind", sp.n, C.foes.indexOf(t), rng, events)) {
+    if (t && t.alive) {
       t.blind = true;
-      const hold = controlHoldRoundsFor(state.floor.depth);
-      if (hold > 0) {
-        t.blindFor = hold;
-        events.push({ type: "blinded", target: t.name, rounds: hold });
-      } else {
-        events.push({ type: "blinded", target: t.name });
-      }
+      delete t.blindFor;
+      events.push({ type: "blinded", target: t.name });
     }
   } else if (sp.kind === "shrink") {
     const n = rng.d(6); // roll:amount
     const affected = liveFoes(state).slice(0, n);
-    // RULES-18 (Phase 75.3, audit C19): past the knee each affected foe gets
-    // its own resist; only those that did not resist are halved, and `count`
-    // counts the halved (every affected foe at or below the knee).
-    // Quick 260927-rsx: the intel resist comes first, per affected foe.
+    // Quick 260927-rsx: each affected foe rolls its own resist first (since
+    // Phase 90 plan 04 the one depth-rising resist, no second control resist);
+    // only those that did not resist are halved, and `count` counts the halved.
     let halved = 0;
     affected.forEach((f) => {
       if (foeResistsSpell(state, f, sp.n, rng, events)) return;
-      if (resistControl(state, f, "shrink", sp.n, C.foes.indexOf(f), rng, events)) return;
       f.wp = Math.ceil(f.wp / 2);
       f.maxWP = Math.ceil(f.maxWP / 2);
       f.shrunk = true;
@@ -424,10 +429,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         f.wp = 0;
         killFoe(state, f, rng, events);
       } else {
-        // RULES-18 (Phase 75.3, audit C10): the sleep outcome's d6 + 2 is
-        // drawn in its existing position, then a per-foe resist past the knee.
+        // The sleep outcome's d6 + 2, drawn in its existing position (Phase 90
+        // plan 04: no second control resist past floor 12 any more).
         const rolled = rng.d(6) + 2; // roll:amount
-        if (resistControl(state, f, "sleep", sp.n, C.foes.indexOf(f), rng, events)) return;
         f.asleep = Math.max(f.asleep, rolled);
       }
     });
@@ -465,18 +469,20 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     events.push({ type: "volley", rolls: n, totalDamage: tot });
   } else if (sp.kind === "petrify") {
     const t = C && C.foes[C.target];
-    // RULES-18 (Phase 75.3, audit C5): past the knee a resist first, then a
-    // stone HOLD (the foe stays in the fight) instead of the removal; at or
-    // below the knee exactly as before (removed, no spoils).
-    if (t && t.alive && resistControl(state, t, "stone", sp.n, C.foes.indexOf(t), rng, events)) {
-      // shaken off: the foe stays flesh (resistControl narrated it)
-    } else if (t && t.alive && controlHoldRoundsFor(state.floor.depth) > 0) {
-      holdFoe(state, t, "stone", sp.n, events);
-    } else if (t && t.alive) {
-      t.alive = false;
-      t.frozen = true;
-      t.wp = 0;
+    // DELIBERATE RULES CHANGE (Phase 90 plan 04, SPELL-12 and Q2 A, user
+    // 2026-09-30: "Petrify turns one foe to stone, it dies, no loot, resist
+    // still allowed, no floor-12 language"; "the stone foe pays its experience
+    // like any kill and drops no coin or treasure"). After the one resist (the
+    // foe may still resist: SINGLE_TARGET_KINDS), a landed Petrify ends BOTH
+    // lives of a kill-twice foe and pays its experience through killFoe with
+    // spoils off: no coin, no treasure offer, no bag drop, no cooking. No
+    // hold at any depth. The old removal (alive false, no killFoe, no
+    // experience) and the past-floor-12 stone hold are gone.
+    if (t && t.alive) {
       events.push({ type: "petrified", target: t.name });
+      t.lives = 1;
+      t.frozen = true;
+      killFoe(state, t, rng, events, { spoils: false });
     }
   } else if (sp.kind === "turn") {
     if (C && C.type === "Walking Dead") {
@@ -602,10 +608,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         t.fled = true;
         events.push({ type: "insaneFled", target: t.name });
       } else if (r === 4) {
-        // RULES-18 (Phase 75.3, audit C11): the d4 is drawn in its existing
-        // position, then a resist past the knee.
-        const rolled = rng.d(4); // roll:amount
-        if (!resistControl(state, t, "sleep", sp.n, C.foes.indexOf(t), rng, events)) t.asleep = rolled;
+        // The nap's d4 (Phase 90 plan 04: no second control resist past floor 12).
+        t.asleep = rng.d(4); // roll:amount
       } else if (r === 5) {
         t.frenzied = true;
       }
@@ -644,13 +648,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   } else if (sp.kind === "status") {
     const t = C && liveFoes(state)[0];
     if (t) {
-      // RULES-18 (Phase 75.3, audit C7): the d4 is drawn in its existing
-      // position, then a resist past the knee (a resisted Doze sleeps nobody).
-      const rolled = rng.d(4); // roll:amount
-      if (!resistControl(state, t, "sleep", sp.n, C.foes.indexOf(t), rng, events)) {
-        t.asleep = rolled;
-        events.push({ type: "dozed", target: t.name, rounds: t.asleep });
-      }
+      // The d4 (Phase 90 plan 04: the one resist was rolled up front, and
+      // there is no second control resist past floor 12 any more; 90-05
+      // reworks Doze itself).
+      t.asleep = rng.d(4); // roll:amount
+      events.push({ type: "dozed", target: t.name, rounds: t.asleep });
     }
   } else {
     // thrown: d8, 4 winning faces, plus the offensive bonus from the
@@ -728,16 +730,16 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
           // never kill outright. It should deal its damage and freeze an
           // enemy for 1d4 rounds." and "if it hits and resists, deal damage,
           // but no freeze." The frozen-solid kill (Phase 23's killFoe route
-          // at or below the knee) and the RULES-18 controlHoldRoundsFor hold
+          // at or below the knee) and the RULES-18 knee hold
           // past it are both retired. The damage has landed (above); a blow
           // that drops the target to 0 hp is a normal kill (killFoe, no
           // frozenSolid). A survivor draws one new d4 (the hold's rounds,
-          // right after the damage, resisted or not), then rolls its intel
-          // resist (the 2026-09-27 derived stream, rolled HERE, after the
-          // damage, never before the throw), then the RULES-18 control resist
-          // past the knee, then freezes for the d4's rounds
-          // (combat.js#freezeFoe, shared with a Joiner's cast and the Birch
-          // Staff). A miss rolls no resist at all.
+          // right after the damage, resisted or not), then rolls its one
+          // depth-rising resist (the 2026-09-27 derived stream, rolled HERE,
+          // after the damage, never before the throw; Phase 90 plan 04: no
+          // separate control resist past floor 12), then freezes for the d4's
+          // rounds (combat.js#freezeFoe, shared with a Joiner's cast and the
+          // Birch Staff). A miss rolls no resist at all.
           if (t.wp <= 0) {
             killFoe(state, t, rng, events);
             continue;
