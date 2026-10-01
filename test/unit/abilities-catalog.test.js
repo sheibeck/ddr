@@ -60,22 +60,23 @@ test("THIEF_SKILLS: 9 keys, same order, same per-position cost as the pre-phase 
 test("Locks/Sewing keep their up-tier + txt2; the ten kept passives keep their exact pre-phase txt", () => {
   assert.equal(THIEF_SKILLS["Locks"].up, 1);
   // VOX-05/ROLL-04 (79-05): the lock ranges read roll-high (test/unit/authored-ranges.test.js pins them to the engine).
-  assert.equal(THIEF_SKILLS["Locks"].txt2, "4–10 on d10 to open a lock");
+  // Phase 90 plan 11 (TEXT-01): the lock rows also name the lockpick and intelligence terms and what a failed roll costs.
+  assert.equal(THIEF_SKILLS["Locks"].txt2, "4–10 on d10 to open a lock, 3–10 with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest");
   assert.equal(THIEF_SKILLS["Sewing"].up, 2);
-  assert.equal(THIEF_SKILLS["Sewing"].txt2, "patch any armour, d6+3 back, 6 times");
+  assert.equal(THIEF_SKILLS["Sewing"].txt2, "once on each fed day's rest, patch hurt armour: d6+3 hp back, 6 times in all");
 
   const KEPT_TXT = {
     // VOX-05/ROLL-04 (79-05): Stealth and Locks read roll-high.
-    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "critical on your die's top two faces when you open a fight; never in plate"],
-    "FIGHTER_SKILLS.Hardiness": [FIGHTER_SKILLS, "Hardiness", "−3 to all damage taken; phobias halved"],
-    "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "a second weapon at the end of every round"],
+    "FIGHTER_SKILLS.Stealth": [FIGHTER_SKILLS, "Stealth", "your first landed blow of a fight crits on the top two numbers of your die (19–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate"],
+    "FIGHTER_SKILLS.Hardiness": [FIGHTER_SKILLS, "Hardiness", "−3 to every blow, bolt and trap that hurts you (never below 1), and a Joiner with it takes 3 less from each blow; phobias halved"],
+    "FIGHTER_SKILLS.Ambidextrous": [FIGHTER_SKILLS, "Ambidextrous", "two swings every time you strike, each rolling to hit and for damage, and a Joiner with it swings twice on a plain strike; it does not stack with Speed"],
     // Phase 43 (CLAR, HP-not-WP ruling): unit word reworded wp -> hp.
-    "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "eat any beast for a quarter of its hp"],
+    "FIGHTER_SKILLS.Cooking": [FIGHTER_SKILLS, "Cooking", "every beast you kill feeds you: you heal a quarter of its max hp (at least 1) and pocket a ration"],
     // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — canRead is gone, so
     // Runes/Signs is the automatic-read guarantee, not the gate.
     "FIGHTER_SKILLS.Runes/Signs": [FIGHTER_SKILLS, "Runes/Signs", "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire"],
-    "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "6–10 on d10 to open a lock"],
-    "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "patch any armour, d6 back, 4 times"],
+    "THIEF_SKILLS.Locks": [THIEF_SKILLS, "Locks", "6–10 on d10 to open a lock, 4–10 with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest"],
+    "THIEF_SKILLS.Sewing": [THIEF_SKILLS, "Sewing", "once on each fed day's rest, patch hurt armour: d6 hp back, 4 times in all"],
     "THIEF_SKILLS.Night Vision": [THIEF_SKILLS, "Night Vision", "darkness costs you nothing"],
     "THIEF_SKILLS.Heft": [THIEF_SKILLS, "Heft", "+2 damage, mail armour, half upkeep"],
     // Phase 72 (ROLL-01, finding F2): the dead "3 to hit the unseen" clause
@@ -134,28 +135,30 @@ test("FREE_SKILL is repointed to the keys sitting at the OLD free key's exact po
 const CATALOG_TXT = {
   // Quick 260928-nrf (user rulings 2026-09-28): Kata and Feint roll to hit
   // with three more faces; Sweep needs two or more foes.
-  kata: "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight",
-  deathTouch: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight",
+  // Phase 90 plan 11 (TEXT-01, user 2026-09-30): a shift reads "+N to hit" / "foes −N to hit you", a hard cap names its d20 range,
+  // and every once-per-fight ability says so (test/unit/spell-skill-text-wording.test.js pins the numbers to the engine).
+  kata: "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  deathTouch: "call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight",
   // VOX-05/ROLL-04 (79-05): sidestep, battleRoar, overheadBlow and smoke read
   // roll-high in faces; feint and mark name what they add (damage).
-  sidestep: "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
+  sidestep: "two rounds of not being where the blade is: foes −2 to hit you",
   pommelStrike: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn",
-  battleRoar: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
-  secondWind: "remember why you came: heal d8 + level",
+  battleRoar: "loud enough to matter: for two rounds foes −2 to hit anyone on your side",
+  secondWind: "remember why you came: heal d8 + level; once per fight",
   sweep: "one wide arc: every living foe takes half damage; needs two or more foes",
   brace: "halve the next blow that lands on you",
   riposte: "for one round every foe that misses you eats your weapon damage",
   taunt: "every foe swings at you this round and your armour soaks double",
-  overheadBlow: "everything into one swing: double damage, but your die has two fewer faces that land it; once per fight",
+  overheadBlow: "everything into one swing: double damage, but −2 to hit; once per fight",
   lastStand: "under a quarter hp: three attacks this round; once per fight",
-  silentStep: "nobody heard that: your next attack is an automatic critical, any round; once per fight",
-  feint: "look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight",
-  dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds",
-  smoke: "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
-  cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems",
+  silentStep: "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling",
+  feint: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical",
+  smoke: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+  cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems; once per fight",
   poisonedEdge: "the blade weeps: d4 a round to the target for three rounds",
-  hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight",
-  mark: "study it: every strike on the target adds +2 damage for the rest of the fight",
+  hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight; once per fight",
+  mark: "study it: every strike on the target adds +2 damage for the rest of the fight; once per fight",
 };
 
 test("ABILITIES: 20 unique entries, valid shape/enums, canon txt lines pinned", () => {

@@ -7,15 +7,17 @@
 // the bag), reads the winning faces from the engine's OWN functions (the
 // ones combat and the lock check call), and asserts the text states them.
 //
-// The phrasing rule (79-CONTEXT, docs/narrative-pass/README.md):
+// The phrasing rule (79-CONTEXT, docs/narrative-pass/README.md; TEXT-01 below):
 //   - a FIXED die (the d10 lock check) states the Phase 74 range, written
 //     by src/browser/rollRange.js#facesRangeText ("6–10");
-//   - a die that SCALES speaks in faces. The hero's strike die runs d20 to
-//     d6 with level, and a foe's strike die runs d20 to d8 with the foe's
-//     level (engine/derived.js#strikeDie, #foeDie), so a face NUMBER would
-//     be wrong at most levels: "their die's top face", "two fewer faces".
-//     The first block proves both dice really scale, which is why those
-//     rows are faces rows.
+//   - a die that SCALES cannot state a face number. The hero's strike die runs
+//     d20 to d6 with level, and a foe's strike die runs d20 to d8 with the
+//     foe's level (engine/derived.js#strikeDie, #foeDie). Phase 79 spoke in
+//     faces for those rows; since TEXT-01 (Phase 89 items, Phase 90 plan 11
+//     spells and skills, user 2026-09-30) a shift reads "+N to hit" or "foes
+//     −N to hit you" and a hard cap names its range on a d20 as the example
+//     ("20 on a d20; 19–20 if you insulted them"). The first block proves both
+//     dice really scale, which is why a range can only be an example.
 //
 // A mishap on a 1 is roll-high canon and is never a row here.
 //
@@ -23,8 +25,12 @@
 // faces. A hard cap names its range on a d20 ("20 on a d20; 19–20 if you
 // insulted them") and a shift is a signed to-hit ("foes −2 to hit you"); both
 // are computed here from the engine's own faces (`d20Range`, `toHitText`
-// below). The face helpers (topFaces, fewerFaces) stay for the spell and
-// ability rows, which Phases 90 and 91 reword.
+// below). Phase 90 plan 11 did the same for the SPELL and SKILL rows (Mirror
+// Self, Weaken, Smoke, Battle Roar, Sidestep, Overhead Blow, Stealth, and the
+// narration lines, chips and menu copy that state them); the face helpers
+// (topFaces, fewerFaces) stay only for the bestiary notes and the Ninja line,
+// which Phase 91 rewords. test/unit/spell-skill-text-wording.test.js is the
+// wording guard for the spell and skill surfaces.
 //
 // Plan 79-12 (section 8) extends the pins outside content/: the narration
 // lines, chip sentences, menu and panel copy Phase 79 wrote, each computed
@@ -189,7 +195,7 @@ test("the hero's and a foe's strike dice both scale with level (so those texts s
 });
 
 // ---------------------------------------------------------------------------
-// 1. "Only their die's top face": Mirror Self, Smoke, invisibility.
+// 1. "Only their best roll (20 on a d20; 19–20 if you insulted them)": Mirror Self, Smoke, invisibility.
 // ---------------------------------------------------------------------------
 
 /** The hero-side faces a foe swings with, plain and insulted, under `cOverrides`. */
@@ -212,8 +218,10 @@ for (const r of TOP_FACE_ROWS) {
     // Sanity: the condition really is live (without it a foe has more faces).
     assert.ok(foeFacesVsHero({}).plain > plain, "the condition should narrow the foe's faces");
     const txt = r.text();
-    assert.match(txt, new RegExp(`their die's ${topFaces(plain)}\\b`), `${r.id}: "${txt}" should state ${topFaces(plain)}`);
-    assert.ok(txt.includes(`the ${topFaces(insulted)} if you insulted them`), `${r.id}: "${txt}" should state the insulted ${topFaces(insulted)}`);
+    // Phase 90 plan 11 (TEXT-01): the cap's range on a d20, plain and insulted, computed from the same faces.
+    const stated = `only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`;
+    assert.ok(txt.includes(stated), `${r.id}: "${txt}" should state "${stated}"`);
+    assert.doesNotMatch(txt, /\bfaces?\b/, `${r.id}: no talk of faces`);
   });
 }
 
@@ -243,19 +251,24 @@ for (const r of INVIS_ITEM_ROWS) {
 // 2. Weaken: a cap on every foe's faces.
 // ---------------------------------------------------------------------------
 
-test("SPELLS.Weaken.txt states the cap Weaken puts on every foe's faces", () => {
+test("SPELLS.Weaken.txt states the cap Weaken puts on every foe's winning faces as a range on a d20, plain and insulted (Phase 90 plan 11, TEXT-01)", () => {
   const foe = fixedFoe();
   // Across heroes whose foes start above, at and below the cap, Weaken never
   // leaves a foe more than the stated faces (and leaves a lower count alone).
   let cap = 0;
+  let capInsulted = 0;
   for (const c of [{}, { sub: "Guard" }, { sub: "Acrobat" }, { mirror: 2 }]) {
     const before = foeSwingVsHero(fixedState(c, { combat: fixedCombat([foe]) }), foe).faces;
     const after = foeSwingVsHero(fixedState(c, { combat: fixedCombat([foe], { foeToHitPenalty: 3 }) }), foe).faces;
     assert.equal(after, Math.min(before, 3));
     cap = Math.max(cap, after);
+    capInsulted = Math.max(capInsulted, foeSwingVsHero(fixedState(c, { combat: fixedCombat([foe], { foeToHitPenalty: 3, parleyInsulted: true }) }), foe).faces);
   }
   assert.equal(cap, 3);
-  assert.ok(spell("Weaken").includes(`no more than their die's ${topFaces(cap)} hit`), spell("Weaken"));
+  assert.equal(capInsulted, 4);
+  const stated = `foes hit only on a high roll (${d20Range(cap)} on a d20; ${d20Range(capInsulted)} if you insulted them)`;
+  assert.ok(spell("Weaken").includes(stated), `${spell("Weaken")} should state "${stated}"`);
+  assert.doesNotMatch(spell("Weaken"), /\bfaces?\b/);
 });
 
 test("STAVES.Walnut Staff.txt states the cap the staff's Weaken puts on every foe, plain and insulted, on the d20 (Phase 89, 89-08 Q6 B)", () => {
@@ -274,24 +287,25 @@ test("STAVES.Walnut Staff.txt states the cap the staff's Weaken puts on every fo
 });
 
 // ---------------------------------------------------------------------------
-// 3. "N fewer faces": Battle Roar, Sidestep, the Anklet, Overhead Blow.
+// 3. "foes −2 to hit you": Battle Roar, Sidestep, the Anklet; "−2 to hit": Overhead Blow (TEXT-01, Phase 90 plan 11).
 // ---------------------------------------------------------------------------
 
 const FEWER_ROWS = [
-  { id: "ABILITIES.battleRoar.txt", text: () => ABILITY_BY_ID.battleRoar.txt, c: { timers: abilityTimer("battleRoar") }, phrase: "that hit anyone on your side" },
-  { id: "FIGHTER_SKILLS.Battle Roar.txt", text: () => FIGHTER_SKILLS["Battle Roar"].txt, c: { timers: abilityTimer("battleRoar") }, phrase: "that hit anyone on your side" },
-  { id: "ABILITIES.sidestep.txt", text: () => ABILITY_BY_ID.sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "that hit you" },
-  { id: "FIGHTER_SKILLS.Sidestep.txt", text: () => FIGHTER_SKILLS.Sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "that hit you" },
+  { id: "ABILITIES.battleRoar.txt", text: () => ABILITY_BY_ID.battleRoar.txt, c: { timers: abilityTimer("battleRoar") }, phrase: "anyone on your side" },
+  { id: "FIGHTER_SKILLS.Battle Roar.txt", text: () => FIGHTER_SKILLS["Battle Roar"].txt, c: { timers: abilityTimer("battleRoar") }, phrase: "anyone on your side" },
+  { id: "ABILITIES.sidestep.txt", text: () => ABILITY_BY_ID.sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "you" },
+  { id: "FIGHTER_SKILLS.Sidestep.txt", text: () => FIGHTER_SKILLS.Sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "you" },
 ];
 
 for (const r of FEWER_ROWS) {
-  test(`${r.id} states how many faces the foe loses, from the engine`, () => {
+  test(`${r.id} states the foes' to-hit shift as a signed number, from the engine`, () => {
     const base = foeToHitVs(fixedState({}));
     const under = foeToHitVs(fixedState(r.c));
     const lost = base - under;
     assert.ok(base - lost >= 1 && lost > 0, `a base of ${base} faces should show the full shift`);
     const txt = r.text();
-    assert.ok(txt.includes(`every foe has ${fewerFaces(lost)} ${r.phrase}`), `${r.id}: "${txt}" should state ${fewerFaces(lost)}`);
+    assert.ok(txt.includes(`foes ${toHitShift(-lost)} to hit ${r.phrase}`), `${r.id}: "${txt}" should state foes ${toHitShift(-lost)} to hit ${r.phrase}`);
+    assert.doesNotMatch(txt, /\bfaces?\b/, `${r.id}: no talk of faces`);
   });
 }
 
@@ -304,7 +318,7 @@ test("JEWELRY.Anklet of Invisibility.txt states the foes' to-hit shift as a sign
   assert.equal(toHitShift(under - base), "−2");
 });
 
-test("ABILITIES.overheadBlow.txt states how many faces the hero's own swing loses", () => {
+test("ABILITIES.overheadBlow.txt states the hero's own to-hit shift as a signed number (Phase 90 plan 11, TEXT-01)", () => {
   const foe = fixedFoe();
   const state = fixedState({ abilities: ["overheadBlow"] }, { combat: fixedCombat([foe]) });
   const events = [];
@@ -315,15 +329,15 @@ test("ABILITIES.overheadBlow.txt states how many faces the hero's own swing lose
   assert.ok(strike, `a strike event, got ${events.map((e) => e.type)}`);
   const mod = (strike.mods || []).find((m) => m.name === "overhead");
   assert.ok(mod, `an overhead mod, got ${JSON.stringify(strike.mods)}`);
-  const lost = -mod.delta;
-  assert.ok(ABILITY_BY_ID.overheadBlow.txt.includes(`your die has ${fewerFaces(lost)} that land it`), ABILITY_BY_ID.overheadBlow.txt);
+  assert.ok(ABILITY_BY_ID.overheadBlow.txt.includes(`but ${toHitShift(mod.delta)} to hit`), ABILITY_BY_ID.overheadBlow.txt);
+  assert.doesNotMatch(ABILITY_BY_ID.overheadBlow.txt, /\bfaces?\b/);
 });
 
 // ---------------------------------------------------------------------------
 // 4. Stealth: the opening crit on the strike die's top faces.
 // ---------------------------------------------------------------------------
 
-test("FIGHTER_SKILLS.Stealth.txt states the top faces a Stealth opener crits on", () => {
+test("FIGHTER_SKILLS.Stealth.txt states the top numbers a Stealth opener crits on, and their range on a d20 (Phase 90 plan 11, TEXT-01)", () => {
   // Walk down from the top face: the Stealth crit fires on exactly the top
   // `n` faces of the hero's strike die (a Club crits on the top face alone,
   // so any crit below that is Stealth's own).
@@ -339,7 +353,8 @@ test("FIGHTER_SKILLS.Stealth.txt states the top faces a Stealth opener crits on"
     else break;
   }
   assert.ok(n > 0, "Stealth should crit on the top face at least");
-  assert.ok(FIGHTER_SKILLS.Stealth.txt.includes(`critical on your die's ${topFaces(n)}`), FIGHTER_SKILLS.Stealth.txt);
+  assert.ok(FIGHTER_SKILLS.Stealth.txt.includes(`crits on the top ${WORD[n]} numbers of your die (${d20Range(n)} on a d20)`), FIGHTER_SKILLS.Stealth.txt);
+  assert.doesNotMatch(FIGHTER_SKILLS.Stealth.txt, /\bfaces?\b/);
 });
 
 // ---------------------------------------------------------------------------
@@ -365,6 +380,17 @@ test("THIEF_SKILLS.Locks.txt and .txt2 state the lock check's d10 range per tier
   const t2 = lockRange({ cls: "Thief", sub: "Burglar", skills: { Locks: 2 } });
   assert.ok(THIEF_SKILLS.Locks.txt.includes(`${t1} on d10`), `${THIEF_SKILLS.Locks.txt} vs ${t1}`);
   assert.ok(THIEF_SKILLS.Locks.txt2.includes(`${t2} on d10`), `${THIEF_SKILLS.Locks.txt2} vs ${t2}`);
+  // Phase 90 plan 11 (TEXT-01): the lockpick term and the intelligence term the audit found missing are stated and measured.
+  const thief = (skills, extra = {}) => ({ cls: "Thief", sub: "Burglar", skills: { Locks: skills }, ...extra });
+  const p1 = lockRange(thief(1, { items: [LOCKPICKS] }));
+  const p2 = lockRange(thief(2, { items: [LOCKPICKS] }));
+  assert.ok(THIEF_SKILLS.Locks.txt.includes(`${p1} with lockpicks`), `${THIEF_SKILLS.Locks.txt} vs ${p1}`);
+  assert.ok(THIEF_SKILLS.Locks.txt2.includes(`${p2} with lockpicks`), `${THIEF_SKILLS.Locks.txt2} vs ${p2}`);
+  // intelligence 15 and 20 each add one more number: the low end drops by one, then by two.
+  const low = (range) => Number(range.split("–")[0]);
+  assert.equal(low(lockRange(thief(1, { intel: 10 }))) - low(lockRange(thief(1, { intel: 15 }))), 1);
+  assert.equal(low(lockRange(thief(1, { intel: 10 }))) - low(lockRange(thief(1, { intel: 20 }))), 2);
+  assert.match(THIEF_SKILLS.Locks.txt, /intelligence 15 and 20 each add one more number; a failed roll loses the chest/);
 });
 
 test("the Lockpicks item text (engine/items.js) and store row (engine/economy.js) state the picks' d10 range", () => {
@@ -574,9 +600,10 @@ test("CONDITION_EXPLAIN and itemEffectStarted: invisibility's 'very best roll' a
   // Phase 89 plan 09 (TEXT-01): the item chip and start lines name the range on the d20, plain and insulted, from the same faces.
   const stated = `only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`;
   assert.ok(EXPLAIN.invis.includes(`foes hit you only on their very best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`), EXPLAIN.invis);
-  // Mirror Self (a spell, Phase 90's) still reads "very best roll", one face.
-  assert.equal(foeFacesVsHero({ mirror: 3 }).plain, 1);
-  assert.match(EXPLAIN.mirror, /only a foe's very best roll finds the real you/);
+  // Mirror Self (a spell, Phase 90 plan 11, TEXT-01) names the same range on the d20, plain and insulted, from the same faces.
+  const mirror = foeFacesVsHero({ mirror: 3 });
+  assert.equal(mirror.plain, 1);
+  assert.ok(EXPLAIN.mirror.includes(`foes hit you only on their best roll (${d20Range(mirror.plain)} on a d20; ${d20Range(mirror.insulted)} if you insulted them)`), EXPLAIN.mirror);
   const ev = { type: "itemEffectStarted", kind: "invis", item: "Cloak of Invisibility", left: 3 };
   assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(stated), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if insulted)`), LINE_FOR.itemEffectStarted(ev, {}).text);
@@ -635,10 +662,10 @@ test("CONDITION_EXPLAIN.enlarge and itemEffectStarted (enlarge): Enlarge is '+11
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(rail), LINE_FOR.itemEffectStarted(ev, {}).text);
 });
 
-test("CONDITION_EXPLAIN.heroBlind: 'only your die's top face lands' is the hero's measured faces while blind", () => {
+test("CONDITION_EXPLAIN.heroBlind: 'only the top number of your die lands' is the hero's measured faces while blind", () => {
   const state = fixedState({}, { combat: fixedCombat([fixedFoe()], { heroBlind: true }) });
   assert.equal(heroStrikeFacesVs(state, state.combat.foes[0]), 1);
-  assert.equal(EXPLAIN.heroBlind, "Only your die's top face lands.");
+  assert.equal(EXPLAIN.heroBlind, "Only the top number of your die lands.");
 });
 
 test("CONDITION_EXPLAIN.tongue and the Helm's text: '+2 to the parley roll' is the Helm's parley bonus (Phase 89, TEXT-01)", () => {
@@ -670,33 +697,37 @@ test("the Helm's parley reach is the engine's: it opens exactly the Humans, Demo
   assert.ok(helm.includes("always parley with Humans, Demons and Beasts"), helm);
 });
 
-test("battleRoarRaised and sidestepped (Oracle and rail): 'two fewer faces' is the engine's shift", () => {
+test("battleRoarRaised and sidestepped (Oracle and rail): 'foes −2 to hit' is the engine's shift (Phase 90 plan 11, TEXT-01)", () => {
   for (const [type, key] of [["battleRoarRaised", "battleRoar"], ["sidestepped", "sidestep"]]) {
     const lost = foeToHitVs(fixedState({})) - foeToHitVs(fixedState({ timers: abilityTimer(key) }));
-    const phrase = `${WORD[lost]} fewer faces to hit`;
+    const phrase = `${toHitShift(-lost)} to hit`;
     const ev = { type };
     assert.ok(plainText(EVENT_NARRATION[type](ev)).includes(phrase), `${type}: ${plainText(EVENT_NARRATION[type](ev))}`);
     assert.ok(LINE_FOR[type](ev, {}).text.includes(phrase), `${type}: ${LINE_FOR[type](ev, {}).text}`);
   }
 });
 
-test("blinded (Oracle and rail) and FOE_CONDITION_DESC.blind: a blind foe 'hits only on its top face'", () => {
+test("blinded (Oracle and rail) and FOE_CONDITION_DESC.blind: a blind foe 'hits only on its best roll (20 on a d20)', insulted or not (Phase 90 plan 11, TEXT-01)", () => {
   const foe = fixedFoe({ blind: true });
   const faces = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe]) }), foe).faces;
   assert.equal(faces, 1);
+  assert.equal(foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe], { parleyInsulted: true }) }), foe).faces, 1, "the blind cap is applied last, so an insult never widens it");
   const ev = { type: "blinded", target: "Viper", rounds: 2 };
   for (const text of [EVENT_NARRATION.blinded(ev), LINE_FOR.blinded(ev, {}).text, FOE_CONDITION_DESC.blind]) {
-    assert.deepEqual(statedTop(text), [faces], plainText(text));
+    assert.ok(plainText(text).includes(`only on its best roll (${d20Range(faces)} on a d20)`), plainText(text));
+    assert.doesNotMatch(plainText(text), /\bfaces?\b/);
   }
 });
 
-test("fumbleOnFoe (mirror, Oracle and rail): 'you hit it only on your top face' is the hero's measured faces against a mirrored foe", () => {
+test("fumbleOnFoe (mirror, Oracle and rail): 'you hit it only on the top number of your die' is the hero's measured faces against a mirrored foe", () => {
   const foe = fixedFoe({ mirror: 3 });
   const state = fixedState({}, { combat: fixedCombat([foe]) });
   assert.equal(heroStrikeFacesVs(state, foe), 1);
   const ev = { type: "fumbleOnFoe", effect: "mirror", spell: "Mirror Self", target: "Viper", rounds: 3 };
-  assert.deepEqual(statedTop(EVENT_NARRATION.fumbleOnFoe(ev)), [1], plainText(EVENT_NARRATION.fumbleOnFoe(ev)));
-  assert.deepEqual(statedTop(LINE_FOR.fumbleOnFoe(ev, {}).text), [1], LINE_FOR.fumbleOnFoe(ev, {}).text);
+  // The hero's own die scales (the first block), so the line speaks of the top number of your die, never of a d20 range or of faces.
+  assert.match(plainText(EVENT_NARRATION.fumbleOnFoe(ev)), /you hit it only on the top number of your die/);
+  assert.match(LINE_FOR.fumbleOnFoe(ev, {}).text, /you hit it only on the top number of your die/);
+  assert.doesNotMatch(plainText(EVENT_NARRATION.fumbleOnFoe(ev)) + LINE_FOR.fumbleOnFoe(ev, {}).text, /\bfaces?\b/);
 });
 
 test("struck (critBy ninja): 'A Ninja's top two faces' is the faces a Ninja's later strikes crit on", () => {
@@ -949,15 +980,18 @@ const PINNED_OUTSIDE_CONTENT = Object.freeze([
   { match: "raw:mazeworld.html#CONDITION_EXPLAIN", proof: "here" },
   { match: "oracle:itemEffectStarted", proof: "here" },
   { match: "rail:itemEffectStarted", proof: "here" },
-  { match: "oracle:battleRoarRaised", proof: "here" },
-  { match: "rail:battleRoarRaised", proof: "here" },
-  { match: "oracle:sidestepped", proof: "here" },
-  { match: "rail:sidestepped", proof: "here" },
+  // Phase 90 plan 11 (TEXT-01): battleRoarRaised, sidestepped and the mirror fumble no longer state a face count (a signed to-hit, and
+  // "the top number of your die"); their pins above stay, and the wording guard names them. Blind, Weaken, the cower and the
+  // chips now state a range on a d20, pinned here and in roll-sign-consistency.test.js.
   { match: "oracle:blinded", proof: "here" },
   { match: "rail:blinded", proof: "here" },
   { match: "bank:FOE_CONDITION_DESC.blind", proof: "here" },
-  { match: "oracle:fumbleOnFoe", proof: "here" },
-  { match: "rail:fumbleOnFoe", proof: "here" },
+  // Phase 90 plan 11 (TEXT-01): the Behemoth's cower names its range on a d20, plain and insulted, measured in the wording guard.
+  { match: "oracle:foeCowers", proof: "test/unit/spell-skill-text-wording.test.js", token: "foeCowers" },
+  { match: "bank:FOE_CONDITION_DESC.cowering", proof: "test/unit/spell-skill-text-wording.test.js", token: "FOE_CONDITION_DESC.cowering" },
+  // The two range constants the foe chips are built from (src/browser/foeConditions.js), measured as BLIND and WEAKEN/COWER there.
+  { match: "raw:src/browser/foeConditions.js#BLIND_RANGE", proof: "test/unit/spell-skill-text-wording.test.js", token: "const BLIND = foeFaces" },
+  { match: "raw:src/browser/foeConditions.js#WEAKEN_RANGE", proof: "test/unit/spell-skill-text-wording.test.js", token: "const WEAKEN = foeFaces" },
   { match: "oracle:struck", proof: "here" },
   { match: "bank:COMBAT_MENU_COPY.parleyDesc", proof: "here" },
   { match: "bank:GEAR_COPY.healingDesc", proof: "here" },

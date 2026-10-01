@@ -145,7 +145,7 @@ const OLD_MARKS_LEGEND = [
   {
     key: "chest",
     name: "LOCKED BOX",
-    desc: "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+    desc: "With lockpicks or the Locks skill, 6–10 on a d10 opens it (a wider range with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
   },
   {
     key: "crevice",

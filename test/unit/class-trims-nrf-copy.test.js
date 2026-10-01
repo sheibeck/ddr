@@ -85,14 +85,16 @@ test("(2) the ability menu shows Sweep disabled with its reason while one foe st
 // (3) Kata and Feint.
 // ---------------------------------------------------------------------------
 
-test("(3) Kata's and Feint's texts state the +3 faces and never promise a sure hit", () => {
+// Phase 90 plan 11 (TEXT-01, user 2026-09-30): the shift reads "+3 to hit", never "three more faces" (the number is pinned to the
+// engine's KATA_FEINT_NEED_SHIFT in test/unit/spell-skill-text-wording.test.js).
+test("(3) Kata's and Feint's texts state the +3 to hit and never promise a sure hit", () => {
   for (const txt of [ABILITY_BY_ID.kata.txt, ABILITY_BY_ID.feint.txt, FIGHTER_SKILLS.Kata.txt, THIEF_SKILLS.Feint.txt]) {
     assert.doesNotMatch(txt, NEVER_MISSES, txt);
-    assert.match(txt, /three more faces that land this strike/, txt);
+    assert.match(txt, /\+3 to hit on this strike/, txt);
     assert.match(txt, /adds your level in damage; once per fight$/, txt);
   }
-  assert.equal(ABILITY_BY_ID.kata.txt, "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight");
-  assert.equal(ABILITY_BY_ID.feint.txt, "look left, stab right: your die has three more faces that land this strike, and it adds your level in damage; once per fight");
+  assert.equal(ABILITY_BY_ID.kata.txt, "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight");
+  assert.equal(ABILITY_BY_ID.feint.txt, "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight");
 });
 
 test("(3) a missed Kata or Feint is an ordinary miss that names the ability, on the Oracle and the rail", () => {
