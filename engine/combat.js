@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1746,15 +1746,19 @@ function wardCrit(body, foe, roll, dieN, events, member = null) {
 
 /**
  * fleeRefusal(state) — Phase 90 plan 09 (SPELL-10): THE never-flee predicate.
- * Returns the reason this hero can never leave a fight by running ("samurai": a
- * Samurai never runs) or null. `flee` reads it for its refusal (behaviour
- * unchanged) and Door Illusion reads it so a hero who may not flee may not
- * conjure an exit either (castSpell refuses the cast before the charge is
- * spent). Phase 91's IDENT-16 (Master of Arms) extends THIS function, so the
- * rule is edited in one place. Pure, zero rng.
+ * Returns the reason this hero can never leave a fight ("samurai": a Samurai
+ * never runs; "masterOfArms": a Master of Arms never leaves a fight once it
+ * starts, Phase 91 plan 05, IDENT-16) or null. `flee` reads it for its refusal
+ * (and with it Smoke, the tracked withdrawal and every later exit) and Door
+ * Illusion reads it so a hero who may not flee may not conjure an exit either
+ * (castSpell refuses the cast before the charge is spent; a scroll's free cast
+ * is refused the same way and the scroll stays spent, RULES-10). Which subs
+ * never leave is engine/derived.js#neverFlees, the one predicate the combat
+ * menu and the bot read too. Pure, zero rng.
  */
 export function fleeRefusal(state) {
-  return state.c.sub === "Samurai" ? "samurai" : null;
+  if (!neverFlees(state.c)) return null;
+  return state.c.sub === "Samurai" ? "samurai" : "masterOfArms";
 }
 
 /**
@@ -1835,9 +1839,10 @@ export function behemothRoar(state, sp, rng, events, caster = {}) {
 
 /**
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
- * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
- * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
- * Arms), otherwise a raw d20 vs `atLeast = 14 - fleeBreakdown(c).bonus`
+ * (lines 2684-2697): Samurai never runs (nor, since Phase 91 plan 05, IDENT-16,
+ * does a Master of Arms), a Cloaker gets away for free while
+ * unseen, a tracked round-1 withdrawal is clean, otherwise a raw d20 vs
+ * `atLeast = 14 - fleeBreakdown(c).bonus`
  * (Phase 73, ROLL-05: flee was ALREADY roll-high — no mirror, only the
  * bonus folding into the threshold), with every modifier named in
  * fleeRolled (DELIBERATE RULES CHANGE, Phase 42, 2026-09-18,
@@ -1849,10 +1854,11 @@ export function behemothRoar(state, sp, rng, events, caster = {}) {
  * cleared-check after a failed flee's foeTurn, since a fleesBelow caster can
  * now leave the fight mid-turn and would otherwise strand the combat screen.
  *
- * DECISION ORDER (Phase 24, IDENT-05/IDENT-07): Samurai refusal first ->
- * Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
- * tracked round-1 clean withdrawal (denied + narrated for a Master of
- * Arms, who falls through) -> the ordinary d20 roll.
+ * DECISION ORDER (Phase 24, IDENT-05/IDENT-07; Phase 91 plan 05, IDENT-16):
+ * never-flee refusal first (fleeRefusal: the Samurai and the Master of Arms,
+ * zero draws, every round, which also shuts Smoke and the withdrawal for them)
+ * -> Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
+ * tracked round-1 clean withdrawal -> Smoke -> the ordinary d20 roll.
  *
  * Phase 29 (LOOT-06, CONTEXT §Pending pile): every success exit (cloaker,
  * tracked, escaped) forfeits a non-empty pending loot pile with ONE
@@ -1866,6 +1872,8 @@ export function flee(state, rng, events = []) {
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "fleeRefused")) return events;
   if (!C) return events;
+  // Phase 91 plan 05 (IDENT-16): `fleeRefused { reason: "samurai" }` or
+  // `fleeRefused { reason: "masterOfArms" }`, in every round, with no draw.
   const refusal = fleeRefusal(state);
   if (refusal) {
     events.push({ type: "fleeRefused", reason: refusal });
@@ -1890,21 +1898,16 @@ export function flee(state, rng, events = []) {
   // re-rolls per round, so "round 1" still means exactly what it always did:
   // before the first full cycle completes.
   if (C.tracked && C.round === 1) {
-    // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): "you attack
-    // creatures without question" — a Master of Arms gets no clean
-    // round-1 tracked withdrawal; they narrate the denial and fall through
-    // to the ordinary flee roll below like any other Fighter past round 1.
-    // Every other Fighter's clean exit stays byte-identical (same three
-    // statements, same order).
-    if (c.sub === "Master of Arms") {
-      events.push({ type: "withdrawalDenied", reason: "masterOfArms" });
-    } else {
-      if (pursuitStrike(state, rng, events).died) return events;
-      forfeitLoot(state, "fled", events);
-      events.push({ type: "fled", reason: "tracked" });
-      endCombat(state, events);
-      return events;
-    }
+    // Phase 91 plan 05 (IDENT-16): the Master of Arms branch that used to sit
+    // here (a denied withdrawal that fell through to the roll) is gone — a
+    // Master of Arms never reaches this line, fleeRefusal above refuses it in
+    // every round. Every other Fighter's clean exit is byte-identical (same
+    // three statements, same order).
+    if (pursuitStrike(state, rng, events).died) return events;
+    forfeitLoot(state, "fled", events);
+    events.push({ type: "fled", reason: "tracked" });
+    endCombat(state, events);
+    return events;
   }
   // Phase 38 (ABIL-01, Smoke) — "a flee during it just works": no roll, no
   // pursuit strike, unconditional escape while the effect is active. False

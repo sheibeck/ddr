@@ -273,15 +273,18 @@ test("flee: a Cloaker who has already struck (opened2) can also fail the ordinar
   );
 });
 
-// --- Master of Arms: no clean tracked round-1 withdrawal --------------------
+// --- Master of Arms: never leaves a fight (Phase 91 plan 05, IDENT-16) -------
+// Replaces Phase 24's "no clean tracked round-1 withdrawal" (denied, then the
+// ordinary roll): the Master of Arms is now refused in every round, with no roll.
 
-test("flee: a Master of Arms gets no clean tracked round-1 withdrawal — narrated, then the ordinary roll", () => {
-  const moa = fixedState({ c: { sub: "Master of Arms" } });
-  moa.combat = fixedCombat([fixedFoe({ asleep: 5 })], { tracked: true, round: 1 });
-  const moaEvents = flee(moa, fakeRng([1]), []);
-  assert.ok(moaEvents.some((e) => e.type === "withdrawalDenied" && e.reason === "masterOfArms"));
-  assert.ok(moaEvents.some((e) => e.type === "fleeRolled"));
-  assert.equal(moaEvents.some((e) => e.type === "fled" && e.reason === "tracked"), false);
+test("flee: a Master of Arms never leaves a fight — refused in a tracked round 1 and in round 2, no roll, the fight stays live", () => {
+  for (const combatOver of [{ tracked: true, round: 1 }, { round: 2 }]) {
+    const moa = fixedState({ c: { sub: "Master of Arms" } });
+    moa.combat = fixedCombat([fixedFoe({ asleep: 5 })], combatOver);
+    const moaEvents = flee(moa, fakeRng([]), []);
+    assert.deepEqual(moaEvents, [{ type: "fleeRefused", reason: "masterOfArms" }]);
+    assert.ok(moa.combat);
+  }
 });
 
 test("flee: every other Fighter's tracked round-1 clean exit stays byte-identical", () => {

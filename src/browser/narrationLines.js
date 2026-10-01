@@ -319,7 +319,6 @@ export const FEATURE_EVENTS = [
   "strikeRefused",
   "fleeRefused",
   "parleyRefused",
-  "withdrawalDenied",
   "vanishDenied",
   "itemRejected",
   "equipRejected",
@@ -1697,8 +1696,13 @@ export const LINE_FOR = {
   }),
   // Phase 31 (CMB-01): notFought — Fight! not yet pressed — added alongside
   // the existing samurai reason.
-  fleeRefused: (e) => (e?.reason === "notFought" ? block("Running comes after Fight!, not instead of it.") : block("A Samurai does not run.")),
-  withdrawalDenied: () => block("Slipping away untouched would mean not attacking."),
+  // Phase 91 plan 05 (IDENT-16): a Master of Arms never leaves a fight either.
+  fleeRefused: (e) =>
+    e?.reason === "notFought"
+      ? block("Running comes after Fight!, not instead of it.")
+      : e?.reason === "masterOfArms"
+        ? block("A Master of Arms does not stop halfway.")
+        : block("A Samurai does not run."),
   vanishDenied: () => block("They have already seen your face."),
   fled: (e) => {
     // Phase 90 plan 09 (SPELL-10): door is Door Illusion's escape.
@@ -2167,6 +2171,8 @@ export const LINE_FOR = {
       noTarget: "Nothing left to aim at.",
       // Phase 90 plan 09 (SPELL-10): the rail twins of the Door Illusion / Chameleon Tongue refusals.
       samurai: "A Samurai does not run, not even through a door that is not there. Nothing spent.",
+      // Phase 91 plan 05 (IDENT-16): the Master of Arms' door refusal ("masterOfArms" below is the Tongue's).
+      masterOfArmsStays: "A Master of Arms finishes what it starts, doors that are not there included. Nothing spent.",
       parleySpent: "You already said your piece. Nothing spent.",
       ninja: "A Ninja does not speak, in any tongue. Nothing spent.",
       masterOfArms: "A Master of Arms has one answer, and it is not a sentence. Nothing spent.",

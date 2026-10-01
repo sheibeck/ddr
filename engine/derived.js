@@ -1605,6 +1605,25 @@ export function armorBulk(c) {
 }
 
 /**
+ * NEVER_FLEES — Phase 91 plan 05 (IDENT-16): the sub-classes that never leave
+ * a live fight by any route. The Samurai ("A Samurai will never run from a
+ * combat", rulebook p.14) and the Master of Arms (user ruling 2026-09-30:
+ * "never leaves a fight ... fights every battle to the end"; replaces the
+ * round-1 withdrawal denial, which cost it nothing).
+ */
+export const NEVER_FLEES = Object.freeze(["Samurai", "Master of Arms"]);
+
+/**
+ * neverFlees(c) — Phase 91 plan 05 (IDENT-16): THE one predicate for "this hero
+ * can never leave a fight". `engine/combat.js#fleeRefusal` (which `flee` and
+ * the Door Illusion cast read), the combat menu's FLEE row and the tuning bot
+ * all read it, so the rule is edited in one place. Pure, zero rng.
+ */
+export function neverFlees(c) {
+  return !!c && NEVER_FLEES.includes(c.sub);
+}
+
+/**
  * fleeBreakdown(c) — Phase 42 (FLEE-01/FLEE-02): the ONE flee-need rule,
  * mirroring foeToHitBreakdown's `{ name, delta }` shape so every surface
  * (the fight log, the rail, the combat submenu) narrates the SAME

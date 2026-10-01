@@ -756,13 +756,16 @@ export const EVENT_NARRATION = {
         : `You cook what is left, but you were already at full hp. <span class="hit">+${e.rations ?? 1} ration.</span>`,
   // Phase 31 (CMB-01): notFought — Fight! not yet pressed — alongside the
   // existing samurai reason.
+  // Phase 91 plan 05 (IDENT-16): a Master of Arms never leaves a fight either;
+  // the reason names which rule refused.
   fleeRefused: (e) =>
     e.reason === "notFought"
       ? `<span class="miss">Running comes after Fight!, not instead of it.</span>`
-      : `<span class="miss">A Samurai does not run.</span>`,
-  // Phase 24 (IDENT-05): a Master of Arms' tracked round-1 withdrawal is
-  // denied — they fall through to the ordinary flee roll below instead.
-  withdrawalDenied: () => `<span class="miss">Slipping away untouched would mean not attacking. You attack. Roll like everyone else.</span>`,
+      : e.reason === "masterOfArms"
+        ? `<span class="miss">A Master of Arms attacks creatures without question, and does not stop halfway.</span> The fight ends when it ends.`
+        : `<span class="miss">A Samurai does not run.</span>`,
+  // Phase 91 plan 05 (IDENT-16): the Phase 24 withdrawalDenied builder is retired
+  // with its event (nothing emits it: a Master of Arms is refused by fleeRefused).
   // Phase 24 (IDENT-07): a Cloaker who has already landed a blow this fight
   // loses the free vanish and falls through to the ordinary Thief roll.
   vanishDenied: () => `<span class="miss">You can always vanish — as long as nobody has seen your face. They have now seen your face.</span>`,
@@ -1265,6 +1268,8 @@ export const EVENT_NARRATION = {
       // spell charge is spent (engine/magic.js castSpell, through combat.js#fleeRefusal and
       // #parleyBlockedReason), and the line says why.
       samurai: `<span class="miss">A Samurai does not run, and that includes through doors that are not there.</span> No spell charge was spent.`,
+      // Phase 91 plan 05 (IDENT-16): the Master of Arms' door refusal (its own key: "masterOfArms" below is the Tongue's).
+      masterOfArmsStays: `<span class="miss">A Master of Arms finishes what it starts, and that includes ignoring doors that are not there.</span> No spell charge was spent.`,
       parleySpent: `<span class="miss">You already said your piece.</span> One parley a fight, and a new accent will not buy a second. No spell charge was spent.`,
       ninja: `<span class="miss">A Ninja does not speak, in any tongue.</span> No spell charge was spent.`,
       masterOfArms: `<span class="miss">A Master of Arms has one answer to a question like that, and it is not a sentence.</span> No spell charge was spent.`,

@@ -715,18 +715,25 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "cannot parley, ever; no clean round-1 tracked withdrawal",
+      name: "cannot parley, ever; never leaves a fight",
       run() {
         const state = hero("Master of Arms");
         for (const type of ENC_TYPES) {
           withCombat(state, [fixedFoe({ type })], { type });
           assert.equal(canParley(state), false, `Master of Arms vs ${type}`);
         }
-        const withdraw = hero("Master of Arms");
-        withCombat(withdraw, [fixedFoe({ asleep: 5 })], { tracked: true, round: 1 });
-        const events = flee(withdraw, fakeRng([1]), []);
-        expectEvent(events, "withdrawalDenied", { reason: "masterOfArms" });
-        assert.ok(events.some((e) => e.type === "fleeRolled"));
+        // Phase 91 plan 05 (IDENT-16): replaces the round-1 withdrawal denial
+        // (dead code: nothing sets C.tracked). The Master of Arms can never leave a
+        // fight, in any round, with no draw (test/unit/moa-never-leaves.test.js pins
+        // every escape route).
+        for (const combatOver of [{ tracked: true, round: 1 }, { round: 2 }]) {
+          const stays = hero("Master of Arms");
+          withCombat(stays, [fixedFoe({ asleep: 5 })], combatOver);
+          const events = flee(stays, fakeRng([]), []);
+          expectEvent(events, "fleeRefused", { reason: "masterOfArms" });
+          assert.equal(events.some((e) => e.type === "fleeRolled" || e.type === "fled"), false);
+          assert.ok(stays.combat, "the fight stays live");
+        }
       },
     },
   },

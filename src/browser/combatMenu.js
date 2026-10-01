@@ -15,7 +15,7 @@
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
 import { characterSheetViewModel, GRIMOIRE_COPY } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
-import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
+import { canCast, neverFlees, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley, parleyBlockedReason, fleeRefusal } from "../../engine/combat.js";
@@ -103,6 +103,13 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // wrong for nearly every fight.
   fleeDesc: "Roll to run. Fail and they all get a turn; get away and the loot stays behind.",
   withdrawDesc: "They have not noticed you. Leave before they do.",
+  // Phase 91 plan 05 (IDENT-16): a hero who never leaves a fight (engine/derived.js#neverFlees)
+  // gets a greyed FLEE row with this cost and a one-line reason, never an odds range.
+  neverFlees: "NEVER",
+  neverFleesReason: Object.freeze({
+    samurai: "A Samurai does not run. The fight ends when one side does, and it will not be you.",
+    masterOfArms: "You attack creatures without question, and you finish what you start. Leaving is not on the list.",
+  }),
   parley: "PARLEY",
   // VOX-05 (79-07): one attempt per encounter (C.parleyTried); a failure
   // insults the group for the rest of the fight (C.parleyInsulted, +1 face
@@ -121,6 +128,7 @@ export const COMBAT_MENU_COPY = Object.freeze({
   }),
   doorBlocked: Object.freeze({
     samurai: "A Samurai does not run, and that includes through doors that are not there.",
+    masterOfArms: "A Master of Arms finishes what it starts, and that includes ignoring doors that are not there.",
   }),
   back: "BACK",
   // RULES-10 (Phase 75.1, user ruling 2026-09-25): the hero-cannot-act shape.
@@ -554,16 +562,31 @@ function combatMenuViewModelUnlocked(state) {
   // (fleeOdds(c).text, "9–20 (d20)"), and the desc's modifier list is the
   // ONE player-signed formatter (rollRange.js's modsText, via
   // fleeOdds(c).modsText) — supersedes the Phase 42 "d20+5, 14+" reading.
-  const withdraw = !!(C.tracked && C.round === 1);
-  const flee = fleeOdds(c);
-  const fleeRow = {
-    id: "flee",
-    label: withdraw ? COMBAT_MENU_COPY.withdraw : COMBAT_MENU_COPY.flee,
-    cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : flee.text,
-    desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : flee.modsText ? `${COMBAT_MENU_COPY.fleeDesc} (${flee.modsText})` : COMBAT_MENU_COPY.fleeDesc,
-    enabled: true,
-    dispatch: { type: "flee" },
-  };
+  // Phase 91 plan 05 (IDENT-16): a hero who never leaves a fight (the Samurai and
+  // the Master of Arms, engine/derived.js#neverFlees) gets a greyed FLEE row with a
+  // one-line reason: no odds range, and never the WITHDRAW label. The row stays
+  // tappable (the rule at the top of this file), so a tap lands the engine's own
+  // fleeRefused line.
+  const never = neverFlees(c);
+  const withdraw = !never && !!(C.tracked && C.round === 1);
+  const flee = never ? null : fleeOdds(c);
+  const fleeRow = never
+    ? {
+        id: "flee",
+        label: COMBAT_MENU_COPY.flee,
+        cost: COMBAT_MENU_COPY.neverFlees,
+        desc: COMBAT_MENU_COPY.neverFleesReason[c.sub === "Samurai" ? "samurai" : "masterOfArms"],
+        enabled: false,
+        dispatch: { type: "flee" },
+      }
+    : {
+        id: "flee",
+        label: withdraw ? COMBAT_MENU_COPY.withdraw : COMBAT_MENU_COPY.flee,
+        cost: withdraw ? COMBAT_MENU_COPY.withdrawCost : flee.text,
+        desc: withdraw ? COMBAT_MENU_COPY.withdrawDesc : flee.modsText ? `${COMBAT_MENU_COPY.fleeDesc} (${flee.modsText})` : COMBAT_MENU_COPY.fleeDesc,
+        enabled: true,
+        dispatch: { type: "flee" },
+      };
   // PARLEY keeps its flat "d20" cost: there is no engine-derived parley
   // faces function (Phase 74, ROLL-02) — this row prints no range or
   // modifier today, unlike STRIKE/FLEE above.

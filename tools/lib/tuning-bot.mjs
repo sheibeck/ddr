@@ -29,7 +29,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes, fleeRefusal, parleyBlockedReason } from "../../engine/combat.js";
-import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
+import { canCast, neverFlees, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
 import { maxCharges, nightlyEats } from "../../engine/movement.js";
 import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
@@ -1213,7 +1213,8 @@ function preHazardFlight(state, ctx, dir) {
  *       — a bag Healing/Xtra Healing potion drunk BEFORE the flee/parley
  *       decision below, so a hero who could simply heal doesn't run instead;
  *   (a) caster-aware flee/parley threshold (D-06): parley if available, else
- *       flee — UNLESS the character is a Samurai (canon: never flees) or a
+ *       flee — UNLESS the character never flees (`neverFlees`: the Samurai,
+ *       canon, and the Master of Arms, Phase 91 plan 05 IDENT-16) or a
  *       flee attempt was already refused this encounter (`ctx.fleeBlocked`),
  *       in which case fall through to fight instead of looping the refusal;
  *   (b) drink below potionThreshold (D-05);
@@ -1282,7 +1283,7 @@ function preHazardFlight(state, ctx, dir) {
  *      action cap. `ctx.fleeBlocked`/`ctx.strikeBlocked` (set by `observe`
  *      on `fleeRefused`/`strikeRefused`, cleared on `encounterStarted`) make
  *      the bot react like a human would instead: a Samurai simply fights
- *      (step a's explicit `c.sub === "Samurai"` check also handles this
+ *      (step a's explicit `neverFlees(c)` check, a Samurai or a Master of Arms, also handles this
  *      structurally, not just reactively); a blocked Wizard casts something
  *      else or flees (step g).
  */
@@ -1331,7 +1332,7 @@ export function decideAction(state, policyRng, ctx) {
       if (tongueBeforeFlee) {
         return { type: "useItem", slot: tongueBeforeFlee.slot };
       }
-      if (!(c.sub === "Samurai" || ctx.fleeBlocked)) {
+      if (!(neverFlees(c) || ctx.fleeBlocked)) {
         // Phase 90 plan 10 (SPELL-10): where the flee rule would flee, a castable
         // Door Illusion is the escape instead (a sure escape beats the roll; the
         // cleverest foe's one resist may see through it, then the bot flees).
@@ -1339,7 +1340,8 @@ export function decideAction(state, policyRng, ctx) {
         if (doorIdx !== null) return { type: "castSpell", idx: doorIdx };
         return { type: "flee" };
       }
-      // Samurai never runs (canon); a flee refused this encounter is not
+      // A Samurai never runs (canon) and a Master of Arms never leaves a fight
+      // (IDENT-16), both through derived.js#neverFlees; a flee refused this encounter is not
       // retried (Rule-1 fix) — fall through to the rest of the chain below.
     }
 
@@ -1388,7 +1390,7 @@ export function decideAction(state, policyRng, ctx) {
     if (ctx.strikeBlocked && chargesLeft > 0) {
       const utilIdx = lowestCastableUtilitySpellIdx(state);
       if (utilIdx !== null) return { type: "castSpell", idx: utilIdx };
-      return ctx.fleeBlocked ? { type: "attack" } : { type: "flee" };
+      return ctx.fleeBlocked || neverFlees(c) ? { type: "attack" } : { type: "flee" };
     }
 
     // (h) HARN-02 scoring table
