@@ -61,6 +61,16 @@
 // Proven state-only: replaying and deleting that empty map re-hashes to the
 // old pin b390924b... exactly. No rule, draw or event moved.
 
+// Phase 90 plan 06 (SPELL-12, 2026-10-01): `expected.hash` re-recorded ONLY
+// (`dead`/`depth`/`actions` still false/3/300; `save`/`dispatched` untouched).
+// The tolerant load (engine/saveState.js#migrateSpellNames) rewrites a saved
+// book's removed spells, and the save's Joiner, Denn of Ash Alley, holds Lesser
+// Summon, which loads as Summon. Traced live (an extracted tree of the plan base
+// c5017f16 against the plan): all 300 dispatched steps' event lists and the final
+// rng cursor are identical; the only state difference is that one book entry.
+// Proven: replaying and writing Lesser Summon back over Denn's Summon re-hashes to
+// the old pin 0e2cc518... exactly. No rule, draw or event moved.
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

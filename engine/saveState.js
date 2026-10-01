@@ -28,6 +28,7 @@ import {
   effectSourceOf,
   sourceSlotItem,
   SOURCE_SLOTS,
+  schoolClosed,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { DIRV } from "./movement.js";
@@ -413,10 +414,11 @@ function sanitizePendingTile(raw, floor) {
 /**
  * sanitizePendingJoiner(raw) — a Joiner offer with the minimal character
  * shape the party load already demands (isValidCharacter) and a string
- * `name`, carried wholesale (never re-rolled), or null.
+ * `name`, carried wholesale (never re-rolled), or null. Phase 90 plan 06: its
+ * grimoire gets the same tolerant spell load as a party member's.
  */
 function sanitizePendingJoiner(raw) {
-  return isValidCharacter(raw) && typeof raw.name === "string" ? raw : null;
+  return isValidCharacter(raw) && typeof raw.name === "string" ? migrateSpellNames(raw) : null;
 }
 
 /**
@@ -750,12 +752,15 @@ function sanitizeWaterCells(floor) {
 }
 
 /**
- * RETIRED_SPELL_NAMES — Phase 40 (SPELL-05): the one rename this migration
- * ever needs to know about — "Detect Magic" became "Map the Floor". A
- * frozen, single-entry map so a FUTURE rename can extend it without
- * touching migrateSpellNames itself.
+ * RETIRED_SPELL_NAMES — the renames and removals this migration knows about:
+ * "Detect Magic" became "Map the Floor" (Phase 40, SPELL-05); and Phase 90 plan
+ * 06 (SPELL-12) removed two spells — "Lesser Summon" becomes "Summon" (the
+ * Summoner now casts Summon from level 1) and "Phantom Host" maps to `null`
+ * (dropped: no spell stands in for it). A frozen map so a FUTURE rename can
+ * extend it without touching migrateSpellNames itself. These are the ONLY
+ * places the removed names appear anywhere in engine/ or content/.
  */
-const RETIRED_SPELL_NAMES = Object.freeze({ "Detect Magic": "Map the Floor" });
+const RETIRED_SPELL_NAMES = Object.freeze({ "Detect Magic": "Map the Floor", "Lesser Summon": "Summon", "Phantom Host": null });
 
 /**
  * migrateSpellNames(c) — Phase 40 (SPELL-05, Plan 04) tolerant-load rename
@@ -771,20 +776,57 @@ const RETIRED_SPELL_NAMES = Object.freeze({ "Detect Magic": "Map the Floor" });
  * is returned completely untouched (a genuine no-op, not merely a no-op on
  * the RETURNED value — `c.grimoire` itself is never reassigned unless a
  * rewrite is needed). Mutates and returns the passed `c`.
+ *
+ * Phase 90 plan 06 (SPELL-12, SPELL-10) widens it: an entry mapped to `null`
+ * (Phantom Host) is dropped; so is any name no SPELLS row carries (a tampered
+ * or non-string entry); and so is any spell whose school the sheet's sub-class
+ * can NEVER learn (a Wizard's Mirror Self), judged only when `c.sub` names a
+ * MU_CHART row (a sheet with no chart row keeps every real spell). The
+ * surviving names keep their saved order, first occurrence wins a duplicate
+ * (so a Lesser Summon before a Summon becomes the one Summon at its place, and
+ * one after it is dropped). Run for the hero's sheet and every Joiner's
+ * (migratePartySpellNames), by both load chains.
  */
 function migrateSpellNames(c) {
   if (!c || typeof c !== "object" || Array.isArray(c) || !Array.isArray(c.grimoire)) return c;
-  if (!c.grimoire.some((n) => Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n))) return c;
+  const resolve = (n) => (Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n) ? RETIRED_SPELL_NAMES[n] : n);
+  const keep = (n) => {
+    if (typeof n !== "string") return null;
+    const name = resolve(n);
+    const row = name === null ? undefined : SPELLS.find((sp) => sp.n === name);
+    if (!row) return null;
+    if (schoolClosed(c.sub, row.s)) return null;
+    return name;
+  };
+  // A book that needs no change is left completely untouched (not reassigned).
+  const seenCheck = new Set();
+  const clean = c.grimoire.every((n) => {
+    const name = keep(n);
+    if (name !== n || seenCheck.has(name)) return false;
+    seenCheck.add(name);
+    return true;
+  });
+  if (clean) return c;
   const seen = new Set();
   const next = [];
   for (const n of c.grimoire) {
-    const renamed = Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n) ? RETIRED_SPELL_NAMES[n] : n;
-    if (seen.has(renamed)) continue;
-    seen.add(renamed);
-    next.push(renamed);
+    const name = keep(n);
+    if (name === null || seen.has(name)) continue;
+    seen.add(name);
+    next.push(name);
   }
   c.grimoire = next;
   return c;
+}
+
+/**
+ * migratePartySpellNames(party) — Phase 90 plan 06 (SPELL-12): the same
+ * tolerant grimoire load for every Joiner sheet in the roster. Mutates each
+ * sheet in place; returns the same array.
+ */
+function migratePartySpellNames(party) {
+  for (const m of party) migrateSpellNames(m);
+  return party;
 }
 
 /**
@@ -1055,7 +1097,7 @@ export function validateSave(raw, options = {}) {
   // (clearFoeEffect/clearStaleTimers keep the fight's hero-side state only
   // then). Phase 38 (ABIL-05): each party member gets the same tolerant-load
   // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
-  const party = ensurePartyAbilities(sanitizeParty(obj.party));
+  const party = migratePartySpellNames(ensurePartyAbilities(sanitizeParty(obj.party)));
   const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
   // Phase 90 (SPELL-09): the retired Strength doubling is unwound on the hero
   // and on every foe of a resumed fight.
@@ -1218,7 +1260,7 @@ export function rehydrate(obj) {
   // sanitizeStaff runs OUTERMOST of all here too, mirroring validateSave.
   // SAV-06 (Phase 76): mirrors validateSave — the party and the resumed fight
   // first, so the `c` chain knows whether a fight survives.
-  const party = ensurePartyAbilities(sanitizeParty(obj.party));
+  const party = migratePartySpellNames(ensurePartyAbilities(sanitizeParty(obj.party)));
   const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
   // Phase 90 (SPELL-09): mirrors validateSave's retired-Strength unwinding.
   const combat = retireStrengthBoostInFight(sanitizeCombat(obj.combat, party, partyIntact));

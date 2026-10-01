@@ -435,11 +435,12 @@
         }
       ],
       "divergence": {
-        "phase": "31+51+54+79.2",
+        "phase": "31+51+54+79.2+90",
         "requirements": [
           "CMB-01",
           "INIT-01",
-          "BAND-02"
+          "BAND-02",
+          "SPELL-12"
         ],
         "kind": "action-path",
         "fromAction": 0,
@@ -458,10 +459,10 @@
           "rations": 4
         },
         "after": {
-          "wp": 36,
-          "sp": 14,
+          "wp": 39,
+          "sp": 9,
           "gold": 50,
-          "kills": 2,
+          "kills": 1,
           "rations": 6
         },
         "stateFields": [
@@ -473,15 +474,16 @@
         "stateAfter": {
           "dead": false
         },
-        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the lose-plain scenario (seed 1119, below), which is itself a declared divergence again as of Phase 51 (see its own record). Phase 31 alone (re-measured 2026-09-16): the hero still died (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differed. Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 0 onward the engine draws two fewer d20 per round and never gives the foe two turns back to back -- with roughly a third less incoming damage per exchange, this Apprentice now SURVIVES the same 15-action script and clears the encounter (wp 0->23, sp 0->40, gold 50->52, kills 0->2, rations 4->6, dead true->false). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. Phase 54 (BAND-02, 2026-09-21, USER RULING D): identity-commit level-cap cause -- the retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw, changing the whole fight from action 0. Re-measured live via this file's own replay harness: sp 40->60 (a third kill's SP share), gold 52->50 (the third foe's own coin roll shifts the downstream loot-gate draw so the engine no longer clears the >2+lvl loot-gate on this particular kill), rations 6->4 (the shifted draw sequence no longer lands a Cooking/d6>=4 rations tick); wp/kills/dead are unchanged (still 23/2/false). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes). Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 (the hero's starting pool) with FOE_HIT_SCALE { base 0.6, perDepth 0.01 } -> { 0.84, 0.02 } and FOE_HP_SCALE.base 0.9 -> 1.2 (the foes' hits and hit points) and HERO_SP_SCALE 0.28 -> 0.23 moves wp 35 -> 36, sp 17 -> 14 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "Phase 31, user ruling 2026-09-16: phobia is a penalty, not a lost action. The seed-127 Human Apprentice fears Beasts; the prototype froze him at Fight! and spent action 1 (the first attack) shaking it off -- no strike die drawn. The engine sets combat.afraid = 2 and action 1 is a real strike (need - 3, floor 1, half damage), so every draw from action 1 onward shifts and the outcome is re-measured here. fromAction is 0 because the fight-step combat object differs (afraid counter vs freeze flag) the instant Fight! resolves. NOTE: this scenario was added in Phase 24 to restore byte-identical death-path parity; that coverage now lives in the lose-plain scenario (seed 1119, below), which is itself a declared divergence again as of Phase 51 (see its own record). Phase 31 alone (re-measured 2026-09-16): the hero still died (wp 0, dead: true), matching the prototype's own outcome field-for-field, even though the exact draw sequence from action 1 onward differed. Phase 51 (INIT-01, 2026-09-20): initiative is rolled once per fight in fight(); the prototype's per-round re-roll (canon p.24) and its pre-emptive foe turn are gone from afterPlayerAction, so from action 0 onward the engine draws two fewer d20 per round and never gives the foe two turns back to back -- with roughly a third less incoming damage per exchange, this Apprentice now SURVIVES the same 15-action script and clears the encounter (wp 0->23, sp 0->40, gold 50->52, kills 0->2, rations 4->6, dead true->false). Measured by tools/initiative-fixture-scan.mjs -- Part A (MOVED SET) byte-identical before and after the edit (51-01 vs 51-02 commits), Part B supplied every after/stateAfter value. Phase 54 (BAND-02, 2026-09-21, USER RULING D): identity-commit level-cap cause -- the retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is gone; FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Beasts foe at this seed's count draw, changing the whole fight from action 0. Re-measured live via this file's own replay harness: sp 40->60 (a third kill's SP share), gold 52->50 (the third foe's own coin roll shifts the downstream loot-gate draw so the engine no longer clears the >2+lvl loot-gate on this particular kill), rations 6->4 (the shifted draw sequence no longer lands a Cooking/d6>=4 rations tick); wp/kills/dead are unchanged (still 23/2/false). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): the fitted dials (FOE_LEVEL, FOE_HIT_SCALE, FOE_HP_SCALE, HERO_HP_SCALE, HERO_REGEN_PER_FLOOR, HERO_SP_SCALE, HAZARD_SCALE, ENCOUNTER_DOTS, plus the held ROUND_DAMAGE_CEILING/LOOT_SCALE/FOE_COUNT_SKEW/FOOD_CLOCK) change this scenario's whole combat outcome, not just a scaled number — re-measured end-to-end by replaying this scenario's own action script against the fitted engine (never hand-typed); the prototype's own before/dead values are untouched (the frozen master never changes). Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 (the hero's starting pool) with FOE_HIT_SCALE { base 0.6, perDepth 0.01 } -> { 0.84, 0.02 } and FOE_HP_SCALE.base 0.9 -> 1.2 (the foes' hits and hit points) and HERO_SP_SCALE 0.28 -> 0.23 moves wp 35 -> 36, sp 17 -> 14 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): the engine's chargen draws one fewer main-rng value for an Apprentice than the prototype's (see this scenario's chargenDivergence.rngShift), so from chargen on the two sides play different floors and different strike rolls; this record was already action-path from action 0 (only the end state is checked), so it needs no new shape. Re-measured live by replaying seed 127 against the live engine: before (the prototype, untouched) {\"wp\":0,\"sp\":0,\"gold\":50,\"kills\":0,\"rations\":4} dead true; after was {\"wp\":36,\"sp\":14,\"gold\":50,\"kills\":2,\"rations\":6} dead false and is now {\"wp\":39,\"sp\":9,\"gold\":50,\"kills\":1,\"rations\":6} dead false: the afraid Apprentice's strikes land on the new draws and it clears the encounter (1 kill, 9 sp) at 39 hp."
       },
       "chargenDivergence": {
-        "phase": "40+54+75+79.2",
+        "phase": "40+54+75+79.2+90",
         "requirements": [
           "SPELL-04",
           "SPELL-05",
           "BAND-02",
-          "RULES-03"
+          "RULES-03",
+          "SPELL-12"
         ],
         "fields": [
           "grimoire",
@@ -508,13 +510,21 @@
             "Heal",
             "Stun",
             "Insane",
+            "Acid",
             "Freeze"
           ],
           "maxWP": 46,
           "wp": 46,
           "rations": 6
         },
-        "rationale": "Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). This Apprentice's ready set (Strength/Shield/Heal/Stun) had no damage-dealing spell under the narrowed SPELL-04 guarantee — Stun no longer counts (control, not damage; it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase). The day-one top-up now appends Freeze. This scenario only ever `attack`s (never casts), so the action path itself and its already-declared action-path divergence (above) are unaffected — only the chargen-time grimoire differs. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Insane (offense, ungated) instead. This scenario still only ever `attack`s, so the action-path divergence's own end fields (wp 35, sp 17, gold 50, kills 2, rations 6) are unchanged — re-measured live and confirmed identical. Zero new/reordered rng draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 41 -> 46, wp 41 -> 46 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). This Apprentice's ready set (Strength/Shield/Heal/Stun) had no damage-dealing spell under the narrowed SPELL-04 guarantee — Stun no longer counts (control, not damage; it satisfied the OLD attack-kind guarantee, which is why this seed was byte-identical to the prototype before this phase). The day-one top-up now appends Freeze. This scenario only ever `attack`s (never casts), so the action path itself and its already-declared action-path divergence (above) are unaffected — only the chargen-time grimoire differs. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Insane (offense, ungated) instead. This scenario still only ever `attack`s, so the action-path divergence's own end fields (wp 35, sp 17, gold 50, kills 2, rations 6) are unchanged — re-measured live and confirmed identical. Zero new/reordered rng draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 41 -> 46, wp 41 -> 46 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed, so the Apprentice's main-rng pools (the high-level list lost Phantom Host) are one value shorter and rollGrimoire draws 37 values where the frozen prototype's draws 38 (every Apprentice, measured over seeds). The engine's rng cursor therefore sits one draw behind the prototype's from chargen on: this seed's floor (generated next), the encounter and every strike roll differ from the prototype's, so the boot compare no longer carries the floor (`rngShift.floorDiffers`, asserted real by the test: the two floors DO differ) and the grimoire is re-measured for the new draws. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed.",
+        "rngShift": {
+          "rollGrimoireDraws": {
+            "before": 38,
+            "after": 37
+          },
+          "floorDiffers": true
+        }
       },
       "floorFeatureShift": {
         "phase": "54",

@@ -231,7 +231,12 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
       // declared chargenDivergence (the table reshape moved their chargen
       // c.skills) — wrap the base comparable with the shift strip.
       const shift = chargenShiftOf(scenario);
-      const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
+      const shiftCmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
+      // Phase 90 plan 06 (SPELL-12): mirrors combat-parity.test.js's local
+      // `rngShift` handling (lose-apprentice): the engine's chargen draws fewer
+      // main-rng values, so the two floors differ and the boot compare drops the
+      // floor — after asserting they really do differ.
+      const cmp = shift?.rngShift?.floorDiffers ? (s) => { const { floor, ...rest } = shiftCmp(s); return rest; } : shiftCmp;
       // FID-07 (Phase 24, plan 24-02): the identical consult/skip/end-assert
       // logic as combat-parity.test.js — both replay sites must agree (the
       // Phase 23 rule). `null` for every scenario today (no-op).
@@ -243,6 +248,9 @@ test("ENG-05 phase gate: full-suite parity across chargen/movement/combat/magic/
         const shiftDiffs = chargenShiftDiffs(ctx.S.c, engineState.c, shift);
         assert.equal(shiftDiffs.before, null, `combat scenario ${scenario.name}: prototype chargen shift != declared before at ${shiftDiffs.before}`);
         assert.equal(shiftDiffs.after, null, `combat scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
+      }
+      if (shift?.rngShift?.floorDiffers) {
+        assert.notEqual(diffState(ctx.S.floor, engineState.floor), null, `combat scenario ${scenario.name}: rngShift.floorDiffers is declared but the two boot floors are identical`);
       }
       assert.equal(diffState(cmp(ctx.S), cmp(engineState)), null);
       scenario.actions.forEach((action, i) => {

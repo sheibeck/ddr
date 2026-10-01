@@ -277,12 +277,13 @@ test("Stun: holds exactly one foe at levels 1, 3, 5: the p.26 reach multiplier i
   }
 });
 
+// Phase 90 plan 06 (SPELL-10): canCast re-checks the school and an Illusionist never learns healing, so the caster here is a Court Mage.
 test("heals never add level²: Heal and Major Heal restore their dice at levels 1, 3, 5", () => {
   for (const n of ["Heal", "Major Heal"]) {
     const sp = row(n);
     for (const level of LEVELS) {
       for (const [face, want] of [[1, lo(sp.dmg)], [sp.dmg.sides, hi(sp.dmg)]]) {
-        const s = fight({ ...caster(n, level), wp: 100, maxWP: 999 }, [foe("F1")]);
+        const s = fight({ ...caster(n, level), sub: "Court Mage", wp: 100, maxWP: 999 }, [foe("F1")]);
         const events = castSpell(s, idx(n), rngBy((sides) => (sides === sp.dmg.sides ? face : 1)), []);
         assert.equal(events.find((e) => e.type === "healed").amount, want, `${n} L${level} face ${face}`);
       }

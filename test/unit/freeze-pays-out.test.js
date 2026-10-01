@@ -243,20 +243,20 @@ test("castSpell: a non-Freeze thrown spell still kills via the plain t.wp<=0 pat
 // --- spellAboveLevel's diagnostic reads the effective level -------------
 
 test("castSpell: spellAboveLevel names the effective level via spellLevelFor (no override for Wizard)", () => {
-  const state = fixedState({ c: { sub: "Wizard", grimoire: ["Phantom Host"], level: 1 } });
-  const events = castSpell(state, SPELL_IDX["Phantom Host"], fakeRng([]), []);
+  const state = fixedState({ c: { sub: "Wizard", grimoire: ["Summon"], level: 1 } });
+  const events = castSpell(state, SPELL_IDX["Summon"], fakeRng([]), []);
   const refusal = events.find((e) => e.type === "spellAboveLevel");
-  assert.ok(refusal, "a level-1 Wizard cannot yet cast a level-3 spell");
-  assert.equal(refusal.need, 3);
+  assert.ok(refusal, "a level-1 Wizard cannot yet cast a level-2 spell");
+  assert.equal(refusal.need, 2);
   assert.equal(refusal.have, 1);
   assert.equal(state.c.spellsUsed, 0);
 });
 
-test("castSpell: an Illusionist's level-1 Phantom Host is castable (the diagnostic is unreachable for the override cell)", () => {
-  const state = fixedState({ c: { sub: "Illusionist", grimoire: ["Phantom Host"], level: 1 }, combat: null });
-  // sp.kind "summon" is resist-immune and Illusionist is not doubled: one d4
-  // draw for the ally's rounds, no backfire draw (only a Summoner doubles).
-  const events = castSpell(state, SPELL_IDX["Phantom Host"], fakeRng([4]), []);
+test("castSpell: a Summoner's level-1 Summon is castable (the diagnostic is unreachable for the override cell: SPELL-12, Phase 90 plan 06)", () => {
+  const state = fixedState({ c: { sub: "Summoner", grimoire: ["Summon"], level: 1 }, combat: null });
+  // sp.kind "summon" is resist-immune; the Summoner doubles, so a d8 backfire
+  // draw (5: safe) then one d4 for the ally's rounds.
+  const events = castSpell(state, SPELL_IDX["Summon"], fakeRng([5, 4]), []);
   assert.ok(!events.some((e) => e.type === "spellAboveLevel"));
   assert.ok(!events.some((e) => e.type === "spellNotKnown"));
   assert.ok(!events.some((e) => e.type === "spellSchoolLocked"));

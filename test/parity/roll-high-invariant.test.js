@@ -215,7 +215,12 @@ const NESTED_CHECKS = {
  * `roll:` across every engine/ event push (73-02-PLAN.md's interfaces
  * block).
  */
-const SELECTION_ROLL_EVENTS = ["encounterRolled", "vaporRolled", "insaneRolled", "insanityRolled", "afflictionRolled", "faerieMet"];
+// Phase 90 plan 06: `critWarded` (quick 260928-cos, the Cloak of Strength turning a foe's
+// critical aside) joins the list. It reports the foe's roll that was already a critical and
+// makes no check of its own (the struck line that follows carries the atLeast); no replay
+// site had met a Cloak of Strength until the Phase 90 chargen re-roll moved the bot sweep's
+// runs, so the first run to wear one surfaced it.
+const SELECTION_ROLL_EVENTS = ["encounterRolled", "vaporRolled", "insaneRolled", "insanityRolled", "afflictionRolled", "faerieMet", "critWarded"];
 
 /** COMPLETE — set to true by 73-09, once every roll-carrying event has been converted. */
 const COMPLETE = true;

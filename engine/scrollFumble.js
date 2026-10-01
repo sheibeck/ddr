@@ -11,7 +11,7 @@
 // content/scroll-fumbles.js#SCROLL_FUMBLE[sp.n] and NOTHING else to decide
 // the fumble's side (harmful/area/helpful) and effect — every spell's own
 // SPELLS row (`sp`, passed in by the caller) supplies the numbers (dmg/pool/
-// rounds/popPool/mirror/lesser). Every draw this module makes of its own
+// rounds/popPool/mirror). Every draw this module makes of its own
 // comes from `srng` (the caller's own fumble-stream rng, the SAME derived
 // stream items.js#pilferFumbleRng and combat.js#fumbleHeavyBlow's own
 // pattern establishes) — `fumbleHeavyBlow` itself still draws its d10 from
@@ -253,8 +253,7 @@ function resolveArea(state, sp, entry, srng, rng, events, now) {
  *   - senses: sets `senses` — no further engine rule of its own.
  *   - summon: queues one Demons reinforcement (via the shared
  *     foeAbilities.js#buildReinforcement helper) at the summon's own tier
- *     (Lesser Summon: one under the reader's level, 1..3; Summon/Phantom
- *     Host: the reader's level, at most 5 — never doubled), UNLESS a summon
+ *     (the reader's level, at most 5 — never doubled), UNLESS a summon
  *     is already pending or the room already holds SUMMON_MAX_LIVE live
  *     foes, in which case it wanders off instead.
  *   - wasted: Map the Floor, Sense Danger — changes nothing.
@@ -316,7 +315,7 @@ function resolveHelpful(state, sp, entry, srng, rng, events, now) {
       if (capped) {
         events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "summon", joined: false });
       } else {
-        const tier = sp.lesser ? Math.max(1, Math.min(3, state.c.level - 1)) : Math.min(5, state.c.level);
+        const tier = Math.min(5, state.c.level);
         const foe = buildReinforcement("Demons", tier, srng);
         C.pendingFoes = [{ by: "you", foe }];
         events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "summon", joined: true, reinforcement: foe.name });

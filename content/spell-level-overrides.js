@@ -1,30 +1,29 @@
 // content/spell-level-overrides.js
 //
-// DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-03/IDENT-04): the
-// prototype casts Summon at spell level 2 and Phantom Host at spell level 3
-// for EVERY Magic User sub-class, so a level-1 Summoner could not summon at
-// all and a level-1 Illusionist could only stall (Mirror Self) with no
-// damage source of its own. This table lowers the EFFECTIVE level of a
-// spell for ONE sub-class without editing content/spells.js. It is read by
-// exactly one engine helper, engine/derived.js#spellLevelFor, which canCast
-// and rollGrimoire both consume. Pure data so a later phase can add rows
-// here with no engine edit.
+// The NAMED EXCEPTIONS to a spell's printed level: a row here lowers the
+// EFFECTIVE level of one spell for ONE sub-class without editing
+// content/spells.js. It is read by exactly one engine helper,
+// engine/derived.js#spellLevelFor, which canCast, rollGrimoire's usableNow,
+// castSpell's spellAboveLevel, the Grimoire and combat-menu view models and
+// identityFooter's generated chart-override lines all consume. Pure data, so
+// a later phase adds a row here with no engine edit, and NO sub-class name
+// check is ever written in engine code.
 //
-// SUPERSEDED BY PHASE 40 (SPELL-04, 2026-09-18, DELIBERATE RULES CHANGE —
-// user ruling verbatim, 40-CONTEXT.md Area 3): "Give the summoner a level 1
-// summon. Summoning less strong than the level 2 summon. Then you can keep
-// level 1 spells without the bad gate." The Summoner's level-1 summon is now
-// its OWN row (Lesser Summon, content/spells.js row 32, `roll: "derived"`,
-// `lesser: true`) rather than an override on Summon's effective level — so
-// the `Summoner: { Summon: 1 }` row is RETIRED here. Summon is spell level 2
-// for every sub-class again, including the Summoner; the Summoner's offense
-// gate stays 3 (test/unit/identity-contract.test.js's locked "bad" is
-// untouched — the user's own point: "keep level 1 spells without the bad
-// gate", i.e. add a new safe spell, don't touch the existing gate). The
-// Illusionist's Phantom Host override is unaffected.
+// Spell-name keys MUST equal SPELLS[].n exactly (content/spells.js); the
+// sub-class keys MUST be MU_CHART rows whose chart can learn the spell's
+// school (test/unit/school-gates.test.js's content guard fails otherwise).
 //
-// Spell-name keys MUST equal SPELLS[].n exactly (see content/spells.js).
+// HISTORY. Phase 23 (2026-09-14, IDENT-03/IDENT-04) lowered Summoner/Summon and
+// Illusionist/Phantom Host to level 1. Phase 40 (SPELL-04, 2026-09-18) retired
+// the Summoner row for a separate level-1 spell, Lesser Summon. Phase 90 plan
+// 06 (SPELL-12, 2026-09-30) removed Lesser Summon and Phantom Host and ruled
+// the Summoner's Summon back to level 1:
+//
+// DELIBERATE RULES CHANGE (Phase 90 plan 06, SPELL-12, user 2026-09-30): "The
+// Summoner may cast the level-2 Summon from level 1, as an exception to the
+// school gates." Summon stays spell level 2 for every other sub-class. The
+// Illusionist's Phantom Host row went with the spell.
 
 export const SPELL_LEVEL_OVERRIDES = {
-  Illusionist: { "Phantom Host": 1 },
+  Summoner: { Summon: 1 },
 };

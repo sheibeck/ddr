@@ -190,9 +190,19 @@ const FLOOR_GEN_PIN = {
 // file's ten shared seeds — 1, 2, 3, 7, 8, 14, 17, 38, 256, 303 — match that
 // pin exactly) so the two pins fail together, loudly, if a main draw ever
 // slips into floor generation.
+//
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): three pins re-measured live
+// (newRun(seed).rngState), before -> after — the Wizard (seed 7), the
+// Illusionist (seed 8) and the Apprentice (seed 127) now draw fewer main-rng
+// values in chargen (Phantom Host left the pools; the Wizard lost Illusion):
+//   seed 7    514860380 -> 1778531720
+//   seed 8     74848302 ->   10907105
+//   seed 127 1778531840 -> 1146696170
+// The genFloor pins above are fresh makeRng(seed) cursors, independent of
+// chargen, and are unmoved; the other eleven newRun pins are unmoved.
 const NEWRUN_PIN = {
-  1: -1692776321, 2: 266671887, 3: 1466402031, 7: 514860380, 8: 74848302,
-  14: 2034296515, 17: 1466402045, 38: -996999417, 127: 1778531840, 160: -1564893768,
+  1: -1692776321, 2: 266671887, 3: 1466402031, 7: 1778531720, 8: 10907105,
+  14: 2034296515, 17: 1466402045, 38: -996999417, 127: 1146696170, 160: -1564893768,
   256: 2098237954, 303: -429104679, 1119: 2034297620, 2026: -996997429,
 };
 

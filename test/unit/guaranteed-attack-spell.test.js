@@ -70,10 +70,11 @@ function countingRng(inner) {
 // RULES-03 (Phase 75, user 2026-09-25): Summoner re-measured live, 31 -> 36
 // — see test/unit/chargen-rng-pin.test.js's own comment on this constant
 // for the full cause (the offense gate's removal widens the day-one `spare`
-// pool).
+// pool). Phase 90 plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33,
+// Apprentice 38 -> 37, measured live — see that file's declaration.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
+  Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
+  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 const spellByName = (n) => SPELLS.find((sp) => sp.n === n);
@@ -97,7 +98,7 @@ function oldRollGrimoire(rng, sub) {
   for (const sp of low) { if (book.length < Math.min(n, 6)) book.push(sp.n); }
   for (const sp of high) { if (book.length < n) book.push(sp.n); }
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
-  if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
+  if (sub === "Illusionist") for (const n2 of ["Mirror Self"]) if (!book.includes(n2)) book.push(n2);
   if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
   if (sub === "Sorcerer") for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
   const usableNow = (sp) => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1;
@@ -111,8 +112,9 @@ function oldRollGrimoire(rng, sub) {
 // Phase 40 (SPELL-04, DELIBERATE RULES CHANGE): the guarantee narrows from
 // "any ATTACK_SPELL_KINDS member" to "a spell that actually deals damage"
 // (engine/derived.js#dealsDamage) — and it now applies to EVERY sub,
-// including the Summoner (its guarantee is the granted Lesser Summon, whose
-// `lesser: true` flag makes dealsDamage true). See also
+// including the Summoner. Phase 90 plan 06 (SPELL-12): the Summoner's granted
+// Lesser Summon (whose `lesser: true` flag made dealsDamage true) is removed;
+// the Summoner gets its damage spell from the same top-up as everyone. See also
 // test/unit/day-one-damage.test.js for the primary, fuller-coverage proof;
 // this file's copy stays for IDENT-02's own historical name/continuity.
 test("SPELL-04 (was IDENT-02): every Magic User sub, including the Summoner, has a castable damage-dealing spell at level 1", () => {
@@ -125,10 +127,9 @@ test("SPELL-04 (was IDENT-02): every Magic User sub, including the Summoner, has
   }
 });
 
-// Phase 40: the Phase 23 SPELL_LEVEL_OVERRIDES.Summoner row is retired —
-// Summon is spell level 2 for the Summoner again (a spell-LEVEL lock, still
-// enforced by canCast regardless of the offense gate); the Summoner's
-// day-one damage source is now the granted Lesser Summon.
+// Phase 90 plan 06 (SPELL-12): the Summoner casts the level-2 Summon from
+// level 1 (the named exception in content/spell-level-overrides.js); Phase
+// 40's Lesser Summon is removed.
 //
 // RULES-03 (Phase 75, user 2026-09-25): the Summoner's offense SCHOOL gate
 // is retired (content/mu-chart.js) — castableAttackSpells(state) NO LONGER
@@ -136,15 +137,13 @@ test("SPELL-04 (was IDENT-02): every Magic User sub, including the Summoner, has
 // this seed's widened day-one book happens to hold a castable attack-kind
 // spell (Doze/Freeze/Stun/Weaken), same as any other sub. Summon's own
 // LEVEL lock (spellLevelFor 2) is untouched either way.
-test("IDENT-03 (Phase 40) + RULES-03 (Phase 75): Summon needs level 2 again for the Summoner (a level lock, unrelated to the retired offense gate); Lesser Summon is granted and castable", () => {
+test("IDENT-03 (Phase 90 plan 06, SPELL-12) + RULES-03 (Phase 75): the Summoner is granted Summon and casts it at level 1 (the named exception); Lesser Summon is gone", () => {
   const Summon = spellByName("Summon");
-  const LesserSummon = spellByName("Lesser Summon");
+  assert.equal(spellByName("Lesser Summon"), undefined);
   for (const seed of SEEDS) {
     const state = newRun(seed, [], { force: { sub: "Summoner" } });
     assert.ok(state.c.grimoire.includes("Summon"), `Summoner seed ${seed}: grimoire missing Summon`);
-    assert.equal(canCast(state, Summon), false, `Summoner seed ${seed}: Summon should need level 2 (a spell-LEVEL lock, IDENT-03/Phase 40)`);
-    assert.ok(state.c.grimoire.includes("Lesser Summon"), `Summoner seed ${seed}: grimoire missing the granted Lesser Summon`);
-    assert.ok(canCast(state, LesserSummon), `Summoner seed ${seed}: Lesser Summon should be castable at level 1`);
+    assert.equal(canCast(state, Summon), true, `Summoner seed ${seed}: Summon should be castable at level 1 (the SPELL-12 exception)`);
     // Every candidate castableAttackSpells returns (if any) must actually be
     // in the grimoire and castable — the offense gate no longer forces this
     // list to be empty, but it must never include Summon (a summon-kind
@@ -229,7 +228,12 @@ test("zero-draw proof: rollGrimoire's rng draw count per sub is unchanged, over 
 // walk, unaffected by the rename); seed 15's Summoner grimoire now also
 // carries the granted Lesser Summon (Phase 40's own declared fixture
 // divergence, test/parity/FIXTURE-INVENTORY.md's Phase 40 section, Task 3).
-test("fixture seeds (re-measured, Phase 40): seed 24 (Apprentice) ends in Freeze; seed 15 (Summoner) carries the granted Lesser Summon", () => {
+//
+// Phase 90 plan 06 (SPELL-12): seed 15's Summoner book re-measured live, before
+// -> after: ["Stupidity", "Stun", "Lesser Summon", "Shield", "Summon"] ->
+// ["Stupidity", "Stun", "Shield", "Summon", "Freeze"] (Lesser Summon is gone; the
+// day-one damage top-up adds Freeze, since a summon never counts as damage).
+test("fixture seeds (re-measured, Phase 90 plan 06): seed 24 (Apprentice) ends in Freeze; seed 15 (Summoner) holds Summon and the topped-up Freeze", () => {
   assert.equal(newRun(24).c.grimoire.at(-1), "Freeze", `seed 24: expected Freeze as the last grimoire entry, got ${JSON.stringify(newRun(24).c.grimoire)}`);
-  assert.deepStrictEqual(newRun(15).c.grimoire, ["Stupidity", "Stun", "Lesser Summon", "Shield", "Summon"]);
+  assert.deepStrictEqual(newRun(15).c.grimoire, ["Stupidity", "Stun", "Shield", "Summon", "Freeze"]);
 });

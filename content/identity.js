@@ -51,7 +51,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Summoner": side(
       [
-        trait("summoner-lesser", "Lesser Summon in the book and castable from day one", CONTRACT, "a small, safe summon on day one — Lesser Summon is guaranteed and castable at level 1"),
+        trait("summoner-summon", "a Summon is always in the book from day one", CONTRACT, "a full Summon on day one — Summon is guaranteed and castable at level 1"),
         trait("summoner-doubled", "a full Summon arrives a level stronger, and its duration die counts double", "test/unit/casters-can-act.test.js", "IDENT-03: a level-2 Summoner summons in combat with the unchanged doubled formula"),
       ],
       [trait("summoner-backfire", "one full Summon in eight turns on you", CONTRACT, "the summon backfire stays")],

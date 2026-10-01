@@ -148,7 +148,10 @@ export const DRAW_INVENTORY = {
   // Phase 90 plan 05 (SPELL-11, SPELL-12): amount 17 -> 13. Stun's d6 reach and
   // per-foe d4, Doze's single d4 and the dot branch's duration d4 left magic.js
   // (-4); the Doze, Stun and Ice draws now live in combat.js's shared tails.
-  "engine/magic.js": { rollCheck: 2, amount: 13, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
+  // Phase 90 plan 06 (SPELL-12): amount 13 -> 12. The summon branch's rounds line
+  // read `lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2`: Lesser Summon is
+  // gone, so the lesser d4 (one `.d(` occurrence on that tagged line) went with it.
+  "engine/magic.js": { rollCheck: 2, amount: 12, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/movement.js": { rollCheck: 3, amount: 7, selection: 4, "mishap-on-1": 1, "already-high": 2, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

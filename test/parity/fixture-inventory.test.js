@@ -70,16 +70,18 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
     // FOE_COUNT_TABLE row 0 (identity) now rolls a THIRD Shriek at this
     // seed's count draw (declared, see the scenario's own `divergence`
     // record).
+    //
+    // Phase 90 plan 06 (SPELL-12, user 2026-09-30): an Apprentice's chargen now
+    // draws one fewer main-rng value than the frozen prototype's (Phantom Host
+    // left its pool), so from chargen on this scenario's engine side rolls a
+    // different floor and a different encounter: ONE Shriek (was Bat/Rat plus
+    // two Shrieks). Declared on the scenario's chargenDivergence.rngShift.
     {
       fixture: "action-script.combat.json",
       scenario: "lose-apprentice",
       seed: 127,
       forced: "Beasts",
-      foes: [
-        { name: "Bat/Rat", type: "Beasts", lvl: 1, wp: 1 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
-        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
-      ],
+      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 4 }],
     },
     // Phase 31 (2026-09-16, CMB-01): added because the Afraid ruling (phobia
     // is a penalty, not a lost action) turned `lose-apprentice` into a
@@ -131,12 +133,18 @@ test("FID-01: the seven fixture fights roll exactly the pinned creatures, in ord
         { name: "Ned", type: "Humans", lvl: 1, wp: 10 },
       ],
     },
+    // Phase 90 plan 06 (SPELL-12): the scenario was re-picked from seed 8 (an
+    // Illusionist, whose chargen now draws fewer main-rng values than the
+    // prototype's) to seed 243 (a Sorcerer): a Viper and a Shriek.
     {
       fixture: "action-script.magic.json",
       scenario: "cast-damage",
-      seed: 8,
+      seed: 243,
       forced: "Beasts",
-      foes: [{ name: "Shriek", type: "Beasts", lvl: 1, wp: 4 }],
+      foes: [
+        { name: "Viper", type: "Beasts", lvl: 1, wp: 4 },
+        { name: "Shriek", type: "Beasts", lvl: 1, wp: 4 },
+      ],
     },
   ]);
 

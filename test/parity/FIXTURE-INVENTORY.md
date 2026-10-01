@@ -34,14 +34,14 @@ intent artifact).
 | action-script.movement.json | (script) | 256 | none | — | — |
 | action-script.combat.json | win | 3 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
 | action-script.combat.json | lose | 14 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 4) |
-| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Bat/Rat (Beasts lvl 1, wp 1); Shriek (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
+| action-script.combat.json | lose-apprentice | 127 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
 | action-script.combat.json | lose-plain | 1119 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
 | action-script.combat.json | flee | 17 | startCombat | Beasts | Viper (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
 | action-script.combat.json | parley | 303 | startCombat | Humans | Ned (Humans lvl 1, wp 10); Ned (Humans lvl 1, wp 10) |
-| action-script.magic.json | cast-damage | 8 | startCombat | Beasts | Shriek (Beasts lvl 1, wp 4) |
-| action-script.magic.json | heal | 7 | none | — | — |
+| action-script.magic.json | cast-damage | 243 | startCombat | Beasts | Viper (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
+| action-script.magic.json | heal | 110 | none | — | — |
 | action-script.magic.json | potion | 1 | none | — | — |
-| action-script.magic.json | scroll | 7 | none | — | — |
+| action-script.magic.json | scroll | 19 | none | — | — |
 | action-script.economy.json | (script) | 3 | none | — | — |
 | action-script.encounters.json | trap | 1 | none | — | — |
 | action-script.encounters.json | chest | 2 | none | — | — |
@@ -6824,3 +6824,127 @@ damage kinds), `strength-spell.test.js` (the one `f.dot` left is Poisoned Edge's
 (Dozing and Stunned chips, no Ice chip), `narrationLinesTable.test.js`, `tuning-bot.test.js` (Ice's expected
 damage, Stun against a lone foe) and `shell-tab-snapshots.test.js` (the Doze text above). New pin:
 `test/unit/doze-stun-ice.test.js`.
+
+### Phase 90 plan 06: Lesser Summon and Phantom Host removed, Summon from level 1, Wizards lose Illusion, school gates pinned (SPELL-12, SPELL-10)
+
+**The rule (the user's 2026-09-30 rulings).** SPELL-12: "Lesser Summon is removed and the Summoner casts
+the level-2 Summon from level 1 ... Phantom Host is removed", and "Illusion is the Illusionist's alone
+(rulebook p.17): Wizards lose the Illusion school; the Illusionist and the Apprentice keep it." SPELL-10
+adds the gate guard: a sub-class or race that cannot cast a school is never dealt, offered, able to copy
+or able to cast a spell of it. The engine side: `SPELLS` is 31 rows, `SPELL_LEVEL_OVERRIDES` is
+`{ Summoner: { Summon: 1 } }`, `MU_CHART.Wizard.illusion` is `null`, `derived.js#canCast` re-checks the school,
+and the save load drops or renames a saved book's removed and forbidden spells. No new serialized field
+(nothing to carve out of the three `*Comparable()` functions); `test/parity/prototype-master.js.txt` is
+untouched.
+
+**The predictor.** Chargen draws main-rng values for every Magic User's book (`rollGrimoire`: the low and
+high shuffles, one d10, the day-one shuffle). Removing Phantom Host shortens the Wizard's, Illusionist's
+and Apprentice's high pool by one, and the Wizard also loses Mirror Self from its low pool and its
+day-one pool, so those three sub-classes draw FEWER values than the frozen prototype's chargen: Wizard
+39 to 36, Illusionist 34 to 33, Apprentice 38 to 37 (measured live, constant over seeds). Every later
+draw (the floor, the encounter, every roll) then lands on a different value, so any parity scenario on
+such a seed can no longer replay in lockstep. The Summoner's book moves in content only (Lesser Summon was
+a derived-stream row, so removing it never touched a main-rng shuffle: 36 draws, unchanged) and the
+Warlock, Sorcerer, Cleric and Court Mage are unchanged. Separately, a scroll's `rng.pick(options)` is over
+31 rows now (15 at depth 1 where it was 16, and so on), the same draw count but another row, which moves
+any bot run that reads a scroll. Parity seeds on an affected sub-class: chargen 7 (Wizard), 8
+(Illusionist) and 24 (Apprentice); combat `lose-apprentice` (127, an Apprentice); magic `cast-damage` (8,
+an Illusionist), `heal` (7) and `scroll` (7), both Wizards.
+
+**The live scan (measured at the plan's end, against the base c5017f16).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass after the declarations below. Before them,
+  five fixtures failed exactly where predicted: chargen seeds 7, 8, 24 (and 15's book), the three magic
+  scenarios and `lose-apprentice`. `test/parity/prototype-master.js.txt` is untouched.
+- `node tools/roll-high-baseline.mjs pins`: **4 of 8 labels moved** (solo-1, solo-2,
+  solo-magicuser-sorcerer, deep-8), pasted by hand; `save` was never run. solo-thief-pilfer, party-1,
+  party-fighter-knight and deep-14 re-measured byte-identical.
+- `roll-high-save-compat.test.js`: the fixture's `expected.hash` only (see below).
+- `roll-high-guard.test.js#DRAW_INVENTORY`: `engine/magic.js` amount 13 to 12 (the summon branch's lesser
+  `rng.d(4)` left the rounds line with Lesser Summon).
+- `test/unit/fixtures/hazard-commit/golden.json`: unchanged.
+
+**Moved parity entries (each measured live against the frozen prototype sandbox, declared with a
+before/after record and regenerated alone).**
+
+1. `action-script.chargen.json`, four records. Seed 7 (Wizard): the engine's book before this plan
+   `[Sense Presence, Mirror Self, Stun, Heal, Lesser Summon]` becomes `[Stun, Freeze, Heal, Stupidity]`.
+   Seed 8 (Illusionist) gains a `grimoire` field: prototype `[Stupidity, Freeze, Acid, Insane, Mirror Self,
+   Summon, Petrify, Phantom Host]`, engine `[Stupidity, Freeze, Acid, Insane, Mirror Self, Summon]`. Seed 15
+   (Summoner): `[Stupidity, Stun, Lesser Summon, Shield, Summon]` becomes `[Stupidity, Stun, Shield, Summon,
+   Freeze]` (no Lesser Summon; the day-one damage top-up adds Freeze, since a summon is never damage). Seed
+   24 (Apprentice): `[Heal, Strength, Stupidity, Sense Presence, Weaken, Freeze]` becomes `[Heal, Strength,
+   Stupidity, Sense Presence, Weaken, Turn Walking Dead, Petrify, Earthquake, Blind, Freeze]` (a longer d10
+   roll on the shifted draws). The prototype sides are untouched; every record's phase gains "+90".
+2. `action-script.magic.json`, three scenarios RE-PICKED (a scenario's outcome rides on lucky draws, so
+   a shifted stream cannot keep its seed): `cast-damage` 8 to 243 (a Human Sorcerer with Freeze and a
+   Beasts phobia: Afraid at Fight!, the Freeze hits a Viper for 3, frozen 2 rounds, 1 left after the
+   dispatch's tick), `heal` 7 to 110 (a Court Mage with Heal), `scroll` 7 to 19 (a Sorcerer whose scroll
+   is copied into its book). Each new seed is a Magic User of a sub-class whose chargen draw count is
+   unchanged, found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype
+   sandbox (heal and scroll replay in lockstep; cast-damage keeps its action-path record). Each scenario's
+   `chargenDivergence` and `floorFeatureShift` were re-measured for the new seed (13 cells at depth 1);
+   `cast-damage`'s action-path record is unchanged in shape (prototype rations 4, engine 6, dead false on
+   both). The seed-243 Sorcerer's book differs from the prototype's for an earlier declared reason
+   (RULES-03 skips Heal, healing opens at level 4), which its `chargenDivergence` now carries.
+3. `action-script.combat.json`, `lose-apprentice` (seed 127, an Apprentice): kept, with a declared
+   `chargenDivergence.rngShift` (`rollGrimoireDraws` 38 to 37, `floorDiffers`). The boot compare drops the
+   floor (a LOCAL strip in combat-parity.test.js and full-suite.test.js, never the shared harness) after
+   asserting the two floors really do differ. Its grimoire after: `[Strength, Shield, Heal, Stun, Insane,
+   Acid, Freeze]` (was `[..., Insane, Freeze]`). Its action-path end record re-measured: prototype
+   unchanged (wp 0, sp 0, gold 50, kills 0, rations 4, dead true); engine before `{ wp 36, sp 14, gold 50,
+   kills 2, rations 6, dead false }`, now `{ wp 39, sp 9, gold 50, kills 1, rations 6, dead false }` (the
+   afraid Apprentice's strikes land on the new draws and it clears the encounter).
+4. The generated roster block (`node tools/fixture-inventory.mjs`) and `fixture-inventory.test.js`:
+   `lose-apprentice` rolls one Shriek (was Bat/Rat plus two Shrieks); `cast-damage` rolls a Viper and a
+   Shriek at seed 243; `heal` and `scroll` are none rows at seeds 110 and 19.
+5. `divergence-records.test.js`: `FIGHT_SITE_SEEDS` names seed 243 for cast-damage (a Human, size zero);
+   the RULES-11 size guard is why the Dwarven candidates in the scan were not used.
+
+**Moved pins (before -> after, each measured live and re-recorded alone).**
+
+- `chargen-rng-pin.test.js`: `ROLL_CHARACTER_PINS` seed 7 -447588372 to -1647318515, seed 8 -1015482844 to
+  1447918639, seed 24 2015813128 to 184247315; `NEW_RUN_PINS` seed 7 514860380 to 1778531720, seed 8
+  74848302 to 10907105, seed 24 -556987352 to 10907121; `ROLL_GRIMOIRE_DRAW_COUNTS` Wizard 39 to 36,
+  Illusionist 34 to 33, Apprentice 38 to 37 (restated in `day-one-damage.test.js`,
+  `guaranteed-attack-spell.test.js`, `grimoire-legality.test.js`). The other 17 cursors and five counts are
+  byte-identical (seed 15's Summoner cursor does not move).
+- `floor-gen-rng-pin.test.js` `NEWRUN_PIN`: seed 7 514860380 to 1778531720, seed 8 74848302 to 10907105,
+  seed 127 1778531840 to 1146696170; `ability-pool.test.js` seed 7 likewise.
+- `foe-turn-draw-count.test.js`: FULL_FIGHTS seed 8 21 draws / 6 attacks to 20 / 4; seed 127 roster
+  `[Bat/Rat, Shriek, Shriek]` to `[Shriek, Shriek]`, 83 / 15 to 81 / 21; OPENER_DRAWS seed 127 10 to 8.
+- `roll-high-state-pins.test.js` (traced per bot step against an extracted tree of c5017f16): solo-1 (a
+  Court Mage) 253/dead/3 to 353/dead/4, first divergence bot step 25 (its first scroll read picks Heal,
+  cast free, where the base picked Shield, copied); solo-2 (an Apprentice) 294/dead/3 to 368/dead/4,
+  step 0 (Freeze for Stun); solo-magicuser-sorcerer 400/alive/4 to 400/alive/5, step 0 (Insane for
+  Summon); deep-8 (a Court Mage) 225/dead/10 to 300/alive/11, step 0 (Strength for Doze).
+- `roll-high-save-compat.test.js` fixture `expected.hash` ONLY (`dead`/`depth`/`actions` still
+  false/3/300): the save's Joiner Denn holds Lesser Summon, which the tolerant load renames to Summon. All
+  300 dispatched steps' event lists and the final rng cursor are identical to the base's; writing Lesser
+  Summon back over Denn's Summon re-hashes to the old pin exactly. State shape only.
+- `bot-tactics.test.js` no-stall trio: Sorcerer seeds 2 and 1 now stall (the pre-existing campFailed loop)
+  and were swapped for seeds 4 and 5 (the smallest untaken seeds that die naturally); `days-farm.test.js`
+  camp-guard regression seed 530574 to 380113 (no Summoner solo start in seedList(120) fires the guard any
+  more; the first Magic User start that does is a Court Mage, campGuard 300, campFailed 0).
+- `shell-snapshots/mu.hero.txt` (`MZ_SNAPSHOT_UPDATE=1`, that one test only): seed 3's forced Magic User is a
+  Wizard, whose chargen moved: hero name Petra Holloway to Rosa Larkin, the Grimoire rows (Heal, Lesser
+  Summon, Mirror Self, Insane, Phantom Host, Mangle become Freeze, Heal, Map the Floor, Stun, Earthquake)
+  and the generated footer (the "every school of magic from level 1" line gone, "never learns illusion
+  spells" added).
+
+**Non-fixture assertions the rules moved (updated to the new rules, each before -> after).**
+`content-tables.test.js` and `spell-table.test.js` (31 rows, 11 non-combat spells, rows after Phantom Host one
+earlier), `scroll-fumble-table.test.js` and `scroll-fumble-resolve.test.js` (31 names; a fumbled Summon's
+tier is the reader's level), `spell-level-overrides.test.js` (`{ Summoner: { Summon: 1 } }`; the canCast diff
+walk changes exactly one cell, plus a closed-school sweep), `day-one-damage.test.js` (a summon is never
+damage; the Summoner holds a castable Summon and a topped-up damage spell), `casters-can-act.test.js`,
+`freeze-pays-out.test.js`, `spell-mechanics.test.js` (the Lesser Summon branch tests became the Summoner's
+doubled Summon from level 1), `grimoireViewModel.test.js` (the row prints the effective level, a closed
+school reads "Not your school"), `combatMenu.test.js`, `tuning-bot.test.js`, `identity-contract.test.js` and
+`identity-footer.test.js` (the Summoner's and Illusionist's good halves, the Wizard's generated
+never-learns line), `spell-damage-level-sq.test.js` (its Heal cast is by a Court Mage: an Illusionist never
+learns healing) and `usable-features-audit.test.js` (an Illusion spell is cast by an Illusionist). The
+roll-high invariant test (`roll-high-invariant.test.js`) gained `critWarded` in SELECTION_ROLL_EVENTS: the
+Cloak of Strength's event (quick 260928-cos) carries a roll with no atLeast, and no replay site had met one
+until the moved bot sweep wore one. New pins: `test/unit/removed-spells-load.test.js` and
+`test/unit/school-gates.test.js`.

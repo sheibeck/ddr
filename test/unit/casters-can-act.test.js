@@ -11,9 +11,9 @@
 //   the spell to cast instead.
 //
 //   IDENT-03/IDENT-04: a level-1 Summoner can cast Summon (doubled formula,
-//   backfire kept) and a level-1 Illusionist can raise an UNdoubled Phantom
-//   Host, via Plan 01's SPELL_LEVEL_OVERRIDES table — with every other bad
-//   (the Illusionist's d20 strike die until level 3, Mirror Self) intact.
+//   backfire kept) via the SPELL_LEVEL_OVERRIDES table's named exception
+//   (Phase 90 plan 06, SPELL-12) — with every other bad (the Illusionist's d20
+//   strike die until level 3, Mirror Self) intact. Phantom Host is removed.
 //
 // Helpers mirror test/unit/combat.test.js / test/unit/magic.test.js's
 // established fakeRng/fixed* pattern verbatim.
@@ -161,10 +161,12 @@ test("IDENT-01: a level-locked attack spell (Fireball, lvl 3) does not count as 
 // lock, which canCast still enforces regardless of any school gate, and
 // (b) a sweep proving no MU_CHART sub-class gates the offense school any
 // more.
-test("IDENT-01: a level-locked attack spell (Summon, lvl 2 for the Summoner) does not count as castable at level 1", () => {
+test("IDENT-01: a level-locked spell (Summon, lvl 2) is not castable at level 1 by a Wizard, and a Summoner's exception does not make it an attack spell", () => {
   const summonerState = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"] } });
   assert.deepStrictEqual(castableAttackSpells(summonerState), [], "Summon is not an attack-kind spell, so it never counts here regardless");
-  assert.equal(canCast(summonerState, spellByName("Summon")), false, "Summon needs level 2 (a spell-LEVEL lock, IDENT-03/Phase 40)");
+  assert.equal(canCast(summonerState, spellByName("Summon")), true, "the Summoner's named exception (SPELL-12): castable at level 1");
+  const wizardState = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Summon"] } });
+  assert.equal(canCast(wizardState, spellByName("Summon")), false, "Summon needs level 2 for everyone else (a spell-LEVEL lock)");
 });
 
 test("RULES-03: no MU_CHART sub-class gates the offense school any more", () => {
@@ -188,19 +190,19 @@ test("IDENT-01: a non-Wizard caster never refuses, even holding an attack spell 
   assert.ok(events.some((e) => e.type === "struck"));
 });
 
-// --- IDENT-03: Summoner Summon, level 2 again (Phase 40 override retired) ---
+// --- IDENT-03: Summoner Summon, castable from level 1 (Phase 90 plan 06) ---
 
-// Phase 40 (SPELL-04, DELIBERATE RULES CHANGE): SPELL_LEVEL_OVERRIDES.Summoner
-// is retired — Summon is spell level 2 for the Summoner again (the new
-// Lesser Summon row is the Summoner's level-1 summon instead). The doubled
-// formula itself is unchanged; it now only fires at level 2+.
-test("IDENT-03: a level-1 Summoner casting Summon is refused (spellAboveLevel need 2) — Phase 40 retires the level-1 override", () => {
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): the Summoner casts the
+// level-2 Summon from level 1 as a named exception in
+// content/spell-level-overrides.js (Phase 40's Lesser Summon, the stand-in, is
+// removed). The doubled formula is unchanged and now fires from level 1.
+test("IDENT-03: a level-1 Summoner casts Summon (the SPELL-12 exception): a doubled level-2 ally, d4 rounds doubled, backfire draw kept", () => {
   const state = fixedState({ c: { sub: "Summoner", level: 1, grimoire: ["Summon"] } });
   const combat = fixedCombat([]);
   state.combat = combat;
-  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([]), []);
-  assert.deepStrictEqual(events, [{ type: "spellAboveLevel", spell: "Summon", need: 2, have: 1 }]);
-  assert.equal(state.c.spellsUsed, 0);
+  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([2, 3]), []); // d8=2 (no backfire), d4=3 (rounds)
+  assert.ok(events.some((e) => e.type === "allySummoned" && e.lvl === 2 && e.rounds === 8), "lvl min(5,1+1)=2, rounds 2*3+2=8");
+  assert.equal(state.c.spellsUsed, 1);
 });
 
 test("IDENT-03: a level-2 Summoner summons in combat with the unchanged doubled formula", () => {
@@ -240,27 +242,32 @@ test("IDENT-03: before the override, a level-1 Wizard casting Summon is still re
 
 // --- IDENT-04: Illusionist at level 1 — FLAGGED PLANNER ASSUMPTION ------
 
-test("IDENT-04: a level-1 Illusionist raises an UNdoubled Phantom Host (no backfire draw)", () => {
-  const state = fixedState({ c: { sub: "Illusionist", level: 1, grimoire: ["Phantom Host"] } });
+// Phase 90 plan 06 (SPELL-12): Phantom Host is removed, so an Illusionist's
+// Summon is a level-2 spell like anyone's (the Summoner alone has the
+// exception); and the Illusionist's undoubled-summon rule is covered by the
+// Summon of a non-Summoner at level 2.
+test("IDENT-04: an Illusionist's Summon is level 2 (no exception for it): refused at level 1, an UNdoubled ally at level 2 with no backfire draw", () => {
+  const refused = fixedState({ c: { sub: "Illusionist", level: 1, grimoire: ["Summon"] } });
+  const refusal = castSpell(refused, SPELL_IDX.Summon, fakeRng([]), []);
+  assert.ok(refusal.some((e) => e.type === "spellSchoolLocked" || e.type === "spellAboveLevel"));
+  assert.equal(refused.c.spellsUsed, 0);
+  // Illusionist's special school is gated at 4 (content/mu-chart.js): a level-4
+  // Illusionist casts it, undoubled — one fakeRng value (the d4) proves no backfire draw.
+  const state = fixedState({ c: { sub: "Illusionist", level: 4, grimoire: ["Summon"] } });
   const combat = fixedCombat([]);
   state.combat = combat;
-  // A single fakeRng value, consumed by the d4 rounds roll, proves the
-  // `doubled && rng.d(8) === 1` backfire check short-circuits on `doubled`
-  // (false for an Illusionist) WITHOUT drawing — a fakeRng underflow would
-  // throw if an extra d8 were rolled.
-  const events = castSpell(state, SPELL_IDX["Phantom Host"], fakeRng([3]), []);
+  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([3]), []);
   const allyEvents = events.filter((e) => e.type === "allySummoned");
   assert.equal(allyEvents.length, 1, "exactly one ally event — no backfire branch taken");
-  assert.equal(allyEvents[0].lvl, 1, "min(5, level) — NOT doubled");
+  assert.equal(allyEvents[0].lvl, 4, "min(5, level) — NOT doubled");
   assert.equal(allyEvents[0].rounds, 5, "1*d4(3)+2, not the Summoner's 2*d4+2");
   assert.equal(events.some((e) => e.type === "summonBackfired"), false);
-  assert.equal(combat.ally.rounds, 5);
 });
 
-test("IDENT-04: a non-Illusionist at level 1 (Wizard with Phantom Host) is still refused", () => {
-  const state = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Phantom Host"] } });
-  const events = castSpell(state, SPELL_IDX["Phantom Host"], fakeRng([]), []);
-  assert.ok(events.some((e) => e.type === "spellAboveLevel" && e.need === 3 && e.have === 1));
+test("IDENT-04: a non-Summoner at level 1 (Wizard with Summon) is still refused: the exception is the Summoner's alone", () => {
+  const state = fixedState({ c: { sub: "Wizard", level: 1, grimoire: ["Summon"] } });
+  const events = castSpell(state, SPELL_IDX.Summon, fakeRng([]), []);
+  assert.ok(events.some((e) => e.type === "spellAboveLevel" && e.need === 2 && e.have === 1));
   assert.equal(state.c.spellsUsed, 0);
 });
 
@@ -284,6 +291,6 @@ test("SUB_NOTE: Wizard/Summoner/Illusionist describe the landed rules (guards Ta
   assert.match(SUB_NOTE.Wizard, /staff/i);
   assert.match(SUB_NOTE.Wizard, /attack spell/i);
   assert.match(SUB_NOTE.Summoner, /(first day|day one)/i);
-  assert.match(SUB_NOTE.Illusionist, /Phantom Host/);
+  assert.match(SUB_NOTE.Illusionist, /Mirror Self/);
   assert.match(SUB_NOTE.Illusionist, /d20/);
 });

@@ -285,15 +285,19 @@ for (const scenario of FIXTURE.scenarios) {
       // FID-06: Freeze now pays out via killFoe — a hit must show BOTH
       // frozenSolid (the narration) and foeKilled (the payout), not "one way
       // or another" as before this phase.
-      // Phase 31 (CMB-01, user ruling 2026-09-16): the seed-8 Illusionist's
-      // Beasts phobia triggers Afraid at Fight! — never a lost action. The
+      // Phase 31 (CMB-01, user ruling 2026-09-16): the hero's Beasts phobia
+      // (seed 8's Illusionist; since Phase 90 plan 06 seed 243's Sorcerer,
+      // re-picked because the Illusionist's chargen draws fewer main-rng values
+      // than the prototype's) triggers Afraid at Fight! — never a lost action. The
       // afraid caster still casts (spellThrown) and Freeze still pays out;
       // nothing is EVER refused for fear (no castRefused/strikeRefused).
       // User rulings 2026-09-28 (re-pinned, plan 79.2-01): a Freeze never
-      // kills outright — the halved 2 damage leaves the Shriek standing, and
-      // the survivor is frozen for its d4 (2) rounds: no frozenSolid, no
-      // foeKilled, and the fight goes on.
-      assert.ok(allEventTypes.includes("phobiaAfraid"), "the Illusionist's Beasts phobia triggered Afraid");
+      // kills outright — the halved damage leaves the foe standing, and
+      // the survivor is frozen for its d4 rounds: no frozenSolid, no
+      // foeKilled, and the fight goes on. (Seed 243: the Sorcerer's afraid
+      // Freeze does 3 to a Viper, which is frozen for 2 rounds and has 1 left
+      // after the same dispatch's tick.)
+      assert.ok(allEventTypes.includes("phobiaAfraid"), "the hero's Beasts phobia triggered Afraid");
       assert.ok(allEventTypes.includes("spellThrown"), "the afraid caster still casts");
       assert.ok(allEventTypes.includes("spellHit"), "the Freeze hit");
       assert.ok(allEventTypes.includes("controlHeld"), "the survivor was frozen for its d4");

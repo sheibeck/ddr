@@ -251,10 +251,11 @@
       "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "7": {
-      "phase": "40+54+79.2",
+      "phase": "40+54+79.2+90",
       "requirements": [
         "SPELL-04",
-        "BAND-02"
+        "BAND-02",
+        "SPELL-12"
       ],
       "fields": [
         "grimoire",
@@ -275,39 +276,58 @@
       },
       "after": {
         "grimoire": [
-          "Sense Presence",
-          "Mirror Self",
           "Stun",
+          "Freeze",
           "Heal",
-          "Lesser Summon"
+          "Stupidity"
         ],
         "maxWP": 43,
         "wp": 43,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "Phase 40 (SPELL-04): this Wizard's book (Sense Presence/Mirror Self/Stun/Heal) has no damage-dealing spell under the narrowed day-one guarantee (Stun no longer counts — control, not damage). content/spells.js's Lesser Summon (roll: \"derived\", lesser: true, so dealsDamage is true) is spliced into the day-one pool at a derived-random position for this seed and itself satisfies the guarantee, so it is appended — no Freeze needed. Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged)."
     },
     "8": {
-      "phase": "54+79.2",
+      "phase": "54+79.2+90",
       "requirements": [
-        "BAND-02"
+        "BAND-02",
+        "SPELL-12"
       ],
       "fields": [
+        "grimoire",
         "maxWP",
         "wp",
         "rations"
       ],
       "before": {
+        "grimoire": [
+          "Stupidity",
+          "Freeze",
+          "Acid",
+          "Insane",
+          "Mirror Self",
+          "Summon",
+          "Petrify",
+          "Phantom Host"
+        ],
         "maxWP": 31,
         "wp": 31,
         "rations": 4
       },
       "after": {
+        "grimoire": [
+          "Stupidity",
+          "Freeze",
+          "Acid",
+          "Insane",
+          "Mirror Self",
+          "Summon"
+        ],
         "maxWP": 43,
         "wp": 43,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged). This Illusionist loses Phantom Host from the book (the high pool is one shorter), so seed 8 gains a grimoire record: the prototype's last entry, Phantom Host, no longer exists."
     },
     "13": {
       "phase": "38+54+79.2",
@@ -339,11 +359,12 @@
       "rationale": "ABIL-02: Death-touch was converted to the Death Touch active and Tracking was dropped outright; Death Touch landed in c.abilities (deathTouch) instead of c.skills, and Tracking's table position is now Battle Roar (also an active). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "15": {
-      "phase": "40+54+79.2",
+      "phase": "40+54+79.2+90",
       "requirements": [
         "SPELL-04",
         "FID-06",
-        "BAND-02"
+        "BAND-02",
+        "SPELL-12"
       ],
       "fields": [
         "grimoire",
@@ -367,15 +388,15 @@
         "grimoire": [
           "Stupidity",
           "Stun",
-          "Lesser Summon",
           "Shield",
-          "Summon"
+          "Summon",
+          "Freeze"
         ],
         "maxWP": 39,
         "wp": 39,
         "rations": 6
       },
-      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 35 -> 39, wp 35 -> 39 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, 2026-09-18): the Phase 23 Summoner/Summon level-1 override is retired — Summon is spell level 2 again, no longer usable-now, so it no longer counts toward the two-usable-now top-up on its own. content/spells.js's Lesser Summon (roll: \"derived\") is spliced into this seed's shuffled low-level pool at a derived-random position, displacing Heal from the final book; the Summoner is also deterministically granted Lesser Summon (already present here from the splice, so no duplicate is pushed). Zero new main-rng draws — test/unit/chargen-rng-pin.test.js is unedited. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 35 -> 39, wp 35 -> 39 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged)."
     },
     "19": {
       "phase": "54+79.2",
@@ -400,13 +421,14 @@
       "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 44 -> 49, wp 44 -> 49 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "24": {
-      "phase": "40+54+75+79.2",
+      "phase": "40+54+75+79.2+90",
       "requirements": [
         "SPELL-04",
         "SPELL-05",
         "FID-06",
         "BAND-02",
-        "RULES-03"
+        "RULES-03",
+        "SPELL-12"
       ],
       "fields": [
         "grimoire",
@@ -433,13 +455,17 @@
           "Stupidity",
           "Sense Presence",
           "Weaken",
+          "Turn Walking Dead",
+          "Petrify",
+          "Earthquake",
+          "Blind",
           "Freeze"
         ],
         "maxWP": 43,
         "wp": 43,
         "rations": 6
       },
-      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Weaken (offense, ungated) instead — zero new/reordered rng draws, matching test/unit/chargen-rng-pin.test.js's unmoved cursor for this seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "Phase 40: Detect Magic renamed Map the Floor (SPELL-05, same table position, cosmetic). The Apprentice's ready set (Heal/Strength/Stupidity) still has no damage-dealing spell under the narrowed SPELL-04 guarantee (Stupidity is control, not damage) — Freeze is still appended by the day-one top-up, now checking dealsDamage instead of the retired isAttackSpell top-up, same result for this seed. This seed's Lesser Summon derived-random splice landed outside the day-one/spare cutoff, so it does not appear here — expected variance (test/unit/day-one-damage.test.js proves it appears for other seeds). Zero new main-rng draws. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. RULES-03 (Phase 75, user 2026-09-25): the Apprentice's divination gate is 3 — Map the Floor (divination) is no longer grant-time-legal at level 1, so engine/character.js#rollGrimoire's low walk skips it (grantableAt) and reaches one entry further into the already-shuffled low list, landing on Weaken (offense, ungated) instead — zero new/reordered rng draws, matching test/unit/chargen-rng-pin.test.js's unmoved cursor for this seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged)."
     },
     "29": {
       "phase": "40+54+75+79.2",

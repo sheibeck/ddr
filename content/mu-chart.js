@@ -7,7 +7,12 @@
 // engine/character.js in plan 01-05.
 
 export const MU_CHART = {
-  "Wizard": { offense: 3, protection: 0, healing: 0, divination: 0, special: 0, illusion: 0 },
+  // DELIBERATE RULES CHANGE (Phase 90 plan 06, SPELL-12, user ruling
+  // 2026-09-30; rulebook p.17): Illusion spells are the Illusionist's, and the
+  // Apprentice's ("even Illusionist spells") — the Wizard never learns that
+  // school. `illusion: null` means never learned (schoolAllowed false;
+  // identityFooter generates "never learns illusion spells").
+  "Wizard": { offense: 3, protection: 0, healing: 0, divination: 0, special: 0, illusion: null },
   "Warlock": {
     offense: 4, protection: 0, healing: 0, divination: 2, special: null, illusion: null,
     gate: { protection: 4, healing: 3 },

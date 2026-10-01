@@ -123,7 +123,9 @@ test("grantLevelAbilities grants one id per level up to upToLevel; a Fighter own
 test("newRun: every Fighter/Thief fixture seed has >= 1 pool ability at level 1; Magic Users stay empty; rngState is the pinned pre-phase value", () => {
   const NEW_RUN_PINS = {
     1: -1692776321, 2: 266671887, 3: 1466402031, 4: 266671889, 6: 202730694,
-    7: 514860380, 13: -365163772, 32: -1692776290,
+    // Phase 90 plan 06 (SPELL-12): seed 7 (a Wizard) re-measured 514860380 -> 1778531720 — see
+    // test/unit/chargen-rng-pin.test.js's declaration.
+    7: 1778531720, 13: -365163772, 32: -1692776290,
   };
   for (const [seedStr, pin] of Object.entries(NEW_RUN_PINS)) {
     const seed = Number(seedStr);

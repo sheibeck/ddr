@@ -155,20 +155,32 @@ test("grimoireViewModel: a school-locked spell names the school and level it ope
   assert.equal(row.disabledReason, "healing opens at level 4");
 });
 
-// Phase 40 (SPELL-04): the Phase 23 Summoner/Summon override is retired —
-// Summon is printed lvl 2 and spellLevelFor now falls back to sp.lvl for
-// the Summoner, so a level-1 Summoner's Summon row reads "Needs level 2"
-// again. The Summoner's level-1 summon is the new Lesser Summon row
-// instead, which IS castable at level 1.
-test("grimoireViewModel: a level-1 Summoner's Summon needs level 2 (Phase 40 retires the override); Lesser Summon is castable instead", () => {
-  const state = fixedState({ c: { grimoire: ["Summon", "Lesser Summon"], level: 1, sub: "Summoner", spellsUsed: 0 }, combat: null });
+// Phase 90 plan 06 (SPELL-12): the Summoner casts the level-2 Summon from
+// level 1 (the named exception, spellLevelFor), so its row is castable at
+// level 1 and PRINTS the effective level (L1, sorted with the level-1 spells)
+// — the row's `lvl` is the effective level, never the printed 2. Every other
+// sub-class still reads "Needs level 2" and L2.
+test("grimoireViewModel: a level-1 Summoner's Summon is castable and reads level 1 (the SPELL-12 exception); a Wizard's needs level 2 and reads 2", () => {
+  const state = fixedState({ c: { grimoire: ["Summon", "Doze", "Weaken"], level: 1, sub: "Summoner", spellsUsed: 0 }, combat: null });
   const vm = grimoireViewModel(state);
   const summonRow = vm.rows.find((r) => r.name === "Summon");
-  assert.equal(summonRow.castable, false);
-  assert.equal(summonRow.disabledReason, "Needs level 2");
-  const lesserRow = vm.rows.find((r) => r.name === "Lesser Summon");
-  assert.equal(lesserRow.castable, true);
-  assert.equal(lesserRow.disabledReason, null);
+  assert.equal(summonRow.castable, true);
+  assert.equal(summonRow.disabledReason, null);
+  assert.equal(summonRow.lvl, 1, "the row prints the EFFECTIVE level, which is what canCast gates on");
+  assert.deepEqual(vm.rows.map((r) => r.name), ["Doze", "Summon", "Weaken"], "sorted among the level-1 spells, in name order");
+  const wiz = grimoireViewModel(fixedState({ c: { grimoire: ["Summon"], level: 1, sub: "Wizard", spellsUsed: 0 }, combat: null }));
+  assert.equal(wiz.rows[0].castable, false);
+  assert.equal(wiz.rows[0].disabledReason, "Needs level 2");
+  assert.equal(wiz.rows[0].lvl, 2);
+});
+
+test("grimoireViewModel (SPELL-10): a tampered book holding a spell of a school the sub-class can never learn shows it disabled, never castable", () => {
+  const state = fixedState({ c: { grimoire: ["Summon", "Mirror Self"], level: 5, sub: "Wizard", spellsUsed: 0 }, combat: null });
+  const vm = grimoireViewModel(state);
+  const mirror = vm.rows.find((r) => r.name === "Mirror Self");
+  assert.equal(mirror.castable, false);
+  assert.equal(mirror.disabledReason, "Not your school");
+  assert.equal(vm.rows.find((r) => r.name === "Summon").castable, true, "the Wizard's special school is open at 5");
 });
 
 test("grimoireViewModel: a non-combat spell with no charges left is disabled (No charges left)", () => {

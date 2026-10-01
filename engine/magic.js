@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
+import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm } from "./combat.js";
@@ -82,17 +82,9 @@ const SINGLE_TARGET_KINDS = Object.freeze({
   thrown: "target",
 });
 
-// Phase 40 (SPELL-01/SPELL-04): the summon branch's two ally name tables,
-// moved to module consts (byte-identical strings, same order) so both the
-// full Summon/Phantom Host table and the new Lesser Summon table live in one
-// place. ALLY_NAMES is the pre-Phase-40 inline literal, unchanged.
+// The summon branch's ally name table (the pre-Phase-40 inline literal,
+// unchanged; Phase 90 plan 06 removed the Lesser Summon table beside it).
 const ALLY_NAMES = ["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"];
-const LESSER_ALLY_NAMES = [
-  "A thing with one horn, mostly",
-  "Something with nearly enough arms",
-  "A small grey sulk",
-  "A shape that is mildly upsetting to look at",
-];
 
 /**
  * castSpell(state, idx, rng, events, now) — resolves SPELLS[idx] by kind.
@@ -104,12 +96,11 @@ const LESSER_ALLY_NAMES = [
  * foresee/regen/death/stupid/blind/shrink). A bad `idx` (T-01-09a: no
  * validated range check upstream) is a safe no-op.
  *
- * Phase 40 (SPELL-01, research Pitfall 2): the thrown branch and the summon
- * branch read DATA FLAGS, never a spell name — Freeze's own `onHit` flag
- * (its damage-then-freeze tail), Lightning's own `aoe` flag (its every-foe case),
- * Lesser Summon's own `lesser` flag (its no-doubling/no-backfire rule) — so a
- * content-table rename can never silently break any of the three. See the
- * thrown branch and the summon branch below for the exact comparisons.
+ * Phase 40 (SPELL-01, research Pitfall 2): the thrown branch reads DATA
+ * FLAGS, never a spell name — Freeze's own `onHit` flag (its damage-then-
+ * freeze tail) and Lightning's own `aoe` flag (its every-foe case) — so a
+ * content-table rename can never silently break either. See the thrown
+ * branch below for the exact comparisons.
  */
 export function castSpell(state, idx, rng, events = [], now = Date.now) {
   const sp = SPELLS[idx];
@@ -126,10 +117,16 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   if (!c.scrollCast && !canCast(state, sp)) {
     if (!c.grimoire || !c.grimoire.includes(sp.n)) {
       events.push({ type: "spellNotKnown", spell: sp.n });
+    } else if (schoolClosed(c.sub, sp.s)) {
+      // Phase 90 plan 06 (SPELL-10): the book holds a spell whose school this
+      // sub-class can NEVER learn (an old or tampered book — a dealt book is
+      // gated at grant time). No level opens it, so the refusal names no level:
+      // `need: null`, `forbidden: true`.
+      events.push({ type: "spellSchoolLocked", spell: sp.n, school: sp.s, need: null, have: c.level, forbidden: true });
     } else if (spellLevelFor(c.sub, sp) > c.level) {
       // Phase 23 (IDENT-03/IDENT-04): one definition of "effective level" —
-      // spellLevelFor honors the per-sub override table (Summoner/Summon,
-      // Illusionist/Phantom Host) so this diagnostic can never disagree with
+      // spellLevelFor honors the per-sub override table (Phase 90 plan 06: the
+      // Summoner's Summon) so this diagnostic can never disagree with
       // canCast; byte-identical to the old `sp.lvl > c.level` check for
       // every (sub, spell) pair that has no override.
       events.push({ type: "spellAboveLevel", spell: sp.n, need: spellLevelFor(c.sub, sp), have: c.level });
@@ -209,15 +206,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   }
 
   if (sp.kind === "summon") {
-    // Phase 40 (SPELL-04): `sp.lesser === true` (Lesser Summon, the new
-    // level-1 row) is a data flag, never a spell name — the Summoner's
-    // doubled-creature and one-in-eight backfire rules NEVER apply to it (it
-    // is the safe, small trick the user ruling asked for). `doubled` stays
-    // exactly the pre-Phase-40 Summoner rule for every OTHER summon kind
-    // (Summon, Phantom Host).
-    const lesser = sp.lesser === true;
-    const doubled = c.sub === "Summoner" && !lesser; // a Summoner's FULL creatures come doubled
-    const lvl = lesser ? Math.max(1, Math.min(3, c.level - 1)) : Math.min(5, c.level + (doubled ? 1 : 0));
+    const doubled = c.sub === "Summoner"; // a Summoner's creatures come doubled
+    const lvl = Math.min(5, c.level + (doubled ? 1 : 0));
     // Phase 73 (ROLL-05): the same natural-1 mishap pattern as the
     // Apprentice backfire above — drawn ONLY when doubled (the ternary
     // preserves the old `&&` short-circuit), on its own tagged line.
@@ -235,18 +225,15 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     } else {
       const ally = {
         lvl,
-        // Lesser Summon: a plain d4, never doubled, never the +2 tacked onto
-        // the full table's roll — shorter, and never lengthened by a
-        // Summoner's own doubling (it isn't doubled here at all).
-        rounds: lesser ? rng.d(4) : (doubled ? 2 : 1) * rng.d(4) + 2, // roll:amount
-        name: rng.pick(lesser ? LESSER_ALLY_NAMES : ALLY_NAMES),
+        rounds: (doubled ? 2 : 1) * rng.d(4) + 2, // roll:amount
+        name: rng.pick(ALLY_NAMES),
       };
       if (C) {
         C.ally = ally;
-        events.push({ type: "allySummoned", name: ally.name, rounds: ally.rounds, lvl: ally.lvl, ...(lesser ? { lesser: true } : {}) });
+        events.push({ type: "allySummoned", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
       } else {
         c.pendingAlly = ally;
-        events.push({ type: "allyPending", name: ally.name, rounds: ally.rounds, lvl: ally.lvl, ...(lesser ? { lesser: true } : {}) });
+        events.push({ type: "allyPending", name: ally.name, rounds: ally.rounds, lvl: ally.lvl });
       }
     }
   } else if (sp.kind === "stun") {
