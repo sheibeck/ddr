@@ -7348,3 +7348,59 @@ different value: any fixture or pin whose hero is a Cleric moves, and nothing el
 
 **Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): the Cleric is the one class
 whose book, and so whose bot behaviour, changed. The Wizard's books and cursors did not move.
+
+### Phase 91 plan 03: the Illusionist picks where a teleport lands (IDENT-14)
+
+**The rule (report #3 and the user's decision, 2026-09-30).** Report #3: "I have a deserved illusionist. It says I
+choose where teleports takes me, but when I stepped on a teleport I didn't get to choose." An Illusionist's
+teleport now opens a pending pick (`state.pendingTeleport = { x, y, depth }`, `teleportPickOffered`); nothing
+moves and no rng value is drawn until the player picks a floor square the hero has already explored (up to 12
+squares along any of the 8 rays; fog stays fog, user 2026-09-30 "Explored squares only") or lets it choose
+(`teleportPick { auto: true }`, the old automatic landing: `bestTeleportDir`, a fixed 12). While a pick is open
+every other action returns the same state. Every non-Illusionist teleport draws and lands exactly as before
+(two d8 and a d20, the same order), through the same landing function. The key `pendingTeleport` exists only
+while a pick is open, so no fresh state, serialized fixture or state hash gains a field; it is carved out of all
+three `*Comparable()` functions anyway. `test/parity/prototype-master.js.txt` was not edited.
+
+**The predictor.** Only a run whose hero is an Illusionist and whose path steps on a teleport tile (or
+insanity-teleports) can move: the pick costs the bot exactly one extra validated action (`acts` rises by one per
+teleport, and every stream keyed on `acts` shifts from that point), and LET IT CHOOSE lands where the old
+automatic teleport landed. Everything else is byte-identical: the engine's only other change on a non-Illusionist
+path is that the rolled teleport now ends in the shared landing function, whose `teleported` event keeps its
+exact key set and order (pinned in `teleport-pick.test.js`).
+
+**The live scan (measured at the plan's end, against the base 30960ba1).**
+
+- `node tools/fixture-inventory.mjs --json`: the fixture roster did not move (no fixture seed forces an
+  Illusionist onto a teleport).
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass with no declaration (no parity script has an
+  Illusionist standing on a tele tile; the comparables strip `pendingTeleport` and `acts` regardless).
+- `roll-high-state-pins.test.js` and `roll-high-save-compat.test.js` (the `roll-high-baseline.mjs pins`
+  semantics): **0 of 8 labels moved** (none of solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1,
+  party-fighter-knight, deep-8, deep-14 is an Illusionist), the save-compat `expected` hash did not move.
+  Nothing re-recorded; `roll-high-baseline.mjs save` was never run.
+- `roll-high-guard.test.js`, `roll-high-helper.test.js`, `shell-tab-snapshots.test.js` (11 tests; no snapshot
+  shows an Illusionist), `save-resume`, `save-validation`, `test/determinism`, `test/persistence` and
+  `test/roundtrip`: 215 tests, all pass unchanged.
+- A scratch scan (not a balance run, nothing recorded): 40 forced-Illusionist bot runs of 600 actions reached a
+  teleport in 35 of them and answered 92 picks with LET IT CHOOSE, so any future fixture or pin that uses an
+  Illusionist will move by the extra `acts` per teleport; none does today.
+
+**Moved entries (each measured live, declared with before/after, regenerated alone).**
+
+1. `test/unit/movement.test.js`, "teleport: an Illusionist chooses their best direction and travels a fixed 12 (no
+   rng draws)": before, one call to `teleport()` landed the Illusionist at (17, 5) with `teleported { dist: 12,
+   used: "E" }`; after, the same call opens the pick with no move and no draw, and `resolveTeleportPick { auto:
+   true }` lands at (17, 5) with the same `dist` and `used` plus `auto: true`. Same landing, one more step.
+2. `test/unit/identity-audit.test.js`: `illusionist-book` left the pre-registered list (it is a live
+   `identityEntries` id now), like 91-02's two built traits.
+3. `docs/IDENTITY-AUDIT.md`: `illusionist-teleport` reads `fixed engine (91-03)`, `illusionist-book` reads
+   `fixed text (91-03)`, each with its Pinned by.
+4. `docs/narrative-pass/why/91-03.json` holds 8 rows (SUB_NOTE Illusionist, the two trait lines, the footer, the
+   Oracle and rail words of the two new events, the rail family title), each `after` taken from the live corpus;
+   `node tools/narrative-review.mjs` regenerated the pages and `--check` is in sync. The corpus's frozen variant
+   list renders no picked or let-it-choose `teleported` voice, so those two lines are pinned in
+   `teleport-pick-lines.test.js` instead.
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): an Illusionist's bot behaviour
+changes only by the extra answered pick. No existing cursor, pin or fixture moved.
