@@ -114,6 +114,12 @@ const EXEMPT = {
     applyPommel: "X5: Pommel Strike, a one-turn ability effect",
     applyDirtyTrick: "X5: Dirty Trick, a two-round ability effect",
   },
+  // Phase 89 plan 08 (ITEM-01, user Q1 2026-09-30): item and staff effects
+  // resist through the ONE depth-rising resist (combat.js#foeResistsEffect), not
+  // resistControl, and have no floor-12 hold or extra control resist.
+  "items.js": {
+    useItem: "X9: every item and staff effect rolls the one depth-rising resist (foeResistsEffect); no knee, no hold",
+  },
 };
 
 /**

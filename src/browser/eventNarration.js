@@ -118,6 +118,10 @@ const withArticle = (word) => `${/^[aeiou]/i.test(String(word)) ? "an" : "a"} ${
 // fallback when the event names no one ("its", never the "it's" a bare
 // `${e.name ?? "it"}'s` used to print).
 const possessive = (name, fallback) => (name ? `${name}'s` : fallback);
+// Phase 89 plan 08 (ITEM-01, Q1): the resist roll's parenthetical — the foe's
+// intelligence, plus the faces the floor added when the depth-rising resist
+// rolled (`depthFaces`, absent on shallow floors and on spells).
+const resistNote = (e) => `intel ${e.intel ?? "?"}${e.depthFaces > 0 ? `, depth +${e.depthFaces}` : ""}`;
 /** wardName(item) — critWarded's `item` is the warding item's display name
  * (engine/derived.js#critWardOf); an item object or a missing field reads
  * as its `n` or "cloak" (quick 260928-cos). */
@@ -1154,12 +1158,16 @@ export const EVENT_NARRATION = {
   // Joiner caster; the hero's own cast reads "your".
   // User ruling 2026-09-28: a Freeze rolls its resist after the damage
   // lands (`freeze: true`), and a resist stops only the ice.
+  // Phase 89 plan 08 (ITEM-01, Q1): a staff or amulet effect rolls the
+  // depth-rising resist; its event carries `depthFaces` (the faces the floor
+  // added, absent on the shallow floors), and the roll detail names it so the
+  // wider range is explained: (intel 1, depth +8).
   spellResisted: (e) =>
     e.freeze
-      ? `<span class="miss">${e.target ?? "It"} resists the freeze: the damage lands, the ice doesn't.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`
-      : `<span class="miss">${e.target ?? "It"} resists ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}: no effect.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+      ? `<span class="miss">${e.target ?? "It"} resists the freeze: the damage lands, the ice doesn't.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (${resistNote(e)}).</span>`
+      : `<span class="miss">${e.target ?? "It"} resists ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}: no effect.</span> <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (${resistNote(e)}).</span>`,
   resistFailed: (e) =>
-    `${e.target ?? "It"} fails to resist ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (intel ${e.intel ?? "?"}).</span>`,
+    `${e.target ?? "It"} fails to resist ${e.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e.spell ?? "spell"}. <span class="roll">${e.roll ?? "?"} vs ${rangeText(e.atLeast, e.dieN)} (${resistNote(e)}).</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) =>
     `<span class="hurt">Summoning: ${e.spell ?? "The spell"} answered, then turned on you — a ${e.sub ?? "Summoner"}'s doubled creatures come with a grudge.</span> −${e.amount ?? 0} hp.`,
@@ -1414,7 +1422,15 @@ export const EVENT_NARRATION = {
     `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (Half price, as always.)" : ""}${
       e.pickpocket ? " The shopkeeper knows a Pickpocket's face: you pay ×1.25 to buy, and get ×0.75 when you sell." : ""
     }`,
-  buyFailed: (e) => `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
+  // Phase 89 plan 08 (ITEM-06, Q4): a Joiner's repair line whose Joiner left
+  // (`repairGone`) or whose armour no longer needs mending (`nothingToMend`)
+  // refuses before any wilmst moves, and says so.
+  buyFailed: (e) =>
+    e.reason === "repairGone"
+      ? `<span class="miss">${e.name ?? "Someone"} has left the party, and took the armour along.</span> No charge. The shopkeeper shrugs.`
+      : e.reason === "nothingToMend"
+        ? `<span class="miss">${possessive(e.name, "That")} armour needs no mending any more.</span> No charge. The shopkeeper is almost disappointed.`
+        : `<span class="miss">You are short ${e.short ?? 0} wilmst.</span>`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-02): a store meal adds the HP it really restored.
   bought: (e) => {
@@ -1716,6 +1732,15 @@ export const EVENT_NARRATION = {
     if (e.reason === "notFought") return `<span class="miss">Fight! first.</span> It will keep.`;
     // Phase 39 (GEAR-05): the torch used while not dark.
     if (e.reason === "notDark") return `<span class="miss">It is not dark.</span> Save the torch for when it is.`;
+    // Phase 89 plan 08 (ITEM-01, Q5): a cure potion cures only its own kind.
+    // `need` is the kind it cures, `have` the kind carried (null for none).
+    // Refused and kept: the potion is not spent.
+    if (e.reason === "nothingToCure") {
+      const need = String(e.need ?? "that").toLowerCase();
+      return e.have
+        ? `<span class="miss">${item} only cures ${need}. What you have is ${String(e.have).toLowerCase()}.</span> Wrong bottle. It stays corked.`
+        : `<span class="miss">${item} only cures ${need}, and you have none.</span> It stays corked. Hypochondria is not a class.`;
+    }
     // RULES-09 (Phase 75.1): the Pilfer heal-only branch that used to live
     // here is gone (superseded by pilferFumbled below) — this is now a
     // generic fallback for any reason not named above.

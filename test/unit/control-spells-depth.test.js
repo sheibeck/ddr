@@ -22,6 +22,20 @@
 // 15d08ab, before this plan's magic.js / items.js edits) with this file's own
 // scenario builders — they are written expectations, never regenerated from
 // the new code.
+//
+// Phase 89 plan 08 (ITEM-01, docs/ITEM-AUDIT.md Q1 and Q6, user 2026-09-30):
+// the floor-12 special effects are gone from every ITEM effect and from the two
+// combat.js tails the items share with spells (freezeFoe, roomWeakenResists):
+// one depth-rising resist (derived.js#risingResistFaces, rolled by
+// combat.js#foeResistsEffect), no separate control resist, no three-round cap,
+// no hold. The rows this file pinned for Freeze (C1), Weaken (C14), the main-
+// draw parity of both, the scroll of Freeze, and the Birch (C4), Cedar (C12),
+// Oak / Amulet (C6) and Walnut (C16) items at floor 20 are re-pinned below to
+// the new rule (each says so). Every floor-12 digest row is UNCHANGED: at or
+// below floor 12 the rising resist IS the half-intel resist, byte for byte.
+// Their forced outcomes are found against the REAL foeRisingResistCheck
+// (`findRisingActs`), the way the RULES-18 rows were found against
+// controlResistCheck.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -29,7 +43,7 @@ import assert from "node:assert/strict";
 import { castSpell, readScroll } from "../../engine/magic.js";
 import { useItem } from "../../engine/items.js";
 import { foeTurn } from "../../engine/combat.js";
-import { controlResistCheck, foeSpellResistCheck } from "../../engine/derived.js";
+import { controlResistCheck, foeSpellResistCheck, foeRisingResistCheck, risingResistFaces } from "../../engine/derived.js";
 import { DIALS, controlHoldRoundsFor } from "../../engine/difficulty.js";
 import { SPELLS } from "../../content/index.js";
 import { STAVES, JEWELRY } from "../../content/treasure-tables.js";
@@ -117,6 +131,19 @@ function findActs(depth, wants) {
     if (ok && intelQuiet(acts, source)) return acts;
   }
   throw new Error(`findActs: nothing for ${JSON.stringify(wants)} at depth ${depth}`);
+}
+
+/** findRisingActs(depth, wants) — Phase 89 plan 08: the first state.acts
+ * (0..5000) whose REAL derived.js#foeRisingResistCheck (the one depth-rising
+ * resist, intel-1 foes) gives every `[source, idx, resisted]` in `wants`, off
+ * cursor 0, round 1, caster "you". */
+function findRisingActs(depth, wants) {
+  const probe = { getState: () => 0 };
+  for (let acts = 0; acts <= 20000; acts++) {
+    const ok = wants.every(([source, idx, resisted]) => foeRisingResistCheck({ floor: { depth }, acts, combat: { round: 1 } }, probe, source, idx, 1).resisted === resisted);
+    if (ok) return acts;
+  }
+  throw new Error(`findRisingActs: nothing for ${JSON.stringify(wants)} at depth ${depth}`);
 }
 
 /** intelQuiet(acts, source) — quick 260927-rsx (user ruling 2026-09-27):
@@ -227,7 +254,7 @@ test("floor 12: every hero control spell (Freeze excepted, user rulings 2026-09-
 // draw right after the damage. This row rolls a 3, the old hold's number.
 test("Freeze (C1) floor 20: a hit that leaves the foe standing and is not resisted holds it for the rolled d4 (3) — alive, none of killFoe's draws", () => {
   const s = spellState(20, "Freeze", 1, 1);
-  s.acts = findActs(20, [["freeze:Freeze", 0, false]]);
+  s.acts = findRisingActs(20, [["Freeze", 0, false]]); // Phase 89 plan 08: the one depth-rising resist
   const rng = fakeRng([1, 4, 3]); // to-hit d10 (raw 1 -> 10), damage d6 = 4, hold d4 = 3 — nothing else may draw
   const events = castSpell(s, IDX.Freeze, rng, []);
   const f = s.combat.foes[0];
@@ -242,18 +269,25 @@ test("Freeze (C1) floor 20: a hit that leaves the foe standing and is not resist
   assert.equal(rng.count(), 3);
 });
 
-test("Freeze (C1) floor 20: a resisted hit leaves the foe standing and damaged — controlResisted, no hold, no kill", () => {
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The floor-20 Freeze has ONE resist
+// (the depth-rising one, post-damage, `freeze: true`), not a resist plus a
+// control resist: a resist leaves the foe damaged and unfrozen, with a
+// spellResisted line carrying the floor's extra faces and no controlResisted.
+test("Freeze (C1) floor 20: a resisted hit leaves the foe standing and damaged — one rising spellResisted (freeze), no controlResisted, no hold, no kill", () => {
   const s = spellState(20, "Freeze", 1, 1);
-  s.acts = findActs(20, [["freeze:Freeze", 0, true]]);
+  s.acts = findRisingActs(20, [["Freeze", 0, true]]);
   const events = castSpell(s, IDX.Freeze, fakeRng([1, 4, ...PAD(10)]), []);
   const f = s.combat.foes[0];
   assert.equal(f.alive, true);
   assert.equal(f.wp, 25); // d6 4 + level² 1 (quick 260928-sq2)
-  assert.equal(f.resisted, "freeze");
+  assert.equal("resisted" in f, false, "no Unmoved mark: there is no separate control resist any more");
   assert.equal("held" in f, false);
-  const r = events.find((e) => e.type === "controlResisted");
-  assert.equal(r.source, "Freeze");
-  assert.equal(r.effect, "freeze");
+  const r = events.find((e) => e.type === "spellResisted");
+  assert.equal(r.spell, "Freeze");
+  assert.equal(r.freeze, true);
+  assert.equal(r.faces, risingResistFaces(20, 1));
+  assert.equal(r.depthFaces, 8);
+  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false);
   assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "foeKilled"), false);
 });
 
@@ -303,19 +337,23 @@ test("Stun (C8) floor 20: three affected foes, the second resists — 1 and 3 as
   assert.equal(events.filter((e) => e.type === "controlResisted").length, 1);
 });
 
-test("Weaken (C14) floor 20: resisted -> no weakened flag, no timer, every live foe Unmoved; landed -> today's d4+1", () => {
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The room has no extra resist past
+// floor 12: each live foe rolls its own depth-rising resist, and when every
+// one resists nothing lands (no Unmoved marks, no controlResisted).
+test("Weaken (C14) floor 20: every foe resisting -> no weakened flag, no timer; a foe failing its resist -> today's d4+1", () => {
   const r = spellState(20, "Weaken", 1, 2);
-  r.acts = findActs(20, [["weaken:Weaken", 0, true]]);
+  r.acts = findRisingActs(20, [["Weaken", 0, true], ["Weaken", 1, true]]);
   const rngR = fakeRng([3, ...PAD(10)]);
   const evR = castSpell(r, IDX.Weaken, rngR, []);
   assert.equal(!!r.combat.weakened, false);
   assert.equal(r.c.timers && r.c.timers["spell:weaken"], undefined);
-  assert.deepEqual(r.combat.foes.map((f) => f.resisted), ["weaken", "weaken"]);
+  assert.deepEqual(r.combat.foes.map((f) => f.resisted), [undefined, undefined], "no Unmoved marks: no separate room resist");
   assert.equal(evR.some((e) => e.type === "weakened"), false);
-  assert.equal(evR.filter((e) => e.type === "controlResisted").length, 1, "one resist for the room");
+  assert.equal(evR.filter((e) => e.type === "spellResisted").length, 2, "each foe's own resist");
+  assert.equal(evR.some((e) => e.type === "controlResisted"), false);
 
   const l = spellState(20, "Weaken", 1, 2);
-  l.acts = findActs(20, [["weaken:Weaken", 0, false]]);
+  l.acts = findRisingActs(20, [["Weaken", 0, false]]);
   const evL = castSpell(l, IDX.Weaken, fakeRng([3, ...PAD(10)]), []);
   assert.equal(l.combat.weakened, true);
   assert.equal(evL.find((e) => e.type === "weakened").rounds, 4);
@@ -431,11 +469,16 @@ test("main-draw parity: for every control spell on floor 20, a resisted and a la
   // User rulings 2026-09-28 (re-pinned): Freeze's cast now takes 3 main
   // draws either way — to-hit, damage and the hold's d4 (drawn resisted or
   // not, like Doze's d4).
+  // Phase 89 plan 08: Freeze and Weaken ("rising" rows) resist through the one
+  // depth-rising resist now (a `spellResisted` line, found by findRisingActs;
+  // Weaken needs BOTH foes resisting for nothing to land); the rest still
+  // resist through the RULES-18 control resist until Phase 90.
+  const RISING = new Set(["Freeze", "Weaken"]);
   const CASES = [
-    ["Freeze", "freeze:Freeze", [0], 3],
+    ["Freeze", "Freeze", [0], 3],
     ["Doze", "sleep:Doze", [0], 1],
     ["Stun", "sleep:Stun", [0, 1, 2], 4],
-    ["Weaken", "weaken:Weaken", [0], 1],
+    ["Weaken", "Weaken", [0, 1], 1],
     ["Stupidity", "stupid:Stupidity", [0], 0],
     ["Blind", "blind:Blind", [0], 0],
     ["Shrink", "shrink:Shrink", [0, 1, 2], 1],
@@ -449,11 +492,11 @@ test("main-draw parity: for every control spell on floor 20, a resisted and a la
       const s = spellState(20, name, level, nFoes);
       s.c.regen = true;
       s.c.wp = 20;
-      s.acts = findActs(20, idxs.map((i) => [purpose, i, resisted]));
+      s.acts = RISING.has(key) ? findRisingActs(20, idxs.map((i) => [purpose, i, resisted])) : findActs(20, idxs.map((i) => [purpose, i, resisted]));
       const rng = fakeRng([...seq, ...PAD(20)]);
       const events = markingEvents(rng, "regenerated");
       castSpell(s, IDX[name], rng, events);
-      assert.equal(events.some((e) => e.type === "controlResisted"), resisted, `${key} resisted=${resisted}`);
+      assert.equal(events.some((e) => e.type === (RISING.has(key) ? "spellResisted" : "controlResisted")), resisted, `${key} resisted=${resisted}`);
       assert.equal(events.marks.length, 1, `${key}: the regen marker fired once`);
       return events.marks[0];
     });
@@ -465,7 +508,7 @@ test("main-draw parity: for every control spell on floor 20, a resisted and a la
 test("a scroll of Freeze read in combat on floor 20 meets the same rule (castSpell's own branch)", () => {
   const s = spellState(20, "Freeze", 1, 1);
   s.c.scrolls = 1;
-  s.acts = findActs(20, [["freeze:Freeze", 0, false]]);
+  s.acts = findRisingActs(20, [["Freeze", 0, false]]);
   // User rulings 2026-09-28: plus the hold's d4 (3).
   const rng = { ...fakeRng([1, 4, 3]), pick: (arr) => arr.find((sp) => sp.n === "Freeze") };
   const events = readScroll(s, rng, []);
@@ -532,74 +575,83 @@ test("floor 12: every control item (the Birch Staff excepted, user rulings 2026-
 // User rulings 2026-09-28 (re-pinned): the staff's freeze is a frozen hold
 // for a rolled d4 (one main draw per foe reached, resisted or not), never a
 // 99-round (or 3-round) sleep.
-test("Birch Staff (C4) floor 20: the first target resists (awake, Unmoved, not held), the second is frozen for its d4 (3); one d4 per foe reached", () => {
-  const acts = findActs(20, [["freeze:Birch Staff", 0, true], ["freeze:Birch Staff", 1, false]]);
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The staff's freeze has ONE resist
+// (the depth-rising one, inside freezeFoe): a resisting foe is untouched and
+// unmarked, the other is frozen for its d4 (3), one d4 per foe reached.
+test("Birch Staff (C4) floor 20: the first target resists (awake, not held), the second is frozen for its d4 (3); one d4 per foe reached; no controlResisted", () => {
+  const acts = findRisingActs(20, [["Birch Staff", 0, true], ["Birch Staff", 1, false]]);
   const { s, rng, events } = useScenario("Birch", 20, acts, [2, 3, ...PAD(40)]);
   const [f1, f2, f3] = s.combat.foes;
   assert.equal(f1.asleep, 0);
-  assert.equal(f1.resisted, "freeze");
+  assert.equal("resisted" in f1, false);
   assert.equal("held" in f1, false);
   assert.equal(f2.asleep, 0);
   assert.equal(events.find((e) => e.type === "controlHeld" && e.target === "F2").rounds, 3);
   assert.equal(f3.asleep, 0, "outside the staff's two squares");
   assert.equal("held" in f3, false, "outside the staff's two squares");
-  assert.equal(events.filter((e) => e.type === "controlResisted").length, 1);
+  assert.equal(events.filter((e) => e.type === "spellResisted").length, 1);
+  assert.equal(events.some((e) => e.type === "controlResisted"), false);
   assert.equal(rng.count(), 2);
 });
 
-test("Cedar Staff (C12) floor 20: every non-resisting foe sleeps 3 (not 99); a resisting one stays awake", () => {
-  const acts = findActs(20, [["sleep:Cedar Staff", 0, false], ["sleep:Cedar Staff", 1, true], ["sleep:Cedar Staff", 2, false]]);
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. A foe that fails the one resist
+// sleeps the rest of the fight (99 rounds) at floor 20, never three.
+test("Cedar Staff (C12) floor 20: every non-resisting foe sleeps the fight (99, not 3); a resisting one stays awake", () => {
+  const acts = findRisingActs(20, [["Cedar Staff", 0, false], ["Cedar Staff", 1, true], ["Cedar Staff", 2, false]]);
   const { s, rng } = useScenario("Cedar", 20, acts);
-  assert.deepEqual(s.combat.foes.map((f) => f.asleep), [3, 0, 3]);
-  assert.equal(s.combat.foes[1].resisted, "sleep");
+  assert.deepEqual(s.combat.foes.map((f) => f.asleep), [99, 0, 99]);
+  assert.equal("resisted" in s.combat.foes[1], false);
   assert.equal(rng.count(), 0);
 });
 
-test("Oak Staff and Amulet of Stone (C6) floor 20: a non-resisting target is held as stone and alive, and foeStoned never names it", () => {
-  const acts = findActs(20, [["stone:Oak Staff", 0, false], ["stone:Oak Staff", 1, true]]);
-  const { s, rng, events } = useScenario("Oak", 20, acts);
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. A stone that lands KILLS at floor
+// 20 (foeStoned names it, killFoe pays it); no hold, no extra control resist.
+test("Oak Staff and Amulet of Stone (C6) floor 20: a non-resisting target is stoned outright (dead, named by foeStoned), a resisting one is untouched; no hold", () => {
+  const acts = findRisingActs(20, [["Oak Staff", 0, false], ["Oak Staff", 1, true]]);
+  const { s, events } = useScenario("Oak", 20, acts);
   const [f1, f2] = s.combat.foes;
-  assert.equal(f1.alive, true);
-  assert.deepEqual(f1.held, { kind: "stone", left: 3 }, "an item is a free action: no foe turn spends the hold yet");
+  assert.equal(f1.alive, false);
+  assert.equal("held" in f1, false);
   assert.equal(f2.alive, true);
-  assert.equal(f2.resisted, "stone");
-  assert.equal(events.some((e) => e.type === "foeStoned"), false);
-  assert.equal(events.some((e) => e.type === "foeKilled"), false);
-  assert.equal(rng.count(), 0, "nothing died, so none of killFoe's draws");
+  assert.equal("held" in f2, false);
+  assert.deepEqual(events.find((e) => e.type === "foeStoned").names, ["F1"]);
+  assert.equal(events.filter((e) => e.type === "foeKilled").length, 1);
+  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false);
 
-  const actsA = findActs(20, [0, 1, 2, 3].map((i) => ["stone:Amulet of Stone", i, false]));
+  const actsA = findRisingActs(20, [0, 1, 2, 3].map((i) => ["Amulet of Stone", i, false]));
   const a = useScenario("Amulet", 20, actsA);
-  assert.deepEqual(a.s.combat.foes.map((f) => f.held?.kind ?? null), ["stone", "stone", "stone", "stone", null]);
-  assert.equal(a.s.combat.foes.every((f) => f.alive), true);
-  assert.equal(a.events.filter((e) => e.type === "controlHeld").length, 4);
-  assert.equal(a.events.some((e) => e.type === "foeStoned"), false);
+  assert.deepEqual(a.s.combat.foes.map((f) => f.alive), [false, false, false, false, true]);
+  assert.deepEqual(a.events.find((e) => e.type === "foeStoned").names, ["F1", "F2", "F3", "F4"]);
+  assert.equal(a.events.some((e) => e.type === "controlHeld"), false);
 });
 
-test("Walnut Staff (C16): floor 20 resisted -> no weakened flag, every live foe Unmoved; landed -> a 3-round spell:weaken timer that clears the flag; floor 12 -> the fight, no timer", () => {
-  const actsR = findActs(20, [["weaken:Walnut Staff", 0, true]]);
+// Phase 89 plan 08 (ITEM-01, Q1 and Q6): re-pinned. The staff casts the full
+// Weaken (half damage and the top-three-faces to-hit cap) for the whole fight
+// at every depth: no three-round timer past the knee, no Unmoved marks.
+test("Walnut Staff (C16): floor 20 every foe resisting -> no weakened flag; a foe failing -> half damage and the top-three cap for the fight (no timer, no fade); floor 12 the same", () => {
+  const actsR = findRisingActs(20, [["Walnut Staff", 0, true], ["Walnut Staff", 1, true]]);
   const r = useScenario("Walnut", 20, actsR);
   assert.equal(!!r.s.combat.weakened, false);
-  assert.deepEqual(r.s.combat.foes.map((f) => f.resisted), ["weaken", "weaken"]);
+  assert.equal(!!r.s.combat.foeToHitPenalty, false);
+  assert.deepEqual(r.s.combat.foes.map((f) => f.resisted), [undefined, undefined]);
   assert.equal(r.s.c.timers["spell:weaken"], undefined);
 
-  const actsL = findActs(20, [["weaken:Walnut Staff", 0, false]]);
+  const actsL = findRisingActs(20, [["Walnut Staff", 0, false]]);
   const l = useScenario("Walnut", 20, actsL);
   assert.equal(l.s.combat.weakened, true);
-  assert.equal(l.s.c.timers["spell:weaken"].left, 3);
+  assert.equal(l.s.combat.foeToHitPenalty, 3, "the Weaken spell's own cap (Q6)");
+  assert.equal(l.s.c.timers["spell:weaken"], undefined, "no three-round timer past floor 12 (Q1)");
   const rng = fakeRng(PAD(40));
-  const ticks = [1, 2, 3].map(() => {
+  const ticks = [1, 2, 3, 4, 5].map(() => {
     const ev = foeTurn(l.s, rng, []);
     return { weakened: !!l.s.combat.weakened, faded: ev.some((e) => e.type === "weakenFaded") };
   });
-  assert.deepEqual(ticks, [
-    { weakened: true, faded: false },
-    { weakened: true, faded: false },
-    { weakened: false, faded: true },
-  ]);
+  assert.deepEqual(ticks, new Array(5).fill({ weakened: true, faded: false }));
 
   const t = useScenario("Walnut", 12);
   assert.equal(t.s.combat.weakened, true);
-  assert.equal(t.s.c.timers["spell:weaken"], undefined, "at or below the knee the weaken lasts the fight");
+  assert.equal(t.s.combat.foeToHitPenalty, 3);
+  assert.equal(t.s.c.timers["spell:weaken"], undefined, "at every depth the weaken lasts the fight");
 });
 
 // User rulings 2026-09-28 (re-pinned): Freeze left this list — it never

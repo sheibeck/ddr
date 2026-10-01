@@ -35,6 +35,7 @@ never a generic "you can't do that."
 | *(its own event, not a reason string)* | `pilferFumbled` | (RULES-09, Phase 75.1) a Pilfer's use of a jewel/cloak/staff rolls a derived d20; on a 1 the use fails, the item explodes for a d10 to the Pilfer only (no armor/ward soak) and turns to dust — potions, scrolls and tools never roll this die | `pilferFumbled` |
 | notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no `c.worn` slot; see `notWielded` below for its own bag-use refusal) | useRefused |
 | `notWielded` | `useRefused` | (RULES-13, Phase 75, user 2026-09-25) a staff addressed by BAG INDEX that is not the currently-wielded one (`wieldedStaff(c) !== it`) — a staff's charged power works only while equipped into the weapon slot; reverses the 2026-09-18 bag-use amendment. The wielded staff, addressed via `{ slot: "weapon" }`, is unaffected | `useRefused` |
+| `nothingToCure {need,have}` | `useRefused` | (Phase 89 plan 08, ITEM-01, docs/ITEM-AUDIT.md Q5, user 2026-09-30) a Cure Poison or Cure Disease potion drunk while the drinker carries none of ITS kind of affliction (`need` is "Poison" or "Disease", `have` the kind carried or null) — refused BEFORE `itemUsed`, the potion is kept, nothing is drawn; each cure clears only its own kind | `useRefused` |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
 | `abilityRefused` reasons | `abilityRefused` | (Phase 38, ABIL-01/04) the ABILITIES submenu's own ladder: `unknown` (not in the catalog, or not owned) · `cooldown {left}` (rounds remaining — the canon "Your arm has opinions." line) · `notInCombat` (no active encounter) · `noTarget` (structurally unreachable in combat, same reasoning as `castSpell`'s own retarget) · `notLowEnough` (Last Stand above a quarter hp, payload `have`/`max`) — plus the shared `notFought` above. Every reason names the ability; rows stay TAPPABLE on cooldown (never disabled) — the dispatch itself is the refusal | `abilityRefused` |
 
@@ -118,11 +119,11 @@ Gauntlet's own matching row.
 | Potion | eff | Explore | Combat | Pending | Pilfer |
 |---|---|---|---|---|---|
 | Healing | heal | `healed` | `healed` | `useRefused notFought` | allowed |
-| Cure Poison | poison | `cured` | `cured` | `useRefused notFought` | allowed |
+| Cure Poison | poison | `cured` (a Poison affliction), else `useRefused nothingToCure` | same | `useRefused notFought` | allowed |
 | Speed | speed | `itemUsed` (haste=50) | same | `useRefused notFought` | allowed |
 | Xtra Healing | full | `healed` | `healed` | `useRefused notFought` | allowed |
 | Strength | strength | `itemUsed` (might+8) | same | `useRefused notFought` | allowed |
-| Cure Disease | disease | `cured` | `cured` | `useRefused notFought` | allowed |
+| Cure Disease | disease | `cured` (a Disease affliction), else `useRefused nothingToCure` | same | `useRefused notFought` | allowed |
 | Enlarge | enlarge | `itemUsed` (size +1, 50 squares) | same | `useRefused notFought` | allowed |
 | Acuteness | acute | `itemUsed` (acute=d8) | same | `useRefused notFought` | allowed |
 | Death | death | `died` | `died` | `useRefused notFought` | allowed |

@@ -250,6 +250,39 @@ export function rationsLeft(line) {
 }
 
 /**
+ * memberArmourToMend(sheet) — Phase 89 plan 08 (ITEM-06, Q4): the repair a
+ * Joiner's armour could buy, `{ pts }` (armour points missing), or null when
+ * there is nothing to buy: no sheet, a downed one, no armour worn (`armor`
+ * missing or "Nothing", or AR 0), a whole piece, or one already at 0 (a
+ * destroyed armour cannot be repaired, the hero's own rule). Pure, no rng.
+ */
+export function memberArmourToMend(sheet) {
+  if (!sheet || typeof sheet !== "object" || sheet.status === "downed") return null;
+  if (typeof sheet.armor !== "string" || sheet.armor === "Nothing" || !(sheet.ar > 0)) return null;
+  const left = Number(sheet.armorWP);
+  const max = Number(sheet.armorMax);
+  if (!(left > 0 && left < max)) return null;
+  return { pts: max - left };
+}
+
+/**
+ * memberRepairRefusal(state, line) — Phase 89 plan 08 (ITEM-06, Q4): the
+ * pre-payment check for a Joiner's repair line (effectId `repairArmor` with a
+ * `member` param). Returns null for every other line and for a Joiner still
+ * in the party (same index, same name) whose armour can still be mended;
+ * otherwise the `buyFailed` event to push: `{ type: "buyFailed", reason: "repairGone" | "nothingToMend", name }`
+ * (`name` is the Joiner the line was written for). Pure, no rng.
+ */
+export function memberRepairRefusal(state, line) {
+  const params = line && line.effectParams;
+  if (!line || line.effectId !== "repairArmor" || !params || !Number.isInteger(params.member)) return null;
+  const sheet = Array.isArray(state.party) ? state.party[params.member] : null;
+  if (!sheet || sheet.name !== params.name) return { type: "buyFailed", reason: "repairGone", name: params.name };
+  if (!memberArmourToMend(sheet)) return { type: "buyFailed", reason: "nothingToMend", name: params.name };
+  return null;
+}
+
+/**
  * STORE_EFFECTS — effectId → (state, params, events) => void. The engine-
  * side replacement for every stock entry's `buy` closure. Never stored on
  * `state` itself; `buyFrom` looks the effect up here by the plain-data
@@ -289,6 +322,16 @@ export const STORE_EFFECTS = {
     stowItem(state, params.item, events, false);
   },
   repairArmor(state, params, events) {
+    // Phase 89 plan 08, ITEM-06 (Q4): a Joiner's line carries `member` (its
+    // party index) and mends THAT sheet's armour only; the hero's own line
+    // (no params) mends the hero's, exactly as before. buyFrom's pre-payment
+    // check (memberRepairRefusal) already proved the sheet is still there and
+    // hurt, so the guard here is defensive, never load-bearing.
+    if (params && Number.isInteger(params.member)) {
+      const sheet = Array.isArray(state.party) ? state.party[params.member] : null;
+      if (sheet && memberArmourToMend(sheet)) sheet.armorWP = sheet.armorMax;
+      return;
+    }
     state.c.armorWP = state.c.armorMax;
   },
   buyWeapon(state, params, events) {
@@ -435,6 +478,19 @@ export function openStore(state, rng, events = []) {
     const pts = c.armorMax - c.armorWP;
     add(`Repair your ${c.armor.toLowerCase()}`, (priceFor(base, race, c.sub) / 10) * pts, "repairArmor", null, `${pts} points at a tenth of its cost each`);
   }
+  // Phase 89 plan 08, ITEM-06 (Joiner armour repair, docs/ITEM-AUDIT.md Q4,
+  // user 2026-09-30): "each store offers a repair line for each Joiner's
+  // armour, on the hero's rule (a tenth of the armour's cost per point)".
+  // One line per party member whose armour is worn and hurt, in party order,
+  // right after the hero's own line; the hero's store price modifiers apply
+  // (the hero is the one paying), and the line carries the Joiner's party
+  // index and name so STORE_EFFECTS.repairArmor mends that sheet. No rng.
+  (Array.isArray(state.party) ? state.party : []).forEach((sheet, idx) => {
+    const m = memberArmourToMend(sheet);
+    if (!m) return;
+    const base = (ARMORS.find((a) => a.name === sheet.armor) || ARMORS[0]).cost;
+    add(`Repair ${sheet.name}'s ${String(sheet.armor).toLowerCase()}`, (priceFor(base, race, c.sub) / 10) * m.pts, "repairArmor", { member: idx, name: sheet.name }, `${m.pts} points at a tenth of its cost each`);
+  });
 
   const arms = Object.keys(WEAPONS).filter((w) => WEAPONS[w].cls.includes(letter));
   rng.shuffle(arms);
@@ -656,6 +712,15 @@ export function buyFrom(state, idx, events = []) {
   if (!item || item.sold) return events;
   const isRations = item.effectId === "buyRations";
   if (isRations && rationsLeft(item) <= 0) return events;
+  // Phase 89 plan 08, ITEM-06 (Q4): a Joiner's repair line whose Joiner has
+  // left (dismissed from the Hero tab while the store was open) or whose
+  // armour is no longer mendable refuses BEFORE any gold moves, like every
+  // other refusal here. The line stays unsold on the shelf.
+  const repairGone = memberRepairRefusal(state, item);
+  if (repairGone) {
+    events.push(repairGone);
+    return events;
+  }
   const refusal = storeBuyRefusal(state.c, item);
   if (refusal) {
     if (refusal.reason === "insufficientGold") {

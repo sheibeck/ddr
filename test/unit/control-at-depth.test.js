@@ -35,7 +35,7 @@ import {
   alliesTurn,
   sing,
 } from "../../engine/combat.js";
-import { targetStrikeFaces, controlResistRoll, controlResistCheck } from "../../engine/derived.js";
+import { targetStrikeFaces, controlResistRoll, controlResistCheck, foeRisingResistCheck } from "../../engine/derived.js";
 import {
   DIALS,
   setDialsForTuning,
@@ -165,6 +165,31 @@ function forceControlResist(purpose, idx, depth, round, cursor, wantResisted) {
     if (r.rolled && r.resisted === wantResisted) return acts;
   }
   throw new Error(`forceControlResist: no acts found for ${purpose}/${idx} depth ${depth} round ${round} cursor ${cursor} want ${wantResisted}`);
+}
+
+/**
+ * forceRisingResist(source, caster, idx, depth, round, cursor, wantResisted) —
+ * Phase 89 plan 08 (ITEM-01, Q1): the twin of forceControlResist for the ONE
+ * depth-rising resist (derived.js#foeRisingResistCheck, intel-1 foes) that
+ * freezeFoe and roomWeakenResists roll now. Same search over state.acts off a
+ * fixed cursor; the REAL check, never a mock.
+ */
+function forceRisingResist(source, caster, idx, depth, round, cursor, wantResisted) {
+  const probe = { getState: () => cursor };
+  for (let acts = 0; acts <= 5000; acts++) {
+    const r = foeRisingResistCheck({ floor: { depth }, acts, combat: { round } }, probe, source, idx, 1, caster);
+    if (r.resisted === wantResisted) return acts;
+  }
+  throw new Error(`forceRisingResist: no acts found for ${source}/${caster}/${idx} depth ${depth} want ${wantResisted}`);
+}
+
+/** forceRisingResistAll — the first acts where EVERY foe idx in `idxs` gets `wantResisted`. */
+function forceRisingResistAll(source, caster, idxs, depth, round, cursor, wantResisted) {
+  const probe = { getState: () => cursor };
+  for (let acts = 0; acts <= 5000; acts++) {
+    if (idxs.every((idx) => foeRisingResistCheck({ floor: { depth }, acts, combat: { round } }, probe, source, idx, 1, caster).resisted === wantResisted)) return acts;
+  }
+  throw new Error(`forceRisingResistAll: no acts found for ${source}/${caster}/${idxs} depth ${depth}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +409,7 @@ test("held skip: a held foe's asleep count runs down alongside — asleep 5 read
 test("Joiner Freeze (C2): floor 20, a hit that leaves the foe standing and is not resisted holds it for the rolled d4 — no killFoe, no kill draws", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth: 20 } });
-  state.acts = forceControlResist("freeze:Freeze", 0, 20, 1, 0, false);
+  state.acts = forceRisingResist("Freeze", "Ada", 0, 20, 1, 0, false); // Phase 89 plan 08: the one depth-rising resist
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
   // check roll (d10, raw 5 -> mirrored 6, hits need 6 with school+3), dmg (d6, raw 4), hold d4 (3).
   const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
@@ -396,17 +421,21 @@ test("Joiner Freeze (C2): floor 20, a hit that leaves the foe standing and is no
   assert.ok(events.some((e) => e.type === "controlHeld" && e.freeze === true && e.rounds === 3));
 });
 
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The Joiner's floor-20 Freeze has
+// one resist (the depth-rising one, freezeFoe's): no controlResisted, no
+// Unmoved mark.
 test("Joiner Freeze (C2): floor 20, a resisted hit leaves the foe standing, damaged, with no hold (the d4 is drawn either way)", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Freeze"] })], floor: { depth: 20 } });
-  state.acts = forceControlResist("freeze:Freeze", 0, 20, 1, 0, true);
+  state.acts = forceRisingResist("Freeze", "Ada", 0, 20, 1, 0, true);
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
   const events = alliesTurn(state, fakeRng([5, 4, 3]), []);
   assert.equal(foe.alive, true);
   assert.equal(foe.wp, 25, "the damage landed (d6 4 + the level-1 Joiner's level² 1, quick 260928-sq2)");
   assert.equal("held" in foe, false);
-  assert.equal(foe.resisted, "freeze");
-  assert.ok(events.some((e) => e.type === "controlResisted"));
+  assert.equal("resisted" in foe, false);
+  assert.ok(events.some((e) => e.type === "spellResisted" && e.freeze === true && e.by === "Ada"));
+  assert.equal(events.some((e) => e.type === "controlResisted"), false);
   const hit = events.find((e) => e.type === "allySpellHit");
   assert.equal(hit.effect, "damage");
 });
@@ -485,21 +514,25 @@ test("Joiner Doze (C9): draw parity — the main rng cursor after a resisted cas
   assert.equal(rng1.getState(), rng2.getState(), "the main cursor advances identically regardless of the resist outcome");
 });
 
-test("Joiner Weaken (C15): floor 20, the d4+1 is always drawn; resisted means no weakened flag and every live foe marked; landed means today's d4+1 timer", () => {
+// Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The Joiner's Weaken has no extra
+// room resist past floor 12: each live foe rolls its own depth-rising resist;
+// when every one resists nothing lands (no Unmoved marks).
+test("Joiner Weaken (C15): floor 20, the d4+1 is always drawn; every foe resisting means no weakened flag; a foe failing its resist means today's d4+1 timer", () => {
   const foeR1 = fixedFoe({ name: "R1", type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const foeR2 = fixedFoe({ name: "R2", type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateR = fixedState({ party: [muMember({ grimoire: ["Weaken"] })], floor: { depth: 20 } });
-  stateR.acts = forceControlResist("weaken:Weaken", 0, 20, 1, 0, true);
+  stateR.acts = forceRisingResistAll("Weaken", "Ada", [0, 1], 20, 1, 0, true);
   stateR.combat = fixedCombat([foeR1, foeR2], { allies: [fixedAlly()] });
   const eventsR = alliesTurn(stateR, fakeRng([3]), []);
   assert.equal(stateR.combat.weakened, undefined);
-  assert.equal(foeR1.resisted, "weaken");
-  assert.equal(foeR2.resisted, "weaken", "every live foe is marked, not just the aimed-at target");
+  assert.equal("resisted" in foeR1, false);
+  assert.equal("resisted" in foeR2, false, "no Unmoved marks: no separate room resist");
+  assert.equal(eventsR.filter((e) => e.type === "spellResisted").length, 2);
   assert.equal(eventsR.some((e) => e.type === "allySpellHit"), false);
 
   const foeL = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateL = fixedState({ party: [muMember({ grimoire: ["Weaken"] })], floor: { depth: 20 } });
-  stateL.acts = forceControlResist("weaken:Weaken", 0, 20, 1, 0, false);
+  stateL.acts = forceRisingResist("Weaken", "Ada", 0, 20, 1, 0, false);
   stateL.combat = fixedCombat([foeL], { allies: [fixedAlly()] });
   const eventsL = alliesTurn(stateL, fakeRng([3]), []);
   assert.equal(stateL.combat.weakened, true);

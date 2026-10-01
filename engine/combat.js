@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeSpellResistCheck, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1115,8 +1115,11 @@ export function killFoe(state, f, rng, events = []) {
 /**
  * resistControl(state, foe, effect, source, idx, rng, events) — RULES-18
  * (Phase 75.3, user ruling 2026-09-25): the ONE resist gate every past-the-
- * knee control site in this file (audit ids C2, C3, C9, C13, C15) calls
- * before landing Freeze, Doze/Stun, Weaken or a Bard song's sleep. Reads
+ * knee control site in this file (audit ids C3, C9, C13) calls before
+ * landing Ice, Doze/Stun or a Bard song's sleep (Phase 89 plan 08 moved C2 and
+ * C15, the Freeze and Weaken tails `freezeFoe` and `roomWeakenResists`, and
+ * every item effect onto `foeResistsEffect`, the depth-rising resist; Phase 90
+ * moves the rest of the spells). Reads
  * `engine/derived.js#controlResistCheck` — a derived-stream, roll-high check
  * that draws NOTHING from the caller's own `rng` (the main cursor is
  * untouched either way) and returns `false` with no roll and no event at or
@@ -1165,39 +1168,80 @@ export function foeResistsSpell(state, foe, spell, rng, events, by, extra) {
   const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
   const intel = Number.isFinite(foe.intel) ? foe.intel : 0;
   const res = foeSpellResistCheck(state, rng, spell, idx, intel, by || "you");
-  // User ruling 2026-09-28: `extra` (optional) rides on the event — a
-  // Freeze's post-damage resist carries `{ freeze: true }` (freezeFoe below),
-  // so the line says the damage landed and only the ice was shrugged off.
-  const payload = { target: foe.name, spell, ...(by ? { by } : {}), roll: res.roll, atLeast: res.atLeast, dieN: res.dieN, intel, faces: res.faces, ...(extra || {}) };
+  return pushResist(res, foe, spell, events, by, intel, extra);
+}
+
+/**
+ * foeResistsEffect(state, foe, source, rng, events, by, extra) — Phase 89 plan
+ * 08 (ITEM-01, user ruling Q1, 2026-09-30): THE depth-rising resist gate, the
+ * twin of `foeResistsSpell` above. One roll per foe the effect reaches, on
+ * `derived.js#risingResistFaces` (the foe's half-intel faces plus the faces
+ * the floor adds past floor 12, capped at 19), from a derived stream (the
+ * main rng never moves), always narrated (`spellResisted` / `resistFailed`,
+ * carrying `depthFaces` when the floor added any). There is NO second control
+ * resist and NO hold after it: a foe that fails this roll takes the effect's
+ * floor-1 form at every depth. Returns `true` when the foe resisted.
+ *
+ * Every item and staff effect a foe can resist goes through here (the Birch
+ * Staff's freeze via `freezeFoe`, the Walnut Staff's weaken via
+ * `roomWeakenResists`, the Oak Staff and Amulet of Stone's stone, the Pine
+ * Staff's fire, the Cedar Staff's gas); Phase 90 moves the spells onto it.
+ */
+export function foeResistsEffect(state, foe, source, rng, events, by, extra) {
+  const C = state.combat;
+  const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(foe) : -1;
+  const intel = Number.isFinite(foe.intel) ? foe.intel : 0;
+  const res = foeRisingResistCheck(state, rng, source, idx, intel, by || "you");
+  return pushResist(res, foe, source, events, by, intel, extra, res.depthFaces);
+}
+
+/**
+ * pushResist(res, foe, spell, events, by, intel, extra, depthFaces) — the one
+ * resist line both gates share: pushes `spellResisted` or `resistFailed` and
+ * returns whether the foe resisted. User ruling 2026-09-28: `extra`
+ * (optional) rides on the event — a Freeze's post-damage resist carries
+ * `{ freeze: true }` (freezeFoe below), so the line says the damage landed and
+ * only the ice was shrugged off. `depthFaces` (optional, > 0 only) is the
+ * rising resist's floor bonus, additive.
+ */
+function pushResist(res, foe, spell, events, by, intel, extra, depthFaces) {
+  const payload = {
+    target: foe.name,
+    spell,
+    ...(by ? { by } : {}),
+    roll: res.roll,
+    atLeast: res.atLeast,
+    dieN: res.dieN,
+    intel,
+    faces: res.faces,
+    ...(depthFaces > 0 ? { depthFaces } : {}),
+    ...(extra || {}),
+  };
   events.push({ type: res.resisted ? "spellResisted" : "resistFailed", ...payload });
   return res.resisted;
 }
 
 /**
- * roomWeakenResists(state, aimed, spell, rng, events, by) — a room-wide
- * Weaken (the hero's spell, a Joiner's, the Walnut Staff) under the per-foe
- * rule of quick 260927-rsx: every live foe rolls its own intel resist
- * (foeResistsSpell, in C.foes order). When every one resists, nothing lands
- * (returns false). Otherwise the RULES-18 room resist runs EXACTLY as before
- * (one `resistControl` keyed on `aimed`; a resist marks every live foe
- * Unmoved and nothing lands). When the Weaken lands (returns true), a foe
+ * roomWeakenResists(state, spell, rng, events, by) — a room-wide Weaken (the
+ * hero's spell, a Joiner's, the Walnut Staff) under the per-foe rule of quick
+ * 260927-rsx: every live foe rolls its own resist (foeResistsEffect, in
+ * C.foes order). When every one resists, nothing lands (returns false).
+ * Phase 89 plan 08 (ITEM-01, user ruling Q1, 2026-09-30): that resist IS the
+ * depth-rising one (`derived.js#risingResistFaces`); the old extra room
+ * resist past floor 12 (one `resistControl` keyed on the aimed foe, which
+ * marked every live foe Unmoved) is gone, and so is the `aimed` argument it
+ * needed. When the Weaken lands (returns true), a foe
  * that resisted is marked `weakenResisted` — but only if no Weaken was
  * already running (a resist shrugs off the new cast, not an old one that
  * already took) — and every foe that did not resist loses the mark; the
  * CALLER then sets `C.weakened`/`C.foeToHitPenalty`/its timer, which
  * derived.js#foeWeakened reads per foe.
  */
-export function roomWeakenResists(state, aimed, spell, rng, events, by) {
+export function roomWeakenResists(state, spell, rng, events, by) {
   const C = state.combat;
   const live = liveFoes(state);
-  const shrugged = new Set(live.filter((f) => foeResistsSpell(state, f, spell, rng, events, by)));
+  const shrugged = new Set(live.filter((f) => foeResistsEffect(state, f, spell, rng, events, by)));
   if (shrugged.size === live.length) return false;
-  if (aimed && resistControl(state, aimed, "weaken", spell, C.foes.indexOf(aimed), rng, events)) {
-    C.foes.forEach((f) => {
-      if (f.alive) f.resisted = "weaken";
-    });
-    return false;
-  }
   const already = !!C.weakened;
   for (const f of live) {
     if (!shrugged.has(f)) delete f.weakenResisted;
@@ -1255,25 +1299,23 @@ export const FREEZE_HOLD_DIE = 4;
  *      taken right after the damage, whenever the foe survives, resisted or
  *      not (the RULES-18 main-draw parity: a resisted and a landed freeze
  *      take the same main draws, like Doze's d4);
- *   2. the foe's intel resist (foeResistsSpell, the 2026-09-27 derived
- *      stream). A resist stops only the freeze: the damage already landed.
+ *   2. the foe's depth-rising resist (foeResistsEffect: the 2026-09-27
+ *      derived-stream resist, its faces rising with the floor since Phase 89
+ *      plan 08). A resist stops only the freeze: the damage already landed.
  *      When the hit did damage (`opts.dmg` set) the event carries
  *      `freeze: true` so the line says so;
- *   3. past the knee, the RULES-18 control resist (resistControl), as
- *      before — shaken off means no freeze;
- *   4. otherwise a frozen hold (holdFoe, kind "frozen") for the rolled
+ *   3. otherwise a frozen hold (holdFoe, kind "frozen") for the rolled
  *      rounds, at every depth.
- * Both resists are derived streams, so neither moves the main rng. Returns
- * the rounds held, or 0 when the foe resisted.
+ * Phase 89 plan 08 (ITEM-01, user ruling Q1): the separate RULES-18 control
+ * resist that used to sit between 2 and 3 past floor 12 is gone; the one
+ * resist rises with depth instead. It is a derived stream, so it never moves
+ * the main rng. Returns the rounds held, or 0 when the foe resisted.
  */
 export function freezeFoe(state, t, source, rng, events, opts = {}) {
   const { by, dmg } = opts;
   const hasDmg = Number.isFinite(dmg);
   const rounds = rng.d(FREEZE_HOLD_DIE); // roll:amount
-  if (foeResistsSpell(state, t, source, rng, events, by, hasDmg ? { freeze: true } : undefined)) return 0;
-  const C = state.combat;
-  const idx = C && Array.isArray(C.foes) ? C.foes.indexOf(t) : -1;
-  if (resistControl(state, t, "freeze", source, idx, rng, events)) return 0;
+  if (foeResistsEffect(state, t, source, rng, events, by, hasDmg ? { freeze: true } : undefined)) return 0;
   holdFoe(state, t, "frozen", source, events, { rounds, ...(hasDmg ? { dmg } : {}) });
   return rounds;
 }
@@ -2650,10 +2692,10 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
     // (party-wide duration lives in one place) — its own d4+1 draw.
     const rounds = rng.d(4) + 1; // roll:amount
-    // Quick 260927-rsx: every live foe rolls its own intel resist, then
-    // RULES-18 (audit C15) keeps its one depth roll for the whole room,
-    // keyed on the target the caster aimed at — see roomWeakenResists.
-    if (!roomWeakenResists(state, t, sp.n, rng, events, ally.name)) return;
+    // Quick 260927-rsx: every live foe rolls its own resist; since Phase 89
+    // plan 08 that is the one depth-rising resist and the old extra room
+    // roll past floor 12 is gone — see roomWeakenResists.
+    if (!roomWeakenResists(state, sp.n, rng, events, ally.name)) return;
     const C = state.combat;
     if (C) {
       C.weakened = true;
