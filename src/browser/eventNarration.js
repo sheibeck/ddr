@@ -36,7 +36,7 @@
 // Phase 25.1 (DFB-04): JOINER_EXIT_LINES is pure DATA (no rng, no DOM, no
 // engine/ import) — importing it here does not violate this module's
 // presentation-only contract.
-import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "../../content/flavor.js";
+import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES, COMPASS_WORD } from "../../content/flavor.js";
 // Phase 38 Plan 04 (ABIL-05): ABILITY_BY_ID maps a member ability's `via`
 // key to its canon display name for allyStruck/allyMissed's optional clause
 // — pure content data, no engine/ import, same discipline as the flavor.js
@@ -573,8 +573,38 @@ export const EVENT_NARRATION = {
     const eaters = members.length ? `the party eats ${e.need} a night (${shares} of those)` : `you eat ${e.need} a night`;
     return `<span class="miss">Not enough food to make camp: ${eaters}, and you have ${e.have}.</span> Find rations first.`;
   },
-  teleported: () =>
-    `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`,
+  // Phase 91 (IDENT-14, report #3): an Illusionist's teleport is a pick. The
+  // pending pick's own line (the decision card itself is built from state), then
+  // the landing in three voices: picked, let-it-choose, or rolled (unchanged).
+  teleportPickOffered: (e) => {
+    const n = Number.isFinite(e.count) ? e.count : null;
+    const glow =
+      n === 0
+        ? `No square you have explored is in reach, so the only choice on offer is to let it choose.`
+        : n === 1
+          ? `One square glows. It is not much of a menu, but it is yours.`
+          : n === null
+            ? `Squares glow.`
+            : `${n} squares glow.`;
+    return `<span class="beat">The teleporter hums and waits for instructions. Illusionists give them.</span> ${glow} Pick one on the map, or let it choose.`;
+  },
+  teleportPickRefused: (e) => {
+    const map = {
+      notATarget: `<span class="miss">That square is not one the teleport can reach.</span> Pick a glowing one, or let it choose.`,
+      none: `<span class="miss">There is no teleport waiting on you.</span> Nothing to pick.`,
+      stale: `<span class="miss">The moment has passed.</span> The teleport has forgotten what you were going to say.`,
+    };
+    return map[e.reason] ?? `<span class="miss">That is not a pick the teleport accepts.</span>`;
+  },
+  teleported: (e) => {
+    if (e.picked) {
+      const way = COMPASS_WORD[e.dir] ?? "somewhere";
+      const far = Number.isFinite(e.dist) ? `, ${plural(e.dist, "square")} away` : "";
+      return `<span class="beat">You choose your landing: ${way}${far}.</span> For once the teleport takes instructions.`;
+    }
+    if (e.auto) return `<span class="beat">You let the teleport choose.</span> It chose. You are on the other side now.`;
+    return `<span class="beat">You teleport to an unknown location on this floor…</span> the dungeon does not offer refunds.`;
+  },
   spGained: (e) => {
     const reason = e.reason === "parley" ? "Talking your way out" : e.reason === "descend" ? "Surviving the floor" : "That";
     // VOX-05 (Phase 79, plan 79-04): the count prints once, outside a roll

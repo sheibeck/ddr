@@ -1118,26 +1118,164 @@ export function makeCamp(state, rng, events = [], now = Date.now) {
 /* ---------------- teleport ---------------- */
 
 /**
+ * TELEPORT_REACH — how far a teleport can throw an Illusionist, in squares
+ * along a ray. Phase 91 (IDENT-14, user 2026-09-30): the reach STAYS 12 (the
+ * 1994 canon allows 1 to 20; the user kept 12). A diagonal step counts as one
+ * square, so the reach is the eight rays of a 25x25 box, not a circle.
+ */
+export const TELEPORT_REACH = 12;
+
+/**
+ * TELEPORT_DIRS — the eight rays a teleport can run along, as [dx, dy]. Key
+ * order IS the list order of teleportTargets (N, NE, E, SE, S, SW, W, NW).
+ * The rolled teleport keeps the four-direction DIRV; only the Illusionist's
+ * pick uses these.
+ */
+export const TELEPORT_DIRS = Object.freeze({
+  N: [0, -1],
+  NE: [1, -1],
+  E: [1, 0],
+  SE: [1, 1],
+  S: [0, 1],
+  SW: [-1, 1],
+  W: [-1, 0],
+  NW: [-1, -1],
+});
+
+/**
+ * teleportReach(state) — every floor square a teleport could land on from
+ * where the hero stands, explored or not: up to TELEPORT_REACH squares along
+ * each of the eight rays (N, NE, E, SE, S, SW, W, NW; nearest first), inside
+ * 1..GW-2 / 1..GH-2, never a wall, never the hero's own square. A teleport
+ * passes through stone; only the landing square must be floor. Pure; no rng.
+ * Returns `[{ x, y, dir, dist }]`.
+ */
+export function teleportReach(state) {
+  const f = state.floor;
+  const out = [];
+  for (const [dir, [dx, dy]] of Object.entries(TELEPORT_DIRS)) {
+    for (let d = 1; d <= TELEPORT_REACH; d++) {
+      const x = f.px + dx * d;
+      const y = f.py + dy * d;
+      if (x < 1 || y < 1 || x > GW - 2 || y > GH - 2) continue; // never off the map
+      const cell = f.g[y] && f.g[y][x];
+      if (!cell || cell.wall) continue; // land on floor, not in stone
+      out.push({ x, y, dir, dist: d });
+    }
+  }
+  return out;
+}
+
+/**
+ * teleportTargets(state) — the squares an Illusionist's pick may name:
+ * teleportReach narrowed to the squares the hero has ALREADY EXPLORED
+ * (`cell.seen`). Phase 91 (IDENT-14, user 2026-09-30 "Explored squares
+ * only"): fog stays fog and the pick reveals nothing. May be empty (nothing
+ * explored is in reach), in which case LET IT CHOOSE is the only answer.
+ * Pure; no rng. Returns `[{ x, y, dir, dist }]`.
+ */
+export function teleportTargets(state) {
+  const f = state.floor;
+  return teleportReach(state).filter((t) => f.g[t.y][t.x].seen === true);
+}
+
+/**
+ * autoTeleportLanding(state) — where LET IT CHOOSE lands: the Illusionist's
+ * pre-Phase-91 automatic rule, moved here verbatim. `bestTeleportDir` (the
+ * longest clear run, N/S/E/W), a fixed TELEPORT_REACH, walking back toward the
+ * hero one square at a time until floor is found, then the fallback order
+ * `[dir, "N", "S", "E", "W"]`. The hero's own square with `travelled` 0 when
+ * nothing is found. Pure; no rng. Returns `{ x, y, dir, used, travelled }`.
+ */
+export function autoTeleportLanding(state) {
+  const f = state.floor;
+  const dir = bestTeleportDir(state);
+  const tryDir = (dd) => {
+    const [ax, ay] = DIRV[dd];
+    for (let d = TELEPORT_REACH; d >= 1; d--) {
+      const nx = f.px + ax * d;
+      const ny = f.py + ay * d;
+      if (nx < 1 || ny < 1 || nx > GW - 2 || ny > GH - 2) continue; // never off the map
+      if (f.g[ny][nx].wall) continue; // land on floor, not in stone
+      return [nx, ny, d];
+    }
+    return null;
+  };
+  const order = [dir, "N", "S", "E", "W"].filter((d, i, a) => d && a.indexOf(d) === i);
+  for (const d of order) {
+    const hit = tryDir(d);
+    if (hit) return { x: hit[0], y: hit[1], dir, used: d, travelled: hit[2] };
+  }
+  return { x: f.px, y: f.py, dir, used: dir, travelled: 0 };
+}
+
+/**
+ * landTeleport(state, landing, meta, rng, events) — the ONE landing tail every
+ * teleport uses (the rolled one, a picked square, LET IT CHOOSE): set the
+ * position, resolve any pending hazard, reveal, push `teleported` (plus
+ * `meta`: `{ picked: true }` or `{ auto: true }`, nothing for a rolled
+ * teleport), the terrain phobias, then the landing square's dot or trap.
+ * `landing` is `{ x, y, dir, other, dist, used, travelled }`.
+ */
+function landTeleport(state, landing, meta, rng, events) {
+  const f = state.floor;
+  const { x, y, dir, other, dist, used, travelled } = landing;
+  f.px = x;
+  f.py = y;
+  // Phase 39 (GEAR-05): a teleport resolves any pending hazard decision too.
+  state.pendingHazard = null;
+  reveal(f, revealRadius(state));
+  events.push({ type: "teleported", dir, other, dist, used, travelled, to: { x, y }, ...meta });
+  // Phase 41 (TERR-04/05): a teleport landing is a fresh entry too.
+  checkTerrainPhobias(state, events);
+
+  const cell = f.g[y][x];
+  if (cell.feat === "dot") {
+    cell.feat = null;
+    encounterDot(state, rng, events);
+  }
+  if (cell.feat === "trap") {
+    cell.feat = null;
+    springTrap(state, rng, events);
+  }
+  return events;
+}
+
+/**
  * teleport(state, rng, events) — ports mazeworld.html teleport() (lines
- * 1787-1832). An Illusionist chooses the best direction and travels a fixed
- * 12 squares; everyone else rolls 2d8 for direction (contradictory rolls
- * favor the first) and d20 for distance, falling back toward the nearest
- * open square (never off the map) if the full distance would leave the maze.
+ * 1787-1832). Everyone but an Illusionist rolls 2d8 for direction
+ * (contradictory rolls favor the first) and d20 for distance, falling back
+ * toward the nearest open square (never off the map) if the full distance
+ * would leave the maze.
+ *
+ * DELIBERATE RULES CHANGE (Phase 91, IDENT-14, report #3, user 2026-09-30):
+ * an Illusionist CHOOSES where a teleport lands ("I have a deserved
+ * illusionist. It says I choose where teleports takes me, but when I stepped
+ * on a teleport I didn't get to choose."). The teleport opens a pending pick
+ * (`state.pendingTeleport = { x, y, depth }`, `teleportPickOffered`), nothing
+ * moves and NO rng value is drawn until the pick commits (resolveTeleportPick:
+ * a listed square, or LET IT CHOOSE for the old automatic landing). When no
+ * floor square at all is in reach there is nothing to pick: the teleport
+ * resolves by the automatic rule at once (the hero stays put, travelled 0).
  */
 export function teleport(state, rng, events = []) {
   const c = state.c;
-  const illusionist = c.sub === "Illusionist";
-  let dir;
-  let other = null;
-  if (illusionist) {
-    dir = bestTeleportDir(state);
-  } else {
-    const a = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
-    const b = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
-    dir = a;
-    other = b;
+  if (c.sub === "Illusionist") {
+    if (teleportReach(state).length === 0) {
+      const a = autoTeleportLanding(state);
+      return landTeleport(state, { ...a, other: null, dist: TELEPORT_REACH }, { auto: true }, rng, events);
+    }
+    const f = state.floor;
+    const a = autoTeleportLanding(state);
+    state.pendingTeleport = { x: f.px, y: f.py, depth: f.depth };
+    events.push({ type: "teleportPickOffered", count: teleportTargets(state).length, auto: { x: a.x, y: a.y } });
+    return events;
   }
-  const dist = illusionist ? 12 : rng.d(20); // roll:amount
+  const a = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
+  const b = DIRECTION_TABLE[rng.d(8) - 1]; // roll:selection
+  const dir = a;
+  const other = b;
+  const dist = rng.d(20); // roll:amount
   const f = state.floor;
 
   let x = f.px;
@@ -1171,25 +1309,53 @@ export function teleport(state, rng, events = []) {
     y = hit[1];
     travelled = hit[2];
   }
-  f.px = x;
-  f.py = y;
-  // Phase 39 (GEAR-05): a teleport resolves any pending hazard decision too.
-  state.pendingHazard = null;
-  reveal(f, revealRadius(state));
-  events.push({ type: "teleported", dir, other, dist, used, travelled, to: { x, y } });
-  // Phase 41 (TERR-04/05): a teleport landing is a fresh entry too.
-  checkTerrainPhobias(state, events);
+  return landTeleport(state, { x, y, dir, other, dist, used, travelled }, {}, rng, events);
+}
 
-  const cell = f.g[y][x];
-  if (cell.feat === "dot") {
-    cell.feat = null;
-    encounterDot(state, rng, events);
+/**
+ * resolveTeleportPick(state, pick, rng, events) — Phase 91 (IDENT-14): the
+ * Illusionist's answer to `state.pendingTeleport`. `pick` is `{ x, y }` (a
+ * square from teleportTargets, matched by exact integer equality) or
+ * `{ auto: true }` (LET IT CHOOSE: autoTeleportLanding, today's automatic
+ * rule). No pending pick: `teleportPickRefused { reason: "none" }`. A pending
+ * record that no longer matches the floor and the hero's square is cleared:
+ * `{ reason: "stale" }`. A square that is not listed (or not an integer):
+ * `{ reason: "notATarget" }`, the pick left pending. No rng is drawn on any
+ * refusal or before the landing square resolves.
+ */
+export function resolveTeleportPick(state, pick, rng, events = []) {
+  const p = state.pendingTeleport;
+  if (!p) {
+    events.push({ type: "teleportPickRefused", reason: "none" });
+    return events;
   }
-  if (cell.feat === "trap") {
-    cell.feat = null;
-    springTrap(state, rng, events);
+  const f = state.floor;
+  if (p.depth !== f.depth || p.x !== f.px || p.y !== f.py) {
+    delete state.pendingTeleport;
+    events.push({ type: "teleportPickRefused", reason: "stale" });
+    return events;
   }
-  return events;
+  if (pick && pick.auto === true) {
+    delete state.pendingTeleport;
+    const a = autoTeleportLanding(state);
+    return landTeleport(state, { ...a, other: null, dist: TELEPORT_REACH }, { auto: true }, rng, events);
+  }
+  const hit =
+    pick && Number.isInteger(pick.x) && Number.isInteger(pick.y)
+      ? teleportTargets(state).find((t) => t.x === pick.x && t.y === pick.y)
+      : undefined;
+  if (!hit) {
+    events.push({ type: "teleportPickRefused", reason: "notATarget" });
+    return events;
+  }
+  delete state.pendingTeleport;
+  return landTeleport(
+    state,
+    { x: hit.x, y: hit.y, dir: hit.dir, other: null, dist: hit.dist, used: hit.dir, travelled: hit.dist },
+    { picked: true },
+    rng,
+    events,
+  );
 }
 
 /**

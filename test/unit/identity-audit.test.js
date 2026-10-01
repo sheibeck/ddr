@@ -88,7 +88,9 @@ const PRE_REGISTERED = [
   // Phase 91 plan 02 built wizard-day-one and cleric-heal-start (IDENT-13, IDENT-15):
   // both are live identityEntries now, so they left this list and sit in their
   // identity's authored-then-generated order with a fixed verdict.
-  ["sub", "Illusionist", "illusionist-book", /^ruled \(2026-09-30\) -> 91-03/],
+  // Phase 91 plan 03 stated illusionist-book as a trait (IDENT-14 and the Phase 90
+  // starting-book ruling): it is a live identityEntries id now, so it left this list
+  // and sits in the Illusionist's authored order with the verdict fixed text (91-03).
   ["sub", "Master of Arms", "moa-never-leaves", /^ruled \(2026-09-30\) -> 91-05/],
   ["sub", "Pickpocket", "pickpocket-item", /^ruled \(2026-09-30\) -> 91-08/],
   ["sub", "Master of Arms", "moa-withdraw", /^(retire|retired) \(91-05\)$/],

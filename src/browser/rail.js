@@ -277,6 +277,10 @@ export const RAIL_FAMILY = Object.freeze({
   // findOffered; Phase 78 builds that card in src/browser/hazardCard.js)
   // and the spent-tool outcome.
   hazardChoice: { icon: "⧗", title: "A CHOICE", tone: "info" },
+  // Phase 91 (IDENT-14): the Illusionist's teleport pick — the rail twin of
+  // teleportPickOffered, which is ORACLE_ONLY on the line side exactly like
+  // hazardChoice (the decision card, built from state in 91-04, IS the UI).
+  teleportPickOffered: { icon: "◆", title: "A TELEPORT", tone: "info" },
   toolUsed: { icon: "⧗", title: "OVER IT", tone: "good" },
   // Phase 78 (CLIMB-02): TURN BACK on the decision card: nothing rolled,
   // nothing spent, so a quiet line. Its icon comes from the event's own

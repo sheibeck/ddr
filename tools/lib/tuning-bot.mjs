@@ -1287,6 +1287,11 @@ function preHazardFlight(state, ctx, dir) {
  *      else or flees (step g).
  */
 export function decideAction(state, policyRng, ctx) {
+  // Phase 91 (IDENT-14, report #3): an Illusionist's teleport waits on a pick
+  // and holds every other action, so the bot answers it before anything else.
+  // The bot plays the new rule by letting the teleport choose, which lands
+  // where the automatic Illusionist teleport always did.
+  if (state.pendingTeleport) return { type: "teleportPick", auto: true };
   if (state.combat) {
     // CMB-01 (Phase 31): the bot presses Fight! like a player would.
     if (state.combat.pending) return { type: "fight" };

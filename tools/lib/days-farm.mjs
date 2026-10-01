@@ -209,7 +209,8 @@ export function makeFarmerPolicy({ variant, farmFloor }) {
       (Array.isArray(state.pendingLoot) && state.pendingLoot.length > 0) ||
       !!state.pendingJoiner ||
       !!state.pendingFind ||
-      !!state.pendingHazard;
+      !!state.pendingHazard ||
+      !!state.pendingTeleport;
 
     // (i) hoarder store branch
     if (variant === "hoarder" && (action.type === "buyItem" || action.type === "leaveStore")) {

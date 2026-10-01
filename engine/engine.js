@@ -16,7 +16,7 @@
 import { newRun } from "./state.js";
 import { validateAction } from "./actions.js";
 import { makeRng } from "./rng.js";
-import { move, makeCamp, useTool, resolveHazard, resolvePendingTile } from "./movement.js";
+import { move, makeCamp, useTool, resolveHazard, resolvePendingTile, resolveTeleportPick } from "./movement.js";
 import { fight, playerStrike, flee, parley, sing, loseTurn } from "./combat.js";
 import { castSpell, drinkPotion, readScroll } from "./magic.js";
 import { useAbility } from "./abilities.js";
@@ -37,6 +37,15 @@ export function applyAction(state, action) {
   if (!check.ok) {
     // Malformed/unknown action: fail safe. Return the state untouched and no
     // events, rather than throwing or corrupting anything.
+    return { state, events: [] };
+  }
+
+  // Phase 91 (IDENT-14): an Illusionist's teleport pick is a decision that
+  // holds input — while `state.pendingTeleport` is set, every action but the
+  // pick itself is ignored exactly like an invalid one (the same state, no
+  // events, nothing cloned, counted or drawn). LET IT CHOOSE is always an
+  // answer, so the hold can never soft-lock a run.
+  if (state && state.pendingTeleport && action.type !== "teleportPick") {
     return { state, events: [] };
   }
 
@@ -90,6 +99,12 @@ export function applyAction(state, action) {
       // Phase 78 (CLIMB-01/02): the pre-roll wall/crevice decision — commit
       // (the roll) or TURN BACK (free). See movement.js#resolveHazard.
       resolveHazard(next, action.cross, rng, events);
+      break;
+    case "teleportPick":
+      // Phase 91 (IDENT-14, report #3): an Illusionist's answer to the
+      // pending teleport — a listed square or LET IT CHOOSE. See
+      // movement.js#resolveTeleportPick.
+      resolveTeleportPick(next, action, rng, events);
       break;
     case "camp":
       makeCamp(next, rng, events);
