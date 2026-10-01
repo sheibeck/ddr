@@ -153,6 +153,8 @@ function makeStack({
   play = {},
   version = () => "2.3.0 (13)",
   liveHash = () => null,
+  wrapClient = (c) => c,
+  identityOverride = null,
 } = {}) {
   const clock = clockBox();
   let competing = competeOn;
@@ -161,12 +163,13 @@ function makeStack({
   const syncStorage = makeSyncStorage();
   const client = createBoardClient({ fetchFn: rig.fetchFn, config: rig.config, competeOn: () => competing, now: clock });
 
-  const calls = { onAcked: [], onPlacement: [], onChange: 0 };
+  const calls = { onAcked: [], onPlacement: [], onChange: 0, onSession: [] };
   const sync = createBoardSync({
     storage: syncStorage,
     fetchFn: rig.fetchFn,
-    identity: rig.identity,
-    client,
+    identity: identityOverride || rig.identity,
+    client: wrapClient(client),
+    onSession: (info) => calls.onSession.push(info),
     config: rig.config,
     competeOn: () => competing,
     online: () => onlineFlag,
@@ -209,11 +212,11 @@ test("constants: RETIRED_KEYS is exactly the pre-2.2 queue key and the 2.2 re-ro
   assert.equal("HANDLE_REWRITE_KEY" in boardSyncModule, false, "the rewrite-mark constant is gone");
 });
 
-test("createBoardSync returns a frozen API with no reroll", () => {
+test("createBoardSync returns a frozen API with the session methods and no reroll", () => {
   const stack = makeStack();
   const api = stack.sync;
   assert.ok(Object.isFrozen(api));
-  assert.deepEqual(Object.keys(api).sort(), ["boot", "erase", "flush", "purge", "record", "waitForPending"].sort());
+  assert.deepEqual(Object.keys(api).sort(), ["boot", "erase", "flush", "purge", "record", "session", "signIn", "waitForPending"].sort());
 });
 
 /* ================================================================
@@ -561,6 +564,244 @@ test("boot: a first launch with Compete OFF marks the backfill done-as-skipped; 
 });
 
 /* ================================================================
+   session() / signIn() / onSession (91.2-06: D-03, D-06)
+   ================================================================ */
+
+test("session: a signed-in player is reported signedIn with the verified name, and held runs flush", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  const s = baseSummary({ steps: 801 });
+  await stack.sync.record(s);
+  assert.equal(stack.fake.docs().length, 0);
+
+  stack.rig.play.setSignedIn(true);
+  stack.calls.onSession.length = 0;
+  const info = await stack.sync.session();
+  assert.deepEqual({ ...info }, { state: "signedIn", name: PLAYER_NAME });
+  assert.ok(Object.isFrozen(info));
+  assert.deepEqual(stack.calls.onSession, [info]);
+  assert.equal(stack.fake.docs().length, 1, "the held run posted");
+  assert.equal(stack.fake.docs()[0].handle, PLAYER_NAME);
+});
+
+test("session: a signed-out player is reported signedOut and nothing posts", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: true } });
+  await stack.sync.record(baseSummary({ steps: 802 }));
+  stack.calls.onSession.length = 0;
+
+  const info = await stack.sync.session();
+  assert.deepEqual({ ...info }, { state: "signedOut", name: null });
+  assert.deepEqual(stack.calls.onSession.map((i) => ({ ...i })), [{ state: "signedOut", name: null }]);
+  assert.equal(stack.fake.docs().length, 0);
+  assert.equal(stack.rig.play.calls().some((c) => c.method === "signIn"), false, "the quiet session never prompts");
+});
+
+test("signIn: an interactive sign-in succeeds, reports signedIn and posts the held runs", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: true } });
+  await stack.sync.record(baseSummary({ steps: 803 }));
+  await stack.sync.record(baseSummary({ steps: 804 }));
+  assert.equal(stack.fake.docs().length, 0);
+
+  stack.calls.onSession.length = 0;
+  const info = await stack.sync.signIn();
+  assert.equal(info.state, "signedIn");
+  assert.equal(info.name, PLAYER_NAME);
+  assert.deepEqual(stack.calls.onSession.map((i) => i.state), ["signedIn"]);
+  assert.equal(stack.fake.docs().length, 2);
+});
+
+test("signIn: a player who declines stays signedOut and keeps the runs queued", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  await stack.sync.record(baseSummary({ steps: 805 }));
+  const info = await stack.sync.signIn();
+  assert.equal(info.state, "signedOut");
+  assert.equal(stack.fake.docs().length, 0);
+  const stored = JSON.parse(stack.storage.map.get("ddr.runQueue.v1"));
+  assert.equal(stored.entries.length, 1);
+  assert.equal(stored.entries[0].attempts, 0);
+  assert.equal(stored.failures, 0);
+});
+
+test("session and signIn: Compete OFF resolve state off with zero network and zero Play Games calls", async () => {
+  const stack = makeStack({ competeOn: false });
+  const before = stack.fake.calls().length;
+  for (const info of [await stack.sync.session(), await stack.sync.signIn()]) {
+    assert.deepEqual({ ...info }, { state: "off", name: null });
+  }
+  assert.equal(stack.fake.calls().length, before);
+  assert.equal(stack.rig.play.calls().length, 0);
+});
+
+test("session: every identity outcome maps to a state and never throws", async () => {
+  const cases = [
+    [{ ok: false, reason: "signin" }, "signedOut"],
+    [{ ok: false, reason: "unavailable" }, "unavailable"],
+    [{ ok: false, reason: "offline" }, "offline"],
+    [{ ok: false, reason: "server" }, "error"],
+    [{ ok: false, reason: "refused" }, "error"],
+    [{ ok: false, reason: "off" }, "off"],
+    [null, "error"],
+  ];
+  for (const [answer, state] of cases) {
+    const stack = makeStack({ identityOverride: { boardSession: async () => answer, signIn: async () => answer } });
+    const quiet = await stack.sync.session();
+    const loud = await stack.sync.signIn();
+    assert.equal(quiet.state, state, `session ${JSON.stringify(answer)}`);
+    assert.equal(loud.state, state, `signIn ${JSON.stringify(answer)}`);
+    assert.equal(quiet.name, null);
+  }
+  const throwing = makeStack({
+    identityOverride: {
+      boardSession: async () => {
+        throw new Error("boom");
+      },
+    },
+  });
+  assert.equal((await throwing.sync.session()).state, "error");
+});
+
+test("flush: hitting the sign-in hold reports signedOut once through onSession", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  await stack.sync.record(baseSummary({ steps: 806 }));
+  stack.calls.onSession.length = 0;
+
+  const res = await stack.sync.flush({ force: true });
+  assert.equal(res.reason, "signin");
+  assert.deepEqual(stack.calls.onSession.map((i) => ({ ...i })), [{ state: "signedOut", name: null }]);
+});
+
+test("record: a death while signed out reports signedOut and queues the run", async () => {
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  const res = await stack.sync.record(baseSummary({ steps: 807 }));
+  assert.equal(res.queued, true);
+  assert.deepEqual(stack.calls.onSession.map((i) => i.state), ["signedOut"]);
+});
+
+test("boot: Compete ON runs session() once instead of a bare flush; Compete OFF never touches the network", async () => {
+  const on = makeStack();
+  await on.sync.boot({ history: [] });
+  assert.deepEqual(on.calls.onSession.map((i) => ({ ...i })), [{ state: "signedIn", name: PLAYER_NAME }]);
+
+  const off = makeStack({ competeOn: false });
+  const before = off.fake.calls().length;
+  await off.sync.boot({ history: [] });
+  assert.equal(off.fake.calls().length, before);
+  assert.equal(off.rig.play.calls().length, 0);
+  assert.equal(off.calls.onSession.length, 0);
+});
+
+/* ================================================================
+   D-05: the once-only re-post of settled runs missing from the board
+   ================================================================ */
+
+const FIRST_UID = "fakeuid000001"; // the rig's first signed-in player
+
+function repostRuns() {
+  return {
+    onBoard: baseSummary({ steps: 901 }),
+    missingA: baseSummary({ steps: 902 }),
+    missingB: baseSummary({ steps: 903 }),
+    competeOff: baseSummary({ steps: 904 }), // stored locally, never enqueued: not in the settled ledger
+  };
+}
+
+async function seedRepost(stack, runs, { settled } = {}) {
+  await stack.storage.setItem("ddr.graveyard.v1", JSON.stringify([runs.onBoard, runs.missingA, runs.competeOff]));
+  await stack.storage.setItem("ddr.bests.v1", JSON.stringify({ v: 1, runs: { [runs.missingB.hash]: runs.missingB } }));
+  const hashes = settled || [runs.onBoard.hash, runs.missingA.hash, runs.missingB.hash];
+  await stack.storage.setItem("ddr.runQueue.v1", JSON.stringify({ v: 1, entries: [], settled: hashes, failures: 0, retryAt: 0 }));
+}
+
+function countingClient(counter) {
+  return (c) => ({
+    ...c,
+    ownRuns: (uid) => {
+      counter.n += 1;
+      return c.ownRuns(uid);
+    },
+  });
+}
+
+test("D-05: the first signedIn session re-posts exactly the settled runs missing from the board, with the history's versions, once", async () => {
+  const runs = repostRuns();
+  const counter = { n: 0 };
+  const stack = makeStack({
+    fakeOpts: { runs: [seedFor({ uid: FIRST_UID, hash: runs.onBoard.hash })] },
+    wrapClient: countingClient(counter),
+  });
+  await seedRepost(stack, runs);
+  await stack.sync.boot({
+    history: [
+      { hash: runs.missingA.hash, version: "2.2.0 (12)" },
+      { hash: runs.onBoard.hash, version: "2.2.0 (12)" },
+    ],
+  });
+
+  const docs = stack.fake.docs();
+  const byHash = Object.fromEntries(docs.map((d) => [d.hash, d]));
+  assert.equal(docs.length, 3, "the seeded board run plus the two re-posted");
+  assert.equal(byHash[runs.missingA.hash].version, "2.2.0 (12)", "the version it was first recorded with");
+  assert.equal(byHash[runs.missingB.hash].version, "2.3.0 (13)", "no history record: the current version");
+  assert.equal(byHash[runs.missingA.hash].uid, FIRST_UID);
+  assert.equal(byHash[runs.competeOff.hash], undefined, "a run outside the settled ledger is never posted");
+  assert.deepEqual(JSON.parse(stack.storage.map.get("ddr.boardRepost.v1")), { v: 1, done: true, count: 2 });
+  assert.equal(counter.n, 1);
+
+  // a second session re-posts nothing and does not even re-read the board
+  const commitsBefore = commitCalls(stack.fake).length;
+  await stack.sync.session();
+  assert.equal(commitCalls(stack.fake).length, commitsBefore);
+  assert.equal(counter.n, 1);
+});
+
+test("D-05: a Compete-OFF run (stored locally, hash not in the settled ledger) is never posted", async () => {
+  const runs = repostRuns();
+  const stack = makeStack();
+  await seedRepost(stack, runs, { settled: [] });
+  await stack.sync.session();
+  assert.equal(stack.fake.docs().length, 0);
+  assert.equal(JSON.parse(stack.storage.map.get("ddr.boardRepost.v1")).count, 0);
+});
+
+test("D-05: when ownRuns fails nothing is re-posted and the marker stays unset, so the next session retries", async () => {
+  const runs = repostRuns();
+  let failing = true;
+  const stack = makeStack({
+    wrapClient: (c) => ({
+      ...c,
+      ownRuns: (uid) => (failing ? Promise.resolve({ ok: false, reason: "offline" }) : c.ownRuns(uid)),
+    }),
+  });
+  await seedRepost(stack, runs);
+
+  await stack.sync.session();
+  assert.equal(stack.fake.docs().length, 0);
+  assert.equal(stack.storage.map.has("ddr.boardRepost.v1"), false);
+
+  failing = false;
+  await stack.sync.session();
+  assert.equal(stack.fake.docs().length, 3, "all three settled runs were missing from this empty board");
+  assert.equal(JSON.parse(stack.storage.map.get("ddr.boardRepost.v1")).done, true);
+});
+
+test("D-05: a signed-out session re-posts nothing and leaves the marker unset", async () => {
+  const runs = repostRuns();
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  await seedRepost(stack, runs);
+  await stack.sync.session();
+  assert.equal(stack.fake.docs().length, 0);
+  assert.equal(stack.storage.map.has("ddr.boardRepost.v1"), false);
+});
+
+test("D-05: Compete OFF never reads the stores for a re-post and writes no marker", async () => {
+  const runs = repostRuns();
+  const stack = makeStack({ competeOn: false });
+  await seedRepost(stack, runs);
+  await stack.sync.session();
+  assert.equal(stack.storage.map.has("ddr.boardRepost.v1"), false);
+  assert.equal(stack.fake.docs().length, 0);
+});
+
+/* ================================================================
    waitForPending()
    ================================================================ */
 
@@ -595,6 +836,7 @@ test("purity: exports createBoardSync exactly once; the retired-key literals app
   assert.equal((BOARD_SYNC_SRC.match(/export function createBoardSync/g) || []).length, 1);
   assert.equal((BOARD_SYNC_SRC.match(/ddr\.pgsqueue\.v1/g) || []).length, 1);
   assert.equal((BOARD_SYNC_SRC.match(/ddr\.handleRewrite\.v1/g) || []).length, 1);
+  assert.equal((BOARD_SYNC_SRC.match(/ddr\.boardRepost\.v1/g) || []).length, 1, "the re-post marker literal appears once");
   assert.ok((BOARD_SYNC_SRC.match(/preReleaseHashes\(/g) || []).length >= 1);
   for (const gone of ["reroll", "HANDLE_REWRITE_KEY", "setHandle", "ensureHandle", "rewriteHandle", "handles.js"]) {
     assert.equal(BOARD_SYNC_SRC.includes(gone), false, `${gone} is gone from boardSync.js`);
