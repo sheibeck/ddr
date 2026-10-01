@@ -352,11 +352,11 @@ Plans:
   3. The user rules on each flagged entry at a checkpoint before any change is built, and the rulings are recorded in the ledger.
   4. Every approved change is built, its text updated to match, and each one pinned by a test. Any fixture it moves is declared and regenerated.
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 
-- [ ] 91.1-01-PLAN.md — VALUE-01..04: docs/VALUE-LEDGER.md (races, sub-classes, skills, level-up abilities, Sing; systems → exists/gap; value flags; recommendations), its guard test, ONE batched value checkpoint (V1..Vn), rulings recorded and each build plan's worklist (autonomous: false)
+- [x] 91.1-01-PLAN.md — VALUE-01..04: docs/VALUE-LEDGER.md (races, sub-classes, skills, level-up abilities, Sing; systems → exists/gap; value flags; recommendations), its guard test, ONE batched value checkpoint (V1..Vn), rulings recorded and each build plan's worklist (autonomous: false)
 - [ ] 91.1-02-PLAN.md — the approved Fighter and Thief skill and ability changes, text, SKILL-AUDIT, a pin each, declared drift
 - [ ] 91.1-03-PLAN.md — the approved hero race and sub-class changes, text, IDENTITY-AUDIT/SPELL-AUDIT, a pin each, declared drift
 - [ ] 91.1-04-PLAN.md — the approved Joiner-parity changes, hero case beside Joiner case, text, audits, declared drift
@@ -429,7 +429,7 @@ Plans:
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
 | 91. Race & Sub-class Audit | 10/10 | Complete    | 2026-10-01 |
-| 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
+| 91.1. Value Review: Races, Sub-classes & Abilities | 1/5 | In Progress|  |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
 ## Backlog
