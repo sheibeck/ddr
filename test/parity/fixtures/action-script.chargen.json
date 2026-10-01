@@ -291,7 +291,8 @@
       "phase": "54+79.2+90",
       "requirements": [
         "BAND-02",
-        "SPELL-12"
+        "SPELL-12",
+        "SPELL-10"
       ],
       "fields": [
         "grimoire",
@@ -317,17 +318,18 @@
       "after": {
         "grimoire": [
           "Stupidity",
+          "Door Illusion",
           "Freeze",
           "Acid",
           "Insane",
           "Mirror Self",
-          "Summon"
+          "Chameleon Tongue"
         ],
         "maxWP": 43,
         "wp": 43,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged). This Illusionist loses Phantom Host from the book (the high pool is one shorter), so seed 8 gains a grimoire record: the prototype's last entry, Phantom Host, no longer exists."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 39 -> 43, wp 39 -> 43 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host are removed and the Wizard lost the Illusion school (Mirror Self), so the Wizard's, Illusionist's and Apprentice's main-rng pools are shorter and their shuffles draw fewer values; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged). This Illusionist loses Phantom Host from the book (the high pool is one shorter), so seed 8 gains a grimoire record: the prototype's last entry, Phantom Host, no longer exists. Phase 90 plan 09 (SPELL-10, user 2026-09-30, the slate accepted as drafted): the last three of the ten (Door Illusion, Chameleon Tongue, Size of the Behemoth) are roll: \"derived\" Illusion rows, so they join the Illusionist's pool through the same derived-stream splice (zero new main-rng draws, the chargen cursor is unchanged: 33 for the Illusionist, as pinned), and the Illusionist's book now ends with the canon p.17 grants (Door Illusion if it was not rolled, then one random Illusion spell it did not roll, picked on the derived stream). For this seed Door Illusion lands in the low walk (second in the book, so it is rolled and not appended), which pushes Summon out of the six-spell low cut, and the random Illusion grant is Chameleon Tongue (before: [Stupidity, Freeze, Acid, Insane, Mirror Self, Summon]; after: [Stupidity, Door Illusion, Freeze, Acid, Insane, Mirror Self, Chameleon Tongue]). Re-measured live via newRun(seed); the prototype side is unchanged. Seeds 7, 15, 24 and 29 (and every no-grimoire and non-record seed) are unmoved by this plan."
     },
     "13": {
       "phase": "38+54+79.2",

@@ -7098,3 +7098,73 @@ it was 17, 25, 31 and 35), so a run that reads a scroll lands on another row.
   seven appended `roll: "derived"` rows, the four plan-07 rows' position), `foe-conditions` (three new chips,
   one multi-word label), `shell-combat-actions` / `combatMenu` (the hero chip kind `stopped`),
   `usable-features-audit` (the doc lists all 38 spells).
+
+### Phase 90 plan 09: Door Illusion, Chameleon Tongue, Size of the Behemoth, the Illusionist's book, the scroll table (SPELL-10)
+
+**The rule (the user's 2026-09-30 slate, the Illusionist default, and the scroll-table requirement).** The last
+three of the ten slate spells join `SPELLS` (41 rows): Door Illusion (Illusion 1, `kind: "door"`), Chameleon
+Tongue (Illusion 3, `kind: "tongue"`, `fluency: 2`) and Size of the Behemoth (Illusion 4, `kind: "behemoth"`),
+all `roll: "derived"`, combat-only. `combat.js#doorIllusionEscape` ends the fight through the flee path Smoke
+uses behind the cleverest foe's one resist; the Tongue sets a fight-scoped `C.tongue` of 2 that
+`derived.js#fluency(c, combat)` reads and calls `parley()`; `combat.js#behemothRoar` routs the foes below the
+caster's level and sets a per-foe `cowering` flag on the rest. `rollGrimoire` appends Door Illusion (when not
+rolled) and one random Illusion spell (a derived-stream pick) to a new Illusionist's book, at the very end of
+the function. `C.tongue` and `f.cowering` live inside `state.combat` (a foe lives only there), which every
+comparable already carves out, so no `*Comparable()` carve-out was needed; `test/parity/prototype-master.js.txt`
+is untouched and `roll-high-baseline.mjs save` was never run.
+
+**New draws (declared).** One DERIVED `selection` draw (the Illusionist's random Illusion pick, after every
+existing draw on `rollGrimoire`'s derived stream): `roll-high-guard.test.js` DRAW_INVENTORY `engine/character.js`
+`selection` 13 -> 14. No main-rng draw anywhere: Door Illusion, the Behemoth and the Tongue's own cast draw
+nothing on the main rng (the Tongue's `parley()` draws what an ordinary parley draws), and the chargen cursors
+are unchanged (`chargen-rng-pin.test.js` passes unedited: 33 for the Illusionist, 37 for the Apprentice).
+
+**The predictor.** (1) The Illusionist and the Apprentice (the two sub-classes that learn Illusion) can be dealt
+a spliced row, and every other spliced row's derived position shifts with the extra splice draws; the Illusionist
+also gains the two appended grants, so every Illusionist's book changed (measured: 500 of 500 seeds against the
+plan base; the Apprentice 164 of 500; the Wizard, Warlock, Sorcerer, Court Mage, Cleric and Summoner 0 of 500, with
+the main-rng cursor identical for all eight). (2) A scroll's `rng.pick(options)` is over a longer list (19, 29,
+36 and 41 rows at depths 1 to 4+, where it was 18, 27, 33 and 38), so a run that reads a scroll lands on another
+row.
+
+**The live scan (measured at the plan's end, against the base a060c0b6).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass after the declaration below. Before it the
+  chargen test (seed 8) and the ENG-05 aggregate gate failed, exactly where predicted. The combat fixtures
+  (`lose-apprentice` is an Apprentice but its book is unchanged), the magic fixture, movement, economy and
+  encounters replay unchanged.
+- `node tools/roll-high-baseline.mjs pins` (read, `save` never run): **2 of 8 labels moved**
+  (solo-magicuser-sorcerer, deep-8), pasted by hand, each hashed identically twice and traced per bot step
+  against an extracted tree of a060c0b6. solo-1, solo-2, solo-thief-pilfer, party-1, party-fighter-knight and
+  deep-14 re-measured byte-identical. `roll-high-save-compat.test.js`: unchanged.
+
+**Moved parity entries (measured live, declared with a before/after record and regenerated alone).**
+
+1. `action-script.chargen.json`, seed 8 (an Illusionist): the engine's book `[Stupidity, Freeze, Acid, Insane,
+   Mirror Self, Summon]` becomes `[Stupidity, Door Illusion, Freeze, Acid, Insane, Mirror Self, Chameleon
+   Tongue]` (Door Illusion lands in the low walk, which pushes Summon out of the six-spell cut, and the random
+   Illusion grant is Chameleon Tongue). `maxWP`, `wp` and `rations` are unchanged. Seeds 7, 15, 24 and 29, and
+   every no-grimoire and non-record seed, are unchanged. The prototype side is untouched; the record's
+   `requirements` gained SPELL-10.
+2. Unmoved: every combat, magic, movement, economy and encounters parity scenario.
+
+**Moved pins and tests (re-recorded alone).**
+
+- `roll-high-state-pins.test.js`: two labels (old -> new, actions / dead / depth: solo-magicuser-sorcerer
+  313/true/3 -> 400/false/4; deep-8 300/false/11 -> 300/false/11, the hash only). First divergence:
+  solo-magicuser-sorcerer at step 0 (the depth-1 scroll read picks Sense Presence, free-cast as too advanced
+  to copy, where the base read Turn Walking Dead, refused) and deep-8 at step 80 (its first scroll read picks
+  Death, copied into the book, where the base picked Regeneration, copied).
+- `bot-tactics.test.js`: the Pilfer trio's seed 2 now stalls (depth 7 at 5000 actions under identity dials;
+  seed 1 stalls too); swapped for seed 5 (505 actions, depth 4), the smallest seed that dies naturally and is
+  not already in the trio. The Sorcerer and Troll Knight trios re-confirmed in the test's own order.
+- `guaranteed-attack-spell.test.js`: the measured adjacency bound for the special-school sub-classes 8 -> 9
+  (worst case: Illusionist, seed 174219: the old reference algorithm never makes the Illusionist's two
+  appended grants).
+- Table pins moved by the new rows (not fixtures): `spell-table`, `content-tables`, `scroll-fumble-table`,
+  `day-one-damage`, `removed-spells-load`, `special-timed-spells` and `control-slate-spells` (41 rows, the ten
+  appended `roll: "derived"` rows, the tail order), `spell-resist` (`tongue` joins the self kinds), `fluency`
+  (the second argument), `foe-conditions` (the Cowering chip), `hero-conditions` (`tongue` is not a
+  condition), `usable-features-audit` (the doc lists all 41 spells), `roll-high-guard` (the one derived
+  selection draw), and the new `scroll-pool.test.js`, `escape-talk-rout-spells.test.js` and
+  `illusionist-book.test.js`.

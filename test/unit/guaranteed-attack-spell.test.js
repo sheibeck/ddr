@@ -196,7 +196,11 @@ test("adjacency: the new algorithm differs from the old by a measured, bounded n
   // special-school subs (and the old reference algorithm, which does not exclude them) differ by
   // up to one more spell; re-measured live over this file's 200 seeds, 7 -> 8 (worst case: Illusionist,
   // seed 411789). NO_SPECIAL_BOUND is unchanged (Warlock, Cleric and Court Mage never see a Special row).
-  const SPECIAL_BOUND = 8; // measured worst case (Illusionist, seed 411789) — the derived-row reshuffle confound above
+  // Phase 90 plan 09 (SPELL-10): the three Illusion rows are three more derived rows, and the
+  // Illusionist's book now ends with Door Illusion and one random Illusion spell (two appended
+  // entries the old reference algorithm never makes); re-measured live over this file's 200 seeds,
+  // 8 -> 9 (worst case: Illusionist, seed 174219).
+  const SPECIAL_BOUND = 9; // measured worst case (Illusionist, seed 174219) — the derived-row reshuffle confound above
 
   for (const sub of MU_SUBS) {
     const bound = NO_SPECIAL_SCHOOL.includes(sub) ? NO_SPECIAL_BOUND : SPECIAL_BOUND;

@@ -362,7 +362,20 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 992002f4edb013af107541738a89ebcbf6da7dd1afe8bfd4c914d651f0d7ecf6; actions, dead and depth are unchanged.
-  "solo-magicuser-sorcerer": { actions: 313, dead: true, depth: 3, hash: "a71ec542bb94da80df63ea701bbcb6e346787abf8dabfcbed415a04c92c7b4bf" },
+  // "solo-magicuser-sorcerer" and "deep-8" re-pinned (Phase 90 plan 09, SPELL-10, 2026-10-01): the last three
+  // slate spells (Door Illusion, Chameleon Tongue, Size of the Behemoth) joined the spell list (38 rows -> 41), so a
+  // scroll's `rng.pick(options)` lands on another row (19 rows at depth 1, 29, 36 and 41 deeper, not 18, 27, 33 and
+  // 38). No chargen cursor moved (the new rows are roll: derived, and the Illusionist's two grants are on the derived
+  // stream), so every divergence is a different spell, never a different draw count. Traced with a per-bot-step
+  // state-hash trace (playRun's onStep) against an extracted tree of the plan base a060c0b6: both labels
+  // differ at their first scroll read. solo-magicuser-sorcerer at step 0 (the depth-1 read picks Sense Presence,
+  // which the Sorcerer free-casts as a scroll too advanced to copy, where the base read Turn Walking Dead, refused);
+  // deep-8 matches for 80 steps, then its first read picks Death (copied into the book) where the base picked
+  // Regeneration (copied). Old -> new (actions / dead / depth): solo-magicuser-sorcerer 313/true/3 -> 400/false/4;
+  // deep-8 300/false/11 -> 300/false/11 (the hash only). "solo-1", "solo-2", "solo-thief-pilfer", "party-1",
+  // "party-fighter-knight" and "deep-14" re-measured byte-identical. Only these two labels were pasted, by hand,
+  // from `node tools/roll-high-baseline.mjs pins` (each hashed identically twice); `save` was never run.
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "f49b9400c6a21cc711ade269aa67dd9347ac7d00312f664a8f32be9fc13c15c5" },
   // "party-1" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
@@ -499,7 +512,8 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263; actions, dead and depth are unchanged.
-  "deep-8": { actions: 300, dead: false, depth: 11, hash: "17fb3b5349b4fc7dbb21b4b87b4b30c38ecdfa7585d9edd190eeb23090d7cb33" },
+  // "deep-8" re-pinned (Phase 90 plan 09, SPELL-10, 2026-10-01): see the block comment above "solo-magicuser-sorcerer".
+  "deep-8": { actions: 300, dead: false, depth: 11, hash: "85673de6ad134f2a1fda38d548ba5b92997817bdb295f1117ebe2a44df3ad7af" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

@@ -126,9 +126,9 @@ test("the load is silent and never throws on a tampered book (non-string entries
 
 // --- the content the load leans on -----------------------------------------
 
-// Phase 90 plan 07 (SPELL-10) appended the four Special spells: 35 rows; plan 08 the three control spells: 38 rows.
-test("content: 38 rows, no Lesser Summon, no Phantom Host, the Summoner's one named exception, Wizard.illusion null", () => {
-  assert.equal(SPELLS.length, 38);
+// Phase 90 plan 07 (SPELL-10) appended the four Special spells: 35 rows; plan 08 the three control spells: 38 rows; plan 09 the last three Illusion spells: 41 rows.
+test("content: 41 rows, no Lesser Summon, no Phantom Host, the Summoner's one named exception, Wizard.illusion null", () => {
+  assert.equal(SPELLS.length, 41);
   assert.equal(byName("Lesser Summon"), undefined);
   assert.equal(byName("Phantom Host"), undefined);
   assert.deepStrictEqual(SPELL_LEVEL_OVERRIDES, { Summoner: { Summon: 1 } });

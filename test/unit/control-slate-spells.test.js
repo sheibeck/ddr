@@ -118,7 +118,8 @@ const failActs = (source, nFoes, by) => findActs(Array.from({ length: nFoes }, (
 // ---------------------------------------------------------------------------
 
 test("rows: the last three SPELLS rows are Stop Time, Senseless, Duplicate Foe, after Speed of Sound, with the ruled level, school, flags and numbers", () => {
-  const tail = SPELLS.slice(-4).map((sp) => sp.n);
+  // Phase 90 plan 09 appended Door Illusion, Chameleon Tongue and Size of the Behemoth after Duplicate Foe.
+  const tail = SPELLS.slice(-7, -3).map((sp) => sp.n);
   assert.deepEqual(tail, ["Speed of Sound", "Stop Time", "Senseless", "Duplicate Foe"]);
   const stop = SP["Stop Time"];
   assert.equal(stop.lvl, 3);

@@ -129,7 +129,25 @@ test("D-09 purity: fluency neither draws nor mutates", () => {
   const before = structuredClone(c);
   fluency(c);
   assert.deepStrictEqual(c, before, "fluency must not mutate its argument");
-  assert.equal(fluency.length, 1, "fluency takes exactly one argument (c)");
+  // Phase 90 plan 09 (SPELL-10): the optional second argument is the combat, whose `tongue`
+  // is Chameleon Tongue's fight-scoped source (2); `fluency.length` counts both parameters.
+  assert.equal(fluency.length, 2, "fluency takes the character and, optionally, the combat");
+  const combat = { tongue: 2 };
+  const combatBefore = structuredClone(combat);
+  fluency(c, combat);
+  assert.deepStrictEqual(combat, combatBefore, "fluency must not mutate the combat either");
+});
+
+// Phase 90 plan 09 (SPELL-10): C.tongue is a second, fight-scoped source. The larger of the two
+// sources wins (they never stack), and with no combat it is the item source alone, as before.
+test("Phase 90 plan 09: fluency reads the fight-scoped tongue (Chameleon Tongue) as the larger of the two sources, never stacked", () => {
+  const helm = { skills: {}, items: [{ n: "Helm of Knowledge", eff: { tongue: 1 } }], timers: liveHelm() };
+  assert.equal(fluency({ skills: {}, items: [] }, { tongue: 2 }), 2, "the spell alone");
+  assert.equal(fluency(helm, { tongue: 2 }), 2, "the Helm and the spell: 2, not 3");
+  assert.equal(fluency(helm, {}), 1, "a combat with no tongue: the Helm alone");
+  assert.equal(fluency(helm, null), 1, "no combat: the Helm alone");
+  assert.equal(fluency({ skills: {}, items: [] }, { tongue: 0 }), 0);
+  assert.equal(fluency({ skills: {}, items: [] }, { tongue: "2" }), 0, "only an integer counts");
 });
 
 // --- D-01: killSpFor equivalence -----------------------------------------

@@ -1599,3 +1599,86 @@ a foe's blows away from your side.
 "Phase 90 plan 08"): the rows are `roll: "derived"`, so no chargen cursor moved; chargen seed 24 and the
 combat `lose-apprentice` book changed in content only, three roll-high state pins and two bot pins moved,
 and `roll-high-guard` gained one `rollCheck` and one `amount` draw for the misdirected swing.
+
+## Phase 90: Door Illusion, Chameleon Tongue, Size of the Behemoth, the Illusionist's book and the scroll table (SPELL-10, plan 90-09)
+
+User 2026-09-30 (SPELL-10): the slate in `90-SPELL-SLATE-DRAFT.md` is "accepted as drafted"; this plan appends
+the last three of its ten (the Illusion spells that end or tilt a fight), completes the Illusionist's three
+illusions (canon p.17) and pins the scroll roll table the user asked for ("Make sure that the scroll roll
+table now includes the two new schools of spell as options").
+
+- **The rows.** Three rows are appended after Duplicate Foe (41 rows), each `roll: "derived"`,
+  `combatOnly: true`, school `illusion`, none stretched (the chart gives the Illusion school +0 to both
+  sub-classes that learn it):
+
+  | Spell | Lvl | Kind | Niche | What it does |
+  |---|---|---|---|---|
+  | Door Illusion | 1 | `door` | defensive | the fight ends at once through the flee path Smoke uses: no flee roll, no parting blow, spoils left behind; the cleverest foe rolls one resist and may see through it (then the turn is spent) |
+  | Chameleon Tongue | 3 | `tongue` (`fluency: 2`) | answer | the fight's one parley, made at fluency 2: +4 on the roll, Magical foes can be talked to, the Walking Dead never |
+  | Size of the Behemoth | 4 | `behemoth` | control | every foe rolls its resist; a failer below your level flees (no experience, no spoils), every other failer cowers for the fight: top three numbers, half damage |
+
+  The school gates need no code: all three reach only the Illusionist and the Apprentice, and
+  `school-gates.test.js` passes unchanged with them in `SPELLS`.
+- **Door Illusion** (`combat.js#doorIllusionEscape`). The cleverest live foe (highest intelligence; the
+  first in `C.foes` order on a tie) rolls the one depth-rising resist. A resist pushes `doorIllusionSeen` and
+  the foes take their turn; a failure ends the fight (`fled { reason: "door" }`), the pending spoils are
+  forfeited as in any flee, and a Joiner in the party leaves with the hero. `combat.js#fleeRefusal(state)`
+  is the one never-flee predicate (`"samurai"` today; Phase 91's IDENT-16 extends it): `flee()` reads it,
+  and so does `castSpell`, which refuses a Door Illusion from a hero it names with `castRefused { reason }`
+  BEFORE the charge is spent. A scroll's free cast of it is still consumed (RULES-10), and the line says why.
+- **Chameleon Tongue** (`magic.js` tongue branch). `derived.js#fluency(c, combat)` is the larger of the item
+  source (the Helm of Knowledge, 1) and the fight-scoped `C.tongue` the cast sets (2); they never stack.
+  The cast pushes `tongueCast` and calls `parley()`, which pays what parley pays (Phase 91's PARLEY-01 sets
+  the rewards): a level-3 caster against level-3 Humans parleys on 8–20 (13 winning faces, 65%; the cap
+  is 17 faces, 85%); a failure insults the foes and runs the foes' turn itself, so `castSpell` returns
+  without a second one. `combat.js#parleyBlockedReason(state, fluencyOverride)` is the one predicate for
+  "why can this fight not be parleyed": `"parleySpent"`, `"ninja"`, `"masterOfArms"`, `"walkingDead"`,
+  `"noTalk"` (canParley's gate at that fluency) and `"wilmsryVsMagical"`, in `parley()`'s order. `parley()`
+  and `castSpell` (before the charge) read it, and so does the combat menu, which greys the Tongue row with
+  the reason (the row stays tappable, so the engine's own refusal line explains).
+- **Size of the Behemoth** (`combat.js#behemothRoar`). Each live foe, in `C.foes` order, rolls the one
+  resist. A foe that fails and is BELOW the caster's level flees (`alive = false`, `fled = true`: no
+  `foeKilled`, no experience, no spoils); a foe exactly at the level, or above it, cowers. The cower is a
+  per-foe `cowering` flag, deliberately not the room's Weaken fields: `derived.js#foeSwingChain` caps its
+  swings at 3 faces (`COWER_FACES`) and `foeWeakened` halves its damage, and a later Weaken running out never
+  clears it. When the rout empties the room the encounter clears through the usual path.
+- **The Illusionist's book** (`character.js#rollGrimoire`). A new Illusionist holds Mirror Self, Door
+  Illusion and one more Illusion spell it did not roll (canon p.17: three illusion spells on top of the
+  beginning roll), appended at the very end of the function: the rolled book and every day-one top-up are
+  untouched, no main-rng draw is made (the pick is on the call's derived stream, after its last existing
+  draw), and a pick above the Illusionist's level waits in the book until it levels. `SUB_NOTE.Illusionist`
+  says so.
+- **Scroll fumbles.** A fumbled Door Illusion does nothing (the door does not open); a fumbled Chameleon
+  Tongue insults the room (the new `insulted` effect sets the parley insult, +1 on every foe's winning faces
+  for the fight); a fumbled Size of the Behemoth weakens the reader (the existing `weakened` effect, d4+1
+  rounds).
+- **The scroll roll table, by depth band** (`magic.js#readScroll` rolls `SPELLS.filter(sp => sp.lvl <=
+  min(5, depth + 1))`; `test/unit/scroll-pool.test.js` pins it): 
+
+  | Depth | Rows | Slate spells in the pool |
+  |---|---|---|
+  | 1 | 19 | Open/Lock, Door Illusion, Fly, Senseless |
+  | 2 | 29 | those four, plus Stop Time and Chameleon Tongue |
+  | 3 | 36 | those six, plus Enchant Character and Size of the Behemoth |
+  | 4 and deeper | 41 | all ten, plus Speed of Sound and Duplicate Foe |
+
+  Every band holds at least one Special and one Illusion spell; Lesser Summon and Phantom Host are in none.
+  Reading follows RULES-10: any reader may try a Special or Illusion scroll (a read scroll is consumed), and a
+  Magic User copies it into the book only when its sub-class can learn the school and can already cast it (a
+  Warlock free-casts an Illusion scroll and never copies it; a Wizard copies Special but not Illusion; an
+  Illusionist copies an Illusion scroll it is high enough for).
+- **Surfaces.** The Cowering foe chip; the Oracle and rail lines for `doorIllusionSeen`, `tongueCast`,
+  `foeRouted`, `foeCowers`, `behemothCast`, the door flee (`fled` reason `door`), the new `castRefused`
+  reasons and the `insulted` fumble; a failed resist folds behind a foe's own rout or cower line and behind
+  the door escape on the rail. `docs/narrative-pass/why/90-09.json` has the ledger rows.
+- **Flagged for the user.** (1) The Illusionist's two grants come AFTER the day-one top-ups, not with Mirror
+  Self: put with Mirror Self, Door Illusion would count as a second ready level-1 spell and shrink the
+  top-up, which would change the rolled part of every Illusionist's book. (2) A Door Illusion row is never
+  actually greyed in the menu for a Samurai (a Samurai is not a Magic User); the refusal exists for a
+  Samurai who reads a Door Illusion scroll. (3) The Chameleon Tongue pays whatever `parley()` pays today:
+  Phase 91's PARLEY-01 rewards apply to it unchanged.
+
+**Fixtures this moved** (measured, declared and regenerated alone; docs in test/parity/FIXTURE-INVENTORY.md
+"Phase 90 plan 09"): the rows are `roll: "derived"`, so no chargen cursor moved; chargen seed 8 (an
+Illusionist), two roll-high state pins (`solo-magicuser-sorcerer`, `deep-8`) and one bot pin (the Pilfer
+trio's seed 2) moved, and `roll-high-guard` gained one derived `selection` draw.

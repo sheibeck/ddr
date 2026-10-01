@@ -178,8 +178,8 @@ test("the caster is part of the resist key: a Joiner casting the hero's spell in
 });
 
 test("spellTargetsFoe: only the self and ally kinds are never resisted", () => {
-  // Phase 90 plan 07 (SPELL-10): "timed" (Open/Lock, Fly, Enchant Character, Speed of Sound) is a self kind.
-  assert.deepEqual([...SPELL_SELF_KINDS].sort(), ["foresee", "heal", "might", "mirror", "regen", "reveal", "senses", "summon", "timed", "ward"]);
+  // Phase 90 plan 07 (SPELL-10): "timed" (Open/Lock, Fly, Enchant Character, Speed of Sound) is a self kind. Plan 09: so is "tongue" (Chameleon Tongue: the parley roll is its check, never a resist).
+  assert.deepEqual([...SPELL_SELF_KINDS].sort(), ["foresee", "heal", "might", "mirror", "regen", "reveal", "senses", "summon", "timed", "tongue", "ward"]);
   for (const sp of SPELLS) assert.equal(spellTargetsFoe(sp), !SPELL_SELF_KINDS.has(sp.kind), sp.n);
   assert.equal(spellTargetsFoe(SPELLS[IDX.Fireball]), true, "thrown damage is resistible now");
   assert.equal(spellTargetsFoe(SPELLS[IDX.Heal]), false);
