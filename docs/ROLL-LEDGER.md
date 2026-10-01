@@ -1347,3 +1347,31 @@ the same helper.
   potion kept.
 - **Joiner armour repair (Q4)** adds store lines (`repairArmor` with `{ member,
   name }`): no draw; `openStore` draws exactly as before.
+
+## Phase 90 plan 03: the Strength spell's d10 (SPELL-09, user 2026-09-30)
+
+"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points
+instead." (report #8) and the Q1 A ruling: Strength adds a d10 to every damage roll the hero
+makes, for 100 squares, no hit points, a recast restarts it.
+
+- **The d10 is an AMOUNT draw on a derived stream, never the main rng.**
+  `derived.js#strengthRoll(sheet, rng)` returns 0 unless a live `spell:Strength` record
+  (act kind `"strength"`) is on the sheet; otherwise
+  `rollDice(derivedRng(<main rng cursor, or 0 for a test double with no getState>, "strength"),
+  { n: 1, sides: 10, bonus: 0 })`. The main rng is only READ for its cursor; no existing draw
+  moves, and a run with no live record draws nothing at all. It is called right AFTER a damage
+  roll's own dice are drawn, so the cursor has moved since the previous roll and each roll gets
+  its own d10 (both blows of a double strike, each foe a Lightning bolt reaches, each Fireballs
+  bolt).
+- **Its sites, under the ruled reach (Q1 A).** `weaponDamage` (every weapon blow: the strike,
+  both blows of a double strike, Sweep, Riposte, a Joiner's blow on its own sheet), then the
+  spell damage rolls in `magic.js#castSpell`: the thrown hit (and so each foe of Lightning),
+  Earthquake's one roll (every foe takes it; the caster's own backlash stays the dice alone) and
+  each Fireballs bolt. A damage-over-time tick (Acid, Ice, Poisoned Edge) is not a new damage
+  roll and calls nothing. The d10 joins the roll before the Sorcerer's cap of 9, the floor of 1,
+  Afraid halving and the damage multiplier seam; a critical doubles the roll with the d10 in it.
+- **The cast draws nothing.** The old cast rolled one main-rng d10 into `c.might`
+  (`rollDice(rng, sp.dmg)`); the new cast starts a timer record and draws no die. The `magic.js`
+  AMOUNT draw count drops by one (the might branch), and the fumbled-scroll Strength rolls its
+  foe's flat d10 from the fumble stream (`srng`) as before.
+- **No check-direction change.** No check or threshold was added or flipped.

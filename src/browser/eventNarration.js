@@ -124,6 +124,10 @@ const withArticle = (word) => `${/^[aeiou]/i.test(String(word)) ? "an" : "a"} ${
 // fallback when the event names no one ("its", never the "it's" a bare
 // `${e.name ?? "it"}'s` used to print).
 const possessive = (name, fallback) => (name ? `${name}'s` : fallback);
+// Phase 90 (SPELL-09): what stops when a spell-sourced timed effect of this
+// act kind runs out (spellEffectFaded). A later kind without an entry reads
+// as the spell simply wearing off.
+const SPELL_FADE_WHAT = { strength: "the extra d10 on every damage roll goes with it, and you are back to the dice you were born with" };
 // Phase 89 plan 08 (ITEM-01, Q1): the resist roll's parenthetical — the foe's
 // intelligence, plus the faces the floor added when the depth-rising resist
 // rolled (`depthFaces`, absent on shallow floors and on spells).
@@ -962,7 +966,8 @@ export const EVENT_NARRATION = {
       ward: e.mirror
         ? `wraps ${t} in a bubble instead: your next blow on it is swallowed and thrown back at you`
         : `wards ${t} instead: it soaks your next ${e.pool ?? 0} hp of damage`,
-      might: `strengthens ${t} instead: <span class="roll">+${e.might ?? 0}</span> damage on its blows${(e.gained ?? 0) > 0 ? `, and <span class="roll">+${e.gained} hp</span>` : ""}`,
+      // Phase 90 (SPELL-09): no hit points any more, to anyone; a flat d10 on each of its blows for the fight.
+      might: `strengthens ${t} instead: <span class="roll">+${e.might ?? 0}</span> damage on each of its blows, for the whole fight`,
       mirror: `gives ${t} a mirror image instead: for ${plural(e.rounds ?? 0, "round")} you hit it only on your die's top face`,
       senses: `sharpens ${possessive(e.target, "its")} senses instead, to no effect you can see`,
     }[e.effect];
@@ -1282,13 +1287,24 @@ export const EVENT_NARRATION = {
     e.mirror
       ? `<span class="hit">A bubble shimmers around you. The next blow goes back where it came from.</span>`
       : `<span class="hit">${e.spell ?? "A spell"} raises a ward: it soaks the next ${e.pool ?? 0} hp of damage.</span>`,
-  // VOX-05 (Phase 79, plan 79-08): the +N is damage on every blow, and the
-  // HP the cast added (engine/magic.js's `gained`: the doubling happens once
-  // a day, so a recast adds none) is stated, never silent.
+  // Phase 90 (SPELL-09, report #8): Strength is an extra d10 on every damage
+  // roll for 100 squares (engine/magic.js's might branch; `squares` is the
+  // window, `restarted` a recast of a live one). It grants no HP, and says so.
   strengthCast: (e) =>
-    `<span class="hit">Might surges: +${e.might ?? 0} damage on every blow until you make camp${
-      (e.gained ?? 0) > 0 ? `, and +${e.gained} hp${Number.isFinite(e.maxWP) ? ` (max ${e.maxWP})` : ""}` : ""
-    }.</span>${Number.isFinite(e.gained) && e.gained <= 0 ? " Your hp was already doubled for the day." : ""}`,
+    e.restarted
+      ? `<span class="hit">Strength starts over: <span class="roll">${squaresText(e.squares ?? 100)}</span> of an extra d10 on every damage roll, not double that.</span> It does not stack, however politely you ask.`
+      : `<span class="hit">Might surges: every damage roll you make adds an extra d10 for the next <span class="roll">${squaresText(e.squares ?? 100)}</span>.</span> No extra HP. The spell is about hitting things, not about being hit less.`,
+  // Phase 90 (SPELL-09): a spell-sourced timed effect running out
+  // (engine/items.js#narrateTimerTransitions). SPELL_FADE_WHAT names what stops
+  // per effect kind; a kind with no clause here just wears off.
+  spellEffectFaded: (e) => {
+    const owner = e.member ? possessive(e.member, "Their") : "Your";
+    const what = SPELL_FADE_WHAT[e.kind];
+    if (!e.spell) return `<span class="beat">The spell wears off.</span>`;
+    return what
+      ? `<span class="beat">${owner} ${e.spell} wears off: ${what}.</span>`
+      : `<span class="beat">${owner} ${e.spell} wears off.</span>`;
+  },
   regenerationCast: () => `<span class="hit">Wounds start closing on their own.</span>`,
   // VOX-05 (Phase 79, plan 79-08): "turn insane at" did not read naturally.
   insaneNoTarget: () => `<span class="miss">There is no one here to drive insane.</span>`,

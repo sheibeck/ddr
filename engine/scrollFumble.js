@@ -24,8 +24,8 @@
 // exactly once, after this resolver returns.
 //
 // This resolver NEVER lowers a foe's wp: every helpful-branch effect either
-// raises a foe's wp/maxWP (heal, Strength's one-time double) or sets a
-// non-hp field (ward/regen/mirror/senses) — the ONLY hp gained or lost here
+// raises a foe's wp (heal) or sets a non-hp field (ward/regen/mirror/senses/
+// Strength's might, which grants no hit points since Phase 90) — the ONLY hp gained or lost here
 // belongs to the reader or their own side (party members, the summoned
 // ally).
 
@@ -245,8 +245,10 @@ function resolveArea(state, sp, entry, srng, rng, events, now) {
  *   - ward: Shield's plain pool/rounds, or Bubble's armed mirror
  *     (pool 0, rounds null, popPool) — the SAME two shapes
  *     engine/magic.js#castSpell's own ward branch raises on the hero.
- *   - might: sets `might` to the spell's own dice, doubling maxWP/wp once
- *     (a second fumble refreshes `might` but never doubles again).
+ *   - might: sets `might` to the spell's own die (Strength's `act.dice`, a
+ *     d10) for the fight: a flat bonus on each of the foe's landed blows
+ *     (combat.js#foeLevelBase). Phase 90 (SPELL-09): no hit points, no doubling;
+ *     a second fumble re-rolls it.
  *   - mirror: sets `mirror` to the row's own `rounds` dice (Mirror Self has
  *     no `dmg` of its own — the fumble table names the d6 instead).
  *   - senses: sets `senses` — no further engine rule of its own.
@@ -293,16 +295,11 @@ function resolveHelpful(state, sp, entry, srng, rng, events, now) {
       break;
     }
     case "might": {
-      t.might = rollDice(srng, sp.dmg);
-      const before = t.wp;
-      if (!t.strengthBoost) {
-        t.strengthBoost = t.maxWP;
-        t.maxWP += t.strengthBoost;
-        t.wp += t.strengthBoost;
-      }
-      // VOX-05 (Phase 79, plan 79-08): `gained` is the HP the fumble handed
-      // the foe (0 on a second one), so the line can say it. Additive, zero draws.
-      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "might", might: t.might, gained: t.wp - before });
+      // Phase 90 (SPELL-09): Strength grants no hit points any more, to a hero
+      // or a foe: the fumbled scroll strengthens the foe's blows by a flat d10
+      // for the fight (f.might, read by combat.js#foeLevelBase) and nothing else.
+      t.might = rollDice(srng, sp.act.dice);
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "might", might: t.might });
       break;
     }
     case "mirror": {

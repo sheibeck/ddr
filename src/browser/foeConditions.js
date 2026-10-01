@@ -152,11 +152,11 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // inline copies) cap every strike at it to the top face; foeTurn's tail
   // ticks it down (foeMirrorFaded).
   mirror: "Copies of it everywhere, and only one is real: every strike at it, yours or your party's, lands only on the very top roll until the count runs out.",
-  // Applied: resolveHelpful's `might` (Strength's own dice) plus the
-  // one-time `strengthBoost` that adds its whole maximum again. Consumed:
+  // Applied: resolveHelpful's `might` (Strength's own die). Consumed:
   // engine/combat.js#foeLevelBase adds `might` to every blow it lands (hero,
-  // party and pursuit alike), for the rest of the fight.
-  might: "Your Strength went to it instead: it gained a second helping of hit points on the spot, and every blow it lands hits harder for the rest of the fight.",
+  // party and pursuit alike), for the rest of the fight. Phase 90 (SPELL-09):
+  // Strength grants no hit points any more, so there is no hit-point clause.
+  might: "Your Strength went to it instead: every blow it lands hits harder for the rest of the fight. It gained no hit points, which is the only mercy in this.",
   // Applied: resolveHelpful's `regen = true`. Consumed: foeTurn heals it a
   // little each round below its maximum, ahead of the asleep/stunned skips.
   regen: "It knits itself back together a little every round, even while it naps, for the rest of the fight.",
@@ -261,8 +261,8 @@ export const FOE_CONDITIONS = Object.freeze(
     { key: "rebound", label: C.rebound, desc: D.rebound, tone: "bad", fields: ["rebound"], when: (f) => typeof f.rebound === "number" && f.rebound > 0, rounds: none },
     // Mirror Self's rounds: targetStrikeFaces caps every strike at the top face; foeTurn ticks it.
     { key: "mirror", label: C.mirror, desc: D.mirror, tone: "bad", fields: ["mirror"], when: (f) => posInt(f.mirror) !== null, rounds: (f) => posInt(f.mirror) },
-    // Strength: `might` feeds foeLevelBase; `strengthBoost` is the one-time hit-point doubling.
-    { key: "might", label: C.might, desc: D.might, tone: "bad", fields: ["might", "strengthBoost"], when: (f) => posInt(f.might) !== null || posInt(f.strengthBoost) !== null, rounds: none },
+    // Strength: `might` feeds foeLevelBase (a flat d10 on each blow it lands, for the fight).
+    { key: "might", label: C.might, desc: D.might, tone: "bad", fields: ["might"], when: (f) => posInt(f.might) !== null, rounds: none },
     // Regeneration: foeTurn's per-foe heal below its maximum.
     { key: "regen", label: C.regen, desc: D.regen, tone: "bad", fields: ["regen"], when: (f) => !!f.regen, rounds: none },
     // Sense Presence: no rule reads a foe's senses mid-fight; shown because the player caused it.

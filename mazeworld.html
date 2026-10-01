@@ -3467,11 +3467,16 @@ const CONDITION_COPY = {
   // the in-combat "rds" reading right beside the ward branch.
   acute:  { label: "Acute",     unit: "sq" },  // strike on a d6
   ether:  { label: "Ethereal",  unit: "sq"  },  // pass through walls
-  // Phase 39 (GEAR-02): `unit: "sq"` now also covers a TIMED potion "might"
-  // effect (Strength/Enlarge) — the untimed SPELL might chip carries no
-  // `remaining`, so the generic detail branch below prints nothing for it
-  // (unchanged behaviour).
-  might:  { label: "Strong", unit: "sq" },  // +damage; a potion effect counts down, the spell effect lasts the day
+  // Phase 39 (GEAR-02): `unit: "sq"` also covers a TIMED potion "might"
+  // effect (the Strength potion) — the untimed rage chip (c.might, the
+  // phobia rage's flat +d10 till the day ends) carries no `remaining`, so the
+  // generic detail branch below prints nothing for it. Phase 90 (SPELL-09):
+  // the Strength SPELL is its own `strength` chip below.
+  might:  { label: "Strong", unit: "sq" },  // +damage; a potion effect counts down, the rage lasts the day
+  // Phase 90 (SPELL-09, report #8): the Strength spell's `spell:Strength`
+  // record, an extra d10 on every damage roll, counted in squares like any
+  // timed effect (generic detail branch below).
+  strength: { label: "Strength", unit: "sq" },
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
   // CMBUI-13 (Phase 77, plan 77-08): one word, the house style for a chip.
   darkness: { label: "Dark", unit: "sq" },
@@ -3557,7 +3562,6 @@ const CONDITION_COPY = {
   braced: { label: "Bracing" },
   inspired: { label: "Inspired" },
   halfNext: { label: "Fortified" },
-  strengthBoost: { label: "Bolstered" },
   nightVision: { label: "Nightsight" },
   fightDark: { label: "Dark" },
   insulted: { label: "Provoked" },
@@ -3659,7 +3663,7 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   heroOut: "bad", heroBlind: "bad", heroShrunk: "bad",
   // CMBUI-13 (Phase 77, plan 77-08): the new keys, good or bad by what they
   // do to the player.
-  ability: "good", braced: "good", inspired: "good", halfNext: "good", strengthBoost: "good", nightVision: "good",
+  ability: "good", braced: "good", inspired: "good", halfNext: "good", nightVision: "good", strength: "good",
   fightDark: "bad", insulted: "bad", selfDot: "bad" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
@@ -3675,7 +3679,9 @@ const CONDITION_EXPLAIN = {
   ether: "Walls are a suggestion for the count shown. When it reaches zero, be standing in a corridor. The rock will not be.",
   // CMBUI-13 (plan 77-08): "how long" now follows on the tap card
   // (conditionTapText), so the sentences below no longer repeat it.
-  might: "Extra damage on every blow. Hit things.",
+  might: "Extra damage on every blow, from a potion or a rage you did not ask for. Hit things.",
+  // Phase 90 (SPELL-09): the Strength spell. The count is on the tap card's lead.
+  strength: "Every damage roll you make adds an extra d10 until the count runs out: each blow, each spell that hits. Casting it again starts the count over, not on top of it. It adds no hit points, whatever you were hoping.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
   // DARK-02 (Phase 76, user ruling 2026-09-25 "combat too"): one rule for
   // the map and the fight (engine/derived.js#darkWaiver / darkLimited). The
@@ -3741,7 +3747,6 @@ const CONDITION_EXPLAIN = {
   braced: "The next blow that lands does half damage. Planning ahead, for once.",
   inspired: "Your song is still ringing in your ears: your own strikes land one face easier. The party is pretending not to have heard it.",
   halfNext: "The next blow that lands on you does half damage. The Pendant takes the other half personally.",
-  strengthBoost: "Your hit points are doubled. When the day ends the extra goes, whether you spent it or not.",
   nightVision: "Your own eyes see in the dark, so the dark cannot make your strikes harder to land. Everyone else is squinting.",
   fightDark: "You are fighting in the dark: every strike is harder to land and none of them can be critical. A light or Sense Presence would fix that.",
   insulted: "You insulted them and they took it personally: every foe finds it one face easier to hit you and yours.",

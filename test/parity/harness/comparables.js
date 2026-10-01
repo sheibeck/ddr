@@ -630,6 +630,12 @@ export function stripFoeDamageClosures(combat) {
  * fixture (or a determinism test reusing this comparable) from ever
  * reaching the diff on this genuine, permanent, deliberate divergence.
  *
+ * Phase 90 (SPELL-09): `strengthBoost` is RETIRED (the Strength spell no longer
+ * doubles hit points, to a hero or a foe; engine/saveState.js unwinds an old
+ * save's field on load), so nothing writes it any more. It stays in the strip
+ * below as a harmless tripwire for an old fixture or save that still carries
+ * it; `might` is now only a fumbled Strength's flat d10 on a foe.
+ *
  * RULES-10 (Phase 75.1, plan 04): the READER-side fumble fields —
  * `selfDot` (the burn), `heroOut` (the hero-cannot-act state), `heroBlind`
  * and `heroShrunk` — are ALL combat-level (never on a foe) and, exactly like

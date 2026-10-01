@@ -213,7 +213,8 @@ export function partyEffectActive(state, key) {
 
 /**
  * eff(c, key) — sum of the named effect across the character's currently
- * LIVE item timer records.
+ * LIVE item timer records (and, since Phase 90, live spell-sourced timed
+ * effects: a `spell:<name>` record whose SPELLS row carries an `act`).
  *
  * 260918-w4n (use-activated-only, user ruling 2026-09-18: "Nothing works
  * without using it, which triggers its cooldown"): rewritten as a SINGLE
@@ -241,7 +242,7 @@ export function eff(c, key) {
 
 /**
  * critWardOf(c) — quick 260928-cos (user-approved fix 2026-09-28): the name
- * of the live item whose `critWard` payload protects `c` (the Cloak of
+ * of the live item (or, since Phase 90, the live spell effect) whose `critWard` payload protects `c` (the Cloak of
  * Strength: "no critical damage lands on you"), or null. While it returns a
  * name, a foe's critical against `c` lands as an ordinary hit — engine/
  * combat.js reads it at every foe-crit site (foeTurn's hero branch and member
@@ -667,25 +668,45 @@ export function chargesTimerId(it) {
 }
 
 /**
- * liveItemEffects(c) — Phase 39 (GEAR-02): every currently-LIVE item effect
- * on `c` — a `c.timers` record whose id starts with `"item:"`, is in
- * `phase: "effect"` with `left > 0`, and whose key resolves to a known
- * `ACTIVATION_OF` entry (an unknown key — e.g. a stripped item, or a tampered
- * save, T-39-07 — is silently skipped, never thrown). Returns an array of
- * `{ key, act, rec }` in `c.timers`'s own insertion (`Object.keys`) order.
+ * SPELL_ACT_OF — Phase 90 (SPELL-09): spell name -> its `act` record, for every
+ * SPELLS row that carries one (Strength today; the SPELL-10 slate's timed
+ * spells next). A row with an `act` is a SPELL-SOURCED TIMED EFFECT: casting it
+ * starts a `spell:<n>` c.timers record (engine/combat.js#startSpellEffect) and
+ * liveItemEffects reads the live record back through this map, so the one
+ * activation vocabulary (`act.kind`, `act.eff`, ...) serves items and spells.
+ * Built once, frozen. A `spell:` record whose name is not here (the
+ * `spell:weaken` and `spell:reveal` windows) is not a spell effect and is
+ * ignored by liveItemEffects.
+ */
+export const SPELL_ACT_OF = Object.freeze(
+  Object.fromEntries(SPELLS.filter((sp) => sp.act && typeof sp.act === "object").map((sp) => [sp.n, sp.act])),
+);
+
+/**
+ * liveItemEffects(c) — Phase 39 (GEAR-02): every currently-LIVE timed effect
+ * on `c` — a `c.timers` record in `phase: "effect"` with `left > 0` whose id is
+ * either `"item:<key>"` with a known `ACTIVATION_OF` entry (an unknown key —
+ * e.g. a stripped item, or a tampered save, T-39-07 — is silently skipped,
+ * never thrown) or, since Phase 90 (SPELL-09), `"spell:<name>"` with a known
+ * `SPELL_ACT_OF` entry (a spell with an `act` record; `spell:weaken` and
+ * `spell:reveal` are not). Returns an array of `{ key, act, rec, source }` in
+ * `c.timers`'s own insertion (`Object.keys`) order; `source` is `"item"` or
+ * `"spell"`, and `key` is the item's or the spell's name. The item/spell ids
+ * never collide (`item:Strength` is the potion, `spell:Strength` the spell).
  * Pure read, no rng, no mutation.
  */
 export function liveItemEffects(c) {
   const out = [];
   if (!c || !c.timers || typeof c.timers !== "object") return out;
   for (const id of Object.keys(c.timers)) {
-    if (!id.startsWith("item:")) continue;
+    const isItem = id.startsWith("item:");
+    if (!isItem && !id.startsWith("spell:")) continue;
     const rec = c.timers[id];
     if (!rec || rec.phase !== "effect" || !(rec.left > 0)) continue;
-    const key = id.slice("item:".length);
-    const act = ACTIVATION_OF[key];
+    const key = id.slice(isItem ? "item:".length : "spell:".length);
+    const act = isItem ? ACTIVATION_OF[key] : Object.prototype.hasOwnProperty.call(SPELL_ACT_OF, key) ? SPELL_ACT_OF[key] : null;
     if (!act) continue;
-    out.push({ key, act, rec });
+    out.push({ key, act, rec, source: isItem ? "item" : "spell" });
   }
   return out;
 }
@@ -778,8 +799,8 @@ export function effectSourceOf(rec) {
 }
 
 /**
- * itemEffectActive(c, kind) — Phase 39 (GEAR-02): is ANY live item effect of
- * activation `kind` (e.g. `"haste"`, `"invis"`, `"ether"`, `"acute"`, `"fly"`)
+ * itemEffectActive(c, kind) — Phase 39 (GEAR-02): is ANY live item effect (or,
+ * since Phase 90, spell-sourced timed effect) of activation `kind` (e.g. `"haste"`, `"invis"`, `"ether"`, `"acute"`, `"fly"`)
  * currently active on `c`? The one read every retired-counter consumer
  * (strikeDie/foeToHitVs/weaponDamage/isFlying/the climb block) re-points to.
  * Pure, no rng.
@@ -800,6 +821,38 @@ export function potionMight(c) {
   let t = 0;
   for (const e of liveItemEffects(c)) if (e.act.kind === "might" && typeof e.act.might === "number") t += e.act.might;
   return t;
+}
+
+/**
+ * strengthRoll(sheet, rng) — Phase 90 (SPELL-09, user 2026-09-30, report #8 and
+ * Q1 A): the Strength spell's extra damage die. 0 unless a live effect of act
+ * kind `"strength"` is on `sheet` (the `spell:Strength` record, 100 squares
+ * from the cast); else the die `act.dice` (a d10) rolled from the DERIVED stream
+ * `derivedRng(<rng.getState() when it is a function, else 0>, "strength")`, so
+ * the main `rng` is only READ for its cursor and never advances (no existing
+ * draw moves). Call it right AFTER a damage roll's own dice are drawn: the
+ * cursor has then moved since the previous roll, so each roll (each blow of a
+ * double strike, each foe a Lightning bolt reaches, each Fireballs bolt) gets
+ * its own d10 and not a repeat. Added to the roll BEFORE every cap, floor,
+ * Afraid halving and damage multiplier. One record means one die: a recast
+ * restarts the record and never adds a second. A damage-over-time tick never
+ * calls it (Q1). Integer, never throws on a missing sheet.
+ */
+export function strengthRoll(sheet, rng) {
+  const dice = strengthDiceOf(sheet);
+  if (!dice) return 0;
+  const cursor = rng && typeof rng.getState === "function" ? rng.getState() : 0;
+  return rollDice(derivedRng(cursor, "strength"), dice); // roll:amount
+}
+
+/**
+ * strengthDiceOf(sheet) — Phase 90 (SPELL-09), module-private: the live
+ * Strength record's die (`{ n, sides, bonus }`), or null. The one read
+ * strengthRoll and weaponDamageRange share.
+ */
+function strengthDiceOf(sheet) {
+  const live = liveItemEffects(sheet).find((e) => e.act.kind === "strength" && e.act.dice);
+  return live ? live.act.dice : null;
 }
 
 // TUNING KNOB — Phase 41 (TERR-02, user-ratified Key Decision 2026-09-18,
@@ -880,7 +933,8 @@ export function isFlying(state) {
  *     size step's plus its own eff.dmg bulk; Phase 89, ITEM-05: Enlarge 11,
  *     the Gauntlet 2>}
  *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>
- *   - might  {polarity:"good"}                            — the SPELL's +damage, lasts the day (no count) — distinct from a potion's timed "might" chip above; both may appear together
+ *   - strength {polarity:"good", remaining:<squares left>, cadence:"squares", source:"Strength"} — Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record, reported by the same generic loop as an item effect (a spell-sourced timed effect, liveItemEffects)
+ *   - might  {polarity:"good"}                            — the phobia rage's flat +d10 until the day ends (engine/encounters.js insanityRage is the only writer of c.might since Phase 90) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape
  *   - mirror {polarity:"good", remaining:<rounds>}         — Phase 40 (SPELL-02): Mirror Self — c.mirror counts down once per foeTurn; cleared at endCombat
  *   - senses {polarity:"good"}                             — Phase 40 (SPELL-02): Sense Presence — a flat 0/1 flag (no count), lasts until endCombat clears it; also waives every forced foe-first initiative rule (see combat.js#rollInitiative)
@@ -904,7 +958,6 @@ export function isFlying(state) {
  *   - braced {polarity:"good"} — Brace's C.braced, until the next landed blow consumes it; fight-only; after reveal
  *   - inspired {polarity:"good", amount:<to-hit plus>} — the Bard's level-2 song, C.inspired (toHit adds it), the rest of the fight; fight-only
  *   - halfNext {polarity:"good"} — an armed Pendant of Fortitude (engine/items.js), halves the next landed blow; shows anywhere
- *   - strengthBoost {polarity:"good", amount:<hp added>} — the Strength spell's doubled hit points (engine/magic.js), until the day ends; shows anywhere
  *   - nightVision {polarity:"good"} — a fight where inDark holds and Night Vision is the waiver (darkWaiver) holding the dark back; fight-only; ends the good block, before itemCooldown/staffCharges
  *   - fightDark {polarity:"bad"} — a fight on a dark square with toHit's dark cap live (darkLimited and no Sense Presence) and NO darkFor counter running (its `darkness` chip covers that case); fight-only
  *   - insulted {polarity:"bad"} — a failed parley's C.parleyInsulted grudge, the rest of the fight
@@ -993,12 +1046,11 @@ export function conditionsOf(state) {
   // CMBUI-13 (Phase 77): the good effects that had no chip, appended in a
   // fixed order before the cooldown/charges chips. braced/inspired/
   // nightVision are fight-only (they live on state.combat, or only matter in
-  // a fight); halfNext and strengthBoost live on `c` and show anywhere.
+  // a fight); halfNext lives on `c` and shows anywhere.
   const inFight = !!(state && state.combat);
   if (inFight && state.combat.braced) out.push({ key: "braced", polarity: "good" });
   if (inFight && state.combat.inspired > 0) out.push({ key: "inspired", polarity: "good", amount: state.combat.inspired });
   if (c.halfNext) out.push({ key: "halfNext", polarity: "good" });
-  if (c.strengthBoost > 0) out.push({ key: "strengthBoost", polarity: "good", amount: c.strengthBoost });
   if (inFight && state.c && inDark(state) && darkWaiver(c) === "nightVision") out.push({ key: "nightVision", polarity: "good" });
 
   // Phase 39 (GEAR-02): one `itemCooldown` chip per duration+cooldown item
@@ -2377,7 +2429,11 @@ function settleDamage(t, base) {
 export function weaponDamage(c, rng) {
   const t = weaponDamageTerms(c);
   const w = t.weapon;
-  const base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
+  let base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
+  // Phase 90 (SPELL-09): a live Strength spell adds its own d10 to this roll,
+  // drawn from a derived stream right after the weapon dice (the main rng
+  // never advances for it), before the Sorcerer's cap and the floor of 1.
+  base += strengthRoll(c, rng);
   return settleDamage(t, base);
 }
 
@@ -2395,7 +2451,12 @@ export function weaponDamageRange(c) {
   const lo = n + flat;
   const hi = n * sides + flat;
   const halve = (x) => (t.weapon.halve ? Math.ceil(x / 2) : x);
-  return { min: settleDamage(t, halve(lo)), max: settleDamage(t, halve(hi)) };
+  // Phase 90 (SPELL-09): a live Strength spell widens the range by its die's
+  // lowest and highest faces, the same extra weaponDamage draws.
+  const sd = strengthDiceOf(c);
+  const sLo = sd ? sd.n + (sd.bonus || 0) : 0;
+  const sHi = sd ? sd.n * sd.sides + (sd.bonus || 0) : 0;
+  return { min: settleDamage(t, halve(lo) + sLo), max: settleDamage(t, halve(hi) + sHi) };
 }
 
 /**

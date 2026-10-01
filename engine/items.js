@@ -40,6 +40,7 @@ import {
   sourceSlotItem,
   effectSourceOf,
   liveItemEffects,
+  SPELL_ACT_OF,
   healTicksDue,
   healTicksLeft,
 } from "./derived.js";
@@ -1475,6 +1476,11 @@ function applyActivation(state, it, rng, events, slot = null, sheet = null) {
  * these are (a Joiner's, after movement.js ticks its timers). It defaults to
  * the hero; a Joiner's events carry `member` (its name), the hero's are
  * byte-identical to before.
+ *
+ * Phase 90 (SPELL-09): a `spell:<name>` record whose SPELLS row carries an
+ * `act` (a spell-sourced timed effect, derived.js#SPELL_ACT_OF) that runs out
+ * (a transition from "effect") pushes `spellEffectFaded { spell, kind, member? }`.
+ * `spell:weaken` and `spell:reveal` are not spell effects and stay silent here.
  */
 export function narrateTimerTransitions(state, transitions, events = [], sheet = null) {
   const c = sheet ?? state.c;
@@ -1487,6 +1493,10 @@ export function narrateTimerTransitions(state, transitions, events = [], sheet =
       } else if (from === "cooldown") {
         events.push({ type: "itemCooled", item: key, ...who });
       }
+    } else if (id.startsWith("spell:")) {
+      const name = id.slice("spell:".length);
+      const spellAct = Object.prototype.hasOwnProperty.call(SPELL_ACT_OF, name) ? SPELL_ACT_OF[name] : null;
+      if (spellAct && from === "effect") events.push({ type: "spellEffectFaded", spell: name, kind: spellAct.kind, ...who });
     } else if (id.startsWith("charges:")) {
       const key = id.slice("charges:".length);
       const act = ACTIVATION_OF[key];

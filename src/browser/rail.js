@@ -339,6 +339,8 @@ export const RAIL_FAMILY = Object.freeze({
   // Phase 39 (GEAR-02): the item activation model's four transition events.
   itemEffectStarted: { icon: "◇", title: "IN EFFECT", tone: "good" },
   itemEffectFaded: { icon: "◇", title: "WORN OFF", tone: "odd" },
+  // Phase 90 (SPELL-09): a spell-sourced timed effect (Strength) running out.
+  spellEffectFaded: { icon: "◇", title: "WORN OFF", tone: "odd" },
   itemCooled: { icon: "◇", title: "READY", tone: "good" },
   staffRecharged: { icon: "◇", title: "CHARGED", tone: "good" },
 

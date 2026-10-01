@@ -123,13 +123,15 @@ export const HERO_CONDITIONS = Object.freeze(
     item("lit", true), // a lit torch: lifts the dark cap in a dark fight (darkWaiver).
     item("knit", false), // Cloak of Regeneration (Phase 88, ITEM-03): heals on squares walked, never in a fight (no steps in a fight).
     item("flight", false), // Cloak of Flying / Bracelet of Flight: crossing terrain, not a fight.
+    // Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record (a spell-sourced timed effect, derived.js#liveItemEffects): an extra d10 on every damage roll, 100 squares from the cast.
+    { key: "strength", fields: ["timers"], timers: ["spell:Strength"], fight: true, lasts: "squares", source: "spell" },
     // ── duration abilities (engine/abilities.js DURATION_ROUNDS) — changes a foe's swing or your blows ──
     { key: "ability", fields: ["timers"], timers: ["ability:*"], fight: true, lasts: "rounds", source: "ability" },
-    // Strength potion (a `might` item effect, with a source) or the spell's day-long c.might: more damage.
+    // Strength potion (a `might` item effect, with a source) or, with no source, the phobia rage's flat +d10 till the day ends (c.might; the Strength spell has its own `strength` entry since Phase 90).
     {
-      key: "might", fields: ["might", "timers"], timers: ["item:*"], fight: true, lasts: "day", source: "spell",
+      key: "might", fields: ["might", "timers"], timers: ["item:*"], fight: true, lasts: "day", source: "fear",
       lastsFor: (cn) => (typeof cn.source === "string" && cn.source ? "squares" : "day"),
-      sourceFor: (cn) => (typeof cn.source === "string" && cn.source ? "item" : "spell"),
+      sourceFor: (cn) => (typeof cn.source === "string" && cn.source ? "item" : "fear"),
     },
     // Shield soaks blows; an armed Bubble mirror waits for one.
     { key: "ward", fields: ["ward"], fight: true, lasts: "rounds", source: "spell", lastsFor: (cn) => (cn.mirror ? "nextBlow" : "rounds") },
@@ -141,7 +143,6 @@ export const HERO_CONDITIONS = Object.freeze(
     { key: "braced", fields: ["braced"], fight: true, lasts: "nextBlow", source: "ability", sourceName: ABILITY_BY_ID.brace?.name }, // Brace: halves the next blow.
     { key: "inspired", fields: ["inspired"], fight: true, lasts: "fight", source: "song" }, // the level-2 song: one more face on the hero's own strikes (toHit).
     { key: "halfNext", fields: ["halfNext"], fight: true, lasts: "nextBlow", source: "item", sourceName: "Pendant of Fortitude" }, // halves the next blow.
-    { key: "strengthBoost", fields: ["strengthBoost"], fight: true, lasts: "day", source: "spell" }, // Strength: doubled hit points to spend.
     { key: "nightVision", fields: ["skills"], fight: true, lasts: "fight", source: "trait" }, // Night Vision: holds the dark cap back.
     { key: "itemCooldown", fields: ["timers"], timers: ["item:*"], fight: false, lasts: "squares", source: "item" }, // an item recharging: nothing live.
     { key: "staffCharges", fields: ["timers"], timers: ["charges:*"], fight: false, lasts: "charges", source: "item" }, // a staff refilling: its menu row says so.

@@ -6628,3 +6628,54 @@ strike; before it was a round-1 opener only), which moves bot runs of Fighters t
 **Nothing else moved.** `git diff --stat -- test/parity/prototype-master.js.txt
 tools/lib/event-variants.mjs docs/narrative-pass/corpus-base.json` prints nothing for this
 plan.
+
+### Phase 90 plan 03: Strength is an extra d10 for 100 squares, no hit points (SPELL-09)
+
+**The rule (report #8 and the user's 2026-09-30 rulings).** Report #8: "Strength spell says
++d10 damage until tomorrow. But casting it actually grants you hit points instead." The ruling
+(docs/SPELL-AUDIT.md "## Rulings", Q1 A): Strength adds a d10 to every damage roll the hero
+makes, for 100 squares from the cast, grants no hit points, and a recast restarts the 100.
+The reach is each weapon blow (both blows of a double strike, Sweep and Riposte through
+`weaponDamage`) and each damage spell's roll as it lands (a thrown hit, each foe of Lightning,
+Earthquake's one roll, each Fireballs bolt); a damage-over-time tick gets none. Before, the cast
+rolled ONE d10 into `c.might` (added to every weapon blow until the next day boundary, so it
+lasted 1 to 100 squares), never touched spell damage, and doubled maximum and current hit points
+once a day (`c.strengthBoost`), unwound by `newDay`. Now the cast starts one
+`c.timers["spell:Strength"]` squares record (no new serialized field; `c.timers` is already
+carved out of the hero comparable) and each damage roll draws its own d10 from
+`derivedRng(<main cursor>, "strength")`, so the main rng never advances for it. The retired
+doubled-hit-point field (hero, and a foe a fumbled scroll strengthened) is unwound on load by a
+tolerant step in `engine/saveState.js`.
+
+**The predictor.** A move can only reach a fixture or pin whose run (a) casts Strength (the
+prototype doubles hit points, so a parity fixture that cast it would diverge on `maxWP`/`wp`
+and `strengthBoost`), (b) holds a live `spell:Strength` record when it damages, (c) reads a
+newDay reversal of `strengthBoost`, or (d) loads a save carrying `strengthBoost`. With no
+live record `strengthRoll` returns 0 and draws nothing, so every other run is byte-identical.
+The fair bot (`tools/lib/tuning-bot.mjs`) never casts the Strength spell (it casts attack
+spells only; its Strength is the bag potion), so no bot-played pin should move.
+
+**The live scan (measured at the plan's end, against the base 462abc15).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass. **Zero parity drift.** No parity
+  action script casts Strength (`action-script.magic.json` never uses spell index 2; the other
+  scripts' "Strength" hits are a potion name and grimoire contents). `test/parity/prototype-master.js.txt`
+  is untouched. `test/parity/harness/comparables.js` gained a comment only (its foe-side strip
+  of `might`/`strengthBoost` stays as an inert tripwire).
+- `roll-high-state-pins.test.js`: **0 of 8 labels moved** (all eight re-measured byte-identical).
+  None was re-recorded; `roll-high-baseline.mjs save` was not run.
+- `roll-high-save-compat.test.js`: unchanged (its save holds no `strengthBoost`).
+- `test/unit/fixtures/hazard-commit/golden.json`: unchanged.
+- `days-farm.test.js` and every other seed-pinned test: unchanged (the full suite's only
+  failures after the change were three non-fixture assertions, below).
+
+**Moved entries: none.** No fixture, pin or golden moved, so none was regenerated or re-pinned.
+
+**Non-fixture assertions the rule moved (updated to the new rule, each before -> after).**
+`test/unit/spell-table.test.js` (Strength's pinned `dmg` die moved to `act.dice`),
+`test/unit/shell-worn-slots.test.js` (the `gearTab.js` import line gained `liveItemEffects`),
+`test/unit/status-chit-combat.test.js` (a source-less Strong chip is the phobia rage: "from your
+fear", no longer "from a spell"). The Strength cases in `spell-mechanics`, `magic`,
+`scroll-fumble-resolve`, `hp-growth-linear`, `honest-gains`, `conditions`, `hero-conditions`,
+`foe-conditions`, `foeDetails`, `gear-panels` and `gear-view-models` were re-pinned the same
+way (see the 90-03 SUMMARY).

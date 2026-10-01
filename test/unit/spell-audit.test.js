@@ -439,12 +439,13 @@ test("the checker fails a doctored swap of two rows and of two slate rows", () =
 });
 
 test("the checker fails a balance call whose question already has a ruling, and a ruling with no question", () => {
-  // Q1 is answered: turn its Strength row back into an open call and the checker must object.
+  // Q8 is answered: turn its Lightning row back into an open call and the checker must object.
+  // (Phase 90 plan 03: Strength, Q1's row, now reads fixed engine (90-03), so Lightning is the probe.)
   const reopened = doctor((c, at) => {
-    const i = at("Strength");
-    c[i] = c[i].replace("| ruled (Q1, 2026-09-30) -> 90-03 |", "| balance call (Q1) |");
+    const i = at("Lightning");
+    c[i] = c[i].replace("| ruled (Q8, 2026-09-30) -> 90-10 |", "| balance call (Q8) |");
   });
-  assert.ok(checkDoc(reopened).some((p) => /still reads balance call \(Q1\) but Q1 has a ruling/.test(p)));
+  assert.ok(checkDoc(reopened).some((p) => /still reads balance call \(Q8\) but Q8 has a ruling/.test(p)));
   // And a doc where a question has no open row and no ruling fails too.
   const unasked = DOC_TEXT.replace(/^- Q6 \(2026-09-30\):/m, "- Q60 (2026-09-30):");
   assert.ok(checkDoc(unasked).some((p) => /Q60, which is not in Balance calls/.test(p) || /Q6 is asked but no row/.test(p)));

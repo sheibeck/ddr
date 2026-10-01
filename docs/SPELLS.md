@@ -1304,3 +1304,57 @@ half-intel scale as the hero and the foes, the user said "Yes, same scale."
 
 See docs/ROLL-LEDGER.md (`[resist:member-intel]`) for the site and the draw
 order.
+
+## Phase 90: Strength (SPELL-09) and spell-sourced timed effects
+
+Report #8: "Strength spell says +d10 damage until tomorrow. But casting it actually grants you
+hit points instead." The user's 2026-09-30 ruling (docs/SPELL-AUDIT.md "## Rulings", Q1 A):
+Strength is **an extra d10 on every damage roll the hero makes, for 100 squares from the cast,
+with no hit points**, and casting it again restarts the 100.
+
+### The rule
+
+- **The record.** Casting Strength starts one `c.timers["spell:Strength"]` squares record of
+  100 (`{ cadence: "squares", left: 100, phase: "effect" }`, no cooldown) through
+  `combat.js#startSpellEffect`, and pushes `strengthCast { squares, restarted }`. A recast
+  while it is live overwrites the record (`restarted: true`): never two records, never two dice.
+  The cast never touches `maxWP` or `wp` and rolls nothing.
+- **The clock.** 100 squares walked from the cast, whenever it is cast. Making camp and a new day
+  neither end nor shorten it (`movement.js#newDay` no longer touches it); the step that walks the
+  100th square deletes the record and pushes `spellEffectFaded { spell: "Strength", kind:
+  "strength" }` before that step's encounter events. A 2-square water step with 1 left ends it
+  with no negative count.
+- **The reach (Q1 A).** Each time the hero deals damage, one d10 joins that roll
+  (`derived.js#strengthRoll`, a derived stream: docs/ROLL-LEDGER.md "Phase 90 plan 03"): every
+  weapon blow (both blows of a double strike, Sweep, Riposte), a thrown spell's hit, each foe
+  Lightning reaches, Earthquake's one roll, each Fireballs bolt. A damage-over-time tick (Acid, Ice)
+  gets none. It is added before the Sorcerer's cap of 9, the floor of 1, Afraid halving and the
+  damage multiplier. The hero sheet's damage range (`weaponDamageRange`) grows by 1 to 10 while it
+  is live; the chip reads Strength with its squares left; the Gear tab's kit row reads the same.
+- **Three separate sources.** The Strength spell, the Strength potion (+8 for 25 squares,
+  `potionMight`) and the phobia rage (`c.might`, a flat d10 till the day ends) are independent and
+  all add at once. `c.might` is only the rage's now.
+- **The retired doubling.** The old spell doubled maximum and current hit points
+  (`c.strengthBoost`). That field is gone from the hero, from a fumbled scroll's foe (a fumbled
+  Strength now only gives the foe a flat d10, `f.might`, on each landed blow for the fight), and
+  from the chip tables. A save carrying it loads tolerantly: `saveState.js` subtracts it from
+  `maxWP` (never below 1), clamps `wp`, and drops the field, for the hero and for every foe of a
+  saved fight; a save without it is byte-identical after load.
+
+### Spell-sourced timed effects (the mechanism the SPELL-10 slate reuses)
+
+- **`act` on a SPELLS row.** A row carrying `act: { kind, effect, ... }` is a spell-sourced
+  timed effect (Strength: `{ kind: "strength", effect: 100, dice: { n: 1, sides: 10, bonus: 0 } }`).
+  `derived.js#SPELL_ACT_OF` is the frozen map of spell name to `act`.
+- **One starter.** `combat.js#startSpellEffect(sheet, sp, events, opts)` starts the `spell:<n>`
+  squares record (`opts.squares` overrides `act.effect`, for the school bonus stretch); it pushes
+  nothing. It serves the hero now and a Joiner's own sheet and the slate later.
+- **One reader.** `derived.js#liveItemEffects` also returns live `spell:<name>` records whose
+  name has an `act`, each entry tagged `source: "spell"` (item entries `source: "item"`), so
+  `eff`, `itemEffectActive`, `critWardOf` and `conditionsOf` read them with no spell-specific
+  code. A `spell:` record with no `act` (`spell:weaken`, `spell:reveal`) is ignored. Phase 88's
+  `endSourceEffects` walks `item:` ids only and never touches a spell record.
+- **One expiry line.** `items.js#narrateTimerTransitions` pushes `spellEffectFaded { spell, kind,
+  member? }` when such a record runs out; the Oracle and rail name the spell and say what stops per
+  kind (Strength: the extra d10 goes), and a kind with no clause just wears off.
+- Pins: `test/unit/strength-spell.test.js` and `test/unit/spell-effect-records.test.js`.

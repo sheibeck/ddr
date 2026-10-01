@@ -1900,7 +1900,7 @@ export const LINE_FOR = {
       heal: `heals ${t} instead (+${e?.amount ?? 0} hp).`,
       regen: `lands on ${t} instead: it regenerates.`,
       ward: e?.mirror ? `wraps ${t} in a bubble: your next blow comes back.` : `wards ${t}: it soaks your next ${e?.pool ?? 0}.`,
-      might: `strengthens ${t}: +${e?.might ?? 0} damage${(e?.gained ?? 0) > 0 ? `, +${e.gained} hp` : ""}.`,
+      might: `strengthens ${t}: +${e?.might ?? 0} damage on its blows, for the fight.`,
       mirror: `mirrors ${t}, ${railPlural(e?.rounds ?? 0, "round")}: you hit it only on your top face.`,
       senses: `sharpens ${railPossessive(e?.target, "its")} senses, to no visible effect.`,
     };
@@ -2233,14 +2233,25 @@ export const LINE_FOR = {
     tone: "magic",
     priority: PRIORITY.you,
   }),
-  // VOX-05 (Phase 79, plan 79-08): the damage and the HP the cast added.
+  // Phase 90 (SPELL-09, report #8): the rail twin of the Oracle's strengthCast.
   strengthCast: (e) => ({
-    text: `Might surges: +${e?.might ?? 0} damage till camp${
-      (e?.gained ?? 0) > 0 ? `, +${e.gained} hp` : Number.isFinite(e?.gained) ? " (hp already doubled today)" : ""
-    }.`,
+    text: e?.restarted
+      ? `Strength starts over: ${railSquares(e?.squares ?? 100)}, not double.`
+      : `Might surges: an extra d10 on every damage roll for ${railSquares(e?.squares ?? 100)}. No extra HP.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
+  // Phase 90 (SPELL-09): the rail twin of the Oracle's spellEffectFaded; a kind
+  // with no clause just wears off, a bare payload never prints "undefined".
+  spellEffectFaded: (e) => {
+    const owner = e?.member ? `${e.member}'s` : "Your";
+    const what = { strength: "damage is back to plain dice" }[e?.kind];
+    return {
+      text: !e?.spell ? "The spell wears off." : what ? `${owner} ${e.spell} wears off: ${what}.` : `${owner} ${e.spell} wears off.`,
+      tone: "beat",
+      priority: PRIORITY.other,
+    };
+  },
   regenerationCast: () => ({ text: "Wounds start closing on their own.", tone: "magic", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): reads naturally; the face says what it did.
   insaneNoTarget: () => block("No one here to drive insane."),

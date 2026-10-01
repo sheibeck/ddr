@@ -19,10 +19,10 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq } from "./derived.js";
+import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, resistControl, holdFoe, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -383,8 +383,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     // deals through Earthquake while combat.afraid > 0 (a no-op otherwise).
     // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1,
     // no-op) sits between the roll and afraidDamage.
+    // Phase 90 (SPELL-09, Q1 A): a live Strength adds its d10 to this one roll
+    // (every foe takes it); the caster's own backlash stays the dice alone.
     const rolled = rollDice(rng, sp.dmg);
-    const d = afraidDamage(state, spellDamageFor(rolled + spellLevelSq(c), c));
+    const d = afraidDamage(state, spellDamageFor(rolled + strengthRoll(c, rng) + spellLevelSq(c), c));
     const backlash = afraidDamage(state, spellDamageFor(rolled, c));
     // Quick 260927-rsx: every live foe rolls its intel resist up front (in
     // C.foes order, before any damage lands); a foe that resists takes none.
@@ -451,7 +453,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       // Phase 31 Afraid: halves each Volley bolt the hero deals (post-roll
       // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
       // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
-      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + (first ? levelSq : 0), c));
+      // Phase 90 (SPELL-09, Q1 A): each bolt is its own damage roll, so a live
+      // Strength adds its own d10 to every bolt.
+      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + strengthRoll(c, rng) + (first ? levelSq : 0), c));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
       const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
@@ -559,17 +563,15 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       events.push({ type: "wardRaised", spell: sp.n, pool: sp.pool });
     }
   } else if (sp.kind === "might") {
-    c.might = rollDice(rng, sp.dmg);
-    const before = c.wp;
-    if (!c.strengthBoost) {
-      c.strengthBoost = c.maxWP;
-      c.maxWP += c.strengthBoost;
-      c.wp += c.strengthBoost;
-    }
-    // VOX-05 (Phase 79, plan 79-08): `gained` is the HP the cast added (the
-    // doubling happens once a day, so a recast adds 0) and `maxWP` the new
-    // ceiling, so the cast line can state the boost. Additive, zero draws.
-    events.push({ type: "strengthCast", might: c.might, gained: c.wp - before, maxWP: c.maxWP });
+    // Phase 90 (SPELL-09, report #8, user 2026-09-30): Strength is a
+    // spell-sourced timed effect, 100 squares from the cast: one
+    // `spell:Strength` record (startSpellEffect). A recast restarts it and
+    // never stacks; it grants no hit points and rolls nothing here (the extra
+    // d10 is rolled on each damage roll, derived.js#strengthRoll).
+    const prior = c.timers && c.timers["spell:" + sp.n];
+    const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
+    const rec = startSpellEffect(c, sp, events);
+    events.push({ type: "strengthCast", squares: rec ? rec.left : 0, restarted });
   } else if (sp.kind === "regen") {
     c.regen = true;
     events.push({ type: "regenerationCast" });
@@ -712,7 +714,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         // Phase 31 Afraid: halves the hero's thrown-spell damage (post-roll
         // arithmetic, zero rng change; a no-op unless combat.afraid > 0).
         // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
-        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + levelSq + eff(c, "spellDmg"), c));
+        // Phase 90 (SPELL-09, Q1 A): a live Strength adds its d10 to this damage
+        // roll (each foe a Lightning throw reaches rolls its own).
+        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + strengthRoll(c, rng) + levelSq + eff(c, "spellDmg"), c));
         // Spell damage (D-06): bypasses foe armor entirely; eligible for the
         // CANON-04 multiplier table. `levelSq` in the event is the level
         // term above (the narration says "the roll +N, for your level");
