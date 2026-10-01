@@ -125,7 +125,7 @@ test("--yes runs every printed command in order through the injected runner; a f
 
   const s = harness(["--setup", "--yes"]);
   assert.equal(await s.run(), 0);
-  assert.ok(s.ran.length >= 5);
+  assert.equal(s.ran.length, 4);
   assert.match(s.ran[s.ran.length - 1], /functions deploy boardName/);
 
   const failing = { ran: [], out: [], err: [] };
