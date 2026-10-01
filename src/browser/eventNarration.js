@@ -1833,7 +1833,7 @@ export const EVENT_NARRATION = {
         : `<span class="hit">One size larger for ${sq}.</span>`,
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
       unseen: `<span class="hit">Unseen for ${sq}: foes ${ITEM_UNSEEN_SHIFT} to hit you.</span>`,
-      tongue: `<span class="hit">You can always parley for ${sq}, and the roll gets +2. Do not waste it on small talk.</span>`,
+      tongue: `<span class="hit">You can always parley for ${sq}, with +2 to the parley roll. Do not waste it on small talk.</span>`,
       critWard: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
       plate: `<span class="hit">${sq} of weightless plate.</span>`,
       // Phase 88 (ITEM-03): the Cloak of Regeneration's window, stated from

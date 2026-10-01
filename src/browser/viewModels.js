@@ -12,7 +12,7 @@ import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgra
 import { storeBuyRefusal } from "../../engine/economy.js";
 import { rationsLeft } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
-import { signedText, facesRangeText } from "./rollRange.js";
+import { signedText } from "./rollRange.js";
 
 /**
  * armorDisplay(c) — Phase 28 (ARMOR-02/04): the ONE render-ready description
@@ -241,7 +241,7 @@ export const ITEM_STAT_COPY = Object.freeze({
     slots: "{n} slots",
     wield: "Fights as a {lab} weapon; its power works only while wielded.",
     toHit: "{signed} to hit",
-    crit: "crits on {range} on a d20",
+    crit: "crits on the top {n} numbers of your strike die",
     bulk: "{signed} to climb, leap and flee rolls",
     carry: "carries up to {wilmst} wilmst and {rations} rations",
   }),
@@ -301,12 +301,13 @@ export function itemStatLines(item, c = null) {
     lines.push(statLine("damage", damage, damage));
     // Phase 89 plan 09 (TEXT-01): the weapon's own to-hit (WEAPONS `need`, a
     // signed count of winning faces, so "+1 to hit" / "−1 to hit", never "+0")
-    // and, for the precise blades, the range on the d20 that doubles damage.
+    // and, for the precise blades, how many of the strike die's top numbers
+    // double the damage (the die scales with level, so a count, not a d20 range).
     if (Number.isInteger(w.need) && w.need !== 0) {
       lines.push(statLine("toHit", w.need, ITEM_STAT_COPY.text.toHit.replace("{signed}", signedText(w.need))));
     }
     if (Number.isInteger(w.crit) && w.crit > 1) {
-      lines.push(statLine("crit", w.crit, ITEM_STAT_COPY.text.crit.replace("{range}", facesRangeText(w.crit, 20))));
+      lines.push(statLine("crit", w.crit, ITEM_STAT_COPY.text.crit.replace("{n}", w.crit)));
     }
     if (bonus) lines.push(statLine("enchanted", bonus, ITEM_STAT_COPY.text.enchanted));
     pushUsable();

@@ -150,7 +150,7 @@ const JEWELRY_ROWS = [
     // Use-activated (260918-w4n): worn + used, perfect fluency for 50
     // squares, 50 to forget it again.
     n: "Helm of Knowledge", slot: "jewelry", eff: { tongue: 1 },
-    txt: "used, for fifty squares you can always parley with Humans, Demons and Beasts: a parley is talking your way out of the fight instead of swinging, one try per fight, and the roll gets +2 (Ninjas and Masters of Arms still will not); then fifty squares of forgetting again",
+    txt: "used, for fifty squares you can always parley with Humans, Demons and Beasts: a parley is talking your way out of the fight instead of swinging, one try per fight, and +2 to the parley roll (Ninjas and Masters of Arms still will not); then fifty squares of forgetting again",
     act: { kind: "tongue", effect: 50, cd: 50 },
   },
   {
