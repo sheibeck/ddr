@@ -25,7 +25,7 @@
 - [x] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps. (completed 2026-09-30)
 - [x] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits. (completed 2026-09-30)
 - [x] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled. (completed 2026-09-30)
-- [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
+- [x] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed. (completed 2026-10-01)
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
 - [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
 - [ ] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update.
@@ -239,7 +239,7 @@ Plans:
   3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
   4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
 
-**Plans:** 11/12 plans executed
+**Plans:** 12/12 plans complete
 
 Plans:
 **Wave 1**
@@ -285,7 +285,7 @@ Plans:
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 90-12-PLAN.md — the text-vs-engine guard, both audits closed with a pin per row, the spell / ability / roll ledgers, the phase gate and the hand-offs to Phases 91 and 92
+- [x] 90-12-PLAN.md — the text-vs-engine guard, both audits closed with a pin per row, the spell / ability / roll ledgers, the phase gate and the hand-offs to Phases 91 and 92
 
 ### Phase 91: Race & Sub-class Audit
 
@@ -414,7 +414,7 @@ Plans:
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
-| 90. Spell & Skill Audit | 11/12 | In Progress|  |
+| 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |

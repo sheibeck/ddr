@@ -50,16 +50,16 @@
 
 ### Spells (SPELL) — backlog 999.15
 
-- [ ] **SPELL-08**: Every spell is in an audit table covering its to-hit roll (if any), damage dice, multipliers, duration, resist checks, school gates, and backfire and fumble odds. Its text, the Grimoire, its chips and the foe card all agree with the engine and canon, stated in roll-high form.
-- [ ] **SPELL-09**: The Strength spell does what its text says (report #8). The damage bonus, its duration ("till tomorrow" vs "until you make camp") and the hp it grants all match between the text and the engine.
-- [ ] **SPELL-10**: The Special and Illusion schools get spells, drawn first from the rulebook's page-50 spell list, combat-effective or useful in the maze (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **SPELL-11**: Doze and Stun are swapped: Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Stun holds one foe for d4 rounds and a hit does not end it (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **SPELL-12**: Spell reworks: Petrify kills one foe outright (no loot, resist still allowed, no floor-12 cap); Stupidity drops a foe's intelligence to 1 for the fight; Blind limits a foe to its maximum roll and no crits (no floor-12 cap); Ice is an area d10 with a chance to freeze each target 1d4 rounds; Strength gives +d10 damage rolled on every damage roll, no hp; Lesser Summon and Phantom Host are removed, and the Summoner casts the level-2 Summon from level 1 (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **SPELL-08**: Every spell is in an audit table covering its to-hit roll (if any), damage dice, multipliers, duration, resist checks, school gates, and backfire and fumble odds. Its text, the Grimoire, its chips and the foe card all agree with the engine and canon, stated in roll-high form.
+- [x] **SPELL-09**: The Strength spell does what its text says (report #8). The damage bonus, its duration ("till tomorrow" vs "until you make camp") and the hp it grants all match between the text and the engine.
+- [x] **SPELL-10**: The Special and Illusion schools get spells, drawn first from the rulebook's page-50 spell list, combat-effective or useful in the maze (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **SPELL-11**: Doze and Stun are swapped: Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Stun holds one foe for d4 rounds and a hit does not end it (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **SPELL-12**: Spell reworks: Petrify kills one foe outright (no loot, resist still allowed, no floor-12 cap); Stupidity drops a foe's intelligence to 1 for the fight; Blind limits a foe to its maximum roll and no crits (no floor-12 cap); Ice is an area d10 with a chance to freeze each target 1d4 rounds; Strength gives +d10 damage rolled on every damage roll, no hp; Lesser Summon and Phantom Host are removed, and the Summoner casts the level-2 Summon from level 1 (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Skills & abilities (ABIL) — backlog 999.15
 
-- [ ] **ABIL-06**: Every skill and ability is in an audit table covering its cooldown or once-per-fight rule, auto-hit or forced crit, bonus terms, and who can use it (hero, Joiners). Its text and the engine agree.
-- [ ] **ABIL-07**: Pommel Strike gains the player more than it costs (report #4). Using it doesn't trade the hero's attack for the foe's lost turn.
+- [x] **ABIL-06**: Every skill and ability is in an audit table covering its cooldown or once-per-fight rule, auto-hit or forced crit, bonus terms, and who can use it (hero, Joiners). Its text and the engine agree.
+- [x] **ABIL-07**: Pommel Strike gains the player more than it costs (report #4). Using it doesn't trade the hero's attack for the foe's lost turn.
 
 ### Plain-language text & parley (TEXT, PARLEY) — user, 2026-09-30
 
@@ -121,10 +121,10 @@
 | IDENT-12 | Phase 91 | Pending |
 | IDENT-13 | Phase 91 | Pending |
 | IDENT-14 | Phase 91 | Pending |
-| SPELL-08 | Phase 90 | Pending |
-| SPELL-09 | Phase 90 | Pending |
-| ABIL-06 | Phase 90 | Pending |
-| ABIL-07 | Phase 90 | Pending |
+| SPELL-08 | Phase 90 | Complete |
+| SPELL-09 | Phase 90 | Complete |
+| ABIL-06 | Phase 90 | Complete |
+| ABIL-07 | Phase 90 | Complete |
 | PARTY-11 | Phase 87 | Complete |
 | BOARD-28 | Phase 87 | Complete |
 | BOARD-29 | Phase 87 | Complete |
@@ -138,9 +138,9 @@
 | VALUE-04 | Phase 91.1 | Pending |
 | ITEM-07 | Phase 89 | Complete |
 | TEXT-01 | Phases 89, 90, 91 | Complete |
-| SPELL-10 | Phase 90 | Pending |
-| SPELL-11 | Phase 90 | Pending |
-| SPELL-12 | Phase 90 | Pending |
+| SPELL-10 | Phase 90 | Complete |
+| SPELL-11 | Phase 90 | Complete |
+| SPELL-12 | Phase 90 | Complete |
 | IDENT-15 | Phase 91 | Pending |
 | IDENT-16 | Phase 91 | Pending |
 | IDENT-17 | Phase 91 | Pending |
