@@ -197,7 +197,8 @@ test("playerStrike: a Fridgian's frenzy second swing always targets a live foe â
     fixedFoe({ name: "Target", wp: 999, maxWP: 999 }),
   ], { target: 1 });
   // Phase 51 (INIT-01): no round-advance draws â€” initiative is rolled once.
-  const seq = [5, 20, 20, 20];
+  // IDENT-20 (Phase 91 plan 09): the frenzy is a d6 now; raw 1 is a roll of 6 (a 4-6 frenzies).
+  const seq = [1, 20, 20, 20];
   const rng = countingRng(fakeRng(seq));
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "frenzy"));

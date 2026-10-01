@@ -562,7 +562,8 @@ test("playerStrike: Fridgian frenzy grants a second wild swing that always targe
   // DELIBERATE RULES CHANGE (Phase 24, race pass / IDENT-08): the prototype
   // could roll a d10 <= 5 against a dead foe here and waste the whole round
   // ("frenzyWasted") — that branch and its rng.d(10) draw are both gone.
-  // frenzy roll d8=5 (<=5, triggers); both swings target the live Target and
+  // frenzy roll d6=1 (raw 1 = a roll of 6, in the 4-6 that triggers; Phase 91
+  // plan 09, IDENT-20 moved this from a d8 raw 5); both swings target the live Target and
   // miss (need 5 for the first swing; the frenzy swing's need is the normal
   // need narrowed by one (Phase 72 ROLL-01 (b)), so need 4 here — 20 beats
   // both); the still-alive Target swings back and misses (foeDie 20 vs need
@@ -571,7 +572,7 @@ test("playerStrike: Fridgian frenzy grants a second wild swing that always targe
   // gate (never called by this test, which builds combat directly), and
   // afterPlayerAction no longer re-rolls or reads `C.first` at all. Four
   // draws total.
-  const rng = fakeRng([5, 20, 20, 20]);
+  const rng = fakeRng([1, 20, 20, 20]);
   const events = playerStrike(state, rng, []);
   assert.ok(events.some((e) => e.type === "frenzy"));
   const misses = events.filter((e) => e.type === "strikeMissed");

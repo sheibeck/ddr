@@ -245,12 +245,12 @@ test("race lines: the size signature reads the engine's net truth (Dwarven +2 ke
   assert.ok(troll.bad.includes("being large makes you one face easier to hit"));
 });
 
-test("race lines: the Fridgian frenzy odds match the engine's own frenzy check (five of the d8's eight faces)", () => {
+test("race lines: the Fridgian frenzy odds match the engine's own frenzy check (a 4-6 on a d6, IDENT-20)", () => {
   const combat = stripJs(read("engine/combat.js"));
   const i = combat.indexOf("if (R.frenzy) {");
   assert.ok(i !== -1);
-  assert.match(combat.slice(i, i + 200), /rollCheck\(rng, 8, atLeastFor\(5, 8\)\)/);
-  assert.ok(identityFooter("race", "Fridgian").good.some((t) => t.startsWith("five times in eight, a frenzy")));
+  assert.match(combat.slice(i, i + 200), /rollCheck\(rng, 6, atLeastFor\(3, 6\)\)/);
+  assert.ok(identityFooter("race", "Fridgian").good.includes("each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit)"));
 });
 
 // ─── authored traits and their proofs ───────────────────────────────────

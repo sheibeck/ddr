@@ -36,7 +36,7 @@ export const RACE_NOTE = {
   // small only makes the Dwarf one face harder to hit — the +2 is untouched.
   "Dwarven": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
   "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.",
-  "Fridgian": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest — and unlike the stories, neither swing is ever wasted on something already dead. The Game Master has notes about you.",
+  "Fridgian": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (-1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
   // Large points the same way as the Troll's own +9 (dmg+wpnBonus), so
   // nothing is masked: both axes stack in full (+11 damage, one face
   // easier to hit).

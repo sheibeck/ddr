@@ -188,10 +188,12 @@ export const RACE_FIELD_LINES = Object.freeze({
   heal2x: (row) => (row.heal2x ? [entry("race-heal2x", "good", "rest, potions and your own healing spells heal twice as much")] : []),
   spMul: (row) => (row.spMul < 1 ? [entry("race-sp-mul", "bad", `${fractionWord(row.spMul)} the experience from every kill`)] : []),
   noArmor: (row) => (row.noArmor ? [entry("race-no-armor", "bad", "can never wear armour")] : []),
-  // The five-in-eight odds are engine/combat.js's frenzy check,
-  // rollCheck(rng, 8, atLeastFor(5, 8)); test/unit/identity-footer.test.js
-  // pins that source so the number cannot drift.
-  frenzy: (row) => (row.frenzy ? [entry("race-frenzy", "good", "five times in eight, a frenzy adds a second swing that never wastes itself on a corpse")] : []),
+  // The 4-6 on a d6 is engine/combat.js's frenzy check,
+  // rollCheck(rng, 6, atLeastFor(3, 6)) (IDENT-20); test/unit/fridgian-frenzy.test.js
+  // and test/unit/identity-footer.test.js pin that source so the number cannot
+  // drift. The extra swing is one step narrower than the hero's own (-1 to hit,
+  // the user's 2026-09-24 ruling); U+2212 minus and an en dash in "4–6".
+  frenzy: (row) => (row.frenzy ? [entry("race-frenzy", "good", "each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit)")] : []),
   slow: (row) => (row.slow ? [entry("race-slow", "bad", "never wins initiative")] : []),
   hide: (row) => (row.hide > 0 ? [entry("race-hide", "good", `thick hide soaks ${row.hide} from every blow`)] : []),
   eats: (row) => (row.eats > 1 ? [entry("race-eats", "bad", `eats ${countWord(row.eats)} rations a night`)] : []),

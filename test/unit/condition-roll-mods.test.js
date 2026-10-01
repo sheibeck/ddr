@@ -248,7 +248,7 @@ test("playerStrike: a strike with no live condition keeps today's mods (absent w
 });
 
 test("playerStrike: the frenzy second swing reads the same condition entries (a dazed Fridgian)", () => {
-  // The frenzy check (d8 face 1 → roll 8, a success), then two sure misses.
+  // The frenzy check (d6 raw 1 → roll 6, a success; IDENT-20), then two sure misses.
   const state = strikeState({ c: { race: "Fridgian", foeEffect: { kind: "dazed", rounds: 3 } } });
   const events = playerStrike(state, fakeRng([1, 20, 20, ...FILL]), []);
   assert.ok(events.some((e) => e.type === "frenzy"), "the frenzy fired");
@@ -300,7 +300,12 @@ const STRIKE_DIGESTS = {
   stacked: "beb06a3b",
   afraidDazed: "d02406de",
   muFloored: "5ba11e7b",
-  frenzyDazed: "c0da3841",
+  // Phase 91 plan 09 (IDENT-20, measured): frenzyDazed is the one Fridgian scenario and the
+  // only digest that moves, c0da3841 -> 28fc9673. The frenzy check is a d6 (a 4-6 wins) where
+  // it was a d8 (the top five faces), so the real stream's first draw maps to a different roll
+  // and some of the eight seeds swing once where they swung twice, or the reverse. Every other
+  // scenario is byte-identical. Re-recorded alone.
+  frenzyDazed: "28fc9673",
 };
 
 test("measured zero: every strike's roll, faces, outcome, draw count and resulting state match the plan base (mods stripped)", () => {

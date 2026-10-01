@@ -278,7 +278,10 @@ const FULL_FIGHTS = [
   // net out at this exact cursor), but the attack count moves 3 -> 4: the foe
   // no longer gets a same-cycle second turn, which reshuffles every
   // downstream d20 in the shared rng stream.
-  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 36, attacks: 4, outcome: "won" },
+  // Phase 91 plan 09 (IDENT-20, 2026-10-01): re-measured live - this seed's hero is a
+  // Fridgian, whose frenzy is now a d6 (a 4-6) where it was a d8 (the top five faces), so
+  // the same stream maps to different rolls from the first strike: totalDraws 36 -> 33.
+  { seed: 14, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek"], totalDraws: 33, attacks: 4, outcome: "won" },
   // Phase 54 (BAND-02, 2026-09-21, USER RULING D): re-measured live — the
   // retired level-keyed foe-count cap (`c.level <= 2 ? 2 : 3`) is GONE;
   // FOE_COUNT_TABLE row 0 (identity) can now roll a THIRD foe where the old
@@ -659,7 +662,8 @@ for (const row of GATED_DRAWS) {
 // Phase 90 plan 06 (SPELL-12): seeds 8 and 127 re-measured live (an Illusionist and an
 // Apprentice — their chargen draws fewer main-rng values now): totals
 // 12/36/70/29/21/83/38 -> 12/36/70/29/20/81/38.
-test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/70/29/20/81/38) are measured-current and no fixture-roster creature carries a kit", () => {
+// Phase 91 plan 09 (IDENT-20): seed 14 (a Fridgian hero) re-measured live: 12/36/70/29/20/81/38 -> 12/33/70/29/20/81/38.
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/33/70/29/20/81/38) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);

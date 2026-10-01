@@ -1324,7 +1324,8 @@ const CONTRACT = [
           { target: 1 },
         );
         // Phase 51 (INIT-01): no round-advance draws — initiative is rolled once.
-        const seq = [5, 20, 20, 20];
+        // IDENT-20 (Phase 91 plan 09): the frenzy is a d6 now; raw 1 is a roll of 6 (a 4-6 frenzies).
+        const seq = [1, 20, 20, 20];
         const rng = countingRng(fakeRng(seq));
         const events = playerStrike(state, rng, []);
         expectEvent(events, "frenzy");
