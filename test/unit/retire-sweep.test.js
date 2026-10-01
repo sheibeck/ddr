@@ -1,6 +1,17 @@
 // test/unit/retire-sweep.test.js
 //
-// RETIRE-02 (Phase 85): the retired game service never comes back.
+// RETIRE-02 (Phase 85), reworked in Phase 91.2: the retired leaderboard
+// artefacts and the community plugin never come back.
+//
+// Phase 91.2 (BOARD-31/33) brings Play Games back for SIGN-IN ONLY, as the
+// in-repo PlayIdentity plugin on the first-party Play Games Services v2 SDK.
+// So the Play Games identifiers (play-games wording, the APP_ID string
+// resource, gms.games, games-ids.xml) are no longer swept. Still retired,
+// and still swept: the leaderboard modules and helpers (leaderboardIdsFor,
+// LEADERBOARD_IDS, scoreTag, globalBoards, boardScores,
+// createSubmissionQueue), the retired submission-queue key, and the
+// community plugin (modbender, idleflowgames, any play-games key in
+// package.json / package-lock.json).
 //
 // Scope: shipped code only — src/ and content/ (recursive .js/.mjs), the
 // classic shell (mazeworld.html), tools/build-www.mjs, and the tracked text
@@ -8,17 +19,13 @@
 // android/app/src/main/res/, every .java under android/app/src/, the
 // proguard rules and the six tracked Gradle files). docs/, archived
 // .planning, test/ and engine/ are all out of scope — engine/ comments are
-// frozen by the engine gate (STATE.md), and docs/PLAY-GAMES-SETUP.md is
-// Phase 86's to retire.
+// frozen by the engine gate (STATE.md).
 //
 // The one allowlisted literal: src/browser/boardSync.js#RETIRED_KEYS holds
 // the string "ddr.pgsqueue.v1" — the one retired pre-2.2 submission-queue
 // storage key, dropped silently at every boot (RETIRE-03). It must stay so
 // the drop keeps happening; this file allowlists exactly that one
 // occurrence in that one file before running the raw sweep.
-//
-// Also covers ACCT-03: no player-facing string in the voice corpus carries
-// sign-in/sign-out or game-service wording.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -26,7 +33,6 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
 import { RETIRED_KEYS } from "../../src/browser/boardSync.js";
 import { SETTINGS_DEFAULTS } from "../../src/browser/settings.js";
 
@@ -37,13 +43,8 @@ const rel = (p) => path.relative(REPO_ROOT, p).split(path.sep).join("/");
 // ─── the retired-identifier sweep patterns ──────────────────────────────────
 
 const SWEEP_PATTERNS = [
-  "play[ _-]?games",
-  "pgs",
   "modbender",
   "idleflowgames",
-  "game_services_project_id",
-  "gms\\.games",
-  "games-ids",
   "leaderboardIdsFor",
   "LEADERBOARD_IDS",
   "scoreTag",
@@ -121,7 +122,7 @@ function shippedCodeFiles() {
 
 // ─── behavior: the retired files are gone ───────────────────────────────────
 
-test("the retired module files, their test files and games-ids.xml do not exist", () => {
+test("the retired module files and their test files do not exist", () => {
   const gone = [
     "src/browser/playGames.js",
     "src/browser/pgsQueue.js",
@@ -137,7 +138,6 @@ test("the retired module files, their test files and games-ids.xml do not exist"
     "test/unit/scoreTag.test.js",
     "test/unit/play-games-intake.test.js",
     "test/unit/board-global-trace.test.js",
-    "android/app/src/main/res/values/games-ids.xml",
   ];
   for (const p of gone) {
     assert.equal(existsSync(path.join(REPO_ROOT, p)), false, `${p} must not exist`);
@@ -204,34 +204,12 @@ test("Object.keys(SETTINGS_DEFAULTS) has no key starting with pgs", () => {
   assert.deepEqual(pgsKeys, []);
 });
 
-// ─── behavior: ACCT-03 — no sign-in/sign-out or game-service wording ───────
-
-test("ACCT-03: every text of every buildCorpus() entry is free of sign-in/out and play-games wording", async () => {
-  const corpus = await buildCorpus();
-  const signRe = /\bsign(s|ed|ing)?[ -]?(in|out)\b/i;
-  const gamesRe = /play[ _-]?games/i;
-  const failures = [];
-  for (const entry of corpus.entries) {
-    for (const t of entry.texts || []) {
-      if (typeof t !== "string") continue;
-      if (signRe.test(t)) failures.push(`${entry.key} (${entry.source}): sign-in/out wording in ${JSON.stringify(t)}`);
-      if (gamesRe.test(t)) failures.push(`${entry.key} (${entry.source}): play-games wording in ${JSON.stringify(t)}`);
-    }
-  }
-  assert.deepEqual(failures, []);
-});
-
 // ─── self-check: the sweep cannot pass vacuously ────────────────────────────
 
 test("self-check: every sweep pattern catches a planted line", () => {
   const planted = {
-    "play[ _-]?games": "// this app used to talk to Play Games",
-    pgs: "const oldKey = \"ddr.pgsqueue.v1\";",
     modbender: "// @modbender/capacitor-play-games used to live here",
     idleflowgames: "// com.idleflowgames.playgames.PlayGamesPlugin",
-    game_services_project_id: "@string/game_services_project_id",
-    "gms\\.games": "com.google.android.gms.games.APP_ID",
-    "games-ids": "android/app/src/main/res/values/games-ids.xml",
     leaderboardIdsFor: "const ids = leaderboardIdsFor(sub);",
     LEADERBOARD_IDS: "import { LEADERBOARD_IDS } from \"./leaderboards.js\";",
     scoreTag: "import { encode } from \"./scoreTag.js\";",
