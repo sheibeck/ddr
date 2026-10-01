@@ -2627,7 +2627,7 @@ export function alliesTurn(state, rng, events = []) {
     // strike: `ally.sang` (the fight's own ally entry, so it never leaks into the
     // next fight) marks it sung. The pick (pickSong over songPool at the JOINER's
     // level), the title and every roll of the spell come from ONE derived stream,
-    // derivedRng(<main cursor>, "memberSong", <party index>, <acts>); the main rng
+    // derivedRng(<main cursor>, memberSong, <party index>, <acts>); the main rng
     // draws nothing for the song. The spell resolves through the Joiner cast path
     // (allyCast) in its free mode: no charge on any sheet, "you" the Joiner.
     if (sheet.sub === "Bard" && !ally.sang) {

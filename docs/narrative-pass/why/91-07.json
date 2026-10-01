@@ -1,0 +1,269 @@
+[
+  {
+    "key": "oracle:sang",
+    "surface": "oracle",
+    "trigger": "sang { member } — engine/combat.js#alliesTurn, a Joiner Bard's song",
+    "before": "You sing \"An Ode to Freeze\". The song lands as Freeze.",
+    "after": "the companion sings \"An Ode to Freeze\". The party endures it, and it lands as Freeze.",
+    "reasons": [
+      "fact",
+      "naming",
+      "joke"
+    ],
+    "why": "IDENT-17 (Joiners): a Joiner Bard sings on its own first turn, so the line names the singer instead of saying \"You\". The fact leads (who sang what, and what it landed as); the joke closes it."
+  },
+  {
+    "key": "rail:sang",
+    "surface": "rail",
+    "trigger": "sang { member } — engine/combat.js#alliesTurn, a Joiner Bard's song",
+    "before": "Song: An Ode to Freeze (Freeze)",
+    "after": "the companion sings: An Ode to Freeze (Freeze)",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names the Joiner who sang; the hero's own song keeps \"Song:\"."
+  },
+  {
+    "key": "oracle:wardRaised",
+    "surface": "oracle",
+    "trigger": "wardRaised { member } — a Joiner Bard sings Shield or Bubble",
+    "before": "A spell raises a ward: it soaks the next 0 hp of damage.",
+    "after": "Shield raises a ward around the companion: it soaks the next 50 hp of damage.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "IDENT-17 (Joiners): \"you\" in a sung spell is the singer, so a Joiner's ward is raised around the Joiner and the line says so. The Bubble line names its owner the same way. The hero's own lines are unchanged."
+  },
+  {
+    "key": "rail:wardRaised",
+    "surface": "rail",
+    "trigger": "wardRaised { member } — a Joiner Bard sings Shield or Bubble",
+    "before": "A spell raises a ward: it soaks the next 0 hp.",
+    "after": "Shield wards the companion: it soaks the next 50 hp.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin of the Oracle line: whose ward it is, and how much it soaks."
+  },
+  {
+    "key": "oracle:wardAbsorbed",
+    "surface": "oracle",
+    "trigger": "wardAbsorbed { member } — a foe's blow lands on a Joiner's own ward",
+    "before": "The ward eats 2 (1 left).",
+    "after": "the companion's ward eats 2 (1 left).",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "A Joiner's ward now exists (a sung Shield), so the absorb line says whose ward ate the blow."
+  },
+  {
+    "key": "rail:wardAbsorbed",
+    "surface": "rail",
+    "trigger": "wardAbsorbed { member } — a foe's blow lands on a Joiner's own ward",
+    "before": "The ward eats 2 (1 left).",
+    "after": "the companion's ward eats 2 (1 left).",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names the Joiner whose ward ate the blow."
+  },
+  {
+    "key": "oracle:wardShattered",
+    "surface": "oracle",
+    "trigger": "wardShattered { member } — a Joiner's own ward is spent",
+    "before": "The ward shatters.",
+    "after": "the companion's ward shatters.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "Says whose ward gave out."
+  },
+  {
+    "key": "rail:wardShattered",
+    "surface": "rail",
+    "trigger": "wardShattered { member } — a Joiner's own ward is spent",
+    "before": "The ward shatters.",
+    "after": "the companion's ward shatters.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin says whose ward gave out."
+  },
+  {
+    "key": "oracle:wardFaded",
+    "surface": "oracle",
+    "trigger": "wardFaded { member } — a Joiner's own ward runs out of rounds",
+    "before": "The ward fades.",
+    "after": "the companion's ward fades.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "Says whose ward ran out of rounds."
+  },
+  {
+    "key": "rail:wardFaded",
+    "surface": "rail",
+    "trigger": "wardFaded { member } — a Joiner's own ward runs out of rounds",
+    "before": "The ward fades.",
+    "after": "the companion's ward fades.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin says whose ward ran out."
+  },
+  {
+    "key": "oracle:wardReflected",
+    "surface": "oracle",
+    "trigger": "wardReflected { member } — a foe's blow hits a Joiner's armed Bubble",
+    "before": "The bubble catches it and sends it back — 2 to Viper. Pop. A thin film holds for the rest of the round.",
+    "after": "The bubble around the companion catches it and sends it back — 2 to Viper. Pop. A thin film holds for the rest of the round.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "A Joiner can now carry a Bubble, so the bounce line says which bubble caught the blow."
+  },
+  {
+    "key": "rail:wardReflected",
+    "surface": "rail",
+    "trigger": "wardReflected { member } — a foe's blow hits a Joiner's armed Bubble",
+    "before": "The bubble sends it back — 2 to Viper. Pop.",
+    "after": "the companion's bubble sends it back — 2 to Viper. Pop.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names the Joiner whose bubble bounced the blow."
+  },
+  {
+    "key": "oracle:strengthCast",
+    "surface": "oracle",
+    "trigger": "strengthCast { member } — a Joiner Bard sings Strength",
+    "before": "Might surges: every damage roll you make adds an extra d10 for the next 100 squares. No extra HP. The spell is about hitting things, not about being hit less.",
+    "after": "Might surges in the companion: every damage roll adds an extra d10 for the next 100 squares. No extra HP. The spell is about hitting things, not about being hit less.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "IDENT-17 (Joiners): a sung Strength is on the Joiner's own sheet, so it is the Joiner's blows that roll the extra d10, and the line says whose. A recast starts over, in the Joiner's name."
+  },
+  {
+    "key": "rail:strengthCast",
+    "surface": "rail",
+    "trigger": "strengthCast { member } — a Joiner Bard sings Strength",
+    "before": "Might surges: an extra d10 on every damage roll for 100 squares. No extra HP.",
+    "after": "Might surges in the companion: an extra d10 on every damage roll for 100 squares. No extra HP.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names the Joiner the might surges in."
+  },
+  {
+    "key": "oracle:sensesGained",
+    "surface": "oracle",
+    "trigger": "sensesGained { member } — a Joiner Bard sings Sense Presence",
+    "before": "Your senses sharpen: nothing gets the jump on you, and the dark costs you nothing, until your next fight ends.",
+    "after": "the companion's senses sharpen: the dark costs the companion nothing, until this fight ends.",
+    "reasons": [
+      "fact",
+      "naming",
+      "accurate"
+    ],
+    "why": "A Joiner's sung Sense Presence is the Joiner's own, so it names them. It claims only what a Joiner gets from it (the dark costs it nothing: its Stealth reads the flag), not the ambush clause, which belongs to the hero."
+  },
+  {
+    "key": "rail:sensesGained",
+    "surface": "rail",
+    "trigger": "sensesGained { member } — a Joiner Bard sings Sense Presence",
+    "before": "Your senses sharpen: no surprises, no penalty in the dark, till your next fight ends.",
+    "after": "the companion's senses sharpen: no penalty in the dark, till this fight ends.",
+    "reasons": [
+      "fact",
+      "naming",
+      "accurate"
+    ],
+    "why": "The rail twin keeps only the part a Joiner gets: no penalty in the dark."
+  },
+  {
+    "key": "oracle:earthquakeSelfDamage",
+    "surface": "oracle",
+    "trigger": "earthquakeSelfDamage { member } — a Joiner Bard sings Earthquake",
+    "before": "Earthquake: the floor does not take sides. −2 hp.",
+    "after": "Earthquake: the floor does not take sides, the companion included. −2 hp.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "IDENT-17 (Joiners): the backlash of a sung Earthquake lands on the singer, so the line says it was the Joiner's hit points, not yours."
+  },
+  {
+    "key": "rail:earthquakeSelfDamage",
+    "surface": "rail",
+    "trigger": "earthquakeSelfDamage { member } — a Joiner Bard sings Earthquake",
+    "before": "Earthquake: −2 hp, yours too.",
+    "after": "Earthquake: the companion −2 hp, theirs too.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin: whose hit points the floor took."
+  },
+  {
+    "key": "oracle:deathCast",
+    "surface": "oracle",
+    "trigger": "deathCast { member } — a Joiner Bard sings Death",
+    "before": "Death: the spell takes its fee first. −25 hp.",
+    "after": "Death: the spell takes its fee first, from the companion. −25 hp.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "IDENT-17 (Joiners): a sung Death's 25 hp fee comes out of the singer, and the line says whose."
+  },
+  {
+    "key": "rail:deathCast",
+    "surface": "rail",
+    "trigger": "deathCast { member } — a Joiner Bard sings Death",
+    "before": "Death: its fee (−25 hp).",
+    "after": "Death: its fee, from the companion (−25 hp).",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names who paid the fee."
+  },
+  {
+    "key": "oracle:deathSpellTooWeak",
+    "surface": "oracle",
+    "trigger": "deathSpellTooWeak { member } — a Joiner Bard sings Death at 26 hp or less",
+    "before": "Death: the fee is 25 hp, and you need at least 27 to pay it. The spell refuses to be what kills you.",
+    "after": "Death: the fee is 25 hp, and the companion needs at least 27 to pay it. The spell refuses to be what drops its singer.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "A Joiner who cannot pay a sung Death's fee is the one refused, and the line says who needs the 27 hp. Family-friendly: the Joiner is dropped, not killed."
+  },
+  {
+    "key": "rail:deathSpellTooWeak",
+    "surface": "rail",
+    "trigger": "deathSpellTooWeak { member } — a Joiner Bard sings Death at 26 hp or less",
+    "before": "Death: 25 hp fee. You need at least 27 hp to pay it.",
+    "after": "Death: 25 hp fee. the companion needs at least 27 hp to pay it.",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The rail twin names who needs the hit points."
+  }
+]

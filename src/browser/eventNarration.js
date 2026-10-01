@@ -855,7 +855,12 @@ export const EVENT_NARRATION = {
   // resist, its ward) follow on their own lines. The five per-song lines
   // (beastsSoothed, songIgnored, lullabyRolled, thunderRolled) retired with the
   // fixed song table.
-  sang: (e) => `You sing "${e.title ?? "a tune"}". <span class="beat">The song lands as ${e.spell ?? "a spell"}.</span>`,
+  // Phase 91 plan 07 (IDENT-17, the Joiner half): a Joiner Bard sings on its own first turn
+  // (`member`), so the line names it; the song lands for the singer, never for you.
+  sang: (e) =>
+    e.member
+      ? `${e.member} sings "${e.title ?? "a tune"}". <span class="beat">The party endures it, and it lands as ${e.spell ?? "a spell"}.</span>`
+      : `You sing "${e.title ?? "a tune"}". <span class="beat">The song lands as ${e.spell ?? "a spell"}.</span>`,
   combatEnded: () => `<span class="beat">The fight is over.</span>`,
   // DFB-05 (Phase 25.1): extended additively — `weapon`/`crit`/`backstab` on
   // allyStruck and `target`/`roll`/`need`/`weapon` on allyMissed render only
@@ -915,12 +920,16 @@ export const EVENT_NARRATION = {
   // "pops" — a one-shot mirror, not a repeating soak pool) and names the
   // pool it leaves behind; a plain ward reflect (pre-Phase-75 save, or any
   // future non-mirror reflect) keeps today's text.
+  // Phase 91 plan 07 (IDENT-17): a Joiner's own sung ward (`member`) names its owner on all five ward lines.
   wardReflected: (e) =>
     e.mirror
-      ? `<span class="hit">The bubble catches it and sends it back — ${e.amount ?? 0} to ${e.target ?? "it"}. Pop.</span> A thin film holds for the rest of the round.`
+      ? e.member
+        ? `<span class="hit">The bubble around ${e.member} catches it and sends it back — ${e.amount ?? 0} to ${e.target ?? "it"}. Pop.</span> A thin film holds for the rest of the round.`
+        : `<span class="hit">The bubble catches it and sends it back — ${e.amount ?? 0} to ${e.target ?? "it"}. Pop.</span> A thin film holds for the rest of the round.`
       : `<span class="hit">The ward throws ${e.amount ?? 0} back at ${e.target ?? "it"}.</span>`,
-  wardAbsorbed: (e) => `The ward eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
-  wardShattered: () => `<span class="hurt">The ward shatters.</span>`,
+  wardAbsorbed: (e) =>
+    `${e.member ? `${possessive(e.member, "Their")} ward` : "The ward"} eats <span class="roll">${e.amount ?? 0}</span> (${e.remaining ?? 0} left).`,
+  wardShattered: (e) => `<span class="hurt">${e?.member ? `${possessive(e.member, "Their")} ward` : "The ward"} shatters.</span>`,
   // RULES-10 (Phase 75.1) — the foe-side mirror of the hero's own ward: a
   // fumbled Shield or a popped fumbled Bubble sitting on the FOE eats the
   // hero's own blow instead. `name` is the foe; the pool drains the same
@@ -986,7 +995,7 @@ export const EVENT_NARRATION = {
   // foe's name IS the cause and the fight log already folds this line.
   struckByFoe: (e) =>
     `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.foe)}. ${e.critical || e.soldierCrit ? '<span class="hurt">Critical!</span> ' : ""}${e.name ?? "It"} hits you for <span class="hurt">${e.dmg ?? 0} hp</span>${soakedText(e.soaked)}.`,
-  wardFaded: () => `<span class="beat">The ward fades.</span>`,
+  wardFaded: (e) => `<span class="beat">${e?.member ? `${possessive(e.member, "Their")} ward` : "The ward"} fades.</span>`,
   mirrorFaded: () => `<span class="beat">The mirror fades.</span>`,
   // RULES-10 (Phase 75.1) — a foe's own fumbled Mirror Self, ticking down in
   // foeTurn's tail exactly like the hero's c.mirror does above.
@@ -1370,7 +1379,11 @@ export const EVENT_NARRATION = {
   // every foe (the caster's own half is earthquakeSelfDamage's line).
   earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  earthquakeSelfDamage: (e) => `<span class="hurt">Earthquake: the floor does not take sides.</span> −${e.amount ?? 0} hp.`,
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Earthquake costs the Joiner (`member`), not you.
+  earthquakeSelfDamage: (e) =>
+    e.member
+      ? `<span class="hurt">Earthquake: the floor does not take sides, ${e.member} included.</span> −${e.amount ?? 0} hp.`
+      : `<span class="hurt">Earthquake: the floor does not take sides.</span> −${e.amount ?? 0} hp.`,
   // VOX-05 (Phase 79, plan 79-08): the face means something; say what
   // (engine/magic.js's vapor branch: a 4 drops every foe unless its own d10
   // shows a 1; any other face, or that 1, puts it to sleep for d6+2 rounds).
@@ -1393,7 +1406,11 @@ export const EVENT_NARRATION = {
   // VOX-05 (Phase 79, plan 79-08): what the sharpening does (engine/
   // combat.js reads c.senses: you act first, and the dark costs nothing),
   // until endCombat's sensesFaded.
-  sensesGained: () => `<span class="hit">Your senses sharpen: nothing gets the jump on you, and the dark costs you nothing, until your next fight ends.</span>`,
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Sense Presence sharpens the Joiner's senses (`member`).
+  sensesGained: (e) =>
+    e?.member
+      ? `<span class="hit">${e.member}'s senses sharpen: the dark costs ${e.member} nothing, until this fight ends.</span>`
+      : `<span class="hit">Your senses sharpen: nothing gets the jump on you, and the dark costs you nothing, until your next fight ends.</span>`,
   // Phase 40 (SPELL-05, Plan 04): Map the Floor is now a time-boxed,
   // re-fogging reveal — the old permanent whole-floor reveal event is
   // retired outright; floorMapped/revealFaded replace it. Plan 76-06 (user
@@ -1411,17 +1428,25 @@ export const EVENT_NARRATION = {
   // every other ward (Shield) keeps its plain "N points" text (no more
   // ", reflecting" suffix — that promise is now the whole point of the
   // mirror line, never a footnote on Shield's).
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung ward (`member`) is raised around the Joiner, not you.
   wardRaised: (e) =>
     e.mirror
-      ? `<span class="hit">A bubble shimmers around you. The next blow goes back where it came from.</span>`
-      : `<span class="hit">${e.spell ?? "A spell"} raises a ward: it soaks the next ${e.pool ?? 0} hp of damage.</span>`,
+      ? `<span class="hit">A bubble shimmers around ${e.member ?? "you"}. The next blow goes back where it came from.</span>`
+      : e.member
+        ? `<span class="hit">${e.spell ?? "A spell"} raises a ward around ${e.member}: it soaks the next ${e.pool ?? 0} hp of damage.</span>`
+        : `<span class="hit">${e.spell ?? "A spell"} raises a ward: it soaks the next ${e.pool ?? 0} hp of damage.</span>`,
   // Phase 90 (SPELL-09, report #8): Strength is an extra d10 on every damage
   // roll for 100 squares (engine/magic.js's might branch; `squares` is the
   // window, `restarted` a recast of a live one). It grants no HP, and says so.
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Strength is the Joiner's own (`member`): its blows roll the extra d10.
   strengthCast: (e) =>
-    e.restarted
-      ? `<span class="hit">Strength starts over: <span class="roll">${squaresText(e.squares ?? 100)}</span> of an extra d10 on every damage roll, not double that.</span> It does not stack, however politely you ask.`
-      : `<span class="hit">Might surges: every damage roll you make adds an extra d10 for the next <span class="roll">${squaresText(e.squares ?? 100)}</span>.</span> No extra HP. The spell is about hitting things, not about being hit less.`,
+    e.member
+      ? e.restarted
+        ? `<span class="hit">${e.member}'s Strength starts over: <span class="roll">${squaresText(e.squares ?? 100)}</span> of an extra d10 on every damage roll, not double that.</span> It does not stack, however politely the song asks.`
+        : `<span class="hit">Might surges in ${e.member}: every damage roll adds an extra d10 for the next <span class="roll">${squaresText(e.squares ?? 100)}</span>.</span> No extra HP. The spell is about hitting things, not about being hit less.`
+      : e.restarted
+        ? `<span class="hit">Strength starts over: <span class="roll">${squaresText(e.squares ?? 100)}</span> of an extra d10 on every damage roll, not double that.</span> It does not stack, however politely you ask.`
+        : `<span class="hit">Might surges: every damage roll you make adds an extra d10 for the next <span class="roll">${squaresText(e.squares ?? 100)}</span>.</span> No extra HP. The spell is about hitting things, not about being hit less.`,
   // Phase 90 plan 07 (SPELL-10): a timed Special spell (Open/Lock, Fly, Enchant
   // Character, Speed of Sound) takes hold (engine/magic.js's timed branch):
   // `kind` is the act kind, `squares` the stretched window, `restarted` a recast
@@ -1539,9 +1564,16 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): the rule refuses at fee + 1 hp or less
   // (engine/magic.js), so the line states the hp it needs.
-  deathSpellTooWeak: (e) => `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you need at least ${(e?.fee ?? 25) + 2} to pay it.</span> The spell refuses to be what kills you.`,
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Death pays from the Joiner's own hit points (`member`).
+  deathSpellTooWeak: (e) =>
+    e?.member
+      ? `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and ${e.member} needs at least ${(e?.fee ?? 25) + 2} to pay it.</span> The spell refuses to be what drops its singer.`
+      : `<span class="miss">Death: the fee is ${e?.fee ?? 25} hp, and you need at least ${(e?.fee ?? 25) + 2} to pay it.</span> The spell refuses to be what kills you.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  deathCast: (e) => `<span class="hurt">Death: the spell takes its fee first.</span> −${e?.cost ?? 25} hp.`,
+  deathCast: (e) =>
+    e?.member
+      ? `<span class="hurt">Death: the spell takes its fee first, from ${e.member}.</span> −${e?.cost ?? 25} hp.`
+      : `<span class="hurt">Death: the spell takes its fee first.</span> −${e?.cost ?? 25} hp.`,
   // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
   // Phase 90 plan 05 (SPELL-11): Doze reaches d4 foes, one line each, and a hit wakes the sleeper.
   dozed: (e) => `${joinerOf(e) ? `${joinerOf(e)}'s Doze: ` : ""}${e.target ?? "It"} dozes off for ${plural(e.rounds ?? 0, "round")}. A hit will wake it.`,
