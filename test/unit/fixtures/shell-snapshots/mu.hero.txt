@@ -124,11 +124,11 @@
     <p class="doss-rules">
       text="No advantages and no disadvantages: every other race is measured against this one."
   <section>
-    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and only your top three faces to hit — 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
+    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
   <section>
-    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
+    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
     <p class="doss-rules">
-      text="Good: always starts with a level 1 direct-damage spell it can cast on day one; your thrown offense spells land on three more faces."
+      text="Good: always starts with a level 1 direct-damage spell it can cast on day one; +3 to hit with thrown offense spells."
     <p class="doss-rules">
       text="Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells."
 ## #hero-party

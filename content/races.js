@@ -34,7 +34,8 @@ export const RACES = {
     // ROLL-04 (Phase 79, Plan 03): the strike die scales with level, so the
     // to-hit floor speaks in faces (test/unit/identity-footer.test.js pins it
     // to this row's own toHit).
-    note: "Strikes a die better and lands on its top five faces whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
+    // Phase 91 plan 10 (TEXT-01, IDENT-12): states every Elven trait the footer lists, in the "+N to hit" form.
+    note: "Thin-boned and easy to hit (foes get +1 to hit it), with 60% of the usual HP, and being small costs it 2 damage; but it strikes on a smaller die and hits on at least the top five numbers of it (16–20 on a d20) whatever the class; store prices halved (torches, rope and ladders aside); can always parley with Humans (talking a fight down) at +3 on that parley roll.",
   },
   "Dwarven": {
     // armorWear: fraction of a soaked blow charged to armour durability,
@@ -50,25 +51,26 @@ export const RACES = {
     sizeAxes: { dmg: false },
     // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
     // rule — the masked damage axis leaves the +2 untouched; the face axis
-    // is NOT masked, so being small also makes it one face harder to hit.
-    note: "+2 damage and 1 hp/day upkeep; foes strike at a better die; armour wears at half the rate; being small makes it one face harder to hit.",
+    // is NOT masked, so being small also makes foes −1 to hit it (TEXT-01,
+    // Phase 91 plan 10: no "faces").
+    note: "+2 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
-    note: "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.",
+    note: "Heals twice as much (rest, potions, own healing spells) and gets half the experience; can always parley (talking a fight down) with anything but Magical foes and the Walking Dead, at +4 on every parley roll; store prices 30% off; refuses to take Magic Users on as Joiners.",
   },
   "Fridgian": {
     // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer
     // and (Phase 91 plan 09, Q7 A) by applyFoeDamageToMember for a Joiner of the race.
     size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 2,
-    note: "Never wears armour, never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at -1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+    note: "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,
     // RULES-11 (Phase 75.2, Plan 04): Large points the SAME way as the
     // Troll's own +9 (dmg+wpnBonus) trait, so nothing is masked — both
-    // axes stack in full: +11 damage total, and one face easier to hit.
-    note: "75 hp regardless of class and +11 damage (being large adds 2), but eats two rations a night and is one face easier to hit.",
+    // axes stack in full: +11 damage total, and foes +1 to hit you.
+    note: "75 hp regardless of class and +11 damage (being large adds 2), but eats two rations a night, loses 15 HP on a night without them, and foes get +1 to hit it; store prices doubled (torches, rope and ladders aside).",
   },
 };
 

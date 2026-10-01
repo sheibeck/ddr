@@ -118,11 +118,13 @@ test("(3) a missed Kata or Feint is an ordinary miss that names the ability, on 
 // (4) The Acrobat's four faces.
 // ---------------------------------------------------------------------------
 
-test("(4) the Acrobat's trait line and blurb say four faces", () => {
+// Phase 91 plan 10 (TEXT-01, user 2026-09-30): "top four faces" is plain words now, the four winning faces of the d20
+// written as the range they are (17–20); test/unit/identity-text.test.js reads the number back from foeToHitVs.
+test("(4) the Acrobat's trait line and blurb say the foe's four winning numbers plainly (17–20 on a d20)", () => {
   const good = IDENTITY_TRAITS.sub.Acrobat.good;
-  assert.equal(good[0].text, "foes land only on their top four faces");
-  assert.match(SUB_NOTE.Acrobat, /^Nothing lays a hand on you except on its top four faces,/);
-  assert.doesNotMatch(SUB_NOTE.Acrobat, /top three faces/);
+  assert.equal(good[0].text, "foes hit you only on a high roll (17–20 on a d20)");
+  assert.match(SUB_NOTE.Acrobat, /^Foes hit you only on a high roll \(17–20 on a d20\),/);
+  assert.doesNotMatch(SUB_NOTE.Acrobat, /\bfaces?\b/i);
 });
 
 // ---------------------------------------------------------------------------

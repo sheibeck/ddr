@@ -293,4 +293,9 @@ test("SUB_NOTE: Wizard/Summoner/Illusionist describe the landed rules (guards Ta
   assert.match(SUB_NOTE.Summoner, /(first day|day one)/i);
   assert.match(SUB_NOTE.Illusionist, /Mirror Self/);
   assert.match(SUB_NOTE.Illusionist, /d20/);
+  // Phase 91 plan 10 (IDENT-12, SPELL-12): the Summoner's blurb states Summon from level 1 and everyone else's level 2,
+  // and the Wizard's names the school it can never learn (Illusion), which the Illusionist keeps for itself.
+  assert.match(SUB_NOTE.Summoner, /everyone else waits for level 2/);
+  assert.match(SUB_NOTE.Wizard, /never Illusion, which the Illusionist keeps for itself/);
+  assert.match(SUB_NOTE.Illusionist, /healing is closed to you/);
 });

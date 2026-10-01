@@ -32,28 +32,37 @@
 // test/unit/identity-footer.test.js pins the engine's schoolBonus readers so
 // this has to be revisited if a new one appears.
 //
+// Phase 91 plan 10 (TEXT-01, user 2026-09-30): the "faces" wording of ROLL-04
+// is superseded. A shift reads "+N to hit" or "foes −N to hit you"; a hard cap
+// or a crit range names its range on a d20 (computed here by rollRange.js from
+// the engine's own number, never typed); "can talk to X" is "can always parley
+// with X". test/unit/identity-text.test.js guards the wording and reads every
+// number back through the engine.
+//
 // Pure: no DOM, no rng, no mutation. Numbers go through rollRange.js
-// (signedText, U+2212); face counts are words. The strings reach the DOM
-// through textContent only (heroTab.js, roller.js).
+// (signedText, U+2212; facesRangeText, the en dash); count words are words. The
+// strings reach the DOM through textContent only (heroTab.js, roller.js).
 
-import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, SPELLS, STRIKE_DICE } from "../../content/index.js";
+import { IDENTITY_TRAITS, MU_CHART, SPELL_LEVEL_OVERRIDES, RACES, SPELLS, STRIKE_DICE, FREE_SKILL } from "../../content/index.js";
 import {
   schoolAllowed,
   schoolGate,
   schoolBonus,
   healMulFor,
   spellLevelFor,
+  spellEffectSquares,
+  spellEffectRounds,
+  foeDie,
   sizeAxisStep,
   SIZE_DAMAGE_PER_STEP,
   SIZE_FACES_PER_STEP,
 } from "../../engine/derived.js";
-import { signedText } from "./rollRange.js";
+import { signedText, facesRangeText } from "./rollRange.js";
 
 // ─── module-private helpers ─────────────────────────────────────────────
 
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 const countWord = (n) => WORDS[n] ?? String(n);
-const faces = (n) => `${countWord(n)} face${n === 1 ? "" : "s"}`;
 const fractionWord = (x) => (x === 0.5 ? "half" : `${Math.round(x * 100)}%`);
 
 /** The spell schools, from SPELLS itself (MU_CHART rows also carry gate/healMul). */
@@ -67,9 +76,39 @@ function orList(items) {
   return `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`;
 }
 
+function andList(items) {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 const entry = (id, side, text) => ({ id, side, text });
 
 // ─── Magic User chart lines ─────────────────────────────────────────────
+
+/**
+ * stretchLine(sub, school) — Phase 91 plan 10 (the audit's unstated Special stretch, Phase 90 Q6 A): a school
+ * bonus lengthens the timed spells of its school, by the engine's own helpers (`spellEffectSquares` for the
+ * square-timed spells, `spellEffectRounds` for the round-timed ones). Returns "" when the bonus stretches
+ * nothing (a Wizard's Special +0).
+ */
+function stretchLine(sub, school) {
+  const bySquares = new Map();
+  const byRounds = new Map();
+  for (const sp of SPELLS) {
+    if (sp.s !== school || !sp.stretch) continue;
+    if (sp.stretch === "squares") {
+      const d = spellEffectSquares(sub, sp) - (sp.act && Number.isInteger(sp.act.effect) ? sp.act.effect : 0);
+      if (d > 0) bySquares.set(d, [...(bySquares.get(d) || []), sp.n]);
+    } else if (sp.stretch === "rounds") {
+      const d = spellEffectRounds(sub, sp, 0);
+      if (d > 0) byRounds.set(d, [...(byRounds.get(d) || []), sp.n]);
+    }
+  }
+  const parts = [];
+  for (const [d, names] of bySquares) parts.push(`your ${andList(names)} last ${d} squares longer`);
+  for (const [d, names] of byRounds) parts.push(`${parts.length ? "" : "your "}${andList(names)} ${names.length === 1 ? "lasts" : "last"} ${d} round${d === 1 ? "" : "s"} longer`);
+  return parts.join(", and ");
+}
 
 function chartLines(sub) {
   const row = MU_CHART[sub];
@@ -91,10 +130,12 @@ function chartLines(sub) {
     }
     const bonus = schoolBonus(sub, school);
     if (bonus > 0 && BONUS_SCHOOLS.has(school)) {
-      out.push(entry(`chart-bonus-${school}`, "good", `your thrown ${school} spells land on ${countWord(bonus)} more face${bonus === 1 ? "" : "s"}`));
+      out.push(entry(`chart-bonus-${school}`, "good", `${signedText(bonus)} to hit with thrown ${school} spells`));
     }
     const gate = schoolGate(sub, school);
     if (gate > 1) out.push(entry(`chart-gate-${school}`, "bad", `no ${school} spells until level ${gate}`));
+    const stretch = stretchLine(sub, school);
+    if (stretch) out.push(entry(`chart-stretch-${school}`, "good", stretch));
   }
   const mul = healMulFor(sub);
   if (mul < 1) out.push(entry("chart-healmul", "bad", `healing spells you cast heal at ${fractionWord(mul)} strength`));
@@ -121,8 +162,8 @@ function sizeLines(row, race) {
   if (dmg > 0) out.push(entry("race-size-dmg", "good", `being ${word} adds ${dmg} damage`));
   if (dmg < 0) out.push(entry("race-size-dmg", "bad", `being ${word} costs ${-dmg} damage`));
   const face = SIZE_FACES_PER_STEP * sizeAxisStep({ race }, "face");
-  if (face > 0) out.push(entry("race-size-face", "bad", `being ${word} makes you ${faces(face)} easier to hit`));
-  if (face < 0) out.push(entry("race-size-face", "good", `being ${word} makes you ${faces(-face)} harder to hit`));
+  if (face > 0) out.push(entry("race-size-face", "bad", `being ${word} means foes ${signedText(face)} to hit you`));
+  if (face < 0) out.push(entry("race-size-face", "good", `being ${word} means foes ${signedText(face)} to hit you`));
   return out;
 }
 
@@ -167,27 +208,35 @@ export const RACE_FIELD_LINES = Object.freeze({
   },
   flatWP: (row) => [entry("race-flat-hp", "good", `starts with ${row.flatWP} HP whatever the class`)],
   wpMul: (row) => (row.wpMul === 1 ? [] : [entry("race-hp-mul", row.wpMul < 1 ? "bad" : "good", `${Math.round(row.wpMul * 100)}% of the usual HP, at every level`)]),
+  // A smaller strike die hits more often (the winning numbers count down from the top of the die), so "one size
+  // better" is "one size smaller": the die is named at level 1, from the engine's own STRIKE_DICE.
   strikeStep: (row) => {
     const n = row.strikeStep;
     if (!n) return [];
     const die = STRIKE_DICE[Math.min(STRIKE_DICE.length - 1, Math.max(0, n))];
-    return [entry("race-strike-step", n > 0 ? "good" : "bad", `strikes on a die ${countWord(Math.abs(n))} size${Math.abs(n) === 1 ? "" : "s"} ${n > 0 ? "better" : "worse"} (a d${die} at level 1, not a d${STRIKE_DICE[0]})`)];
+    const sizes = `${countWord(Math.abs(n))} size${Math.abs(n) === 1 ? "" : "s"}`;
+    return [entry("race-strike-step", n > 0 ? "good" : "bad", `your strike die is ${sizes} ${n > 0 ? "smaller" : "bigger"} (a d${die} at level 1, not a d${STRIKE_DICE[0]}), so you hit ${n > 0 ? "more" : "less"} often`)];
   },
-  toHit: (row) => [entry("race-to-hit", "good", `at least your top ${faces(row.toHit)} hit, whatever the class`)],
+  toHit: (row) => [entry("race-to-hit", "good", `you hit on at least the top ${row.toHit === 1 ? "number" : `${countWord(row.toHit)} numbers`} of your strike die (${facesRangeText(row.toHit, STRIKE_DICE[0])} on a d${STRIKE_DICE[0]}), whatever the class`)],
   foeToHit: (row) => {
     const n = row.foeToHit;
     if (!n) return [];
-    return [entry("race-foe-to-hit", n > 0 ? "bad" : "good", `foes land on ${faces(Math.abs(n))} ${n > 0 ? "more" : "fewer"} against you`)];
+    return [entry("race-foe-to-hit", n > 0 ? "bad" : "good", `foes ${signedText(n)} to hit you`)];
   },
-  foeStrikeStep: (row) => {
+  // foeDie reads the race row itself (never below a d8), so the level 1 die and the floor are the engine's own.
+  foeStrikeStep: (row, race) => {
     const n = row.foeStrikeStep;
     if (!n) return [];
-    return [entry("race-foe-strike-step", n > 0 ? "bad" : "good", `foes strike on a die ${countWord(Math.abs(n))} size${Math.abs(n) === 1 ? "" : "s"} ${n > 0 ? "better" : "worse"}`)];
+    const sizes = `${countWord(Math.abs(n))} size${Math.abs(n) === 1 ? "" : "s"}`;
+    const dieNote = race ? ` (a d${foeDie({ race }, { lvl: 1 })} for a level 1 foe, never below a d${foeDie({ race }, { lvl: 99 })})` : "";
+    return [entry("race-foe-strike-step", n > 0 ? "bad" : "good", `foes strike on a die ${sizes} ${n > 0 ? "smaller" : "bigger"}${n > 0 ? dieNote : ""}, so they hit you ${n > 0 ? "more" : "less"} often`)];
   },
   armorWear: (row) => (row.armorWear < 1 ? [entry("race-armor-wear", "good", `armour wears at ${fractionWord(row.armorWear)} the rate`)] : []),
   heal2x: (row) => (row.heal2x ? [entry("race-heal2x", "good", "rest, potions and your own healing spells heal twice as much")] : []),
   spMul: (row) => (row.spMul < 1 ? [entry("race-sp-mul", "bad", `${fractionWord(row.spMul)} the experience from every kill`)] : []),
-  noArmor: (row) => (row.noArmor ? [entry("race-no-armor", "bad", "can never wear armour")] : []),
+  // A Samurai starts in plate, so a race that never wears armour can never be one (engine/character.js rerolls the
+  // sub and refuses a forced pair): the second line is the audit's unstated no-Samurai rule, now stated.
+  noArmor: (row) => (row.noArmor ? [entry("race-no-armor", "bad", "can never wear armour"), entry("race-no-samurai", "bad", "can never be a Samurai (the job comes with plate)")] : []),
   // The 4-6 on a d6 is engine/combat.js's frenzy check,
   // rollCheck(rng, 6, atLeastFor(3, 6)) (IDENT-20); test/unit/fridgian-frenzy.test.js
   // and test/unit/identity-footer.test.js pin that source so the number cannot
@@ -218,6 +267,16 @@ export function unphrasedRaceFields(races = RACES) {
   return [...missing];
 }
 
+/**
+ * subLines(sub) — the lines a sub-class's own data states outside the Magic User chart: the free starting skill
+ * (content/kit.js#FREE_SKILL, read by engine/character.js#rollSkills; Phase 91 plan 10 states the audit's
+ * unstated free-skill rows). One good line for a sub-class with an entry, nothing otherwise.
+ */
+function subLines(sub) {
+  const skill = Object.prototype.hasOwnProperty.call(FREE_SKILL, sub) ? FREE_SKILL[sub] : null;
+  return skill ? [entry("free-skill", "good", `starts with the ${skill} skill for free`)] : [];
+}
+
 function raceLines(race) {
   const row = RACES[race];
   if (!row) return [];
@@ -245,7 +304,7 @@ function raceLines(race) {
  */
 export function identityEntries(kind, key) {
   const authored = (IDENTITY_TRAITS[kind] && Object.prototype.hasOwnProperty.call(IDENTITY_TRAITS[kind], key) && IDENTITY_TRAITS[kind][key]) || null;
-  const generated = kind === "sub" ? chartLines(key) : kind === "race" ? raceLines(key) : [];
+  const generated = kind === "sub" ? [...chartLines(key), ...subLines(key)] : kind === "race" ? raceLines(key) : [];
   const out = [];
   const seen = new Set();
   if (authored && authored.neutral) {

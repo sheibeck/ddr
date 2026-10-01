@@ -50,6 +50,7 @@ import {
   SPELLS,
   STRIKE_DICE,
   FREE_SKILL,
+  ABILITIES,
   SUB_NOTE,
   RACE_NOTE,
   CLASS_NOTE,
@@ -277,7 +278,7 @@ test("TEXT-01: the ruled wordings hold (Ninja, Acrobat, Elven, Troll)", () => {
   assert.match(SUB_NOTE.Ninja, /top two numbers of your strike die/);
   assert.match(SUB_NOTE.Ninja, new RegExp(`${critRange()} on a d20`));
   assert.equal(text("sub", "Acrobat", "acrobat-dodge"), `foes hit you only on a high roll (${range(foeToHitVs(hero("Acrobat")))} on a d20)`);
-  assert.match(SUB_NOTE.Acrobat, /foes hit you only on a high roll/);
+  assert.match(SUB_NOTE.Acrobat, /foes hit you only on a high roll/i);
   assert.doesNotMatch(SUB_NOTE.Acrobat, /top four/i);
   assert.equal(text("race", "Elven", "elven-humans"), "can always parley with Humans, +3 on that parley roll");
   assert.match(RACE_NOTE.Elven, /can always parley with Humans/);
@@ -426,14 +427,31 @@ test("numbers: class notes state the class's own level-1 range (CLASSES.toHit) i
   assert.match(CLASS_NOTE["Magic User"], /seventeen swings in twenty are decorative/);
 });
 
+test("TEXT-01 (90-12 hand-offs): the parley card, the insult chip, the Bard's song chip and the Ninja's crit line say +1 to hit and the top two numbers, never faces", () => {
+  const html = read("mazeworld.html");
+  const chip = (key) => new RegExp(`^\\s*${key}: "([^"]*)"`, "m").exec(html)?.[1];
+  assert.match(chip("insulted"), /^You insulted them and they took it personally: every foe gets \+1 to hit you and yours\.$/);
+  assert.match(chip("inspired"), /your own strikes get \+1 to hit/);
+  for (const key of ["insulted", "inspired"]) assert.deepEqual(faceProblems(chip(key)), [], key);
+  const menu = stripJs(read("src/browser/combatMenu.js"));
+  assert.match(menu, /every foe gets \+1 to hit you and yours until it ends/);
+  const narration = stripJs(read("src/browser/eventNarration.js"));
+  assert.match(narration, /ninja: "A Ninja's top two numbers\. Critical!"/);
+  assert.doesNotMatch(narration, /A Ninja's top two faces/);
+});
+
 // ─── the unstated rules the audit closes as stated traits ───────────────
 
 test("91-10 pin: a Cat Burglar, a Ninja and an Acrobat start with their free skill, and the footer names it (generated from FREE_SKILL)", () => {
   assert.deepEqual(FREE_SKILL, { "Cat Burglar": "Dirty Trick", "Acrobat": "Smoke", "Ninja": "Silent Step" });
   for (const [sub, skill] of Object.entries(FREE_SKILL)) {
+    // rollSkills grants the table skill; the Phase 38 reshape turns an active table skill into an ability
+    // (c.abilities holds its id), so the free skill is a live ability from the first step.
+    const ability = ABILITIES.find((a) => a.skillKey === skill);
+    assert.ok(ability, `${skill} is a table ability`);
     for (let seed = 1; seed <= 20; seed++) {
       const s = newRun(seed, [], { force: { sub } });
-      assert.equal(s.c.skills[skill], 1, `${sub} seed ${seed} starts with ${skill}`);
+      assert.ok(s.c.abilities.includes(ability.id), `${sub} seed ${seed} starts with ${skill}`);
     }
     const e = identityEntries("sub", sub).find((x) => x.id === "free-skill");
     assert.ok(e, `${sub}: a free-skill line`);

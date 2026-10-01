@@ -279,6 +279,7 @@ export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("content/damage-multipliers.js", "DAMAGE_MULTIPLIERS", "a rules table keyed by foe family ids"),
   nonCopy("content/encounters.js", "ENCOUNTER_TABLES", "engine dispatch keys, not copy (79-02 stops printing them)"),
   nonCopy("content/kit.js", "FREE_SKILL", "skill names (ids into the skill tables)"),
+  nonCopy("content/identity.js", "BLURB_ANCHORS", "regex sources the IDENT-12 blurb guard matches against the blurbs (Phase 91 plan 10); the player reads the blurbs, never these patterns"),
   // 79-12: registered as a bank until 79-11 stopped printing it.
   nonCopy("content/misc-tables.js", "INSANITY", "never printed since 79-11 (the hero's insanityRolled line no longer shows the foe-side row); engine/encounters.js#goInsane still stamps it as insanityRolled.result, so it stays as engine data, and test/voice/safety-scan.test.js still scans it"),
   nonCopy("content/kit.js", "KIT", "starting-kit weapon names (ids into WEAPONS)"),

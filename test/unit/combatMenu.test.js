@@ -882,7 +882,7 @@ test("VOX-05 (79-07): potion, flee, parley and sing descriptions state the engin
   assert.match(COMBAT_MENU_COPY.fleeDesc, /Fail and they all get a turn/);
   assert.match(COMBAT_MENU_COPY.fleeDesc, /loot stays behind/);
   assert.match(COMBAT_MENU_COPY.parleyDesc, /^One try per fight\./);
-  assert.match(COMBAT_MENU_COPY.parleyDesc, /one face easier until it ends/);
+  assert.match(COMBAT_MENU_COPY.parleyDesc, /\+1 to hit you and yours until it ends/);
   assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /permanent/);
   // Phase 91 (IDENT-17): once per fight, a random offense or defense spell of your level or lower, full strength, no charges.
   assert.match(COMBAT_MENU_COPY.singDesc, /^Once per fight: /);
