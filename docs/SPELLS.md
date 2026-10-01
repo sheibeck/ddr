@@ -246,35 +246,34 @@ never a spell's name (research Pitfall 2).
 `grep -rn 'sp\.n === "' engine/ tools/lib/` now prints zero matches anywhere
 in the engine or bot.
 
-### Ice — the real DOT (`kind: "dot"`)
+### Ice — the area freeze (`kind: "blast"`, Phase 90 plan 05)
 
-`castSpell`'s new `dot` branch, a peer of `acid`, not a rewrite of the
-thrown branch: `t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice" }` on
-`C.foes[C.target]` — one draw, no to-hit roll (like Acid), guarded on
-`sp.dmg` being present (T-40-03: a tampered/unknown `dot` row missing it
-never writes a broken record). Like Acid, the target rolls its spell resist
-first (quick 260927-rsx: every foe, half its intel in faces on a d20).
-Recasting on a foe already carrying an ice dot REFRESHES `left` (a plain
-overwrite — the record is replaced, never stacked).
+Superseded. Phase 40 made Ice a real damage-over-time spell (an `f.dot` record, a per-round
+d6 tick and a frozen-solid payoff when the last tick left the foe standing). The user ruled
+otherwise on 2026-09-30 (SPELL-12, Q5 A): "Ice is an area d10 to every foe with a chance to freeze
+each target 1d4 rounds" — the area version of the level-1 Freeze. Ice is now kind `"blast"` with
+`aoe: "all"`, `onHit: "freeze"` and `dmg` a d10, and `combat.js#iceStorm` resolves it for the
+hero's cast (a scroll's free cast included) and for a Joiner Magic User alike:
 
-`combat.js#foeTurn`'s existing `f.dot` tick block (Phase 38, Poisoned
-Edge's own template) already ran the per-round `d6` and the kill check; this
-plan adds the payoff directly after it: when the tick that just ran leaves
-`left <= 0` (the record about to be deleted) AND `by === "ice"` AND the foe
-is still alive, it freezes solid (`f.frozen = true`, `frozenSolid`) and dies
-through `killFoe` — paid exactly like a melee kill (sp/gold/kill count/loot
-roll), mirroring the thrown Freeze branch's own frozen/killFoe/revive lines
-(a kill-twice `lives` foe survives the freeze once and is unfrozen). `by` is
-the ONLY switch — a Poisoned Edge dot running out is completely unaffected,
-and Ice's own tick that itself kills the foe (wp reaches 0 on the DAMAGE,
-not the expiry) pays through the ordinary dot-kill path with no
-`frozenSolid` at all.
+- **No roll to hit and no up-front resist.** Every live foe, in `C.foes` order, takes its OWN
+  `d10 + level²` (plus Strength's d10 under Q1 A and any spell-damage item; Afraid halves the hero's
+  cast), through `damageFoe`.
+- **Then the freeze, foe by foe.** A foe the damage kills is a normal kill (no freeze line). A
+  survivor goes through `freezeFoe` exactly like a Freeze's: a d4 right after the damage, the ONE
+  depth-rising resist (which stops only the freeze, the damage already landed), then a `frozen`
+  hold for the d4's rounds. Damage, that foe's freeze, then the next foe.
+- **A hit wakes a dozing foe**, so Ice on a Doze sleeper wakes it with the damage and may freeze
+  it (the hold wins).
+- **Gone with the dot:** the `dot` kind, `castSpell`'s dot branch, `iceApplied`, foeTurn's ice
+  payoff and `frozenSolid`, the scroll fumble's `then: "heavy"` hand-off (a fumbled Ice is an area
+  damage row, Lightning's shape, hitting the reader's side) and the Ice foe chip. Poisoned Edge's
+  `f.dot` tick stays.
+- **Attack spell.** `"blast"` joins `ATTACK_SPELL_KINDS` and `DAMAGE_SPELL_KINDS` (so a Wizard
+  with Ice refuses melee, and a Joiner may pick it); `"dot"` left `DAMAGE_SPELL_KINDS`.
+- **The bot** scores Ice in the DAMAGE tier per live foe, like Lightning (never as a Freeze-style
+  hold: it has Freeze's `onHit` flag but also `aoe`).
 
-**Draw statement:** cast — one `d4` (the duration). Per tick — one `d6` (the
-damage; `damageFoe`'s own draw count is zero for a `kind: "spell"` hit,
-since the natural-armor soak only ever fires for a physical source). Payoff
-— zero extra draws; `killFoe`'s own draws (sp `d6`, coin `d10`, treasure
-`d20`, an optional Beasts/Lair-Beasts cooking `d6`) are the only ones.
+The roll draws are in docs/ROLL-LEDGER.md "Phase 90 plan 05".
 
 ### Lesser Summon — small, safe, its own thing
 
@@ -347,6 +346,9 @@ halving — a foe that is both shrunk AND weakened is quartered (`ceil`
 applied twice, independently). Zero draws; `false` on every fixture.
 
 ### The bot repoints
+
+(Phase 90 plan 05: the Ice `dot` scoring below is gone with the dot kind; Ice is scored as area
+damage per live foe, like Lightning. See "Ice — the area freeze" above.)
 
 `tools/lib/tuning-bot.mjs#chooseSpell`'s KILL tier reads `sp.onHit ===
 "freeze"` (was `sp.n === "Freeze"`); the DAMAGE tier's every-foe multiplier
@@ -1379,4 +1381,31 @@ at every depth. The combat menu's resist hint and the foe card show the same ran
 - **Blind** (level 3): the foe hits only on its die's top face and never lands a critical, for the
   fight at every depth. A flagged assumption for the user: the cap is applied after an insult, so
   an insulted party still faces only the top face.
-- **Ice** keeps its dot and its freeze-solid payoff at every depth until 90-05 reworks it.
+- **Ice** kept its dot and its freeze-solid payoff at every depth until 90-05 reworked it (below).
+
+## Phase 90: Doze and Stun swapped, Ice freezes the room (SPELL-11, SPELL-12, plan 90-05)
+
+User 2026-09-30 (SPELL-11): "Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Stun
+holds one foe for d4 rounds and a hit does not end it." The rulings Q3 A, Q4 A and Q5 A
+(docs/SPELL-AUDIT.md "## Rulings") fix the branches. Each effect lives in a shared tail in
+`engine/combat.js`, so the hero, a scroll and a Joiner cast it the same way.
+
+- **Doze** (level 1, `dozeFoes`): sleeps **exactly d4 foes** (no level multiplier), your target
+  first and then the other live foes in order; each reached foe rolls the one depth-rising resist,
+  and one that fails it sleeps **its own d4 rounds** (a longer sleep it already had stands) and is
+  marked `dozing`. **A hit wakes a dozing foe**: the first damage it takes (a blow, a spell, a burn,
+  from anyone) ends its sleep at once (`foeWoke`), unless the hit killed it. Only Doze's sleep wakes
+  on a hit (Q3 A); Noxious Vapor's, Insane's nap, a staff's gas and a song stay plain sleeps. A
+  cast that sleeps nobody says so in one line (`dozeFailed`). The foe chip reads **Dozing** (a hit
+  wakes it) instead of Asleep.
+- **Stun** (level 1, `stunFoe`): holds **one foe**, the one you picked, for **d4 rounds** after its
+  one resist. It is the existing hold (`holdFoe`, kind `stunned`): the foe skips that many of its
+  turns, is struck on at least 5 winning faces, and **a hit does not end the hold**. A new hold never
+  shortens a longer one still running. The foe chip reads **Stunned · N**.
+- **Ice** (level 3): see "Ice — the area freeze" above.
+- **Scroll fumbles.** Doze and Stun stay `out` asleep d4 rows (a fumbled one costs the reader up
+  to d4 turns); Ice is an area damage row.
+
+A flagged assumption for the user (probe SPELL-11): "a hit wakes it" means ANY damage the dozing foe
+takes through the damage seam, whoever deals it; "d4 foes" starts at the hero's target; each sleeper
+rolls its own d4; Stun's "one foe" is the hero's current target.

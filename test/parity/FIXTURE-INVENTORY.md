@@ -6744,3 +6744,83 @@ last, so an insult leaves one face), `test/unit/spell-mechanics.test.js` and
 `test/unit/item-audit-fixes.test.js` (the spell gate is the rising gate) and
 `test/unit/shell-tab-snapshots.test.js` (the Stupidity text above). New pins:
 `test/unit/spell-depth-resist.test.js` and `test/unit/petrify-blind-stupidity.test.js`.
+
+### Phase 90 plan 05: Doze and Stun swapped, Ice freezes the room (SPELL-11, SPELL-12)
+
+**The rule (the user's 2026-09-30 rulings).** SPELL-11: "Doze sleeps d4 foes for d4 rounds and a hit
+wakes a dozing foe; Stun holds one foe for d4 rounds and a hit does not end it." SPELL-12: "Ice is an
+area d10 to every foe with a chance to freeze each target 1d4 rounds." The branches (docs/SPELL-AUDIT.md
+"## Rulings"): Q3 A only Doze's sleep wakes on a hit; Q4 A Doze reaches exactly d4 foes, your target
+first; Q5 A Ice has no to-hit roll, every foe takes d10 + level², a survivor is frozen d4 rounds unless
+it resists (the resist stops only the freeze). Three shared tails in `engine/combat.js` (`dozeFoes`,
+`stunFoe`, `iceStorm`), so the hero, a scroll and a Joiner cast them the same way; `damageFoe` wakes
+a dozing foe. Ice's old damage-over-time record, `iceApplied` and foeTurn's frozen-solid payoff are
+gone. One new serialized per-foe field, `dozing`, carved out of all three `*Comparable()` functions
+(`stripFoeAbilityState`'s destructure, which they share).
+
+**The predictor.** A run can only move if it (a) casts Doze, Stun or Ice (the hero's cast, a scroll's
+free cast, or a Joiner's), (b) reads a scroll that rolls one of those, or (c) is a fair-bot run whose
+spell choice changes because the bot now scores Stun against a lone foe, Ice as area damage and Doze as
+a multi-foe sleep. Parity fixtures sit on floors 1 to 3 and cast only Freeze, Heal and a Fireball
+(`action-script.magic.json`), so zero parity drift was predicted. The fair bot's pinned runs end on
+floors 3 to 5, so a bot-played pin could move.
+
+**The live scan (measured at the plan's end, against the base 0c4cb0e4).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass. **Zero parity drift.** No parity script
+  casts Doze, Stun or Ice (its only spells are Freeze, Heal and a Fireball). `test/parity/prototype-master.js.txt`
+  is untouched.
+- `roll-high-state-pins.test.js`: **0 of 8 labels moved.** None was re-recorded;
+  `roll-high-baseline.mjs save` was not run. `roll-high-save-compat.test.js`: unchanged.
+- `roll-high-guard.test.js#DRAW_INVENTORY`: two counts moved, both declared in the file. `engine/combat.js`
+  amount 20 to 22 (+3 tagged draws in the shared tails: Doze's reach, the per-sleeper d4, Stun's hold d4;
+  -1 for allyCast's old sleeping d4); `engine/magic.js` amount 17 to 13 (-4: Stun's d6 reach and per-foe
+  d4, Doze's single d4, the dot branch's duration d4). `iceStorm` adds no `.d(`: its damage dice go
+  through `rollDice` and its freeze d4 is `freezeFoe`'s existing draw.
+- `test/unit/fixtures/hazard-commit/golden.json` and every other seed pin except the one below:
+  unchanged.
+
+**Moved entries (each measured, declared and re-recorded alone; nothing was regenerated wholesale).**
+
+1. `test/unit/days-farm.test.js`, the camp-guard regression on a real fair-bot run. Before: seed 293004
+   (seedList index 37, a solo Summoner start), campGuard 139, campFailed 0. After: the run plays out
+   differently (the bot now casts the reworked Doze, Stun and Ice) and its campGuard is 0 (campFailed 0;
+   seeds 55434 and 15839 are 0 too). A scan of the Summoner solo starts in seedList(120), in index order
+   (55434, 277166, 293004, 395951, 530574, 681035), found the first whose measured run fires the guard:
+   seed 530574 (index 67), campGuard 10, campFailed 0, outcome unbounded. Only the seed (and its comment)
+   changed; the assertion is the same.
+2. `test/unit/fixtures/event-order/default-fold-corpus.json`, ONE case: `resist-folds`. Before: its last
+   event was the retired `{ type: "stunned", target: "Imp", rounds: 1 }` ("The stun puts nobody to
+   sleep." on the rail) and the dozed line read "Orc dozes off, 2 rounds." After: the case's last event is
+   Stun's hold (`controlHeld` kind "stunned", folding the failed resist behind it, "Imp stunned for 1
+   round; a hit will not end it.") and the dozed line reads "Orc dozes off, 2 rounds. A hit wakes it."
+   The corpus's recorded events are inputs, not re-derived: the file's own `MZ_REGEN_EVENT_ORDER_CORPUS`
+   switch re-runs the real engine for every worst-case and walk case (which since 77-02 has moved on:
+   new foe abilities, hero resist events), so it was NOT used; the one case's events, lines and linesIdx
+   were recomputed alone. All other 181 cases are byte-identical.
+3. `test/unit/fixtures/shell-snapshots/mu.hero.txt`, one line (hand-pasted): the Grimoire row for Doze.
+   Before "control · one foe · asleep d4 rounds"; after "control · d4 foes, your target first · asleep d4
+   rounds each; a hit wakes the sleeper it lands on, because a nap is not armour". No other committed
+   fixture renders Doze, Stun or Ice.
+
+**Main-rng draws that moved (spells the pins do not run, or a different bot choice).** Doze: one d4 (the
+reach) is drawn before the first resist, and a resisted reached foe draws no sleeping d4. Stun: one d4 in
+all (before: a d6 reach and a d4 per foe that failed its resist). Ice: one damage die and, for a survivor,
+one freeze d4 per foe (before: one d4 for the dot's duration, then a d6 a round). A Joiner's Doze and Stun
+likewise.
+
+**Non-fixture assertions the rules moved (updated to the new rules, each before -> after).**
+`test/unit/spell-mechanics.test.js` (the Ice dot cast, resist, payoff and kill-twice pins became the area
+freeze's; the iceApplied narration pin became iceCast), `test/unit/scroll-fumble-table.test.js` and
+`scroll-fumble-resolve.test.js` (Ice's row is area damage, no `then`; a fumbled Ice hits the reader's side),
+`test/unit/reader-fumble-mechanics.test.js` (an old Ice selfDot with `then: "heavy"` just ends, no heavy
+blow), `test/unit/spell-depth-resist.test.js`, `control-spells-depth.test.js`, `control-at-depth.test.js` and
+`control-at-depth-rules.test.js` (Doze C7 / C9 reach first, Stun C8 one foe, Ice C3 retired,
+`holdFoe` requires `rounds`, the `dozeFoes` exemption), `party-combat.test.js` and `spell-resist.test.js` (a
+Joiner's Doze draws a reach, says `dozed` with `by`), `spell-damage-level-sq.test.js` (Ice's d10 + level²
+per foe; Stun holds one foe at every level), `authored-ranges.test.js` (Ice's text), `spell-table.test.js`,
+`spell-level-overrides.test.js`, `summoner-heal.test.js`, `day-one-damage.test.js` (`blast` in the attack and
+damage kinds), `strength-spell.test.js` (the one `f.dot` left is Poisoned Edge's), `foe-conditions.test.js`
+(Dozing and Stunned chips, no Ice chip), `narrationLinesTable.test.js`, `tuning-bot.test.js` (Ice's expected
+damage, Stun against a lone foe) and `shell-tab-snapshots.test.js` (the Doze text above). New pin:
+`test/unit/doze-stun-ice.test.js`.

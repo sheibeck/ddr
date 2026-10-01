@@ -58,11 +58,13 @@ test("a failed resist folds behind the throw it let through (both orders); a res
   assert.deepEqual(alone.map((l) => l.text), ["the Orc resists your Fireball: no effect"]);
 });
 
-test("a room spell's run of failed resists folds into its summary line (Stun), in the event order too", () => {
+// Phase 90 plan 05: Stun holds one foe now (its `stunned { count }` summary line is retired), so the room
+// spell this pin uses is Weaken, whose `weakened` line is the untargeted summary a run of failed resists folds into.
+test("a room spell's run of failed resists folds into its summary line (Weaken), in the event order too", () => {
   const events = [
-    { type: "resistFailed", target: "A", spell: "Stun", roll: 3, atLeast: 20, dieN: 20, intel: 1, faces: 1 },
-    { type: "resistFailed", target: "B", spell: "Stun", roll: 9, atLeast: 20, dieN: 20, intel: 1, faces: 1 },
-    { type: "stunned", count: 2 },
+    { type: "resistFailed", target: "A", spell: "Weaken", roll: 3, atLeast: 20, dieN: 20, intel: 1, faces: 1 },
+    { type: "resistFailed", target: "B", spell: "Weaken", roll: 9, atLeast: 20, dieN: 20, intel: 1, faces: 1 },
+    { type: "weakened", rounds: 3 },
   ];
   for (const order of ["priority", "event"]) {
     const out = linesForAction("castSpell", events, {}, { order });
@@ -74,7 +76,8 @@ test("a Joiner's failed resist folds behind the Joiner's outcome", () => {
   const events = [
     { type: "allyCast", name: "Ada", spell: "Doze", target: "the Orc" },
     { type: "resistFailed", target: "the Orc", spell: "Doze", by: "Ada", roll: 2, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
-    { type: "allySpellHit", name: "Ada", spell: "Doze", target: "the Orc", effect: "asleep", rounds: 3 },
+    // Phase 90 plan 05: a Joiner's Doze says `dozed` with `by` (before: allySpellHit { effect: "asleep" }).
+    { type: "dozed", target: "the Orc", rounds: 3, by: "Ada" },
   ];
   const out = linesForAction("alliesTurn", events, {}, { order: "event" });
   assert.equal(out.filter((l) => /fails to resist/.test(l.text)).length, 0, JSON.stringify(out.map((l) => l.text)));

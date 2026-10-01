@@ -837,13 +837,13 @@ mutation (a miss, or no roll at the knee or above it) or marks
 |---|---|---|---|---|---|---|
 | C1 | freeze | Freeze (hero) | magic.js castSpell thrown `onHit` | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold; a blow that leaves the foe at 0 hp still kills. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): `freezeFoe` rolls the one depth-rising resist (`foeResistsEffect`), no separate control resist | 75.3-05 |
 | C2 | freeze | Freeze (Joiner) | combat.js allyCast | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the same `freezeFoe` tail | 75.3-04 |
-| C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): no knee branch: an iced foe that survives its last tick freezes solid and dies at every depth; the one resist it rolled was the cast's own | 75.3-04 |
+| C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): no knee branch: an iced foe that survives its last tick freezes solid and dies at every depth; the one resist it rolled was the cast's own SUPERSEDED AGAIN (Phase 90 plan 05, SPELL-12, Q5 A): Ice is the area freeze, so `foeTurn` has no Ice payoff at all (no dot, no `frozenSolid`); an Ice survivor's freeze is `combat.js#freezeFoe` (its resist after its own damage, a d4 hold). See the Phase 90 plan 05 section. | 75.3-04 |
 | C4 | freeze (asleep 99) | Birch Staff | items.js freeze | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the staff's freeze is `freezeFoe` (its d4 hold at every depth since 2026-09-28) with the one depth-rising resist; see X9 | 75.3-05 |
 | C5 | stone | Petrify | magic.js petrify | resist; a stone hold instead of the removal | APPLIED: resist, then a stone hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist, then a kill through `killFoe` with spoils off (the experience is paid, Q2 A); no hold at any depth | 75.3-05 |
 | C6 | stone | Oak Staff, Amulet of Stone | items.js stone | resist per foe; a stone hold instead of the kill | APPLIED: resist per target, then a stone hold; `foeStoned` names only the killed foes. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per target, then the stone KILLS at every depth; no hold; see X9 | 75.3-05 |
-| C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist BEFORE the d4, no second control resist; a resisted Doze draws no d4 | 75.3-05 |
-| C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe before its d4, no second control resist | 75.3-05 |
-| C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist (foeResistsSpell, keyed on the Joiner's name) before the d4, no second control resist | 75.3-04 |
+| C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist BEFORE the d4, no second control resist; a resisted Doze draws no d4 SUPERSEDED AGAIN (Phase 90 plan 05, SPELL-11, Q4 A): Doze is `combat.js#dozeFoes`: the d4 REACH is drawn first, then for each reached foe (the target first) the one resist and, when it fails, that foe's own sleeping d4; a resisted foe draws none. See the Phase 90 plan 05 section. | 75.3-05 |
+| C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe before its d4, no second control resist SUPERSEDED AGAIN (Phase 90 plan 05, SPELL-11): Stun holds ONE foe: the aimed foe's one resist up front, then `combat.js#stunFoe`'s d4 and a held `stunned` hold; the per-foe reach and `stunned.count` are gone. See the Phase 90 plan 05 section. | 75.3-05 |
+| C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist (foeResistsSpell, keyed on the Joiner's name) before the d4, no second control resist SUPERSEDED AGAIN (Phase 90 plan 05, SPELL-11, SPELL-12): a Joiner's Doze, Stun and Ice go through the same shared tails (`dozeFoes`, `stunFoe`, `iceStorm`), the Joiner's name on every line; its Doze draws the d4 reach first. | 75.3-04 |
 | C10 | sleep | Noxious Vapor's sleep outcome | magic.js vapor | resist per foe (its d6+2 stays) | APPLIED: resist per foe. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe before its d6, no second control resist | 75.3-05 |
 | C11 | sleep | Insane's sleep face | magic.js insane | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): the one depth-rising resist is rolled up front (SINGLE_TARGET_KINDS) before the madness d6; the nap's d4 has no second resist | 75.3-05 |
 | C12 | sleep | Cedar Staff gas | items.js gas | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per foe, then asleep for the fight (99) at every depth; see X9 | 75.3-05 |
@@ -863,7 +863,7 @@ mutation (a miss, or no roll at the knee or above it) or marks
 | X7 | on the hero | foe abilities (c.foeEffect) | foeAbilities.js | OUT: the hero's own intel resist governs | OUT | — |
 | X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | RESOLVED (user ruling 2026-09-26, "weaken the reader"; Plan 76-06's dispatch). Found by 75.3-07's scan: it used to set the foe-side `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields, so the harmful fumble helped the reader. It now sets the reader's own `c.foeEffect` `{ kind: "weakened", rounds }` (d4+1), the debuff a foe's Weaken inflicts, and assigns no foe control, so the guard exemption is gone. Out of combat the fumble still fizzles (Phase 75.1) | 76-06 |
 | X9 | item controls | Amulet of Stone, Oak Staff, Cedar Staff, Birch Staff, Walnut Staff (and Pine Staff's fire resist) | items.js useItem | OUT of RULES-18: no floor-12 knee, no hold, no separate control resist (user Q1, 2026-09-30) | RESOLVED: every item effect a foe can resist rolls the one depth-rising resist (`combat.js#foeResistsEffect`, `derived.js#risingResistFaces`), not `resistControl`; `items.js#useItem` is exempt in the guard for that reason. Phase 90 moves the spells onto the same helper | 89-08 |
-| X10 | spell controls | every spell a foe can resist (the hero's, a scroll's free cast, a Joiner's) and foeTurn's Ice payoff | magic.js castSpell, combat.js allyCast and foeTurn | OUT of RULES-18: no floor-12 knee, no hold, no cap, no separate control resist (user 2026-09-30, "rising resists ... should apply to ALL spells ... remove the floor-12 special effects only") | RESOLVED: every spell rolls the one depth-rising resist (`combat.js#foeResistsSpell`, which IS `foeResistsEffect`; `derived.js#risingResistFaces`), not `resistControl`; `castSpell`, `allyCast` and `foeTurn` are exempt in the guard for that reason. Only the Bard's `sing` still calls `resistControl` (Phase 91, IDENT-17) | 90-04 |
+| X10 | spell controls | every spell a foe can resist (the hero's, a scroll's free cast, a Joiner's) and foeTurn's Ice payoff | magic.js castSpell, combat.js allyCast and foeTurn | OUT of RULES-18: no floor-12 knee, no hold, no cap, no separate control resist (user 2026-09-30, "rising resists ... should apply to ALL spells ... remove the floor-12 special effects only") | RESOLVED: every spell rolls the one depth-rising resist (`combat.js#foeResistsSpell`, which IS `foeResistsEffect`; `derived.js#risingResistFaces`), not `resistControl`; `castSpell`, `allyCast` and `foeTurn` are exempt in the guard for that reason. Only the Bard's `sing` still calls `resistControl` (Phase 91, IDENT-17) UPDATED (Phase 90 plan 05): `dozeFoes` is now an audited site (after the one resist per reached foe) and `foeTurn` assigns no control any more (Ice's payoff is gone); `holdFoe` is the one hold, shared by Freeze, Ice and Stun. | 90-04 |
 
 **The standing guard.** `test/unit/control-at-depth-rules.test.js`
 (75.3-07) scans every comment-stripped `engine/*.js` file and fails when a
@@ -1041,7 +1041,7 @@ Joiner's `allyCast`, and the Birch Staff's freeze power) now resolves through
 
 **Retired.** The frozen-solid kill at or below the knee (the Phase 23
 `killFoe` route, audit rows C1 and C2) and the staff's `asleep = 99` (row C4)
-are gone. `frozenSolid` stays: Ice's last tick (C3) still emits it.
+are gone. (`frozenSolid` stayed for Ice's last tick (C3) until Phase 90 plan 05 retired it with Ice's burn: nothing emits it now.)
 
 **Draw count.** A hit that leaves the foe standing now takes to-hit, damage
 and the d4 (3 main draws, was 2 past the knee); a Freeze kill takes to-hit,
@@ -1061,7 +1061,7 @@ for it.
 offensive spell's damage is now **its dice + the caster's level²**
 (`engine/derived.js#spellLevelSq`, the weapon's `levelSq` term), replacing
 canon p.26's `× max(1, caster level − spell level)` for damage. Stun's reach
-keeps the multiplier (it is not damage). **No new draw anywhere**: the level²
+kept the multiplier (it is not damage) until Phase 90 plan 05 made Stun hold one foe. **No new draw anywhere**: the level²
 is added to dice that were already rolled, so every site's draw order and
 count are unchanged, and `test/unit/roll-high-guard.test.js#DRAW_INVENTORY`
 does not move.
@@ -1071,9 +1071,9 @@ does not move.
 | magic.js thrown (Freeze, Fireball, Mangle, Lightning per foe) | `rollDice(dmg) × mult + spellDmg` | `rollDice(dmg) + level² + spellDmg` |
 | magic.js quake (Earthquake) | every foe `rollDice(dmg) × mult`; self `ceil(that / 2)` | every foe `roll + level²`; self `ceil(roll / 2)` (no level²) |
 | magic.js volley (Fireballs) | each bolt `rollDice(dmg)` | each bolt `rollDice(dmg)`, the first bolt to strike each foe `+ level²` |
-| magic.js acid / dot (Acid, Ice) | each tick `rollDice(dmg)` | the first tick `+ level²` (the record's `levelSq`, then deleted) |
+| magic.js acid / dot (Acid, Ice) | each tick `rollDice(dmg)` | the first tick `+ level²` (the record's `levelSq`, then deleted); Phase 90 plan 05: Ice left this row (it is `iceStorm`: each foe `rollDice(d10) + level²`) |
 | combat.js allyCast (a Joiner's thrown spell) | `rollDice(dmg) × max(1, level − spell level) + spellDmg` | `rollDice(dmg) + level² + spellDmg`, the Joiner's own level |
-| magic.js stun | `d6 × mult` foes | unchanged |
+| magic.js stun | `d6 × mult` foes | unchanged (Phase 90 plan 05: Stun holds one foe, `combat.js#stunFoe`; no reach) |
 | magic.js heal, backfire; scrollFumble.js | — | unchanged (self and healing never add level²) |
 
 Every amount still passes through `spellDamageFor` / `afraidDamage` (hero
@@ -1414,3 +1414,60 @@ for items and staves; this plan moves every spell onto it.
   of `foeSwingChain` to the last, so an insulted party faces one winning face (the top face) of a
   blind foe where it used to face two; the `foeToHitVs` mods read `penalty`, `insulted`,
   `blind` in that order. FLAGGED ASSUMPTION for the user's review.
+
+## Phase 90 plan 05: Doze and Stun swapped, Ice freezes the room (SPELL-11, SPELL-12, user 2026-09-30)
+
+The user's rulings (docs/SPELL-AUDIT.md "## Rulings", Q3 A, Q4 A, Q5 A) and the SPELL-11 and
+SPELL-12 lines: "Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Stun holds one
+foe for d4 rounds and a hit does not end it." "Ice is an area d10 to every foe with a chance to
+freeze each target 1d4 rounds." Three shared tails in `engine/combat.js` (the hero's cast, a
+scroll's free cast and a Joiner's `allyCast` all call them, the Joiner's name on every line) and
+one new line in the damage seam.
+
+- **Doze: `combat.js#dozeFoes`** (the old castSpell status branch, a first-live-foe single d4, and
+  allyCast's single nap are gone). Draw order: (1) the REACH, one `rng.d(4)` [roll:amount], drawn
+  first on the main rng; no level multiplier (Q4 A: exactly d4 foes); (2) the reached foes are the
+  aimed foe when it is alive, then the other live foes in `C.foes` order, the first `reach` of
+  them; (3) per reached foe in that order the ONE depth-rising resist (`foeResistsSpell`, a
+  derived stream: no main draw) and, only when it fails, that foe's own `rng.d(4)` [roll:amount];
+  `f.asleep = max(f.asleep, d4)` (a longer sleep it already has stands) and `f.dozing = true`.
+  A cast that sleeps nobody pushes one `dozeFailed` line. `f.dozing` is the one new serialized
+  field (combat-scoped, on a foe); it is carved out of ALL THREE `*Comparable()` functions
+  (`stripFoeAbilityState`'s per-foe destructure) and tolerant on load (absent means a plain sleep).
+- **The wake: `foeDamage.js#damageFoe`.** After the damage is applied, a foe with `dozing` loses its
+  sleep (`asleep = 0`, the mark deleted) and a `foeWoke` line is pushed unless the hit killed it. A
+  blow the ward or the natural armour absorbed returns earlier and wakes nobody. No draw. Any
+  damage through the seam wakes it, whoever deals it (a blow, a spell, an acid tick, a Joiner).
+  Q3 A: only Doze sets `dozing`; Noxious Vapor's, Insane's, a staff's and a song's sleeps stay
+  plain sleeps a hit does not wake. `foeTurn` clears the mark when the sleep runs out (the asleep
+  skip and the held skip).
+- **Stun: `combat.js#stunFoe`.** The old branch (`d6 × max(1, level − spell level)` foes, a resist
+  and a d4 each, `stunned { count }`) is gone. Stun is a single-target spell
+  (`SINGLE_TARGET_KINDS.stun = "target"`): the aimed foe's one resist up front (a dead pick falls to
+  the first live foe), then ONE `rng.d(4)` [roll:amount] and `holdFoe` kind `stunned`. A Joiner
+  rolls the resist in `allyCast` and then calls the same tail. The hold is the existing held skip:
+  the foe loses that many of its own turns, a held foe is struck on at least 5 winning faces, and a
+  blow never ends it.
+- **`holdFoe` never shortens.** `holdFoe(state, foe, kind, source, events, { rounds, freeze?, dmg?, by? })`:
+  `rounds` is required (the `controlHoldRoundsFor` depth default is gone). When the foe already
+  holds with MORE rounds left than the new cast's, the longer hold (its kind and its rounds) stands
+  and the new cast's line still names the hold in force. No draw.
+- **Ice: `combat.js#iceStorm`** (kind `blast`, `aoe: "all"`, `onHit: "freeze"`, `dmg` d10; the old `dot`
+  kind, its `f.dot` record, `iceApplied` and foeTurn's frozen-solid payoff are gone; a fumbled Ice
+  is an area damage row, Lightning's shape). No to-hit roll and no up-front resist. For each live
+  foe in `C.foes` order: `rollDice(d10) + strengthRoll + level² + spellDmg` (Strength adds its d10
+  per Q1 A, from its derived stream; Afraid and the difficulty seam apply to the hero's cast only,
+  like a thrown spell), then `damageFoe`; a foe the damage kills is a normal `killFoe` (no freeze
+  line); a survivor goes through `freezeFoe`: its existing d4 [roll:amount] right after the
+  damage, then the one resist (which stops only the freeze), then a `frozen` hold. The foe-by-foe
+  order is damage, that foe's freeze, then the next foe. `iceStorm` adds no `.d(` of its own.
+- **`DRAW_INVENTORY`.** `combat.js` amount 20 → 22 (+3 tagged draws: the Doze reach, the per-sleeper
+  d4 and the Stun hold d4; −1: allyCast's old sleeping d4); `magic.js` amount 17 → 13 (−4: Stun's
+  d6 reach and per-foe d4, Doze's d4, the dot branch's duration d4). Every other count is unmoved.
+- **Main-rng draws that moved.** Doze: one d4 (the reach) before the first resist; a resisted
+  reached foe draws no sleeping d4. Stun: one d4 total (before: a d6 and a d4 per foe that failed
+  its resist). Ice: one damage die and, for a survivor, one freeze d4 PER FOE (before: one d4 for
+  the whole dot's duration). A Joiner's Doze and Stun likewise. At floor 12 and below the one
+  resist already came first, so only these counts moved.
+- **Check direction.** None flipped; no check was added (Ice has none, Stun and Doze never rolled one).
+  The one resist is unchanged (`risingResistFaces`).

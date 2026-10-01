@@ -106,7 +106,13 @@ export const DRAW_INVENTORY = {
   // adds one amount draw (a Freeze's d4 hold, drawn whenever a hit foe survives).
   // Phase 89 plan 04 (ITEM-07): applyFoeDamageToMember adds one rollCheck call
   // (the Joiner's soak d20, roll-high, on a derived stream): 22 -> 23.
-  "engine/combat.js": { rollCheck: 23, amount: 20, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  // Phase 90 plan 05 (SPELL-11, SPELL-12): amount 20 -> 22. The shared tails move
+  // the Doze and Stun draws here from magic.js and allyCast: dozeFoes' d4 reach
+  // and its per-sleeper d4, and stunFoe's hold d4, are three tagged amount draws,
+  // and allyCast's own sleeping d4 is gone (-1): +3 -1 = +2. Ice's damage dice
+  // go through dice.js#rollDice (no `.d(` of its own) and its freeze d4 is
+  // freezeFoe's existing draw, so iceStorm adds none.
+  "engine/combat.js": { rollCheck: 23, amount: 22, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one
@@ -139,7 +145,10 @@ export const DRAW_INVENTORY = {
   "engine/events.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeAbilities.js": { rollCheck: 0, amount: 1, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/foeDamage.js": { rollCheck: 1, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
-  "engine/magic.js": { rollCheck: 2, amount: 17, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
+  // Phase 90 plan 05 (SPELL-11, SPELL-12): amount 17 -> 13. Stun's d6 reach and
+  // per-foe d4, Doze's single d4 and the dot branch's duration d4 left magic.js
+  // (-4); the Doze, Stun and Ice draws now live in combat.js's shared tails.
+  "engine/magic.js": { rollCheck: 2, amount: 13, selection: 2, "mishap-on-1": 3, "already-high": 0, primitive: 0 },
   "engine/movement.js": { rollCheck: 3, amount: 7, selection: 4, "mishap-on-1": 1, "already-high": 2, primitive: 0 },
   "engine/phobias.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/records.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
