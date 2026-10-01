@@ -18,6 +18,10 @@ import { gainWilmst, pickpocketExtra, rollTreasureItem, bagUpgradeTier } from ".
 import { priceFor, sellPriceFor, openStore, buyFrom } from "../../engine/economy.js";
 import { derivedRng, makeRng } from "../../engine/rng.js";
 import { newRun } from "../../engine/state.js";
+import { IDENTITY_TRAITS } from "../../content/identity.js";
+import { SUB_NOTE } from "../../content/flavor.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -327,4 +331,32 @@ test("shops: the Pickpocket drawback stays exactly: buy x1.25 on a routed line, 
   const cloak = { kind: "cloak", n: "Cloak of Armor" };
   assert.equal(sellPriceFor(cloak, "Human", "Pickpocket"), 938);
   assert.equal(sellPriceFor(cloak, "Human"), 1250);
+});
+
+test("the trait and the blurb state the extra item, and the gold take is retired from the table", () => {
+  const good = IDENTITY_TRAITS.sub.Pickpocket.good;
+  assert.ok(good.some((t) => t.id === "pickpocket-item" && /one extra item/i.test(t.text)));
+  assert.ok(!good.some((t) => t.id === "pickpocket-take"), "Q1 B: the gold take is gone");
+  assert.match(SUB_NOTE.Pickpocket, /extra item/i);
+  assert.doesNotMatch(SUB_NOTE.Pickpocket, /percentage of everything/i, "the gold-take claim is gone from the blurb");
+  assert.match(SUB_NOTE.Pickpocket, /a quarter more to buy/i, "the shop drawback is still stated");
+});
+
+test("narration: a pickpocket lootDropped has its own Oracle line and rail twin", () => {
+  const base = { type: "lootDropped", name: "Ring of Doom", kind: "jewel" };
+  const plain = EVENT_NARRATION.lootDropped(base);
+  const extra = EVENT_NARRATION.lootDropped({ ...base, pickpocket: true });
+  assert.notEqual(extra, plain);
+  assert.match(extra, /Ring of Doom/);
+  assert.match(extra, /second one/);
+  const rail = LINE_FOR.lootDropped({ ...base, pickpocket: true });
+  assert.match(rail.text, /Ring of Doom/);
+  assert.notEqual(rail.text, LINE_FOR.lootDropped(base).text);
+  // a sparse payload never prints undefined
+  assert.doesNotMatch(EVENT_NARRATION.lootDropped({ type: "lootDropped", pickpocket: true }), /undefined|NaN/);
+  assert.doesNotMatch(LINE_FOR.lootDropped({ pickpocket: true }).text, /undefined|NaN/);
+});
+
+test("narration: the old Pickpocket gold suffix is gone from the rail's goldGained line", () => {
+  assert.doesNotMatch(LINE_FOR.goldGained({ type: "goldGained", amount: 5, why: "pickpocket" }).text, /Pickpocket/);
 });

@@ -165,7 +165,11 @@ export const DRAW_INVENTORY = {
   // DERIVED stream "memberPotion" (never the main rng). The Joiner's Pilfer
   // fumble shares the hero's roll through rollPilferFumble, so neither its
   // rollCheck nor its d10 adds a count.
-  "engine/items.js": { rollCheck: 1, amount: 8, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
+  // Phase 91 plan 08 (IDENT-18, audit Q1 B): amount 8 -> 5. gainWilmst's Pickpocket extra gold
+  // take (`rng.d(10)`, `rng.d(10)` and `rng.d(4)` on one tagged line, three amount draws) is
+  // retired; pickpocketExtra adds no `.d(` of its own (rollTreasureItem's draws are the existing
+  // selection lines, run on the DERIVED "pickpocket" stream, never the main rng).
+  "engine/items.js": { rollCheck: 1, amount: 5, selection: 9, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/actions.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/death.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
   "engine/effects.js": { rollCheck: 0, amount: 0, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },

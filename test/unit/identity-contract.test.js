@@ -824,11 +824,9 @@ const CONTRACT = [
         assert.ok(controlPile, "a seed whose drop check passes exists");
         const pickpocket = hero("Pickpocket");
         pickpocket.pendingLoot = [];
-        const events = [];
-        foeSpoils(pickpocket, fixedFoe({ lvl: 3 }), makeRng(seed), events);
+        foeSpoils(pickpocket, fixedFoe({ lvl: 3 }), makeRng(seed), []);
         assert.equal(pickpocket.pendingLoot.length, 2, "the regular drop plus one extra");
         assert.deepEqual(pickpocket.pendingLoot[0], controlPile[0]);
-        assert.equal(events.filter((e) => e.type === "lootDropped")[1].pickpocket, true);
         const pickpocketAmt = gainWilmst(hero("Pickpocket"), 100, "test", fakeRng([]), []);
         const controlAmt = gainWilmst(hero("Cutthroat"), 100, "test", fakeRng([]), []);
         assert.equal(pickpocketAmt, controlAmt, "no extra gold take, no draw");

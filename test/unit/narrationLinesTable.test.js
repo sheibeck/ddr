@@ -252,7 +252,10 @@ test("missing optional fields degrade gracefully, never throw", () => {
 
 test("feature flag clauses render when present", () => {
   assert.ok(LINE_FOR.rested({ type: "rested", amount: 16, doubled: "Soldier" }).text.includes("Soldier"));
-  assert.ok(LINE_FOR.goldGained({ type: "goldGained", amount: 3, why: "pickpocket" }).text.includes("Pickpocket"));
+  // Phase 91 plan 08 (IDENT-18, Q1 B): the Pickpocket's gold take is retired, so the "(Pickpocket)"
+  // suffix on goldGained is gone; the Pickpocket's feature clause is its extra item's own line.
+  assert.ok(!LINE_FOR.goldGained({ type: "goldGained", amount: 3, why: "pickpocket" }).text.includes("Pickpocket"));
+  assert.ok(LINE_FOR.lootDropped({ type: "lootDropped", name: "Ring", pickpocket: true }).text.includes("fingers"));
   assert.ok(LINE_FOR.storeOpened({ type: "storeOpened", pickpocket: true }).text.includes("1.25"));
   assert.ok(LINE_FOR.wanderingMonster({ type: "wanderingMonster", hours: 2, bard: true }).text.includes("Bard"));
   assert.ok(LINE_FOR.chestOpened({ type: "chestOpened", reason: "pilfer" }).text.includes("Pilfer"));

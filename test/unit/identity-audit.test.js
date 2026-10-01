@@ -94,7 +94,10 @@ const PRE_REGISTERED = [
   // Phase 91 plan 05 built moa-never-leaves (IDENT-16): it is a live identityEntries id now, so it left
   // this list and sits in the Master of Arms' authored order with the verdict fixed engine; fixed text (91-05).
   // moa-withdraw stays here as the retired record (it is no longer a live id).
-  ["sub", "Pickpocket", "pickpocket-item", /^ruled \(2026-09-30\) -> 91-08/],
+  // Phase 91 plan 08 built pickpocket-item (IDENT-18): it is a live identityEntries id now, so it left
+  // this list and sits first in the Pickpocket's authored order with the verdict fixed engine; fixed text
+  // (91-08). pickpocket-take (the gold take, Q1 B) is the retired record that replaces it here.
+  ["sub", "Pickpocket", "pickpocket-take", /^(retire|retired) \(91-08\)$/],
   ["sub", "Master of Arms", "moa-withdraw", /^(retire|retired) \(91-05\)$/],
   ["race", "Troll", "troll-weapons", /^(retire|retired) \(91-08\)$/],
 ];

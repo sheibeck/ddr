@@ -1,0 +1,232 @@
+[
+  {
+    "key": "oracle:lootDropped",
+    "surface": "oracle",
+    "trigger": "lootDropped — engine/items.js#offerLoot",
+    "before": "",
+    "after": "Your fingers find a second one: Viper. Nobody saw. Nobody ever does.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "IDENT-18: a Pickpocket's extra item arrives as its own pile entry with its own line (`lootDropped { pickpocket: true }`), whether a chest or a monster gave the regular one, so it never reads as \"something falls out of the fight\". The fact leads; the joke closes it."
+  },
+  {
+    "key": "rail:lootDropped",
+    "surface": "rail",
+    "trigger": "lootDropped — engine/items.js#offerLoot",
+    "before": "",
+    "after": "Light fingers: Viper too.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "The rail twin of the Pickpocket's extra item: it names the item and says it is the extra."
+  },
+  {
+    "key": "rail:goldGained",
+    "surface": "rail",
+    "trigger": "goldGained — engine/combat.js#parley; engine/items.js#gainWilmst",
+    "before": "+2 wilmst (Pickpocket)",
+    "after": "+2 wilmst",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Audit Q1 B: the extra item replaces the Pickpocket's extra gold take, so the `goldGained { why: \"pickpocket\" }` beat and its \"(Pickpocket)\" suffix are retired; the line was only ever true for that beat."
+  },
+  {
+    "key": "oracle:joinerRefused",
+    "surface": "refusals",
+    "trigger": "joinerRefused — engine/encounters.js#meetJoiner",
+    "before": "Viper, a Magic User, takes one look at a Wilmsry and remembers an appointment elsewhere.",
+    "after": "You take one look at Viper, a Magic User, and refuse before they finish asking. The Wilmsry keep a long list of grudges, and you are carrying all of it.",
+    "reasons": [
+      "fact",
+      "identity",
+      "joke"
+    ],
+    "why": "IDENT-21: you refuse to take Magic User Joiners on, not the other way round. The line is in the Wilmsry's voice now and the joke is on the Wilmsry's grudges; the rule itself is unchanged."
+  },
+  {
+    "key": "rail:joinerRefused",
+    "surface": "refusals",
+    "trigger": "joinerRefused — engine/encounters.js#meetJoiner",
+    "before": "Viper, a Magic User, takes one look at a Wilmsry and leaves.",
+    "after": "You refuse Viper, a Magic User. Wilmsry grudge.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "The rail twin of the Oracle line: you do the refusing, and it names the Joiner and why."
+  },
+  {
+    "key": "bank:SUB_NOTE.Pickpocket",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
+    "after": "Whenever a chest or a monster hands over an item, you somehow walk away with one extra item as well: a talent, not a miracle. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
+    "reasons": [
+      "fact",
+      "accurate",
+      "joke"
+    ],
+    "why": "IDENT-18 and Q1 B: the blurb states the extra item and the shop drawback only. \"A percentage of everything: purses, shop stock\" described the retired gold take and never described a shop rule, so it goes. The rest of the blurb is the house voice and stays."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in twenty, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "after": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "reasons": [
+      "number"
+    ],
+    "why": "IDENT-19: the Joiner check is a d10 on every descent with a Joiner, so the odds in the blurb move from one in twenty to one in ten. Nothing else in the blurb changes."
+  },
+  {
+    "key": "bank:RACE_NOTE.Troll",
+    "surface": "blurbs",
+    "trigger": "the race blurb (roller and Hero tab)",
+    "before": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Everything you own cost triple.",
+    "after": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Shops charge you double for everything but the tools.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "IDENT-21 and Q8 A: a Troll's prices are doubled (they were tripled, weapons sextupled), and every stock line except the three flat-priced tools takes the rule. The old line also read as if it were about what the Troll owns; the new one says what is charged and what is exempt."
+  },
+  {
+    "key": "bank:RACE_NOTE.Wilmsry",
+    "surface": "blurbs",
+    "trigger": "the race blurb (roller and Hero tab)",
+    "before": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.",
+    "after": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "IDENT-21: the drawback is reworded so the Wilmsry is the one refusing Magic User Joiners (the rule never changed; the old words said the Magic Users refuse)."
+  },
+  {
+    "key": "content:RACES.Wilmsry.note",
+    "surface": "blurbs",
+    "trigger": "a race's rules note",
+    "before": "Heals twice as fast, learns half as quickly. Magic Users despise them.",
+    "after": "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-21: \"Magic Users despise them\" described no engine rule; the note now states the real one, the Wilmsry refusing Magic User Joiners."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pickpocket.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "an extra take from every kill and chest",
+    "after": "whenever you gain an item from a chest or a monster, you gain one extra item as well",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "IDENT-18 in the user's own words (2026-09-30); Q1 B retires the gold take this line used to state."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "one descent in twenty, the Joiner beside you doesn't reach the next floor",
+    "after": "whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner",
+    "reasons": [
+      "fact",
+      "number",
+      "identity"
+    ],
+    "why": "IDENT-19 in the user's own words (2026-09-30), with \"a 1 kills that Joiner\" in place of \"on a 1\" because the footer hygiene scan bans a low face named after \"on a\"; a 1 here is the worst face and the mishap."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Wilmsry.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "Magic User Joiners refuse to travel with you",
+    "after": "you refuse to take Magic User Joiners on",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "IDENT-21: the Wilmsry refuses, not the Magic Users (the user's wording, 2026-09-30)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Troll.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "store prices triple",
+    "after": "store prices doubled",
+    "reasons": [
+      "number",
+      "identity"
+    ],
+    "why": "IDENT-21: a Troll's prices are doubled (the user's ruling, 2026-09-30); with Q8 A the rule reaches every stock line except the three tools."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Troll.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "weapons cost double on top of that",
+    "after": "",
+    "reasons": [
+      "accurate",
+      "identity"
+    ],
+    "why": "IDENT-21: the weapon line is no longer doubled again on top of the doubled price, so the trait (`troll-weapons`) is retired."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Pickpocket",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: an extra take from every kill and chest. Bad: shops charge you a quarter more and pay a quarter less.",
+    "after": "Good: whenever you gain an item from a chest or a monster, you gain one extra item as well. Bad: shops charge you a quarter more and pay a quarter less.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "The footer is built from the trait rows: the Pickpocket's good line is the extra item now. The shop drawback is unchanged (a quarter more to buy, a quarter less to sell, with the Q5 ruling that the quarter-less is taken off the ordinary price)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: your first landed blow always crits, even in heavy armour. Bad: one descent in twenty, the Joiner beside you doesn't reach the next floor.",
+    "after": "Good: your first landed blow always crits, even in heavy armour. Bad: whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner.",
+    "reasons": [
+      "fact",
+      "number",
+      "identity"
+    ],
+    "why": "The footer is built from the trait rows: the Cutthroat's bad line is the d10 now."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Troll",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: starts with 75 HP whatever the class; +11 damage with every weapon (2 of it for being large). Bad: store prices triple; weapons cost double on top of that; being large makes you one face easier to hit; a night without rations costs 15 HP (a Human's costs 4); eats two rations a night.",
+    "after": "Good: starts with 75 HP whatever the class; +11 damage with every weapon (2 of it for being large). Bad: store prices doubled; being large makes you one face easier to hit; a night without rations costs 15 HP (a Human's costs 4); eats two rations a night.",
+    "reasons": [
+      "number",
+      "identity"
+    ],
+    "why": "The footer is built from the trait rows: prices doubled, and the weapon line retired."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Wilmsry",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; store prices 30% off; rest, potions and your own healing spells heal twice as much. Bad: Magic User Joiners refuse to travel with you; half the experience from every kill.",
+    "after": "Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; store prices 30% off; rest, potions and your own healing spells heal twice as much. Bad: you refuse to take Magic User Joiners on; half the experience from every kill.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "The footer is built from the trait rows: the Wilmsry refuses Magic User Joiners."
+  }
+]

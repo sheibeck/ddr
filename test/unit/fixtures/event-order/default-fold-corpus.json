@@ -13697,7 +13697,7 @@
      "priority": 3
     },
     {
-     "text": "+12 wilmst (Pickpocket) ×2",
+     "text": "+12 wilmst ×2",
      "tone": "hit",
      "priority": 3
     },
@@ -13732,7 +13732,7 @@
      "type": "backstab"
     },
     {
-     "text": "+12 wilmst (Pickpocket) ×2",
+     "text": "+12 wilmst ×2",
      "tone": "hit",
      "priority": 3,
      "idx": 3,

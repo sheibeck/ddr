@@ -267,8 +267,13 @@ function runVisits(spec, visits) {
 //   - every per-visit log moved for the same two reasons (one d20 at an
 //     intel-2 hero's ability visits; different resist outcomes, so different
 //     damage/debuff dice, at intel 20).
+//
+// Phase 91 plan 08 (IDENT-18, audit Q1 B, user 2026-09-30): ONE pin moved, re-recorded alone.
+// humans-t2 (seed 3's hero is a Human Pickpocket) 17/1 won -> 14/1 won: the one kill's coin gain
+// no longer draws the Pickpocket's extra take (d10 + d10 + d4, three main-rng draws, retired);
+// every other pin, and the per-visit pins below, are byte-identical.
 const FULL_FIGHT_PINS = {
-  "humans-t2": { foeNames: ["Krupke"], totalDraws: 17, attacks: 1, outcome: "won" },
+  "humans-t2": { foeNames: ["Krupke"], totalDraws: 14, attacks: 1, outcome: "won" },
   "magical-t4": { foeNames: ["Drudge", "Drudge"], totalDraws: 35, attacks: 3, outcome: "won" },
   "demons-t5": { foeNames: ["Djinni", "Djinni"], totalDraws: 41, attacks: 3, outcome: "won" },
   "walking-dead-t5": { foeNames: ["Vampire", "Vampire"], totalDraws: 36, attacks: 2, outcome: "died" },

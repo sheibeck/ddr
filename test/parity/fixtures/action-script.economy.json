@@ -70,35 +70,35 @@
     "stockAfter": [
       [
         "Chicken (+12 hp)",
-        20
-      ],
-      [
-        "Bread (+5 hp)",
-        15
-      ],
-      [
-        "Meat (+15 hp)",
         25
       ],
       [
+        "Bread (+5 hp)",
+        19
+      ],
+      [
+        "Meat (+15 hp)",
+        31
+      ],
+      [
         "Healing potion",
-        150
+        188
       ],
       [
         "Xtra Healing potion",
-        500
+        625
       ],
       [
         "Strength potion",
-        100
+        125
       ],
       [
         "Speed potion",
-        500
+        625
       ],
       [
         "Set of lockpicks",
-        450
+        563
       ],
       [
         "Katana",
@@ -162,7 +162,7 @@
       ]
     },
     "after": {
-      "gold": 2066,
+      "gold": 1785,
       "weapon": "Katana",
       "items": [
         {
@@ -203,7 +203,7 @@
         }
       }
     },
-    "rationale": "The seed-3 hero is a Human Pickpocket; Phase 24 marks up every priceFor-routed store line (buyWeapon/buyArmor/buyPremium/buyRations/repairArmor) x1.25 for a Pickpocket, floor 1. Phase 39 (GEAR-01) re-prices the WEAPONS table itself, so a flat multiplier off the PROTOTYPE's own cost no longer describes the engine's line prices (the prototype is frozen at Katana 525/Axe 50/Broadsword-premium 500; the engine now sells Katana 650, Broadsword 550, before the 1.25x Pickpocket markup) — the stockCostMul check is replaced by the stronger stockNames/stockAfter pin: the store ROLL is still byte-identical to the prototype (same 12 names, in order — Rations is the engine's own extra line, excluded from stockNames and present only in stockAfter) while every routed cost is measured directly. With the same 5000-gold bump on both sides, the higher engine prices no longer starve the run the way the old prices did: the engine now affords everything the prototype does PLUS extra purchases the prototype's own gold ran out before reaching (the fixture's own action order buys Axe/Studded/Casket/Lockpicks/Katana/Speed potion in sequence) — action 5 (Casket, 4128) still fails on both sides (both are far short of a ~4100-gold premium item at this point), but the engine ends the script with 2066 gold left over (vs the prototype's 55) and a Speed potion the prototype could never reach. `weaponUpgradeDelta`'s expected-strike heuristic still makes the Axe purchase (action 3) NOT an upgrade over the Pickpocket's starting Dagger (which already out-crits a bare Axe) — but Phase 61 (STORE-02) changes what happens to a legal, not-better store buy: it is charged and BAGGED (`deliverGear` -> `stowItem` + `purchaseBagged`) rather than charged and discarded (the frozen prototype's own behaviour, and this engine's pre-Phase-61 behaviour, both of which paid for the Axe and threw it away via takeItem's `notBetter` rejection branch). Gold is charged identically either way (end gold 2066, unchanged by this phase) — the ONLY field this phase moves is `after.items`, where the Axe now appears between the Healing potion and the Lockpicks. Measured directly by `tools/worn-fixture-scan.mjs` and a live replay (test/parity/divergence-records.test.js's `STORE-02 (Phase 61)` guard). Seed/actions/gold bump are deliberately untouched — the divergence is declared, not dodged. Purchase mechanics parity for a non-Pickpocket hero is unchanged code (buyFrom/takeItem/sellItem's arithmetic paths are untouched for a non-Pickpocket sub) and is covered instead by test/unit/economy.test.js's priceFor/sellPriceFor/seed-3-stock-pin cases. Phase 39 (GEAR-05, Plan 04) appends two MORE engine-only lines after Rations — this seed-3 hero starts with neither a Rope nor a Torch, so at depth 1 (tier 0) both are offered flat-priced (no priceFor route, so the Pickpocket markup never applies to them either): Torch 25, Rope 60 (no Ladder — tier 1+ only). Both are stripped from stockNames (ENGINE_ONLY_STORE_EFFECTS, mirroring Rations) and measured directly in stockAfter, same as every other engine-only line; the fixture's action-path fields (gold/weapon/items) are unaffected since the script never buys either. Phase 43 (CLAR-01 HP-not-WP sweep): the engine's Healing potion txt unit is hp; the prototype's stays wp — a cosmetic, declared, measured field. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so the end-state's engine items list loses it (bought items stay bagged) and c.worn is populated; the store visit never wears/unwears anything itself, so end.after.worn is unchanged from chargen; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
+    "rationale": "The seed-3 hero is a Human Pickpocket; Phase 24 marks up every priceFor-routed store line (buyWeapon/buyArmor/buyPremium/buyRations/repairArmor) x1.25 for a Pickpocket, floor 1. Phase 39 (GEAR-01) re-prices the WEAPONS table itself, so a flat multiplier off the PROTOTYPE's own cost no longer describes the engine's line prices (the prototype is frozen at Katana 525/Axe 50/Broadsword-premium 500; the engine now sells Katana 650, Broadsword 550, before the 1.25x Pickpocket markup) — the stockCostMul check is replaced by the stronger stockNames/stockAfter pin: the store ROLL is still byte-identical to the prototype (same 12 names, in order — Rations is the engine's own extra line, excluded from stockNames and present only in stockAfter) while every routed cost is measured directly. With the same 5000-gold bump on both sides, the higher engine prices no longer starve the run the way the old prices did: the engine now affords everything the prototype does PLUS extra purchases the prototype's own gold ran out before reaching (the fixture's own action order buys Axe/Studded/Casket/Lockpicks/Katana/Speed potion in sequence) — action 5 (Casket, 4128) still fails on both sides (both are far short of a ~4100-gold premium item at this point), but the engine ends the script with 2066 gold left over (vs the prototype's 55) and a Speed potion the prototype could never reach. `weaponUpgradeDelta`'s expected-strike heuristic still makes the Axe purchase (action 3) NOT an upgrade over the Pickpocket's starting Dagger (which already out-crits a bare Axe) — but Phase 61 (STORE-02) changes what happens to a legal, not-better store buy: it is charged and BAGGED (`deliverGear` -> `stowItem` + `purchaseBagged`) rather than charged and discarded (the frozen prototype's own behaviour, and this engine's pre-Phase-61 behaviour, both of which paid for the Axe and threw it away via takeItem's `notBetter` rejection branch). Gold is charged identically either way (end gold 2066, unchanged by this phase) — the ONLY field this phase moves is `after.items`, where the Axe now appears between the Healing potion and the Lockpicks. Measured directly by `tools/worn-fixture-scan.mjs` and a live replay (test/parity/divergence-records.test.js's `STORE-02 (Phase 61)` guard). Seed/actions/gold bump are deliberately untouched — the divergence is declared, not dodged. Purchase mechanics parity for a non-Pickpocket hero is unchanged code (buyFrom/takeItem/sellItem's arithmetic paths are untouched for a non-Pickpocket sub) and is covered instead by test/unit/economy.test.js's priceFor/sellPriceFor/seed-3-stock-pin cases. Phase 39 (GEAR-05, Plan 04) appends two MORE engine-only lines after Rations — this seed-3 hero starts with neither a Rope nor a Torch, so at depth 1 (tier 0) both are offered flat-priced (no priceFor route, so the Pickpocket markup never applies to them either): Torch 25, Rope 60 (no Ladder — tier 1+ only). Both are stripped from stockNames (ENGINE_ONLY_STORE_EFFECTS, mirroring Rations) and measured directly in stockAfter, same as every other engine-only line; the fixture's action-path fields (gold/weapon/items) are unaffected since the script never buys either. Phase 43 (CLAR-01 HP-not-WP sweep): the engine's Healing potion txt unit is hp; the prototype's stays wp — a cosmetic, declared, measured field. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so the end-state's engine items list loses it (bought items stay bagged) and c.worn is populated; the store visit never wears/unwears anything itself, so end.after.worn is unchanged from chargen; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged. Phase 91 plan 08 (IDENT-21, audit Q8 A, user 2026-10-01): every store stock line except the three flat-priced tools now goes through the race and Pickpocket buy rule, so the Pickpocket's x1.25 reaches food, potions and lockpicks too (stockAfter, measured live: Chicken 20 -> 25, Bread 15 -> 19, Meat 25 -> 31, Healing potion 150 -> 188, Xtra Healing 500 -> 625, Strength 100 -> 125, Speed 500 -> 625, lockpicks 450 -> 563; the weapon, armour, premium and ration lines and the flat Torch and Rope are unchanged), and the declared engine end gold moves 2066 -> 1785 because the script buys a Chicken, a Healing potion, the lockpicks and a Speed potion at those prices (the end items, weapon and worn are unchanged; the prototype side, before.gold 55, is unchanged). The store ROLL (names, order, subs) is still byte-identical to the prototype. The Pickpocket's retired extra gold take (Q1 B) moves nothing here: this script never gains coin."
   },
   "chargenDivergence": {
     "phase": "38+45+54+79.2",

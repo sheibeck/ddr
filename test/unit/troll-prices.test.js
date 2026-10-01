@@ -22,6 +22,8 @@ import { newRun } from "../../engine/state.js";
 import { WEAPONS, TOOLS } from "../../content/index.js";
 import { IDENTITY_TRAITS } from "../../content/identity.js";
 import { RACE_NOTE } from "../../content/flavor.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -264,6 +266,17 @@ test("edge (concurrency): a save taken with a store open from before this change
   openStore(loaded.value, makeRng(77), []);
   assert.deepEqual(costs(loaded.value), costs(troll), "the next store opened prices by the new rules");
   assert.notDeepEqual(costs(loaded.value), oldCosts);
+});
+
+test("narration: joinerRefused { wilmsry } says YOU refuse the Magic User on both surfaces; the store line says Trolls pay double", () => {
+  const e = { type: "joinerRefused", reason: "wilmsry", name: "Ada Brook" };
+  assert.match(EVENT_NARRATION.joinerRefused(e), /You take one look at Ada Brook, a Magic User, and refuse/);
+  assert.match(LINE_FOR.joinerRefused(e).text, /You refuse Ada Brook, a Magic User/);
+  for (const text of [EVENT_NARRATION.joinerRefused(e), LINE_FOR.joinerRefused(e).text]) {
+    assert.doesNotMatch(text, /takes one look at a Wilmsry/);
+  }
+  assert.match(EVENT_NARRATION.storeOpened({ type: "storeOpened", troll: true }), /Trolls pay double/);
+  assert.match(LINE_FOR.storeOpened({ type: "storeOpened", troll: true }).text, /Trolls pay double/);
 });
 
 test("the traits state the rule: troll-prices doubled, troll-weapons retired, the Elven and Dwarven proofs renamed", () => {

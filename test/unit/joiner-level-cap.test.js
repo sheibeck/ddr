@@ -331,12 +331,16 @@ test("SC3: joinerMet and joinerRefused render byte-identical through narrateEven
   );
   assert.equal(
     narrateEvent({ type: "joinerRefused", reason: "wilmsry", name: "Ada Brook", sub: "Apprentice", cls: "Magic User", lvl: 2 }),
-    '<span class="beat">Ada Brook, a Magic User, takes one look at a Wilmsry and remembers an appointment elsewhere.</span>',
+    // Phase 91 plan 08 (IDENT-21, user 2026-09-30): the WILMSRY refuses, so the line is in its voice.
+    // (It read '<span class="beat">Ada Brook, a Magic User, takes one look at a Wilmsry and remembers an
+    // appointment elsewhere.</span>'.)
+    '<span class="beat">You take one look at Ada Brook, a Magic User, and refuse before they finish asking.</span> The Wilmsry keep a long list of grudges, and you are carrying all of it.',
   );
   assert.equal(
     LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "wilmsry", name: "Ada Brook", sub: "Apprentice", cls: "Magic User", lvl: 2 }).text,
-    // VOX-05 (79-11): the rail names why, as the Oracle does.
-    "Ada Brook, a Magic User, takes one look at a Wilmsry and leaves.",
+    // VOX-05 (79-11): the rail names why, as the Oracle does. Phase 91 plan 08: you refuse the Magic User
+    // (it read "Ada Brook, a Magic User, takes one look at a Wilmsry and leaves.").
+    "You refuse Ada Brook, a Magic User. Wilmsry grudge.",
   );
 });
 
