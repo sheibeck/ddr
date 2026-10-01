@@ -365,14 +365,16 @@ test("a Joiner's Doze and Weaken roll the same single depth-rising resist per fo
 
 const stripComments = (src) => src.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");
 
-test("engine/magic.js castSpell and combat.js allyCast call neither resistControl, controlHoldRoundsFor nor controlCapRounds (the Bard's sing is the one caller left)", () => {
+test("engine/magic.js castSpell, combat.js allyCast and combat.js sing call none of resistControl, controlHoldRoundsFor, controlCapRounds (no engine caller is left; sing is a free castSpell since Phase 91 plan 06)", () => {
   const magic = stripComments(fs.readFileSync("engine/magic.js", "utf8"));
   for (const token of ["resistControl(", "controlHoldRoundsFor(", "controlCapRounds(", "holdFoe("]) assert.equal(magic.includes(token), false, `magic.js: ${token}`);
   const combat = fs.readFileSync("engine/combat.js", "utf8").replace(/\r\n/g, "\n");
   const ally = stripComments(combat.slice(combat.indexOf("function allyCast("), combat.indexOf("export function downMember(")));
   assert.equal(ally.includes("resistControl("), false, "allyCast");
   const sing = stripComments(combat.slice(combat.indexOf("export function sing("), combat.indexOf("export function sing(") + 6000));
-  assert.ok(sing.includes("resistControl("), "sing still rolls the RULES-18 resist until Phase 91 (IDENT-17)");
+  // Phase 91 (IDENT-17, plan 91-06): the Bard's song is a castSpell free cast on the one shared rising resist, so sing calls none of the RULES-18 helpers.
+  for (const token of ["resistControl(", "controlCapRounds(", "controlHoldRoundsFor("]) assert.equal(sing.includes(token), false, `sing: ${token}`);
+  assert.ok(sing.includes("free: true"), "sing resolves its spell through castSpell's free mode");
 });
 
 test("foeResistsSpell IS the depth-rising gate: a floor-20 spell resist line carries depthFaces and the helper's faces, a floor-12 one carries none", () => {

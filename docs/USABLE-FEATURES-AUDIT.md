@@ -26,9 +26,10 @@ never a generic "you can't do that."
 |---|---|---|---|
 | `notFought` | `castRefused`, `useRefused`, `scrollRefused`, `actionRefused`, `strikeRefused`, `fleeRefused`, `parleyRefused` | the encounter is still a preview — Fight! has not been pressed | every combat-gated action, via the single `refuseIfPending` guard |
 | `combatOnly` | `castRefused`, `useRefused` | a combat-only spell/targeted item used with no active encounter (Phase 89: a Joiner's `useRefused` carries `member` the same way) | `castRefused`, `useRefused` |
-| `cooldown {left}` | `useRefused`, `actionRefused` | (Phase 39, GEAR-02: a `c.timers` duration+cooldown jewelry/cloak still cooling), or a Bard's song, still counting down; `left` is the exact squares remaining (Phase 89: a Joiner's own cooling item refuses the same way, with `member`, on its own sheet's timers) | `useRefused`, `actionRefused` |
+| `cooldown {left}` | `useRefused`, `actionRefused` | (Phase 39, GEAR-02: a `c.timers` duration+cooldown jewelry/cloak still cooling); `left` is the exact squares remaining (Phase 89: a Joiner's own cooling item refuses the same way, with `member`, on its own sheet's timers) | `useRefused`, `actionRefused` |
 | `recharging {left,charges,max}` | `useRefused` | (Phase 39, GEAR-02) an EMPTY staff still refilling its charge pool — `left` is the squares to the next charge, `charges`/`max` the current/full pool | `useRefused` |
 | `wrongClass` | `useRefused`, `actionRefused` | a staff used by a non-Magic-User; Sing attempted by a non-Bard | `useRefused`, `actionRefused` |
+| `sungThisFight` | `actionRefused` | (Phase 91 plan 06, IDENT-17) a Bard's second SING in the same fight: SING is once per fight (`state.combat.sang`), refused with no draw; it replaced the old 100-square `cooldown {left}` | `actionRefused` |
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
 | `noTarget` | (mostly its own dedicated event) | a targeted effect with nothing to target | `nothingToThrowAt`, `insaneNoTarget`, `nothingToTurn`, `gateRefused` — **unreachable for the four common targeted kinds (thrown/acid/blind/petrify) in combat**: `castSpell` retargets a dead `C.target` onto the first live foe exactly like `playerStrike`, the same way a Strike never whiffs on a corpse |
 | `pilfer` | *(superseded, Phase 75.1)* | **Superseded by Phase 75.1 (RULES-09/RULES-10):** the `useRefused pilfer` heal-only refusal AND the `scrollRefused pilfer` refusal are BOTH gone — a Pilfer uses every magic item under the normal rules (see `pilferFumbled` below for its new risk) and reads every scroll under the same intelligence rule as everyone else (see the Scrolls section below) | *(retired)* |
@@ -318,8 +319,10 @@ button ever renders, so no refusal event is needed). A Wilmsry vs. Magical
 → `parleyRefused wilmsryVsMagical` (reachable only at full fluency, since
 `canParley` itself blocks Magical below fluency 2).
 
-**Sing (Bard only):** non-Bard → `actionRefused wrongClass`; still cooling
-down (100-square cadence) → `actionRefused cooldown {left}`; ready → `sang`.
+**Sing (Bard only):** non-Bard → `actionRefused wrongClass`; already sung this
+fight → `actionRefused sungThisFight` (Phase 91 plan 06: once per fight, the
+old 100-square cadence is gone); ready → `sang { title, spell }`, then the
+spell's own events.
 
 **Withdraw (Tracking skill):** the Tracking skill's own round-1 clean-exit
 branch of Flee, above — no separate action, no separate refusal.
@@ -438,7 +441,7 @@ phase's change (if any).
   `spellLevelFor` (closing the stale classic-script duplicate, RESEARCH §3.2)
   — the Grimoire's reason string split into its three distinct diagnostics
   instead of one collapsed "Not ready yet."
-- Sing button with its cooldown countdown.
+- Sing button: READY, or SUNG THIS FIGHT once the one song is spent (Phase 91 plan 06; it was a squares countdown).
 - The ward chip: "Shield · 34 hp · 3 rds" (both numbers at once, mirroring
   the existing `flight` two-number chip precedent).
 - An "Acute" chip that visibly counts down, in and out of combat, and

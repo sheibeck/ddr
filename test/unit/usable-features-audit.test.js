@@ -497,13 +497,14 @@ CASES.push({
   expect: { refused: { type: "actionRefused", reason: "wrongClass" } },
 });
 CASES.push({
-  name: "sing: a Bard still cooling down is refused cooldown",
+  // Phase 91 (IDENT-17, plan 91-06): the squares cooldown is retired; once per fight.
+  name: "sing: a Bard that has already sung this fight is refused sungThisFight",
   run: () => {
-    const state = fixedState({ c: { sub: "Bard", songAt: 0 }, steps: 0 });
-    state.combat = fixedCombat([fixedFoe()]);
+    const state = fixedState({ c: { sub: "Bard" } });
+    state.combat = fixedCombat([fixedFoe()], { sang: true });
     return { events: sing(state, fakeRng([]), []), state };
   },
-  expect: { refused: { type: "actionRefused", reason: "cooldown" } },
+  expect: { refused: { type: "actionRefused", reason: "sungThisFight" } },
 });
 CASES.push({
   name: "sing: Fight!-pending refuses notFought",
