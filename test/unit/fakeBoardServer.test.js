@@ -32,7 +32,7 @@ import {
   legacyDeepKeyOf,
   runDocId,
   createRunCommit,
-  handleUpdateCommit,
+  legacyHandleUpdateCommit,
   deleteCommit,
   topTenQuery,
   countQuery,
@@ -388,7 +388,7 @@ test("commit handle update: owner + valid handle -> 200, doc updated", async () 
   const id = runDocId(u.uid, doc.hash);
   await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
   const newHandle = validHandle(0.85);
-  const res = await postCommit(server, handleUpdateCommit(VALID_CONFIG, id, newHandle), u.idToken);
+  const res = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, newHandle), u.idToken);
   assert.equal(res.status, 200);
   assert.equal(server.docs().find((d) => d.id === id).handle, newHandle);
 });
@@ -401,10 +401,10 @@ test("commit handle update: another user's doc -> 403; invalid handle -> 403", a
   const id = runDocId(owner.uid, doc.hash);
   await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), owner.idToken);
 
-  const otherRes = await postCommit(server, handleUpdateCommit(VALID_CONFIG, id, validHandle(0.85)), other.idToken);
+  const otherRes = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, validHandle(0.85)), other.idToken);
   assert.equal(otherRes.status, 403);
 
-  const badHandleRes = await postCommit(server, handleUpdateCommit(VALID_CONFIG, id, "@not-a-valid-handle"), owner.idToken);
+  const badHandleRes = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, "@not-a-valid-handle"), owner.idToken);
   assert.equal(badHandleRes.status, 403);
 });
 
@@ -438,7 +438,7 @@ test("commit handle update: N-run re-roll is atomic (all-or-nothing)", async () 
   await postCommit(server, createRunCommit(VALID_CONFIG, id2, doc2), u.idToken);
 
   const newHandle = validHandle(0.9);
-  const ok = await postCommit(server, handleUpdateCommit(VALID_CONFIG, [id1, id2], newHandle), u.idToken);
+  const ok = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, [id1, id2], newHandle), u.idToken);
   assert.equal(ok.status, 200);
   assert.equal(server.docs().find((d) => d.id === id1).handle, newHandle);
   assert.equal(server.docs().find((d) => d.id === id2).handle, newHandle);
@@ -446,7 +446,7 @@ test("commit handle update: N-run re-roll is atomic (all-or-nothing)", async () 
   // one failing write (a nonexistent third id) rolls back the whole batch
   const before1 = server.docs().find((d) => d.id === id1).handle;
   const anotherHandle = validHandle(0.4);
-  const bad = await postCommit(server, handleUpdateCommit(VALID_CONFIG, [id1, "nope_00000000"], anotherHandle), u.idToken);
+  const bad = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, [id1, "nope_00000000"], anotherHandle), u.idToken);
   assert.equal(bad.status, 403);
   assert.equal(server.docs().find((d) => d.id === id1).handle, before1);
 });
@@ -1004,7 +1004,7 @@ test("final fake: no client run update at all — not the 2.2.0 re-roll, not a r
   assert.equal(made.res.status, 200);
   const before = JSON.stringify(server.docs());
   for (const handle of ["@mossjaw", GAMER, "Other Name"]) {
-    const res = await postCommit(server, handleUpdateCommit(VALID_CONFIG, made.id, handle), u.idToken);
+    const res = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, handle), u.idToken);
     assert.equal(res.status, 403, handle);
   }
   assert.equal(JSON.stringify(server.docs()), before);
@@ -1025,7 +1025,7 @@ test("final fake: a shipped 2.2.0 client's whole flow is refused (anonymous crea
   const held = createFakeBoardFetch({ config: VALID_CONFIG, runs: [own] });
   const w = await newUser(held);
   assert.equal(w.uid, "fakeuid000001");
-  const reroll = await postCommit(held, handleUpdateCommit(VALID_CONFIG, own.id, "@gravepouch"), w.idToken);
+  const reroll = await postCommit(held, legacyHandleUpdateCommit(VALID_CONFIG, own.id, "@gravepouch"), w.idToken);
   assert.equal(reroll.status, 403);
   assert.equal(held.docs().find((d) => d.id === own.id).handle, "@mossjaw");
 });
@@ -1053,7 +1053,7 @@ test("final fake: the admin paths never reach a client rule (create of any shape
   assert.equal((await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), FAKE_ADMIN_TOKEN)).status, 200);
   const patch = await server.fetchFn(patchDeepKeyUrl(id), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
   assert.equal(patch.status, 200);
-  const renamed = await postCommit(server, handleUpdateCommit(VALID_CONFIG, id, GAMER), FAKE_ADMIN_TOKEN);
+  const renamed = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, GAMER), FAKE_ADMIN_TOKEN);
   assert.equal(renamed.status, 200);
   assert.equal(server.docs().find((d) => d.id === id).handle, GAMER);
 });
@@ -1077,11 +1077,11 @@ test("transition fake: an unnamed owner's 2.2.0 handle-only re-roll lands, a non
   const u = await newUser(server);
   const made = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000051", handle: "@mossjaw" });
   assert.equal(made.res.status, 200);
-  assert.equal((await postCommit(server, handleUpdateCommit(VALID_CONFIG, made.id, "@gravepouch"), u.idToken)).status, 200);
+  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, "@gravepouch"), u.idToken)).status, 200);
   assert.equal(server.docs().find((d) => d.id === made.id).handle, "@gravepouch");
-  assert.equal((await postCommit(server, handleUpdateCommit(VALID_CONFIG, made.id, GAMER), u.idToken)).status, 403);
+  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, GAMER), u.idToken)).status, 403);
   const other = await newUser(server);
-  assert.equal((await postCommit(server, handleUpdateCommit(VALID_CONFIG, made.id, "@mossjaw"), other.idToken)).status, 403);
+  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, "@mossjaw"), other.idToken)).status, 403);
 });
 
 test("transition fake: a named uid can never use a legacy branch (T-91.2-14)", async () => {
@@ -1092,7 +1092,7 @@ test("transition fake: a named uid can never use a legacy branch (T-91.2-14)", a
   server.setName(u.uid, GAMER);
   const late = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000062", handle: "@mossjaw" });
   assert.equal(late.res.status, 403, "named: the legacy @handle create is refused");
-  assert.equal((await postCommit(server, handleUpdateCommit(VALID_CONFIG, early.id, "@gravepouch"), u.idToken)).status, 403, "named: the legacy update is refused");
+  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, early.id, "@gravepouch"), u.idToken)).status, 403, "named: the legacy update is refused");
   assert.equal(server.docs().find((d) => d.id === early.id).handle, "@mossjaw");
 });
 

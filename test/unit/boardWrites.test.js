@@ -1,11 +1,12 @@
 // test/unit/boardWrites.test.js
 //
-// Phase 83 Plan 06 Task 1. Covers createBoardWrites against
-// createFakeBoardFetch (83-04) with the real createIdentity (83-03): the
-// idempotent submitRun (created / exists under all three existsResponse
-// modes / refused / invalid / 401 refresh-and-retry / offline / server /
-// off), rewriteHandle (paging, zero-call cases) and eraseMyRuns (success,
-// mid-way failure).
+// Phase 83 Plan 06 Task 1, moved to the named flow by Phase 91.2 Plan 05.
+// Covers createBoardWrites on the shared rig (test/unit/harness/boardHarness.js:
+// the fake board server under the FINAL rules, a fake Play Games player, the
+// real identity): the idempotent submitRun under the verified name (created /
+// exists under all three existsResponse modes / refused / invalid / 401
+// refresh-and-retry / offline / server / off / signin / a stale name that is
+// re-claimed once) and eraseMyRuns (success, mid-way failure, name released).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,35 +17,18 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
-import { rollHandle, isValidHandle } from "../../src/browser/handles.js";
 import { RUN_CLIENT_FIELDS, rankKeys, runDocId } from "../../src/browser/runDoc.js";
-import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
-import { createIdentity } from "../../src/browser/firebaseAuth.js";
+import { IDENTITY_KEY } from "../../src/browser/firebaseAuth.js";
 import { WRITE_REASONS, classifyWrite, createBoardWrites } from "../../src/browser/boardWrites.js";
+import { makeBoardRig } from "./harness/boardHarness.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const BOARD_WRITES_SRC = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "boardWrites.js"), "utf8").replace(/\r\n/g, "\n");
 
-const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
+const PLAYER_NAME = "Dev Delver"; // the fake Play Games player's default name
 
 /* ---------------- helpers ---------------- */
-
-function makeStorage() {
-  const map = new Map();
-  return {
-    map,
-    async getItem(key) {
-      return map.has(key) ? map.get(key) : null;
-    },
-    async setItem(key, value) {
-      map.set(key, String(value));
-    },
-    async removeItem(key) {
-      map.delete(key);
-    },
-  };
-}
 
 function clockBox(start = 0) {
   let t = start;
@@ -84,14 +68,10 @@ function baseSummary(overrides = {}) {
   return s;
 }
 
-function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
-}
-
 function docFor(overrides = {}) {
   const merged = {
     uid: "fakeuid000001",
-    handle: validHandle(0.15),
+    handle: PLAYER_NAME,
     season: SEASON,
     name: "Hero",
     race: "Human",
@@ -109,7 +89,7 @@ function docFor(overrides = {}) {
     epitaph: "",
     when: 1000,
     hash: "00000001",
-    version: "2.2.0 (12)",
+    version: "2.3.0 (13)",
     seed: 1,
     acts: 10,
     ...overrides,
@@ -129,26 +109,18 @@ function hexHash(n) {
   return n.toString(16).padStart(8, "0");
 }
 
-function makeSetup({ competeOn = true, fakeOpts = {}, identityOpts = {} } = {}) {
+// A rig plus writes. The player is signed in to Play Games unless play says otherwise.
+function makeSetup({ competeOn = true, fakeOpts = {}, play = {} } = {}) {
   const clock = clockBox(0);
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
-  const storage = makeStorage();
   let competing = competeOn;
-  const identity = createIdentity({
-    storage,
-    fetchFn: fake.fetchFn,
-    config: VALID_CONFIG,
-    competeOn: () => competing,
-    now: clock,
-    random: () => 0.42,
-    ...identityOpts,
-  });
-  const writes = createBoardWrites({ fetchFn: fake.fetchFn, identity, config: VALID_CONFIG });
+  const rig = makeBoardRig({ now: clock, fakeOpts, play, competeOn: () => competing });
+  const writes = createBoardWrites({ fetchFn: rig.fetchFn, identity: rig.identity, config: rig.config });
   return {
-    fake,
-    storage,
+    rig,
+    fake: rig.fake,
+    storage: rig.storage,
     clock,
-    identity,
+    identity: rig.identity,
     writes,
     setCompeting: (v) => {
       competing = v;
@@ -164,12 +136,16 @@ function getRunCalls(fake) {
   return fake.calls().filter((c) => c.method === "GET" && /\/runs\//.test(c.url));
 }
 
+function firestoreCalls(fake) {
+  return fake.calls().filter((c) => c.url.includes("firestore.googleapis.com"));
+}
+
 /* ================================================================
    constants
    ================================================================ */
 
-test("constants: WRITE_REASONS", () => {
-  assert.deepEqual(WRITE_REASONS, ["off", "offline", "server", "refused", "invalid", "auth", "unavailable"]);
+test("constants: WRITE_REASONS gains signin", () => {
+  assert.deepEqual(WRITE_REASONS, ["off", "offline", "server", "refused", "invalid", "auth", "unavailable", "signin"]);
   assert.ok(Object.isFrozen(WRITE_REASONS));
 });
 
@@ -193,16 +169,17 @@ test("classifyWrite: 2xx is ok, 401/UNAUTHENTICATED is auth, 429/5xx is server, 
    submitRun
    ================================================================ */
 
-test("submitRun: a fresh identity signs up and creates the run", async () => {
-  const { fake, writes } = makeSetup();
+test("submitRun: a signed-in player's run lands under their verified name (D-06: the session claims first)", async () => {
+  const { fake, writes } = makeSetup({ play: { playerId: "p-ann", displayName: "Ann the Bold" } });
   const summary = baseSummary();
-  const res = await writes.submitRun(summary, { version: "2.2.0 (12)" });
+  const res = await writes.submitRun(summary, { version: "2.3.0 (13)" });
   assert.equal(res.ok, true);
   assert.equal(res.status, "created");
   const docs = fake.docs();
   assert.equal(docs.length, 1);
   assert.equal(docs[0].hash, summary.hash);
-  assert.ok(isValidHandle(docs[0].handle));
+  assert.equal(docs[0].handle, "Ann the Bold");
+  assert.equal(docs[0].handle, fake.names()[0].name, "the run's handle is the name the function wrote");
   assert.equal(typeof docs[0].createdAt, "string");
 });
 
@@ -220,42 +197,96 @@ for (const mode of ["precondition", "denied", "conflict"]) {
     assert.equal(second.status, "exists");
     assert.equal(second.id, first.id);
     assert.equal(getRunCalls(setup.fake).length, before + 1, "exactly one public GET settles the ambiguity");
-    assert.equal(fake_docsCount(setup.fake), 1);
+    assert.equal(setup.fake.docs().length, 1);
   });
 }
 
-function fake_docsCount(fake) {
-  return fake.docs().length;
-}
+test("submitRun: a player who is not signed in to Play Games gets reason signin and nothing reaches Firestore", async () => {
+  const { fake, writes } = makeSetup({ play: { signedIn: false, interactive: false } });
+  const res = await writes.submitRun(baseSummary(), { version: "1" });
+  assert.deepEqual(res, { ok: false, reason: "signin" });
+  assert.equal(fake.calls().length, 0);
+  assert.equal(firestoreCalls(fake).length, 0);
+});
 
-test("submitRun: a create refused for a doc that does not exist (banned uid) resolves refused", async () => {
+test("submitRun: a session failure's reason passes through unchanged with no create", async () => {
+  const setup = makeSetup();
+  for (const reason of ["offline", "server", "unavailable", "off"]) {
+    const identity = { boardSession: async () => ({ ok: false, reason }) };
+    const writes = createBoardWrites({ fetchFn: setup.fake.fetchFn, identity, config: setup.rig.config });
+    assert.deepEqual(await writes.submitRun(baseSummary(), { version: "1" }), { ok: false, reason });
+  }
+  assert.equal(setup.fake.calls().length, 0);
+});
+
+test("submitRun: Compete OFF resolves off with zero requests", async () => {
+  const setup = makeSetup({ competeOn: false });
+  const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
+  assert.deepEqual(res, { ok: false, reason: "off" });
+  assert.equal(setup.fake.calls().length, 0);
+  assert.equal(setup.rig.play.calls().length, 0);
+});
+
+test("submitRun: a create refused for a doc that does not exist (banned uid) resolves refused after one name refresh and no loop", async () => {
   const { fake, identity, writes } = makeSetup();
-  const token = await identity.getToken();
-  assert.equal(token.ok, true);
-  fake.ban(token.uid);
+  const session = await identity.boardSession();
+  assert.equal(session.ok, true);
+  fake.ban(session.uid);
 
   const res = await writes.submitRun(baseSummary(), { version: "1" });
   assert.equal(res.ok, false);
   assert.equal(res.reason, "refused");
   assert.equal(res.status, "PERMISSION_DENIED");
   assert.equal(fake.docs().length, 0);
+  assert.equal(commitCalls(fake).length, 1, "the name did not change, so there is no second create");
 });
 
 test("submitRun: a summary the JS mirror refuses resolves invalid with no :commit request", async () => {
   const { fake, writes } = makeSetup();
   const bad = baseSummary({ kills: 999999 }); // kills > steps fails the mirror
-  const before = commitCalls(fake).length;
   const res = await writes.submitRun(bad, { version: "1" });
   assert.equal(res.ok, false);
   assert.equal(res.reason, "invalid");
   assert.ok(Array.isArray(res.fails) && res.fails.includes("kills"));
-  assert.equal(commitCalls(fake).length, before);
+  assert.equal(commitCalls(fake).length, 0);
+});
+
+test("submitRun: a stale name is refused, re-claimed once, rebuilt with the current name and lands", async () => {
+  const setup = makeSetup();
+  const session = await setup.identity.boardSession();
+  assert.equal(session.name, PLAYER_NAME);
+  // The server's name moved on (another device renamed the player, or an admin override): the cached name is stale.
+  setup.fake.setOverride(session.uid, "Renamed Elsewhere");
+  setup.fake.setName(session.uid, "Renamed Elsewhere");
+
+  const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, "created");
+  assert.equal(setup.fake.docs().length, 1);
+  assert.equal(setup.fake.docs()[0].handle, "Renamed Elsewhere");
+  assert.equal(commitCalls(setup.fake).length, 2, "the refused create and the retry");
+  assert.equal((await setup.identity.snapshot()).name, "Renamed Elsewhere");
+});
+
+test("submitRun: a second refusal after the re-claim resolves refused (no loop)", async () => {
+  const setup = makeSetup();
+  const session = await setup.identity.boardSession();
+  setup.fake.setOverride(session.uid, "Renamed Elsewhere");
+  setup.fake.setName(session.uid, "Renamed Elsewhere");
+  setup.fake.ban(session.uid); // the retry is refused for another reason
+
+  const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
+  assert.equal(res.ok, false);
+  assert.equal(res.reason, "refused");
+  assert.equal(commitCalls(setup.fake).length, 2, "one retry, never more");
+  assert.equal(setup.fake.docs().length, 0);
 });
 
 test("submitRun: a 401 forces one forceRefresh and one retry, then resolves created", async () => {
   const setup = makeSetup({ fakeOpts: { tokenTtlMs: 100 } });
-  await setup.identity.getToken(); // sign up at t=0
-  setup.clock.set(150); // past the fake's own tokenTtlMs, well within the JWT's own margin
+  const session = await setup.identity.boardSession(); // link and claim at t=0
+  assert.equal(session.ok, true);
+  setup.clock.set(150); // past the fake's own tokenTtlMs, well within the client's margin
 
   const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
   assert.equal(res.ok, true);
@@ -263,15 +294,22 @@ test("submitRun: a 401 forces one forceRefresh and one retry, then resolves crea
 });
 
 test("submitRun: a second 401 (forceRefresh does not help) resolves reason auth", async () => {
-  const setup = makeSetup({ fakeOpts: { tokenTtlMs: -1 } }); // every token is immediately expired
-  const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
-  assert.equal(res.ok, false);
-  assert.equal(res.reason, "auth");
+  const setup = makeSetup();
+  const uid = "fakeuid000001";
+  const identity = {
+    boardSession: async () => ({ ok: true, uid, idToken: "not-a-real-token", name: PLAYER_NAME }),
+    forceRefresh: async () => ({ ok: true, uid, idToken: "still-not-real" }),
+    refreshName: async () => ({ ok: false, reason: "server" }),
+  };
+  const writes = createBoardWrites({ fetchFn: setup.fake.fetchFn, identity, config: setup.rig.config });
+  const res = await writes.submitRun(baseSummary(), { version: "1" });
+  assert.deepEqual(res, { ok: false, reason: "auth" });
+  assert.equal(commitCalls(setup.fake).length, 2);
 });
 
 test("submitRun: offline resolves offline", async () => {
   const setup = makeSetup();
-  await setup.identity.getToken(); // sign up while online
+  await setup.identity.boardSession(); // sign in while online
   setup.fake.setOnline(false);
   const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
   assert.equal(res.ok, false);
@@ -280,75 +318,27 @@ test("submitRun: offline resolves offline", async () => {
 
 test("submitRun: a stub 503 resolves server", async () => {
   const setup = makeSetup();
-  await setup.identity.getToken();
-  const real = setup.fake.fetchFn;
+  await setup.identity.boardSession();
   const stub503 = async (u, init) => {
     if (typeof u === "string" && u.includes(":commit")) {
       return { ok: false, status: 503, json: async () => ({ error: { code: 503, status: "UNAVAILABLE", message: "UNAVAILABLE" } }) };
     }
-    return real(u, init);
+    return setup.rig.fetchFn(u, init);
   };
-  const writes2 = createBoardWrites({ fetchFn: stub503, identity: setup.identity, config: VALID_CONFIG });
+  const writes2 = createBoardWrites({ fetchFn: stub503, identity: setup.identity, config: setup.rig.config });
   const res = await writes2.submitRun(baseSummary(), { version: "1" });
   assert.equal(res.ok, false);
   assert.equal(res.reason, "server");
 });
 
-test("submitRun: Compete OFF resolves off with zero requests", async () => {
-  const setup = makeSetup({ competeOn: false });
-  const before = setup.fake.calls().length;
-  const res = await setup.writes.submitRun(baseSummary(), { version: "1" });
-  assert.equal(res.ok, false);
-  assert.equal(res.reason, "off");
-  assert.equal(setup.fake.calls().length, before);
-});
-
 /* ================================================================
-   rewriteHandle
+   the rename path is gone (D-11)
    ================================================================ */
 
-test("rewriteHandle: with no uid yet resolves updated:0 with zero requests", async () => {
+test("D-11: there is no rewriteHandle; the writer's surface is submitRun and eraseMyRuns", () => {
   const setup = makeSetup();
-  const before = setup.fake.calls().length;
-  const res = await setup.writes.rewriteHandle(validHandle(0.9));
-  assert.deepEqual(res, { ok: true, updated: 0 });
-  assert.equal(setup.fake.calls().length, before);
-});
-
-test("rewriteHandle: an invalid handle resolves invalid with zero requests", async () => {
-  const setup = makeSetup();
-  const before = setup.fake.calls().length;
-  const res = await setup.writes.rewriteHandle("not-a-handle");
-  assert.equal(res.ok, false);
-  assert.equal(res.reason, "invalid");
-  assert.equal(setup.fake.calls().length, before);
-});
-
-test("rewriteHandle: updates exactly the player's 120 runs (paged, handle-only), leaves another player's 5", async () => {
-  const oldHandle = validHandle(0.1);
-  const newHandle = validHandle(0.77);
-  const mine = [];
-  for (let i = 0; i < 120; i++) mine.push(seedFor({ uid: "fakeuid000001", hash: hexHash(i + 1), handle: oldHandle, floor: 2 + (i % 10) }));
-  const theirs = [];
-  for (let i = 0; i < 5; i++) theirs.push(seedFor({ uid: "otheruid", hash: hexHash(1000 + i), handle: oldHandle, floor: 3 }));
-
-  const setup = makeSetup({ fakeOpts: { runs: [...mine, ...theirs] } });
-  await setup.identity.getToken(); // signs up as fakeuid000001 (the fake's fresh-instance first uid)
-
-  const res = await setup.writes.rewriteHandle(newHandle);
-  assert.equal(res.ok, true);
-  assert.equal(res.updated, 120);
-
-  const docs = setup.fake.docs();
-  const mineDocs = docs.filter((d) => d.uid === "fakeuid000001");
-  const theirDocs = docs.filter((d) => d.uid === "otheruid");
-  assert.equal(mineDocs.length, 120);
-  assert.ok(mineDocs.every((d) => d.handle === newHandle));
-  assert.equal(theirDocs.length, 5);
-  assert.ok(theirDocs.every((d) => d.handle === oldHandle));
-
-  const commits = commitCalls(setup.fake);
-  assert.ok(commits.length >= 3, "120 runs at 50/page needs at least 3 handle-update commits");
+  assert.deepEqual(Object.keys(setup.writes).sort(), ["eraseMyRuns", "submitRun"]);
+  assert.equal("rewriteHandle" in setup.writes, false);
 });
 
 /* ================================================================
@@ -361,14 +351,16 @@ test("eraseMyRuns: with no identity yet drops nothing but resolves ok with zero 
   assert.deepEqual(res, { ok: true, deleted: 0, dropped: true, accountDeleted: false });
 });
 
-test("eraseMyRuns: deletes all 120 of the player's runs, leaves the other player's 5, deletes the account, drops the identity", async () => {
+test("eraseMyRuns: deletes all 120 of the player's runs, leaves the other player's 5, releases the name, deletes the account, drops the identity", async () => {
   const mine = [];
   for (let i = 0; i < 120; i++) mine.push(seedFor({ uid: "fakeuid000001", hash: hexHash(i + 1) }));
   const theirs = [];
   for (let i = 0; i < 5; i++) theirs.push(seedFor({ uid: "otheruid", hash: hexHash(1000 + i) }));
 
   const setup = makeSetup({ fakeOpts: { runs: [...mine, ...theirs] } });
-  await setup.identity.getToken();
+  const session = await setup.identity.boardSession(); // fakeuid000001, claims the name
+  assert.equal(session.uid, "fakeuid000001");
+  assert.equal(setup.fake.names().length, 1);
 
   const res = await setup.writes.eraseMyRuns();
   assert.equal(res.ok, true);
@@ -380,7 +372,8 @@ test("eraseMyRuns: deletes all 120 of the player's runs, leaves the other player
   assert.equal(docs.filter((d) => d.uid === "fakeuid000001").length, 0);
   assert.equal(docs.filter((d) => d.uid === "otheruid").length, 5);
   assert.ok(!setup.fake.users().includes("fakeuid000001"));
-  assert.equal(setup.storage.map.has("ddr.identity.v1"), false);
+  assert.equal(setup.fake.names().length, 0, "the name record was released");
+  assert.equal(setup.storage.map.has(IDENTITY_KEY), false);
 });
 
 test("eraseMyRuns: a mid-way network failure resolves ok:false with the partial deleted count, and keeps the identity stored", async () => {
@@ -388,22 +381,21 @@ test("eraseMyRuns: a mid-way network failure resolves ok:false with the partial 
   for (let i = 0; i < 60; i++) mine.push(seedFor({ uid: "fakeuid000001", hash: hexHash(i + 1) }));
 
   const setup = makeSetup({ fakeOpts: { runs: mine } });
-  await setup.identity.getToken();
+  await setup.identity.boardSession();
 
   let callCount = 0;
-  const real = setup.fake.fetchFn;
   const wrapped = async (u, init) => {
     callCount += 1;
-    if (callCount === 4) setup.fake.setOnline(false); // after signUp(1)+query(2)+commit(3), fail the 2nd page's query
-    return real(u, init);
+    if (callCount === 4) setup.fake.setOnline(false); // query(1) commit(2) query(3) then the second commit fails
+    return setup.rig.fetchFn(u, init);
   };
-  const writes2 = createBoardWrites({ fetchFn: wrapped, identity: setup.identity, config: VALID_CONFIG });
+  const writes2 = createBoardWrites({ fetchFn: wrapped, identity: setup.identity, config: setup.rig.config });
 
   const res = await writes2.eraseMyRuns();
   assert.equal(res.ok, false);
   assert.equal(res.reason, "offline");
   assert.equal(res.deleted, 50);
-  assert.equal(setup.storage.map.has("ddr.identity.v1"), true);
+  assert.equal(setup.storage.map.has(IDENTITY_KEY), true);
 });
 
 /* ================================================================
@@ -419,7 +411,11 @@ test("purity: boardWrites.js never touches DOM globals and never calls the bare 
   assert.doesNotMatch(code, /(?<!\w)fetch\(/, "must never call the global fetch directly");
 });
 
-test("purity: exports createBoardWrites exactly once, and uses createRunCommit", () => {
+test("purity: exports createBoardWrites exactly once, uses createRunCommit and the session's name, and keeps no handle rewrite", () => {
   assert.equal((BOARD_WRITES_SRC.match(/export function createBoardWrites/g) || []).length, 1);
   assert.match(BOARD_WRITES_SRC, /createRunCommit/);
+  assert.match(BOARD_WRITES_SRC, /boardSession/);
+  assert.equal(BOARD_WRITES_SRC.includes("rewriteHandle"), false);
+  assert.equal(BOARD_WRITES_SRC.includes("handleUpdateCommit"), false);
+  assert.equal(BOARD_WRITES_SRC.includes("handles.js"), false);
 });

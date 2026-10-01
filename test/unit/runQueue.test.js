@@ -17,8 +17,7 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
-import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
-import { createIdentity } from "../../src/browser/firebaseAuth.js";
+import { makeBoardRig } from "./harness/boardHarness.js";
 import { createBoardWrites } from "../../src/browser/boardWrites.js";
 import {
   RUN_QUEUE_KEY,
@@ -35,7 +34,6 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const RUN_QUEUE_SRC = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "runQueue.js"), "utf8").replace(/\r\n/g, "\n");
 
-const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
 
 /* ---------------- helpers ---------------- */
 
@@ -116,21 +114,15 @@ function stubWrites(sequence) {
   };
 }
 
-function makeFullStack({ competeOn = true, online = true, fakeOpts = {} } = {}) {
+// The named flow (Phase 91.2): the shared rig is the fake server (final rules),
+// a signed-in fake Play Games player and the real identity; every run posts
+// under the player's verified name.
+function makeFullStack({ competeOn = true, fakeOpts = {} } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
-  const idStorage = makeStorage();
   let competing = competeOn;
-  const identity = createIdentity({
-    storage: idStorage,
-    fetchFn: fake.fetchFn,
-    config: VALID_CONFIG,
-    competeOn: () => competing,
-    now: clock,
-    random: () => 0.42,
-  });
-  const writes = createBoardWrites({ fetchFn: fake.fetchFn, identity, config: VALID_CONFIG });
-  return { clock, fake, identity, writes, setCompeting: (v) => (competing = v) };
+  const rig = makeBoardRig({ now: clock, fakeOpts, competeOn: () => competing });
+  const writes = createBoardWrites({ fetchFn: rig.fetchFn, identity: rig.identity, config: rig.config });
+  return { clock, fake: rig.fake, identity: rig.identity, writes, rig, setCompeting: (v) => (competing = v) };
 }
 
 /* ================================================================
@@ -361,8 +353,9 @@ test("flush: a refused entry (banned uid) is dropped with a log line, and the ne
   const log = makeLog();
   const queue = createRunQueue({ storage, writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock, log });
 
-  const token = await stack.identity.getToken();
-  stack.fake.ban(token.uid);
+  const session = await stack.identity.boardSession();
+  assert.equal(session.ok, true);
+  stack.fake.ban(session.uid);
 
   const a = baseSummary({ steps: 501 });
   const b = baseSummary({ steps: 502 });

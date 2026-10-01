@@ -63,7 +63,7 @@ import {
   buildRunDoc,
   validateRunDoc,
   createRunCommit,
-  handleUpdateCommit,
+  legacyHandleUpdateCommit,
   deleteCommit,
   boardFilters,
   topTenQuery,
@@ -453,9 +453,9 @@ test("createRunCommit: one Write — update (no createdAt) + updateTransforms + 
   assert.deepEqual(w.currentDocument, { exists: false });
 });
 
-test("handleUpdateCommit: one Write per id, updateMask [handle], currentDocument.exists:true", () => {
+test("legacyHandleUpdateCommit (transition-only, the 2.2.0 re-roll shape): one Write per id, updateMask [handle], currentDocument.exists:true", () => {
   const ids = ["u1_aaaa1111", "u1_bbbb2222"];
-  const commit = handleUpdateCommit(FIREBASE_CONFIG, ids, "@lanternjaw");
+  const commit = legacyHandleUpdateCommit(FIREBASE_CONFIG, ids, "@lanternjaw");
   assert.equal(commit.writes.length, 2);
   ids.forEach((id, i) => {
     const w = commit.writes[i];
@@ -634,4 +634,12 @@ test("purity: runDoc.js no longer imports the rolled-handle module", () => {
   assert.equal(/from\s+["']\.\/handles\.js["']/.test(raw), false);
   assert.equal(raw.includes("handles.js"), false, "not even in a comment");
   assert.ok(/from\s+["']\.\/boardName\.js["']/.test(raw));
+});
+
+test("D-11: the shipped client has no handle-only commit builder (only the transition-only legacy shape remains)", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "runDoc.js"), "utf8");
+  assert.equal(raw.includes("handleUpdateCommit"), false);
+  assert.ok(raw.includes("export function legacyHandleUpdateCommit"));
+  const writes = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "boardWrites.js"), "utf8");
+  assert.equal(/legacyHandleUpdateCommit|handleUpdateCommit/.test(writes), false, "boardWrites never builds a handle update");
 });

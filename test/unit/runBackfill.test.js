@@ -15,8 +15,7 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { SEASON } from "../../content/season.js";
 import { runHash, emptyBests, updateBests } from "../../engine/records.js";
-import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
-import { createIdentity } from "../../src/browser/firebaseAuth.js";
+import { makeBoardRig } from "./harness/boardHarness.js";
 import { createBoardWrites } from "../../src/browser/boardWrites.js";
 import { createRunQueue } from "../../src/browser/runQueue.js";
 import {
@@ -34,7 +33,6 @@ const RUN_BACKFILL_SRC = fs
   .readFileSync(path.join(REPO_ROOT, "src", "browser", "runBackfill.js"), "utf8")
   .replace(/\r\n/g, "\n");
 
-const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
 
 /* ---------------- helpers ---------------- */
 
@@ -103,21 +101,15 @@ function foldBests(summaries) {
   return rec;
 }
 
+// The named flow (Phase 91.2): the shared rig is the fake server (final rules),
+// a signed-in fake Play Games player and the real identity; every run posts
+// under the player's verified name.
 function makeFullStack({ competeOn = true } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock });
-  const idStorage = makeStorage();
   let competing = competeOn;
-  const identity = createIdentity({
-    storage: idStorage,
-    fetchFn: fake.fetchFn,
-    config: VALID_CONFIG,
-    competeOn: () => competing,
-    now: clock,
-    random: () => 0.42,
-  });
-  const writes = createBoardWrites({ fetchFn: fake.fetchFn, identity, config: VALID_CONFIG });
-  return { clock, fake, identity, writes, setCompeting: (v) => (competing = v) };
+  const rig = makeBoardRig({ now: clock, competeOn: () => competing });
+  const writes = createBoardWrites({ fetchFn: rig.fetchFn, identity: rig.identity, config: rig.config });
+  return { clock, fake: rig.fake, identity: rig.identity, writes, rig, setCompeting: (v) => (competing = v) };
 }
 
 /* ================================================================

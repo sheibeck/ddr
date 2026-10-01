@@ -411,8 +411,16 @@ export function createRunCommit(config, id, doc) {
   };
 }
 
-/** handleUpdateCommit(config, ids, handle) — one handle-only update Write per id. */
-export function handleUpdateCommit(config, ids, handle) {
+/**
+ * legacyHandleUpdateCommit(config, ids, handle) — the shipped 2.2.0 (vc12)
+ * re-roll's wire shape: one handle-only update Write per id (updateMask
+ * ["handle"], currentDocument.exists true). Transition-only, like
+ * legacyDeepKeyOf and isLegacyHandle: no shipped client builds it any more
+ * (Phase 91.2 D-11 removed the rewrite path); the fake server's transition
+ * mode and tools/boards-smoke.mjs --transition use it to play a 2.2.0 client.
+ * Delete it with the transition files at the 2.3 cutover.
+ */
+export function legacyHandleUpdateCommit(config, ids, handle) {
   const list = Array.isArray(ids) ? ids : [ids];
   return {
     writes: list.map((id) => ({

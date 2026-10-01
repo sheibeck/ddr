@@ -579,7 +579,7 @@ export function createFakeBoardFetch(opts = {}) {
 
   // --- :commit -------------------------------------------------------------
   //
-  // Multi-write commits: handleUpdateCommit and deleteCommit can each carry
+  // Multi-write commits: legacyHandleUpdateCommit and deleteCommit can each carry
   // N writes for the SAME collection (the "re-roll rewrites handle on all
   // of the player's existing runs" flow, CONTEXT "Identity & the @handle").
   // These are validated as a batch (every write must be individually valid)

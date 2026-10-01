@@ -1,53 +1,64 @@
 // src/browser/boardWrites.js
 //
 // Phase 83 (SRV-01, the client half of "each run stored once; resubmitting
-// never duplicates"). The board write client: submitRun (idempotent run
-// create), rewriteHandle (a handle re-roll rewritten onto every one of the
-// player's existing runs) and eraseMyRuns (owner delete-everything, then
-// drop the local identity). CONTEXT "The run document" / "Identity & the
-// @handle". Pure, DOM-free: no window/document/navigator/localStorage, no
-// bare global fetch — the network is reached only through the injected
-// fetchFn, and durable identity state lives entirely behind the injected
-// `identity` (src/browser/firebaseAuth.js#createIdentity, Phase 83-03).
+// never duplicates") + Phase 91.2 (BOARD-31, D-06, D-11). The board write
+// client: submitRun (idempotent run create under the player's verified Play
+// Games name) and eraseMyRuns (owner delete-everything, release the name,
+// drop the local identity). Pure, DOM-free: no window/document/navigator/
+// localStorage, no bare global fetch. The network is reached only through the
+// injected fetchFn, and durable identity state lives entirely behind the
+// injected `identity` (src/browser/firebaseAuth.js#createIdentity).
+//
+// THE NAME COMES FROM THE SESSION. submitRun asks identity.boardSession() for
+// { uid, idToken, name } and builds the run with that name as its handle. The
+// client never chooses a name: the session got it from the boardName function,
+// and the rules accept a create only when the handle equals names/{uid}.name.
+// There is no rename path and no handle-only commit any more (D-11): the
+// function stamps a changed name onto a player's runs itself. Without a Play
+// Games session the result is the session's own reason ("signin" when the
+// player is not signed in, "off" with Compete OFF) and nothing is requested
+// from Firestore, so the run queue simply holds the run (D-06).
+//
+// A STALE NAME. A name cached in the session can go stale (an admin override,
+// a rename the session has not seen yet): the create is then refused. After
+// the idempotence check below shows the refusal is genuine, submitRun asks
+// identity.refreshName() once; when that returns a different name the run is
+// rebuilt and retried exactly once. A second refusal is returned as refused, so
+// there is no loop.
 //
 // The idempotence argument (RESEARCH Pitfall 1 / Assumption A3): a run
 // create always carries the currentDocument.exists:false precondition
 // (runDoc.js#createRunCommit) on doc id `{uid}_{hash}`. The live project's
 // exact answer to "already there" is unverified until 83-08's live smoke
-// test — it could be a 400 FAILED_PRECONDITION, a 403 PERMISSION_DENIED or a
+// test: it could be a 400 FAILED_PRECONDITION, a 403 PERMISSION_DENIED or a
 // 409 ALREADY_EXISTS. classifyWrite() below treats all three the same way,
 // as "ambiguous", and submitRun resolves the ambiguity with exactly ONE
 // public GET (no Authorization) of runs/{id}: a 200 whose decoded uid
 // matches the caller's own uid means the run is already on the board
 // (acknowledged, status "exists"); a 404 means the create was genuinely
-// refused (the doc never landed — e.g. a banned uid) and the ORIGINAL
-// create response's error status is what the caller sees. This makes a
-// resubmit of the same run idempotent no matter which of the three answers
+// refused (the doc never landed, e.g. a banned uid or a wrong name) and the
+// ORIGINAL create response's error status is what the caller sees. This makes
+// a resubmit of the same run idempotent no matter which of the three answers
 // the live project actually returns.
 //
-// rewriteHandle rewrites `handle` on every one of the caller's own runs,
-// paged by runDoc.js#LIST_LIMIT_MAX (the rules' own list-read cap), using
-// handle-only commits (runDoc.js#handleUpdateCommit) — the rules allow the
-// owner to update ONLY the `handle` field of their own runs.
-//
-// eraseMyRuns deletes every one of the caller's own runs (paged the same
-// way, oldest page repeated since each delete round shrinks the set), then
-// deletes the anonymous account best-effort (so no orphaned anonymous
-// account remains — CONTEXT "Claude's Discretion"), then drops
-// ddr.identity.v1. A failure before that last drop leaves the identity
-// stored, so a retry can pick up where it left off.
+// eraseMyRuns deletes every one of the caller's own runs (paged by
+// runDoc.js#LIST_LIMIT_MAX, the rules' own list-read cap, oldest page repeated
+// since each delete round shrinks the set), then identity.deleteAccount()
+// releases the name through the function, deletes the account best-effort (so
+// no orphaned account remains) and the identity record is dropped. A failure
+// before that last drop leaves the identity stored, so a retry can pick up
+// where it left off.
 //
 // A 401 (or a REST UNAUTHENTICATED status) on any request forces exactly
 // one identity.forceRefresh() and one retry, shared across a whole
-// submitRun/rewriteHandle/eraseMyRuns call — never a second retry.
+// submitRun/eraseMyRuns call, never a second retry.
 
 import { FIREBASE_CONFIG } from "./firebaseConfig.js";
 import { firestoreUrl, timedFetch, readJson, restError } from "./firestoreRest.js";
-import { buildRunDoc, createRunCommit, handleUpdateCommit, deleteCommit, ownRunsQuery, RUN_COLLECTION, LIST_LIMIT_MAX } from "./runDoc.js";
+import { buildRunDoc, createRunCommit, deleteCommit, ownRunsQuery, RUN_COLLECTION } from "./runDoc.js";
 import { decodeRunDocument } from "./boardClient.js";
-import { isValidHandle } from "./handles.js";
 
-export const WRITE_REASONS = Object.freeze(["off", "offline", "server", "refused", "invalid", "auth", "unavailable"]);
+export const WRITE_REASONS = Object.freeze(["off", "offline", "server", "refused", "invalid", "auth", "unavailable", "signin"]);
 
 const ERASE_PAGE_GUARD = 200;
 
@@ -69,11 +80,10 @@ export function classifyWrite(status, json) {
 
 /**
  * nonCreateReason(status, json) — module-private: the failure result for a
- * non-create write (handle update, delete, own-runs query) whose response
- * classified as "ambiguous" or "refused" — both map to plain "refused" here,
- * since neither has a create's GET-settled idempotence meaning. "server"
- * passes through unchanged. Always carries the REST error's `.status` when
- * present.
+ * non-create write (delete, own-runs query) whose response classified as
+ * "ambiguous" or "refused" — both map to plain "refused" here, since neither
+ * has a create's GET-settled idempotence meaning. "server" passes through
+ * unchanged. Always carries the REST error's `.status` when present.
  */
 function nonCreateReason(status, json) {
   const cls = classifyWrite(status, json);
@@ -85,9 +95,9 @@ function nonCreateReason(status, json) {
 /**
  * createBoardWrites({ fetchFn, identity, config = FIREBASE_CONFIG,
  * timeoutMs, setTimer, clearTimer, AbortCtl }) — returns frozen
- * { submitRun, rewriteHandle, eraseMyRuns }. `identity` is the object
- * returned by src/browser/firebaseAuth.js#createIdentity (getToken,
- * forceRefresh, snapshot, deleteAccount, drop). Never throws.
+ * { submitRun, eraseMyRuns }. `identity` is the object returned by
+ * src/browser/firebaseAuth.js#createIdentity (boardSession, refreshName,
+ * getToken, forceRefresh, snapshot, deleteAccount, drop). Never throws.
  */
 export function createBoardWrites(opts = {}) {
   const { fetchFn, identity, config = FIREBASE_CONFIG, timeoutMs, setTimer, clearTimer, AbortCtl } = opts;
@@ -159,45 +169,59 @@ export function createBoardWrites(opts = {}) {
   }
 
   /**
-   * submitRun(summary, { version }) — see the module header for the full
-   * idempotence argument. Resolves { ok: true, status: "created" | "exists",
-   * id } or { ok: false, reason, ... }.
+   * submitRun(summary, { version }) — see the module header for the name and
+   * the idempotence argument. Resolves { ok: true, status: "created" |
+   * "exists", id } or { ok: false, reason, ... }.
    */
   async function submitRun(summary, opts2 = {}) {
     const { version } = opts2 && typeof opts2 === "object" ? opts2 : {};
-    const token = await identity.getToken();
-    if (!token.ok) return { ok: false, reason: token.reason };
-
-    const built = buildRunDoc(summary, { uid: token.uid, handle: token.handle, version });
-    if (!built.ok) return built;
+    const session = await identity.boardSession();
+    if (!session.ok) return { ok: false, reason: session.reason };
 
     const url = firestoreUrl(config, ":commit");
-    const commitBody = createRunCommit(config, built.id, built.doc);
-    const makeInit = (idToken) => bearerInit(commitBody, idToken);
-
-    let idToken = token.idToken;
-    let uid = token.uid;
-    let retried = false;
+    let idToken = session.idToken;
+    let uid = session.uid;
+    let name = session.name;
+    let authRetried = false;
+    let renamed = false;
 
     for (;;) {
-      const attempt = await request(url, makeInit(idToken));
+      const built = buildRunDoc(summary, { uid, handle: name, version });
+      if (!built.ok) return built;
+      const commitBody = createRunCommit(config, built.id, built.doc);
+
+      const attempt = await request(url, bearerInit(commitBody, idToken));
       if (attempt.kind === "offline") return { ok: false, reason: "offline" };
       if (attempt.ok) return { ok: true, status: "created", id: built.id };
 
       const cls = classifyWrite(attempt.status, attempt.json);
       if (cls === "auth") {
-        if (retried) return { ok: false, reason: "auth" };
+        if (authRetried) return { ok: false, reason: "auth" };
         const refreshed = await identity.forceRefresh();
         if (!refreshed.ok) return { ok: false, reason: refreshed.reason };
         idToken = refreshed.idToken;
         uid = refreshed.uid;
-        retried = true;
+        authRetried = true;
         continue;
       }
       if (cls === "server") return { ok: false, reason: "server" };
       if (cls === "ambiguous") {
         const { status: errStatus } = restError(attempt.json);
-        return resolveAmbiguousCreate(built.id, uid, errStatus);
+        const settled = await resolveAmbiguousCreate(built.id, uid, errStatus);
+        if (settled.ok === false && settled.reason === "refused" && !renamed) {
+          // A genuine refusal: the stored name may have gone stale. Claim again, and retry once if it moved.
+          renamed = true;
+          const fresh = await identity.refreshName();
+          if (fresh.ok && fresh.name !== name) {
+            const again = await identity.boardSession();
+            if (!again.ok) return { ok: false, reason: again.reason };
+            idToken = again.idToken;
+            uid = again.uid;
+            name = again.name;
+            continue;
+          }
+        }
+        return settled;
       }
       const { status: errStatus2 } = restError(attempt.json);
       return errStatus2 ? { ok: false, reason: "refused", status: errStatus2 } : { ok: false, reason: "refused" };
@@ -205,58 +229,11 @@ export function createBoardWrites(opts = {}) {
   }
 
   /**
-   * rewriteHandle(handle) — pages the caller's own runs (LIST_LIMIT_MAX at a
-   * time, ordered by document name) and POSTs a handle-only commit for the
-   * ids whose handle differs. Resolves { ok: true, updated } or
-   * { ok: false, reason, ... }.
-   */
-  async function rewriteHandle(handle) {
-    if (!isValidHandle(handle)) return { ok: false, reason: "invalid" };
-
-    const snap = await identity.snapshot();
-    if (!snap.uid) return { ok: true, updated: 0 };
-
-    const token = await identity.getToken();
-    if (!token.ok) return { ok: false, reason: token.reason };
-
-    const tokenBox = { idToken: token.idToken, uid: token.uid, retried: false };
-    const queryUrl = firestoreUrl(config, ":runQuery");
-    const commitUrl = firestoreUrl(config, ":commit");
-
-    let updated = 0;
-    let afterName = null;
-
-    for (;;) {
-      const queryBody = ownRunsQuery({ uid: snap.uid, afterName });
-      const makeQueryInit = (idToken) => bearerInit(queryBody, idToken);
-      const queryResult = await requestWithRetry(queryUrl, makeQueryInit, tokenBox);
-      if (!queryResult.ok) return queryResult;
-
-      const hits = Array.isArray(queryResult.json) ? queryResult.json : [];
-      const page = hits.filter((h) => h && h.document).map((h) => ({ name: h.document.name, doc: decodeRunDocument(h.document) }));
-      const ids = page.filter((p) => p.doc.handle !== handle).map((p) => p.doc.id);
-
-      if (ids.length > 0) {
-        const commitBody = handleUpdateCommit(config, ids, handle);
-        const makeCommitInit = (idToken) => bearerInit(commitBody, idToken);
-        const commitResult = await requestWithRetry(commitUrl, makeCommitInit, tokenBox);
-        if (!commitResult.ok) return commitResult;
-        updated += ids.length;
-      }
-
-      if (page.length < LIST_LIMIT_MAX) break;
-      afterName = page[page.length - 1].name;
-    }
-
-    return { ok: true, updated };
-  }
-
-  /**
    * eraseMyRuns() — deletes every one of the caller's own runs, then
-   * deletes the anonymous account best-effort, then drops ddr.identity.v1.
-   * Resolves { ok: true, deleted, dropped: true, accountDeleted } or, on a
-   * failure before the identity is dropped, { ok: false, reason, deleted }
-   * (the identity stays stored).
+   * releases the name and deletes the account (identity.deleteAccount, best
+   * effort), then drops the identity record. Resolves { ok: true, deleted,
+   * dropped: true, accountDeleted } or, on a failure before the identity is
+   * dropped, { ok: false, reason, deleted } (the identity stays stored).
    */
   async function eraseMyRuns() {
     const snap = await identity.snapshot();
@@ -299,5 +276,5 @@ export function createBoardWrites(opts = {}) {
     return { ok: true, deleted, dropped: true, accountDeleted };
   }
 
-  return Object.freeze({ submitRun, rewriteHandle, eraseMyRuns });
+  return Object.freeze({ submitRun, eraseMyRuns });
 }

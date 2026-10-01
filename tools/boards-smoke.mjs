@@ -95,7 +95,7 @@ import { firestoreUrl, restError, docName, toFirestoreFields } from "../src/brow
 import {
   buildRunDoc,
   createRunCommit,
-  handleUpdateCommit,
+  legacyHandleUpdateCommit,
   RUN_COLLECTION,
   RANK_FIELD,
   BOARD_STATS,
@@ -607,8 +607,8 @@ export async function runSmoke(opts = {}) {
       const token = await identity.getToken();
       if (!token.ok) return { pass: false, detail: { reason: token.reason } };
       const commitUrl = firestoreUrl(config, ":commit");
-      const reroll = await rawRequest(commitUrl, bearerInit(handleUpdateCommit(config, builtAId, LEGACY_REROLL_HANDLE), token.idToken));
-      const same = await rawRequest(commitUrl, bearerInit(handleUpdateCommit(config, builtAId, SMOKE_NAME), token.idToken));
+      const reroll = await rawRequest(commitUrl, bearerInit(legacyHandleUpdateCommit(config, builtAId, LEGACY_REROLL_HANDLE), token.idToken));
+      const same = await rawRequest(commitUrl, bearerInit(legacyHandleUpdateCommit(config, builtAId, SMOKE_NAME), token.idToken));
       const floorBody = {
         writes: [
           {
@@ -812,7 +812,7 @@ export async function runTransitionProbe(opts = {}) {
       if (!(out.res.status === 200 && keyOk)) return { pass: false, detail: { status: out.res.status, getStatus: out.check.status } };
 
       // the 2.2.0 re-roll: a handle-only update by the (still unnamed) owner
-      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(handleUpdateCommit(config, legacyRunId, LEGACY_REROLL_HANDLE), token.idToken));
+      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(legacyHandleUpdateCommit(config, legacyRunId, LEGACY_REROLL_HANDLE), token.idToken));
       const after = await getRun(legacyRunId);
       const afterDoc = after.status === 200 ? decodeRunDocument(after.json) : null;
       return {
@@ -855,7 +855,7 @@ export async function runTransitionProbe(opts = {}) {
       if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
       if (out.res.status === 200) state.createdIds.push(out.built.id);
       // and the legacy re-roll update of the earlier legacy run
-      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(handleUpdateCommit(config, legacyRunId, LEGACY_PROBE_HANDLE), token.idToken));
+      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(legacyHandleUpdateCommit(config, legacyRunId, LEGACY_PROBE_HANDLE), token.idToken));
       const after = await getRun(legacyRunId);
       const afterDoc = after.status === 200 ? decodeRunDocument(after.json) : null;
       const unchanged = !!afterDoc && afterDoc.handle === LEGACY_REROLL_HANDLE;
