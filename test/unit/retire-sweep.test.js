@@ -149,11 +149,12 @@ test("the retired module files and their test files do not exist", () => {
 const BOARD_SYNC_PATH = path.join(REPO_ROOT, "src", "browser", "boardSync.js");
 const ALLOWLISTED_LITERAL = "ddr.pgsqueue.v1";
 
-test("src/browser/boardSync.js contains the retired queue-key string exactly once, and RETIRED_KEYS is exactly that key", () => {
+test("src/browser/boardSync.js contains the retired queue-key string exactly once, and RETIRED_KEYS is exactly that key plus the 2.2 re-roll mark", () => {
   const content = readFileSync(BOARD_SYNC_PATH, "utf8");
   const count = content.split(ALLOWLISTED_LITERAL).length - 1;
   assert.equal(count, 1, `expected exactly one occurrence of ${JSON.stringify(ALLOWLISTED_LITERAL)} in boardSync.js, found ${count}`);
-  assert.deepEqual([...RETIRED_KEYS], [ALLOWLISTED_LITERAL]);
+  // Phase 91.2 D-11: the re-roll's pending-rewrite mark is dropped at boot too.
+  assert.deepEqual([...RETIRED_KEYS], [ALLOWLISTED_LITERAL, "ddr.handleRewrite.v1"]);
 });
 
 // ─── behavior: the raw sweep over shipped code ──────────────────────────────

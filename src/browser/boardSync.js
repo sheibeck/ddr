@@ -1,22 +1,22 @@
 // src/browser/boardSync.js
 //
-// Phase 85 (ACCT-04, ACCT-05, ACCT-06, RETIRE-03; 85-CONTEXT groups 1-3).
-// The board-side engine room the shell (85-04/85-05) only has to wire up:
-// death-time submission through the durable queue, flushing (with a
-// pending handle rewrite applied first), the offline re-roll retry, erase
-// that keeps the handle, the bounded one-time 2.1.0 backfill at boot, the
-// retired pre-2.2 submission-queue key drop (RETIRE-03), and the DEPTH-rank
-// placement report split into the live death and the rest.
+// Phase 85 (ACCT-04, ACCT-05, ACCT-06, RETIRE-03; 85-CONTEXT groups 1-3) +
+// Phase 91.2 (BOARD-31, D-06, D-11). The board-side engine room the shell
+// (85-04/85-05) only has to wire up: death-time submission through the
+// durable queue, flushing, erase, the bounded one-time 2.1.0 backfill at boot,
+// the retired-key drop (RETIRE-03), and the DEPTH-rank placement report split
+// into the live death and the rest.
+//
+// Phase 91.2 removed the rolled handle from this module (D-11): there is no
+// re-roll, no pending-rewrite mark and no handle kept across an erase. A run's
+// name is whatever the Play Games session verified (boardWrites.js asks
+// identity.boardSession()); the sign-in hold and the session methods land in
+// 91.2-06.
 //
 // Claude's-discretion choices from 85-CONTEXT / this plan's objective:
-// - the re-roll offline retry shape: a persisted pending-rewrite mark
-//   (HANDLE_REWRITE_KEY) cleared only when rewriteHandle succeeds on a
-//   Compete-ON flush; several offline re-rolls collapse into one rewrite
-//   carrying whatever handle is current at flush time.
-// - the handle survives erase (the API shape): identity.setHandle(handle)
-//   re-seeds the dropped record with the OLD handle and no uid, so the
-//   next Compete-ON run signs up a new account under the SAME handle
-//   (user choice, 85-CONTEXT group 3).
+// - erase drops the whole identity (runs, name record, account, local
+//   record) and re-seeds nothing: the next Compete-ON run signs in to Play
+//   Games again and claims the player's name afresh.
 // - unsent runs at erase: the queue is purged only AFTER a successful
 //   erase, so no run of the erased account posts moments later under the
 //   new account; a failed erase changes nothing.
@@ -49,15 +49,13 @@ import { runBackfill, preReleaseHashes, BACKFILL_KEY } from "./runBackfill.js";
 import { deepKeyOf } from "./runDoc.js";
 
 /**
- * RETIRED_KEYS — the one retired pre-2.2 submission-queue storage key
- * (RETIRE-03), dropped silently at every boot regardless of Compete. This
- * is the only place its literal string appears in shipped code (85-06's
- * RETIRE-02 sweep allowlists exactly this one occurrence in this file).
+ * RETIRED_KEYS — the retired storage keys, dropped silently at every boot
+ * regardless of Compete: the pre-2.2 submission queue (RETIRE-03; 85-06's
+ * RETIRE-02 sweep allowlists exactly that one occurrence in this file) and
+ * the 2.2 re-roll's pending-rewrite mark (D-11: nothing writes or reads it any
+ * more).
  */
-export const RETIRED_KEYS = Object.freeze(["ddr.pgsqueue.v1"]);
-
-/** HANDLE_REWRITE_KEY — the persisted pending-rewrite mark a re-roll leaves until a Compete-ON flush rewrites it onto every one of the player's board runs. */
-export const HANDLE_REWRITE_KEY = "ddr.handleRewrite.v1";
+export const RETIRED_KEYS = Object.freeze(["ddr.pgsqueue.v1", "ddr.handleRewrite.v1"]);
 
 function safeCall(fn, ...args) {
   if (typeof fn !== "function") return;
@@ -77,7 +75,7 @@ function isPlainObject(v) {
  * createBoardSync({ storage, fetchFn, identity, client, config, competeOn,
  * online = () => true, version = () => "dev", liveHash = () => null,
  * onAcked, onPlacement, onChange, now = Date.now, log }) — returns frozen
- * { boot, record, flush, purge, reroll, erase, waitForPending }.
+ * { boot, record, flush, purge, erase, waitForPending }.
  * `identity` is src/browser/firebaseAuth.js#createIdentity's return value;
  * `client` is src/browser/boardClient.js#createBoardClient's return value
  * (only rankOf/total/clear are called). Never throws.
@@ -112,7 +110,7 @@ export function createBoardSync(opts = {}) {
   }
 
   // trackedWrite(run) — every storage write this module itself starts
-  // (the rewrite mark, the retired keys, the skipped-backfill marker) is
+  // (the retired keys, the skipped-backfill marker) is
   // registered here so waitForPending() can await it alongside the
   // queue's own tracked writes.
   function trackedWrite(run) {
@@ -244,22 +242,11 @@ export function createBoardSync(opts = {}) {
     }
   }
 
-  // --- flush (coalesced + serialized, with the pending handle rewrite) --
+  // --- flush (coalesced + serialized) -------------------------------------
 
   async function runFlushOnce(flushOpts) {
     try {
       if (!gate()) return { ok: false, reason: "off" };
-
-      const markRaw = await storage.getItem(HANDLE_REWRITE_KEY);
-      if (typeof markRaw === "string") {
-        const snap = await identity.snapshot();
-        if (snap && snap.handle) {
-          const rw = await writes.rewriteHandle(snap.handle);
-          if (rw && rw.ok === true) {
-            await trackedWrite(() => storage.removeItem(HANDLE_REWRITE_KEY));
-          }
-        }
-      }
 
       const res = await queue.flush(flushOpts);
       await settleAcks();
@@ -295,21 +282,6 @@ export function createBoardSync(opts = {}) {
     }
   }
 
-  // --- reroll --------------------------------------------------------------
-
-  async function reroll() {
-    try {
-      const res = await identity.rerollHandle();
-      await trackedWrite(() => storage.setItem(HANDLE_REWRITE_KEY, "1"));
-      if (gate()) {
-        flush({}); // not awaited by the returned handle
-      }
-      return res;
-    } catch {
-      return { handle: null, previous: null };
-    }
-  }
-
   // --- erase -----------------------------------------------------------
 
   async function erase() {
@@ -324,18 +296,11 @@ export function createBoardSync(opts = {}) {
         }
       }
 
-      const snap = await identity.snapshot();
-      const rememberedHandle = snap && snap.handle;
-
+      // Deletes the runs, releases the name, deletes the account and drops the
+      // identity record (boardWrites.eraseMyRuns); nothing is re-seeded.
       const res = await writes.eraseMyRuns();
       if (res && res.ok === true) {
-        if (rememberedHandle) {
-          await identity.setHandle(rememberedHandle);
-        } else {
-          await identity.ensureHandle();
-        }
         await queue.purge();
-        await trackedWrite(() => storage.removeItem(HANDLE_REWRITE_KEY));
         if (client && typeof client.clear === "function") {
           try {
             client.clear();
@@ -428,5 +393,5 @@ export function createBoardSync(opts = {}) {
     }
   }
 
-  return Object.freeze({ boot, record, flush, purge, reroll, erase, waitForPending });
+  return Object.freeze({ boot, record, flush, purge, erase, waitForPending });
 }

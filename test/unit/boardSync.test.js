@@ -1,11 +1,13 @@
 // test/unit/boardSync.test.js
 //
-// Phase 85 Plan 02 Task 2. End-to-end proof of createBoardSync against
-// src/browser/fakeBoardServer.js, a real createIdentity (83-03) and a real
-// createBoardClient (83-04): death-time submission, flush (coalesced,
-// serialized, with the pending handle rewrite applied first), the offline
-// re-roll retry, erase-keeps-the-handle, boot's retired-key drop and
-// bounded backfill, placement reports, and waitForPending.
+// Phase 85 Plan 02 Task 2, moved to the named flow by Phase 91.2 Plan 05.
+// End-to-end proof of createBoardSync on the shared rig
+// (test/unit/harness/boardHarness.js: the fake board server under the FINAL
+// rules, a fake Play Games player, the real identity) plus a real
+// createBoardClient: death-time submission under the verified name, flush
+// (coalesced, serialized), erase (runs, name, account, queue; nothing
+// re-seeded), boot's retired-key drops and bounded backfill, placement
+// reports, and waitForPending. There is no re-roll any more (D-11).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,37 +18,22 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
-import { rollHandle, isValidHandle } from "../../src/browser/handles.js";
 import { RUN_CLIENT_FIELDS, rankKeys, runDocId } from "../../src/browser/runDoc.js";
-import { createFakeBoardFetch } from "../../src/browser/fakeBoardServer.js";
-import { createIdentity } from "../../src/browser/firebaseAuth.js";
+import { IDENTITY_KEY } from "../../src/browser/firebaseAuth.js";
 import { createBoardClient } from "../../src/browser/boardClient.js";
 import { BACKFILL_SINCE_MS } from "../../src/browser/runBackfill.js";
-import { RETIRED_KEYS, HANDLE_REWRITE_KEY, createBoardSync } from "../../src/browser/boardSync.js";
+import * as boardSyncModule from "../../src/browser/boardSync.js";
+import { makeBoardRig, makeMemoryStorage } from "./harness/boardHarness.js";
+
+const { RETIRED_KEYS, createBoardSync } = boardSyncModule;
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const BOARD_SYNC_SRC = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "boardSync.js"), "utf8").replace(/\r\n/g, "\n");
 
-const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
+const PLAYER_NAME = "Dev Delver"; // the fake Play Games player's default name
 
 /* ---------------- helpers ---------------- */
-
-function makeStorage() {
-  const map = new Map();
-  return {
-    map,
-    async getItem(key) {
-      return map.has(key) ? map.get(key) : null;
-    },
-    async setItem(key, value) {
-      map.set(key, String(value));
-    },
-    async removeItem(key) {
-      map.delete(key);
-    },
-  };
-}
 
 function clockBox(start = BACKFILL_SINCE_MS + 500000) {
   let t = start;
@@ -86,14 +73,10 @@ function baseSummary(overrides = {}) {
   return s;
 }
 
-function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
-}
-
 function docFor(overrides = {}) {
   const merged = {
     uid: "fakeuid000001",
-    handle: validHandle(0.15),
+    handle: PLAYER_NAME,
     season: SEASON,
     name: "Hero",
     race: "Human",
@@ -111,7 +94,7 @@ function docFor(overrides = {}) {
     epitaph: "",
     when: 1000,
     hash: "00000001",
-    version: "2.2.0 (12)",
+    version: "2.3.0 (13)",
     seed: 1,
     acts: 10,
     ...overrides,
@@ -145,42 +128,46 @@ function wrapAfterNCalls(fn, n) {
   };
 }
 
+/** A sync-side storage that also lists every key it was asked to read. */
+function makeSyncStorage() {
+  const store = makeMemoryStorage();
+  const reads = [];
+  const inner = store.getItem;
+  store.getItem = async (key) => {
+    reads.push(key);
+    return inner(key);
+  };
+  store.reads = reads;
+  return store;
+}
+
 /**
- * makeStack({competeOn, online, fakeOpts, version, liveHash}) — builds a
- * fake board, a real identity, a real client and a boardSync all sharing
- * one storage/fetchFn/config, mirroring the shell's own wiring.
+ * makeStack({competeOn, online, fakeOpts, version, liveHash}) — the shared rig
+ * (fake board in final mode, a signed-in fake player, the real identity), a
+ * real client and a boardSync, all on one clock, mirroring the shell's wiring.
  */
 function makeStack({
   competeOn = true,
   online = true,
   fakeOpts = {},
-  version = () => "2.2.0 (12)",
+  play = {},
+  version = () => "2.3.0 (13)",
   liveHash = () => null,
 } = {}) {
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
-  const idStorage = makeStorage();
-  const syncStorage = makeStorage();
   let competing = competeOn;
   let onlineFlag = online;
-
-  const identity = createIdentity({
-    storage: idStorage,
-    fetchFn: fake.fetchFn,
-    config: VALID_CONFIG,
-    competeOn: () => competing,
-    now: clock,
-    random: () => 0.42,
-  });
-  const client = createBoardClient({ fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => competing, now: clock });
+  const rig = makeBoardRig({ now: clock, fakeOpts, play, competeOn: () => competing });
+  const syncStorage = makeSyncStorage();
+  const client = createBoardClient({ fetchFn: rig.fetchFn, config: rig.config, competeOn: () => competing, now: clock });
 
   const calls = { onAcked: [], onPlacement: [], onChange: 0 };
   const sync = createBoardSync({
     storage: syncStorage,
-    fetchFn: fake.fetchFn,
-    identity,
+    fetchFn: rig.fetchFn,
+    identity: rig.identity,
     client,
-    config: VALID_CONFIG,
+    config: rig.config,
     competeOn: () => competing,
     online: () => onlineFlag,
     version,
@@ -195,12 +182,13 @@ function makeStack({
 
   return {
     clock,
-    fake,
-    identity,
+    rig,
+    fake: rig.fake,
+    identity: rig.identity,
     client,
     sync,
     storage: syncStorage,
-    idStorage,
+    idStorage: rig.storage,
     calls,
     setCompeting: (v) => {
       competing = v;
@@ -215,34 +203,34 @@ function makeStack({
    constants
    ================================================================ */
 
-test("constants: RETIRED_KEYS holds exactly one retired key; HANDLE_REWRITE_KEY", () => {
-  assert.deepEqual(RETIRED_KEYS, ["ddr.pgsqueue.v1"]);
+test("constants: RETIRED_KEYS is exactly the pre-2.2 queue key and the 2.2 re-roll mark (D-11)", () => {
+  assert.deepEqual(RETIRED_KEYS, ["ddr.pgsqueue.v1", "ddr.handleRewrite.v1"]);
   assert.ok(Object.isFrozen(RETIRED_KEYS));
-  assert.equal(HANDLE_REWRITE_KEY, "ddr.handleRewrite.v1");
+  assert.equal("HANDLE_REWRITE_KEY" in boardSyncModule, false, "the rewrite-mark constant is gone");
 });
 
-test("createBoardSync returns a frozen API", () => {
+test("createBoardSync returns a frozen API with no reroll", () => {
   const stack = makeStack();
   const api = stack.sync;
   assert.ok(Object.isFrozen(api));
-  assert.deepEqual(Object.keys(api).sort(), ["boot", "erase", "flush", "purge", "record", "reroll", "waitForPending"].sort());
+  assert.deepEqual(Object.keys(api).sort(), ["boot", "erase", "flush", "purge", "record", "waitForPending"].sort());
 });
 
 /* ================================================================
    record()
    ================================================================ */
 
-test("record: Compete ON queues, submits, acks once, and reports a live placement", async () => {
+test("record: Compete ON queues, submits under the verified name, acks once, and reports a live placement", async () => {
   const s = baseSummary();
-  const stack = makeStack({ liveHash: () => s.hash });
+  const stack = makeStack({ liveHash: () => s.hash, play: { playerId: "p-ann", displayName: "Ann the Bold" } });
   const res = await stack.sync.record(s);
   assert.equal(res.ok, true);
 
   const docs = stack.fake.docs();
   assert.equal(docs.length, 1);
   assert.equal(docs[0].hash, s.hash);
-  assert.equal(docs[0].version, "2.2.0 (12)");
-  assert.ok(isValidHandle(docs[0].handle));
+  assert.equal(docs[0].version, "2.3.0 (13)");
+  assert.equal(docs[0].handle, "Ann the Bold");
 
   assert.deepEqual(stack.calls.onAcked, [1]);
   assert.equal(stack.calls.onPlacement.length, 1);
@@ -260,9 +248,22 @@ test("record: Compete OFF makes zero calls, stores nothing, fires no callback", 
   assert.equal(res.ok, false);
   assert.equal(res.reason, "off");
   assert.equal(stack.fake.calls().length, before);
+  assert.equal(stack.rig.play.calls().length, 0);
   assert.equal(stack.storage.map.has("ddr.runQueue.v1"), false);
   assert.equal(stack.calls.onAcked.length, 0);
   assert.equal(stack.calls.onPlacement.length, 0);
+});
+
+test("record: a player who is not signed in to Play Games posts nothing and keeps the run queued", async () => {
+  const s = baseSummary();
+  const stack = makeStack({ play: { signedIn: false, interactive: false } });
+  const res = await stack.sync.record(s);
+  assert.equal(res.ok, true);
+  assert.equal(res.queued, true);
+  assert.equal(stack.fake.docs().length, 0);
+  assert.equal(stack.calls.onAcked.length, 0);
+  const stored = JSON.parse(stack.storage.map.get("ddr.runQueue.v1"));
+  assert.equal(stored.entries.length, 1, "the run waits in the queue");
 });
 
 test("record: offline stays queued with no ack; a later forced flush submits it and reports it in `rest`", async () => {
@@ -311,9 +312,7 @@ test("flush: two runs acknowledged together report rest.count 2 with the deeper 
 test("settleAcks: a failed rank read reports null; onPlacement never fires when both parts are null", async () => {
   const s = baseSummary();
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock });
-  const idStorage = makeStorage();
-  const identity = createIdentity({ storage: idStorage, fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => true, now: clock, random: () => 0.42 });
+  const rig = makeBoardRig({ now: clock });
   const failingClient = {
     rankOf: async () => ({ ok: false, reason: "offline" }),
     total: async () => ({ ok: false, reason: "offline" }),
@@ -322,14 +321,14 @@ test("settleAcks: a failed rank read reports null; onPlacement never fires when 
   let acked = 0;
   let placementCalls = 0;
   const sync = createBoardSync({
-    storage: makeStorage(),
-    fetchFn: fake.fetchFn,
-    identity,
+    storage: makeMemoryStorage(),
+    fetchFn: rig.fetchFn,
+    identity: rig.identity,
     client: failingClient,
-    config: VALID_CONFIG,
+    config: rig.config,
     competeOn: () => true,
     online: () => true,
-    version: () => "2.2.0 (12)",
+    version: () => "2.3.0 (13)",
     liveHash: () => s.hash,
     now: clock,
     onAcked: () => {
@@ -358,86 +357,31 @@ test("flush: Compete OFF makes zero calls", async () => {
   assert.equal(stack.fake.calls().length, before);
 });
 
-test("flush: coalesced and serialized — three concurrent calls apply a pending handle rewrite at most once", async () => {
-  const stack = makeStack();
-  const s = baseSummary();
-  await stack.sync.record(s);
-  assert.equal(stack.fake.docs().length, 1);
+test("flush: coalesced and serialized: three concurrent calls post each queued run once", async () => {
+  const stack = makeStack({ online: false });
+  await stack.sync.record(baseSummary({ steps: 501 }));
+  await stack.sync.record(baseSummary({ steps: 502 }));
+  assert.equal(stack.fake.docs().length, 0);
 
-  // Change the handle directly (bypassing boardSync.reroll()'s own
-  // fire-and-forget flush) so there is something for the rewrite to do,
-  // then set the pending mark by hand.
-  await stack.identity.rerollHandle();
-  await stack.storage.setItem(HANDLE_REWRITE_KEY, "1");
+  stack.setOnline(true);
   const before = commitCalls(stack.fake).length;
-
-  const results = await Promise.all([stack.sync.flush({}), stack.sync.flush({}), stack.sync.flush({})]);
+  const results = await Promise.all([stack.sync.flush({ force: true }), stack.sync.flush({ force: true }), stack.sync.flush({ force: true })]);
   for (const r of results) assert.equal(r.ok, true);
 
-  const after = commitCalls(stack.fake).length;
-  assert.equal(after - before, 1, "exactly one rewrite commit, never three");
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), false);
+  assert.equal(stack.fake.docs().length, 2);
+  assert.equal(commitCalls(stack.fake).length - before, 2, "one create per run, never one per flush call");
 });
 
-/* ================================================================
-   reroll()
-   ================================================================ */
-
-test("reroll: with Compete OFF resolves {handle, previous}, makes zero fetch calls, and stores the rewrite mark", async () => {
-  const stack = makeStack({ competeOn: false });
-  const before = stack.fake.calls().length;
-  const res = await stack.sync.reroll();
-  assert.ok(isValidHandle(res.handle));
-  assert.notEqual(res.handle, res.previous);
-  assert.equal(stack.fake.calls().length, before);
-  await stack.sync.waitForPending();
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), true);
-});
-
-test("reroll: rewrites the handle on every one of the player's board runs, leaves another player's untouched, and clears the mark", async () => {
-  const otherRun = seedFor({ uid: "otheruid", hash: "0000ff01", handle: validHandle(0.11) });
-  const stack = makeStack({ fakeOpts: { runs: [otherRun] } });
-
-  const a = baseSummary({ steps: 501 });
-  const b = baseSummary({ steps: 502 });
-  await stack.sync.record(a);
-  await stack.sync.record(b);
-  assert.equal(stack.fake.docs().length, 3);
-
-  const before = await stack.identity.snapshot();
-  const oldHandle = before.handle;
-
-  const rerollRes = await stack.sync.reroll();
-  assert.notEqual(rerollRes.handle, oldHandle);
-  await stack.sync.waitForPending();
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), true);
-
-  const flushRes = await stack.sync.flush({ force: true });
-  assert.equal(flushRes.ok, true);
-
-  const docs = stack.fake.docs();
-  const mine = docs.filter((d) => d.uid !== "otheruid");
-  const theirs = docs.filter((d) => d.uid === "otheruid");
-  assert.equal(mine.length, 2);
-  assert.ok(mine.every((d) => d.handle === rerollRes.handle));
-  assert.equal(theirs.length, 1);
-  assert.equal(theirs[0].handle, otherRun.doc.handle);
-
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), false);
-});
-
-test("reroll: a rewrite attempt that fails offline keeps the mark", async () => {
+test("flush: no longer reads or writes any rewrite mark (D-11)", async () => {
   const stack = makeStack();
-  const s = baseSummary();
-  await stack.sync.record(s);
+  await stack.sync.record(baseSummary());
+  await stack.storage.setItem("ddr.handleRewrite.v1", "1");
+  stack.storage.reads.length = 0;
 
-  await stack.sync.reroll();
-  await stack.sync.waitForPending();
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), true);
-
-  stack.fake.setOnline(false);
-  await stack.sync.flush({ force: true });
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), true, "the mark survives a failed rewrite attempt");
+  const res = await stack.sync.flush({ force: true });
+  assert.equal(res.ok, true);
+  assert.equal(stack.storage.reads.includes("ddr.handleRewrite.v1"), false, "flush never looks at the mark");
+  assert.equal(stack.storage.map.get("ddr.handleRewrite.v1"), "1", "and never clears it");
 });
 
 /* ================================================================
@@ -452,7 +396,7 @@ test("erase: Compete OFF resolves {ok:false, reason:'off'} with zero calls", asy
   assert.equal(stack.fake.calls().length, before);
 });
 
-test("erase: deletes every board run, keeps the SAME handle with uid null, purges the queue, clears the mark, fires onChange, and a later record() posts under a NEW uid with the SAME handle", async () => {
+test("erase: deletes every board run, releases the name, deletes the account, purges the queue, re-seeds nothing, fires onChange; a later record() signs in afresh", async () => {
   const stack = makeStack();
   const a = baseSummary({ steps: 501 });
   const b = baseSummary({ steps: 502 });
@@ -461,33 +405,32 @@ test("erase: deletes every board run, keeps the SAME handle with uid null, purge
   await stack.sync.record(b);
   await stack.sync.record(c);
   assert.equal(stack.fake.docs().length, 3);
+  assert.equal(stack.fake.names().length, 1);
 
-  const beforeSnap = await stack.identity.snapshot();
-  const oldUid = beforeSnap.uid;
-  const oldHandle = beforeSnap.handle;
+  const oldUid = (await stack.identity.snapshot()).uid;
 
   const res = await stack.sync.erase();
   assert.equal(res.ok, true);
   assert.equal(res.deleted, 3);
   assert.equal(stack.fake.docs().length, 0);
+  assert.equal(stack.fake.names().length, 0, "the name record is released");
+  assert.ok(!stack.fake.users().includes(oldUid), "the account is deleted");
 
-  const afterSnap = await stack.identity.snapshot();
-  assert.equal(afterSnap.handle, oldHandle);
-  assert.equal(afterSnap.uid, null);
+  assert.deepEqual({ ...(await stack.identity.snapshot()) }, { uid: null, name: null, linked: false, playerId: null }, "nothing is re-seeded");
+  assert.equal(stack.idStorage.map.has(IDENTITY_KEY), false);
 
   assert.ok(stack.calls.onChange > 0);
 
   const queueRaw = stack.storage.map.get("ddr.runQueue.v1");
   const queueSnap = queueRaw ? JSON.parse(queueRaw) : null;
   assert.ok(queueSnap === null || queueSnap.entries.length === 0);
-  assert.equal(stack.storage.map.has(HANDLE_REWRITE_KEY), false);
 
   const d = baseSummary({ steps: 504 });
   await stack.sync.record(d);
   assert.equal(stack.fake.docs().length, 1);
   const doc = stack.fake.docs()[0];
-  assert.notEqual(doc.uid, oldUid);
-  assert.equal(doc.handle, oldHandle);
+  assert.notEqual(doc.uid, oldUid, "a new account");
+  assert.equal(doc.handle, PLAYER_NAME, "claimed afresh from Play Games");
 });
 
 test("erase: never touches ddr.runs.v1, ddr.graveyard.v1 or ddr.bests.v1", async () => {
@@ -504,25 +447,24 @@ test("erase: never touches ddr.runs.v1, ddr.graveyard.v1 or ddr.bests.v1", async
   assert.equal(stack.storage.map.get("ddr.bests.v1"), "unchanged-bests");
 });
 
-test("erase: a mid-way network failure resolves {ok:false, reason:'offline', deleted}, leaving the identity uid and queue untouched", async () => {
+test("erase: a mid-way network failure resolves {ok:false, reason:'offline', deleted}, leaving the identity, the name and the queue untouched", async () => {
   const mine = [];
   for (let i = 0; i < 60; i++) mine.push(seedFor({ uid: "fakeuid000001", hash: hexHash(i + 1) }));
   const clock = clockBox();
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, runs: mine });
-  const idStorage = makeStorage();
-  const identity = createIdentity({ storage: idStorage, fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => true, now: clock, random: () => 0.42 });
-  await identity.getToken(); // signs up as fakeuid000001, caches the token — not counted below
+  const rig = makeBoardRig({ now: clock, fakeOpts: { runs: mine } });
+  const session = await rig.identity.boardSession(); // signs in as fakeuid000001 and claims; not counted below
+  assert.equal(session.uid, "fakeuid000001");
 
-  const client = createBoardClient({ fetchFn: fake.fetchFn, config: VALID_CONFIG, competeOn: () => true, now: clock });
-  const syncStorage = makeStorage();
-  const wrappedFetch = wrapAfterNCalls(fake.fetchFn, 2); // the query + the first page's delete commit
+  const client = createBoardClient({ fetchFn: rig.fetchFn, config: rig.config, competeOn: () => true, now: clock });
+  const syncStorage = makeMemoryStorage();
+  const wrappedFetch = wrapAfterNCalls(rig.fetchFn, 2); // the query + the first page's delete commit
 
   const sync = createBoardSync({
     storage: syncStorage,
     fetchFn: wrappedFetch,
-    identity,
+    identity: rig.identity,
     client,
-    config: VALID_CONFIG,
+    config: rig.config,
     competeOn: () => true,
     online: () => true,
     now: clock,
@@ -533,9 +475,9 @@ test("erase: a mid-way network failure resolves {ok:false, reason:'offline', del
   assert.equal(res.reason, "offline");
   assert.equal(res.deleted, 50);
 
-  assert.equal(idStorage.map.has("ddr.identity.v1"), true);
-  const snap = await identity.snapshot();
-  assert.equal(snap.uid, "fakeuid000001");
+  assert.equal(rig.storage.map.has(IDENTITY_KEY), true);
+  assert.equal((await rig.identity.snapshot()).uid, "fakeuid000001");
+  assert.equal(rig.fake.names().length, 1, "the name is released only with the account");
 });
 
 test("record: a call started while erase() is running is refused (the gate reads the erasing flag)", async () => {
@@ -557,14 +499,14 @@ test("record: a call started while erase() is running is refused (the gate reads
    boot()
    ================================================================ */
 
-test("boot: removes RETIRED_KEYS silently (Compete ON and OFF), zero fetch calls with OFF", async () => {
+test("boot: removes every RETIRED_KEYS entry silently (Compete ON and OFF), zero fetch calls with OFF", async () => {
   for (const competeOn of [true, false]) {
     const stack = makeStack({ competeOn });
-    await stack.storage.setItem("ddr.pgsqueue.v1", "leftover");
+    for (const key of RETIRED_KEYS) await stack.storage.setItem(key, "leftover");
     const before = stack.fake.calls().length;
     const res = await stack.sync.boot({ history: [] });
     assert.equal(res.ok, true);
-    assert.equal(stack.storage.map.has("ddr.pgsqueue.v1"), false);
+    for (const key of RETIRED_KEYS) assert.equal(stack.storage.map.has(key), false, `${key} is dropped`);
     if (!competeOn) assert.equal(stack.fake.calls().length, before);
   }
 });
@@ -597,6 +539,7 @@ test("boot: bounds the backfill to the local history's pre-2.2 imports and flush
   assert.equal(docs.length, 1);
   assert.equal(docs[0].hash, legacy.hash);
   assert.equal(docs[0].version, "2.1.0 (11)");
+  assert.equal(docs[0].handle, PLAYER_NAME, "the backfilled run carries the verified name too");
 });
 
 test("boot: a first launch with Compete OFF marks the backfill done-as-skipped; a later Compete-ON boot uploads nothing from it", async () => {
@@ -648,9 +591,12 @@ test("purity: boardSync.js never touches DOM globals and never calls the bare gl
   assert.doesNotMatch(code, /(?<!\w)fetch\(/, "must never call the global fetch directly");
 });
 
-test("purity: exports createBoardSync exactly once; RETIRED_KEYS holds exactly the one retired key literal", () => {
+test("purity: exports createBoardSync exactly once; the retired-key literals appear once each; no handle or re-roll code is left", () => {
   assert.equal((BOARD_SYNC_SRC.match(/export function createBoardSync/g) || []).length, 1);
   assert.equal((BOARD_SYNC_SRC.match(/ddr\.pgsqueue\.v1/g) || []).length, 1);
-  assert.ok((BOARD_SYNC_SRC.match(/setHandle/g) || []).length >= 1);
+  assert.equal((BOARD_SYNC_SRC.match(/ddr\.handleRewrite\.v1/g) || []).length, 1);
   assert.ok((BOARD_SYNC_SRC.match(/preReleaseHashes\(/g) || []).length >= 1);
+  for (const gone of ["reroll", "HANDLE_REWRITE_KEY", "setHandle", "ensureHandle", "rewriteHandle", "handles.js"]) {
+    assert.equal(BOARD_SYNC_SRC.includes(gone), false, `${gone} is gone from boardSync.js`);
+  }
 });
