@@ -7550,3 +7550,49 @@ added matching lines are "Pure; no rng." doc comments, the d8, d8 and d20 telepo
 
 **Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a Bard bot now casts a real
 spell every fight, so its death depth and experience curves shift; none of the eight pinned runs is a Bard.
+
+### Phase 91 plan 07: Joiner Bards sing (IDENT-17)
+
+Measured against the plan base `baab91a2` (an extracted tree of that commit, the same scenes run on both trees), then
+declared. A Joiner Bard's first turn of a fight is now its song: `engine/combat.js#alliesTurn` (`pickSong`, shared
+with `sing`, on `derivedRng(cursor, "memberSong", partyIdx, acts)`), resolved through `#allyCast`'s free mode, which
+now resolves every `songPool(5)` kind for a Joiner caster; `applyFoeDamageToMember` reads a Joiner's own ward and
+`foeTurn`'s tail ticks it.
+
+**Parity: 66 of 66 unmoved.** `node --test "test/parity/**/*.test.js"` passes untouched; no parity fixture carries a
+party, a Joiner or a Bard. `node tools/fixture-inventory.mjs --json` shows the same roster.
+`test/parity/prototype-master.js.txt` is untouched. The new per-Joiner fields on a `combat.allies` entry, `sang`,
+`ward` and `senses`, are carved out of all three `*Comparable()` functions
+(`test/parity/harness/comparables.js#stripFoeAbilityState`, beside `opened`), a structural tripwire like the rest.
+
+**State pins: 8 of 8 unmoved. Save-compat: unchanged.** `node --test test/unit/roll-high-state-pins.test.js
+test/unit/roll-high-save-compat.test.js` passes with no label re-recorded (`node tools/roll-high-baseline.mjs save`
+was never run): the two party pins' Joiners are a Court Mage and a Fighter (Hilda), never a Bard, and a Joiner that
+is not a Bard is byte-identical. Pinned directly: a Joiner Soldier's and a Wizard's two seeded turns, six runs, give
+the same event count, main-rng state and event digest on the base tree and on this one
+(`test/unit/joiner-bard-song.test.js`, "non-Bards ... byte-identical to the base").
+
+**Draws.** The song adds no main-rng draw (the pick, the title and every roll of the sung spell are on the derived
+`memberSong` stream; the hero's `sing` draws exactly what it drew, the two selection draws only moved into
+`pickSong`). The Joiner path now holds a Joiner twin of the hero's tagged `.d(` lines for the kinds it had no branch
+for, so the per-file inventory moves, declared:
+
+1. `test/unit/roll-high-guard.test.js` DRAW_INVENTORY, `engine/combat.js`: `amount` 20 to 27 (Acid's d6, Shrink's
+   d6, Noxious Vapor's sleep d6, Fireballs' bolt-count d8, Plane Gate's reach d6, Insane's neighbour-blow d6 and nap
+   d4), `selection` 5 to 7 (Vapor's table d6 and Insane's table d6), `mishap-on-1` 0 to 1 (Vapor's kill d10); every
+   one runs on the Joiner song's derived stream and none is the main rng. `rollCheck` 24 and `already-high` 5 are
+   unchanged.
+2. `test/unit/bard-song-lines.test.js` gained the Joiner forms (the `member` forms of `sang`, `wardRaised`,
+   `wardAbsorbed`, `wardShattered`, `wardFaded`, `wardReflected`, `strengthCast`, `sensesGained`,
+   `earthquakeSelfDamage`, `deathCast` and `deathSpellTooWeak`, Oracle and rail); the hero's lines are pinned
+   unchanged.
+3. `docs/narrative-pass/why/91-07.json` holds 22 rows (those eleven events on both surfaces), each `after` read from
+   the live corpus; `tools/lib/event-variants.mjs` gained four scoped toggles (a plain Shield ward and a restarted
+   Strength, for a Joiner and for the hero) because the shared base event's `member` makes a Joiner's form the
+   default rendering and `member: null` the hero's; `node tools/narrative-review.mjs` regenerated the pages and
+   `--check` is in sync.
+4. `docs/IDENTITY-AUDIT.md`: `bard-song` reads `fixed engine (91-06, 91-07)` with the Joiner pins; the Joiner Bard's
+   missing dim-witted-foes drawback is a finding for Phase 91.1.
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a Joiner Bard in a bot run now
+sings once a fight, so a run with one shifts; none of the eight pinned runs has one.

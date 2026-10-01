@@ -1755,7 +1755,8 @@ export const LINE_FOR = {
   // Phase 91 (IDENT-17, plan 91-06): the song's title and the spell it echoes; the
   // spell's own lines follow. The four per-song builders (beastsSoothed, songIgnored,
   // lullabyRolled, thunderRolled) retired with the fixed song table.
-  sang: (e) => ({ text: `Song: ${e?.title ?? "a tune"} (${e?.spell ?? "a spell"})`, tone: "magic", priority: PRIORITY.feature }),
+  // Phase 91 plan 07 (IDENT-17): a Joiner Bard's song (`member`) names the singer.
+  sang: (e) => ({ text: `${e?.member ? `${e.member} sings` : "Song"}: ${e?.title ?? "a tune"} (${e?.spell ?? "a spell"})`, tone: "magic", priority: PRIORITY.feature }),
   // DFB-05 (Phase 25.1): legacy text (no `backstab`/`crit`/`target`) stays
   // byte-identical; a classed member's blow names the target and calls out
   // a backstab/crit. Plan 04 (ABIL-05): an optional `via` clause names the
@@ -1823,13 +1824,16 @@ export const LINE_FOR = {
   },
   // RULES-14 (Phase 75): the rail twin of eventNarration.js's own
   // mirror-aware wardReflected line.
+  // Phase 91 plan 07 (IDENT-17): a Joiner's own sung ward (`member`) names its owner on all five ward lines.
   wardReflected: (e) => ({
-    text: e?.mirror ? `The bubble sends it back — ${e?.amount ?? 0} to ${e?.target ?? "them"}. Pop.` : `The ward throws ${e?.amount ?? 0} back.`,
+    text: e?.mirror
+      ? `${e?.member ? `${e.member}'s bubble` : "The bubble"} sends it back — ${e?.amount ?? 0} to ${e?.target ?? "them"}. Pop.`
+      : `The ward throws ${e?.amount ?? 0} back.`,
     tone: "hit",
     priority: PRIORITY.them,
   }),
-  wardAbsorbed: (e) => ({ text: `The ward eats ${e?.amount ?? 0} (${e?.remaining ?? 0} left).`, tone: "hit", priority: PRIORITY.them }),
-  wardShattered: () => ({ text: "The ward shatters.", tone: "hurt", priority: PRIORITY.them }),
+  wardAbsorbed: (e) => ({ text: `${e?.member ? `${e.member}'s ward` : "The ward"} eats ${e?.amount ?? 0} (${e?.remaining ?? 0} left).`, tone: "hit", priority: PRIORITY.them }),
+  wardShattered: (e) => ({ text: `${e?.member ? `${e.member}'s ward` : "The ward"} shatters.`, tone: "hurt", priority: PRIORITY.them }),
   // RULES-10 (Phase 75.1) — the foe-side ward/Bubble mirrors: a fumbled
   // Shield or a popped fumbled Bubble on the FOE eats the hero's OWN blow,
   // mirroring wardAbsorbed/wardShattered's own tone/priority pairing.
@@ -1883,7 +1887,7 @@ export const LINE_FOR = {
     const crit = e?.critical || e?.soldierCrit ? " · CRIT" : "";
     return { text: `${e?.name ?? "It"} hits you (${e?.dmg ?? 0})${crit}${soakSuffix(e?.soaked)}`, tone: "hurt", priority: PRIORITY.them };
   },
-  wardFaded: () => ({ text: "The ward fades.", tone: "beat", priority: PRIORITY.other }),
+  wardFaded: (e) => ({ text: `${e?.member ? `${e.member}'s ward` : "The ward"} fades.`, tone: "beat", priority: PRIORITY.other }),
   mirrorFaded: () => ({ text: "The mirror fades.", tone: "beat", priority: PRIORITY.other }),
   // RULES-10 (Phase 75.1) — a foe's own ward/Mirror Self ticks fade exactly
   // like the hero's above.
@@ -2248,7 +2252,8 @@ export const LINE_FOR = {
   // VOX-05 (Phase 79, plan 79-08): the number is damage to every foe.
   earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  earthquakeSelfDamage: (e) => ({ text: `Earthquake: −${e?.amount ?? 0} hp, yours too.`, tone: "hurt", priority: PRIORITY.you }),
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Earthquake costs the Joiner (`member`).
+  earthquakeSelfDamage: (e) => ({ text: e?.member ? `Earthquake: ${e.member} −${e?.amount ?? 0} hp, theirs too.` : `Earthquake: −${e?.amount ?? 0} hp, yours too.`, tone: "hurt", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): what the face does, twin of the Oracle line.
   vaporRolled: (e) => ({
     text:
@@ -2267,7 +2272,12 @@ export const LINE_FOR = {
   planeGated: (e) => ({ text: `${e?.count ?? 0} gated straight back out.`, tone: "magic", priority: PRIORITY.you }),
   gateRefused: () => block("There is no plane here worth opening."),
   // VOX-05 (Phase 79, plan 79-08): what the sharpening does, and for how long.
-  sensesGained: () => ({ text: "Your senses sharpen: no surprises, no penalty in the dark, till your next fight ends.", tone: "magic", priority: PRIORITY.you }),
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Sense Presence (`member`).
+  sensesGained: (e) => ({
+    text: e?.member ? `${e.member}'s senses sharpen: no penalty in the dark, till this fight ends.` : "Your senses sharpen: no surprises, no penalty in the dark, till your next fight ends.",
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
   // Phase 40 (SPELL-05, Plan 04): see eventNarration.js's matching comment —
   // floorMapped/revealFaded replace the old retired permanent reveal event.
   // Plan 76-06 (user ruling 2026-09-26): until you move; no squares count.
@@ -2284,15 +2294,25 @@ export const LINE_FOR = {
   // mirror-aware wardRaised line.
   wardRaised: (e) => ({
     // VOX-05 (Phase 79, plan 79-08): the pool is hp of damage it soaks.
-    text: e?.mirror ? "A bubble shimmers around you. Next hit bounces back." : `${e?.spell ?? "A spell"} raises a ward: it soaks the next ${e?.pool ?? 0} hp.`,
+    // Phase 91 plan 07 (IDENT-17): a Joiner's sung ward (`member`) is raised around the Joiner.
+    text: e?.mirror
+      ? `A bubble shimmers around ${e?.member ?? "you"}. Next hit bounces back.`
+      : e?.member
+        ? `${e?.spell ?? "A spell"} wards ${e.member}: it soaks the next ${e?.pool ?? 0} hp.`
+        : `${e?.spell ?? "A spell"} raises a ward: it soaks the next ${e?.pool ?? 0} hp.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
   // Phase 90 (SPELL-09, report #8): the rail twin of the Oracle's strengthCast.
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Strength (`member`) is the Joiner's own.
   strengthCast: (e) => ({
-    text: e?.restarted
-      ? `Strength starts over: ${railSquares(e?.squares ?? 100)}, not double.`
-      : `Might surges: an extra d10 on every damage roll for ${railSquares(e?.squares ?? 100)}. No extra HP.`,
+    text: e?.member
+      ? e?.restarted
+        ? `${e.member}'s Strength starts over: ${railSquares(e?.squares ?? 100)}, not double.`
+        : `Might surges in ${e.member}: an extra d10 on every damage roll for ${railSquares(e?.squares ?? 100)}. No extra HP.`
+      : e?.restarted
+        ? `Strength starts over: ${railSquares(e?.squares ?? 100)}, not double.`
+        : `Might surges: an extra d10 on every damage roll for ${railSquares(e?.squares ?? 100)}. No extra HP.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
@@ -2408,9 +2428,11 @@ export const LINE_FOR = {
   },
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-08): the hp it needs (refused at fee + 1 or less).
-  deathSpellTooWeak: (e) => block(`Death: ${e?.fee ?? 25} hp fee. You need at least ${(e?.fee ?? 25) + 2} hp to pay it.`),
+  // Phase 91 plan 07 (IDENT-17): a Joiner's sung Death pays from the Joiner (`member`).
+  deathSpellTooWeak: (e) =>
+    block(e?.member ? `Death: ${e?.fee ?? 25} hp fee. ${e.member} needs at least ${(e?.fee ?? 25) + 2} hp to pay it.` : `Death: ${e?.fee ?? 25} hp fee. You need at least ${(e?.fee ?? 25) + 2} hp to pay it.`),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
-  deathCast: (e) => ({ text: `Death: its fee (−${e?.cost ?? 25} hp).`, tone: "hurt", priority: PRIORITY.you }),
+  deathCast: (e) => ({ text: e?.member ? `Death: its fee, from ${e.member} (−${e?.cost ?? 25} hp).` : `Death: its fee (−${e?.cost ?? 25} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds.
   // Phase 90 plan 05 (SPELL-11): a hit wakes it; a Joiner's Doze names the Joiner.
   dozed: (e) => ({ text: `${joinerOf(e) ? `${joinerOf(e)}'s Doze: ` : ""}${e?.target ?? "It"} dozes off, ${railPlural(e?.rounds ?? 0, "round")}. A hit wakes it.`, tone: "magic", priority: PRIORITY.you }),

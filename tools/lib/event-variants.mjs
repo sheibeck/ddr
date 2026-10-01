@@ -215,6 +215,15 @@ const PHASE_79_TOGGLES = [
   // Bard's once-per-fight refusal and a sung title with its spell.
   { only: ["actionRefused"], reason: "sungThisFight" },
   { only: ["sang"], title: "An Ode to Freeze", spell: "Freeze", level: 1 },
+  // Phase 91 plan 07 (IDENT-17, the Joiner half), appended so every earlier toggle keeps
+  // its id: the shared base event carries `member`, so a Joiner Bard's own forms are the
+  // default rendering and `member: null` is the hero's; these four reach the forms the
+  // base's `mirror: true` and non-restarted defaults never do (a plain Shield ward and a
+  // restarted Strength, for a Joiner and for the hero), so the voice guards read them.
+  { only: ["wardRaised"], mirror: false, spell: "Shield", pool: 50 },
+  { only: ["wardRaised"], mirror: false, spell: "Shield", pool: 50, member: null },
+  { only: ["strengthCast"], restarted: true, squares: 100 },
+  { only: ["strengthCast"], restarted: true, squares: 100, member: null },
 ];
 
 /**
