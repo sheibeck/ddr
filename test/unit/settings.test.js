@@ -59,8 +59,8 @@ test("SETTINGS_DEFAULTS: the twelve fields' defaults", () => {
   assert.equal(SETTINGS_DEFAULTS.dressing, true);
   // Phase 67 (D-01): Compete defaults ON.
   assert.equal(SETTINGS_DEFAULTS.compete, true);
-  // Phase 85 (RETIRE-03): the welcome card has not been shown yet.
-  assert.equal(SETTINGS_DEFAULTS.boardWelcomed, false);
+  // Phase 91.2: the Play Games name welcome card has not been shown yet.
+  assert.equal(SETTINGS_DEFAULTS.nameWelcomed, false);
   // Phase 71 (D-03): the three volume sliders default to full, 100.
   assert.equal(SETTINGS_DEFAULTS.volMaster, 100);
   assert.equal(SETTINGS_DEFAULTS.volMusic, 100);
@@ -85,7 +85,7 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       confirmBeforeQuit: false,
       dressing: false,
       compete: true,
-      boardWelcomed: false,
+      nameWelcomed: false,
       // Phase 71 (D-03): the volume sliders keep their defaults.
       volMaster: 100,
       volMusic: 100,
@@ -160,7 +160,7 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     assert.equal("handedness" in settings, false);
 
     // Phase 59 (DRESS-05) appended `dressing`; Phase 67 appended `compete`;
-    // Phase 85 (RETIRE-03) appended `boardWelcomed` in the slot the two
+    // Phase 91.2 (BOARD-31) put `nameWelcomed` in the slot the Phase 85 welcome flag and the two
     // retired Phase 67 fields used to occupy; Phase 71 (D-03) appended
     // `volMaster`, `volMusic` and `volEffects`; Phase 78 (HUD-08) appended
     // `movement` and `padSide` — twelve keys, in order.
@@ -171,7 +171,7 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "confirmBeforeQuit",
       "dressing",
       "compete",
-      "boardWelcomed",
+      "nameWelcomed",
       "volMaster",
       "volMusic",
       "volEffects",
@@ -278,7 +278,7 @@ test("dressing: a persisted blob with an invalid dressing value (e.g. \"yes\") r
 });
 
 // --- Phase 67: compete; Phase 85 (RETIRE-03): the two retired keys drop,
-// boardWelcomed replaces them -------------------------------------------
+// nameWelcomed replaces the welcome flag -------------------------------------------
 
 test("Phase 67: an old blob without compete reads compete true (tolerant load, no migration)", async () => {
   await withFakeLocalStorage(async (_ls, store) => {
@@ -288,7 +288,7 @@ test("Phase 67: an old blob without compete reads compete true (tolerant load, n
     );
     const settings = await readSettings();
     assert.equal(settings.compete, true);
-    assert.equal(settings.boardWelcomed, false);
+    assert.equal(settings.nameWelcomed, false);
     assert.equal(settings.sound, false); // the old fields still load normally
     assert.equal(settings.dressing, false);
   });
@@ -353,7 +353,7 @@ test("RETIRE-03: a stored blob carrying the two retired Phase 67 keys reads with
     assert.equal(RETIRED_WELCOME_KEY in settings, false);
     assert.equal(RETIRED_DEV_SIGNIN_KEY in settings, false);
     assert.equal(settings.compete, false);
-    assert.equal(settings.boardWelcomed, false);
+    assert.equal(settings.nameWelcomed, false);
     assert.equal(settings.sound, false); // the old fields still load normally
     assert.equal(settings.dressing, false);
   });
@@ -380,17 +380,53 @@ test("RETIRE-03: writeSetting(\"pgsWelcomed\", true) is a no-op returning the cu
     const current = await readSettings();
     assert.deepEqual(await writeSetting(RETIRED_WELCOME_KEY, true), current);
     await flushStorage();
-    assert.equal((await readSettings()).boardWelcomed, false);
+    assert.equal((await readSettings()).nameWelcomed, false);
   });
 });
 
-test("RETIRE-03: writeSetting(\"boardWelcomed\", true) persists it and changes nothing else", async () => {
+test("Phase 91.2: writeSetting(\"nameWelcomed\", true) persists it and changes nothing else", async () => {
   await withFakeLocalStorage(async () => {
     const before = await readSettings();
-    await writeSetting("boardWelcomed", true);
+    await writeSetting("nameWelcomed", true);
     await flushStorage();
     const after = await readSettings();
-    assert.deepEqual(after, { ...before, boardWelcomed: true });
+    assert.deepEqual(after, { ...before, nameWelcomed: true });
+  });
+});
+
+// Phase 91.2 (BOARD-31): the Phase 85 welcome flag is replaced by nameWelcomed
+// (spelled from fragments, like the keys above).
+const PREV_WELCOME_KEY = "board" + "Welcomed";
+
+test("Phase 91.2: a stored blob carrying the previous welcome flag as true reads back without it and with nameWelcomed false", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ compete: true, sound: false, [PREV_WELCOME_KEY]: true }));
+    const settings = await readSettings();
+    assert.equal(PREV_WELCOME_KEY in settings, false);
+    assert.equal(settings.nameWelcomed, false, "a 2.2 player sees the Play Games name disclosure once");
+    assert.equal(settings.sound, false);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).includes(PREV_WELCOME_KEY), false);
+  });
+});
+
+test("Phase 91.2: writeSetting(previous welcome flag, true) is a no-op; the next write drops the old key from the stored blob", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ compete: true, [PREV_WELCOME_KEY]: true }));
+    const current = await readSettings();
+    assert.deepEqual(await writeSetting(PREV_WELCOME_KEY, true), current);
+    await writeSetting("nameWelcomed", true);
+    await flushStorage();
+    const stored = JSON.parse(store.get(SETTINGS_STORAGE_KEY));
+    assert.equal(PREV_WELCOME_KEY in stored, false);
+    assert.equal(stored.nameWelcomed, true);
+  });
+});
+
+test("Phase 91.2: nameWelcomed accepts only booleans", async () => {
+  await withFakeLocalStorage(async () => {
+    const before = await readSettings();
+    assert.deepEqual(await writeSetting("nameWelcomed", "yes"), before);
+    assert.deepEqual(await writeSetting("nameWelcomed", 1), before);
   });
 });
 
