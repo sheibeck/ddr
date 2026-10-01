@@ -239,7 +239,7 @@ Plans:
   3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
   4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
 
-**Plans:** 10/12 plans executed
+**Plans:** 11/12 plans executed
 
 Plans:
 **Wave 1**
@@ -281,7 +281,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 90-11-PLAN.md — TEXT-01 for every spell and skill row, line, chip and menu row ("+/− to hit", d20 ranges, foe counts, the resist stated), with the wording guard
+- [x] 90-11-PLAN.md — TEXT-01 for every spell and skill row, line, chip and menu row ("+/− to hit", d20 ranges, foe counts, the resist stated), with the wording guard
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
@@ -414,7 +414,7 @@ Plans:
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
-| 90. Spell & Skill Audit | 10/12 | In Progress|  |
+| 90. Spell & Skill Audit | 11/12 | In Progress|  |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
