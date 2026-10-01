@@ -101,8 +101,9 @@ const LEGACY_CREATE_DISJUNCT = `
                       && !isNamed(request.auth.uid)
                       && !exists(/databases/$(database)/documents/banned/$(request.auth.uid)))`;
 
-const FINAL_UPDATE = "allow update: if false;";
-const LEGACY_UPDATE = `allow update: if request.auth != null
+const FINAL_UPDATE = "// D-11: no client ever updates a run (no rename path).\n      allow update: if false;";
+const LEGACY_UPDATE = `// Transition only (D-13): the 2.2.0 handle-only re-roll, for an owner with no names document.
+      allow update: if request.auth != null
                     && !isNamed(request.auth.uid)
                     && resource.data.uid == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['handle'])

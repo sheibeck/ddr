@@ -279,7 +279,7 @@ service cloud.firestore {
                       && isLegacyHandle(request.resource.data.handle)
                       && !isNamed(request.auth.uid)
                       && !exists(/databases/$(database)/documents/banned/$(request.auth.uid)));
-      // D-11: no client ever updates a run (no rename path).
+      // Transition only (D-13): the 2.2.0 handle-only re-roll, for an owner with no names document.
       allow update: if request.auth != null
                     && !isNamed(request.auth.uid)
                     && resource.data.uid == request.auth.uid
