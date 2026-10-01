@@ -155,14 +155,14 @@
             "eff": {},
             "use": "ether",
             "every": 80,
-            "txt": "walk through walls, once every 100 squares"
+            "txt": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again"
           }
         },
         "maxWP": 56,
         "wp": 56,
         "rations": 8
       },
-      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
     },
     "4": {
       "phase": "38+45+54+79.2",

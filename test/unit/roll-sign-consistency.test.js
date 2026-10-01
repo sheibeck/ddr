@@ -573,6 +573,16 @@ function statedFewerFaces(text) {
   return m ? faceWord(m[1]) : null;
 }
 
+/**
+ * statedFoeShift(text) — Phase 89 plan 09 (TEXT-01): the signed N of "foes −2 to hit you" /
+ * "foes are −2 to hit you" / "foes +1 to hit them" (foe-signed: a minus is a worse foe), or null.
+ * Matches the minus sign U+2212 only, never a hyphen-minus.
+ */
+function statedFoeShift(text) {
+  const m = stripTags(text).match(/\bfoes (?:are )?([+−])(\d+) to hit (?:you|them)\b/i);
+  return m ? (m[1] === "+" ? 1 : -1) * Number(m[2]) : null;
+}
+
 /** cardOdds(state) — the foe card's "it hits you on …" clause: { faces, dieN, mods }. */
 function cardOdds(state) {
   const line = foeDetailsCard(0, state).lines.map((l) => l.text).find((t) => t.includes("it hits you on"));
@@ -595,6 +605,8 @@ function chipDelta(state, key) {
 }
 
 const itemTimer = (name) => ({ [`item:${name}`]: { cadence: "squares", left: 10, phase: "effect", cd: 0 } });
+// Phase 89 plan 09: the Unseen chip's tap sentence, read out of mazeworld.html's CONDITION_EXPLAIN.
+const CONDITION_EXPLAIN_UNSEEN = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").match(/^\s*unseen: "((?:[^"\\]|\\.)*)",/m)[1];
 const contentRow = (table, n) => table.find((r) => r.n === n);
 
 test("Smoke: the ability and skill text, the Oracle and rail lines state the foe card's measured faces, plain and insulted, and the chip moves the same count", () => {
@@ -657,7 +669,7 @@ test("Weaken: the spell text, the Oracle and rail lines and the foe chip sentenc
   assert.ok(cardLine && cardLine.includes(`it hits you only on ${odds.range} (d${odds.dieN})`), `the foe card's Weakened line measures ${odds.range}: "${cardLine}"`);
 });
 
-test("Anklet of Invisibility: the item text, the Oracle and rail lines state the faces the foe card loses, the card and a real foe line name it 'unseen', and the chip moves the same count", () => {
+test("Anklet of Invisibility: the item text, the Oracle and rail lines state the to-hit the foe card loses (foes −N to hit you), the card and a real foe line name it 'unseen', and the chip moves the same count", () => {
   const ankletC = { timers: itemTimer("Anklet of Invisibility") };
   const base = cardOdds(fullHeroState(plainFoe()));
   const under = cardOdds(fullHeroState(plainFoe(), { c: ankletC }));
@@ -673,8 +685,12 @@ test("Anklet of Invisibility: the item text, the Oracle and rail lines state the
     ["JEWELRY.Anklet of Invisibility.txt", contentRow(CONTENT.JEWELRY, "Anklet of Invisibility").txt],
     ["Oracle itemEffectStarted", EVENT_NARRATION.itemEffectStarted(ev)],
     ["rail itemEffectStarted", LINE_FOR.itemEffectStarted(ev, {}).text],
+    ["Oracle itemEffectStarted (Joiner)", EVENT_NARRATION.itemEffectStarted({ ...ev, member: "Joiny" })],
+    ["rail itemEffectStarted (Joiner)", LINE_FOR.itemEffectStarted({ ...ev, member: "Joiny" }, {}).text],
+    ["CONDITION_EXPLAIN.unseen", CONDITION_EXPLAIN_UNSEEN],
   ]) {
-    assert.equal(statedFewerFaces(text), lost, `${label}: "${stripTags(text).trim()}" vs the card's ${base.range} → ${under.range}`);
+    assert.equal(statedFoeShift(text), -lost, `${label}: "${stripTags(text).trim()}" vs the card's ${base.range} → ${under.range}`);
+    assert.doesNotMatch(stripTags(text), /\bfaces?\b/, `${label}: no talk of faces`);
   }
   assert.equal(chipDelta(fullHeroState(plainFoe(), { c: ankletC }), "unseen"), lost, "the Unseen chip moves the same faces");
 });

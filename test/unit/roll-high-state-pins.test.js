@@ -222,7 +222,20 @@ const PINNED = {
   // 225/true/10; deep-14 154/true/15 -> 50/true/14. Regenerated via
   // `node tools/roll-high-baseline.mjs pins` (each hashed identically twice).
   "solo-1": { actions: 253, dead: true, depth: 3, hash: "47082481220cb07ea9857d986d10ca090337de206997be53411bf393261fa91c" },
-  "solo-2": { actions: 294, dead: true, depth: 3, hash: "0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f" },
+  // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
+  // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
+  // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
+  // reworded item texts (content/treasure-tables.js, potions.js, bags.js) ride the hashed
+  // state on items a run carries, wears or is offered. Proven text-only by running all
+  // eight pins from a scratch copy of the tree with only those three content files at
+  // the plan base (dd49e8d5): every label then hashes to its previous pin, with the same
+  // actions, dead and depth. Only the six moved labels were edited (pasted by hand;
+  // `roll-high-baseline.mjs save` was not run).
+  // "solo-2" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to 0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f; actions, dead and depth are unchanged.
+  "solo-2": { actions: 294, dead: true, depth: 3, hash: "dcb713034ed02e2f857f08e4604427da144543fa5ada579914056c48c933f8ed" },
   // "solo-thief-pilfer" re-recorded (Phase 89 plan 03, ITEM-01, 2026-09-30): this
   // run's bag ends holding a Poplar Staff (a Pilfer can never wield it), and the
   // item object rides the hashed state. Its row changed: use "heal" -> "partyHeal"
@@ -234,7 +247,11 @@ const PINNED = {
   // 400 / false / 4 unchanged. Only this label was re-recorded (pasted by hand from
   // `node tools/roll-high-baseline.mjs pins`, hashed identically twice;
   // `roll-high-baseline.mjs save` was not run).
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca" },
+  // "solo-thief-pilfer" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to 5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca; actions, dead and depth are unchanged.
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "4f510d2220ef9d022210f3165eff5800d941f543f7b88d23ecb19c0960e3c1db" },
   // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
   // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
   // Just like players."): a foe's landed blow on a Joiner now rolls the
@@ -292,8 +309,16 @@ const PINNED = {
   // byte-identical. Only these three labels were pasted, by hand, from `node
   // tools/roll-high-baseline.mjs pins` (each hashed identically twice);
   // `save` was never run.
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "992002f4edb013af107541738a89ebcbf6da7dd1afe8bfd4c914d651f0d7ecf6" },
-  "party-1": { actions: 400, dead: false, depth: 3, hash: "a2bb10bccfbc83ff5d9d8431b7247c1d382b9d3ff8aa3ddf7c346304d5638faa" },
+  // "solo-magicuser-sorcerer" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to 992002f4edb013af107541738a89ebcbf6da7dd1afe8bfd4c914d651f0d7ecf6; actions, dead and depth are unchanged.
+  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "edc3225a005398c0eb5645187719f56408eda1df4fa5c49b933e383dbb4ad90b" },
+  // "party-1" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to a2bb10bccfbc83ff5d9d8431b7247c1d382b9d3ff8aa3ddf7c346304d5638faa; actions, dead and depth are unchanged.
+  "party-1": { actions: 400, dead: false, depth: 3, hash: "66bf8e0198fe53ab3b556ec66d2b8a3d0df54a9b5cd81c81a8ac6d1e6f668e1a" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -366,7 +391,11 @@ const PINNED = {
   // "solo-magicuser-sorcerer" entry. 400/alive/3 -> 400/alive/4.
   // Re-pinned again (Phase 89, Plan 06, ITEM-07): see the block above the
   // "solo-magicuser-sorcerer" entry. 400/alive/4 -> 400/alive/4 (hash only).
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "27bca013003f99a9ec9c21cdc744a16bca36627ed6163c4f5eae6b476d6e6aac" },
+  // "party-fighter-knight" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to 27bca013003f99a9ec9c21cdc744a16bca36627ed6163c4f5eae6b476d6e6aac; actions, dead and depth are unchanged.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "a1ecbfbb3070aab5d92c0ea9bc3ea18606440b8414c37e95d022aded46ca9062" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -406,7 +435,11 @@ const PINNED = {
   // Re-pinned again (quick 260928-sq2, spell damage adds level²): first
   // divergence bot step 10, the same Freeze now a kill; see the "solo-1"
   // block above.
-  "deep-8": { actions: 225, dead: true, depth: 10, hash: "0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263" },
+  // "deep-8" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
+  // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
+  // measurement: with the three content text files at the plan base, this label hashes
+  // to 0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263; actions, dead and depth are unchanged.
+  "deep-8": { actions: 225, dead: true, depth: 10, hash: "eee973f7bc4646eb9838d18383ce55e25197b869d29d09854c7f3e30e7385c53" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll

@@ -91,7 +91,8 @@ test("ACTIVATION_OF['Cloak of Ether'] is 10 squares / 80 cd; the exported CLOAKS
   const row = CLOAKS.find((c) => c.n === "Cloak of Ether");
   assert.deepStrictEqual(row, {
     n: "Cloak of Ether", eff: {}, use: "ether", every: 80,
-    txt: "walk through walls, once every 100 squares",
+    // Phase 89 plan 09 (TEXT-01): the text states the ten squares, the entombment and the eighty of rest.
+    txt: "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again",
   });
 });
 

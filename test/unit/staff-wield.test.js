@@ -33,7 +33,7 @@ import { deliverGear } from "../../engine/economy.js";
 import { validateAction } from "../../engine/actions.js";
 import { rehydrate } from "../../engine/saveState.js";
 import { newRun } from "../../engine/state.js";
-import { WEAPONS, STAFF_WEAPON, STAFF_NAMES } from "../../content/index.js";
+import { WEAPONS, STAFF_WEAPON, STAFF_NAMES, STAVES } from "../../content/index.js";
 
 /** fakeRng(seq) — `.d()` pops the next value off `seq` regardless of the
  * requested side count. Throws if the sequence underflows. */
@@ -87,7 +87,8 @@ function fixedState(overrides = {}) {
 }
 
 function birchStaff(overrides = {}) {
-  return { kind: "staff", n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents indefinitely", charges: 2, ...overrides };
+  // Phase 89 plan 09 (TEXT-01): the row's current text, since a load refreshes a known item's txt.
+  return { kind: "staff", n: "Birch Staff", use: "freeze", txt: STAVES.find((r) => r.n === "Birch Staff").txt, charges: 2, ...overrides };
 }
 
 function fixedFoe(overrides = {}) {

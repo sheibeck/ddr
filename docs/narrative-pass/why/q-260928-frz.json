@@ -22,9 +22,5 @@
   { "key": "rail:allySpellHit", "surface": "rail", "trigger": "allySpellHit — engine/combat.js#allyCast (a Joiner's cast)",
     "before": "Viper casts Heal — Viper frozen solid",
     "after": "",
-    "reasons": ["accurate"], "why": "User ruling 2026-09-28: the rail twin. A Joiner's Freeze reads its damage (\"Viper casts Freeze — Viper (6)\"), and the hold is its own \"frozen for N rounds\" line; the frozen-solid branch is gone." },
-  { "key": "content:STAVES.Birch Staff.txt", "surface": "items", "trigger": "the Birch Staff's item text",
-    "before": "freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds",
-    "after": "freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry",
-    "reasons": ["fact", "accurate"], "why": "User rulings 2026-09-28: the Birch Staff's freeze follows the Freeze spell, a d4-round freeze on each foe it reaches unless that foe resists, at every depth. \"Indefinitely\" is no longer true anywhere, so the text states the d4 and the resist, then echoes Freeze's own \"just cold and angry\"." }
+    "reasons": ["accurate"], "why": "User ruling 2026-09-28: the rail twin. A Joiner's Freeze reads its damage (\"Viper casts Freeze — Viper (6)\"), and the hold is its own \"frozen for N rounds\" line; the frozen-solid branch is gone." }
 ]

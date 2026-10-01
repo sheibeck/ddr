@@ -58,7 +58,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // every event-driven roll line this plan converts (strikeMissed/struck; the
 // foe-side/thrown lines convert in 73-05/73-07) formats its range through
 // rangeText here, so no two surfaces ever write a range differently.
-import { rangeText, rollVsText, modsClause, signedText, ROLLERS, bottomRangeText, toHitText } from "./rollRange.js";
+import { rangeText, rollVsText, modsClause, signedText, ROLLERS, bottomRangeText, toHitText, facesRangeText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled reads the row's own `phobia` flag by
 // roll so a mind-row (5-6) narrates honestly instead of printing "Disease." —
 // pure content data, no engine/ import, same discipline as the flavor.js
@@ -90,6 +90,12 @@ const endedWho = (e) =>
     : { name: "you", be: "are", own: "your" };
 /** endedItem(e) — the ended item's display name: the engine's own string, an item object's `n`, or "" when the event names none. */
 const endedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : typeof e?.item?.n === "string" && e.item.n ? e.item.n : "");
+// Phase 89 plan 09 (TEXT-01, user 2026-09-30): an invisible item's hard cap names its
+// range on a d20, never "faces": one winning face (the die's best roll), two when the
+// foes were insulted (derived.js#foeToHitVs gives one, foeSwingChain adds the insult).
+const ITEM_INVIS_RANGE = `${facesRangeText(1, 20)} on a d20; ${facesRangeText(2, 20)} if you insulted them`;
+// The Anklet of Invisibility's shift, signed from the player's side (content eff foeToHit -2).
+const ITEM_UNSEEN_SHIFT = signedText(-2);
 const ENDED_CLAUSE = Object.freeze({
   fly: () => "the flying stops, right where things stand. No falling, no fuss",
   ether: () => "solid again, and the walls are walls once more",
@@ -1780,13 +1786,13 @@ export const EVENT_NARRATION = {
       const m = e.member;
       const them = {
         haste: `double attacks for ${sq}.`,
-        invis: `unseen for ${sq}: foes hit only on their die's top face. They swing at where ${m} was.`,
+        invis: `unseen for ${sq}: foes hit them only on their best roll (${ITEM_INVIS_RANGE}). They swing at where ${m} was.`,
         acute: `strikes on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.`,
         might: `+${e.might ?? "?"} damage for ${sq}. Hit things.`,
         power: `+1 damage for ${sq}. The ring approves.`,
-        giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
+        giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit them. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
         enlarge: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit. Nobody said it was free.` : `is one size larger for ${sq}.`,
-        unseen: `unseen for ${sq}: every foe has two fewer faces that hit them.`,
+        unseen: `unseen for ${sq}: foes ${ITEM_UNSEEN_SHIFT} to hit them.`,
         critWard: `has ${sq} with nothing critical landing on them.`,
         plate: `wears ${sq} of weightless plate.`,
         knit:
@@ -1798,7 +1804,7 @@ export const EVENT_NARRATION = {
     }
     const map = {
       haste: `<span class="hit">Double attacks for ${sq}.</span>`,
-      invis: `<span class="hit">Unseen for ${sq}: foes hit only on their die's top face (the top two if you insulted them). They swing at where you were.</span>`,
+      invis: `<span class="hit">Unseen for ${sq}: foes hit you only on their best roll (${ITEM_INVIS_RANGE}). They swing at where you were.</span>`,
       // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
       // states the count and, in voice, that ending inside stone is fatal.
       ether: `<span class="hit">${sq} of walking through stone. Be in a corridor when it ends — the stone will not make room.</span>`,
@@ -1816,7 +1822,7 @@ export const EVENT_NARRATION = {
       // kind, but defensive) falls back to the plain line. No overhead-
       // clearance/corridor promise — that promise is dropped (75.2-CONTEXT).
       giant: e.size
-        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.</span>`
+        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit you. You are, on reflection, a bigger target.</span>`
         : `<span class="hit">One size larger for ${sq}.</span>`,
       // Phase 89 (ITEM-05, report #6, ruling 2026-09-30): Enlarge is Troll-
       // sized, so its line is its own — it reads the event's `dmgTotal` (the
@@ -1826,8 +1832,8 @@ export const EVENT_NARRATION = {
         ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit you.</span> A bigger stick and a bigger target. Nobody said it was free.`
         : `<span class="hit">One size larger for ${sq}.</span>`,
       glow: `<span class="hit">Fifty squares of being your own lantern.</span>`,
-      unseen: `<span class="hit">Unseen for ${sq}: every foe has two fewer faces that hit you.</span>`,
-      tongue: `<span class="hit">${sq} of perfect fluency. Do not waste it on small talk.</span>`,
+      unseen: `<span class="hit">Unseen for ${sq}: foes ${ITEM_UNSEEN_SHIFT} to hit you.</span>`,
+      tongue: `<span class="hit">You can always parley for ${sq}, with +2 to the parley roll. Do not waste it on small talk.</span>`,
       critWard: `<span class="hit">${sq} with nothing critical landing on you.</span>`,
       plate: `<span class="hit">${sq} of weightless plate.</span>`,
       // Phase 88 (ITEM-03): the Cloak of Regeneration's window, stated from

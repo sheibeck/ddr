@@ -163,7 +163,7 @@ test("(b) a Human with a live Gauntlet: the tap card leads with the measured eff
   assert.equal(card.lines[0].text, `${effectLead}. ${explainText}`);
   assert.equal(
     card.lines[0].text,
-    "−1 vs their swings. Gauntlet of the Giant — large, 50 squares. One size larger while it lasts: +2 damage, and one face easier for foes to hit."
+    "−1 vs their swings. Gauntlet of the Giant — large, 50 squares. One size larger while it lasts: +2 damage, and foes +1 to hit you."
   );
 });
 
@@ -188,7 +188,7 @@ test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) names the resulting 
   // its dmgTotal and the to-hit cost in TEXT-01 wording.
   const giant = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "giant", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 2 });
   assert.match(giant, /50 squares one size larger: you are Large\./);
-  assert.match(giant, /\+2 damage, and one face easier for foes to hit\./);
+  assert.match(giant, /\+2 damage, and foes \+1 to hit you\./);
   const enlarge = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "enlarge", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 11 });
   assert.match(enlarge, /50 squares one size larger: you are Large\./);
   assert.match(enlarge, /\+11 damage, and foes \+1 to hit you\./);
@@ -210,7 +210,7 @@ test("(d) LINE_FOR.itemEffectStarted (giant/enlarge) mirrors the Oracle line, to
     const line = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Huge", step: 1, sizeDmg: 2, dmgTotal: kind === "enlarge" ? 11 : 2 });
     assert.equal(line.tone, "magic");
     assert.match(line.text, /50 squares one size larger: you are Huge\./);
-    if (kind === "giant") assert.match(line.text, /\+2 damage, and one face easier for foes to hit\./);
+    if (kind === "giant") assert.match(line.text, /\+2 damage, and foes \+1 to hit you\./);
     else assert.match(line.text, /\+11 damage, foes \+1 to hit you\./);
     const fallback = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares" });
     assert.match(fallback.text, /One size larger for 50 squares\./);

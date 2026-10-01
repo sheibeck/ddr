@@ -114,6 +114,8 @@
     text="BAG FULL · DROP OR USE SOMETHING"
   <p class="mw-gear-free">
     text="potions & scrolls ride free"
+  <p class="mw-gear-free">
+    text="this bag carries up to 2000 wilmst and 10 rations"
 ## #gear-bag
 <div id="gear-bag">
   <li class="mw-gear-card mw-gear-tap" data-i="0" onclick>
@@ -150,7 +152,7 @@
         <span class="mw-gear-tag mw-gear-tag-swap">
           text="JEWELRY · SWAP"
       <div class="mw-gear-desc">
-        text="used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight"
+        text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">

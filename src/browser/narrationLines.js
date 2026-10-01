@@ -61,7 +61,7 @@ import { upgradeWhyText } from "./upgradeWhy.js";
 // Phase 73 (ROLL-05): rollRange.js is the ONE place a winning range is
 // formatted ("16–20") — like upgradeWhy.js, it carries zero imports of its
 // own, so pulling it in here does not trip T-25-23's engine-import guard.
-import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomRangeText, toHitText } from "./rollRange.js";
+import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomRangeText, toHitText, facesRangeText } from "./rollRange.js";
 // RULES-07 (Phase 75): afflictionRolled's rail line reads the row's own
 // `phobia` flag by roll, mirroring eventNarration.js — pure content data
 // (not engine/), same discipline as the ABILITY_BY_ID import above.
@@ -384,6 +384,10 @@ const railHealDice = (h) => {
 // says the party is seen again. An unknown kind falls back to "its magic stops".
 /** railEndedItem(e) — eventNarration.js's endedItem twin: the string, an item object's `n`, or "It". */
 const railEndedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : typeof e?.item?.n === "string" && e.item.n ? e.item.n : "Item");
+// Phase 89 plan 09 (TEXT-01): the rail twins of eventNarration.js's ITEM_INVIS_RANGE and
+// ITEM_UNSEEN_SHIFT, in the rail's short form.
+const RAIL_INVIS_RANGE = `${facesRangeText(1, 20)} on a d20; ${facesRangeText(2, 20)} if insulted`;
+const RAIL_UNSEEN_SHIFT = signedText(-2);
 const RAIL_ENDED_CLAUSE = Object.freeze({
   fly: "flying stops",
   ether: "solid again",
@@ -2642,13 +2646,13 @@ export const LINE_FOR = {
       const m = e.member;
       const them = {
         haste: `double attacks for ${sq}.`,
-        invis: `unseen for ${sq}: foes hit only on their die's top face.`,
+        invis: `unseen for ${sq}: foes hit them only on their best roll (${RAIL_INVIS_RANGE}).`,
         acute: `strikes on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
         might: `+${e?.might ?? "?"} damage for ${sq}.`,
         power: `+1 damage for ${sq}.`,
-        giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, one face easier to hit.` : `is one size larger for ${sq}.`,
+        giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
         enlarge: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
-        unseen: `unseen for ${sq}: every foe has two fewer faces that hit them.`,
+        unseen: `unseen for ${sq}: foes ${RAIL_UNSEEN_SHIFT} to hit them.`,
         critWard: `has ${sq} with nothing critical landing on them.`,
         plate: `wears ${sq} of weightless plate.`,
         knit:
@@ -2660,7 +2664,7 @@ export const LINE_FOR = {
     }
     const map = {
       haste: `Double attacks for ${sq}.`,
-      invis: `Unseen for ${sq}: foes hit only on their die's top face (top two if insulted).`,
+      invis: `Unseen for ${sq}: foes hit you only on their best roll (${RAIL_INVIS_RANGE}).`,
       // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19):
       // states the count and, in voice, that ending inside stone is fatal —
       // the same warning eventNarration.js's Oracle line carries.
@@ -2675,7 +2679,7 @@ export const LINE_FOR = {
       // giant/enlarge lines — narrated from the event's own size fields,
       // never a restated formula; no overhead-clearance/corridor promise.
       giant: e?.size
-        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and one face easier for foes to hit. You are, on reflection, a bigger target.`
+        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and foes ${signedText(e?.step ?? 1)} to hit you. You are, on reflection, a bigger target.`
         : `One size larger for ${sq}.`,
       // Phase 89 (ITEM-05): Enlarge's own rail line, the Oracle's numbers
       // (dmgTotal and the step) in the rail's short form.
@@ -2683,8 +2687,8 @@ export const LINE_FOR = {
         ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit you.`
         : `One size larger for ${sq}.`,
       glow: `Fifty squares of being your own lantern.`,
-      unseen: `Unseen for ${sq}: every foe has two fewer faces that hit you.`,
-      tongue: `${sq} of perfect fluency. Do not waste it on small talk.`,
+      unseen: `Unseen for ${sq}: foes ${RAIL_UNSEEN_SHIFT} to hit you.`,
+      tongue: `You can always parley for ${sq}, +2 to the parley roll. Do not waste it on small talk.`,
       critWard: `${sq} with nothing critical landing on you.`,
       plate: `${sq} of weightless plate.`,
       // Phase 88 (ITEM-03): the Cloak of Regeneration's window from the event's own numbers.

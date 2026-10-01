@@ -19,6 +19,13 @@
 //
 // A mishap on a 1 is roll-high canon and is never a row here.
 //
+// Phase 89 plan 09 (TEXT-01, user 2026-09-30): the ITEM rows no longer speak in
+// faces. A hard cap names its range on a d20 ("20 on a d20; 19–20 if you
+// insulted them") and a shift is a signed to-hit ("foes −2 to hit you"); both
+// are computed here from the engine's own faces (`d20Range`, `toHitText`
+// below). The face helpers (topFaces, fewerFaces) stay for the spell and
+// ability rows, which Phases 90 and 91 reword.
+//
 // Plan 79-12 (section 8) extends the pins outside content/: the narration
 // lines, chip sentences, menu and panel copy Phase 79 wrote, each computed
 // from the engine, plus a coverage guard over the live corpus that names
@@ -48,7 +55,7 @@ import {
   SIZE_DAMAGE_PER_STEP,
   SIZE_FACES_PER_STEP,
 } from "../../engine/derived.js";
-import { playerStrike, parley, FREEZE_HOLD_DIE } from "../../engine/combat.js";
+import { playerStrike, parley, canParley, FREEZE_HOLD_DIE } from "../../engine/combat.js";
 import { actsWhere } from "./harness/spellResistActs.js";
 import { drinkPotion, castSpell } from "../../engine/magic.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
@@ -56,20 +63,23 @@ import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { FOE_CONDITION_DESC } from "../../src/browser/foeConditions.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { GEAR_COPY } from "../../src/browser/gearTab.js";
+import { itemStatLines, ITEM_STAT_COPY } from "../../src/browser/viewModels.js";
 import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..");
 import { useAbility } from "../../engine/abilities.js";
 import { openChest } from "../../engine/encounters.js";
 import { openStore } from "../../engine/economy.js";
-import { rollTreasureItem } from "../../engine/items.js";
-import { facesRangeText, hitRangeText } from "../../src/browser/rollRange.js";
+import { rollTreasureItem, useItem } from "../../engine/items.js";
+import { makeRng } from "../../engine/rng.js";
+import { FOE_COUNT_TABLE } from "../../engine/difficulty.js";
+import { facesRangeText, hitRangeText, signedText } from "../../src/browser/rollRange.js";
 // Quick 260927-rsx / 260928-hrs: the one resist scale (both sides) and the
 // foe card copy.
 import { resistFaces, resistRoll } from "../../engine/derived.js";
 import { FOE_DETAILS_COPY } from "../../src/browser/foeDetails.js";
 import {
-  SPELLS, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, BESTIARY, POTIONS, JEWELRY, CLOAKS, STAVES, ACTIVATION_OF,
+  SPELLS, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, BESTIARY, POTIONS, JEWELRY, CLOAKS, STAVES, ACTIVATION_OF, WEAPONS,
 } from "../../content/index.js";
 
 // --- local fixtures (mirror test/unit/odds-helpers.test.js) ---------------
@@ -147,6 +157,10 @@ const WORD = ["zero", "one", "two", "three", "four", "five", "six"];
 const topFaces = (n) => (n === 1 ? "top face" : `top ${WORD[n]} faces`);
 /** fewerFaces(n) — "one face fewer" / "two fewer faces" (a shrinking range). */
 const fewerFaces = (n) => (n === 1 ? "one face fewer" : `${WORD[n]} fewer faces`);
+/** d20Range(faces) — Phase 89 (TEXT-01): the range a count of winning faces is on a d20 ("20", "19–20"), the one formatter. */
+const d20Range = (faces) => facesRangeText(faces, 20);
+/** toHitShift(n) — Phase 89 (TEXT-01): a foe-side shift as an item text writes it ("−2", "+1"), the one formatter. */
+const toHitShift = (n) => signedText(n);
 
 // --- the content rows under test -------------------------------------------
 
@@ -190,9 +204,6 @@ const TOP_FACE_ROWS = [
   { id: "SPELLS.Mirror Self.txt", text: () => spell("Mirror Self"), c: { mirror: 3 } },
   { id: "ABILITIES.smoke.txt", text: () => ABILITY_BY_ID.smoke.txt, c: { cls: "Thief", sub: "Burglar", timers: abilityTimer("smoke") } },
   { id: "THIEF_SKILLS.Smoke.txt", text: () => THIEF_SKILLS.Smoke.txt, c: { cls: "Thief", sub: "Burglar", timers: abilityTimer("smoke") } },
-  { id: "STAVES.Crystal Staff.txt", text: () => row(STAVES, "Crystal Staff"), c: { timers: itemTimer("Crystal Staff") } },
-  { id: "CLOAKS.Cloak of Invisibility.txt", text: () => row(CLOAKS, "Cloak of Invisibility"), c: { timers: itemTimer("Cloak of Invisibility") } },
-  { id: "POTIONS.Invisible.txt", text: () => potion("Invisible"), c: { timers: itemTimer("Invisible") } },
 ];
 
 for (const r of TOP_FACE_ROWS) {
@@ -203,6 +214,28 @@ for (const r of TOP_FACE_ROWS) {
     const txt = r.text();
     assert.match(txt, new RegExp(`their die's ${topFaces(plain)}\\b`), `${r.id}: "${txt}" should state ${topFaces(plain)}`);
     assert.ok(txt.includes(`the ${topFaces(insulted)} if you insulted them`), `${r.id}: "${txt}" should state the insulted ${topFaces(insulted)}`);
+  });
+}
+
+// Phase 89 plan 09 (TEXT-01): the three invisibility ITEMS state the cap as a
+// range on the d20, plain and insulted, computed from the same faces.
+const INVIS_ITEM_ROWS = [
+  { id: "STAVES.Crystal Staff.txt", text: () => row(STAVES, "Crystal Staff"), c: { timers: itemTimer("Crystal Staff") } },
+  { id: "CLOAKS.Cloak of Invisibility.txt", text: () => row(CLOAKS, "Cloak of Invisibility"), c: { timers: itemTimer("Cloak of Invisibility") } },
+  { id: "POTIONS.Invisible.txt", text: () => potion("Invisible"), c: { timers: itemTimer("Invisible") } },
+];
+
+for (const r of INVIS_ITEM_ROWS) {
+  test(`${r.id} names the foe's winning range on a d20, plain and insulted, from the engine`, () => {
+    const { plain, insulted } = foeFacesVsHero(r.c);
+    assert.ok(foeFacesVsHero({}).plain > plain, "the condition should narrow the foe's faces");
+    const txt = r.text();
+    const stated = `only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`;
+    assert.ok(txt.includes(stated), `${r.id}: "${txt}" should state "${stated}"`);
+    assert.doesNotMatch(txt, /\bfaces?\b/, `${r.id}: no talk of faces`);
+    // The range really is the d20's top faces: every face from its low end up wins for the foe, none below.
+    const lo = 21 - plain;
+    assert.equal(d20Range(plain), lo === 20 ? "20" : `${lo}–20`);
   });
 }
 
@@ -225,6 +258,21 @@ test("SPELLS.Weaken.txt states the cap Weaken puts on every foe's faces", () => 
   assert.ok(spell("Weaken").includes(`no more than their die's ${topFaces(cap)} hit`), spell("Weaken"));
 });
 
+test("STAVES.Walnut Staff.txt states the cap the staff's Weaken puts on every foe, plain and insulted, on the d20 (Phase 89, 89-08 Q6 B)", () => {
+  const foe = fixedFoe();
+  let cap = 0;
+  let capInsulted = 0;
+  for (const c of [{}, { sub: "Guard" }, { sub: "Acrobat" }, { mirror: 2 }]) {
+    const state = fixedState(c, { combat: fixedCombat([foe], { foeToHitPenalty: 3 }) });
+    const insulted = fixedState(c, { combat: fixedCombat([foe], { foeToHitPenalty: 3, parleyInsulted: true }) });
+    cap = Math.max(cap, foeSwingVsHero(state, foe).faces);
+    capInsulted = Math.max(capInsulted, foeSwingVsHero(insulted, foe).faces);
+  }
+  assert.equal(cap, 3);
+  assert.equal(capInsulted, 4);
+  assert.ok(row(STAVES, "Walnut Staff").includes(`(${d20Range(cap)} on a d20; ${d20Range(capInsulted)} if you insulted them)`), row(STAVES, "Walnut Staff"));
+});
+
 // ---------------------------------------------------------------------------
 // 3. "N fewer faces": Battle Roar, Sidestep, the Anklet, Overhead Blow.
 // ---------------------------------------------------------------------------
@@ -234,7 +282,6 @@ const FEWER_ROWS = [
   { id: "FIGHTER_SKILLS.Battle Roar.txt", text: () => FIGHTER_SKILLS["Battle Roar"].txt, c: { timers: abilityTimer("battleRoar") }, phrase: "that hit anyone on your side" },
   { id: "ABILITIES.sidestep.txt", text: () => ABILITY_BY_ID.sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "that hit you" },
   { id: "FIGHTER_SKILLS.Sidestep.txt", text: () => FIGHTER_SKILLS.Sidestep.txt, c: { timers: abilityTimer("sidestep") }, phrase: "that hit you" },
-  { id: "JEWELRY.Anklet of Invisibility.txt", text: () => row(JEWELRY, "Anklet of Invisibility"), c: { timers: itemTimer("Anklet of Invisibility") }, phrase: "that hit you" },
 ];
 
 for (const r of FEWER_ROWS) {
@@ -247,6 +294,15 @@ for (const r of FEWER_ROWS) {
     assert.ok(txt.includes(`every foe has ${fewerFaces(lost)} ${r.phrase}`), `${r.id}: "${txt}" should state ${fewerFaces(lost)}`);
   });
 }
+
+test("JEWELRY.Anklet of Invisibility.txt states the foes' to-hit shift as a signed number, from the engine (Phase 89, TEXT-01)", () => {
+  const base = foeToHitVs(fixedState({}));
+  const under = foeToHitVs(fixedState({ timers: itemTimer("Anklet of Invisibility") }));
+  assert.ok(under >= 1 && base > under, `a base of ${base} faces should show the full shift`);
+  const txt = row(JEWELRY, "Anklet of Invisibility");
+  assert.ok(txt.includes(`foes are ${toHitShift(under - base)} to hit you`), `"${txt}" should state foes are ${toHitShift(under - base)} to hit you`);
+  assert.equal(toHitShift(under - base), "−2");
+});
 
 test("ABILITIES.overheadBlow.txt states how many faces the hero's own swing loses", () => {
   const foe = fixedFoe();
@@ -399,9 +455,85 @@ test("every signed number in a bestiary note is that foe's own damage bonus", ()
   }
 });
 
-test("the Gauntlet states the size step's face change for foes", () => {
+test("the Gauntlet states the size step's cost as a to-hit number: foes +1 to hit you (Phase 89, TEXT-01)", () => {
   assert.equal(SIZE_FACES_PER_STEP, 1);
-  assert.ok(row(JEWELRY, "Gauntlet of the Giant").includes("one face easier for foes to hit"));
+  const step = ACTIVATION_OF["Gauntlet of the Giant"].eff.size;
+  const faces = foeToHitVs(fixedState({ timers: itemTimer("Gauntlet of the Giant") })) - foeToHitVs(fixedState({}));
+  assert.equal(faces, SIZE_FACES_PER_STEP * step);
+  const txt = row(JEWELRY, "Gauntlet of the Giant");
+  assert.ok(txt.includes(`foes ${toHitShift(faces)} to hit you`), txt);
+  assert.doesNotMatch(txt, /\bface\b/);
+});
+
+/** foesReached(item, slotRef, cOverrides) — how many of five live foes a real useItem of `item` rolls a resist for (one event each). */
+function foesReached(item, ref, cOverrides) {
+  const foes = Array.from({ length: 5 }, (_, i) => fixedFoe({ name: `Foe${i}`, intel: 1 }));
+  const state = fixedState({ cls: "Magic User", items: [], timers: {}, ...cOverrides }, { combat: fixedCombat(foes) });
+  const events = useItem(state, ref, makeRng(1), [], () => 1);
+  assert.ok(events.some((e) => e.type === "itemUsed"), `${item.n} was used: ${events.map((e) => e.type)}`);
+  return events.filter((e) => e.type === "spellResisted" || e.type === "resistFailed").length;
+}
+
+test("the area items' texts state how many foes they reach, measured with a real useItem against five foes (Phase 89, TEXT-01)", () => {
+  const amulet = { kind: "jewel", ...JEWELRY.find((j) => j.n === "Amulet of Stone") };
+  assert.equal(foesReached(amulet, { slot: "jewelry1" }, { worn: { jewelry1: amulet } }), 4);
+  assert.match(amulet.txt, /up to 4 foes/);
+  for (const [name, count] of [["Birch Staff", 2], ["Oak Staff", 2]]) {
+    const staff = { kind: "staff", charges: ACTIVATION_OF[name].charges, ...STAVES.find((s) => s.n === name) };
+    assert.equal(foesReached(staff, { slot: "weapon" }, { weapon: name, staff }), count, name);
+    assert.match(staff.txt, new RegExp(`up to ${count} foes`), name);
+  }
+  // The Cedar Staff reaches every foe in the fight; a fight holds at most three (engine/difficulty.js#FOE_COUNT_TABLE), which its text says.
+  const cedar = { kind: "staff", charges: ACTIVATION_OF["Cedar Staff"].charges, ...STAVES.find((s) => s.n === "Cedar Staff") };
+  assert.equal(foesReached(cedar, { slot: "weapon" }, { weapon: "Cedar Staff", staff: cedar }), 5);
+  assert.match(cedar.txt, /every foe in the fight/);
+  assert.match(cedar.txt, /a fight holds at most 3/);
+  assert.ok(FOE_COUNT_TABLE.every((row) => row.every((n) => n <= 3)), "no fight is dealt more than three foes");
+});
+
+test("ITEM_STAT_COPY.text.crit: a precise blade crits on exactly the top N numbers of the strike die its stat line states (Phase 89, TEXT-01)", () => {
+  assert.equal(ITEM_STAT_COPY.text.crit, "crits on the top {n} numbers of your strike die");
+  for (const [name, w] of Object.entries(WEAPONS)) {
+    if (w.crit <= 1) continue;
+    const hero = { sub: "Woodsman", weapon: name };
+    const dieN = strikeDie(fixedFighter(hero));
+    const critsAt = (roll) => {
+      const state = fixedState(hero, { combat: fixedCombat([fixedFoe()], { opened2: true }) });
+      const events = [];
+      playerStrike(state, fakeRng([dieN + 1 - roll], 1), events);
+      return events.some((e) => e.type === "struck" && e.critical);
+    };
+    let n = 0;
+    for (let roll = dieN; roll >= dieN - 4; roll--) {
+      if (critsAt(roll)) n++;
+      else break;
+    }
+    assert.equal(n, w.crit, `${name}: crits on the top ${n} numbers`);
+    const line = itemStatLines({ kind: "weapon", n: name, base: name }).find((l) => l.key === "crit");
+    assert.equal(line.text, ITEM_STAT_COPY.text.crit.replace("{n}", n), name);
+  }
+});
+
+test("ITEM_STAT_COPY.text.toHit: a weapon's stated to-hit is the face change the engine applies to the hero's strike (Phase 89, TEXT-01)", () => {
+  for (const [name, w] of Object.entries(WEAPONS)) {
+    const line = itemStatLines({ kind: "weapon", n: name, base: name }).find((l) => l.key === "toHit");
+    if (w.need === 0) {
+      assert.equal(line, undefined, `${name}: no to-hit line for a shift of zero`);
+      continue;
+    }
+    const faces = (weapon) => heroStrikeFacesVs(fixedState({ weapon, cls: "Fighter", sub: "Knight" }, { combat: fixedCombat([fixedFoe()]) }), fixedFoe());
+    const club = faces("Club");
+    // Fighters need at least 2 faces after any shift (derived.js#toHit floors at 1; no legal pair goes below 2).
+    assert.equal(faces(name) - club, w.need, `${name}: the engine's face change`);
+    assert.equal(line.text, `${toHitShift(w.need)} to hit`, name);
+  }
+});
+
+test("the item rows' reach and limits are the engine's: the Helm's parley bonus, the staves' charges and recharge (Phase 89, TEXT-01)", () => {
+  for (const s of STAVES) {
+    const act = ACTIVATION_OF[s.n];
+    assert.ok(s.txt.includes(`${act.charges} charge`) && s.txt.includes(`back every ${act.recharge} squares`), `${s.n}: ${s.txt}`);
+  }
 });
 
 test("Enlarge states the size step's cost as a to-hit number: foes +1 to hit you (Phase 89, ITEM-05)", () => {
@@ -439,22 +571,30 @@ const plainText = (html_) => String(html_).replace(/<[^>]+>/g, " ").replace(/\s+
 test("CONDITION_EXPLAIN and itemEffectStarted: invisibility's 'very best roll' and 'top face (top two)' are the foe's measured faces", () => {
   const { plain, insulted } = foeFacesVsHero({ timers: itemTimer("Cloak of Invisibility") });
   assert.equal(plain, 1, "only the foe's top face finds an invisible hero");
-  // "only a foe's very best roll" names exactly one face.
-  assert.match(EXPLAIN.invis, /only a foe's very best roll finds you/);
+  // Phase 89 plan 09 (TEXT-01): the item chip and start lines name the range on the d20, plain and insulted, from the same faces.
+  const stated = `only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`;
+  assert.ok(EXPLAIN.invis.includes(`foes hit you only on their very best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if you insulted them)`), EXPLAIN.invis);
+  // Mirror Self (a spell, Phase 90's) still reads "very best roll", one face.
   assert.equal(foeFacesVsHero({ mirror: 3 }).plain, 1);
   assert.match(EXPLAIN.mirror, /only a foe's very best roll finds the real you/);
   const ev = { type: "itemEffectStarted", kind: "invis", item: "Cloak of Invisibility", left: 3 };
-  assert.deepEqual(statedTop(EVENT_NARRATION.itemEffectStarted(ev)), [plain, insulted], plainText(EVENT_NARRATION.itemEffectStarted(ev)));
-  assert.deepEqual(statedTop(LINE_FOR.itemEffectStarted(ev, {}).text), [plain, insulted], LINE_FOR.itemEffectStarted(ev, {}).text);
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(stated), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`only on their best roll (${d20Range(plain)} on a d20; ${d20Range(insulted)} if insulted)`), LINE_FOR.itemEffectStarted(ev, {}).text);
+  const joiner = { ...ev, member: "Joiny" };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(joiner)).includes(`only on their best roll (${d20Range(plain)} on a d20;`), plainText(EVENT_NARRATION.itemEffectStarted(joiner)));
+  assert.ok(LINE_FOR.itemEffectStarted(joiner, {}).text.includes(`only on their best roll (${d20Range(plain)} on a d20;`), LINE_FOR.itemEffectStarted(joiner, {}).text);
 });
 
-test("CONDITION_EXPLAIN.unseen and itemEffectStarted (unseen): the Anklet's 'two fewer faces' is the engine's shift", () => {
-  const lost = foeToHitVs(fixedState({})) - foeToHitVs(fixedState({ timers: itemTimer("Anklet of Invisibility") }));
-  const phrase = `${fewerFaces(lost)} that hit you`;
-  assert.ok(EXPLAIN.unseen.includes(`Every foe has ${phrase}`), EXPLAIN.unseen);
+test("CONDITION_EXPLAIN.unseen and itemEffectStarted (unseen): the Anklet's '−2 to hit you' is the engine's shift", () => {
+  const shift = foeToHitVs(fixedState({ timers: itemTimer("Anklet of Invisibility") })) - foeToHitVs(fixedState({}));
+  const phrase = `foes ${toHitShift(shift)} to hit you`;
+  assert.ok(EXPLAIN.unseen.includes(`Foes are ${toHitShift(shift)} to hit you`), EXPLAIN.unseen);
   const ev = { type: "itemEffectStarted", kind: "unseen", item: "Anklet of Invisibility", left: 3 };
   assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+  const joiner = { ...ev, member: "Joiny" };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(joiner)).includes(`foes ${toHitShift(shift)} to hit them`), plainText(EVENT_NARRATION.itemEffectStarted(joiner)));
+  assert.ok(LINE_FOR.itemEffectStarted(joiner, {}).text.includes(`foes ${toHitShift(shift)} to hit them`), LINE_FOR.itemEffectStarted(joiner, {}).text);
 });
 
 test("CONDITION_EXPLAIN.acute and itemEffectStarted (acute): 'you strike on a d6' is the strike die Acuteness sets", () => {
@@ -466,18 +606,20 @@ test("CONDITION_EXPLAIN.acute and itemEffectStarted (acute): 'you strike on a d6
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`strike on a d${die}`), LINE_FOR.itemEffectStarted(ev, {}).text);
 });
 
-test("CONDITION_EXPLAIN.giant and itemEffectStarted (giant): one size step is '+2 damage, and one face easier for foes to hit'", () => {
+test("CONDITION_EXPLAIN.giant and itemEffectStarted (giant): one size step is '+2 damage, and foes +1 to hit you' (Phase 89, TEXT-01)", () => {
   const item = "Gauntlet of the Giant";
   const hero = fixedFighter({ timers: itemTimer(item) });
   const dmg = SIZE_DAMAGE_PER_STEP * sizeAxisStep(hero, "dmg");
   const faces = foeToHitVs(fixedState({ timers: itemTimer(item) })) - foeToHitVs(fixedState({}));
-  assert.equal(faces, 1, `${item}: one face easier`);
-  const phrase = `+${dmg} damage, and one face easier for foes to hit`;
+  assert.equal(faces, 1, `${item}: foes one face easier`);
+  const phrase = `+${dmg} damage, and foes ${toHitShift(faces)} to hit you`;
   assert.ok(EXPLAIN.giant.includes(phrase), `giant: ${EXPLAIN.giant}`);
-  // engine/items.js stamps `size` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
-  const ev = { type: "itemEffectStarted", kind: "giant", item, left: 3, size: "Large", sizeDmg: dmg };
+  // engine/items.js stamps `size`, `step` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
+  const ev = { type: "itemEffectStarted", kind: "giant", item, left: 3, size: "Large", step: 1, sizeDmg: dmg };
   assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+  const joiner = { ...ev, member: "Joiny" };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(joiner)).includes(`foes ${toHitShift(faces)} to hit them`), plainText(EVENT_NARRATION.itemEffectStarted(joiner)));
 });
 
 test("CONDITION_EXPLAIN.enlarge and itemEffectStarted (enlarge): Enlarge is '+11 damage, and foes +1 to hit you', both numbers from the engine (Phase 89, ITEM-05)", () => {
@@ -499,7 +641,7 @@ test("CONDITION_EXPLAIN.heroBlind: 'only your die's top face lands' is the hero'
   assert.equal(EXPLAIN.heroBlind, "Only your die's top face lands.");
 });
 
-test("CONDITION_EXPLAIN.tongue: 'the roll gets two more faces' is the Helm's parley bonus", () => {
+test("CONDITION_EXPLAIN.tongue and the Helm's text: '+2 to the parley roll' is the Helm's parley bonus (Phase 89, TEXT-01)", () => {
   const parleyAt = (cOverrides) => {
     const state = fixedState({ race: "Wilmsry", ...cOverrides }, { combat: fixedCombat([fixedFoe({ type: "Humans" })], { type: "Humans" }) });
     const ev = parley(state, fakeRng([], 20), []).find((e) => e.type === "parleyRolled");
@@ -508,7 +650,24 @@ test("CONDITION_EXPLAIN.tongue: 'the roll gets two more faces' is the Helm's par
   };
   const more = parleyAt({}) - parleyAt({ timers: itemTimer("Helm of Knowledge") });
   assert.equal(more, 2);
-  assert.ok(EXPLAIN.tongue.includes(`the roll gets ${WORD[more]} more faces`), EXPLAIN.tongue);
+  const phrase = `${toHitShift(more)} to the parley roll`;
+  assert.ok(EXPLAIN.tongue.includes(phrase), EXPLAIN.tongue);
+  assert.ok(row(JEWELRY, "Helm of Knowledge").includes(phrase), row(JEWELRY, "Helm of Knowledge"));
+  const ev = { type: "itemEffectStarted", kind: "tongue", item: "Helm of Knowledge", left: 3 };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
+  assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
+});
+
+test("the Helm's parley reach is the engine's: it opens exactly the Humans, Demons and Beasts families (Phase 89, TEXT-01)", () => {
+  const opens = (type) => {
+    const state = fixedState({ timers: itemTimer("Helm of Knowledge") }, { combat: fixedCombat([fixedFoe({ type })], { type }) });
+    return canParley(state);
+  };
+  const noHelm = (type) => canParley(fixedState({}, { combat: fixedCombat([fixedFoe({ type })], { type }) }));
+  const opened = ["Humans", "Demons", "Beasts", "Lair Beasts", "Magical", "Walking Dead"].filter((t) => opens(t) && !noHelm(t));
+  assert.deepEqual(opened, ["Humans", "Demons", "Beasts", "Lair Beasts"]);
+  const helm = row(JEWELRY, "Helm of Knowledge");
+  assert.ok(helm.includes("always parley with Humans, Demons and Beasts"), helm);
 });
 
 test("battleRoarRaised and sidestepped (Oracle and rail): 'two fewer faces' is the engine's shift", () => {

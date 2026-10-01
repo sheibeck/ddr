@@ -60,14 +60,14 @@
               "eff": {},
               "use": "ether",
               "every": 80,
-              "txt": "walk through walls, once every 100 squares"
+              "txt": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again"
             }
           },
           "maxWP": 56,
           "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "ABIL-02: as chargen seed 3 — Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. The opening strike's event is renamed backstab (was silenceStrike) but events are not byte-diffed; crit/dmg/wp are identical (the plain-Thief fallback crits anyway). Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -725,14 +725,14 @@
               "eff": {},
               "use": "ether",
               "every": 80,
-              "txt": "walk through walls, once every 100 squares"
+              "txt": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again"
             }
           },
           "maxWP": 56,
           "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. Phase 51 (INIT-01, 2026-09-20) gave this scenario its own action-path divergence (see above) -- this chargen-time record is unaffected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. Phase 51 (INIT-01, 2026-09-20) gave this scenario its own action-path divergence (see above) -- this chargen-time record is unaffected. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -915,14 +915,14 @@
               "eff": {
                 "fly": 1
               },
-              "txt": "flight for 20 squares, once every 50"
+              "txt": "used, flight for twenty squares; then fifty squares before it will do it again"
             }
           },
           "maxWP": 56,
           "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt would be stripped while the engine side's is not — moot now: the cloak is worn, not bagged, so stripCloakArmorTxt (a c.items-only strip) never reaches it. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "ABIL-02: Silence converted to the Silent Step active (same table position/cost); it lives in c.abilities (silentStep) instead of c.skills. A flee never reaches the opening strike, so no event rename is observed here. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) -- the SAME single draw as before, but this seed's u now lands on Cloak of Flying instead of Cloak of Armor. Cloak of Flying's txt is untouched by this task (it already carried an act block before this task, so it is not one of the 9 reworded rows) -- only Cloak of Armor's name is in REWORDED_TXT_ITEMS, so the prototype side's txt would be stripped while the engine side's is not — moot now: the cloak is worn, not bagged, so stripCloakArmorTxt (a c.items-only strip) never reaches it. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Flying item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -1116,14 +1116,14 @@
               "eff": {},
               "use": "ether",
               "every": 80,
-              "txt": "walk through walls, once every 100 squares"
+              "txt": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again"
             }
           },
           "maxWP": 56,
           "wp": 56,
           "rations": 8
         },
-        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+        "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Smoke (an active), which lives in c.abilities (smoke) instead of c.skills. The existing action-path record above is untouched. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
       },
       "floorFeatureShift": {
         "phase": "54",

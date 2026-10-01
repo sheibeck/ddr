@@ -1,0 +1,486 @@
+[
+  {
+    "key": "content:CLOAKS.Cloak of Ether.txt",
+    "surface": "items",
+    "trigger": "CLOAKS.Cloak of Ether's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "walk through walls, once every 100 squares",
+    "after": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" row: the Cloak of Ether states ten squares of walking through walls (engine act.effect 10), that a window ending in stone is fatal (engine/movement.js#resolveEtherEnd), and the eighty squares before it is ready again. The old \"once every 100 squares\" was neither the ten nor the ninety."
+  },
+  {
+    "key": "content:CLOAKS.Cloak of Flying.txt",
+    "surface": "items",
+    "trigger": "CLOAKS.Cloak of Flying's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "flight for 20 squares, once every 50",
+    "after": "used, flight for twenty squares; then fifty squares before it will do it again",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" row: the Cloak of Flying is twenty squares of flight then fifty before it is ready again (seventy after the use, not fifty); the text kept the prototype sentence."
+  },
+  {
+    "key": "content:CLOAKS.Cloak of Invisibility.txt",
+    "surface": "items",
+    "trigger": "CLOAKS.Cloak of Invisibility's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    "after": "invisible for 50 squares, once every 100: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them)",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The cap is the foe's one winning face (20 on a d20), two if you insulted them (19–20), as engine/derived.js#foeToHitVs and foeSwingChain give it."
+  },
+  {
+    "key": "content:CLOAKS.Cloak of Speed.txt",
+    "surface": "items",
+    "trigger": "CLOAKS.Cloak of Speed's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "double attacks, once every 50 squares",
+    "after": "used, you swing twice a round for fifty squares; then fifty squares before it will do it again",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" row: the Cloak of Speed is fifty squares of double attacks then fifty before it works again, so it is ready a hundred squares after the use, not fifty (the once-a-day model of 2026-09-18)."
+  },
+  {
+    "key": "content:JEWELRY.Amulet of Stone.txt",
+    "surface": "items",
+    "trigger": "JEWELRY.Amulet of Stone's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "turns up to 4 squares of opponents to stone, once every 100 squares; past floor 12, the stone wears off in three rounds",
+    "after": "turns up to 4 foes to stone, once every 100 squares; each foe may resist, and the deeper the floor, the likelier it does",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"squares of opponents/enemies\" becomes how many foes an area effect hits. Q1 ruling (user, 2026-09-30): \"remove the floor-12 special effects only\" and keep the resist that rises with depth. 89-08 built it (a landed stone kills, a landed gas sleeps the fight, one resist that rises with the floor), so the \"past floor 12\" sentences are gone and the text says each foe may resist and the deeper the floor, the likelier it does."
+  },
+  {
+    "key": "content:JEWELRY.Anklet of Invisibility.txt",
+    "surface": "items",
+    "trigger": "JEWELRY.Anklet of Invisibility's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight",
+    "after": "used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Anklet takes two off a foe's to-hit (eff foeToHit −2)."
+  },
+  {
+    "key": "content:JEWELRY.Gauntlet of the Giant.txt",
+    "surface": "items",
+    "trigger": "JEWELRY.Gauntlet of the Giant's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "used, you are one size larger for fifty squares: +2 damage, and one face easier for foes to hit; then fifty squares before it will do it again",
+    "after": "used, you are one size larger for fifty squares: +2 damage, and foes +1 to hit you; then fifty squares before it will do it again",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. One size step is foes +1 to hit you (SIZE_FACES_PER_STEP), the same words Enlarge got in 89-02."
+  },
+  {
+    "key": "content:JEWELRY.Helm of Knowledge.txt",
+    "surface": "items",
+    "trigger": "JEWELRY.Helm of Knowledge's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "used, you understand them perfectly for fifty squares; then fifty squares of forgetting again",
+    "after": "used, for fifty squares you can always parley with Humans, Demons and Beasts: a parley is talking your way out of the fight instead of swinging, one try per fight, and +2 to the parley roll (Ninjas and Masters of Arms still will not); then fifty squares of forgetting again",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): the Helm's \"can talk to\"/\"understand them\" wording \"says it lets you always parley, and says what a parley is\". It opens a parley with Humans, Demons and Beasts, never the Magical or the Walking Dead, adds +2 to the parley roll, and never helps a Ninja or a Master of Arms; parley's rewards are left to PARLEY-01 (Phase 91)."
+  },
+  {
+    "key": "content:POTIONS.Acuteness.txt",
+    "surface": "items",
+    "trigger": "POTIONS.Acuteness's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "strike on a d6 for d8 rounds",
+    "after": "your strike die becomes a d6 for d8 rounds",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md: the potion says what the engine does, your strike die becomes a d6 (derived.js#strikeDie) for d8 rounds, instead of \"strike on a d6\"."
+  },
+  {
+    "key": "content:POTIONS.Death.txt",
+    "surface": "items",
+    "trigger": "POTIONS.Death's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "your dead!",
+    "after": "you're dead!",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "User, 2026-09-30: the Death potion's misspelled contraction (\"your dead!\", inherited from the rulebook and the prototype) becomes \"you're dead!\"."
+  },
+  {
+    "key": "content:POTIONS.Invisible.txt",
+    "surface": "items",
+    "trigger": "POTIONS.Invisible's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    "after": "invisible for a day (100 squares): foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them)",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. \"A day\" is a hundred squares in the engine (the prototype's day), now said."
+  },
+  {
+    "key": "content:STAVES.Birch Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Birch Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "freezes up to 2 squares of opponents indefinitely; past floor 12, indefinitely means three rounds",
+    "after": "freezes up to 2 foes for d4 rounds apiece; each foe may resist, and the deeper the floor, the likelier it does; then they are just cold and angry; 2 charges, one back every 100 squares",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "User rulings 2026-09-28 (quick q-260928-frz, whose own row for this key folds into this one so the chain reads base to final): the freeze is a d4-round hold unless the foe resists, never \"indefinitely\". TEXT-01 (user, 2026-09-30): \"squares of opponents/enemies\" becomes how many foes an area effect hits. Q1 ruling (user, 2026-09-30): \"remove the floor-12 special effects only\" and keep the resist that rises with depth. 89-08 built it (a landed stone kills, a landed gas sleeps the fight, one resist that rises with the floor), so the \"past floor 12\" sentences are gone and the text says each foe may resist and the deeper the floor, the likelier it does. Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Cedar Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Cedar Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "knocks out 3 squares of enemies for a day; past floor 12, a day is three rounds",
+    "after": "puts every foe in the fight to sleep for the rest of it (a fight holds at most 3); each foe may resist, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"squares of opponents/enemies\" becomes how many foes an area effect hits. The Cedar Staff reaches every foe in the fight (a fight holds at most three), so it says that instead of \"3 squares\". Q1 ruling (user, 2026-09-30): \"remove the floor-12 special effects only\" and keep the resist that rises with depth. 89-08 built it (a landed stone kills, a landed gas sleeps the fight, one resist that rises with the floor), so the \"past floor 12\" sentences are gone and the text says each foe may resist and the deeper the floor, the likelier it does. Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Crystal Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Crystal Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them)",
+    "after": "the whole party invisible for d10+5 squares: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them); 2 charges, one back every 100 squares",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. It covers the whole party (PARTY_WIDE_ITEM_EFFECTS). Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Oak Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Oak Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "turns 2 squares of opponents to stone; past floor 12, the stone wears off in three rounds",
+    "after": "turns up to 2 foes to stone; each foe may resist, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"squares of opponents/enemies\" becomes how many foes an area effect hits. Q1 ruling (user, 2026-09-30): \"remove the floor-12 special effects only\" and keep the resist that rises with depth. 89-08 built it (a landed stone kills, a landed gas sleeps the fight, one resist that rises with the floor), so the \"past floor 12\" sentences are gone and the text says each foe may resist and the deeper the floor, the likelier it does. Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Pine Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Pine Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "d6 fireballs, automatic hits, 1d10+4 each",
+    "after": "d6 fireballs, 1d10+4 each, dealt round the foes in turn with no roll to hit; each foe may resist and then takes none, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\": the fireballs are automatic hits but every foe first rolls a resist (a resisted foe takes none, user 2026-09-27) that rises with depth (Q1), and they come round the foes in turn. Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Poplar Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Poplar Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "heals you and every Joiner with you d20+10 hp each",
+    "after": "heals you and every Joiner with you d20+10 hp each; 3 charges, one back every 60 squares",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Rowan Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Rowan Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "a protective dome of 100 hp",
+    "after": "a protective dome that soaks the first 100 hp of blows aimed at you, until it is spent or the fight ends; 2 charges, one back every 100 squares",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\": the dome is a pool of 100 hp that soaks blows aimed at you until it is spent or the fight ends (engine/items.js dome, combat.js ward soak). Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:STAVES.Walnut Staff.txt",
+    "surface": "items",
+    "trigger": "STAVES.Walnut Staff's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "all hits on the weakened do double damage",
+    "after": "casts Weaken on the room for the whole fight: each foe may resist (the deeper the floor, the likelier it does), and each foe that does not does half damage and hits you only on a high roll (18–20 on a d20; 17–20 if you insulted them); 2 charges, one back every 80 squares",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "User, 2026-09-30 (Walnut ruling and Q6 B): \"text-only: it casts Weaken\"; the staff casts the full Weaken for the whole fight, built by 89-08: each foe may resist, and a foe that does not does half damage and hits only on its top three results (18–20 on a d20; 17–20 if you insulted them). The old \"all hits on the weakened do double damage\" doubled nothing. Every staff text now also states its charges and its recharge (docs/ITEM-AUDIT.md: \"no row's text states its recharge time, so every staff text is short of a number\")."
+  },
+  {
+    "key": "content:BAG_ITEMS.medium.txt",
+    "surface": "items",
+    "trigger": "BAG_ITEMS.medium's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "6 slots. Room to regret more things.",
+    "after": "6 slots, 5000 wilmst and 20 rations. Room to regret more things.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" bags: a bag caps wilmst and rations as well as slots (BAGS, derived.js#clampCarry), and the text now says so."
+  },
+  {
+    "key": "content:BAG_ITEMS.large.txt",
+    "surface": "items",
+    "trigger": "BAG_ITEMS.large's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "8 slots. Your spine has filed a complaint.",
+    "after": "8 slots, 8000 wilmst and 40 rations. Your spine has filed a complaint.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" bags: a bag caps wilmst and rations as well as slots (BAGS, derived.js#clampCarry), and the text now says so."
+  },
+  {
+    "key": "content:BAG_ITEMS.exlarge.txt",
+    "surface": "items",
+    "trigger": "BAG_ITEMS.exlarge's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "10 slots. Technically luggage.",
+    "after": "10 slots, 10000 wilmst and 60 rations. Technically luggage.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md \"fix text (89-09)\" bags: a bag caps wilmst and rations as well as slots (BAGS, derived.js#clampCarry), and the text now says so."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.label.toHit",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.label.toHit (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "To hit",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md weapons \"fix text (89-09)\": a weapon's to-hit (heavy −1, Bardiche −2, light +1) is not stated on the item (user 2026-09-30: \"stays, correct under roll-high\", ask only that the item says it). The label for the new to-hit stat line."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.text.toHit",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.text.toHit (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "{signed} to hit",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The weapon's to-hit stat line, signed with the one formatter (rollRange.js#signedText: \"+1 to hit\", \"−1 to hit\", never \"+0\")."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.label.crit",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.label.crit (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "Critical",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md weapons \"fix text (89-09)\": the precise blades' wider critical range is not stated on the item. The label for the new crit stat line."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.text.crit",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.text.crit (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "crits on the top {n} numbers of your strike die",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The crit stat line says how many of the strike die's top numbers double the damage (WEAPONS crit); the strike die scales with level, so it is a count, not a d20 range."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.label.bulk",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.label.bulk (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "Bulk",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md armour \"fix text (89-09)\": Studded, Mail and Plate hide a real agility cost (GEAR-01 bulk) that no surface prints. The label for the new bulk stat line."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.text.bulk",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.text.bulk (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "{signed} to climb, leap and flee rolls",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The bulk stat line: bulk is taken off the climb, leap and flee rolls (engine/movement.js, combat.js#flee), so it reads \"−1\" or \"−2 to climb, leap and flee rolls\"."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.label.carry",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.label.carry (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "Carries",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md bags \"fix text (89-09)\": a bag also caps the wilmst and rations carried, and no text said so. The label for the new carry stat line."
+  },
+  {
+    "key": "bank:ITEM_STAT_COPY.text.carry",
+    "surface": "items",
+    "trigger": "ITEM_STAT_COPY.text.carry (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "carries up to {wilmst} wilmst and {rations} rations",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The bag's carry stat line, from BAGS[tier].wilmst and .rations."
+  },
+  {
+    "key": "bank:GEAR_COPY.bagCaps",
+    "surface": "panels",
+    "trigger": "GEAR_COPY.bagCaps (a new line on the Gear tab, the store, and the loot and find cards)",
+    "before": "",
+    "after": "this bag carries up to {wilmst} wilmst and {rations} rations",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/ITEM-AUDIT.md bags \"fix text (89-09)\": the starting small bag has no item text, so the Gear tab's bag meter now states the wilmst and rations the bag carries (BAGS, clampCarry)."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "",
+    "after": "the companion unseen for 3 squares: foes hit them only on their best roll (20 on a d20; 19–20 if you insulted them). They swing at where the companion was.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. A Joiner's invisible item (the Crystal Staff's party effect): foes hit them only on their best roll, 20 on a d20 (19–20 if you insulted them). The Joiner start line itself arrived with ITEM-07 (89-05/89-06) and has no phase-base line, so it is ledgered here as a new line in its TEXT-01 form."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "",
+    "after": "the companion is one size larger for 3 squares: Large. +2 damage, and foes +1 to hit them. A bigger target, on reflection.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Gauntlet's size step is foes +1 to hit. The Joiner start line itself arrived with ITEM-07 (89-05/89-06) and has no phase-base line, so it is ledgered here as a new line in its TEXT-01 form."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "the companion unseen for 3 squares: every foe has two fewer faces that hit them.",
+    "after": "the companion unseen for 3 squares: foes −2 to hit them.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Anklet is foes −2 to hit."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "",
+    "after": "the companion unseen for 3 squares: foes hit them only on their best roll (20 on a d20; 19–20 if insulted).",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. A Joiner's invisible item (the Crystal Staff's party effect): foes hit them only on their best roll, 20 on a d20 (19–20 if you insulted them). The Joiner start line itself arrived with ITEM-07 (89-05/89-06) and has no phase-base line, so it is ledgered here as a new line in its TEXT-01 form."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "",
+    "after": "the companion is one size larger for 3 squares: Large. +2 damage, foes +1 to hit.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Gauntlet's size step is foes +1 to hit. The Joiner start line itself arrived with ITEM-07 (89-05/89-06) and has no phase-base line, so it is ledgered here as a new line in its TEXT-01 form."
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — engine/items.js#applyActivation, a Joiner's item effect starting (the synthetic corpus event carries a member)",
+    "before": "the companion unseen for 3 squares: every foe has two fewer faces that hit them.",
+    "after": "the companion unseen for 3 squares: foes −2 to hit them.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Anklet is foes −2 to hit."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "CONDITION_EXPLAIN — the chip-tap sentence for an item effect",
+    "before": "They swing at where you were: only a foe's very best roll finds you. Enjoy it; it wears off.",
+    "after": "They swing at where you were: foes hit you only on their very best roll (20 on a d20; 19–20 if you insulted them). Enjoy it; it wears off.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Invisible chip names the range the foes need."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "CONDITION_EXPLAIN — the chip-tap sentence for an item effect",
+    "before": "One size larger while it lasts: +2 damage, and one face easier for foes to hit.",
+    "after": "One size larger while it lasts: +2 damage, and foes +1 to hit you.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Giant chip."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "CONDITION_EXPLAIN — the chip-tap sentence for an item effect",
+    "before": "Every foe has two fewer faces that hit you, and they know it.",
+    "after": "Foes are −2 to hit you, and they know it.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): item \"faces\" wording becomes a signed to-hit (\"every foe has two fewer faces that hit you\" becomes \"foes −2 to hit you\") and a hard cap names its range on a d20 (\"foes hit you only on a high roll (20 on a d20)\" style). Same numbers, plain words. The Unseen chip."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "CONDITION_EXPLAIN — the chip-tap sentence for an item effect",
+    "before": "You can try a parley with anything but the Magical and the Walking Dead, and the roll gets two more faces. Whether they listen is up to them.",
+    "after": "You can always parley with anything but the Magical and the Walking Dead: one try a fight, talking your way out of it instead of swinging, and +2 to the parley roll. Whether they listen is up to them.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): the Helm's chip says you can always parley, what a parley is (talking your way out of the fight instead of swinging, one try a fight) and the +2 to the parley roll, without restating parley's rewards (PARLEY-01, Phase 91)."
+  },
+  {
+    "key": "raw:mazeworld.html#markup",
+    "surface": "title",
+    "trigger": "a 'To hit' label in mazeworld.html's markup: the corpus lists a string once, and the new stat-line label is the same words",
+    "before": "To hit",
+    "after": "",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "The words \"To hit\" now live in ITEM_STAT_COPY.label.toHit (bank:ITEM_STAT_COPY.label.toHit), so the corpus counts them once; the markup label elsewhere on the page is the same two words, unchanged."
+  }
+]

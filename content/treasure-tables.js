@@ -124,7 +124,7 @@ const JEWELRY_ROWS = [
     // the "shrinking back" wording (no such mechanic exists; the effect
     // simply ends).
     n: "Gauntlet of the Giant", slot: "jewelry", eff: { size: 1 },
-    txt: "used, you are one size larger for fifty squares: +2 damage, and one face easier for foes to hit; then fifty squares before it will do it again",
+    txt: "used, you are one size larger for fifty squares: +2 damage, and foes +1 to hit you; then fifty squares before it will do it again",
     act: { kind: "giant", effect: 50, cd: 50 },
   },
   {
@@ -143,14 +143,14 @@ const JEWELRY_ROWS = [
     // Use-activated (260918-w4n): worn + used, every foe has two fewer faces that land
     // for 50 squares, 50 to fade back into view.
     n: "Anklet of Invisibility", slot: "jewelry", eff: { foeToHit: -2 },
-    txt: "used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight",
+    txt: "used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight",
     act: { kind: "unseen", effect: 50, cd: 50 },
   },
   {
     // Use-activated (260918-w4n): worn + used, perfect fluency for 50
     // squares, 50 to forget it again.
     n: "Helm of Knowledge", slot: "jewelry", eff: { tongue: 1 },
-    txt: "used, you understand them perfectly for fifty squares; then fifty squares of forgetting again",
+    txt: "used, for fifty squares you can always parley with Humans, Demons and Beasts: a parley is talking your way out of the fight instead of swinging, one try per fight, and +2 to the parley roll (Ninjas and Masters of Arms still will not); then fifty squares of forgetting again",
     act: { kind: "tongue", effect: 50, cd: 50 },
   },
   {
@@ -164,7 +164,7 @@ const JEWELRY_ROWS = [
     // Once-a-day rule: every 200 -> 100 (the AoE stone effect itself is
     // instant, so effect+cd is just the cd).
     n: "Amulet of Stone", slot: "jewelry", eff: {}, use: "stone", every: 100, aoe: 4,
-    txt: "turns up to 4 squares of opponents to stone, once every 100 squares; past floor 12, the stone wears off in three rounds",
+    txt: "turns up to 4 foes to stone, once every 100 squares; each foe may resist, and the deeper the floor, the likelier it does",
     act: { kind: "stone", effect: 0 },
   },
 ];
@@ -191,12 +191,12 @@ const CLOAKS_ROWS = [
   {
     // Once-a-day rule: 100 effect / 100 cd -> 50 effect / 50 cd (50+50 = one day).
     n: "Cloak of Invisibility", slot: "cloak", eff: {}, use: "invis", every: 50,
-    txt: "invisible for 50 squares, once every 100: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    txt: "invisible for 50 squares, once every 100: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them)",
     act: { kind: "invis", effect: 50 },
   },
   {
     n: "Cloak of Speed", slot: "cloak", eff: {}, use: "haste", every: 50,
-    txt: "double attacks, once every 50 squares",
+    txt: "used, you swing twice a round for fifty squares; then fifty squares before it will do it again",
     act: { kind: "haste", effect: 50 },
   },
   {
@@ -229,7 +229,7 @@ const CLOAKS_ROWS = [
     // row `every` to fall back on. `txt` is left untouched (byte-identical
     // to the frozen prototype) — this row is NOT one of the 9 converted
     // rows this task rewords; it already carried an `act` before this task.
-    n: "Cloak of Flying", slot: "cloak", eff: { fly: 1 }, txt: "flight for 20 squares, once every 50",
+    n: "Cloak of Flying", slot: "cloak", eff: { fly: 1 }, txt: "used, flight for twenty squares; then fifty squares before it will do it again",
     act: { kind: "fly", effect: 20, cd: 50 },
   },
   {
@@ -244,7 +244,7 @@ const CLOAKS_ROWS = [
     // slightly generous (usable every 90) but stays true, and the chip and
     // the rail line state the exact numbers.
     n: "Cloak of Ether", slot: "cloak", eff: {}, use: "ether", every: 80,
-    txt: "walk through walls, once every 100 squares",
+    txt: "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again",
     act: { kind: "ether", effect: 10 },
   },
 ];
@@ -254,23 +254,23 @@ const CLOAKS_ROWS = [
 // harness strips the reworded txt (comparables.js#REWORDED_TXT_ITEMS).
 const STAVES_ROWS = [
   {
-    n: "Rowan Staff", use: "dome", txt: "a protective dome of 100 hp",
+    n: "Rowan Staff", use: "dome", txt: "a protective dome that soaks the first 100 hp of blows aimed at you, until it is spent or the fight ends; 2 charges, one back every 100 squares",
     act: { kind: "dome", charges: 2, recharge: 100 },
   },
   {
-    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 squares of opponents for d4 rounds apiece, unless they resist; then they are just cold and angry",
+    n: "Birch Staff", use: "freeze", txt: "freezes up to 2 foes for d4 rounds apiece; each foe may resist, and the deeper the floor, the likelier it does; then they are just cold and angry; 2 charges, one back every 100 squares",
     act: { kind: "freeze", charges: 2, recharge: 100 },
   },
   {
-    n: "Walnut Staff", use: "weaken", txt: "all hits on the weakened do double damage",
+    n: "Walnut Staff", use: "weaken", txt: "casts Weaken on the room for the whole fight: each foe may resist (the deeper the floor, the likelier it does), and each foe that does not does half damage and hits you only on a high roll (18–20 on a d20; 17–20 if you insulted them); 2 charges, one back every 80 squares",
     act: { kind: "weaken", charges: 2, recharge: 80 },
   },
   {
-    n: "Oak Staff", use: "stone", txt: "turns 2 squares of opponents to stone; past floor 12, the stone wears off in three rounds",
+    n: "Oak Staff", use: "stone", txt: "turns up to 2 foes to stone; each foe may resist, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
     act: { kind: "stone", charges: 1, recharge: 100 },
   },
   {
-    n: "Crystal Staff", use: "invis", txt: "party invisible d10+5 squares: foes hit only on their die's top face (the top two faces if you insulted them)",
+    n: "Crystal Staff", use: "invis", txt: "the whole party invisible for d10+5 squares: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them); 2 charges, one back every 100 squares",
     act: { kind: "invis", charges: 2, recharge: 100, effect: { n: 1, sides: 10, bonus: 5 } },
   },
   {
@@ -280,15 +280,15 @@ const STAVES_ROWS = [
     // two). Its kind is its own `partyHeal`, NOT the Healing potion's `heal`
     // (d10+2, hero only), and its dice live on the activation record
     // (`act.heal`) so the text guard reads the number from one place.
-    n: "Poplar Staff", use: "partyHeal", txt: "heals you and every Joiner with you d20+10 hp each",
+    n: "Poplar Staff", use: "partyHeal", txt: "heals you and every Joiner with you d20+10 hp each; 3 charges, one back every 60 squares",
     act: { kind: "partyHeal", charges: 3, recharge: 60, heal: { n: 1, sides: 20, bonus: 10 } },
   },
   {
-    n: "Pine Staff", use: "fire", txt: "d6 fireballs, automatic hits, 1d10+4 each",
+    n: "Pine Staff", use: "fire", txt: "d6 fireballs, 1d10+4 each, dealt round the foes in turn with no roll to hit; each foe may resist and then takes none, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
     act: { kind: "fire", charges: 1, recharge: 100 },
   },
   {
-    n: "Cedar Staff", use: "gas", txt: "knocks out 3 squares of enemies for a day; past floor 12, a day is three rounds",
+    n: "Cedar Staff", use: "gas", txt: "puts every foe in the fight to sleep for the rest of it (a fight holds at most 3); each foe may resist, and the deeper the floor, the likelier it does; 1 charge, back every 100 squares",
     act: { kind: "gas", charges: 1, recharge: 100 },
   },
 ];

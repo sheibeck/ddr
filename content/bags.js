@@ -50,7 +50,7 @@ export const BAG_DROP_FACES = 3;
 // test/unit/bag-cap-gate.test.js by deriving from BAGS, not duplicated as a
 // literal here).
 export const BAG_ITEMS = {
-  medium: { kind: "bag", tier: "medium", n: "Medium bag", txt: "6 slots. Room to regret more things." },
-  large: { kind: "bag", tier: "large", n: "Large bag", txt: "8 slots. Your spine has filed a complaint." },
-  exlarge: { kind: "bag", tier: "exlarge", n: "Enormous bag", txt: "10 slots. Technically luggage." },
+  medium: { kind: "bag", tier: "medium", n: "Medium bag", txt: "6 slots, 5000 wilmst and 20 rations. Room to regret more things." },
+  large: { kind: "bag", tier: "large", n: "Large bag", txt: "8 slots, 8000 wilmst and 40 rations. Your spine has filed a complaint." },
+  exlarge: { kind: "bag", tier: "exlarge", n: "Enormous bag", txt: "10 slots, 10000 wilmst and 60 rations. Technically luggage." },
 };

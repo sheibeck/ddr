@@ -54,14 +54,14 @@ export const POTIONS = [
   },
   {
     n: "Acuteness", col: "White", uses: { n: 1, sides: 4, bonus: 0 }, price: 800, eff: "acute",
-    txt: "strike on a d6 for d8 rounds",
+    txt: "your strike die becomes a d6 for d8 rounds",
     act: { kind: "acute", effect: { n: 1, sides: 8, bonus: 0 }, cadence: "rounds" },
   },
-  { n: "Death", col: "??", uses: { n: 1, sides: 4, bonus: 0 }, price: 50, eff: "death", txt: "your dead!" },
+  { n: "Death", col: "??", uses: { n: 1, sides: 4, bonus: 0 }, price: 50, eff: "death", txt: "you're dead!" },
   {
     // The canon text says "a day"; the prototype set 100 squares — kept.
     n: "Invisible", col: "Clear", uses: { n: 1, sides: 4, bonus: 0 }, price: 250, eff: "invis",
-    txt: "invisible for a day: foes hit you only on their die's top face (the top two faces if you insulted them)",
+    txt: "invisible for a day (100 squares): foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them)",
     act: { kind: "invis", effect: 100 },
   },
 ];

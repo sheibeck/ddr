@@ -6428,3 +6428,122 @@ affliction.
 **Nothing else moved.** No new serialized field (the Joiner repair line's param
 is `{ member, name }` on an existing plain-object `effectParams`; `sanitizeStore`
 accepts it unchanged), so the three `*Comparable()` functions need no carve-out.
+
+### Phase 89 plan 09: item text in plain words (TEXT-01, ITEM-01)
+
+Plan 89-09, base `dd49e8d5` (gate 8,609 tests, 8,607 pass, 0 fail, 2 skipped;
+parity 66/66). Words only: no item number, rule, rng draw or serialized field
+moves.
+
+**The rule (TEXT-01 for items, user 2026-09-30, 89-CONTEXT, verbatim).**
+"'faces' wording becomes '+/− to hit' (e.g. 'every foe has two fewer faces that
+hit you' → 'foes −2 to hit you'); hard caps name the range on a d20 ('foes hit
+you only on a high roll (20 on a d20)' style); 'squares of opponents/enemies'
+becomes how many foes an area effect hits (Amulet of Stone, Birch, Oak and Cedar
+Staves); 'can talk to'/'understand them' wording on the Helm of Knowledge says
+it lets you always parley, and says what a parley is." Plus the Walnut Staff
+("casts Weaken"), the Death potion ("you're dead!"), and every row
+`docs/ITEM-AUDIT.md` marks `fix text (89-09)`.
+
+**The predictor.** (a) Parity fixtures: a comparison fails only where a fixture
+carries a reworded item's `txt`. The chargen and economy/combat/encounters
+fixtures roll a Thief whose starting cloak is worn at chargen (HEDGE-01), so a
+Cloak of Ether or Cloak of Flying in a declared `after.worn.cloak` would move.
+(b) Bot state pins: a hash moves where the hashed state carries a reworded
+item's `txt`. (c) The save fixture: a load now rewrites a known item's `txt`
+(the tolerant-load refresh), so its continuation hash moves only if the saved
+state carries a reworded item. (d) Unit pins that state an item's old words.
+(e) The shell snapshots that print an item's text or stat lines.
+
+**The live scan (measured with the change).**
+
+1. `node --test "test/parity/**/*.test.js"`: first run 12 failures, all of one
+   kind: `worn.cloak.txt` of a declared `after` record (chargen seed 3,
+   combat win / lose-plain / parley, flee, economy store visit, encounters
+   tablefour / faerie), the engine's worn Thief cloak carrying its reworded text.
+   **Cloak of Ether** (seed 3's Thief) and **Cloak of Flying** (the flee
+   scenario's Thief) are the only names. No prototype side moved
+   (`test/parity/prototype-master.js.txt` untouched).
+2. **Carve-out: none added to `comparables.js`.** The precedent for a WORN
+   cloak text is the Phase 88 Cloak of Regeneration row (declared `after.worn.cloak.txt`
+   re-recorded with a rationale sentence), not `REWORDED_TXT_ITEMS` (which strips
+   `c.items[]` only). Following it: the nine declared `after.worn.cloak.txt` values
+   (chargen seed 3; combat win, lose-plain, flee, parley's `chargenDivergence`;
+   economy `divergence` and `chargenDivergence`; encounters tablefour and faerie)
+   were re-recorded alone, read from the engine's own content row (never typed), each
+   record's `rationale` gaining one Phase 89 plan 09 sentence. Before -> after:
+   - Cloak of Ether: "walk through walls, once every 100 squares" -> "used, you walk
+     through walls for ten squares (be in a corridor when it ends: the wall will not
+     make room); then eighty squares before it will do it again" (eight records);
+   - Cloak of Flying: "flight for 20 squares, once every 50" -> "used, flight for twenty
+     squares; then fifty squares before it will do it again" (combat `flee`).
+   The `before` sides (the frozen prototype) are untouched. **Parity after: 66 / 66.**
+3. **Bot state pins: 6 of 8 moved, 2 unchanged** (`solo-1`, `deep-14`).
+   `solo-2`, `solo-thief-pilfer`, `solo-magicuser-sorcerer`, `party-1`,
+   `party-fighter-knight` and `deep-8` re-recorded **alone**, pasted by hand with a
+   dated comment (`roll-high-baseline.mjs save` was NOT run). Every moved label keeps
+   its actions / dead / depth (294/true/3, 400/false/4, 400/false/4, 400/false/3,
+   400/false/4, 225/true/10). **Proven text-only:** all eight pins run from a scratch
+   copy of the tree with only `content/treasure-tables.js`, `content/potions.js`
+   and `content/bags.js` at the plan base re-hash every label to its previous pin.
+   Before -> after (hash prefix): solo-2 `0f319aa8` -> `dcb71303`; solo-thief-pilfer
+   `5f0056f4` -> `4f510d22`; solo-magicuser-sorcerer `992002f4` -> `edc32250`;
+   party-1 `a2bb10bc` -> `66bf8e01`; party-fighter-knight `27bca013` -> `a1ecbfbb`;
+   deep-8 `0d9ca103` -> `eee973f7`. `roll-high-save-compat.test.js` passes
+   unchanged (13 / 13 with the state pins): its saved state carries no reworded
+   item, so its `expected` did not move and was not re-recorded.
+4. **Main-rng draws: none added, removed or reordered.** The load refresh
+   (`engine/saveState.js#refreshItemTexts`) writes `txt` and a potion line's `sub`
+   and nothing else, draws nothing, and is idempotent. No new serialized field, so
+   the three `*Comparable()` functions need no carve-out.
+5. **Unit pins moved (before -> after), each re-pinned to the new words:**
+   - `authored-ranges.test.js`: the Crystal Staff, Cloak of Invisibility and
+     Invisible potion rows leave the faces table for d20-range rows ("their die's top
+     face (the top two faces if you insulted them)" -> "only on their best roll (20 on a
+     d20; 19–20 if you insulted them)", the range computed from `facesRangeText`); the
+     Anklet row ("every foe has two fewer faces that hit you" -> "foes are −2 to hit
+     you"); the Gauntlet ("one face easier for foes to hit" -> "foes +1 to hit you"); the
+     chip and start-line rows for invis, unseen, giant and tongue ("the roll gets two more
+     faces" -> "+2 to the parley roll"); new rows for the Walnut Staff's cap (18–20 /
+     17–20), the Helm's parley reach (Humans, Demons, Beasts, never the Magical or the
+     Walking Dead), the staves' charges and recharge, and the weapon crit and to-hit stat
+     lines. The face helpers stay for spells and abilities (Phases 90 and 91).
+   - `roll-sign-consistency.test.js`: the Anklet row asserts "foes −2 to hit you" on the
+     item text, the Oracle and rail lines (hero and Joiner) and the chip sentence, equal to
+     the engine's shift, with no talk of faces.
+   - `size-voice.test.js`: the Gauntlet's chip sentence and start lines ("one face easier
+     for foes to hit" -> "foes +1 to hit you").
+   - `item-stat-lines.test.js`: weapon lists gain `toHit` and `crit` (Dagger:
+     ["damage"] -> ["damage", "toHit", "crit"]); armour gains `bulk` (Plate: ["ar", "wear",
+     "usable"] -> ["ar", "wear", "bulk", "usable"]); a bag gains `carry` (["slots"] ->
+     ["slots", "carry"]); the premium blade test no longer assumes the mark is second.
+   - `ether-wallwalk.test.js` (the exported Cloak of Ether row) and
+     `item-activation.test.js` (the Cloak of Speed row): the literal text re-pinned.
+   - `gear-panels.test.js`: `GEAR_COPY` gains the leaf `bagCaps`.
+   - `control-spells-depth.test.js`: the ITEM half of "texts: every spell and item whose
+     promise changes past the knee ..." is dropped (89-08 hand-off); it now asserts the
+     three items no longer name floor 12 or three rounds. The spell half stays (Phase 90).
+   - `staff-wield.test.js` (a bagged Birch Staff) and `worn-migration.test.js` (the
+     synthetic Ring of Power, Cloak of Speed, Rowan Staff, Gauntlet, Helm, Anklet, Bracelet
+     and Amulet of Light that load unchanged): the load refresh now rewrites a known item's
+     text, so each stand-in carries its content row's current text (before: ad hoc literals
+     such as "double attacks, once every 50 squares" or "freezes up to 2 squares of opponents
+     indefinitely"; ten tests moved), and the tag that tells three identical Rings of Power
+     apart rides its own `tag` field instead of `txt`.
+6. **Shell snapshots: 6 of 8 moved** (`mu.hero` and `thief.hero` byte-identical), the
+   captures re-written with `MZ_SNAPSHOT_UPDATE=1` and only the moved six kept:
+   `thief.gear` and `mu.gear` gain the bag meter's caps line ("this bag carries up to 2000
+   wilmst and 10 rations"); `thief.gear-sheet-bag` and `thief.gear-sheet-worn` (the
+   Anklet: "every foe has two fewer faces that hit you" -> "foes are −2 to hit you");
+   `thief-store.store` (a Flail row gains "−1 to hit"; the Warded plate row gains "−2 to
+   climb, leap and flee rolls"); `mu-store.store` (the Warded plate row).
+7. **The narrative review:** `docs/narrative-pass/why/89-09.json` (42 rows, the befores and
+   afters read from a corpus diff of the plan base against the change, never typed);
+   `node tools/narrative-review.mjs` 583 -> 615 rows, `--check` in sync. One earlier
+   ledger row moved: `q-260928-frz.json`'s Birch Staff row (its after, the d4 text, is no
+   longer printed, and a plan sorted before `q-` cannot chain from a `q-` row) is folded
+   into 89-09's Birch row, whose why names the 2026-09-28 ruling.
+
+**Nothing else moved.** `git diff --stat -- engine/items.js engine/combat.js
+test/parity/prototype-master.js.txt tools/lib/event-variants.mjs
+docs/narrative-pass/corpus-base.json` prints nothing for this plan.

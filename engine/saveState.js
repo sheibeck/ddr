@@ -24,6 +24,7 @@ import {
   WORN_SLOTS,
   clampCarry,
   freeWornKey,
+  canonItemText,
   effectSourceOf,
   sourceSlotItem,
   SOURCE_SLOTS,
@@ -886,6 +887,53 @@ export function foldLegacyCounters(c, steps) {
 }
 
 /**
+ * refreshItemTexts(state) — Phase 89 plan 09 (TEXT-01): the tolerant-load text
+ * refresh. A saved item carries its own `txt`, so a save made before a
+ * reworded row would keep the old words on the Gear tab, the store, the loot and
+ * find cards. Every item the save holds that has a content row
+ * (derived.js#canonItemText) gets that row's current text: the hero's bag, worn
+ * slots and wielded staff, each Joiner's bag, worn slots and staff, the pending
+ * find, the loot pile, and an open store's lines (an item line's carried item,
+ * and a potion line's `sub`, which is the potion's text). WORDS ONLY: it writes
+ * `txt` and a potion line's `sub` and nothing else, draws no rng, narrates
+ * nothing, and is idempotent. An item with no content row (a weapon, armour,
+ * lockpicks, a bag, a scroll, a name no table knows) keeps whatever text it had.
+ * Run by both load chains (validateSave and rehydrate) after every other
+ * reconcile. Mutates and returns `state`.
+ */
+export function refreshItemTexts(state) {
+  if (!isPlainObject(state)) return state;
+  /** fresh(it) — set the item's text to its row's, returning its text from before (or undefined). */
+  const fresh = (it) => {
+    if (!isPlainObject(it)) return undefined;
+    const before = it.txt;
+    const canon = canonItemText(it);
+    if (typeof canon === "string" && canon !== before) it.txt = canon;
+    return before;
+  };
+  const sheet = (c) => {
+    if (!isPlainObject(c)) return;
+    if (Array.isArray(c.items)) c.items.forEach(fresh);
+    if (isPlainObject(c.worn)) Object.values(c.worn).forEach(fresh);
+    fresh(c.staff);
+  };
+  sheet(state.c);
+  if (Array.isArray(state.party)) state.party.forEach(sheet);
+  fresh(state.pendingFind);
+  if (Array.isArray(state.pendingLoot)) state.pendingLoot.forEach(fresh);
+  if (isPlainObject(state.store) && Array.isArray(state.store.stock)) {
+    for (const line of state.store.stock) {
+      const item = isPlainObject(line) && isPlainObject(line.effectParams) ? line.effectParams.item : null;
+      if (!isPlainObject(item)) continue;
+      const before = fresh(item);
+      // A potion line prints the potion's text as its `sub`; keep the two the same words.
+      if (item.kind === "potion" && typeof line.sub === "string" && line.sub === before) line.sub = item.txt;
+    }
+  }
+  return state;
+}
+
+/**
  * validateSave(raw, options) — defensively parses an untrusted save (a JSON
  * string, or an already-parsed object) and checks its minimal required
  * shape. Never throws: malformed JSON or a save with a malformed/missing
@@ -1096,6 +1144,8 @@ export function validateSave(raw, options = {}) {
     reconcileWorn(member);
     reconcileItemSources(member);
   }
+  // Phase 89 plan 09 (TEXT-01): last, so every other reconcile has run. Words only.
+  refreshItemTexts(value);
   return { ok: true, value, wornReport };
 }
 
@@ -1246,5 +1296,7 @@ export function rehydrate(obj) {
     reconcileWorn(member);
     reconcileItemSources(member);
   }
+  // Phase 89 plan 09 (TEXT-01): mirrors validateSave's closing call. Idempotent.
+  refreshItemTexts(state);
   return state;
 }

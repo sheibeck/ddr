@@ -675,7 +675,7 @@ test("floors 1-12: a Petrify and an Oak Staff stone are today's kill / removal o
 
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
 
-test("texts: every spell and item whose promise changes past the knee names floor kneeDepth and holdRounds (as a word), from the dial itself", () => {
+test("texts: every spell whose promise changes past the knee names floor kneeDepth and holdRounds (as a word), from the dial itself", () => {
   const { kneeDepth, holdRounds } = DIALS.CONTROL_AT_DEPTH;
   const floorWords = `past floor ${kneeDepth}`;
   const roundWords = `${NUMBER_WORDS[holdRounds]} rounds`;
@@ -687,15 +687,14 @@ test("texts: every spell and item whose promise changes past the knee names floo
     assert.ok(sp.txt.includes(floorWords), `${n}: "${sp.txt}" names ${floorWords}`);
     assert.ok(sp.txt.includes(roundWords), `${n}: "${sp.txt}" names ${roundWords}`);
   }
-  // The Walnut Staff's text ("all hits on the weakened do double damage")
-  // never promised a duration, so it carries no clause (its timed weaken
-  // past the knee is taught by the weakenFaded line in play).
-  // User rulings 2026-09-28: the Birch Staff's freeze is a d4 hold at every
-  // depth (its text says so), so it left this list.
-  const items = [...STAVES.filter((s) => ["Oak Staff", "Cedar Staff"].includes(s.n)), JEWELRY.find((j) => j.n === "Amulet of Stone")];
-  assert.equal(items.length, 3);
-  for (const it of items) {
-    assert.ok(it.txt.includes(floorWords), `${it.n}: "${it.txt}" names ${floorWords}`);
-    assert.ok(it.txt.includes(roundWords), `${it.n}: "${it.txt}" names ${roundWords}`);
+  // Phase 89 plan 09 (89-08 hand-off, docs/ITEM-AUDIT.md Q1): the ITEM half of
+  // this test is gone. The Amulet of Stone, the Oak and Cedar Staves no longer
+  // have a floor-12 hold, so their texts no longer name floor ${kneeDepth} or a
+  // hold of ${holdRounds} rounds; they say each foe may resist and the deeper the
+  // floor the likelier it does (pinned by item-text-wording.test.js). The spell
+  // half above stays until Phase 90 moves the spells.
+  for (const n of ["Amulet of Stone", "Oak Staff", "Cedar Staff"]) {
+    const it = [...STAVES, ...JEWELRY].find((x) => x.n === n);
+    assert.ok(!it.txt.includes(floorWords) && !it.txt.includes(roundWords), `${n}: "${it.txt}" no longer names the floor-12 hold`);
   }
 });

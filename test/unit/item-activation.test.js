@@ -115,7 +115,8 @@ test("ACTIVATION_OF: 29 entries (9 new use-activated rows + 6 existing treasure 
 
 test("exported CLOAKS/JEWELRY/STAVES rows carry NO act key (dropAuthored strips it like slot)", () => {
   const speed = CLOAKS.find((c) => c.n === "Cloak of Speed");
-  assert.deepStrictEqual(speed, { n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" });
+  // Phase 89 plan 09 (TEXT-01): the text states the fifty squares of effect and the fifty of rest.
+  assert.deepStrictEqual(speed, { n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "used, you swing twice a round for fifty squares; then fifty squares before it will do it again" });
   // 260918-w4n: a converted row (act-only, no use/every) is also byte-clean
   // — no act/slot key survives dropAuthored.
   const armor = CLOAKS.find((c) => c.n === "Cloak of Armor");
