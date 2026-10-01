@@ -3256,7 +3256,48 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     allyThrow(state, ally, view, sp, t, rng, events);
     return;
   }
-  allyCastRest(state, ally, sheet, view, sp, t, rng, events, base);
+  // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
+  events.push({ type: "allyCast", ...base });
+  // Phase 90 plan 05 (SPELL-11, SPELL-12): the Joiner's Ice, Doze and Stun are
+  // the hero's rules through the same shared tails (iceStorm, dozeFoes,
+  // stunFoe), the Joiner's name on every line. Ice has no up-front resist (each
+  // survivor rolls it after its damage, inside the tail); Doze rolls one per
+  // reached foe inside its tail; Stun rolls the target's one resist here.
+  const caster = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
+  if (sp.kind === "blast") {
+    iceStorm(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "status") {
+    dozeFoes(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "stun") {
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
+    stunFoe(state, t, sp, rng, events, caster);
+    return;
+  }
+  // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
+  // plan 04 the one depth-rising resist, with no second control resist after
+  // it) comes first, per targeted foe. A Weaken's d4+1 is drawn before its
+  // room resists.
+  if (sp.kind === "weaken") {
+    // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
+    // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
+    // (party-wide duration lives in one place) — its own d4+1 draw.
+    const rounds = rng.d(4) + 1; // roll:amount
+    // Quick 260927-rsx: every live foe rolls its own resist; since Phase 89
+    // plan 08 that is the one depth-rising resist and the old extra room
+    // roll past floor 12 is gone — see roomWeakenResists.
+    if (!roomWeakenResists(state, sp.n, rng, events, ally.name)) return;
+    const C = state.combat;
+    if (C) {
+      C.weakened = true;
+      C.foeToHitPenalty = 3;
+      startEffect(state.c, "spell:weaken", { rounds });
+    }
+    events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
+  }
 }
 
 /**
@@ -3327,57 +3368,6 @@ function allyThrow(state, ally, view, sp, t, rng, events) {
       events.push({ type: "allySpellMissed", ...base, resisted: false });
     }
     return;
-  }
-}
-
-/**
- * allyCastRest(state, ally, sheet, view, sp, t, rng, events, base) — the rest of
- * a Joiner's attack spells, split out of allyCast (Phase 90 plan 10): Ice
- * (`blast`), Doze (`status`), Stun (`stun`) and Weaken (`weaken`), each through
- * the hero's shared tail.
- */
-function allyCastRest(state, ally, sheet, view, sp, t, rng, events, base) {
-  // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
-  events.push({ type: "allyCast", ...base });
-  // Phase 90 plan 05 (SPELL-11, SPELL-12): the Joiner's Ice, Doze and Stun are
-  // the hero's rules through the same shared tails (iceStorm, dozeFoes,
-  // stunFoe), the Joiner's name on every line. Ice has no up-front resist (each
-  // survivor rolls it after its damage, inside the tail); Doze rolls one per
-  // reached foe inside its tail; Stun rolls the target's one resist here.
-  const caster = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
-  if (sp.kind === "blast") {
-    iceStorm(state, sp, rng, events, caster);
-    return;
-  }
-  if (sp.kind === "status") {
-    dozeFoes(state, sp, rng, events, caster);
-    return;
-  }
-  if (sp.kind === "stun") {
-    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
-    stunFoe(state, t, sp, rng, events, caster);
-    return;
-  }
-  // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
-  // plan 04 the one depth-rising resist, with no second control resist after
-  // it) comes first, per targeted foe. A Weaken's d4+1 is drawn before its
-  // room resists.
-  if (sp.kind === "weaken") {
-    // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
-    // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
-    // (party-wide duration lives in one place) — its own d4+1 draw.
-    const rounds = rng.d(4) + 1; // roll:amount
-    // Quick 260927-rsx: every live foe rolls its own resist; since Phase 89
-    // plan 08 that is the one depth-rising resist and the old extra room
-    // roll past floor 12 is gone — see roomWeakenResists.
-    if (!roomWeakenResists(state, sp.n, rng, events, ally.name)) return;
-    const C = state.combat;
-    if (C) {
-      C.weakened = true;
-      C.foeToHitPenalty = 3;
-      startEffect(state.c, "spell:weaken", { rounds });
-    }
-    events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   }
 }
 
