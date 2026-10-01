@@ -239,6 +239,29 @@ test("chooseAbility: a once-a-fight FOE-targeted ability (mark/hamstring/cutpurs
   assert.deepStrictEqual(chooseAbility(cutpurseState, ctx), { key: "cutpurse", target: 1 });
 });
 
+// Phase 90 (ABIL-07): Pommel Strike strikes and stuns, so it is never worse
+// than the plain STRIKE: a ready one is used in any round once nothing
+// above it applies. Before, it was a round-1 opener only (a later round fell
+// through to a plain attack).
+test("chooseAbility: a ready Pommel Strike replaces the plain strike in a later round, and not while on cooldown", () => {
+  const ctx = makeBotContext();
+  const combat = { ...fight("Beasts", 1, 1), round: 3 };
+  const ready = mkState({ combat, c: fighter({ abilities: ["pommelStrike"] }) });
+  assert.deepStrictEqual(chooseAbility(ready, ctx), { key: "pommelStrike" });
+  assert.deepStrictEqual(decideAction(ready, fixedPolicyRng, ctx), { type: "useAbility", key: "pommelStrike" });
+
+  const cooling = mkState({
+    combat,
+    c: fighter({ abilities: ["pommelStrike"], timers: { "ability:pommelStrike": { cadence: "rounds", left: 2, phase: "cooldown" } } }),
+  });
+  assert.strictEqual(chooseAbility(cooling, ctx), null);
+  assert.deepStrictEqual(decideAction(cooling, fixedPolicyRng, ctx), { type: "attack" });
+
+  // a ready damage ability still outranks it (Kata first, above-half-hp foe)
+  const both = mkState({ combat, c: fighter({ abilities: ["pommelStrike", "kata"] }) });
+  assert.strictEqual(chooseAbility(both, ctx).key, "kata");
+});
+
 test("chooseAbility: a self-targeted or numeric-cooldown foe-targeted ability carries no target field", () => {
   const ctx = makeBotContext();
   const combat = fight("Beasts", 1, 1);

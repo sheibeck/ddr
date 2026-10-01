@@ -395,7 +395,18 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 27bca013003f99a9ec9c21cdc744a16bca36627ed6163c4f5eae6b476d6e6aac; actions, dead and depth are unchanged.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 4, hash: "a1ecbfbb3070aab5d92c0ea9bc3ea18606440b8414c37e95d022aded46ca9062" },
+  // "party-fighter-knight" re-pinned (Phase 90 plan 02, ABIL-07, 2026-09-30:
+  // Pommel Strike is a real strike that also stuns, report #4). Bisected with a
+  // per-step state-hash trace against the plan base 63c5fcae (a scratch tree,
+  // the same playRun onStep trace): steps 1-99 are byte-identical and the FIRST
+  // divergence is bot step 100, the hero's round-1 opener. The base's Pommel
+  // Strike only stunned (abilityUsed, pommelStruck, then the Joiner's strike
+  // killed the foe); the new one swings (stealthStrike, struck via
+  // pommelStrike, foeKilled), so the stream moves on from there. 400/alive/4
+  // -> 297/dead/3. The other seven labels re-measured byte-identical. Only this
+  // label was pasted, by hand, from `node tools/roll-high-baseline.mjs pins`
+  // (hashed identically twice); `save` was never run.
+  "party-fighter-knight": { actions: 297, dead: true, depth: 3, hash: "5d0bb1f605b2674b8fe558ce2a1756e9fb94335f2164cef773baaf0c4aeeb22f" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

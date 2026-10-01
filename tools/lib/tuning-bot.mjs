@@ -293,6 +293,13 @@ export function chooseAbility(state, ctx) {
   if (!meta && c.wp < c.maxWP / 2) {
     meta = ready.find((m) => m.tag === "defensive") || null;
   }
+  // Phase 90 (ABIL-07): Pommel Strike is a real strike that also stuns on a
+  // hit (engine/abilities.js, playerStrike's `stunOnHit`), so it is never
+  // worse than the plain STRIKE the bot would fall back to: when it is ready
+  // and nothing above applies, use it in any round, not only as the round-1
+  // opener (before: a stun-only opener the bot spent once a fight, in round 1).
+  // A Joiner's own policy (combat.js#pickMemberAbility) is unchanged.
+  if (!meta) meta = ready.find((m) => m.id === "pommelStrike") || null;
   if (!meta) return null;
 
   const result = { key: meta.id };

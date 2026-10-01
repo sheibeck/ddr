@@ -139,7 +139,7 @@ const CATALOG_TXT = {
   // VOX-05/ROLL-04 (79-05): sidestep, battleRoar, overheadBlow and smoke read
   // roll-high in faces; feint and mark name what they add (damage).
   sidestep: "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
-  pommelStrike: "the blunt end, to the temple: the target loses its next turn",
+  pommelStrike: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn",
   battleRoar: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
   secondWind: "remember why you came: heal d8 + level",
   sweep: "one wide arc: every living foe takes half damage; needs two or more foes",

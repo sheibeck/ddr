@@ -1061,7 +1061,10 @@ export const EVENT_NARRATION = {
   // where the hero's reads "you" (a Joiner's Sidestep, Smoke, Riposte and
   // Brace cover the Joiner's own body, not the hero's).
   pommelStruck: (e) =>
-    `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel finds ${possessive(e.target, "its")} temple. ${e.target ?? "It"} loses its next turn, and will need a moment.</span>`,
+    // Phase 90 (ABIL-07, report #4): the stun now FOLLOWS a landed blow (the
+    // strike's own hit line already said the damage), so this reads as the
+    // follow-through: the pommel on the way past, the target seeing stars.
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel follows through to ${possessive(e.target, "its")} temple. ${e.target ?? "It"} sees stars and loses its next turn.</span>`,
   foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
   battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds every foe has two fewer faces to hit anyone on your side. Loud enough.</span>`,
   sidestepped: (e) =>

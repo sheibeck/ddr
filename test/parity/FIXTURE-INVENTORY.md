@@ -6547,3 +6547,84 @@ state carries a reworded item. (d) Unit pins that state an item's old words.
 **Nothing else moved.** `git diff --stat -- engine/items.js engine/combat.js
 test/parity/prototype-master.js.txt tools/lib/event-variants.mjs
 docs/narrative-pass/corpus-base.json` prints nothing for this plan.
+
+### Phase 90 plan 02: Pommel Strike strikes and stuns (ABIL-07)
+
+**The rule (report #4 and the user's 2026-09-30 ruling).** Report #4: "A pommel strike seems
+kind of pointless. I use my scrub to make them loose their action. It's a wash." The ruling:
+Pommel Strike is a real strike that also stuns. The hero swings as normal (the plain strike's
+to-hit roll, weapon damage, crits and every extra attack, through `playerStrike` with
+`C.abilityStrike = { key: "pommelStrike", stunOnHit: true }`) and a landed blow that leaves the
+target standing also costs it its next turn (`applyPommel`, one `pommelStruck` after the hit
+events). A Joiner Fighter's round-1 opener is the same through `memberStrike`'s
+`mod { key, stunOnHit: true }`. Cooldown stays 4 rounds, spent on use hit or miss. The stun is
+a flag: no new draw (a landed hero Pommel Strike draws exactly the strike's two draws).
+Before, the ability spent the action on the stun alone: no swing, no roll, no damage.
+
+**The predictor.** Parity fixtures never dispatch `useAbility` (the action scripts are
+chargen, movement and plain fights), so zero parity drift. A move can only reach a fixture
+whose run uses Pommel Strike, or whose bot run now plays differently because of it: the
+bot-played pins (`roll-high-state-pins`), the pre-switch save, the hazard-commit golden, and
+any test pinned to a seeded bot run. The bot's own valuation also changed in this plan (a
+ready Pommel Strike is used in any round when nothing else applies, never worse than a plain
+strike; before it was a round-1 opener only), which moves bot runs of Fighters the same way.
+
+**The live scan (measured at the plan's end, against the base 63c5fcae).**
+
+- `node tools/fixture-inventory.mjs --json`: unchanged inventory (no action script touches an
+  ability).
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass. **Zero parity drift.**
+  `test/parity/prototype-master.js.txt` is untouched.
+- `roll-high-save-compat.test.js`: unchanged (its recorded `expected` still holds).
+- `test/unit/fixtures/hazard-commit/golden.json`: unchanged (its scripted run never uses the
+  ability).
+- `roll-high-state-pins.test.js`: **1 of 8 labels moved**, `party-fighter-knight`; the other
+  seven re-measured byte-identical.
+- `days-farm.test.js`: **1 test moved** (a seed pin, below).
+
+**Moved entries, measured and declared.**
+
+1. `roll-high-state-pins.test.js`, label `party-fighter-knight`: 400 / alive / depth 4 ->
+   **297 / dead / depth 3**, hash `a1ecbfbb...` -> `5d0bb1f6...`. Bisected with a per-step
+   state-hash trace (the `playRun` onStep trace) against a scratch tree of the plan base:
+   steps 1-99 are byte-identical and the FIRST divergence is bot step 100, the hero's round-1
+   opener. The base's Pommel Strike only stunned (`abilityUsed`, `pommelStruck`, then the
+   Joiner's strike killed the foe); the new one swings (`stealthStrike`, `struck` via
+   `pommelStrike`, `foeKilled`), and the stream moves on from there. Only this label was
+   pasted, by hand, from `node tools/roll-high-baseline.mjs pins` (hashed identically twice),
+   with a dated comment; `roll-high-baseline.mjs save` was not run.
+2. `days-farm.test.js`, "camp-guard regression on a real run": the pinned seed 55434
+   (a Summoner solo start that recruits a Joiner) now plays out differently, its `campGuard`
+   count 200 -> 0 (`campFailed` 0 either way; its hero is a Summoner, so the Pommel Strike is
+   a Joiner Fighter's, now striking); the seed 15839 (a Barbarian) went 195 -> 0 as well
+   (not traced). Re-pinned to the first
+   `seedList(120)` Summoner solo start whose measured run fires the guard: seed 293004
+   (index 37), `campGuard` 139, `campFailed` 0, the same shape of run. The assertion is
+   unchanged; the comment names the move.
+
+**Tests re-pinned (assertion before -> after).**
+
+- `abilities.test.js`: "round economy: a non-strike ability (pommelStrike)" ran Pommel Strike
+  as its non-strike rung (the bare filler draws); Pommel Strike is a strike now, so the rung is
+  pinned on Brace. "pommelStrike: pushes pommelStruck" and "Task 2: pommelStrike's f.stunned
+  makes the target skip THIS SAME round's foeTurn" stunned on the bare filler draws (no swing);
+  both now feed a landed blow (raw 3, damage die 4) first.
+- `party-abilities.test.js`: "pommelStrike/dirtyTrick/poisonedEdge/hamstring/mark: set the
+  shared foe flags" ran every case on zero draws; Pommel Strike left that list and has its own
+  test (a landed blow, two draws, the stun, `member`, 7 damage).
+- `abilities-catalog.test.js`: the pinned Pommel Strike text, "the blunt end, to the temple: the
+  target loses its next turn" -> "the blunt end, to the temple: a normal strike, and a hit also
+  costs the target its next turn" (the ability and the skill stay equal).
+- `bot-tactics.test.js`: new case, a ready Pommel Strike replaces the plain strike in round 3
+  and not on cooldown, and Kata still outranks it; the existing round-1 cases are unchanged.
+- New `pommel-strike.test.js` (19 tests): hero and Joiner hit, miss, kill, shatter, double
+  strike, cooldown, draw count, parity with a plain strike's damage, the text.
+
+**The narrative review.** `docs/narrative-pass/why/90-02.json` (4 rows: the Oracle and rail
+`pommelStruck` lines, chained from 79-04's afters, and the two text rows for Pommel Strike's
+`txt`); `node tools/narrative-review.mjs` 615 -> 617 rows (the two `pommelStruck` rows extend
+79-04's chains, the two text rows are new), `--check` in sync.
+
+**Nothing else moved.** `git diff --stat -- test/parity/prototype-master.js.txt
+tools/lib/event-variants.mjs docs/narrative-pass/corpus-base.json` prints nothing for this
+plan.
