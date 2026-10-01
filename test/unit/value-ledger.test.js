@@ -428,7 +428,9 @@ function checkDoc(text) {
     if (opts.filter((o) => o.rec).length !== 1) add(`${w} must mark exactly one option (recommended default)`);
     if (opts.map((o) => o.letter).join("") !== "ABCDEFGH".slice(0, opts.length)) add(`${w} options must be lettered A, B, ... in order`);
     questionRows.set(q.n, new Set());
-    const recOpt = opts.find((o) => o.rec);
+    // once the user has ruled (heading ends (answered X)) the rows follow the CHOSEN option, otherwise the recommended default
+    const answered = /\(answered ([A-Z])\)$/.exec(q.title);
+    const recOpt = answered ? opts.find((o) => o.letter === answered[1]) : opts.find((o) => o.rec);
     let anyNonKeep = false;
     let anyPair = false;
     for (const r of q.rows || []) {
@@ -450,12 +452,12 @@ function checkDoc(text) {
         covered.add(`${r.entry}|${m[1]}|${m[2]}`);
         if (partOf(row.kind, m[1]) !== q.part) add(`${w} is in part ${q.part} but ${r.entry} ${pr} belongs in part ${partOf(row.kind, m[1])}`);
         if (found.rec && found.rec.token !== "keep") anyNonKeep = true;
-        if (recOpt && recOpt.to === "nothing built" && found.rec && found.rec.token !== "keep") add(`${w}: the recommended default builds nothing but "${r.entry}" ${pr} recommends ${found.rec.token}`);
+        if (recOpt && recOpt.to === "nothing built" && found.rec && found.rec.token !== "keep") add(`${w}: the chosen option (or the recommended default) builds nothing but "${r.entry}" ${pr} recommends ${found.rec.token}`);
       }
       const cellQ = (row.cells[4] || "").split(", ");
       if (!cellQ.includes(`V${q.n}`)) add(`${w} covers "${r.entry}" but that row's Q cell does not cite it`);
     }
-    if (recOpt && recOpt.to !== "nothing built" && anyPair && !anyNonKeep) add(`${w}: the recommended default builds (${recOpt.to}) but every covered row recommends keep`);
+    if (recOpt && recOpt.to !== "nothing built" && anyPair && !anyNonKeep) add(`${w}: the chosen option (or the recommended default) builds (${recOpt.to}) but every covered row recommends keep`);
   }
   for (const [entry, pairs] of pairsOf) for (const p of pairs) if (!covered.has(`${entry}|${p.flag}|${p.id}`)) add(`flagged pair ${p.flag}@${p.id} of "${entry}" is not covered by any question's Rows line`);
   const citedBy = new Set();
@@ -530,9 +532,13 @@ function checkDoc(text) {
 
 const DOC_TEXT = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // a CRLF checkout reads like the LF one
 const DOC = parseDoc(DOC_TEXT);
+// the ledger as it stood at the batched checkpoint (open, nothing ruled): the checker-mechanics tests doctor THIS copy, so they
+// keep proving every rule after the real doc records the user's rulings
+const OPEN_TEXT = fs.readFileSync(path.join(REPO_ROOT, "test", "fixtures", "value-ledger-open.md"), "utf8").replace(/\r\n/g, "\n");
+const OPEN_DOC = parseDoc(OPEN_TEXT);
 
 /** doctor(fn) — the real doc, with `fn` applied to its lines (and a finder for an entry's row). */
-function doctor(fn, text = DOC_TEXT) {
+function doctor(fn, text = OPEN_TEXT) {
   const lines = text.split("\n");
   fn(lines, (name) => lines.findIndex((l) => l.startsWith(`| ${name} |`)));
   return lines.join("\n");
@@ -664,9 +670,10 @@ test("ledger abilities: every once-per-fight ability, skill and first-blow syste
   };
   for (const n of [...fight, "Sing", "Stealth", "Cat Burglar", "Cutthroat", "Ninja"]) assert.ok(flagged(n), `${n} carries once-per-fight`);
   assert.ok(fight.length >= 11, "the catalog's cd: fight entries");
-  // the 2026-09-27 ruling: a strike that can one-shot a same-depth foe stays once per fight unless the user rules otherwise
+  // the 2026-09-27 ruling: a strike that can one-shot a same-depth foe stays once per fight unless the user rules otherwise,
+  // so at the checkpoint (the open copy) every one of them carried the recommendation keep
   for (const n of ["Kata", "Death Touch", "Overhead Blow", "Silent Step", "Feint", "Last Stand"]) {
-    const row = [...Object.values(DOC.tables)].flat().find((r) => r[0] === n);
+    const row = [...Object.values(OPEN_DOC.tables)].flat().find((r) => r[0] === n);
     assert.match(row[3], /^keep@/, `${n}: the recommended default keeps it once per fight`);
   }
 });
@@ -812,7 +819,7 @@ test("ledger findings: the checker fails a missing known finding, an unknown row
 });
 
 test("ledger rulings: a fully ruled copy (every default accepted) passes, and the same copy with a wrong ownership table fails", () => {
-  const ruled = ruledDoc(DOC_TEXT);
+  const ruled = ruledDoc(OPEN_TEXT);
   assert.deepEqual(checkDoc(ruled), []);
   const building = DOC.questions.filter((q) => !q.options.find((o) => o.rec).to.startsWith("nothing"));
   assert.ok(building.length > 0);
@@ -823,7 +830,7 @@ test("ledger rulings: a fully ruled copy (every default accepted) passes, and th
 });
 
 test("ledger rulings: a ruled question left as question, a ruling for an unknown question and a missing ruling all fail", () => {
-  const ruled = ruledDoc(DOC_TEXT);
+  const ruled = ruledDoc(OPEN_TEXT);
   const left = ruled.replace(/\| ruled keep \(V1, 2026-10-01\)/, "| question (V1)");
   assert.ok(checkDoc(left).some((p) => /still reads question \(V1\)/.test(p)));
   assert.ok(checkDoc(ruled.replace("## Rulings\n", "## Rulings\n\n- V99 (2026-10-01): doctored.\n")).some((p) => /V99, which is not a question/.test(p)));
@@ -832,19 +839,38 @@ test("ledger rulings: a ruled question left as question, a ruling for an unknown
 });
 
 test("ledger rulings: a user answer other than the default is carried through (V3 B builds 91.1-02, V3 A builds nothing)", () => {
-  const a = ruledDoc(DOC_TEXT, { 3: "A" });
+  // the rows follow the chosen option once ruled: Second Wind goes back to keep
+  const a = ruledDoc(OPEN_TEXT, { 3: "A" }).replace(/allow more uses@second-wind-once: [^|;]+/, "keep@second-wind-once: stays once per fight");
   assert.deepEqual(checkDoc(a), []);
   assert.match(a, /\| Second Wind \|[^\n]*ruled keep \(V3, 2026-10-01\)/);
-  const b = ruledDoc(DOC_TEXT, { 3: "B" });
+  const b = ruledDoc(OPEN_TEXT, { 3: "B" });
   assert.deepEqual(checkDoc(b), []);
   assert.match(b, /\| Second Wind \|[^\n]*ruled \(V3, 2026-10-01\) -> 91\.1-02/);
 });
 
 test("ledger close: a closed copy is held to the close rules (no open verdict, no GAP item, built rows pinned, a true pin count)", () => {
-  const ruled = ruledDoc(DOC_TEXT).replace("**Status:** open", "**Status:** closed");
+  const ruled = ruledDoc(OPEN_TEXT).replace("**Status:** open", "**Status:** closed");
   const problems = checkDoc(ruled);
   assert.ok(problems.some((p) => /is still open/.test(p)), "a ruled-but-not-built row is still open");
   assert.ok(problems.some((p) => /still has a GAP: item/.test(p)), "a GAP item must read exists or accepted when closed");
   assert.ok(problems.some((p) => /Closed:/.test(p)), "the Closed line states the pin count");
   assert.ok(checkDoc(DOC_TEXT.replace("**Status:** open", "**Status:** closed")).some((p) => /still open/.test(p)));
+});
+
+test("ledger rulings: the user's rulings of 2026-10-01 are recorded as given (V27 B after the Cloaker change, Joiner parity skipped)", () => {
+  const A = new Set([6, 21, 22, 23, 24, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]);
+  assert.equal(DOC.rulings.length, 37);
+  for (const q of DOC.questions) {
+    const letter = A.has(q.n) ? "A" : "B";
+    assert.match(q.title, new RegExp(`\\(answered ${letter}\\)$`), `V${q.n}`);
+  }
+  const cloaker = DOC.tables["Sub-classes/Thief"].find((r) => r[0] === "Cloaker");
+  assert.match(cloaker[5], /^ruled \(V27, 2026-10-01\) -> 91\.1-03$/);
+  assert.match(DOC.rulings.find((r) => r.n === 27).text, /Cloaker ability should work on specter, too/);
+  // 91.1-04 (Joiner parity) owns nothing, 91.1-05 owns the text-only ruling and the two cleanups
+  const row = (p) => DOC.ownership.find((r) => r[0] === p)[1];
+  assert.equal(row("91.1-04"), "none");
+  assert.match(row("91.1-05"), /Cutthroat \(V26\); Ninja \(V26\); Inspired chip; Soothed-beasts outcome/);
+  for (const v of ["V7", "V15", "V16", "V17", "V18", "V19", "V20", "V25", "V27"]) assert.ok(row("91.1-03").includes(v), v);
+  for (const v of ["V1", "V2", "V3", "V4", "V5", "V8", "V9", "V10", "V11", "V12", "V13", "V14"]) assert.ok(row("91.1-02").includes(v), v);
 });
