@@ -23,10 +23,13 @@ import {
   avatarColour,
   ordinal,
   AVATAR_PALETTE,
+  NEUTRAL_AVATAR,
 } from "../../src/browser/leaderboardView.js";
 import { LEADERBOARD_COPY } from "../../content/boards.js";
 import { SEASON, SEASON_NAMES } from "../../content/season.js";
 import { rankKeyOf } from "../../src/browser/runDoc.js";
+import { nameFlagged } from "../../src/browser/nameFilter.js";
+import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -498,6 +501,82 @@ test("standing card: real rank/note; None of yours yet; youKnown false -> null; 
   assert.equal(view4.standing, null);
 });
 
+// ─── Phase 91.2 (D-08, D-04): masked names and legacy handles ───────────────
+//
+// Flagged names are built at runtime from the safety list; no banned term is
+// spelled in this file.
+
+const FLAG_TERM = BANNED.find((t) => /^[a-z]{5,}$/.test(t) && !ALLOWLIST.includes(t));
+assert.ok(FLAG_TERM, "the safety list offers a plain five-letter-or-longer term to build a flagged name from");
+const FLAGGED_NAME = `${FLAG_TERM} Knuckle`;
+assert.equal(nameFlagged(FLAGGED_NAME), true, "fixture: the flagged name really is flagged");
+assert.equal(nameFlagged("Moss Knuckle"), false, "fixture: the clean name is not");
+
+function boardOf(rows, extra = {}) {
+  return { status: "ready", rows, total: rows.length, filteredTotal: rows.length, you: null, youKnown: true, uid: "me", stale: false, fetchedAt: null, ...extra };
+}
+
+test("D-08: a board row whose name is flagged shows the masked placeholder, ? initials and the neutral avatar; its other fields are untouched", () => {
+  const clean = boardDoc({ id: "c", uid: "u1", handle: "Moss Knuckle", name: "Hero A", floor: 7, steps: 123 });
+  const dirty = boardDoc({ id: "d", uid: "u2", handle: FLAGGED_NAME, name: "Hero B", floor: 9, steps: 456 });
+  const view = leaderboardView({ compete: true, mode: "board", board: boardOf([dirty, clean]), stat: "deep" });
+  const [maskedRow, cleanRow] = view.body.rows;
+  assert.equal(maskedRow.headline, C.maskedName);
+  assert.deepEqual(maskedRow.avatar, { initials: "?", bg: NEUTRAL_AVATAR, on: false });
+  assert.ok(!AVATAR_PALETTE.includes(NEUTRAL_AVATAR));
+  assert.equal(maskedRow.key, "d");
+  assert.equal(maskedRow.line, `HERO B${C.sep}HUMAN KNIGHT${C.sep}I`);
+  assert.equal(maskedRow.val, `9${C.sep}456`);
+  assert.doesNotMatch(JSON.stringify(maskedRow), new RegExp(FLAG_TERM, "i"), "the flagged name appears nowhere on the row");
+  assert.equal(cleanRow.headline, "Moss Knuckle");
+  assert.deepEqual(cleanRow.avatar, { initials: "MK", bg: avatarColour("Moss Knuckle"), on: false });
+});
+
+test("D-08: the player's own flagged row is masked too (listed row and the pinned best)", () => {
+  const mine = boardDoc({ id: "mine", uid: "me", handle: FLAGGED_NAME });
+  const listed = leaderboardView({ compete: true, mode: "board", board: boardOf([mine], { you: { id: "mine", rank: 1, listed: true, run: mine } }) });
+  assert.equal(listed.body.rows[0].headline, C.maskedName);
+  assert.equal(listed.body.rows[0].you, true);
+  assert.equal(listed.body.rows[0].avatar.on, true);
+  assert.equal(listed.body.rows[0].avatar.initials, "?");
+
+  const other = boardDoc({ id: "o", uid: "x", handle: "Moss Knuckle" });
+  const pinned = leaderboardView({ compete: true, mode: "board", board: boardOf([other], { total: 40, filteredTotal: 40, you: { id: "mine", rank: 37, listed: false, run: mine } }) });
+  const pinnedRow = pinned.body.rows[1];
+  assert.equal(pinnedRow.divider, C.divider);
+  assert.equal(pinnedRow.headline, C.maskedName);
+  assert.equal(pinnedRow.avatar.bg, NEUTRAL_AVATAR);
+});
+
+test("D-08: the standing line uses the masked text when the player's own best run's name is flagged", () => {
+  const mine = boardDoc({ id: "mine", uid: "me", handle: FLAGGED_NAME });
+  const board = boardOf([boardDoc({ id: "d0" })], { total: 50, filteredTotal: 12, you: { id: "mine", rank: 4, listed: false, run: mine } });
+  const view = leaderboardView({ compete: true, mode: "board", board, race: "Troll", sub: null });
+  assert.equal(view.standing.place, "4TH");
+  assert.equal(view.standing.note, `${C.maskedName}’s best, of 12 interred as Troll, any sub-class.`);
+  assert.doesNotMatch(view.standing.note, new RegExp(FLAG_TERM, "i"));
+});
+
+test("D-04: legacy 2.2.0 @handle rows render normally, with initials from the generic rule", () => {
+  const legacy = boardDoc({ id: "l", uid: "u3", handle: "@lanternjaw" });
+  const view = leaderboardView({ compete: true, mode: "board", board: boardOf([legacy]) });
+  assert.equal(view.body.rows[0].headline, "@lanternjaw");
+  assert.deepEqual(view.body.rows[0].avatar, { initials: nameInitials("@lanternjaw"), bg: avatarColour("@lanternjaw"), on: false });
+});
+
+test("D-08: YOUR DEAD rows (hero names the game rolled) are not masked", () => {
+  const run = historyRun({ hash: "00000001", name: FLAGGED_NAME });
+  const view = leaderboardView({ compete: false, history: [run] });
+  assert.equal(view.body.rows[0].headline, FLAGGED_NAME);
+  assert.equal(view.body.rows[0].avatar.initials, initialsOf(FLAGGED_NAME));
+});
+
+test("LEADERBOARD_COPY.maskedName is one short string that is not itself flagged", () => {
+  assert.equal(typeof C.maskedName, "string");
+  assert.ok(C.maskedName.length > 0 && C.maskedName.length <= 30);
+  assert.equal(nameFlagged(C.maskedName), false);
+});
+
 test("zero rows: filtered -> empty note + CLEAR FILTERS; unfiltered -> boardAll note, no clear", () => {
   const board = { status: "ready", rows: [], total: 0, filteredTotal: 0, you: null, youKnown: true, uid: null, stale: false, fetchedAt: null };
   const filtered = leaderboardView({ compete: true, mode: "board", board, race: "Troll", sub: "Ninja" });
@@ -682,4 +761,11 @@ test("source pins: exports leaderboardView and nameInitials; uses rankKeyOf and 
   assert.match(MODULE_SRC, /export function nameInitials/);
   assert.match(MODULE_SRC, /rankKeyOf/);
   assert.match(MODULE_SRC, /SEASON_NAMES/);
+});
+
+test("source pins: the board names go through nameFlagged, and the rolled-handle modules are not imported or named", () => {
+  assert.match(STRIPPED, /import \{ nameFlagged \} from "\.\/nameFilter\.js"/);
+  assert.ok((STRIPPED.match(/nameFlagged\(/g) || []).length >= 2);
+  assert.doesNotMatch(MODULE_SRC, /handles\.js|HANDLE_FIRST|HANDLE_SECOND|handleInitials/);
+  assert.match(STRIPPED, /C\.maskedName/);
 });

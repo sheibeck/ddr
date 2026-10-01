@@ -16,7 +16,8 @@
 // CAUSE_TEXT/EPITAPHS), then turned into {id, doc} pairs via
 // runDoc.js#buildRunDoc — the same shape createFakeBoardFetch's own seed
 // runs expect. Every doc passes runDoc.js#validateRunDoc(doc, {}). Six
-// dev uids ("devuid0001".."devuid0006") each own two of the twelve runs, so
+// dev uids ("devuid0001".."devuid0006") each own two of the twelve runs, each
+// under its own board name (five gamer-style names and one legacy @handle), so
 // a pinned "your best" can be exercised against a dev identity snapshot in
 // tests; six races and twelve distinct sub-classes appear across the set.
 //
@@ -27,7 +28,6 @@
 import { newRun } from "../../engine/state.js";
 import { die } from "../../engine/death.js";
 import { makeRng } from "../../engine/rng.js";
-import { HANDLE_FIRST, HANDLE_SECOND } from "../../content/handles.js";
 import { buildRunDoc } from "./runDoc.js";
 
 const DEV_VERSION = "dev";
@@ -57,10 +57,22 @@ function devUid(n) {
   return `devuid${String(n).padStart(4, "0")}`;
 }
 
+// The dev players' board names (Phase 91.2): plausible, family-friendly gamer
+// names, the way Play Games names look on the board, plus one legacy 2.2.0
+// @handle so the dev board also shows a D-04 row. Module-private: the board
+// reads the names off the docs, nothing else needs this list. One per dev uid
+// (uid 1 is the first entry).
+const DEV_NAMES = Object.freeze([
+  "Moss Knuckle",
+  "Dev Delver",
+  "pipHollowbrook",
+  "Nell of the Mines",
+  "Cask_Warden_77",
+  "@lanternjaw",
+]);
+
 function devHandle(n) {
-  const i = (n - 1) % HANDLE_FIRST.length;
-  const j = (n - 1) % HANDLE_SECOND.length;
-  return `@${HANDLE_FIRST[i]}${HANDLE_SECOND[j]}`;
+  return DEV_NAMES[(n - 1) % DEV_NAMES.length];
 }
 
 /**

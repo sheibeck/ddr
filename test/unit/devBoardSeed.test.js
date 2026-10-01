@@ -13,6 +13,7 @@ import url from "node:url";
 
 import { validateRunDoc } from "../../src/browser/runDoc.js";
 import { devBoardRuns } from "../../src/browser/devBoardSeed.js";
+import { nameFlagged } from "../../src/browser/nameFilter.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -77,6 +78,31 @@ test("devBoardRuns: several docs share one dev uid", () => {
   }
   const sharedUids = [...byUid.values()].filter((n) => n >= 2);
   assert.ok(sharedUids.length >= 1, "expected at least one dev uid shared by >= 2 runs");
+});
+
+test("devBoardRuns: each dev uid posts under one plausible, unflagged board name; at least one legacy @handle row", () => {
+  const runs = devBoardRuns();
+  const namesByUid = new Map();
+  for (const { doc } of runs) {
+    assert.equal(typeof doc.handle, "string");
+    assert.ok(doc.handle.length >= 1 && doc.handle.length <= 64);
+    assert.equal(nameFlagged(doc.handle), false, `${doc.handle} must not be masked`);
+    if (!namesByUid.has(doc.uid)) namesByUid.set(doc.uid, new Set());
+    namesByUid.get(doc.uid).add(doc.handle);
+  }
+  for (const [uid, names] of namesByUid) assert.equal(names.size, 1, `${uid} posts under one name`);
+  assert.ok(namesByUid.size >= 5, "several distinct dev players");
+  const all = [...namesByUid.values()].map((s) => [...s][0]);
+  assert.equal(new Set(all).size, all.length, "every dev player has a different name");
+  assert.ok(all.some((n) => /^@[a-z]+$/.test(n)), "a legacy @handle row shows the D-04 case");
+  assert.ok(all.some((n) => !n.startsWith("@")), "and Play Games style names show the new case");
+});
+
+test("devBoardRuns: no import of the retired rolled-handle tables and no exported copy", () => {
+  assert.ok(!/content\/handles\.js/.test(SRC));
+  assert.ok(!/HANDLE_FIRST|HANDLE_SECOND/.test(SRC));
+  const exports = SRC.match(/^export\s+\w+\s+\w+/gm) || [];
+  assert.deepEqual(exports, ["export function devBoardRuns"]);
 });
 
 test("devBoardRuns: respects an injected now()", () => {
