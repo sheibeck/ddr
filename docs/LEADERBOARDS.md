@@ -1,31 +1,57 @@
 # Leaderboards
 
-Phase 83 (SRV-01..SRV-12). Our own leaderboard: no Firebase SDK, plain `fetch`
-against Firestore/Identity Toolkit/Secure Token REST, on the same Spark
-project as the bug reports (`delve-die-repeat-6ba5f`, `.firebaserc`). This is
-the ops runbook — deploys, the rules, indexes, identity, the queue/backfill,
-live setup and key restrictions, the SEASON bump, Spark quotas, moderation
-with `tools/boards-admin.mjs`, and the kill switch.
+Phase 83 (SRV-01..SRV-12), reworked by Phase 91.2 (BOARD-31..BOARD-33). Our own
+leaderboard: no Firebase SDK, plain `fetch` against Firestore/Identity
+Toolkit/Secure Token REST, on the same Firebase project as the bug reports
+(`delve-die-repeat-6ba5f`, `.firebaserc`). Since 2.3 every board name is the
+player's verified **Google Play Games name**, written by one Cloud Function
+(`boardName`), so the project moves from Spark to the Blaze plan (section 11).
+This is the ops runbook — deploys, the rules, indexes, identity, the queue and
+the sign-in hold, live setup and key restrictions, the SEASON bump, quotas,
+moderation with `tools/boards-admin.mjs`, and the kill switch. The console side
+of Play Games sign-in is `docs/PLAY-GAMES-SETUP.md`; the ordered release steps
+are `docs/RELEASING.md` "Release 2.3.0".
 
 ## 1. What the board is
 
 The board is our own Firestore `runs` table, not a third-party service — no
 SDK, plain `fetch`, every network call injected so every module is
-unit-testable with no network. `runs`/`banned` reads and writes are public
-per the rules (section 4); writes always carry the anonymous identity's own
-uid (section 7).
+unit-testable with no network. `runs`/`banned` reads are public per the rules
+(section 4); writes always carry the Play Games-linked identity's own uid and
+the verified Play Games name (section 7).
+
+**The names gate (BOARD-31).** A run is accepted only when its `handle` field
+equals `names/{uid}.name`. That document is the trust anchor: only the
+`boardName` Cloud Function (after Google's own sign-in record confirms a
+`playgames.google.com` provider on the caller's account) and
+`tools/boards-admin.mjs` ever write it, both through IAM. `names` and
+`nameOverrides` are closed to every client, read and write, so a client can
+neither pick nor change the name it posts under (there is no rename path and
+no client update at all). The function returns the name to the client, which
+caches it. The field is still called `handle` on the run document because
+shipped 2.2.0 clients decode it for the board headline.
 
 Compete is the opt-out (the Play Games predecessor was private-by-default and
 became a ghost town — see `.planning/phases/83-leaderboard-server/83-CONTEXT.md`
-"Specific Ideas"). With Compete OFF, this whole path makes zero network
-calls — no sign-up, no submission, no read — except the one player-tapped
-bug-report Send escape hatch (SRV-09, `docs/BUG-REPORTS.md`).
+"Specific Ideas"). Compete **ON** needs Play Games sign-in (D-12); a run
+finished while signed out is held, not lost (section 8). With Compete OFF, this
+whole path makes zero network calls — no sign-up, no sign-in, no Play Games
+SDK start, no submission, no read — except the one player-tapped bug-report
+Send escape hatch (SRV-09, `docs/BUG-REPORTS.md`), which keeps using an
+anonymous identity.
+
+**2.2.0 runs.** A run a 2.2.0 client posted keeps its rolled `@handle` on the
+board until its owner updates to 2.3 and signs in with Play Games (D-04); the
+server then restamps every run of that uid with the Play Games name (the claim,
+or the adopt, section 7). A 2.2.0 client's new runs are refused once the final
+rules are live (D-13, section 6).
 
 Android debug and release builds both talk to the **live** board. The
 browser dev loop (non-native, `npx serve`/`live-server`) selects
-`src/browser/fakeBoardServer.js`'s in-memory fake instead — the shell makes
-that choice in Phases 84/85, not here. Start-at-depth dev runs
-(`state.dev`) are **never submitted**, live or fake.
+`src/browser/fakeBoardServer.js`'s in-memory fake instead (which also fakes
+Play Games sign-in and the `boardName` function) — the shell makes that choice,
+not this layer. Start-at-depth dev runs (`state.dev`) are **never submitted**,
+live or fake.
 
 ## 2. The path
 
@@ -33,17 +59,17 @@ that choice in Phases 84/85, not here. Start-at-depth dev runs
 death (non-dev, Compete ON)
         │
         ▼
-  ddr.runQueue.v1  (enqueue; flush on enqueue/resume/online; backoff)
+  ddr.runQueue.v1  (enqueue; flush on enqueue/resume/online; backoff;
+        │           HOLD while not signed in, no backoff)
+        ▼
+  firebaseAuth.js  (identity v2: Play Games sign-in, link / adopt, claim the
+        │           verified name from the boardName function, bearer token)
+        ▼
+  runDoc.js / boardWrites.js  (build + commit the run doc under that name)
         │
         ▼
-  firebaseAuth.js  (the anonymous identity's bearer token)
-        │
-        ▼
-  runDoc.js / boardWrites.js  (build + commit the run doc)
-        │
-        ▼
-  Firestore REST  (firestore.rules: create-only, owner-gated, shape-checked)
-        │
+  Firestore REST  (firestore.rules: create-only, owner-gated, shape-checked,
+        │           handle == names/{uid}.name)
         ▼
      runs/{uid}_{hash}
         │
@@ -51,30 +77,39 @@ death (non-dev, Compete ON)
   boardClient.js  (topTen / total / rankOf — public reads, 5-minute cache)
         │
         ▼
-tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export)
+tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export /
+                         names / name-override / name-clear)
 ```
 
 | File | Job | Plan |
 |---|---|---|
-| `src/browser/firebaseConfig.js` | The shared project id + public API key | 83-01 |
+| `src/browser/firebaseConfig.js` | The shared project id + public API key, `PLAY_GAMES_CONFIG` (APP_ID, web client ID), `BOARD_NAME_FN` | 83-01, 91.2-01 |
 | `src/browser/firestoreRest.js` | The one typed-value encoder/decoder, REST URL builders, `timedFetch` | 83-01 |
-| `content/handles.js`, `src/browser/handles.js` | The rolled `@handle` word tables and roll/validate | 83-01 |
+| `src/browser/playIdentity.js`, `android/.../PlayIdentityPlugin.java` | The Play Games sign-in seam (init, status, signIn, serverAuthCode) and its fake; the SDK starts only when Compete is ON | 91.2-01 |
+| `functions/board-names/`, `tools/board-names/deploy.mjs` | The `boardName` Cloud Function (writes `names/{uid}`) and its one deploy command | 91.2-02 |
+| `src/browser/nameClient.js`, `src/browser/boardName.js` | The client of the function and the shared name sanitizer | 91.2-02, 91.2-03 |
+| `src/browser/nameFilter.js` | The safety-list mask for board names (D-08) | 91.2-02, 91.2-07 |
 | `src/browser/runDoc.js` | The run document contract, rank keys, the rules' JS mirror, commit/query builders | 83-02 |
 | `src/browser/reportLimits.js` | The per-player bug-report cooldown/daily-cap mirror | 83-02 |
-| `firebase/firestore.rules`, `firebase/firestore.indexes.json` | The deployed rules and composite indexes | 83-02 |
-| `src/browser/firebaseAuth.js` | The anonymous identity: sign-up, refresh, the handle lifecycle | 83-03 |
-| `src/browser/fakeBoardServer.js` | The browser dev loop's in-memory REST model of the whole board | 83-04 |
-| `src/browser/boardClient.js` | `topTen`/`total`/`rankOf`, cached, public | 83-04 |
-| `tools/boards-admin.mjs` | Moderation and balance export (this file) | 83-05 |
-| `src/browser/boardWrites.js`, `src/browser/runQueue.js` | Idempotent submit, handle rewrite, erase, and the submission queue | 83-06 |
+| `firebase/firestore.rules`, `firebase/firestore.indexes.json` | The deployed rules and composite indexes | 83-02, 91.2-04 |
+| `firebase/firestore.transition.rules`, `firebase.transition.json` | The deploy-window rules (section 6), deleted at the 2.3 cutover | 87, 91.2-04 |
+| `src/browser/firebaseAuth.js` | Identity v2: sign-up, refresh, Play Games link / adopt, claim, rename, account switch | 83-03, 91.2-05 |
+| `src/browser/fakeBoardServer.js` | The browser dev loop's in-memory REST model of the whole board, with fake Play Games, `names` and `boardName` | 83-04, 91.2-03 |
+| `src/browser/boardClient.js` | `topTen`/`total`/`rankOf`/`ownRuns`, cached, public | 83-04 |
+| `tools/boards-admin.mjs` | Moderation and balance export (this file) | 83-05, 91.2-04 |
+| `src/browser/boardWrites.js`, `src/browser/runQueue.js`, `src/browser/boardSync.js` | Idempotent submit under the session name, erase, the submission queue with the sign-in hold, sessions and the D-05 re-post | 83-06, 91.2-05, 91.2-06 |
 | `src/browser/runBackfill.js` | The once-only backfill of runs from the 2.1.0 release on | 83-12 |
-| `tools/boards-smoke.mjs` | The live end-to-end smoke test | 83-07 |
+| `src/browser/pgsProbe.js` | The dev-row PLAY GAMES PROBE that proves the spike gates on a device | 91.2-03 |
+| `tools/boards-smoke.mjs` | The live end-to-end smoke test (default, `--transition`, `--function`) | 83-07, 91.2-04 |
 
-Board strings (`name`, `handle`, `epitaph`) are player-rolled-or-content-bank
-data, never free text a player typed — but they still cross a trust boundary
-once they reach another player's device. **Phase 84 must render every board
-string as text (`textContent`, never `innerHTML`) — no board string is ever
-trusted as HTML.**
+Board strings (`name`, `handle`, `epitaph`) now include one player-typed one:
+`handle` is the Google Play Games name, which Google lets players choose, so it
+is free text from our point of view. It crosses a trust boundary once it reaches
+another player's device. **Every board string is rendered as text
+(`textContent`, never `innerHTML`) — no board string is ever trusted as HTML**
+— and a name containing a word from the safety list (`content/safety-wordlist.js`,
+through `nameFilter.js`) shows as a neutral placeholder with a neutral avatar
+(D-08). Moderators can also override a name or hide a run (section 12).
 
 ## 3. The run document
 
@@ -88,7 +123,7 @@ equal by `test/unit/firestore-rules.test.js`.
 | Field | Type | Bound |
 |---|---|---|
 | `uid` | string | 1–128 chars, must equal the caller's own auth uid |
-| `handle` | string | matches the rolled `@word+word` pattern (`content/handles.js`) |
+| `handle` | string | 1–64 chars and, under the rules' create clause, equal to the poster's verified `names/{uid}.name` (the Google Play Games name, `BOARD_NAME_MAX_CHARS`). Runs 2.2.0 posted carry a rolled `@word+word` handle until their owner signs in on 2.3 |
 | `season` | int | must equal `content/season.js`'s `SEASON` (currently 1) |
 | `name` | string | 1–40 chars |
 | `race` | string | one of the six playable races |
@@ -158,13 +193,15 @@ On `runs/{runId}`:
 
 - **`create`** — signed in, `uid == request.auth.uid`, the doc id is exactly
   `{uid}_{hash}`, the full `isValidBoardRun` shape check (section 3) passes,
-  and `banned/{uid}` does not exist.
-- **`update`** — **the one exception to SRV-02's "no update" wording**: the
-  owner may update *only* the `handle` field (`affectedKeys().hasOnly(['handle'])`),
-  and the new handle must itself be valid. This exists because a re-roll
-  keeps the player **one name across every run** (CONTEXT "Identity & the
-  @handle") — every one of that uid's existing run docs gets its `handle`
-  rewritten in one atomic `:commit`, never a new run doc per re-roll.
+  **`names/{uid}` exists and `handle == names/{uid}.name`** (the names gate,
+  BOARD-31: `isNamed` is asked before `verifiedName`, because a `get()` on a
+  missing document is an error, which denies), and `banned/{uid}` does not
+  exist. The rule costs two document reads per create (section 11).
+- **`update`** — **none.** SRV-02's "no update" wording holds again: the
+  2.2.0 handle-only re-roll update is gone with the re-roll (D-11), and the
+  Play Games name is restamped server-side by the function or the admin tool
+  through IAM, never by a client. (The transition file keeps the 2.2.0 re-roll
+  update for unnamed owners; section 6.)
 - **`delete`** — the owner only, of their own run.
 - **`get`** — public, unconditional.
 - **`list`** — public, bounded to `request.query.limit == null ||
@@ -181,6 +218,18 @@ On `runs/{runId}`:
 
 On `banned/{uid}`: `read, write: if false` for every client — only the
 admin's IAM access can write it (`tools/boards-admin.mjs`'s `ban`/`unban`).
+
+On `names/{uid}` and `nameOverrides/{uid}` (Phase 91.2): `read, write: if
+false` for every client, both of them. `names/{uid}` is `{ name, updatedAt }`,
+written only by the `boardName` function and the admin tool;
+`nameOverrides/{uid}` is `{ name, at }`, a moderator's replacement name
+(section 12). The function and the admin tool reach them through IAM, like the
+bug-report Action.
+
+A shipped 2.2.0 client (an anonymous uid, an `@handle`, the re-roll update) is
+refused by these final rules, silently (D-13): an anonymous uid has no names
+document. Its queue drops the refused run and keeps it locally (section 8's
+re-post sends it after the owner updates).
 
 The same file also holds the rate-limited `bugReports` create (auth
 required, a same-commit `reportLimits/{uid}` cooldown/daily-cap step) and
@@ -254,7 +303,7 @@ came back ten PASS (`docs/BUG-REPORTS.md`'s release-day subsection), and the
 transition rules, their config and their test were deleted. That history
 stays here; today's transition config is the next subsection.
 
-### Until the 2.3 cutover: the DEPTH-key transition config
+### Until the 2.3 cutover: the DEPTH-key transition config (and the 2.2.0 legacy branch)
 
 While 2.2.0 (vc12) is a build testers run, every rules or index deploy uses
 the transition config instead of the plain command above:
@@ -264,76 +313,162 @@ firebase deploy --only firestore:rules,firestore:indexes --config firebase.trans
 ```
 
 `firebase.transition.json` points at `firebase/firestore.transition.rules`,
-which is the final rules with exactly one clause swapped: `deepKey` may equal
-the new formula (`floor * 1,000,000 + steps`) or the old 2.2.0 one
-(`floor * 1,000,000 + (999,999 - steps)`), both computed from the doc's own
-floor and steps, and nothing else (report #9, BOARD-28).
-`test/unit/firestore-transition-rules.test.js` proves the one-clause
-difference and refuses every third value. The plain command is the 2.3
-cutover (`docs/RELEASING.md`, "Release 2.3.0"). Until a re-key, a 2.2.0 run
-mis-orders only among runs tied on the same floor (accepted, CONTEXT). The
-first transition deploy was deferred by the user at Phase 87's end (87-08);
-it is still pending (see the Phase 87 record in section 14).
+which is the final rules plus exactly four differences, so one deploy keeps
+2.2.0 posting while a 2.3 build is tested next to it (Phase 87 BOARD-28 and
+Phase 91.2 BOARD-33, D-13):
+
+1. **The DEPTH key.** `deepKey` may equal the new formula (`floor * 1,000,000 +
+   steps`) or the old 2.2.0 one (`floor * 1,000,000 + (999,999 - steps)`),
+   both computed from the doc's own floor and steps, and nothing else.
+2. **The legacy handle shape** (`isLegacyHandle`, the verbatim 2.2.0 `@word+word`
+   regex).
+3. **A legacy create branch**: a run whose handle is a legacy `@handle` from a
+   uid that has **no** `names/{uid}` document (the shipped 2.2.0 client, an
+   anonymous account).
+4. **The legacy update rule**: the 2.2.0 handle-only re-roll update, for an
+   owner with no `names/{uid}` document.
+
+A uid that has a names document can never use either legacy branch (each
+carries `!isNamed`), so a Play Games-linked token can never post an `@handle`.
+Named 2.3 runs are accepted exactly as the final rules accept them.
+`test/unit/firestore-transition-rules.test.js` reduces the transition file by
+exactly those four things (its header excluded) and compares the result to the
+final rules byte for byte, and shows a named uid cannot reach a legacy branch.
+The plain command is the 2.3 cutover (`docs/RELEASING.md`, "Release 2.3.0"
+step 3). Until a re-key, a 2.2.0 run mis-orders only among runs tied on the
+same floor (accepted, CONTEXT).
+
+**One deploy covers both phases.** The user deferred the Phase 87 deploy
+(87-08, 2026-09-30); the 91.2 transition file now carries the Phase 87 key, so
+the single transition deploy at Release 2.3.0 step 1 (before the milestone-end
+Compete-ON device test, or the release, whichever is first) replaces the still
+pending Phase 87 one. A 2.3 build cannot post under today's live rules at all
+(its doc has no `@handle`), which is why that deploy must come first.
 
 After a transition deploy, prove the live rules with
-`node tools/boards-smoke.mjs --transition`: it signs up anonymously, creates a
-run with the 2.3 `deepKey`, creates a run with the exact 2.2.0 `deepKey`
-(`legacyDeepKeyOf`, the value a shipped vc12 client writes), confirms a third
-`deepKey` value is refused, then erases its runs and deletes its account (in a
-`finally`, even when a step fails). Every step must PASS. Against the final
-rules the `create-legacy-key` step fails, which is how the probe tells the two
-rule sets apart. It is a Phase 87 transition artifact, deleted at the 2.3
-cutover.
+`node tools/boards-smoke.mjs --transition` and `node tools/boards-smoke.mjs
+--function`. Both need the admin credentials the tool resolves up front
+(`--transition`) or none (`--function`); the old `--with-admin` flag is gone,
+because the default probe now always seeds a probe name through the admin API.
+
+- **`--transition`** signs up an anonymous account and (1) creates a run shaped
+  like a shipped 2.2.0 client's (a legacy `@handle`, the old DEPTH key) plus its
+  handle-only re-roll update, which must land; (2) confirms a third DEPTH key is
+  refused; (3) seeds a probe name for the uid and creates a named run with the
+  2.3 key, which must land; (4) confirms that now the uid is named, the legacy
+  create and the legacy re-roll update are both refused; then erases its runs,
+  removes the seeded name and deletes its account (in a `finally`, even when a
+  step fails). Every step must PASS. Against the final rules the legacy steps
+  fail, which is how the probe tells the two rule sets apart.
+- **`--function`** needs no admin: it asks the deployed `boardName` function to
+  claim a name for an anonymous (not Play Games-linked) account, which must
+  answer `NOT_LINKED`, and to release, which must answer ok.
+- The **default** probe (the final rules, run at the cutover) proves the names
+  gate: an unnamed uid cannot post, a named uid posts under the probe name, a
+  run whose handle is not the verified name is refused, no client update lands,
+  `names` / `nameOverrides` are closed to client reads and writes, and the
+  existing denies, ban, admin delete and erase still hold.
+
+The `--transition` probe and the transition files are artefacts deleted at the
+2.3 cutover (`docs/RELEASING.md`, "Release 2.3.0" step 4).
 
 ## 7. Identity
 
-Every board write needs an anonymous Firebase identity, created lazily —
-never at app launch, only on the first thing that actually needs it. Signed
-up over plain REST (`accounts:signUp`, `returnSecureToken: true`), never the
-Firebase SDK. `uid`, `refreshToken`, the cached `idToken` and its absolute
-expiry live in durable storage under `ddr.identity.v1` (`src/browser/storage.js`,
-separate from settings).
+Board identity v2 (`src/browser/firebaseAuth.js`, Phase 91.2-05): the board
+poster is a Firebase account **linked to the player's Google Play Games
+player**, signed in over plain REST (`accounts:signUp`, `accounts:signInWithIdp`,
+`accounts:lookup`, `accounts:update`, never the Firebase SDK). The Play Games
+side is the `PlayIdentity` seam (`src/browser/playIdentity.js`, the in-repo
+Capacitor plugin on Android, a fake in the browser dev loop); the SDK starts
+only when Compete is ON. `uid`, `refreshToken`, the cached `idToken` and its
+absolute expiry, the link state, the cached verified name and any pending adopt
+live in durable storage under **`ddr.identity.v2`** (`src/browser/storage.js`,
+separate from settings). A `ddr.identity.v1` record is migrated on first load
+(uid and tokens kept so the link can happen, the rolled handle dropped) and the
+v1 key removed.
 
-A cached token is refreshed proactively with a **5-minute safety margin**
-(`REFRESH_MARGIN_MS`, `src/browser/firebaseAuth.js`) — refreshed once fewer
-than 5 minutes remain, never waiting for an actual 401. Six known-terminal
-refresh error messages (`TOKEN_EXPIRED`, `USER_DISABLED`, `USER_NOT_FOUND`,
-`INVALID_REFRESH_TOKEN`, `INVALID_GRANT_TYPE`, `MISSING_REFRESH_TOKEN`) and a
-`user_id` mismatch all **start a new identity** — clear the dead tokens, sign
-up again, but **keep the same rolled handle**. Every other failure (timeout,
+**`boardSession({ interactive })`** is the one call that makes a player ready
+to post. It answers `{ ok: true, uid, idToken, name }` or `{ ok: false, reason }`
+with `reason` in `off | offline | server | refused | unavailable | signin`.
+Compete-gated always and single-flight. In order: the Compete gate and the
+config check, the Play Games status (an interactive sign-in only when the player
+tapped SIGN IN), an account-switch check, link or sign in, a fresh token, **claim**
+(the `boardName` function writes `names/{uid}` and returns the name), then a
+rename check. A session is complete only after a claim returned a name (D-06: a
+new player's first run waits until their name exists).
+
+**Link, and adopt (BOARD-32).** A stored uid with no link is the 2.2.0
+anonymous account: it is refreshed and linked **in place** with its own ID token
+(`accounts:signInWithIdp` with the Play Games auth code), so the uid, and
+therefore every existing run, is kept and the claim restamps those runs with the
+Play Games name. If the link answers `FEDERATED_USER_ID_ALREADY_LINKED`, or
+returns a different uid (the player played on another device first), the client
+signs in as the linked uid and the function **adopts** the anonymous uid's runs
+onto it (the caller proves ownership with the anonymous account's own ID token;
+only an account with no providers can be adopted); the anonymous account is
+deleted only after the claim succeeds, and an interrupted adopt finishes on the
+next session.
+
+**Claim.** The function (`functions/board-names/`, `POST` with the caller's
+Firebase ID token) confirms through Identity Toolkit `accounts:lookup` that the
+caller has a `playgames.google.com` provider, takes the provider's display name
+(`NAME_SOURCE=provider`, the default), sanitizes it, writes `names/{uid}` (a
+moderator's `nameOverrides/{uid}` wins) and restamps the uid's runs. Errors are
+reason ids: `UNAUTHENTICATED`, `NOT_LINKED`, `ADOPT_REFUSED`,
+`NEEDS_GAMES_CODE`, `GAMES_MISMATCH`, `NO_NAME`, `UPSTREAM`. The fallback
+`NAME_SOURCE=games` (a redeploy with one env var, no client update) answers
+`NEEDS_GAMES_CODE`: the client sends a fresh single-use server auth code, and
+the function exchanges it with the web client secret (kept in Secret Manager),
+asks the Games API for the player and requires the player ID to equal the
+linked provider's. It exists in case spike gate G1 or A4 fails
+(`docs/PLAY-GAMES-SETUP.md` section 4).
+
+**Rename.** A player changes their name in Google Play Games, not in our game.
+When the local Play Games name differs from the claimed one, the next session
+re-signs in and re-claims. If the provider still stores the old name, the client
+unlinks and relinks once per launch (one attempt per player and target name; a
+failed rename never fails the session). A moderator override is never chased.
+Other players see the new name once their next claim has restamped the runs.
+
+**Account switch.** If the device's Play Games player changes, the stored session
+is dropped locally (the new player never adopts the old one's runs) and the new
+player gets their own uid and name; switching back returns the first player's.
+
+**Refresh.** A cached token is refreshed proactively with a **5-minute safety
+margin** (`REFRESH_MARGIN_MS`) — refreshed once fewer than 5 minutes remain,
+never waiting for an actual 401. Six known-terminal refresh error messages
+(`TOKEN_EXPIRED`, `USER_DISABLED`, `USER_NOT_FOUND`, `INVALID_REFRESH_TOKEN`,
+`INVALID_GRANT_TYPE`, `MISSING_REFRESH_TOKEN`) and a `user_id` mismatch clear
+the dead tokens; a linked record then restarts anonymously (bug reports keep
+working) and the next `boardSession` links again. Every other failure (timeout,
 429/5xx, another 4xx) is transient and leaves the stored identity untouched.
+No token appears in any result or log.
 
 **Erasing your runs.** ERASE MY RUNS in the ☰ account block (a two-tap
 arm-in-row confirm, Compete ON only) deletes every one of the player's own
-`runs` docs across every season, then deletes the anonymous Identity Toolkit
-account (`accounts:delete`) — but keeps the player's rolled `@handle`:
-`src/browser/boardSync.js#erase` calls `identity.setHandle(handle)`
-immediately after the drop, re-seeding `ddr.identity.v1` with the SAME
-handle and no `uid` (user choice, 2026-09-29), so the next Compete-ON run
-signs up a brand-new anonymous account under that same handle. Any unsent
-queued runs are discarded the moment the erase succeeds, so nothing of the
-erased account can post moments later under the new one; a failed erase
-changes nothing (the old identity and queue stay exactly as they were).
-Erase is board-only — YOUR DEAD (`ddr.runs.v1`), the old graveyard and bests
-keys all stay on the phone untouched.
+`runs` docs across every season, then `identity.deleteAccount()` releases the
+name through the function (best effort), deletes the Identity Toolkit account
+(`accounts:delete`, which also removes the Play Games link) and drops both
+identity keys. Any unsent queued runs are discarded the moment the erase
+succeeds; a failed erase changes nothing. Erase is board-only — YOUR DEAD
+(`ddr.runs.v1`), the old graveyard and bests keys all stay on the phone
+untouched. Signing in again later creates a fresh account under the Play Games
+name. (Disconnecting the game in Google Play Games settings removes Google's
+side; `store-listing/LISTING.md` "Deletion".)
 
-**Re-roll.** RE-ROLL HANDLE is unlimited and rolls a new handle locally, at
-once — even offline, even with Compete OFF — and leaves a pending-rewrite
-mark (`ddr.handleRewrite.v1`) that a later Compete-ON flush clears only once
-it has rewritten the new handle onto every one of the player's board runs;
-several offline re-rolls collapse into a single rewrite carrying whatever
-handle is current when the flush finally runs.
-
-The ☰ account block and the title's corner sheet are this UI (Phase 85);
-`boardSync.js` decides all of it, so the shell only wires taps to calls.
+The ☰ account block and the title's corner sheet are this UI (Phases 85 and
+91.2-07/08): the name, a NOT SIGNED IN status with a **SIGN IN** row, COMPETE
+and ERASE MY RUNS. There is no RE-ROLL HANDLE (D-11). `boardSync.js` decides all
+of it, so the shell only wires taps to calls.
 
 The identity is **shared with bug reports** (SRV-09) — a player-tapped
-**Send** on the bug-report sheet may create this same identity even with
+**Send** on the bug-report sheet may create an **anonymous** identity even with
 Compete OFF (`getToken({ explicit: true })`, the one Compete-gate escape
-hatch `firebaseAuth.js` offers).
+hatch `firebaseAuth.js` offers; it never calls Play Games). If the player later
+competes, that anonymous account is the one that gets linked.
 
 **A per-IP limit on new anonymous sign-ups** (~10/hour, SRV-10) is set in
-live setup, not in client code — it is a Identity Toolkit project-level
+live setup, not in client code — it is an Identity Toolkit project-level
 control. Recorded live in section 14 by 83-08.
 
 ## 8. The queue and the backfill
@@ -373,8 +508,37 @@ by the local-history check (Phase 84) — only the board upload is bounded.
 The call site is `src/browser/boardSync.js#boot`, at launch.
 
 The retired pre-2.2 submission-queue key (`ddr.pgsqueue.v1`, the old Play
-Games queue) is removed silently at every launch, Compete ON or OFF
-(RETIRE-03) — also in `boardSync.js#boot`.
+Games queue) and the retired handle-rewrite mark (`ddr.handleRewrite.v1`, the
+2.2.0 re-roll) are removed silently at every launch, Compete ON or OFF
+(`RETIRED_KEYS`, RETIRE-03) — also in `boardSync.js#boot`.
+
+**The sign-in hold (D-03, D-06).** Compete ON but not signed in to Play Games
+(declined, no profile, or the auto sign-in failed), or signed in but with no
+name yet: a finished run is **held** in the queue, not dropped and not
+backed-off (`reason: "signin"`: no attempt count, no failure, no `retryAt`). The
+game plays on; the ☰ account block and the title sheet show a NOT SIGNED IN
+status with a SIGN IN row, and one rail card per launch says so at most. After
+the player signs in (or resumes the app signed in) the next flush posts every
+held run in order. Offline and server answers still back off exactly as before.
+Turning Compete OFF purges held runs like any queued run.
+
+**Sessions.** `boardSync.session()` (quiet, used at boot and on resume) and
+`boardSync.signIn()` (interactive, the SIGN IN row) share one routine that
+reports the state to the shell (`signedIn` with the name, `signedOut`, `error`,
+`off`) and, on `signedIn`, runs the re-post below and then forces a flush.
+Compete OFF answers `off` with no identity call, no board call and no Play
+Games call.
+
+**The D-05 re-post (once per device, `ddr.boardRepost.v1`).** Once the first
+named session on a device exists, the game re-posts the runs a 2.2.0 client
+settled but the final rules refused during the refusal window: stored runs
+(graveyard and bests, hash re-verified by `collectBackfillRuns({ since: 0 })`)
+whose hash is in the queue's `settled` ledger, minus those `ownRuns(uid)`
+already lists on the board. The ledger only ever holds runs that were enqueued
+with Compete ON, so a run finished with Compete OFF is never eligible (the
+"never uploaded" ruling stands). The marker is written after a successful board
+read, so a failed read retries next session; a re-posted run that is already on
+the board answers "exists" (idempotent). `ownRuns` pages at most 500 rows.
 
 ## 9. Live setup and the API key
 
@@ -428,6 +592,46 @@ Live results (rules/indexes deployed, anonymous sign-in confirmed working,
 the key restricted, the per-IP limit set, `tools/boards-smoke.mjs` passed)
 are recorded in section 14 by 83-08.
 
+**Enable the Play Games sign-in provider and deploy the `boardName`
+function** (Phase 91.2, D-01, D-14: each is the user's go, just in time, in the
+order of `docs/RELEASING.md` "Release 2.3.0" step 1; the console half is
+`docs/PLAY-GAMES-SETUP.md`):
+
+```
+POST https://identitytoolkit.googleapis.com/v2/projects/delve-die-repeat-6ba5f/defaultSupportedIdpConfigs?idpId=playgames.google.com
+Authorization: Bearer $(gcloud auth print-access-token)
+X-Goog-User-Project: delve-die-repeat-6ba5f
+Content-Type: application/json
+
+{ "enabled": true, "clientId": "<the Game server web client ID>", "clientSecret": "<read from a file outside the repo>" }
+```
+
+If the provider config already exists, `PATCH` the same path plus
+`/playgames.google.com?updateMask=enabled,clientId,clientSecret`. `GET` it
+afterwards and check `enabled: true`; print only `enabled` and `clientId`, never
+the secret (it is never committed, logged or pasted into a doc;
+`docs/PLAY-GAMES-SETUP.md` section 4 says the same). Then:
+
+```
+node tools/board-names/deploy.mjs --setup          # a dry run: prints the gcloud commands
+node tools/board-names/deploy.mjs --setup --yes    # enables the APIs, creates the board-names service account (roles/datastore.user)
+node tools/board-names/deploy.mjs --yes            # deploys the 2nd-gen function boardName (us-central1, nodejs22, 256 MiB, 60 s, max 3 instances)
+```
+
+The deploy prints the function URL, which must equal `BOARD_NAME_FN.url` in
+`src/browser/firebaseConfig.js`. The function is zero-dependency Node 22 ESM
+(`functions/board-names/`); it verifies the caller with Identity Toolkit
+`accounts:lookup` and writes Firestore over REST with its runtime service
+account. The Blaze plan must be attached first (section 11). `--name-source
+games --pgs-client-id <id>` redeploys the G1/A4 fallback (section 7); the secret
+then lives in Secret Manager (`pgs-web-client-secret`), created from a file
+outside the repo.
+
+The function is called with the caller's Bearer token, not the API key, so the
+API-key restriction above does not apply to it; the Play Games sign-in itself
+uses `identitytoolkit.googleapis.com` through the restricted key, which the
+three-service list already covers.
+
 ## 10. The SEASON bump
 
 Bump `content/season.js`'s `SEASON` constant **and** `firebase/firestore.rules`'
@@ -452,20 +656,35 @@ with the release. The alpha runs stay in Firestore under season 1
 (`boards-admin export --season 1` for balance data) and count against the
 1 GiB Spark storage until deleted with `boards-admin`.
 
-## 11. Spark quotas
+## 11. Quotas and billing (Spark, then Blaze)
 
-The Spark plan (billing off — this project can never be billed) has a daily
-Firestore quota: **50,000 reads, 20,000 writes, 20,000 deletes**, and **1
-GiB** stored — shared with bug reports (`docs/BUG-REPORTS.md`), which is why
-report retention/cleanup exists at all.
+Until 2.3 the project ran on the Spark plan (billing off — it could never be
+billed) with a daily Firestore quota: **50,000 reads, 20,000 writes, 20,000
+deletes**, and **1 GiB** stored — shared with bug reports
+(`docs/BUG-REPORTS.md`), which is why report retention/cleanup exists at all.
+
+**2.3 moves the project to the Blaze plan (D-01).** The `boardName` Cloud
+Function (2nd gen, so Cloud Run, Cloud Build and Artifact Registry behind it)
+cannot be deployed on Spark. The user attaches a billing account in the console
+(`docs/PLAY-GAMES-SETUP.md` section 2, step 7), and Blaze keeps the same
+no-cost free tier for Firestore, so board and bug-report usage is unchanged.
+The function is sized to stay inside the free tier too: `--max-instances=3`,
+256 MiB, a 60 s timeout, and it writes only when a name changed (a claim is one
+Identity Toolkit lookup plus one Firestore read, and a write when the name
+moved; stamping and adopt page their runs). **Set a budget alert** (Cloud
+Console, Billing, Budgets and alerts, a few dollars) so a runaway shows up as an
+email, not a bill. The per-IP anonymous sign-up limit (section 14) was set on
+Spark with no billing instrument and is unaffected.
 
 Roughly: a `topTen` read costs **10 reads** (one per returned doc); a
 `count`/`total` read costs **1 read per up to 1,000 index entries** scanned
 (a 1,500-entry match bills 2 reads); `boardClient.js` caches every read for
 **5 minutes** per `(op, stat, race, sub[, key])` to keep this cheap under
-normal play. Admin `suspicious`/`export` each **read every matching run
-once** — fine by hand, never on a schedule (see the header comment in
-`tools/boards-admin.mjs`).
+normal play. Each run create also costs the rules two document reads (the
+`names/{uid}` existence check and its `name`) — the rules' `get`/`exists`
+calls bill like reads. Admin `suspicious`/`export`/`names` each **read every
+matching run or name once** — fine by hand, never on a schedule (see the header
+comment in `tools/boards-admin.mjs`).
 
 ## 12. Moderation
 
@@ -511,6 +730,9 @@ node tools/boards-admin.mjs rekey-deep
 node tools/boards-admin.mjs rekey-deep --yes
 ```
 
+(`names`, `name-override` and `name-clear` are the Phase 91.2 name
+moderation commands, below.)
+
 **`rekey-deep [--season N|--all-seasons] [--yes]`** reads every run in the
 season (one billed read per run) and classifies its `deepKey` against its own
 floor and steps: already on the new formula, on the 2.2.0 formula (to be
@@ -521,18 +743,51 @@ the security rules, so it works under either rule set). It is a Phase 87 transit
 release and again at the final-rules cutover (`docs/RELEASING.md`, "Release
 2.3.0"), then deleted.
 
+**Names (Phase 91.2, D-08).** Every board name is a Play Games name the player
+chose, so the moderation tools gained a names half. All three are dry runs
+unless `--yes`:
+
+```bash
+# Every names/{uid} record the boardName function wrote, with a flagged column
+# (the safety-list matcher, src/browser/nameFilter.js) and any moderator
+# override; --flagged keeps only the flagged ones, --json emits JSON:
+node tools/boards-admin.mjs names
+node tools/boards-admin.mjs names --flagged
+
+# Set a moderator name for a uid. It rewrites names/{uid} and restamps every
+# run of that uid through the same stamp code the function uses
+# (functions/board-names/core.js), so the board shows it at once; the function
+# keeps honouring the override on every later claim:
+node tools/boards-admin.mjs name-override <uid> "Some Neutral Name"
+node tools/boards-admin.mjs name-override <uid> "Some Neutral Name" --yes
+
+# Drop the override; the player's Play Games name returns at their next claim:
+node tools/boards-admin.mjs name-clear <uid> --yes
+```
+
+- **The client mask.** A name that contains a safety-list word already shows as a
+  neutral placeholder with a neutral avatar on every player's board (D-08);
+  `names --flagged` is how a moderator finds those names to override or report
+  (Google also has an "inappropriate gamer name" report flow).
+- **Hiding a run** is the existing `delete-run <id>` (and `ban <uid>` for a
+  player's whole set). There is no separate hide flag.
+- **Name changes** follow the player's Google Play Games name at their next
+  sign-in; an override is never chased by the client or the function.
+
 **Key hygiene:** a service-account key file (if one is ever created) lives
 **outside** the repository, never in `www/`. An `--out` export path resolving
 **inside** the repo must be named `boards-export*` — `.gitignore` ignores
 that pattern, matching `ddr-boards*.json` for a locally-placed key (section
-13's `.gitignore` guard). Exports hold anonymous uids and rolled handles —
-keep them off shared drives.
+13's `.gitignore` guard). Exports hold uids and Play Games names (a name is public on the board,
+but a uid-to-name table is not) — keep them off shared drives.
 
-**A banned player can return** under a fresh anonymous uid — `banned/{uid}`
-keys on the specific uid, and Identity Toolkit anonymous sign-up freely
-mints new ones. This is an accepted residual (full replay verification is
-deferred, per `.planning/phases/83-leaderboard-server/83-CONTEXT.md`
-"Deferred Ideas").
+**A banned player can return** under a fresh uid — `banned/{uid}` keys on
+the specific uid. Since 2.3 a board poster must be linked to a Google Play
+Games player (the names gate), and a player ID maps to one uid, so coming back
+means a different Google account, not just a reinstall; the old anonymous
+sign-up loophole no longer reaches the board. This is an accepted residual (full
+replay verification is deferred, per
+`.planning/phases/83-leaderboard-server/83-CONTEXT.md` "Deferred Ideas").
 
 ## 13. The kill switch
 
@@ -549,7 +804,11 @@ Any run queued client-side during the switch is refused and **dropped** by
 `runQueue.js`'s normal rejection handling (section 8) — nothing accumulates
 waiting to resubmit once the switch lifts. Restore by deploying the normal
 `firebase/firestore.rules` again. This mirrors the bug-report kill switch in
-`docs/BUG-REPORTS.md` exactly.
+`docs/BUG-REPORTS.md` exactly. To stop new names too, delete the function
+(`gcloud functions delete boardName --gen2 --region=us-central1
+--project=delve-die-repeat-6ba5f`): no claim means no `names/{uid}` writes, and the
+rules already refuse every run without one. `node tools/board-names/deploy.mjs
+--yes` brings it back.
 
 ## 14. Live setup record
 
@@ -671,6 +930,10 @@ and limits", fetched live 2026-09-29 — "Account creation and deletion
 limits" and "Account limits" tables).
 
 ### Board smoke (2026-09-29)
+
+*Historical record.* Since Phase 91.2 the admin credentials are always required
+for the default probe and `--with-admin` no longer exists (the steps and tables
+below are the 2.2.0 probe as it ran).
 
 First live `node tools/boards-smoke.mjs --with-admin` run: 5/17 steps PASS,
 then **FAIL totals** — `{"stat":"deep","shape":{"race":null,"sub":null},
@@ -825,6 +1088,12 @@ The offline gate passed first (rules tests 36/36, full suite 8170 pass / 0 fail
 / 2 skipped, the vc12 formula in tag `v2.2.0` confirmed, clean tree), so the
 deploy is ready to run on the user's go.
 
+**Superseded by the combined deploy (Phase 91.2):** `firebase/firestore.transition.rules`
+now also carries the 2.2.0 legacy branch, so the single transition deploy at
+`docs/RELEASING.md` "Release 2.3.0" step 1 covers this one too; when it runs,
+record it in the Phase 91.2 record that 91.2-10 adds, and replace this PENDING
+note with a pointer to it.
+
 **Trigger (whichever comes first):** the transition rules must be live
 - before the milestone-end debug-APK device testing with Compete ON (a 2.3
   debug build submits runs with the new key), or
@@ -876,17 +1145,53 @@ runs.
   limit keeps working. Confirm the rule still reads `request.query.limit ==
   null || request.query.limit <= 50` before suspecting an index or a rank
   key.
+- **The account block says NOT SIGNED IN (or a run never posts), Compete ON**
+  (Phase 91.2) — runs are held, not lost (section 8). Work down the list:
+  the Play Games configuration is published or the account is on the Testers
+  list; the credential's SHA-1 is the installed build's signer (the Play App
+  Signing key for a Play build, the debug keystore for the debug APK); the
+  application ID in `games-ids.xml` equals `PLAY_GAMES_CONFIG.appId`; the web
+  client ID is in `PLAY_GAMES_CONFIG.webClientId` (empty means sign-in is
+  dormant); and the Firebase Play Games provider is enabled (section 9). The
+  dev-row PLAY GAMES PROBE names the first step that fails.
+  `docs/PLAY-GAMES-SETUP.md` has the console side.
+- **`OPERATION_NOT_ALLOWED` on `accounts:signInWithIdp`** — the Play Games
+  provider is not enabled on the live project, or its client ID or secret does not
+  match the Game server credential (section 9).
+- **The function answers `NOT_LINKED`** — the caller's account has no
+  `playgames.google.com` provider (the link did not happen, or it is a bug-report
+  anonymous account); the smoke's `--function` probe expects exactly this for an
+  anonymous account. **`NEEDS_GAMES_CODE`** — the function is deployed with
+  `NAME_SOURCE=games` (the fallback); the client sends a fresh code and it should
+  resolve. **`UPSTREAM` / `INTERNAL`** — read the function's logs
+  (`gcloud functions logs read boardName --region=us-central1 --project=delve-die-repeat-6ba5f`).
+- **A well-formed run is refused with `PERMISSION_DENIED` and the player is named**
+  — the run's `handle` must equal `names/{uid}.name` exactly. A stale cached name
+  (the player renamed in Google Play Games) is refused once, then the client
+  re-claims and retries once.
+- **A player's name on the board is a neutral placeholder** — the safety-list mask
+  (section 12). `names --flagged` lists it; override it if it is a false positive.
+- **Compete ON, the game plays, but nothing posts after the final rules**
+  — the player is on 2.2.0: its anonymous runs are refused by design (D-13).
+  After they update and sign in, the D-05 re-post sends the runs the refusal
+  window dropped (section 8).
 
-## 16. Retiring Google Play Games (Play Console cleanup)
 
-2.2.0 removed Google Play Games from the app (Phase 85, RETIRE-01/RETIRE-02):
-sign-in, the four/five Season-1 boards and the plugin are all gone from the
-shipped build. This cleanup is a **user step in Play Console**, and it waits
-until **2.2 reaches testers** — until then, testers are still on 2.1.0, which
-still signs in through Play Games and still posts to these boards (the same
-trigger as the rules cutover, section 6). Deleting anything here earlier
-would break sign-in and board posting for every tester still on the old
-build.
+## 16. The Play Games configuration and the Season-1 boards
+
+**Do NOT remove the Play Games Services configuration.** 2.2.0 dropped Google
+Play Games sign-in (Phase 85, RETIRE-01/RETIRE-02) and an earlier version of this
+section told the user to delete the configuration at the 2.2 cutover. That step
+is **cancelled**: from 2.3 (Phase 91.2, D-09) the game signs in with Google Play
+Games again, to name the board, and it reuses the **existing configuration**
+(application ID `517177834262`, Google Cloud project `delve-die-repeat`). Deleting
+or unlinking it breaks sign-in for every player. The runbook for its console
+setup is `docs/PLAY-GAMES-SETUP.md` (path A reuses it; path B creates a new one
+linked to `delve-die-repeat-6ba5f` only if spike gate G4 fails).
+
+What stays optional is the **Season-1 leaderboards** inside it, which no build
+since 2.2.0 submits to. They count toward the 70-board cap either way, and the
+console may refuse to delete a published one; leaving them is harmless.
 
 ### The Season-1 boards
 
@@ -898,30 +1203,21 @@ build.
 | PURSE | `gold` | `CgkIlvbN0YYPEAIQBg` |
 | LEANEST | `lean` | `CgkIlvbN0YYPEAIQAw` — retired in v2.1; delete it too if `docs/UAT-v2.1.md` row 15.8 never recorded the delete |
 
-Plus the Play Games Services configuration itself (not a leaderboard —
-the sign-in setup).
+### Optional: deleting the Season-1 boards
 
-### Steps
+1. Play Console → **Delve, Die, Repeat** → **Grow users** → **Play Games
+   Services** → **Setup and management** → **Leaderboards**: open each board
+   above and delete it. Do this only after 2.2.0 or later is the build testers run,
+   since 2.1.0 still posts to them. If the console refuses to delete a published
+   board, leave it — nothing submits to it any more.
+2. Leave the configuration, its credentials (the Android SHA-1s and the Game
+   server credential) and the OAuth consent screen alone: sign-in needs them.
+3. **Never touch the Firebase project `delve-die-repeat-6ba5f`** from the Play
+   Games console steps — it is a different project from `delve-die-repeat`, and it
+   is what the board and bug reports run on.
 
-1. **Delete each leaderboard.** Play Console → **Delve, Die, Repeat** →
-   **Grow users** → **Play Games Services** → **Setup and management** →
-   **Leaderboards**: open each board above and delete it. If the console
-   refuses to delete a published board, leave it — nothing submits to it any
-   more, and it still counts toward the 70-board cap either way (this is
-   the same "if the console refuses" outcome the former runbook's section 13
-   already documented for LEANEST).
-2. **Remove the Play Games Services configuration.** Unpublish it where the
-   console allows, then delete or unlink the configuration and its
-   credentials. Console labels move over time — verify the exact current
-   menu names; the former runbook's publishing path was **Setup and
-   management** → **Publishing**.
-3. **Optional, the user's call.** The Google Cloud project `517177834262`
-   that held the Play Games credentials and its OAuth consent-screen
-   branding can be cleaned up in Google Cloud Console. **Never touch the
-   Firebase project `delve-die-repeat-6ba5f`** — it is a different project
-   and it is what this whole runbook (and bug reports) runs on.
-
-**Source:** the full former Play Games Services runbook, at git commit
+**Source:** the full former Play Games Services runbook (with the leaderboard
+sections that no longer apply), at git commit
 `a217d032b0f53fd75640e15dbefd7e0a9d8d336f`:
 
 ```

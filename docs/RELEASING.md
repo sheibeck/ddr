@@ -106,8 +106,11 @@ double-bump the versionCode `86-01` already set. Do not skip ahead.
    answers and both URLs from `store-listing/LISTING.md`, and paste the
    full description (if Play Console asks for the Data safety form during
    step 3's release review, enter it then instead).
-9. **Play Console cleanup of the old game service** —
-   `docs/LEADERBOARDS.md` section 16.
+9. **Play Console cleanup of the old game service: CANCELLED (Phase 91.2,
+   D-09).** Do **not** remove the Play Games Services configuration: 2.3 signs
+   players in with Google Play Games again and reuses it
+   (`docs/PLAY-GAMES-SETUP.md`, `docs/LEADERBOARDS.md` section 16). Deleting the
+   Season-1 leaderboards inside it stays optional.
 
 At go-live (a later release, not 2.2): the Season 1 reset,
 `docs/LEADERBOARDS.md` section 10.
@@ -124,48 +127,141 @@ ask before pushing a versionCode-bumped signed AAB to the testing track).
   A Play-installed build and a locally-signed build have different signers, so one must be
   uninstalled before the other installs — the phone can't hold both.
 
-## Release 2.3.0: the DEPTH-key steps (BOARD-28)
+## Release 2.3.0: the ordered checklist
 
-These steps slot into the 2.3.0 ordered checklist when it is written at
-milestone close. Hard order, do not skip ahead (Phase 87, report #9: the
-DEPTH board now breaks a floor tie by MORE steps, so `deepKey` changed from
-`floor * 1,000,000 + (999,999 - steps)` to `floor * 1,000,000 + steps`, and
-the shipped 2.2.0 / vc12 client still writes the old value). Every live step
-below (a deploy, the smoke probe, a re-key) is the user's go first; ask
-before each one.
+One hard-ordered sequence for everything live in 2.3: the Phase 87 DEPTH-key
+steps (BOARD-28) and the Phase 91.2 Play Games names steps (BOARD-31..33).
+Do not skip ahead. **Every live step below (a console setting, a deploy, a smoke
+probe, a re-key, a publish) is the user's go first (D-14); ask before each one.**
+Backend deploys are just in time: nothing here runs before it is needed, and
+each step first checks that the shipped build (2.2.0, vc12) is unharmed by it.
 
-1. **The transition rules are live before any 2.3 build submits a run.** The
-   user deferred the Phase 87 deploy (87-08, 2026-09-30), so it is still
-   pending (recorded in `docs/LEADERBOARDS.md` section 14). Deploy it before the milestone-end debug-APK
-   device testing with Compete ON, or here, whichever comes first, with the
-   transition command in `docs/LEADERBOARDS.md` section 6, then run
-   `node tools/boards-smoke.mjs --transition`: every step PASS (a 2.3 key
-   lands, a 2.2.0 key lands, any third value is refused).
-2. **At the 2.3 release, after the user's Play upload:** run
-   `node tools/boards-admin.mjs rekey-deep` (a dry run; record the
-   scanned / current / old / left-alone counts), then
-   `node tools/boards-admin.mjs rekey-deep --yes`. It is idempotent and safe
-   to repeat.
-3. **When 2.3 reaches testers** (the user confirms the update is live on
-   their track): deploy the final rules with the plain command —
+Why the order matters. The DEPTH board breaks a floor tie by MORE steps, so
+`deepKey` changed from `floor * 1,000,000 + (999,999 - steps)` to `floor *
+1,000,000 + steps`, and the shipped 2.2.0 client still writes the old value
+(Phase 87, report #9). 2.3 also posts only under a verified Google Play Games
+name, so the 2.3 run document has no `@handle` of its own and **a 2.3 build cannot
+post under today's live rules at all**. The transition rules (one file, both
+phases) keep 2.2.0 posting while 2.3 is tested; the final rules refuse 2.2.0 once
+2.3 is in testers' hands.
+
+1. **Before the milestone-end Compete-ON device test, or the release, whichever
+   comes first — Play Games names go live (transition window).** The 91.2-10
+   plan runs these, each on the user's go:
+   1. **The console batch (the user):** the Play Games configuration, the OAuth
+      consent screen, the Game server web client, the Android credentials,
+      testers and Blaze billing with a budget alert. Exactly
+      `docs/PLAY-GAMES-SETUP.md` path A (reuse configuration `517177834262`, D-09).
+      Do NOT remove the configuration. The user hands Claude the web client ID and
+      the path of a file outside the repo holding the secret.
+   2. **The client ID commit:** write the web client ID into
+      `PLAY_GAMES_CONFIG.webClientId` (`src/browser/firebaseConfig.js`), run
+      `node --test test/unit/playIdentity.test.js`, commit.
+   3. **The provider enable:** the Firebase Play Games provider, with the admin API
+      and the secret read from the user's file (never printed, never committed): a
+      `POST .../defaultSupportedIdpConfigs?idpId=playgames.google.com`;
+      `GET` it afterwards and confirm `enabled: true`
+      (`docs/LEADERBOARDS.md` section 9).
+   4. **The `boardName` function:** `node tools/board-names/deploy.mjs --setup --yes`
+      (the APIs and the `board-names` service account with
+      `roles/datastore.user`), then `node tools/board-names/deploy.mjs --yes`. The
+      deployed URL must equal `BOARD_NAME_FN.url`. (A dry run, without `--yes`,
+      prints the commands first.)
+   5. **ONE transition deploy** (it also covers Phase 87's still-pending deploy,
+      deferred 2026-09-30): `firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive`,
+      never the plain `firebase deploy` here. It is harmless to 2.2.0 testers: the
+      transition rules keep accepting their runs and re-rolls. Then
+      `gcloud firestore indexes composite list --project=delve-die-repeat-6ba5f --database="(default)"`
+      until every index is READY.
+   6. **The smoke probes:** `node tools/boards-smoke.mjs --transition` and
+      `node tools/boards-smoke.mjs --function`, both exit 0 with every step PASS and
+      cleanup ok. (`--transition`: a 2.3 key lands, a 2.2.0 key lands, any third
+      value is refused, a named uid cannot use the legacy branch.)
+   7. **The debug APK and the dev-row probe:** build once with
+      `npm run android:debug`, install with `adb install -r`, long-press the version
+      label, and run the PLAY GAMES PROBE: G4 pass, G3 pass, A4 pass, A6 pass, and
+      confirm the G1 provider name is your gamer name, not your real name. The
+      fallbacks: **G1 or A4 fails** — redeploy with `--name-source games` after
+      storing the secret (`node tools/board-names/deploy.mjs --setup --name-source
+      games --pgs-client-id <web client id>` prints the two `gcloud secrets`
+      commands; then `node tools/board-names/deploy.mjs --name-source games
+      --pgs-client-id <web client id> --yes`; no client update). **G4 fails** —
+      `docs/PLAY-GAMES-SETUP.md` path B (a new configuration linked to
+      `delve-die-repeat-6ba5f`, then `games-ids.xml` and `PLAY_GAMES_CONFIG` change
+      together, and a new build). **G2 fails** (a rename does not reach Firebase) —
+      already handled in the client (an unlink and relink once per launch); note it.
+2. **At the 2.3 release, after the user's Play upload.** Patch notes are agreed
+   with the user beforehand (they mention Play Games names and SIGN IN) and no
+   release build happens before that; the release build and its audits come first
+   (standing rule, then the upload):
+   1. **The patch notes** `docs/patch-notes/2.3.0.md` (the "Patch notes" section
+      above): agreed with the user, DRAFT paragraph removed,
+      `node tools/patch-notes.mjs --write-module` then `--check`, committed.
+   2. **The release build:** `npm test`, then `npm run play:release` (it bumps to the
+      next versionCode) or `npm run android:release` if `android/version.properties`
+      was already bumped; archive `mapping.txt` outside the repo in a folder named for
+      the versionName and versionCode.
+   3. **The release-build SDK audits**, on this AAB, recorded in
+      `store-listing/LISTING.md`'s build-level audit:
+      - `node tools/android-api-scan.mjs --fail-on com.capacitorjs.plugins.statusbar,com.darktierstudios.delvedierepeat`
+        exits 0, with the **Google-owned Play Games callers recorded** (owner Google:
+        `com.google.android.gms.games` is expected, not a failure);
+      - `node tools/gradle.mjs :app:dependencies --configuration releaseRuntimeClasspath`
+        checked for ad, analytics, measurement or crash-reporting artifacts. The only
+        new dependency is `play-services-games-v2` and its Google Play services
+        transitives; anything else is a stop.
+   4. **The user uploads the AAB** to the testing track and pastes
+      `node tools/patch-notes.mjs --play` into the release notes; push master and the
+      tags (the ask-first rule) and publish the GitHub Release with
+      `node tools/patch-notes.mjs --release-body | gh release create v2.3.0 --repo sheibeck/ddr --title "Delve, Die, Repeat 2.3.0" --notes-file -`.
+   5. **The DEPTH re-key:** `node tools/boards-admin.mjs rekey-deep` (a dry run;
+      record the scanned / current / old / left-alone counts), then
+      `node tools/boards-admin.mjs rekey-deep --yes`. It is idempotent and safe to
+      repeat.
+   6. **Publish the Play Games configuration's pending changes** (Play Console, Play
+      Games Services, Publishing), at least 2 hours before players who are not testers
+      get 2.3: an unpublished configuration silently makes Compete impossible for
+      everyone else (`docs/PLAY-GAMES-SETUP.md` section 2, step 8).
+   7. **The website:** `node tools/patch-notes.mjs --site ../darktier-studio`, commit
+      it there, push the darktier-studio commit (the Play Games names pages are
+      already committed there, unpushed), then `npm run deploy` in
+      `C:/projects/darktier-studio`. Open `/privacy/apps`, `/privacy/delete-data`,
+      `/delve-die-repeat/terms` and `/delve-die-repeat` and confirm each serves the
+      Play Games names text.
+   8. **Play Console: the Data safety form** from `store-listing/LISTING.md` section
+      "Data safety" (Name, User IDs, Other actions, the Play Games SDK's Diagnostics
+      and Photos rows, with both URLs), the 2.3.0 full description, and a **re-read of
+      the IARC questionnaire's "users interact" question**: gamer names on a public
+      leaderboard are expected not to change the rating, and the user confirms that in
+      the console.
+3. **When 2.3 reaches testers** (the user confirms the update is live on their track,
+   and says go): the final rules, with the plain command —
    `firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f --non-interactive`.
-   Then run `node tools/boards-smoke.mjs` (every step PASS), then
-   `node tools/boards-admin.mjs rekey-deep --yes` once more (it catches
-   2.2.0 runs filed between step 2 and the cutover), then
-   `node tools/boards-admin.mjs rekey-deep` must report 0 runs on the old
-   key. **From this moment a 2.2.0 client's run is refused by the live
-   rules**, the same trade the 2.2 cutover made for 2.1.0 bug reports:
-   confirm it with the user before deploying.
-4. **Delete the transition artifacts:** `firebase/firestore.transition.rules`,
+   Then `node tools/boards-smoke.mjs` (every step PASS), then
+   `node tools/boards-admin.mjs rekey-deep --yes` once more (it catches 2.2.0 runs
+   filed between step 2.5 and this cutover), then `node tools/boards-admin.mjs
+   rekey-deep` must report 0 runs on the old key. **From this moment a 2.2.0
+   client's run is refused by the live rules (D-13)**, silently, and dropped by its
+   queue, kept locally: the same trade the 2.2 cutover made for 2.1.0 bug reports.
+   Confirm it with the user before deploying. A 2.2.0 player who updates and signs
+   in gets those runs re-posted once (D-05). Owner delete stays allowed, so a 2.2.0
+   player can still ERASE MY RUNS, and bug reports are unchanged.
+4. **Delete the transition artefacts:** `firebase/firestore.transition.rules`,
    `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js`,
-   `legacyDeepKeyOf` (`src/browser/runDoc.js`), the fake's
-   `acceptLegacyDeepKey` option and admin runs PATCH
-   (`src/browser/fakeBoardServer.js`), `rekey-deep` / `classifyDeepKeys` /
+   `LEGACY_HANDLE_PATTERN` and `isLegacyHandle` in `src/browser/runDoc.js` (with
+   `legacyDeepKeyOf` and `legacyHandleUpdateCommit`), the fake board server's
+   transition mode (`transition: true` and the admin
+   run-document PATCH that only `rekey-deep` uses, `handleRunPatch`; the names PATCH
+   stays; `src/browser/fakeBoardServer.js`), `rekey-deep` / `classifyDeepKeys` /
    `patchDeepKey` (`tools/boards-admin.mjs`), the `--transition` probe
    (`tools/boards-smoke.mjs`) and their tests. Flip
-   `test/unit/compliance-docs.test.js`'s section-6 test back to "the
-   transition files are gone", turn `docs/LEADERBOARDS.md` section 6's 2.3
+   `test/unit/compliance-docs.test.js`'s transition-files test back to "the
+   transition files are gone", turn `docs/LEADERBOARDS.md` section 6's transition
    subsection into history, run `npm test`, commit.
+
+The Play Console Play Games **cleanup is cancelled**: the configuration is in use
+again and must not be removed (`docs/LEADERBOARDS.md` section 16). Deleting the
+Season-1 leaderboards inside it stays optional.
 
 ## Android toolchain pin (AGP 8.13.0, D-21)
 
