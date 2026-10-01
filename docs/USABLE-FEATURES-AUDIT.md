@@ -100,6 +100,9 @@ outcome for every gated circumstance.
 | Fly (new, Phase 90 plan 07) | 2 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
 | Enchant Character (new, Phase 90 plan 07) | 4 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
 | Speed of Sound (new, Phase 90 plan 07) | 5 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
+| Stop Time (new, Phase 90 plan 08) | 3 | special | timestop | true | `castRefused combatOnly` | `resistFailed`/`controlHeld` (kind time) per foe, then `timeStopped` | `castRefused notFought` | casts at the penalty |
+| Senseless (new, Phase 90 plan 08) | 2 | illusion | misdirect | true | `castRefused combatOnly` | `foeMisdirected` | `castRefused notFought` | casts at the penalty |
+| Duplicate Foe (new, Phase 90 plan 08) | 5 | illusion | misdirect | true | `castRefused combatOnly` | `foeMisdirected` | `castRefused notFought` | casts at the penalty |
 
 Every combat-only cast outside combat is `castRefused {spell, reason:
 "combatOnly"}` — no charge spent, zero rng, and (Earthquake/Death) no

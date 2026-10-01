@@ -7027,3 +7027,74 @@ before/after record and regenerated alone).**
   `scroll-fumble-resolve`, `day-one-damage`, `spell-resist`, `removed-spells-load` (35 rows, 15 non-combat
   spells, `timed` a self kind, `utility` and `frenzy` in their closed lists) and `identity-footer` (the
   `schoolBonus` reader count in `derived.js`).
+
+### Phase 90 plan 08: Stop Time, Senseless, Duplicate Foe (SPELL-10)
+
+**The rule (the user's 2026-09-30 slate and Q6 A).** Three control spells join `SPELLS` (38 rows): Stop Time
+(Special 3, `kind: "timestop"`), Senseless (Illusion 2) and Duplicate Foe (Illusion 5), the last two
+`kind: "misdirect"`, all `stretch: "rounds"`, `roll: "derived"`, combat-only. `combat.js#stopTime` holds every
+foe that fails the one rising resist for 2 rounds + the caster's Special school bonus (`holdFoe` kind `"time"`,
+no main-rng draw); `combat.js#misdirectFoe` sets `f.misdirect = { at, left }` (one main-rng draw: the duration
+dice, d4 or d4+1, plus the Illusion bonus, which is +0 for both sub-classes that learn the school) and
+`resolveMisdirectedTurn`, called from `foeTurn` after the held, asleep and stunned skips, aims each of the foe's
+swings at the first other live foe (or itself), never the hero's side. `f.misdirect` is a combat-scoped foe
+field (a foe lives only inside `state.combat`, which every comparable already carves out), so no
+`*Comparable()` carve-out was needed; `test/parity/prototype-master.js.txt` is untouched.
+
+**New draws (declared).** The misdirect duration die (a `rollDice`, no `.d(` of its own) and, per misdirected
+swing, one `rollCheck` (to-hit) and, on a hit, one tagged `amount` draw (damage), each in the position the
+foe's own hero swing draws them. `roll-high-guard.test.js` DRAW_INVENTORY: `engine/combat.js` `rollCheck`
+23 -> 24, `amount` 22 -> 23. Nothing is drawn when no foe is misdirected, so every existing run's draw
+stream is unchanged until a book or a scroll reaches one of the three.
+
+**The predictor.** The three rows are `roll: "derived"`: they never enter `rollGrimoire`'s main-rng shuffles
+(spliced afterwards through a derived stream), so no chargen cursor moves. What moves is content: (1) the
+five sub-classes that learn Special (Wizard, Sorcerer, Illusionist, Summoner, Apprentice) and the two that
+learn Illusion (Illusionist, Apprentice) can be dealt a spliced row, and every other spliced row's derived
+position shifts with the extra splice draws, so a parity seed on one of them can show a different grimoire;
+(2) a scroll's `rng.pick(options)` is over a longer list (18, 27, 33 and 38 rows at depths 1 to 4+, where
+it was 17, 25, 31 and 35), so a run that reads a scroll lands on another row.
+
+**The live scan (measured at the plan's end, against the base 49425bac).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass after the declarations below. Before them
+  chargen (seed 24), combat `lose-apprentice` and the ENG-05 aggregate gate failed, exactly where predicted.
+  The magic fixture (`cast-damage` seed 243, `scroll` seed 1295) replays unchanged.
+- `node tools/roll-high-baseline.mjs pins` (read, `save` never run): **3 of 8 labels moved** (solo-2,
+  solo-magicuser-sorcerer, deep-8), pasted by hand, each hashed identically twice and traced per bot step
+  against an extracted tree of 49425bac. solo-1, solo-thief-pilfer, party-1, party-fighter-knight and deep-14
+  re-measured byte-identical. `roll-high-save-compat.test.js` and `hazard-commit/golden.json`: unchanged.
+
+**Moved parity entries (each measured live, declared with a before/after record and regenerated alone).**
+
+1. `action-script.chargen.json`, seed 24 (Apprentice): the engine's book `[Heal, Strength, Stupidity, Sense
+   Presence, Weaken, Open/Lock, Enchant Character, Petrify, Earthquake, Freeze]` becomes `[Senseless, Heal,
+   Strength, Stupidity, Sense Presence, Weaken, Enchant Character, Petrify, Earthquake, Freeze]` (Senseless
+   lands in the low pool's front and Open/Lock's derived position moves out of the book). Seeds 7, 8, 15 and
+   29, and every no-grimoire and non-record seed, are unchanged. The prototype side is untouched.
+2. `action-script.combat.json`, `lose-apprentice` (seed 127, an Apprentice): the engine's chargen book
+   `[Strength, Shield, Heal, Stun, Insane, Acid, Freeze]` becomes `[Strength, Shield, Heal, Stun, Insane,
+   Senseless, Freeze]` (Senseless displaces Acid in the sixth slot); `rollGrimoireDraws` stays 38 -> 37, the
+   action path and every declared end field are unchanged. (This file is not on the plan's list; the
+   declaration is the same kind of record 90-06 and 90-07 edited.)
+3. Unmoved: every movement, economy and encounters parity scenario, the magic fixture, and the other combat
+   scenarios.
+
+**Moved pins and tests (re-recorded alone).**
+
+- `roll-high-state-pins.test.js`: the three labels above (old -> new, actions / dead / depth: solo-2
+  368/true/4 -> 239/true/2; solo-magicuser-sorcerer 150/true/2 -> 313/true/3; deep-8 109/true/9 ->
+  300/false/11). First divergence: solo-2 and solo-magicuser-sorcerer at step 0 (the book's spliced rows and
+  the first scroll read, depth 1), deep-8 at step 80 (its first scroll read picks a spell the book copies
+  where the base free-cast Sense Presence).
+- `bot-tactics.test.js`: the Sorcerer trio's seed 1 now stalls (campFailed loop, depth 7, day 10 at 5000
+  actions, under identity dials, in the test's own order); swapped for seed 2 (1229 actions, depth 11, day
+  12), the smallest seed that dies naturally. The Pilfer and Troll Knight trios re-confirmed.
+- `days-farm.test.js`: the camp-guard pin 736468 (campGuard 100) now measures 0; the only one of the 30 Magic
+  User starts in `seedList(120)` that fires the guard is seed 863172 (index 109, a Court Mage, campGuard
+  200, campFailed 0, outcome dead). The assertion is unchanged.
+- Table pins moved by the new rows (not fixtures): `spell-table`, `content-tables`, `scroll-fumble-table`,
+  `scroll-fumble-resolve`, `day-one-damage`, `removed-spells-load` and `special-timed-spells` (38 rows, the
+  seven appended `roll: "derived"` rows, the four plan-07 rows' position), `foe-conditions` (three new chips,
+  one multi-word label), `shell-combat-actions` / `combatMenu` (the hero chip kind `stopped`),
+  `usable-features-audit` (the doc lists all 38 spells).

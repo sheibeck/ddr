@@ -1095,7 +1095,16 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
     // (323 actions, depth 3, day 4; seed 3 dies too, 549 actions); seeds 6 and 5 still die
     // naturally (107 and 1561 actions). The Pilfer and Troll Knight trios are unaffected
     // (re-confirmed live).
-    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 1, 5] },
+    // Phase 90 plan 08 (SPELL-10, user 2026-09-30): Sorcerer seed 1 swapped for seed 2. The spell
+    // list is three rows longer (Stop Time, Senseless, Duplicate Foe joined it, and a Sorcerer may
+    // learn Special), so a scroll's pick(options) lands on another row and the book holds another
+    // spell: seed 1 now falls into the pre-existing campFailed
+    // loop the Phase 72 note above describes (stuck at depth 7, day 10, re-measured live to 5000
+    // actions under identity dials; seed 7 stalls too). Seed 2 is the smallest untaken seed that dies
+    // naturally (1229 actions, depth 11, day 12; seeds 3 and 4 die too, 456 and 318 actions); seeds 6
+    // and 5 still die naturally (107 and 410 actions). The Pilfer and Troll Knight trios are
+    // unaffected (re-confirmed live, in the test's own order).
+    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 5] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
   ];
   let sawItem = false;

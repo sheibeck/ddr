@@ -144,8 +144,10 @@ const startedOf = (events) => events.filter((e) => e.type === "spellEffectStarte
 // --- the rows -----------------------------------------------------------------
 
 test("ordering: the four rows are appended after Death, in the ruled order, with the ruled fields", () => {
-  assert.deepEqual(SPELLS.slice(-4).map((sp) => sp.n), NEW_FOUR);
-  assert.equal(SPELLS[SPELLS.length - 5].n, "Death", "no earlier row moved");
+  // Phase 90 plan 08 appended three control rows after Speed of Sound; the four plan-07 rows stay where they were.
+  assert.deepEqual(SPELLS.slice(-7, -3).map((sp) => sp.n), NEW_FOUR);
+  assert.deepEqual(SPELLS.slice(-3).map((sp) => sp.n), ["Stop Time", "Senseless", "Duplicate Foe"]);
+  assert.equal(SPELLS[SPELLS.length - 8].n, "Death", "no earlier row moved");
   const want = [
     ["Open/Lock", 1, "unlock", 100, "utility"],
     ["Fly", 2, "fly", 30, "utility"],

@@ -1471,3 +1471,54 @@ one new line in the damage seam.
   resist already came first, so only these counts moved.
 - **Check direction.** None flipped; no check was added (Ice has none, Stun and Doze never rolled one).
   The one resist is unchanged (`risingResistFaces`).
+
+## Phase 90 plan 08: Stop Time, Senseless, Duplicate Foe, and the misdirected swing (SPELL-10, user 2026-09-30)
+
+The accepted slate (`90-SPELL-SLATE-DRAFT.md` wiring B and C) with Q6 A (+1 round per school bonus
+point on a round-timed new spell, `derived.js#spellEffectRounds`). Two shared tails in
+`engine/combat.js` (the hero's cast and a scroll's free cast call them now; a Joiner's cast will in
+90-10) and one new turn shape in `foeTurn`.
+
+- **Stop Time: `combat.js#stopTime`.** No main-rng draw at all. For each live foe in `C.foes` order, the
+  ONE depth-rising resist (`foeResistsSpell`, a derived stream); a foe that fails it is held kind
+  `"time"` for `holdRounds` (2) + the caster's Special school bonus (`holdFoe`, never shortening a
+  longer live hold). One closing `timeStopped { count, rounds }` line (count 0 when every foe resisted).
+- **Senseless and Duplicate Foe: `combat.js#misdirectFoe`.** NEW main-rng draw: the duration dice
+  (`rollDice(rng, sp.rounds)`: d4 for Senseless, d4+1 for Duplicate Foe), drawn once at the cast after the
+  picked foe's up-front resist (`SINGLE_TARGET_KINDS.misdirect = "target"`, a derived stream; a Joiner's
+  cast rolls it inside the tail). `rollDice` goes through `dice.js`, so the line has no `.d(` of its own
+  and no roll tag. Duration = the dice + the caster's Illusion school bonus (+0 for the Illusionist and
+  the Apprentice, the only sub-classes that learn the school). The record is `f.misdirect = { at, left }`
+  (`at` "friends" or "self"); a longer live record stands (its aim and rounds).
+- **The misdirected turn: `combat.js#resolveMisdirectedTurn`**, called from `foeTurn` right after the
+  held, asleep and stunned skips (a turn those take never spends `left`) and before the flee check and the
+  ability gate (a caster does not cast). Per swing (`frenzied` doubles, `sp.atk` multiplies, as the foe's
+  own turn), in the same positions the foe's own hero swing draws:
+  1. the to-hit, one `rollCheck(rng, foeDie(null, f), atLeastFor(faces, dieN))` on the MAIN rng
+     [rollCheck call, +1 in `engine/combat.js`]. `faces` is `derived.js#foeSwingVsFoe`: `5 + FOE_ACCURACY`,
+     no body's defences (no race, size, class, gear, Mirror Self or invisibility of anyone's), blind caps
+     it to 1 (the top face). Weaken's `foeToHitPenalty` cap is NOT applied (a Weaken halves the foe's blows,
+     below).
+  2. on a hit, the damage dice, `rollDice(rng, f.sp.dmg)` or `rng.d(6)` [roll:amount, +1 in
+     `engine/combat.js`], exactly as the normal swing: a top-face roll is a crit that doubles the dice
+     unless the foe is blind (a blind misdirected foe never crits); `foeHitFor(foeLevelBase(f) + dice, curve,
+     elite)`, then Weaken's, Shrink's and Hamstring's halving (each `ceil(/2)`, independent). The per-round
+     damage ceiling is NOT applied: it guards the hero's side, and this blow is aimed at a foe.
+  3. the blow goes through `damageFoe` (kind `"foe"`: the victim's natural armour may soak it, one more
+     gated d20 exactly as Insane's strike-an-ally; a ward may absorb it) and a kill through `killFoe`, so
+     the hero is paid its experience and spoils.
+  The victim is `f` itself (`at: "self"`) or the first other live foe in `C.foes` order (`at: "friends"`, the
+  pick Insane's strike-an-ally makes: deterministic, no draw). With no other foe the foe swings at the air
+  once (`foeSwingsAtAir`, no draw) and the turn is lost. `pickFoeTarget` is never called, so no blow
+  reaches the hero or a Joiner. After the swings `left` counts down once; at 0 the record goes with one
+  `foeMisdirectEnded` line.
+- **Draw order, summed.** Cast: [the picked foe's resist: derived, no main draw], then the duration dice
+  (one main draw per die). Each later foe turn the foe takes: to-hit (1), then, on a hit, the damage dice
+  (1 for `rng.d(6)`, or the foe's `sp.dmg` dice), then, only if the victim has natural armour and the
+  blow is no crit, the soak d20. Before this plan a misdirected foe did not exist, so no existing run's
+  draw stream moved: only a book or a scroll that reaches one of the three spells changes a run.
+- **DRAW_INVENTORY** (`test/unit/roll-high-guard.test.js`): `engine/combat.js` `rollCheck` 23 -> 24 and
+  `amount` 22 -> 23.
+- **Check direction.** One new check, the misdirected to-hit, read roll-high through `rollCheck` like every
+  other foe swing (a bigger need is more winning faces, the foe's); nothing flipped. The resist is the one
+  shared rising resist, no floor-12 extras.
