@@ -219,3 +219,6 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
   }),
 });
+
+// Phase 91 plan 10 (IDENT-12): BLURB_ANCHORS — see the filled table below.
+export const BLURB_ANCHORS = Object.freeze({ sub: Object.freeze({}), race: Object.freeze({}) });
