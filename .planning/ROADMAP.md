@@ -352,11 +352,14 @@ Plans:
   3. The user rules on each flagged entry at a checkpoint before any change is built, and the rulings are recorded in the ledger.
   4. Every approved change is built, its text updated to match, and each one pinned by a test. Any fixture it moves is declared and regenerated.
 
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-
-- [ ] TBD (run /gsd-plan-phase 91.1 to break down)
+- [ ] 91.1-01-PLAN.md — VALUE-01..04: docs/VALUE-LEDGER.md (races, sub-classes, skills, level-up abilities, Sing; systems → exists/gap; value flags; recommendations), its guard test, ONE batched value checkpoint (V1..Vn), rulings recorded and each build plan's worklist (autonomous: false)
+- [ ] 91.1-02-PLAN.md — the approved Fighter and Thief skill and ability changes, text, SKILL-AUDIT, a pin each, declared drift
+- [ ] 91.1-03-PLAN.md — the approved hero race and sub-class changes, text, IDENTITY-AUDIT/SPELL-AUDIT, a pin each, declared drift
+- [ ] 91.1-04-PLAN.md — the approved Joiner-parity changes, hero case beside Joiner case, text, audits, declared drift
+- [ ] 91.1-05-PLAN.md — MAZEWORLD.HTML PLAN: dead Inspire chip and soothed-beasts check removed, text-only rulings, every GAP closed, VALUE-LEDGER closed
 
 ### Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles (INSERTED)
 
