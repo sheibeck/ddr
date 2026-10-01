@@ -65,7 +65,10 @@ export const IDENTITY_TRAITS = Object.freeze({
       [],
     ),
     "Illusionist": side(
-      [trait("illusionist-teleport", "you choose where every teleport lands", "test/unit/movement.test.js", "teleport: an Illusionist chooses their best direction and travels a fixed 12 (no rng draws)")],
+      [
+        trait("illusionist-teleport", "you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose", "test/unit/teleport-pick.test.js", "Pick: teleportPick on a listed diagonal square lands there through the one landing function"),
+        trait("illusionist-book", "starts with Mirror Self, Door Illusion and one random Illusion spell", "test/unit/illusionist-book.test.js", "a new Illusionist's book holds Mirror Self, Door Illusion and at least one other Illusion spell, on every seed 1-500"),
+      ],
       [trait("illusionist-d20", "strikes on a d20 until level 3", CONTRACT, "strikes on a d20 until level three")],
     ),
     "Court Mage": side(

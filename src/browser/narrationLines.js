@@ -66,6 +66,9 @@ import { rangeText, rollVsText, modsText, modLabel, signedText, ROLLERS, bottomR
 // `phobia` flag by roll, mirroring eventNarration.js — pure content data
 // (not engine/), same discipline as the ABILITY_BY_ID import above.
 import { AFFLICTIONS } from "../../content/afflictions.js";
+// Phase 91 (IDENT-14): the compass words the teleported line names, shared with
+// eventNarration.js (pure content data, not engine/).
+import { COMPASS_WORD } from "../../content/flavor.js";
 
 /**
  * TONES — the tone-family vocabulary every narration line (and the
@@ -229,6 +232,7 @@ export const ORACLE_ONLY = new Set([
   "storeLeft", // the store screen closing IS the signal
   "encounterRolled", // internal table-roll bookkeeping; tableFour/tableFourNoop narrate the outcome
   "findOffered", // the dedicated Take it/Leave it prompt IS the UI
+  "teleportPickOffered", // Phase 91 (IDENT-14): the Illusionist's teleport pick (a decision card built from state) IS the UI, classified like hazardChoice; the Oracle still gets its own line
   "hazardChoice", // Phase 78 (CLIMB-01): the pre-roll wall/crevice decision card (every hero, tool or not) IS the UI, like findOffered
   "findTaken", // the Take it/Leave it prompt IS the UI; the rail's TAKEN card reads it directly (rail.js RAIL_DIRECT)
   "findLeft", // the Take it/Leave it prompt IS the UI; the rail's LEFT IT card reads it directly (rail.js RAIL_DIRECT)
@@ -336,6 +340,8 @@ export const FEATURE_EVENTS = [
   "abilityRefused",
   // Phase 39 (GEAR-05): a spent tool's refusal.
   "toolRefused",
+  // Phase 91 (IDENT-14): the teleport pick's own refusal.
+  "teleportPickRefused",
   // Phase 61 (GRULE-01): the combat gear lock — equipItem/unequipSlot/
   // takeFind/takeLoot/takeAllLoot refuse while state.combat is set. Not in
   // ORACLE_ONLY — the rail is the one feedback surface.
@@ -1565,7 +1571,26 @@ export const LINE_FOR = {
         ? `Not enough food to make camp: ${e?.members?.length ? "the party eats" : "you eat"} ${e.need} a night, you have ${e.have}. Find rations first.`
         : "Not enough food to make camp."
     ),
-  teleported: () => ({ text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other }),
+  // Phase 91 (IDENT-14, report #3): the Illusionist's teleport is a pick. The
+  // offer itself is ORACLE_ONLY (the decision card IS the UI, like
+  // hazardChoice); the refusal and the landing in three voices are rail lines.
+  teleportPickRefused: (e) => {
+    const map = {
+      notATarget: "That square is not one the teleport can reach. Pick a glowing one, or let it choose.",
+      none: "There is no teleport waiting on you.",
+      stale: "The moment has passed. The teleport has forgotten the question.",
+    };
+    return block(map[e?.reason] ?? "That is not a pick the teleport accepts.");
+  },
+  teleported: (e) => {
+    if (e?.picked) {
+      const way = COMPASS_WORD[e.dir] ?? "somewhere";
+      const far = Number.isFinite(e.dist) ? `, ${e.dist} square${e.dist === 1 ? "" : "s"} away` : "";
+      return { text: `You choose your landing: ${way}${far}.`, tone: "beat", priority: PRIORITY.other };
+    }
+    if (e?.auto) return { text: "You let the teleport choose.", tone: "beat", priority: PRIORITY.other };
+    return { text: "You teleport to an unknown location.", tone: "beat", priority: PRIORITY.other };
+  },
   leveled: (e) => ({ text: `Skill level ${e?.level ?? "?"} (+${railGain(e, e?.wpGain)} hp).`, tone: "hit", priority: PRIORITY.feature }),
   // Phase 38 (ABIL-01/03): a level-pool ability roll, sibling of leveled
   // immediately above (both fold into the same SKILL LEVEL N card family).

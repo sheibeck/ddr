@@ -1,0 +1,95 @@
+[
+  {
+    "key": "bank:SUB_NOTE.Illusionist",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting.",
+    "after": "Step on a teleport square and you choose where it puts you: any explored floor square up to 12 squares away in the eight directions, or let it choose, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-14 (report #3: \"It says I choose where teleports takes me, but when I stepped on a teleport I didn't get to choose.\"; user ruling 2026-09-30): the blurb always promised the choice and now the engine delivers it, so the blurb says exactly what the choice is: any floor square the hero has already explored, up to 12 squares away in the eight directions, or let the teleport choose (explored squares only, user 2026-09-30). The joke about owning the floor, the three illusions and the d20 stay."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Illusionist.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "you choose where every teleport lands",
+    "after": "you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-14 (report #3, user ruling 2026-09-30): the trait line states the real rule now that the engine offers it: the choice is among explored floor squares up to 12 away in the eight directions, or let the teleport choose."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Illusionist.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "starts with Mirror Self, Door Illusion and one random Illusion spell",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "IDENT-11 and the Phase 90 ruling (SPELL-10, 90-CONTEXT \"an Illusionist starts with Mirror Self, Door Illusion and one random Illusion spell\"): the engine grants the book since Phase 90 plan 09; the footer now states it as a trait of its own, so the blurb guard has a line to point at."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Illusionist",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: you choose where every teleport lands. Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+    "after": "Good: you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose; starts with Mirror Self, Door Illusion and one random Illusion spell.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-14 and SPELL-10: the generated footer prints the two authored Good lines (the teleport choice with its real reach, and the starting book). The Bad line is untouched."
+  },
+  {
+    "key": "oracle:teleportPickOffered",
+    "surface": "oracle",
+    "trigger": "teleportPickOffered — engine/movement.js#teleport",
+    "before": "",
+    "after": "The teleporter hums and waits for instructions. Illusionists give them. 2 squares glow. Pick one on the map, or let it choose.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "IDENT-14 (report #3): the new pending-pick line. The teleporter hums and waits, the player is told how many squares glow (one square reads singular; none says the only choice is to let it choose, because only explored squares glow) and that the pick is on the map or LET IT CHOOSE. Deadpan, no rules jargon. The sample here is the plural; the singular and none variants live in the builder."
+  },
+  {
+    "key": "oracle:teleportPickRefused",
+    "surface": "refusals",
+    "trigger": "teleportPickRefused — engine/movement.js#resolveTeleportPick",
+    "before": "",
+    "after": "That is not a pick the teleport accepts.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14: a pick the engine will not take (an unlisted square, a fractional one, no pick pending, or a stale one) says so by reason in the builder (that square is not one the teleport can reach, there is no teleport waiting on you, the moment has passed); the corpus renders the generic fallback."
+  },
+  {
+    "key": "rail:teleportPickRefused",
+    "surface": "refusals",
+    "trigger": "teleportPickRefused — engine/movement.js#resolveTeleportPick",
+    "before": "",
+    "after": "That is not a pick the teleport accepts.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14: the rail's twin of the refusal above: one short amber line by reason, never a card."
+  },
+  {
+    "key": "bank:RAIL_FAMILY.teleportPickOffered.title",
+    "surface": "rail-cards",
+    "trigger": "a rail card's family title",
+    "before": "",
+    "after": "A TELEPORT",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-14: the rail family title for the Illusionist's teleport pick, the twin of hazardChoice's A CHOICE (the decision card itself is built from state in plan 91-04)."
+  }
+]
