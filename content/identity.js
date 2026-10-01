@@ -143,7 +143,7 @@ export const IDENTITY_TRAITS = Object.freeze({
 
     // ---------------- Thief ----------------
     "Pickpocket": side(
-      [trait("pickpocket-take", "an extra take from every kill and chest", CONTRACT, "an extra take off every kill/chest")],
+      [trait("pickpocket-item", "whenever you gain an item from a chest or a monster, you gain one extra item as well", CONTRACT, "an extra item from every kill drop and chest")],
       [trait("pickpocket-shops", "shops charge you a quarter more and pay a quarter less", CONTRACT, "shopkeepers know your face — buys x1.25, sells x0.75")],
     ),
     "Pilfer": side(

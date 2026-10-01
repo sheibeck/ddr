@@ -31,7 +31,7 @@ import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities, grantableAt } from "./character.js";
-import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
+import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, pickpocketExtra, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
@@ -173,6 +173,13 @@ export function openChest(state, rng, events = []) {
   // point — the DELIBERATE divergence is take→offer, NOT the roll), so
   // determinism is unchanged; offerFind adds no rng. See offerFind's header.
   offerFind(state, rollTreasureItem(rng, state.floor.depth, c), events);
+  // Phase 91 plan 08 (IDENT-18, user 2026-09-30): a Pickpocket gains one extra
+  // item whenever a chest gives it one. The find card holds ONE item, so the
+  // extra goes into the pending loot pile (the spoils screen) through offerLoot
+  // with `pickpocket: true`, rolled from derivedRng(cursor, "pickpocket", acts,
+  // pile length); the main rng is untouched. A locked chest returned above and
+  // never reaches this line; no other hero gets an extra.
+  pickpocketExtra(state, rng, events);
   return events;
 }
 

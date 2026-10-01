@@ -35,6 +35,7 @@ import {
   pickFoeTarget,
   foeTurn,
   applyFoeDamageToPlayer,
+  foeSpoils,
 } from "../../engine/combat.js";
 import {
   foeToHitVs,
@@ -804,13 +805,33 @@ const CONTRACT = [
     key: "Pickpocket",
     kind: "sub",
     good: {
-      name: "an extra take off every kill/chest",
+      name: "an extra item from every kill drop and chest",
       run() {
+        // IDENT-18 (Phase 91 plan 08): the extra ITEM, a second pile entry from every item a
+        // monster or chest gives; test/unit/pickpocket-item.test.js pins every edge. The extra
+        // GOLD take is retired (audit Q1 B): gainWilmst pays a Pickpocket the ordinary amount.
+        let seed = 1;
+        let controlPile;
+        for (; seed <= 3000; seed++) {
+          const control = hero("Cutthroat");
+          control.pendingLoot = [];
+          foeSpoils(control, fixedFoe({ lvl: 3 }), makeRng(seed), []);
+          if (control.pendingLoot.length === 1) {
+            controlPile = control.pendingLoot;
+            break;
+          }
+        }
+        assert.ok(controlPile, "a seed whose drop check passes exists");
         const pickpocket = hero("Pickpocket");
-        const pickpocketAmt = gainWilmst(pickpocket, 100, "test", fakeRng([5, 5, 3]), []);
-        const control = hero("Cutthroat");
-        const controlAmt = gainWilmst(control, 100, "test", fakeRng([5, 5, 3]), []);
-        assert.ok(pickpocketAmt > controlAmt, "a Pickpocket's take is padded beyond the ordinary amount");
+        pickpocket.pendingLoot = [];
+        const events = [];
+        foeSpoils(pickpocket, fixedFoe({ lvl: 3 }), makeRng(seed), events);
+        assert.equal(pickpocket.pendingLoot.length, 2, "the regular drop plus one extra");
+        assert.deepEqual(pickpocket.pendingLoot[0], controlPile[0]);
+        assert.equal(events.filter((e) => e.type === "lootDropped")[1].pickpocket, true);
+        const pickpocketAmt = gainWilmst(hero("Pickpocket"), 100, "test", fakeRng([]), []);
+        const controlAmt = gainWilmst(hero("Cutthroat"), 100, "test", fakeRng([]), []);
+        assert.equal(pickpocketAmt, controlAmt, "no extra gold take, no draw");
       },
     },
     bad: {

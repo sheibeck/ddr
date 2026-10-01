@@ -121,17 +121,19 @@ export const LOOT_DIVISOR = 10;
 
 /**
  * gainWilmst(state, n, why, rng, events) — adds gold, scaled by the
- * character's `greed` item effects, with a Pickpocket's extra take rolled
- * via the injected rng. Ports mazeworld.html gainWilmst() (lines 1887-1898).
+ * character's `greed` item effects. Ports mazeworld.html gainWilmst() (lines
+ * 1887-1898). Takes no draw of its own now: Phase 91 plan 08 (IDENT-18, audit
+ * Q1 B, user 2026-09-30) RETIRED the Pickpocket's extra take of gold (the
+ * prototype's d10 + d10 scaled by depth, plus a d4, on every coin gain, and its
+ * `goldGained { why: "pickpocket" }` beat). The Pickpocket's extra item
+ * (pickpocketExtra below) replaces it; the `rng` argument stays so every caller
+ * keeps its signature. DELIBERATE RULES CHANGE: the three main-rng draws that
+ * followed every Pickpocket coin gain are gone, declared in
+ * test/parity/FIXTURE-INVENTORY.md; the prototype's master file keeps them.
  */
 export function gainWilmst(state, n, why, rng, events = []) {
   const c = state.c;
-  let amt = Math.round(n * (1 + 0.5 * eff(c, "greed")));
-  if (c.sub === "Pickpocket") {
-    const extra = Math.round(((rng.d(10) + rng.d(10)) * 10 * state.floor.depth) / LOOT_DIVISOR) + rng.d(4); // roll:amount
-    amt += extra;
-    events.push({ type: "goldGained", amount: extra, why: "pickpocket" });
-  }
+  const amt = Math.round(n * (1 + 0.5 * eff(c, "greed")));
   c.gold += amt;
   events.push({ type: "goldGained", amount: amt, why: why || null });
   return amt;
@@ -1178,6 +1180,39 @@ export function offerLoot(state, it, events = [], rollInfo = {}) {
   state.pendingLoot.push(it);
   events.push({ type: "lootDropped", name: it.n, kind: it.kind, ...rollInfo });
   return events;
+}
+
+/**
+ * pickpocketExtra(state, rng, events) — Phase 91 plan 08 (IDENT-18, user
+ * 2026-09-30): "whenever you gain an item from a chest or a monster, you gain
+ * one extra item as well." A Pickpocket's extra treasure item, appended to the
+ * pending loot pile through offerLoot with `pickpocket: true` on its
+ * `lootDropped` event. Called by foeSpoils (a kill's and a won parley's item
+ * drop) right after the regular drop and by openChest right after the find
+ * offer, so the extra sits in the pile immediately after the item it follows
+ * and its event comes right after that item's own. Returns 1 when an extra was
+ * offered, else 0.
+ *
+ * Streams: the roll is `rollTreasureItem` on `derivedRng(<rng cursor, or 0 for
+ * a test double with no getState>, "pickpocket", <state.acts>, <pile length>)`,
+ * never the caller's main rng, so the Pickpocket's main stream is exactly a
+ * Cutthroat's (the pile length keeps two drops in one action apart). The extra
+ * is its own pile entry, never merged with the regular item (it may be the
+ * very same item), and never a bag-upgrade check: that gate belongs to the
+ * regular drop. Hero only: any other sub gets 0 and no draw. Callers invoke it
+ * ONLY when the regular item was gained, so a failed drop check, a locked
+ * chest, a chest or foe with no item, a Faerie gift, a Misc Magic find and a
+ * store purchase never reach it.
+ */
+export function pickpocketExtra(state, rng, events = []) {
+  const c = state.c;
+  if (!c || c.sub !== "Pickpocket") return 0;
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const pile = Array.isArray(state.pendingLoot) ? state.pendingLoot.length : 0;
+  const extra = rollTreasureItem(derivedRng(cursor, "pickpocket", acts, pile), state.floor.depth, c);
+  offerLoot(state, extra, events, { pickpocket: true });
+  return 1;
 }
 
 /**
