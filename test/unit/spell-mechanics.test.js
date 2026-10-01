@@ -513,3 +513,35 @@ test("Strength: the cast event states the 100 squares, a recast says it restarte
   assert.deepStrictEqual(again, { type: "strengthCast", squares: 100, restarted: true });
   assert.equal(state.c.maxWP, 40, "no hit points on a recast either");
 });
+
+// Phase 90 (SPELL-09): the cast lines state the d10, the 100 squares and the
+// absence of hit points; a recast says it starts over; no stale wording.
+test("Strength: the Oracle and rail cast lines say the extra d10, the 100 squares and no extra HP; a recast says it starts over", () => {
+  const fresh = { type: "strengthCast", squares: 100, restarted: false };
+  const oracle = EVENT_NARRATION.strengthCast(fresh).replace(/<[^>]+>/g, "");
+  assert.match(oracle, /extra d10/);
+  assert.match(oracle, /100 squares/);
+  assert.match(oracle, /No extra HP/);
+  const rail = LINE_FOR.strengthCast(fresh).text;
+  assert.match(rail, /extra d10/);
+  assert.match(rail, /100 squares/);
+  assert.match(rail, /No extra HP/);
+
+  const again = { type: "strengthCast", squares: 100, restarted: true };
+  assert.match(EVENT_NARRATION.strengthCast(again).replace(/<[^>]+>/g, ""), /starts over/);
+  assert.match(LINE_FOR.strengthCast(again).text, /starts over/);
+
+  for (const e of [fresh, again, { type: "strengthCast" }]) {
+    for (const text of [EVENT_NARRATION.strengthCast(e).replace(/<[^>]+>/g, ""), LINE_FOR.strengthCast(e).text]) {
+      assert.doesNotMatch(text, /undefined|NaN|until you make camp|till camp|doubled/);
+    }
+  }
+});
+
+test("Strength: a fumbled scroll's line on a foe names the damage and no hit points", () => {
+  const e = { type: "fumbleOnFoe", spell: "Strength", target: "Viper", effect: "might", might: 6 };
+  const oracle = EVENT_NARRATION.fumbleOnFoe(e).replace(/<[^>]+>/g, "");
+  assert.match(oracle, /\+6/);
+  assert.doesNotMatch(oracle, /hp/);
+  assert.doesNotMatch(LINE_FOR.fumbleOnFoe(e).text, /hp/);
+});

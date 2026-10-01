@@ -221,10 +221,10 @@ test("Phase 77 (CMBUI-13) Mirrored: a fumbled Mirror Self (its d6 rounds) reads 
   assert.deepEqual(texts(f), []);
 });
 
-test("Phase 77 (CMBUI-13) Strong: a fumbled Strength (might plus the one-time strengthBoost) reads its bare label", () => {
+test("Phase 77 (CMBUI-13) Strong: a fumbled Strength (a flat might, and since Phase 90 no hit points) reads its bare label", () => {
   const f = fixedFoe();
   const state = fumbleOn("Strength", f);
-  assert.ok(f.might > 0 && f.strengthBoost > 0);
+  assert.ok(f.might > 0 && !("strengthBoost" in f));
   const chips = foeConditionChips(f, state);
   assert.deepEqual(chips.map((c) => c.text), ["Strong"]);
   assert.equal(chips[0].tone, "bad");
@@ -250,10 +250,10 @@ test("Phase 77 (CMBUI-13) Senses: a fumbled Sense Presence (`t.senses = 1`) read
 });
 
 test("Phase 77 (CMBUI-13) the fumble gifts never show on a dead foe, and odd values drop only that chip", () => {
-  const gifts = { ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, strengthBoost: 10, regen: true, senses: 1 };
+  const gifts = { ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, regen: true, senses: 1 };
   assert.deepEqual(texts(fixedFoe({ alive: false, ...gifts })), []);
   assert.deepEqual(
-    texts(fixedFoe({ ward: { pool: "x", rounds: 3 }, rebound: -1, mirror: NaN, might: 0, strengthBoost: -3, marked: true })),
+    texts(fixedFoe({ ward: { pool: "x", rounds: 3 }, rebound: -1, mirror: NaN, might: 0, marked: true })),
     ["Marked"],
   );
   assert.deepEqual(texts(fixedFoe({ ward: null, mirror: "2", rebound: "7", marked: true })), ["Marked"]);
@@ -320,7 +320,7 @@ test("order: chips come out in table order — Stunned … Frenzied, the Phase 7
     frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "poison" }, acid: { rounds: 1 },
     frozen: true, asleep: 2, marked: true, hamstrung: true, blind: true, blindFor: 1, stunned: true,
     held: { kind: "stone", left: 2 }, resisted: "sleep",
-    ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, strengthBoost: 10, regen: true, senses: 1,
+    ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, regen: true, senses: 1,
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   assert.deepEqual(texts(everything, state), [
@@ -404,7 +404,7 @@ const ENGINE_FILES = [
   "engine/items.js",
   "engine/foeDamage.js",
   // Phase 77 (CMBUI-13): resolveScrollFumble's helpful branch is the ONE
-  // place a foe's ward/might/strengthBoost/mirror/regen/senses are SET.
+  // place a foe's ward/might/mirror/regen/senses are SET.
   "engine/scrollFumble.js",
 ];
 
@@ -443,7 +443,7 @@ const NOT_A_CONDITION = Object.freeze({
   pending: "the pre-join encounter marker",
   // Phase 77 (CMBUI-13): the foe-side fumble gifts 75.1-03 parked here
   // (ward, rebound, mirror) are chips now — Shielded/Bubbled, Rebound,
-  // Mirrored — alongside might/strengthBoost (Strong), regen and senses.
+  // Mirrored — alongside might (Strong), regen and senses.
   // ── combat-wide flags a fumble sets on the READER (engine/scrollFumble.js) ──
   heroBlind: "RULES-10 (Phase 75.1): the reader's own fumbled Blind — a hero-side condition (engine/derived.js#conditionsOf), not a foe chip",
   heroShrunk: "RULES-10 (Phase 75.1): the reader's own fumbled Shrink — a hero-side condition (engine/derived.js#conditionsOf), not a foe chip",
@@ -531,7 +531,7 @@ test("coverage guard self-check: the scan still sees hamstrung, marked, stunned,
   }
   // Phase 77 (CMBUI-13): the fumble gifts (engine/scrollFumble.js,
   // engine/foeDamage.js, engine/combat.js) are seen too.
-  for (const k of ["ward", "rebound", "mirror", "might", "strengthBoost", "regen", "senses", "held", "resisted"]) {
+  for (const k of ["ward", "rebound", "mirror", "might", "regen", "senses", "held", "resisted"]) {
     assert.ok(foe.has(k), `the scan must find the foe field ${k}`);
   }
   assert.ok(combat.has("heroBlind") && combat.has("heroShrunk"), "the scan must find the reader's own fumble flags");
@@ -565,7 +565,7 @@ test("coverage guard, Phase 77 (CMBUI-13): no exclusion is parked for a later in
     assert.ok(!/Phase 77|CMBUI-13|draws its indicator/.test(reason), `${k} is still parked for a later indicator: ${reason}`);
   }
   const covered = coveredFields();
-  for (const k of ["ward", "rebound", "mirror", "might", "strengthBoost", "regen", "senses"]) {
+  for (const k of ["ward", "rebound", "mirror", "might", "regen", "senses"]) {
     assert.ok(covered.has(k), `${k} must be a FOE_CONDITIONS field`);
   }
 });
@@ -646,7 +646,7 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
     frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "poison" }, acid: { rounds: 1 },
     frozen: true, asleep: 2, marked: true, hamstrung: true, blind: true, blindFor: 1, stunned: true,
     held: { kind: "stone", left: 2 }, resisted: "sleep",
-    ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, strengthBoost: 10, regen: true, senses: 1,
+    ward: { pool: 12, rounds: 3 }, rebound: 4, mirror: 2, might: 5, regen: true, senses: 1,
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   const chips = foeConditionChips(everything, state);

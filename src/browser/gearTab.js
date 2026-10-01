@@ -15,7 +15,7 @@
 // window.__mz* bridges (itemRowState/bagArmorText/slotFor/WORN_KEYS_OF/
 // sellPriceFor/lootCompare) replaced by direct imports.
 
-import { WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff } from "../../engine/derived.js";
+import { WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff, liveItemEffects } from "../../engine/derived.js";
 import { isReady, remaining } from "../../engine/effects.js";
 import { bagCap, canStow, slotItems } from "../../engine/items.js";
 import { maxCharges } from "../../engine/movement.js";
@@ -134,7 +134,11 @@ export const GEAR_COPY = Object.freeze({
     // wardValue's {pool}/{rounds} against a null rounds.
     wardMirrorValue: "next hit",
     strength: "Strength",
-    strengthValue: "+{n} damage",
+    // Phase 90 (SPELL-09): the live spell:Strength record, an extra d10 on every damage roll.
+    strengthValue: "+d10 damage · {n} sq left",
+    // The phobia rage's flat +d10 (c.might), its own row now that Strength is not c.might.
+    rage: "Rage",
+    rageValue: "+{n} damage",
     regen: "Regeneration",
     regenValue: "d8 a round",
     mirror: "Mirror Self",
@@ -575,8 +579,13 @@ export function gearKitRows(state) {
       : GEAR_COPY.kit.wardValue.replace("{pool}", c.ward.pool).replace("{rounds}", c.ward.rounds);
     rows.push({ label: c.ward.name, value });
   }
+  // Phase 90 (SPELL-09): the Strength spell is a live `spell:Strength` timer record (squares left), not c.might.
+  const strengthLive = liveItemEffects(c).find((e) => e.act.kind === "strength");
+  if (strengthLive) {
+    rows.push({ label: GEAR_COPY.kit.strength, value: GEAR_COPY.kit.strengthValue.replace("{n}", strengthLive.rec.left) });
+  }
   if (c.might) {
-    rows.push({ label: GEAR_COPY.kit.strength, value: GEAR_COPY.kit.strengthValue.replace("{n}", c.might) });
+    rows.push({ label: GEAR_COPY.kit.rage, value: GEAR_COPY.kit.rageValue.replace("{n}", c.might) });
   }
   if (c.regen) {
     rows.push({ label: GEAR_COPY.kit.regen, value: GEAR_COPY.kit.regenValue });

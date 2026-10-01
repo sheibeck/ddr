@@ -525,9 +525,14 @@ test("CMBUI-13 halfNext: engine/items.js's Pendant of Fortitude `c.halfNext = tr
   assert.deepEqual(conditionsOf({ c: cleanChar({ halfNext: false }) }), []);
 });
 
-test("CMBUI-13 strengthBoost: engine/magic.js's Strength `c.strengthBoost = c.maxWP` gives a good chip carrying its amount", () => {
-  assert.deepEqual(conditionsOf({ c: cleanChar({ strengthBoost: 40 }) }), [{ key: "strengthBoost", polarity: "good", amount: 40 }]);
-  assert.deepEqual(conditionsOf({ c: cleanChar({ strengthBoost: 0 }) }), []);
+// Phase 90 (SPELL-09): the Strength spell no longer doubles hit points, so the
+// strengthBoost chip is gone (a stale field is inert); the spell is a live
+// `spell:Strength` record read by the generic live-effect loop.
+test("Phase 90 strength: the retired strengthBoost field makes no chip; a live spell:Strength record makes a strength chip with its squares left", () => {
+  assert.deepEqual(conditionsOf({ c: cleanChar({ strengthBoost: 40 }) }), []);
+  assert.deepEqual(conditionsOf({ c: cleanChar({ timers: { "spell:Strength": rec("squares", 61) } }) }), [
+    { key: "strength", polarity: "good", remaining: 61, cadence: "squares", source: "Strength" },
+  ]);
 });
 
 test("CMBUI-13 selfDot: engine/scrollFumble.js's `C.selfDot` gives a bad chip with remaining, by and spell; left 0 gives none", () => {
@@ -578,7 +583,7 @@ test("CMBUI-13 empty: outside a fight the combat-only chips never appear, even w
   assert.deepEqual(conditionsOf(p77Fight()), []);
 });
 
-test("CMBUI-13 order: ability chips follow the item effects; braced/inspired/halfNext/strengthBoost/nightVision end the good block before itemCooldown; fightDark/insulted/selfDot end the bad block", () => {
+test("CMBUI-13 order: ability chips follow the item effects (the Strength spell's included); braced/inspired/halfNext/nightVision end the good block before itemCooldown; fightDark/insulted/selfDot end the bad block", () => {
   const state = p77Fight({
     dark: true,
     c: {
@@ -586,20 +591,20 @@ test("CMBUI-13 order: ability chips follow the item effects; braced/inspired/hal
       timers: {
         "item:Cloak of Speed": rec("squares", 34, 50),
         "ability:smoke": abilityRec(2),
+        "spell:Strength": rec("squares", 77),
         "spell:reveal": rec("squares", 22),
         "item:Acuteness": { cadence: "rounds", left: 3, phase: "cooldown" },
       },
       might: 8,
       ward: { pool: 10, rounds: 3, name: "Shield" },
       halfNext: true,
-      strengthBoost: 30,
       foeEffect: { kind: "dazed", rounds: 2 },
     },
     combat: { braced: true, inspired: 1, parleyInsulted: true, selfDot: { left: 1, by: "acid", spell: "Acid" }, afraid: 2 },
   });
   // fightDark is absent: Night Vision holds the dark back.
   assert.deepEqual(keys(conditionsOf(state)), [
-    "haste", "ability", "might", "ward", "reveal", "braced", "inspired", "halfNext", "strengthBoost", "nightVision", "itemCooldown",
+    "haste", "strength", "ability", "might", "ward", "reveal", "braced", "inspired", "halfNext", "nightVision", "itemCooldown",
     "foeEffect", "afraid", "insulted", "selfDot",
   ]);
   assert.deepEqual(conditionsOf(state), conditionsOf(state), "two calls are deep-equal");
@@ -651,7 +656,7 @@ test("CMBUI-13 purity: conditionsOf and memberConditionsOf never mutate the stat
   const party = [p77Hero({ name: "Joiner", timers: { "ability:sidestep": abilityRec(2) } })];
   const state = p77Fight({
     dark: true,
-    c: { timers: { "ability:smoke": abilityRec(2) }, halfNext: true, strengthBoost: 10 },
+    c: { timers: { "ability:smoke": abilityRec(2), "spell:Strength": rec("squares", 10) }, halfNext: true },
     combat: {
       braced: true, inspired: 1, parleyInsulted: true, selfDot: { left: 2, by: "ice", spell: "Ice" },
       allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30, braced: true }],

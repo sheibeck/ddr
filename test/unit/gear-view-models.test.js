@@ -822,17 +822,19 @@ test("gearKitRows: a Magic User with spellsUsed 1 gets the second row Spell char
   assert.deepStrictEqual(rows[1], { label: "Spell charges", value: `${max - 1} / ${max}` });
 });
 
-test("gearKitRows, running effects: order is Rations, Shield, Strength, Regeneration, Mirror Self, Sense Presence, Sense Danger, Map the Floor, Kills", () => {
+// Phase 90 (SPELL-09): Strength is the live spell:Strength record (squares left); c.might is the phobia rage, its own Rage row.
+test("gearKitRows, running effects: order is Rations, Shield, Strength, Rage, Regeneration, Mirror Self, Sense Presence, Sense Danger, Map the Floor, Kills", () => {
   const c = fixedChar({
     rations: 5, kills: 3,
     ward: { name: "Shield", pool: 9, rounds: 3 },
     might: 2, regen: true, mirror: 3, senses: true, foresight: true,
-    timers: { "spell:reveal": { phase: "effect", left: 12 } },
+    timers: { "spell:reveal": { phase: "effect", left: 12 }, "spell:Strength": { cadence: "squares", phase: "effect", left: 61 } },
   });
   assert.deepStrictEqual(gearKitRows(st(c)), [
     { label: "Rations", value: "5 days" },
     { label: "Shield", value: "9 hp left · 3 rds" },
-    { label: "Strength", value: "+2 damage" },
+    { label: "Strength", value: "+d10 damage · 61 sq left" },
+    { label: "Rage", value: "+2 damage" },
     { label: "Regeneration", value: "d8 a round" },
     { label: "Mirror Self", value: "3 rds" },
     { label: "Sense Presence", value: "till the fight ends" },

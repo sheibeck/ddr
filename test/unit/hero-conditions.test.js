@@ -35,7 +35,7 @@ import url from "node:url";
 
 import { HERO_CONDITIONS, HERO_CHIP_COPY, LASTS, SOURCES, lotChips, chipText, chipSheetFacts } from "../../src/browser/heroConditions.js";
 import { FOE_CONDITIONS } from "../../src/browser/foeConditions.js";
-import { conditionsOf, memberConditionsOf } from "../../engine/derived.js";
+import { conditionsOf, memberConditionsOf, SPELL_ACT_OF } from "../../engine/derived.js";
 import { DURATION_ROUNDS } from "../../engine/abilities.js";
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 import { ACTIVATION_OF } from "../../content/activations.js";
@@ -83,13 +83,15 @@ function fnBody(head) {
  * literal keys in conditionsOf, liveAbilityChips and memberConditionsOf, plus
  * (Phase 89 plan 06) the two builders both enumerators now share, liveItemChips
  * (the `flight` key) and itemCooldownChips (`itemCooldown`), plus one per live
- * activation kind (the generic item loop; fly shows as flight). */
+ * activation kind (the generic item loop; fly shows as flight), plus (Phase 90,
+ * SPELL-09) one per live spell-sourced timed effect's act kind (the same loop
+ * reads `spell:<name>` records through SPELL_ACT_OF). */
 function emittableKeys() {
   const keys = new Set();
   for (const head of ["export function conditionsOf(state)", "function liveItemChips(sheet)", "function itemCooldownChips(sheet)", "function liveAbilityChips(timers)", "export function memberConditionsOf(state, partyIdx)"]) {
     for (const m of fnBody(head).matchAll(/key: "([A-Za-z]+)"/g)) keys.add(m[1]);
   }
-  for (const act of Object.values(ACTIVATION_OF)) {
+  for (const act of [...Object.values(ACTIVATION_OF), ...Object.values(SPELL_ACT_OF)]) {
     const e = act && act.effect;
     const isLive = (typeof e === "number" && e > 0) || (e && typeof e === "object" && e.sides > 0);
     if (isLive) keys.add(act.kind === "fly" ? "flight" : act.kind);
@@ -105,9 +107,10 @@ test("table: exactly one entry per descriptor key conditionsOf and memberConditi
 
 test("table: the scan of emittable keys still sees the CMBUI-13 keys and the old ones", () => {
   const keys = emittableKeys();
-  for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strengthBoost", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit"]) {
+  for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strength", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit"]) {
     assert.ok(keys.has(k), `the scan sees ${k}`);
   }
+  assert.ok(!keys.has("strengthBoost"), "the retired doubled-hit-point chip is gone (Phase 90)");
   // Phase 88 (ITEM-03): `knit` (the Cloak of Regeneration) now HAS a live window
   // (effect 30), so it is an emittable chip; before it was effect 0 and never one.
   for (const k of ["fly", "half"]) assert.ok(!keys.has(k), `${k} never makes a live chip`);
@@ -210,7 +213,8 @@ test("chipSheetFacts: every lasts and source phrase", () => {
   assert.deepEqual(f({ key: "braced", polarity: "good" }), { lasts: "until the next blow lands", source: `from your ${ABILITY_BY_ID.brace.name}`, detail: "" });
   assert.deepEqual(f({ key: "inspired", polarity: "good", amount: 1 }), { lasts: "for the rest of this fight", source: "from your song", detail: "" });
   assert.deepEqual(f({ key: "insulted", polarity: "bad" }), { lasts: "for the rest of this fight", source: "from your insult", detail: "" });
-  assert.deepEqual(f({ key: "strengthBoost", polarity: "good", amount: 40 }), { lasts: "until the day ends", source: "from a spell", detail: "" });
+  // Phase 90 (SPELL-09): the Strength spell's chip counts squares and names the spell as its source.
+  assert.deepEqual(f({ key: "strength", polarity: "good", remaining: 61, cadence: "squares", source: "Strength" }), { lasts: "61 squares left", source: "from a spell", detail: "" });
   assert.deepEqual(f({ key: "halfNext", polarity: "good" }), { lasts: "until the next blow lands", source: "from Pendant of Fortitude", detail: "" });
   assert.deepEqual(f({ key: "fearArmed", polarity: "bad", phobia: "Heights" }), { lasts: "until your next fight", source: "from your fear", detail: "" });
   assert.deepEqual(f({ key: "selfDot", polarity: "bad", remaining: 2, by: "acid", spell: "Acid" }), { lasts: "2 more rounds", source: "from a fumbled scroll", detail: "" });
@@ -220,7 +224,8 @@ test("chipSheetFacts: every lasts and source phrase", () => {
   // Plan 76-06 (user ruling 2026-09-26): Map the Floor lasts until you move; its chip has no countdown.
   assert.deepEqual(f({ key: "reveal", polarity: "good" }), { lasts: "until you move", source: "from a spell", detail: "" });
   assert.deepEqual(f({ key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" }), { lasts: "34 squares left", source: "from Cloak of Speed", detail: "" });
-  assert.deepEqual(f({ key: "might", polarity: "good" }), { lasts: "until the day ends", source: "from a spell", detail: "" });
+  // Phase 90: a source-less might chip is the phobia rage (c.might), not a spell.
+  assert.deepEqual(f({ key: "might", polarity: "good" }), { lasts: "until the day ends", source: "from your fear", detail: "" });
   assert.deepEqual(f({ key: "might", polarity: "good", remaining: 5, cadence: "squares", source: "Strength", might: 8 }), { lasts: "5 squares left", source: "from Strength", detail: "" });
   assert.deepEqual(f({ key: "ward", polarity: "good", pool: 0, name: "Bubble", mirror: true }).lasts, "until the next blow lands");
   assert.deepEqual(f({ key: "staffCharges", polarity: "good", item: "Oak Staff", charges: 2, max: 5, remaining: 9 }), { lasts: "2 of 5 charges left", source: "from Oak Staff", detail: "" });
@@ -284,7 +289,8 @@ const ENGINE_FILES = fs.readdirSync(ENGINE_DIR).filter((f) => f.endsWith(".js"))
 const NOT_A_CONDITION = Object.freeze({
   // ── hero sheet: stats, kit and bookkeeping ──
   wp: "hit points: the HP bar shows them",
-  maxWP: "max hit points: the HP bar shows them (Strength's doubling has its own strengthBoost chip)",
+  maxWP: "max hit points: the HP bar shows them",
+  strengthBoost: "retired (Phase 90): only the tolerant load (engine/saveState.js) deletes the old Strength doubling field; no live effect",
   sp: "spell points: the SP bar shows them",
   vp: "victory points: the sheet shows them",
   level: "the hero's level: the sheet shows it",
@@ -443,7 +449,7 @@ test("coverage guard: every DURATION_ROUNDS ability is read by the ability entry
 
 test("coverage guard self-check: the scan still sees the known hero, combat and member fields and timer ids", () => {
   const { hero: h, combat, member, timers } = scanAll();
-  for (const k of ["halfNext", "foeEffect", "ward", "mirror", "senses", "regen", "foresight", "strengthBoost", "fearArmed", "darkFor", "affliction"]) assert.ok(h.has(k), `hero ${k}`);
+  for (const k of ["halfNext", "foeEffect", "ward", "mirror", "senses", "regen", "foresight", "fearArmed", "darkFor", "affliction"]) assert.ok(h.has(k), `hero ${k}`);
   for (const k of ["braced", "inspired", "parleyInsulted", "selfDot", "heroOut", "heroBlind", "heroShrunk", "afraid", "weakened"]) assert.ok(combat.has(k), `combat ${k}`);
   assert.ok(member.has("braced"), "member braced");
   for (const id of ["spell:weaken", "spell:reveal", "ability:*", "item:*", "charges:*"]) assert.ok(timers.has(id), `timer ${id}`);

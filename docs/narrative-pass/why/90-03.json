@@ -1,0 +1,173 @@
+[
+  {
+    "key": "oracle:strengthCast",
+    "surface": "oracle",
+    "trigger": "strengthCast — the hero casts Strength (engine/magic.js, the might branch)",
+    "before": "Might surges: +3 damage on every blow until you make camp, and +8 hp.",
+    "after": "Might surges: every damage roll you make adds an extra d10 for the next 100 squares. No extra HP. The spell is about hitting things, not about being hit less.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "Player report #8 (\"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points instead.\") and the 2026-09-30 ruling (SPELL-09, Q1 A): Strength is now an extra d10 on every damage roll for 100 squares and grants no hit points, so the cast line says that (the d10, the 100 squares, no extra HP) instead of a flat bonus until camp and a doubled hit-point pool. A recast says it starts over rather than stacking (the line's other branch, `restarted`)."
+  },
+  {
+    "key": "rail:strengthCast",
+    "surface": "rail",
+    "trigger": "strengthCast — the hero casts Strength",
+    "before": "Might surges: +3 damage till camp, +8 hp.",
+    "after": "Might surges: an extra d10 on every damage roll for 100 squares. No extra HP.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Oracle line: the d10, the 100 squares, and no extra HP, short. A recast reads \"Strength starts over: 100 squares, not double.\""
+  },
+  {
+    "key": "oracle:fumbleOnFoe",
+    "surface": "oracle",
+    "trigger": "fumbleOnFoe — a fumbled Strength scroll lands on the foe instead (the might effect)",
+    "before": "Heal heals Viper instead: +2 hp.",
+    "after": "Heal strengthens Viper instead: +3 damage on each of its blows, for the whole fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Strength no longer grants hit points to anyone, so the foe's fumble line drops the \"+N hp\" clause: a fumbled Strength only makes the foe's blows hit harder, by a flat d10, for the fight."
+  },
+  {
+    "key": "rail:fumbleOnFoe",
+    "surface": "rail",
+    "trigger": "fumbleOnFoe — a fumbled Strength scroll lands on the foe instead (the might effect)",
+    "before": "Heal heals Viper instead (+2 hp).",
+    "after": "Heal strengthens Viper: +3 damage on its blows, for the fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line: no hit-point clause, and it says the bonus lasts the fight."
+  },
+  {
+    "key": "oracle:spellEffectFaded",
+    "surface": "oracle",
+    "trigger": "spellEffectFaded — a spell-sourced timed effect (Strength) runs out (engine/items.js#narrateTimerTransitions)",
+    "before": "",
+    "after": "Your Heal wears off.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Strength now lasts 100 squares and simply ends, so the end is told (it used to vanish at the next day boundary with no line). The line names the spell and says what stops: for Strength, the extra d10 on every damage roll (the corpus renders the plain form for an effect kind with no clause of its own). A Joiner's own spell effect names the Joiner."
+  },
+  {
+    "key": "rail:spellEffectFaded",
+    "surface": "rail",
+    "trigger": "spellEffectFaded — a spell-sourced timed effect runs out",
+    "before": "",
+    "after": "Your Heal wears off.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the Oracle line; for Strength it reads \"Your Strength wears off: damage is back to plain dice.\""
+  },
+  {
+    "key": "bank:RAIL_FAMILY.spellEffectFaded.title",
+    "surface": "rail-cards",
+    "trigger": "the rail family title for spellEffectFaded (src/browser/rail.js)",
+    "before": "",
+    "after": "WORN OFF",
+    "reasons": [
+      "naming"
+    ],
+    "why": "The new spellEffectFaded event joins the item effect's WORN OFF family, so a spell effect ending reads like an item effect ending."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.might",
+    "surface": "combat-screen",
+    "trigger": "the foe card's Strong chip: a foe a fumbled Strength scroll strengthened",
+    "before": "Your Strength went to it instead: it gained a second helping of hit points on the spot, and every blow it lands hits harder for the rest of the fight.",
+    "after": "Your Strength went to it instead: every blow it lands hits harder for the rest of the fight. It gained no hit points, which is the only mercy in this.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Player report #8 (\"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points instead.\") and the 2026-09-30 ruling (SPELL-09, Q1 A): Strength grants no hit points, to a hero or a foe, so the foe card no longer promises a second helping of hit points; it says the blows hit harder for the fight and that no hit points came with it."
+  },
+  {
+    "key": "content:SPELLS.Strength.txt",
+    "surface": "spells",
+    "trigger": "a spell's one-line effect (Grimoire, combat menu)",
+    "before": "buff · you · +d10 damage till tomorrow",
+    "after": "buff · you · for 100 squares, every damage roll you make (each blow, each spell hit) adds an extra d10; casting it again starts the 100 over; no extra HP, sadly",
+    "reasons": [
+      "fact",
+      "accurate",
+      "number"
+    ],
+    "why": "Player report #8 (\"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points instead.\") and the 2026-09-30 ruling (SPELL-09, Q1 A): \"+d10 damage till tomorrow\" described neither the duration (it ended at the next day boundary, 1 to 100 squares) nor what the cast actually did (it doubled hit points). The text now states the ruled rule: 100 squares from the cast, an extra d10 on every damage roll (each blow, each spell hit; a damage-over-time tick gets none), a recast starts the 100 over, and no extra HP."
+  },
+  {
+    "key": "bank:GEAR_COPY.kit.strengthValue",
+    "surface": "panels",
+    "trigger": "the Gear tab's ALSO ON YOU Strength row",
+    "before": "+{n} damage",
+    "after": "+d10 damage · {n} sq left",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The row reads the live Strength record now: the extra d10 and the squares left, not a flat bonus (c.might, which is only the phobia rage's since Phase 90)."
+  },
+  {
+    "key": "bank:GEAR_COPY.kit.rage",
+    "surface": "panels",
+    "trigger": "the Gear tab's ALSO ON YOU row for the phobia rage (c.might)",
+    "before": "",
+    "after": "Rage",
+    "reasons": [
+      "naming"
+    ],
+    "why": "c.might is the phobia rage's flat bonus alone now, so it gets its own row instead of borrowing Strength's."
+  },
+  {
+    "key": "bank:GEAR_COPY.kit.rageValue",
+    "surface": "panels",
+    "trigger": "the Gear tab's Rage row value",
+    "before": "",
+    "after": "+{n} damage",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rage's flat damage, the figure the row used to show under Strength's name."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero chip's tap card: the Strong chip (potion or phobia rage)",
+    "before": "Extra damage on every blow. Hit things.",
+    "after": "Extra damage on every blow, from a potion or a rage you did not ask for. Hit things.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The Strong chip is the Strength potion or the phobia rage now (the Strength spell has its own chip), so the sentence says where the extra damage comes from."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero chip's tap card: the new Strength chip (the spell)",
+    "before": "",
+    "after": "Every damage roll you make adds an extra d10 until the count runs out: each blow, each spell that hits. Casting it again starts the count over, not on top of it. It adds no hit points, whatever you were hoping.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "Player report #8 (\"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points instead.\") and the 2026-09-30 ruling (SPELL-09, Q1 A): the Strength spell has its own chip with its squares left; the tap card says what it does (an extra d10 on each damage roll, blows and spell hits), that a recast restarts the count, and that it adds no hit points."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero chip's tap card: the retired Bolstered chip (the doubled hit points)",
+    "before": "Your hit points are doubled. When the day ends the extra goes, whether you spent it or not.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Player report #8 (\"Strength spell says +d10 damage until tomorrow. But casting it actually grants you hit points instead.\") and the 2026-09-30 ruling (SPELL-09, Q1 A): Strength no longer doubles hit points, so the Bolstered chip and its sentence are gone; the Strength chip's own sentence says it adds none."
+  }
+]

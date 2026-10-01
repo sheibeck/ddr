@@ -22,6 +22,8 @@ import { SPELLS, ACTIVATION_OF } from "../../content/index.js";
 import { startSpellEffect } from "../../engine/combat.js";
 import { startEffect, tickSquares } from "../../engine/effects.js";
 import { endSourceEffects, narrateTimerTransitions } from "../../engine/items.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { SPELL_ACT_OF, liveItemEffects, itemEffectActive, eff, critWardOf, conditionsOf } from "../../engine/derived.js";
 
 const STRENGTH = SPELLS.find((sp) => sp.n === "Strength");
@@ -138,6 +140,27 @@ test("narrateTimerTransitions: a Joiner's own sheet names the member", () => {
   const state = { c: hero(), party: [joiner], combat: null };
   const events = narrateTimerTransitions(state, tickSquares(joiner, 1), [], joiner);
   assert.deepStrictEqual(events, [{ type: "spellEffectFaded", spell: "Strength", kind: "strength", member: "Brann" }]);
+});
+
+test("narration: spellEffectFaded names the spell, says what stops, never prints undefined, and falls back for an unknown kind", () => {
+  const strength = { type: "spellEffectFaded", spell: "Strength", kind: "strength" };
+  const oracle = EVENT_NARRATION.spellEffectFaded(strength).replace(/<[^>]+>/g, "");
+  assert.match(oracle, /Strength/);
+  assert.match(oracle, /d10/);
+  assert.match(LINE_FOR.spellEffectFaded(strength).text, /Strength wears off/);
+  // a Joiner's own effect names the Joiner
+  const joiner = { ...strength, member: "Brann" };
+  assert.match(EVENT_NARRATION.spellEffectFaded(joiner).replace(/<[^>]+>/g, ""), /^Brann's Strength wears off/);
+  assert.match(LINE_FOR.spellEffectFaded(joiner).text, /^Brann's Strength wears off/);
+  // a kind with no clause just wears off; a bare payload never prints "undefined"
+  const unknown = { type: "spellEffectFaded", spell: "Fly", kind: "mystery" };
+  assert.equal(EVENT_NARRATION.spellEffectFaded(unknown).replace(/<[^>]+>/g, ""), "Your Fly wears off.");
+  assert.equal(LINE_FOR.spellEffectFaded(unknown).text, "Your Fly wears off.");
+  for (const bare of [{ type: "spellEffectFaded" }, {}, { spell: "Fly" }]) {
+    for (const text of [EVENT_NARRATION.spellEffectFaded(bare).replace(/<[^>]+>/g, ""), LINE_FOR.spellEffectFaded(bare).text]) {
+      assert.doesNotMatch(text, /undefined|null|NaN/);
+    }
+  }
 });
 
 test("endSourceEffects: Phase 88's early end never touches a spell record, on any slot", () => {

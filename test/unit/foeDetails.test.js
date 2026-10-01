@@ -523,7 +523,7 @@ test("(Phase 77) every other fumble gift has no to-hit effect and keeps '<text> 
     assert.equal(foeConditionEffect({ key }, ned, state), null, key);
   }
   const f = pick("Beasts", "Wolf");
-  Object.assign(f, { ward: { pool: 12, rounds: 3, name: "Shield" }, rebound: 4, might: 5, strengthBoost: 10, regen: true, senses: 1 });
+  Object.assign(f, { ward: { pool: 12, rounds: 3, name: "Shield" }, rebound: 4, might: 5, regen: true, senses: 1 });
   const full = fullHeroState(f);
   const chips = foeConditionChips(f, full);
   assert.deepEqual(chips.map((c) => c.text), ["Shielded · 3", "Rebound", "Strong", "Regenerating", "Senses"]);
