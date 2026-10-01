@@ -24,6 +24,8 @@ import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
 import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow } from "../../engine/derived.js";
 // Phase 90 plan 06 (SPELL-10): its own line, so the pinned line above (test/unit/shell-worn-slots.test.js) is untouched.
 import { schoolClosed } from "../../engine/derived.js";
+// Phase 90 plan 11 (TEXT-01): a spell cast on a foe can be resisted; its row says so in one place (below).
+import { spellTargetsFoe } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -354,6 +356,17 @@ export function rationsViewModel(state) {
 }
 
 /**
+ * GRIMOIRE_COPY — Phase 90 plan 11 (TEXT-01, user 2026-09-30: "the spell texts state the resist plainly"):
+ * `resistNote` is the ONE sentence every foe-targeted spell's Grimoire row and combat menu row carries (beside the
+ * menu's per-target "{target} resists on {range}"), so thirty spell texts do not each restate it. It is true of every
+ * spell a foe can resist (engine/derived.js#spellTargetsFoe): each foe it reaches rolls the one depth-rising
+ * resist (derived.js#risingResistFaces: half its intelligence, plus more of the d20 every floor from 13).
+ */
+export const GRIMOIRE_COPY = Object.freeze({
+  resistNote: "a foe may resist this on its intelligence, and the deeper the floor, the likelier it does",
+});
+
+/**
  * grimoireViewModel(state) — the HERO tab's Grimoire rows (04-DR10): the
  * character's OWN learned spells (`c.grimoire`, a list of names) — NOT the
  * full 32-entry SPELLS table — sorted by level then alphabetically. Each row
@@ -415,6 +428,8 @@ export function grimoireViewModel(state) {
         // Summoner's Summon reads L1 (and sorts at 1), never its printed 2.
         lvl: spellLevelFor(c.sub, sp),
         txt: sp.txt,
+        // Phase 90 plan 11 (TEXT-01): the resist sentence of a spell cast on a foe (null for the caster's own kinds).
+        resistNote: spellTargetsFoe(sp) ? GRIMOIRE_COPY.resistNote : null,
         // Phase 40 (SPELL-01): the niche KEY + its display label, beside the
         // existing txt (which already begins with `nicheLabel + " · "`) — so
         // the shell can group/badge by niche without parsing txt.
@@ -550,7 +565,7 @@ function renderGrimoire(doc, state, deps) {
     // niche line is already the FIRST thing the <i> renders. innerHTML
     // stays safe here because row.txt/row.name are content, not user data
     // (T-40-10, unchanged since 04-DR10).
-    info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}</i>`;
+    info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}${row.resistNote ? ` · ${row.resistNote}` : ""}</i>`;
     li.appendChild(info);
     if (row.combatOnly) {
       const hint = doc.createElement("span");

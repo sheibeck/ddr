@@ -154,6 +154,7 @@ export const BANK_REGISTRY = Object.freeze([
   bank("src/browser/hazardCard.js", "HAZARD_CARD_COPY", "rail-cards", "the wall and crevice decision card"),
   bank("src/browser/heroConditions.js", "HERO_CHIP_COPY", "combat-screen", "a hero or member condition chip's tap sheet"),
   bank("src/browser/heroTab.js", "ABILITY_VIEW_COPY", "panels", "the Hero tab's ability rows"),
+  bank("src/browser/heroTab.js", "GRIMOIRE_COPY", "panels", "the Hero tab's Grimoire rows and the combat menu's spell rows (the resist sentence)"),
   bank("src/browser/heroTab.js", "COMPANY_COPY", "panels", "a Joiner's armour, potion and worn-item rows on the Hero tab's Company panel"),
   bank("src/browser/heroTab.js", "HERO_SIZE_COPY", "panels", "the Hero tab's size row"),
   bank("src/browser/heroTab.js", "RATIONS_COPY", "panels", "the Hero tab's rations row"),

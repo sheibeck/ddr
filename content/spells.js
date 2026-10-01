@@ -119,19 +119,19 @@ export const SPELLS = [
   // Floor lasts only until you move. The old once-a-day cap note no longer
   // applies.
   { n: "Map the Floor", lvl: 1, s: "divination", kind: "reveal", squares: 1, niche: "sight", txt: "sight · the whole floor · shown until you take a step, then your focus breaks", combatOnly: false },
-  { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds", combatOnly: false },
+  { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), d6 rounds", combatOnly: false },
   { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned", combatOnly: true },
-  { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds", combatOnly: true },
+  { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · foes hit only on a high roll (18–20 on a d20; 17–20 if you insulted them) and do half damage, d4+1 rounds", combatOnly: true },
   { n: "Acid", lvl: 2, s: "offense", kind: "acid", dmg: { n: 2, sides: 6, bonus: 2 }, niche: "dot", txt: "damage over time · one foe · 2d6+2 a round, d6 rounds; the first round adds your level² damage", combatOnly: true },
-  { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging", combatOnly: true },
-  { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for the fight: it hits only on its die's top face and never lands a critical", combatOnly: true },
+  { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · the foe you picked · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging", combatOnly: true },
+  { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for the fight: it hits only on its best roll (20 on a d20) and never lands a critical", combatOnly: true },
   { n: "Shrink", lvl: 3, s: "offense", kind: "shrink", niche: "control", txt: "control · up to d6 foes · half hp and half damage, the fight", combatOnly: true },
   { n: "Ice", lvl: 3, s: "offense", kind: "blast", dmg: { n: 1, sides: 10, bonus: 0 }, aoe: "all", onHit: "freeze", niche: "multi", txt: "multi-target · every foe · d10 + your level² damage to each, no roll to hit; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry", combatOnly: true },
   { n: "Earthquake", lvl: 4, s: "offense", kind: "quake", dmg: { n: 3, sides: 10, bonus: 8 }, niche: "multi", txt: "multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides", combatOnly: true },
-  { n: "Noxious Vapor", lvl: 4, s: "offense", kind: "vapor", niche: "chaos", txt: "chaos · every foe · a d6 of very bad outcomes", combatOnly: true },
+  { n: "Noxious Vapor", lvl: 4, s: "offense", kind: "vapor", niche: "chaos", txt: "chaos · every foe · a d6 decides it: on a 4 each foe dies unless its own d10 shows a 1; any other number puts it to sleep for d6+2 rounds; from level 5 it is always the 4", combatOnly: true },
   { n: "Fireballs", lvl: 4, s: "offense", kind: "volley", dmg: { n: 1, sides: 10, bonus: 2 }, niche: "multi", txt: "multi-target · d8 bolts · d10+2 damage each, spread across the foes, + your level² damage once to each foe struck", combatOnly: true },
   { n: "Petrify", lvl: 5, s: "offense", kind: "petrify", niche: "control", txt: "control · one foe · turns to stone and dies; you get the experience and none of the spoils, because statues carry nothing", combatOnly: true },
-  { n: "Insane", lvl: 2, s: "offense", kind: "insane", niche: "chaos", txt: "chaos · one foe · rolls on the madness table", combatOnly: true },
+  { n: "Insane", lvl: 2, s: "offense", kind: "insane", niche: "chaos", txt: "chaos · one foe · a d6 decides it: 1 it dies, 2 it hits the next foe, 3 or 6 it flees, 4 it sleeps d4 rounds, 5 it swings twice for the fight", combatOnly: true },
   { n: "Summon", lvl: 2, s: "special", kind: "summon", niche: "summon", txt: "summon · one ally · fights beside you d4+2 rounds", combatOnly: false },
   { n: "Fireball", lvl: 3, s: "offense", kind: "thrown", dmg: { n: 2, sides: 10, bonus: 4 }, niche: "burst", txt: "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d10+4 + your level² damage", combatOnly: true },
   { n: "Major Heal", lvl: 3, s: "healing", kind: "heal", dmg: { n: 3, sides: 10, bonus: 0 }, niche: "healing", txt: "healing · you · 3d10 hp", combatOnly: false },
@@ -142,13 +142,13 @@ export const SPELLS = [
   // engine/combat.js#applyFoeDamageToPlayer's mirror check.
   { n: "Bubble", lvl: 3, s: "protection", kind: "ward", mirror: true, popPool: 25, niche: "defensive", txt: "defensive · you · the next blow bounces back at whoever threw it, then a 25 hp film for the rest of that round", combatOnly: false },
   { n: "Sense Danger", lvl: 3, s: "divination", kind: "foresee", niche: "sight", txt: "sight · your next fight · you act first, whatever turns up (the family it hints at is a hunch, not a promise)", combatOnly: false },
-  { n: "Turn Walking Dead", lvl: 2, s: "protection", kind: "turn", niche: "answer", txt: "answer · every Walking Dead of your level or lower · sent back", combatOnly: true },
+  { n: "Turn Walking Dead", lvl: 2, s: "protection", kind: "turn", niche: "answer", txt: "answer · every Walking Dead of your level or lower · sent back; any left standing swing only at you for the rest of the fight, never at your Joiner", combatOnly: true },
   { n: "Plane Gate", lvl: 3, s: "protection", kind: "gate", niche: "answer", txt: "answer · d6 Demons or Walking Dead · vanquished to The Planes", combatOnly: true },
   { n: "Sense Presence", lvl: 2, s: "protection", kind: "senses", niche: "sight", txt: "sight · you · fight in the dark at full skill and nothing gets the jump on you, till your next fight ends", combatOnly: false },
   { n: "Lightning", lvl: 4, s: "offense", kind: "thrown", dmg: { n: 1, sides: 10, bonus: 6 }, aoe: "all", niche: "multi", txt: "multi-target · every foe · hits each on 5–8 (d8) before bonuses, for d10+6 + your level² damage apiece", combatOnly: true },
   { n: "Regeneration", lvl: 4, s: "healing", kind: "regen", niche: "healing", txt: "healing · you · d8 hp a round, this fight", combatOnly: false },
   { n: "Mangle", lvl: 5, s: "offense", kind: "thrown", dmg: { n: 2, sides: 20, bonus: 15 }, niche: "burst", txt: "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 + your level² damage", combatOnly: true },
-  { n: "Death", lvl: 5, s: "offense", kind: "death", niche: "burst", txt: "burst · one foe · dies outright; costs you 25 hp", combatOnly: true },
+  { n: "Death", lvl: 5, s: "offense", kind: "death", niche: "burst", txt: "burst · the foe you picked · dies outright; costs you 25 hp", combatOnly: true },
   // Phase 90 plan 07 (SPELL-10, user 2026-09-30: the slate in
   // 90-SPELL-SLATE-DRAFT.md accepted as drafted; Q6 A): the four Special spells
   // that buff and travel. Each is a spell-sourced timed effect (an `act` record,
@@ -185,6 +185,6 @@ export const SPELLS = [
   // +0 to both sub-classes that learn it, and none of them is round- or
   // square-timed.
   { n: "Door Illusion", lvl: 1, s: "illusion", kind: "door", roll: "derived", niche: "defensive", txt: "defensive · the fight · a door that isn't there, and you through it: no flee roll, no parting blow, spoils left behind; the cleverest foe rolls one resist and may see through it, and then you have spent your turn admiring a wall", combatOnly: true },
-  { n: "Chameleon Tongue", lvl: 3, s: "illusion", kind: "tongue", fluency: 2, roll: "derived", niche: "answer", txt: "answer · this fight · you speak their tongue like a local and talk at once: a parley at +4 that even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley", combatOnly: true },
-  { n: "Size of the Behemoth", lvl: 4, s: "illusion", kind: "behemoth", roll: "derived", niche: "control", txt: "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on their die's top three numbers (6–8 on a d8, 18–20 on a d20) for half damage", combatOnly: true },
+  { n: "Chameleon Tongue", lvl: 3, s: "illusion", kind: "tongue", fluency: 2, roll: "derived", niche: "answer", txt: "answer · this fight · you speak their tongue like a local and talk at once: a parley (talking your way out of the fight instead of swinging) at +4 to the roll, which even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley", combatOnly: true },
+  { n: "Size of the Behemoth", lvl: 4, s: "illusion", kind: "behemoth", roll: "derived", niche: "control", txt: "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on a high roll (18–20 on a d20; 17–20 if you insulted them) for half damage", combatOnly: true },
 ];

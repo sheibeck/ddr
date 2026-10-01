@@ -388,6 +388,12 @@ const railEndedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : t
 // ITEM_UNSEEN_SHIFT, in the rail's short form.
 const RAIL_INVIS_RANGE = `${facesRangeText(1, 20)} on a d20; ${facesRangeText(2, 20)} if insulted`;
 const RAIL_UNSEEN_SHIFT = signedText(-2);
+// Phase 90 plan 11 (TEXT-01, spells and skills): the rail twins of eventNarration.js's SPELL_BEST_RANGE, BLIND_RANGE,
+// WEAKEN_RANGE and FOE_SHIFT, in the rail's short form.
+const RAIL_SPELL_BEST_RANGE = RAIL_INVIS_RANGE;
+const RAIL_BLIND_RANGE = `${facesRangeText(1, 20)} on a d20`;
+const RAIL_WEAKEN_RANGE = `${facesRangeText(3, 20)} on a d20; ${facesRangeText(4, 20)} if insulted`;
+const RAIL_FOE_SHIFT = signedText(-2);
 const RAIL_ENDED_CLAUSE = Object.freeze({
   fly: "flying stops",
   ether: "solid again",
@@ -1914,7 +1920,7 @@ export const LINE_FOR = {
       regen: `lands on ${t} instead: it regenerates.`,
       ward: e?.mirror ? `wraps ${t} in a bubble: your next blow comes back.` : `wards ${t}: it soaks your next ${e?.pool ?? 0}.`,
       might: `strengthens ${t}: +${e?.might ?? 0} damage on its blows, for the fight.`,
-      mirror: `mirrors ${t}, ${railPlural(e?.rounds ?? 0, "round")}: you hit it only on your top face.`,
+      mirror: `mirrors ${t}, ${railPlural(e?.rounds ?? 0, "round")}: you hit it only on the top number of your die.`,
       senses: `sharpens ${railPossessive(e?.target, "its")} senses, to no visible effect.`,
       // Phase 90 plan 07 (SPELL-10): a fumbled Speed of Sound.
       frenzy: `quickens ${t}: two swings a turn, for the fight.`,
@@ -2034,9 +2040,9 @@ export const LINE_FOR = {
     priority: PRIORITY.them,
   }),
   foeStunned: (e) => ({ text: `${e?.name ?? "It"} loses its turn.`, tone: "hit", priority: PRIORITY.them }),
-  battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Foes have two fewer faces to hit your side, for two rounds.`, tone: "hit", priority: PRIORITY.feature }),
+  battleRoarRaised: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Foes ${RAIL_FOE_SHIFT} to hit your side, for two rounds.`, tone: "hit", priority: PRIORITY.feature }),
   sidestepped: (e) => ({
-    text: `${e?.member ? `${e.member}: ` : ""}Foes have two fewer faces to hit ${e?.member ? "them" : "you"}, for two rounds.`,
+    text: `${e?.member ? `${e.member}: ` : ""}Foes ${RAIL_FOE_SHIFT} to hit ${e?.member ? "them" : "you"}, for two rounds.`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
@@ -2078,8 +2084,8 @@ export const LINE_FOR = {
   // ROLL-04 (79-04): a foe's strike die scales, so Smoke speaks in faces.
   smokeThrown: (e) => ({
     text: e?.member
-      ? `${e.member}: Gone. Foes find them only on their die's top face (top two if insulted) for two rounds.`
-      : "Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works.",
+      ? `${e.member}: Gone. Foes hit them only on their best roll (${RAIL_SPELL_BEST_RANGE}) for two rounds.`
+      : `Gone. Foes hit you only on their best roll (${RAIL_SPELL_BEST_RANGE}) for two rounds, and a run just works.`,
     tone: "hit",
     priority: PRIORITY.feature,
   }),
@@ -2182,7 +2188,7 @@ export const LINE_FOR = {
   // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
   weakened: (e) => ({
     // Quick 260927-rsx: `spared` counts the foes that resisted the cast.
-    text: `${e?.spared ? `Every foe but ${e.spared === 1 ? "one" : e.spared} weakened` : "Every foe weakened"}${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: top three faces to hit, half damage.`,
+    text: `${e?.spared ? `Every foe but ${e.spared === 1 ? "one" : e.spared} weakened` : "Every foe weakened"}${e?.rounds ? `, ${railPlural(e.rounds, "round")}` : ""}: foes hit only on a high roll (${RAIL_WEAKEN_RANGE}), half damage.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
@@ -2198,7 +2204,7 @@ export const LINE_FOR = {
   // VOX-05 (Phase 79, plan 79-08): what blindness does. Phase 90 plan 04
   // (SPELL-12): for the fight at every depth, and never a critical.
   blinded: (e) => ({
-    text: `${e?.target ?? "It"} is blind for the fight: it hits only on its top face and never crits.`,
+    text: `${e?.target ?? "It"} is blind for the fight: it hits only on its best roll (${RAIL_BLIND_RANGE}) and never crits.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
@@ -2243,7 +2249,7 @@ export const LINE_FOR = {
   senseDanger: (e) => ({ text: `Bad feeling about the ${e?.nextEncounter ?? "next encounter"}.`, tone: "magic", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): what the image does, and "(3)" now says rounds.
   mirrorSelf: (e) => ({
-    text: `A mirror image holds, ${railPlural(e?.rounds ?? 0, "round")}: foes hit you only on their top face.`,
+    text: `A mirror image holds, ${railPlural(e?.rounds ?? 0, "round")}: foes hit you only on their best roll (${RAIL_SPELL_BEST_RANGE}).`,
     tone: "magic",
     priority: PRIORITY.you,
   }),

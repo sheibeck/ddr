@@ -13,7 +13,7 @@
 // storage, no rng draws, no mutation of `state` anywhere in this file.
 
 import { SPELLS, ABILITY_BY_ID, NICHE_LABELS } from "../../content/index.js";
-import { characterSheetViewModel } from "./heroTab.js";
+import { characterSheetViewModel, GRIMOIRE_COPY } from "./heroTab.js";
 import { itemRowState } from "./gearTab.js";
 import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
@@ -299,7 +299,7 @@ function combatMenuViewModelUnlocked(state) {
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
         cost: `LVL ${spellLevelFor(c.sub, sp)}`,
-        desc: blockedLine ? `${blockedLine} · ${sp.txt || ""}` : `${sp.txt || ""}${resistHint && spellTargetsFoe(sp) ? ` · ${resistHint}` : ""}`,
+        desc: blockedLine ? `${blockedLine} · ${sp.txt || ""}` : `${sp.txt || ""}${spellTargetsFoe(sp) ? ` · ${GRIMOIRE_COPY.resistNote}${resistHint ? ` · ${resistHint}` : ""}` : ""}`,
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
         // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
         // desc stays sp.txt, unchanged.
