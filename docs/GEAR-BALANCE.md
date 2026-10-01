@@ -595,13 +595,76 @@ model), so it is combat-scoped exactly like every other rounds-cadence
 timer and pays the same reload cost. This mirrors the `c.ward`/`c.foeEffect`
 precedent (both also die on reload) rather than inventing a new rule.
 
-### Members never activate items
+### Joiners use their items (Phase 89, ITEM-07)
 
-`alliesTurn`/`memberStrike` (`engine/combat.js`) have no item-use branch —
-verified by grepping `useItem` across `engine/combat.js`. Party members
-therefore never carry an `item:`/`charges:` timer record on their own
-sheet; their passive `eff(view, …)` reads (worn-item flat bonuses) are
-completely untouched by this plan.
+> "let joiners use items they have, and let their armor soak damage. Just
+> like players." — user, 2026-09-30
+
+This replaces the Phase 39 rule "Members never activate items" (at Phase 39
+`alliesTurn`/`memberStrike` had no item-use branch, so a party member never
+carried an `item:`/`charges:` timer record). A Joiner is now its own body:
+its items start, tick, heal and end on its own sheet, exactly as the hero's
+do, through the same internal functions (`applyActivation`,
+`narrateTimerTransitions` and `tickHealOverTime` take an optional trailing
+`sheet` that defaults to the hero, so every hero call is unchanged). Every
+event a Joiner causes carries the additive `member` field (its name); no new
+roll touches the main rng (every Joiner roll comes from a derived stream).
+
+**Wear on joining (89-05).** A cloak or jewel in a Joiner's bag (the Thief's
+starting cloak) goes into a free slot when it joins (`resolveJoiner` runs
+`reconcileWorn` on the pending sheet; `joinerJoined.wore` names what it put
+on), and a saved Joiner is dressed the same way on load. A worn slot is what
+makes an item work, so the Joiner can use it the turn it joins.
+
+**The use path (89-05).** One action, `memberUseItem { i, potion: true }` or
+`{ i, slot }` (`engine/items.js#memberUseItem`, over `memberDrinkPotion` and
+`memberUseWorn`). A potion is the Joiner's own: 2d10+5 hp, doubled for a
+heal-twice race, from the derived stream `memberPotion`, clamped to its
+maximum; the hero's potions never move. A worn item starts the same
+`item:<key>` record, cooldown and `src` link on the Joiner's sheet, so taking
+it off, a swap or destruction ends it through Phase 88's `endSourceEffects`
+and the use stays spent. The refusals are named, zero-draw and mutation-free:
+`noMember` (none, or downed), `inCombat` (a fight or a pending one: the fight
+runs itself), `noPotions`, `fullHealth`, `leaderOnly` (below), `combatOnly`
+(a targeted item outside a fight) and `cooldown`. The Hero tab's Company
+panel offers DRINK and USE outside a fight (89-07) and shows each Joiner's
+armour, potions, worn items and item chips (`heroTab.js#companyItemsModel`,
+`derived.js#memberConditionsOf`).
+
+**In a fight (89-06, accepted 2026-09-30).** On its own turn, in
+`engine/combat.js#alliesTurn`, a classed Joiner: in round 1 uses the first
+ready worn item of a combat kind as a free use (`pickMemberItem`: Speed,
+Strength's cloak, Armor, Anklet, Ring of Power, Gauntlet, invisibility, the
+Pendant); at or below a third of its HP (`wp * 3 <= maxWP`) drinks one of its
+own potions instead of acting; and under its own live Speed swings twice on a
+plain strike (a cast or an ability stays single, as the hero's). The policy
+is pure and draws nothing. One item per Joiner in round 1.
+
+**Item timers and heal-over-time (89-05).** Every Joiner's `c.timers` tick on
+every step after the hero's (water included), and its Cloak of Regeneration
+heals a d6 at 10, 20 and 30 squares from the member-keyed derived stream.
+
+**Joiner armour soaks like the hero's (89-04).** A foe's swing or bolt on a
+Joiner goes through `engine/combat.js#applyFoeDamageToMember`, the twin of
+the hero's damage pipeline: its own armed Pendant halves the blow, its Brace
+halves it again, then a d20 from the derived stream `memberSoak` against
+`armorSoak(sheet)` (the Cloak of Armor's plate and the Fighter multiplier
+included) soaks the whole blow, wearing the Joiner's own armour by the hero's
+rule and destroying it at 0. A drain, a no-armour foe and a Joiner with no
+armour draw no soak die. Hardiness and the Fridgian hide are not applied to a
+Joiner (Phase 91's to decide, IDENT-20).
+
+**The rulings that shape it (docs/ITEM-AUDIT.md "## Rulings", 2026-09-30).**
+Q2 = A: a Joiner cannot use the items whose effect belongs to the one leading
+the party (Cloak of Flying, Cloak of Ether, Bracelet of Flight, Amulet of
+Light, Helm of Knowledge, Amulet of Stone: `MEMBER_LEADER_KINDS`); it is
+refused `leaderOnly` and the Company panel says why in one line. Q3 = A: a
+Magic User Joiner reads its starting scroll when it joins (a spell it can
+learn and cast at its level, from a derived stream, into its book; the scroll
+is spent even if nothing is learnable). Q4 = A: each store offers a repair
+line for each hurt Joiner's armour on the hero's rule (a tenth of the armour's
+cost per point, the hero's price modifiers applying). GIVE (the hero handing
+an item to a Joiner) stays deferred.
 
 ### The `txt` note
 
@@ -745,8 +808,69 @@ wall, you die"). A flight that ends early strands nothing: the climb and leap
 checks run as a step enters a tile.
 
 **Joiners.** The link and the helper work on any character sheet (a Joiner's
-event carries `member` and never entombs anyone); Joiners still have no
-item-use path, so nothing starts an effect on one today.
+event carries `member` and never entombs anyone). Phase 88 had no item-use
+path for a Joiner, so nothing started an effect on one; since Phase 89
+(ITEM-07, "Joiners use their items" above) a Joiner's used items carry `src`
+and end through the same helper, tested with the hero's.
+
+### Phase 89: items that do what they say (ITEM-01, ITEM-05, ITEM-06, ITEM-07)
+
+The rule (CONTEXT, 2026-09-30): the item's text is the promise to the player,
+so the engine does what the text says unless the text is a typo or the user
+ruled otherwise. `docs/ITEM-AUDIT.md` has one row per item (text, engine,
+canon, verdict, pin), closed by plan 89-10, and
+`test/unit/item-text-engine.test.js` fails the day any number in an item's
+text and the number the engine uses drift apart.
+
+**Enlarge is Troll-sized (ITEM-05, 89-02).** User, report #6: "Enlarge potion
+send worthless. +2 damage to get hit now often? Should be more in alignment
+with troll +11 to damage." Now: +11 damage (the one size step's +2,
+`SIZE_DAMAGE_PER_STEP`, plus +9 bulk carried as `act.eff.dmg`, the term the
+Ring of Power's +1 rides), foes +1 to hit the drinker (`SIZE_FACES_PER_STEP`
+x one step; the +9 adds no cost), 50 squares, price 75 to 150 so +11 for 50
+squares does not undercut the Strength potion (+8 for 25 squares at 100). A
+Troll drinking it stacks (+11 on its own +11, size Large to Huge). The Gauntlet
+of the Giant is unchanged (+2, foes +1 to hit, 50 squares every 100). Phase 92
+may retune the price with the store economy.
+
+**The Poplar Staff heals the party (ITEM-01, ITEM-06, 89-03).** User,
+2026-09-30: it heals every party member d20+10 each (the party is the hero and
+at most one Joiner), rolled from a derived stream. Its kind is its own
+`partyHeal` (it used to fall into the Healing potion's d10+2, hero only), the
+dice live on the activation record (`act.heal`), and an old save's staff heals
+the party with no migration. 3 charges, one back every 60 squares.
+
+**The Pendant disarms when it comes off (89-03).** User, 2026-09-30: keep the
+one blow, disarm it when the pendant comes off, add it to the Phase 88 source
+link, leave the use spent. The armed charge is `halfNext = { slot, n }`;
+`endSourceEffects` disarms it on take-off, swap, destruction and the load
+sweep with one `itemEffectEnded` (kind `half`), and its 100-square cooldown
+runs on.
+
+**The depth-rising resist applies to every item effect (89-08, Q1, Q5, Q6).**
+Q1, user, 2026-09-30: "rising resists on higher floors should apply to ALL
+spells and spell-like effects (staves included). That shouldn't be limited to
+just these items anyway. remove the floor-12 special effects only." The floor-12
+special effects (the three-round hold, the extra control resist) are gone from
+the Amulet of Stone, Oak Staff, Cedar Staff, Birch Staff and Walnut Staff: a
+landed stone kills and a landed gas sleeps for the whole fight at any depth.
+Every item effect a foe can resist (those five and the Pine Staff's fire) rolls
+ONE resist, `derived.js#risingResistFaces`, folding the old two chances (the
+half-intel faces `a`, the floor's faces `c`) into one d20 of `a + c - a*c/20`
+faces (capped at 19), so a deep foe resists as often as it did and never more
+often than the two rolls did. Q5 (Cure Poison and Cure Disease each cure only
+their own kind; against the wrong affliction, or none, the potion is refused
+and kept) and Q6 B (the Walnut Staff casts the full Weaken: half damage and
+foes hit only on their top three faces, for the whole fight) are built in the
+same plan. The spell side of the same rule is Phase 90's.
+
+**Plain words (TEXT-01, 89-09).** Item texts state signed to-hit ("foes −2 to
+hit you"), d20 ranges ("20 on a d20; 19–20 if you insulted them") and foe counts
+("up to 4 foes"), never faces or squares of foes; every staff states its charges
+and its recharge; the Helm of Knowledge says it lets you always parley and
+what a parley is; the Death potion reads "you're dead!"; a weapon states its
+to-hit and crit, a bulky armour its cost, a bag its caps. A saved game's items
+load with the current words (`saveState.js#refreshItemTexts`).
 
 ## One-shot tools (GEAR-05) — Plan 04
 

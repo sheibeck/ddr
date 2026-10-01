@@ -38,8 +38,21 @@
 //   - ordering: rows follow the content tables' order; the checker must fail
 //     a doctored swap of two rows.
 //
-// The doc is text and the test only reads it (plus content); no engine,
-// rng or shell module runs.
+// Phase 89 plan 10 (the close): the same checker now also enforces the CLOSE
+// state of the table, so it can never reopen unnoticed:
+//   - no Verdict (row or system) reads `fix engine`, `fix text` or
+//     `balance call`: every mismatch is fixed or ruled;
+//   - every `fixed engine`, `fixed text` and `ruled` row has a Pinned by that
+//     names at least one test as `test/unit/<file>.test.js: <title>`; every
+//     named file exists and its source contains the named title, so a pin
+//     cannot name a test that is gone or renamed; only `match` and
+//     `not in game` rows may read `—`;
+//   - every Systems entry reads `built (89-NN)` or `ruled (Qn, ...) -> 89-NN`
+//     followed by `; pinned by` and pins that exist;
+//   - the header's "Closed" line states the true number of distinct pins.
+//
+// The doc is text and the test only reads it (plus content and the named test
+// files); no engine, rng or shell module runs.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -130,7 +143,71 @@ const VERDICT_TOKENS = [
   /^balance call \(Q\d+\)$/,
 ];
 
+/** OPEN_VERDICT — the open states a closed table may not contain. */
+const OPEN_VERDICT = /^(fix engine|fix text|balance call)\b/;
+
+/** SYSTEM_VERDICT — a Systems cell: built or ruled, then "; pinned by" and the pins. */
+const SYSTEM_VERDICT = /^(built \(89-\d\d(?:, 89-\d\d)*\)|ruled \(Q\d+, 2026-09-30\) -> 89-\d\d); pinned by (.+)$/;
+
+/** PIN — one pin: a test file, and (required on a fixed or ruled row) the title. */
+const PIN = /^(test\/[A-Za-z0-9_\-/.]+\.test\.js)(?:: (.+))?$/;
+
 const GAP_WORDS = /not stated|not printed|omits/i;
+
+const sourceCache = new Map();
+/** sourceOf(relPath) — a test file's source, or null when it is missing. */
+function sourceOf(rel) {
+  if (!sourceCache.has(rel)) {
+    const abs = path.join(REPO_ROOT, rel);
+    sourceCache.set(rel, fs.existsSync(abs) ? fs.readFileSync(abs, "utf8") : null);
+  }
+  return sourceCache.get(rel);
+}
+
+/**
+ * pinProblems(where, pinned, { needTitle, allowDash }) — every problem with a
+ * Pinned by cell: malformed pins, a missing file, a title the file does not
+ * contain, and (needTitle) no pin that names a title at all.
+ */
+function pinProblems(where, pinned, { needTitle, allowDash }) {
+  if (pinned === "—") return allowDash ? [] : [`${where}: is not pinned (—), but it is fixed or ruled`];
+  const out = [];
+  let titled = 0;
+  for (const raw of pinned.split("; ")) {
+    const m = PIN.exec(raw.trim());
+    if (!m) {
+      out.push(`${where}: malformed pin "${raw}" (want test/unit/<file>.test.js: <title>)`);
+      continue;
+    }
+    const src = sourceOf(m[1]);
+    if (src === null) {
+      out.push(`${where}: is pinned by "${m[1]}", which does not exist`);
+      continue;
+    }
+    if (m[2] !== undefined) {
+      titled++;
+      if (!src.includes(m[2])) out.push(`${where}: pin "${m[1]}: ${m[2]}" names a test title that is not in the file`);
+    }
+  }
+  if (needTitle && titled === 0) out.push(`${where}: pinned by file only, but a fixed or ruled row must name a test title`);
+  return out;
+}
+
+/** distinctPins(text) — every distinct titled pin in the rows and systems of the doc. */
+function distinctPins(text) {
+  const doc = parseDoc(text);
+  const set = new Set();
+  const add = (cell) => {
+    for (const raw of cell.split("; ")) if (PIN.exec(raw.trim()) && raw.includes(": ")) set.add(raw.trim());
+  };
+  for (const rows of Object.values(doc.rows)) for (const cells of rows) if (cells.length === 6) add(cells[5]);
+  for (const cells of doc.systems) {
+    if (cells.length !== 3) continue;
+    const m = SYSTEM_VERDICT.exec(cells[2]);
+    if (m) add(m[2]);
+  }
+  return set;
+}
 
 /** splitCells(line) — the cells of one table row (cells never hold a pipe). */
 function splitCells(line) {
@@ -235,10 +312,10 @@ function checkDoc(text) {
         if (n < 1 || n > 10) add(`${family}: row "${item}" names owner 89-${m[1]}, not a Phase 89 plan`);
       }
       if (verdict === "match" && cells.some((c) => GAP_WORDS.test(c))) add(`${family}: row "${item}" reads match but a cell admits a gap`);
-      if (pinned && pinned !== "—") {
-        for (const p of pinned.split(",").map((s) => s.trim())) {
-          if (!fs.existsSync(path.join(REPO_ROOT, p))) add(`${family}: row "${item}" is pinned by "${p}", which does not exist`);
-        }
+      if (OPEN_VERDICT.test(verdict)) add(`${family}: row "${item}" is still open ("${verdict}"): a closed table has no fix engine, fix text or balance call`);
+      if (pinned) {
+        const settled = /^(fixed (engine|text)|ruled)\b/.test(verdict);
+        for (const p of pinProblems(`${family}: row "${item}"`, pinned, { needTitle: settled, allowDash: !settled })) add(p);
       }
       allVerdictRows.push([family, item, verdict]);
     }
@@ -256,8 +333,15 @@ function checkDoc(text) {
       continue;
     }
     if (cells.some((c) => !c)) add(`Systems: row "${cells[0]}" has an empty cell`);
-    const verdict = cells[2];
-    if (!VERDICT_TOKENS.some((re) => re.test(verdict))) add(`Systems: row "${cells[0]}" has an unknown verdict "${verdict}"`);
+    const cell = cells[2];
+    if (OPEN_VERDICT.test(cell)) add(`Systems: row "${cells[0]}" is still open ("${cell}"): every system is built or ruled`);
+    const sys = SYSTEM_VERDICT.exec(cell);
+    if (!sys) {
+      add(`Systems: row "${cells[0]}" has an unknown verdict "${cell}" (want built (89-NN) or ruled (Qn, 2026-09-30) -> 89-NN, then "; pinned by" and its pins)`);
+    } else {
+      for (const p of pinProblems(`Systems: row "${cells[0]}"`, sys[2], { needTitle: true, allowDash: false })) add(p);
+    }
+    const verdict = sys ? sys[1] : cell;
     for (const m of verdict.matchAll(/\b89-(\d\d)\b/g)) {
       const n = Number(m[1]);
       if (n < 1 || n > 10) add(`Systems: row "${cells[0]}" names owner 89-${m[1]}, not a Phase 89 plan`);
@@ -300,18 +384,23 @@ function checkDoc(text) {
     if (!q1Rows.includes(n)) add(`Q1 must cover "${n}"`);
   }
 
-  // Pre-owned verdicts (the fix may later read "fixed", never anything else).
+  // Pre-owned verdicts: the rows 89-01 handed to a plan end as "fixed", with that plan's owner.
   const find = (family, item) => (doc.rows[family] || []).find((r) => r[0] === item);
   const pre = [
-    ["Potions", "Enlarge", /^(fix|fixed) engine \(89-02\)$/],
-    ["Staves", "Poplar Staff", /^(fix|fixed) engine \(89-03\)$/],
-    ["Jewellery", "Pendant of Fortitude", /^(fix|fixed) engine \(89-03\)$/],
-    ["Potions", "Death", /^(fix|fixed) text \(89-09\)$/],
+    ["Potions", "Enlarge", /^fixed engine \(89-02\)$/],
+    ["Staves", "Poplar Staff", /^fixed engine \(89-03\)$/],
+    ["Jewellery", "Pendant of Fortitude", /^fixed engine \(89-03\)$/],
+    ["Potions", "Death", /^fixed text \(89-09\)$/],
   ];
   for (const [family, item, re] of pre) {
     const row = find(family, item);
-    if (!row || !re.test(row[4] || "")) add(`${family}: pre-owned row "${item}" does not carry its owner`);
+    if (!row || !re.test(row[4] || "")) add(`${family}: pre-owned row "${item}" does not read its final verdict`);
   }
+
+  // The close: the header says so, and states the true pin count.
+  const closed = /^\*\*Closed:\*\* 2026-09-30 \(plan 89-10\).*?\((\d+) distinct pins\)/m.exec(text.replace(/\r\n/g, "\n"));
+  if (!closed) add('the header has no "**Closed:** 2026-09-30 (plan 89-10)" line stating its distinct pins');
+  else if (Number(closed[1]) !== distinctPins(text).size) add(`the Closed line says ${closed[1]} distinct pins but the table names ${distinctPins(text).size}`);
   return problems;
 }
 
@@ -422,4 +511,99 @@ test("Systems (ITEM-06) names every system the audit found missing", () => {
   const doc = parseDoc(DOC_TEXT);
   const names = doc.systems.map((r) => r[0]);
   for (const s of SYSTEMS) assert.ok(names.includes(s), s);
+});
+
+// --- the close (89-10) -------------------------------------------------------
+
+/** doctor(fn) — the real doc, with `fn` applied to its lines. */
+function doctor(fn) {
+  const lines = DOC_TEXT.split("\n");
+  fn(lines, (item) => lines.findIndex((l) => l.startsWith(`| ${item} |`)));
+  return lines.join("\n");
+}
+
+test("the close: no row and no system reads fix engine, fix text or balance call, and the Rows hold at least 20 titled pins", () => {
+  const doc = parseDoc(DOC_TEXT);
+  for (const [family, rows] of Object.entries(doc.rows)) {
+    for (const r of rows) assert.ok(!OPEN_VERDICT.test(r[4]), `${family}: ${r[0]} reads ${r[4]}`);
+  }
+  for (const s of doc.systems) assert.ok(!OPEN_VERDICT.test(s[2]), `Systems: ${s[0]} reads ${s[2]}`);
+  const titled = Object.values(doc.rows).flat().filter((r) => / test\/unit\/[^;]*\.test\.js: /.test(` ${r[5]}`)).length;
+  assert.ok(titled >= 20, `${titled} rows name a test title`);
+});
+
+test("the close: a row turned back into fix text, fix engine or balance call fails", () => {
+  const back = doctor((lines, at) => {
+    const i = at("Rapier");
+    lines[i] = lines[i].replace("| fixed text (89-09) |", "| fix text (89-09) |");
+  });
+  assert.ok(checkDoc(back).some((p) => /Rapier.*still open/.test(p)));
+  const engine = doctor((lines, at) => {
+    const i = at("Poplar Staff");
+    lines[i] = lines[i].replace("| fixed engine (89-03) |", "| fix engine (89-03) |");
+  });
+  assert.ok(checkDoc(engine).some((p) => /Poplar Staff.*still open/.test(p)));
+  const call = doctor((lines, at) => {
+    const i = at("Amulet of Stone");
+    lines[i] = lines[i].replace(/\| ruled \(Q1, 2026-09-30\) -> 89-08[^|]*\|/, "| balance call (Q1) |");
+  });
+  assert.ok(checkDoc(call).some((p) => /Amulet of Stone.*still open/.test(p)));
+});
+
+test("the close: a fixed or ruled row whose pin names a missing title, a missing file, no title or no pin fails", () => {
+  const pinnedAs = (item, pin) =>
+    doctor((lines, at) => {
+      const i = at(item);
+      const cells = splitCells(lines[i]);
+      cells[5] = pin;
+      lines[i] = `| ${cells.join(" | ")} |`;
+    });
+  assert.ok(checkDoc(pinnedAs("Ring of Power", "test/unit/authored-ranges.test.js: a title that was never written")).some((p) => /Ring of Power.*title that is not in the file/.test(p)));
+  assert.ok(checkDoc(pinnedAs("Ring of Power", "test/unit/nope-not-there.test.js: whatever")).some((p) => /Ring of Power.*does not exist/.test(p)));
+  assert.ok(checkDoc(pinnedAs("Ring of Power", "test/unit/authored-ranges.test.js")).some((p) => /Ring of Power.*must name a test title/.test(p)));
+  assert.ok(checkDoc(pinnedAs("Ring of Power", "—")).some((p) => /Ring of Power.*is not pinned/.test(p)));
+  assert.ok(checkDoc(pinnedAs("Ring of Power", "authored-ranges, not a path")).some((p) => /Ring of Power.*malformed pin/.test(p)));
+  // A match row may keep a bare file, and the Wands row (not in game) may read —.
+  assert.deepEqual(checkDoc(pinnedAs("Club", "test/unit/gear-axes.test.js")), []);
+});
+
+test("the close: a system that is not built or ruled, or whose pin is gone, fails", () => {
+  const sysAs = (system, cell) =>
+    doctor((lines, at) => {
+      const i = at(system);
+      const cells = splitCells(lines[i]);
+      cells[2] = cell;
+      lines[i] = `| ${cells.join(" | ")} |`;
+    });
+  assert.ok(checkDoc(sysAs("Joiner scroll", "fix engine (89-05)")).some((p) => /Joiner scroll.*still open/.test(p)));
+  assert.ok(checkDoc(sysAs("Joiner scroll", "built (89-05)")).some((p) => /Joiner scroll.*unknown verdict/.test(p)));
+  assert.ok(checkDoc(sysAs("Joiner scroll", "built (89-05); pinned by test/unit/joiner-item-use.test.js: no such title anywhere")).some((p) => /Joiner scroll.*title that is not in the file/.test(p)));
+});
+
+test("the close: the Closed line states the true number of distinct pins, and its absence fails", () => {
+  const n = distinctPins(DOC_TEXT).size;
+  assert.ok(n >= 20, `${n} distinct pins`);
+  const wrong = DOC_TEXT.replace(`(${n} distinct pins)`, `(${n + 1} distinct pins)`);
+  assert.ok(checkDoc(wrong).some((p) => /Closed line says/.test(p)));
+  const gone = DOC_TEXT.replace("**Closed:**", "**Opened:**");
+  assert.ok(checkDoc(gone).some((p) => /no "\*\*Closed:\*\*/.test(p)));
+});
+
+test("the close: the rows the fix plans owned each read their final verdict and name the plan's own pin file", () => {
+  const doc = parseDoc(DOC_TEXT);
+  const row = (family, item) => doc.rows[family].find((r) => r[0] === item);
+  const expect = [
+    ["Potions", "Enlarge", "fixed engine (89-02)", "test/unit/enlarge-potion.test.js"],
+    ["Staves", "Poplar Staff", "fixed engine (89-03)", "test/unit/poplar-party-heal.test.js"],
+    ["Jewellery", "Pendant of Fortitude", "fixed engine (89-03)", "test/unit/pendant-source-link.test.js"],
+    ["Potions", "Death", "fixed text (89-09)", "test/unit/item-text-wording.test.js"],
+    ["Staves", "Walnut Staff", "ruled (Q6, 2026-09-30) -> 89-08", "test/unit/item-audit-fixes.test.js"],
+    ["Potions", "Cure Poison", "ruled (Q5, 2026-09-30) -> 89-08", "test/unit/item-audit-fixes.test.js"],
+    ["Jewellery", "Amulet of Stone", "ruled (Q1, 2026-09-30) -> 89-08", "test/unit/item-audit-fixes.test.js"],
+  ];
+  for (const [family, item, verdict, file] of expect) {
+    const r = row(family, item);
+    assert.ok(r[4].startsWith(verdict), `${item}: ${r[4]}`);
+    assert.ok(r[5].includes(file), `${item} is pinned by ${file}`);
+  }
 });

@@ -25,8 +25,8 @@ never a generic "you can't do that."
 | Reason | Carried by | Meaning | Event type(s) |
 |---|---|---|---|
 | `notFought` | `castRefused`, `useRefused`, `scrollRefused`, `actionRefused`, `strikeRefused`, `fleeRefused`, `parleyRefused` | the encounter is still a preview — Fight! has not been pressed | every combat-gated action, via the single `refuseIfPending` guard |
-| `combatOnly` | `castRefused`, `useRefused` | a combat-only spell/targeted item used with no active encounter | `castRefused`, `useRefused` |
-| `cooldown {left}` | `useRefused`, `actionRefused` | (Phase 39, GEAR-02: a `c.timers` duration+cooldown jewelry/cloak still cooling), or a Bard's song, still counting down; `left` is the exact squares remaining | `useRefused`, `actionRefused` |
+| `combatOnly` | `castRefused`, `useRefused` | a combat-only spell/targeted item used with no active encounter (Phase 89: a Joiner's `useRefused` carries `member` the same way) | `castRefused`, `useRefused` |
+| `cooldown {left}` | `useRefused`, `actionRefused` | (Phase 39, GEAR-02: a `c.timers` duration+cooldown jewelry/cloak still cooling), or a Bard's song, still counting down; `left` is the exact squares remaining (Phase 89: a Joiner's own cooling item refuses the same way, with `member`, on its own sheet's timers) | `useRefused`, `actionRefused` |
 | `recharging {left,charges,max}` | `useRefused` | (Phase 39, GEAR-02) an EMPTY staff still refilling its charge pool — `left` is the squares to the next charge, `charges`/`max` the current/full pool | `useRefused` |
 | `wrongClass` | `useRefused`, `actionRefused` | a staff used by a non-Magic-User; Sing attempted by a non-Bard | `useRefused`, `actionRefused` |
 | `noCharges` | (its own event, not this reason string) | see `noChargesLeft` below | `noChargesLeft` |
@@ -36,6 +36,11 @@ never a generic "you can't do that."
 | notWorn | useRefused | (Phase 37, GEAR-03; 260918-w4n) a cloak/jewelry activatable used from the BAG while the character is on the worn-slot model — activatables must be worn to work; legacy states (no c.worn) keep bag-use. A staff is NEVER refused this way (it has no `c.worn` slot; see `notWielded` below for its own bag-use refusal) | useRefused |
 | `notWielded` | `useRefused` | (RULES-13, Phase 75, user 2026-09-25) a staff addressed by BAG INDEX that is not the currently-wielded one (`wieldedStaff(c) !== it`) — a staff's charged power works only while equipped into the weapon slot; reverses the 2026-09-18 bag-use amendment. The wielded staff, addressed via `{ slot: "weapon" }`, is unaffected | `useRefused` |
 | `nothingToCure {need,have}` | `useRefused` | (Phase 89 plan 08, ITEM-01, docs/ITEM-AUDIT.md Q5, user 2026-09-30) a Cure Poison or Cure Disease potion drunk while the drinker carries none of ITS kind of affliction (`need` is "Poison" or "Disease", `have` the kind carried or null) — refused BEFORE `itemUsed`, the potion is kept, nothing is drawn; each cure clears only its own kind | `useRefused` |
+| `noMember {}` | `useRefused` | (Phase 89 plan 05, ITEM-07) the Joiner action `memberUseItem` addressed a party index with no Joiner, or one that is already downed; the line carries no `member` (there is nobody to name) | `useRefused` |
+| `inCombat {member}` | `useRefused` | (Phase 89 plan 05, ITEM-07) the Joiner action used during a fight, or one still pending: in a fight a Joiner's item use is automatic (§4b), so the Company panel's DRINK and USE are for outside a fight only | `useRefused` |
+| `noPotions {member}` | `useRefused` | (Phase 89 plan 05, ITEM-07) DRINK for a Joiner whose own potion count is 0; the hero's potions are never read | `useRefused` |
+| `fullHealth {member}` | `useRefused` | (Phase 89 plan 05, ITEM-07) DRINK for a Joiner at exactly its maximum hp; its potion is kept | `useRefused` |
+| `leaderOnly {member}` | `useRefused` | (Phase 89 plan 05, ITEM-07, docs/ITEM-AUDIT.md Q2) USE of an item whose effect belongs to the one leading the party (Cloak of Flying, Cloak of Ether, Bracelet of Flight, Amulet of Light, Helm of Knowledge, Amulet of Stone: `MEMBER_LEADER_KINDS`), checked before `combatOnly` and `cooldown`, with no draw | `useRefused` |
 | `exploreOnly` | *(reserved)* | no current engine emitter uses this reason — every existing combat-flavored action is gated the other direction (`combatOnly`), not this one | — |
 | `abilityRefused` reasons | `abilityRefused` | (Phase 38, ABIL-01/04) the ABILITIES submenu's own ladder: `unknown` (not in the catalog, or not owned) · `cooldown {left}` (rounds remaining — the canon "Your arm has opinions." line) · `notInCombat` (no active encounter) · `noTarget` (structurally unreachable in combat, same reasoning as `castSpell`'s own retarget) · `notLowEnough` (Last Stand above a quarter hp, payload `have`/`max`) — plus the shared `notFought` above. Every reason names the ability; rows stay TAPPABLE on cooldown (never disabled) — the dispatch itself is the refusal | `abilityRefused` |
 
@@ -247,6 +252,38 @@ next cast attempt refuses with the existing `spellSchoolLocked`/
 
 **Lockpicks:** passive (`hasPicks`), no `use`/refusal concept — consumed by
 `openChest`'s lock-roll gate, not by `useItem`.
+
+## §4b. The Joiner's items (`memberUseItem`, Phase 89, ITEM-07)
+
+> "let joiners use items they have, and let their armor soak damage. Just
+> like players." — user, 2026-09-30
+
+A Joiner (a party member) carries potions, a worn cloak or jewel and, for a
+Magic User, a scroll it reads on joining. Two paths use them, both through
+the same internal functions as the hero's (`applyActivation`, the `c.timers`
+records, `endSourceEffects`), each event carrying `member` (the Joiner's name):
+
+- **Player-directed, outside a fight:** the Hero tab's Company panel offers
+  DRINK and USE, which dispatch the engine action `memberUseItem { i, potion:
+  true }` or `{ i, slot }` (`engine/items.js#memberUseItem`). A DRINK spends
+  one of the Joiner's OWN potions (2d10+5 hp, doubled for a heal-twice race,
+  from a derived stream) and heals that Joiner only; a USE starts the item's
+  effect and cooldown on the Joiner's own sheet. The refusals are the
+  reasons in §1, each a `useRefused` event with `member` (except `noMember`),
+  each drawing nothing and changing nothing: `noMember`, `inCombat`,
+  `noPotions`, `fullHealth`, `leaderOnly`, and the two shared ones carried
+  with `member`, `combatOnly` and `cooldown`. An empty slot is a silent
+  no-op, like the hero's.
+- **Automatic, in a fight (89-06):** on its own turn a Joiner uses a ready
+  worn item of a combat kind in round 1 (a free use), drinks one of its own
+  potions at or below a third of its hp instead of acting, and swings twice
+  under its own live Speed. These are policy steps, never refusals: an item
+  the Joiner cannot use (cooling, already live, a leader-only kind) is
+  skipped silently with no event.
+
+`test/unit/usable-features-audit.test.js` exercises each reason below
+(zero draws, no side effect) and one success each for a potion and a worn
+item (the `memberUseItem` rows).
 
 ## §5. Class/race/sub-class active features
 
