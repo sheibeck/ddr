@@ -14,7 +14,6 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { rollHandle } from "../../src/browser/handles.js";
 import { SEASON } from "../../content/season.js";
 import { firestoreUrl, docName } from "../../src/browser/firestoreRest.js";
 import { RUN_COLLECTION, RUN_CLIENT_FIELDS, rankKeys, runDocId, topTenQuery, countQuery, ownRunsQuery } from "../../src/browser/runDoc.js";
@@ -35,8 +34,10 @@ const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey
 
 /* ---------------- helpers ---------------- */
 
+// A Play Games-style poster name (Phase 91.2); the seed picks one of two
+// literals so a test can tell two posters apart.
 function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
+  return seed < 0.5 ? "Dev Delver" : "Moss Knuckle";
 }
 
 function baseValidPartial(overrides = {}) {

@@ -97,7 +97,7 @@ function accountSheet({ encounter = false, hasState = true, sheetOpen = false } 
   const account = {
     sheetView: () => ({ view: "sheet" }),
     setCompete: (v) => calls.push(["setCompete", v]),
-    reroll: () => calls.push(["reroll"]),
+    signInTap: () => calls.push(["signInTap"]),
     eraseTap: () => calls.push(["eraseTap"]),
     disarmErase: () => calls.push(["disarmErase"]),
   };
@@ -181,8 +181,8 @@ test("(A2) SOURCE: boardIdentity() returns sharedIdentity() on a native platform
   assert.ok(MODULE.indexOf("const boardFetch = boardFetchFn();") < MODULE.indexOf("let account = null;"));
 });
 
-test("(A3) SOURCE: the shell names no retired game-service provider or plugin package anywhere, not even in a comment", () => {
-  for (const pattern of [/play[ _-]?games/i, /\bpgs\w*/i, /globalBoards/, /boardScores/, /scoreTag/]) {
+test("(A3) SOURCE: the shell names no retired leaderboard module anywhere, not even in a comment (Phase 91.2 brought Play Games back for sign-in only, so its own names are no longer swept)", () => {
+  for (const pattern of [/globalBoards/, /boardScores/, /scoreTag/, /playGames\.js/, /pgsQueue/, /modbender/i]) {
     assert.doesNotMatch(HTML, pattern, `must not match ${pattern}`);
   }
 });
@@ -270,6 +270,17 @@ test("(C2) SOURCE: createBoardSync's onAcked calls account.boardAcked() — the 
   assert.match(region, /onAcked: \(\) => account\?\.boardAcked\(\),/);
 });
 
+test("(C3) SOURCE: the board session feeds the controller through onSession, both account surfaces call signInTap, and no re-roll wiring is left (91.2-08, D-03/D-11)", () => {
+  const region = sliceBetween(MODULE, "const boardSync = createBoardSync({", "\n  });");
+  assert.match(region, /onSession: \(info\) => account\?\.sessionChanged\(info\),/);
+  assert.match(MODULE, /onSignIn: \(\) => account\.signInTap\(\),/);
+  const surfaces = sliceBetween(MODULE, "function renderAccountSurfaces() {", "\n  account.subscribe(");
+  assert.match(surfaces, /onSignIn: \(event\) => \{\s*event\?\.stopPropagation\?\.\(\);\s*account\.signInTap\(\);\s*\},/);
+  assert.equal(occurrences(MODULE, "signInTap"), 2);
+  assert.doesNotMatch(MODULE, /reroll/i);
+  assert.doesNotMatch(MODULE, /ensureHandle/);
+});
+
 // ═══════════════════════ (D) the account sheet ══════════════════════════════
 
 test("(D1) SOURCE: only the title chip opens the sheet (Phase 70 D-03: the band-2 chip is retired), with no options and no encounter guard; scrim and Close close it", () => {
@@ -300,9 +311,10 @@ test("(D4) BEHAVIOUR: the rows go through the controller, and Settings closes th
   s.calls.length = 0;
   h.onCompete(false);
   h.onCompete(true);
-  h.onReroll();
+  assert.deepStrictEqual(Object.keys(h).sort(), ["onCompete", "onErase", "onSettings", "onSignIn"], "no re-roll handler (D-11)");
+  h.onSignIn();
   h.onErase();
-  assert.deepStrictEqual(s.calls, [["setCompete", false], ["setCompete", true], ["reroll"], ["eraseTap"]]);
+  assert.deepStrictEqual(s.calls, [["setCompete", false], ["setCompete", true], ["signInTap"], ["eraseTap"]]);
   s.calls.length = 0;
   h.onSettings();
   assert.deepStrictEqual(s.calls, [["close", true], ["keepInView"], ["disarmErase"], ["openSettings"]]);
@@ -456,9 +468,9 @@ function accountSurfaces() {
     menuView: () => ({ view: "menu" }),
     sheetView: () => ({ view: "sheet" }),
     setCompete: (v) => log.push(`setCompete:${v}`),
-    reroll: () => log.push("reroll"),
+    signInTap: () => log.push("signInTap"),
     eraseTap: () => log.push("eraseTap"),
-    state: () => ({ erase: eraseState }),
+    state:() => ({ erase: eraseState }),
   };
   const renderAccountChip = (el, view) => renders.push(["chip", el.id, view.view]);
   const renderMenuFace = (el, view) => renders.push(["face", el.id, view.view]);
@@ -484,7 +496,7 @@ function fakeClickEvent() {
   return { stopPropagation: () => { stopped = true; }, wasStopped: () => stopped };
 }
 
-test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the controller's views; onCompete/onReroll stop the click event's propagation and never raise \"select\"; onErase on an idle row arms without \"select\", and on an armed row calls eraseTap then raises \"select\"", () => {
+test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the controller's views; onCompete/onSignIn stop the click event's propagation (the ☰ stays open) and never raise \"select\"; onErase on an idle row arms without \"select\", and on an armed row calls eraseTap then raises \"select\"", () => {
   const s = accountSurfaces();
   s.render();
   assert.deepStrictEqual(s.renders, [
@@ -493,7 +505,7 @@ test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the 
     ["menu", "mw-hud-menu-acct", "sheet"],
   ]);
   const h = s.handlers();
-  assert.deepStrictEqual(Object.keys(h).sort(), ["onCompete", "onErase", "onReroll"], "no Settings handler: the ☰ already has SETTINGS");
+  assert.deepStrictEqual(Object.keys(h).sort(), ["onCompete", "onErase", "onSignIn"], "no Settings handler: the ☰ already has SETTINGS");
 
   let e = fakeClickEvent();
   h.onCompete(false, e);
@@ -506,9 +518,9 @@ test("(G1) BEHAVIOUR: renderAccountSurfaces renders the three surfaces from the 
   assert.deepStrictEqual(s.log.splice(0), ["setCompete:true"]);
 
   e = fakeClickEvent();
-  h.onReroll(e);
+  h.onSignIn(e);
   assert.equal(e.wasStopped(), true);
-  assert.deepStrictEqual(s.log.splice(0), ["reroll"]);
+  assert.deepStrictEqual(s.log.splice(0), ["signInTap"], "SIGN IN calls signInTap and never raises select");
 
   s.setErase("idle");
   e = fakeClickEvent();

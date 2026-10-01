@@ -1948,6 +1948,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-settings-row[hidden]{display:none}
 .mw-settings-version{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;opacity:.75}
 #mw-dev-start-depth{width:5.5em;font:inherit;padding:4px 6px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:4px}
+#mw-dev-pgs-out{margin:8px 0 0;max-height:12em;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.4;color:#c9bda0;user-select:text;-webkit-user-select:text}
 .mw-dev-chip{font:700 10px/1 inherit;letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:var(--ditto);color:#000;margin-left:8px}
 #mw-dev-perf{margin-top:8px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;line-height:1.5;color:#c9bda0;opacity:.85;overflow-wrap:anywhere}
 #mw-dev-perf:empty{display:none}
@@ -2335,6 +2336,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
            record nothing unless state.dev is true. -->
       <div class="mw-settings-row" id="mw-settings-version-row"><span class="mw-settings-label mw-settings-version" id="mw-settings-version">Version <span id="mw-app-version">dev</span></span></div>
       <div class="mw-settings-row" id="mw-dev-row" hidden><span class="mw-settings-label">Start at depth (dev)</span><div class="mw-settings-options"><input type="number" id="mw-dev-start-depth" min="1" max="999" value="20" inputmode="numeric" aria-label="Start depth"><button type="button" class="mw-settings-opt" id="mw-dev-start-btn">Start</button></div><div id="mw-dev-perf"></div></div>
+      <!-- Phase 91.2 (BOARD-31, D-10): the Play Games spike probe's dev row, a
+           SIBLING of #mw-dev-row (never inside it), revealed by the same
+           version-label long-press. The fake sign-in toggle shows in the
+           browser dev loop only. -->
+      <div class="mw-settings-row" id="mw-dev-pgs-row" hidden><span class="mw-settings-label">Play Games probe (dev)</span><div class="mw-settings-options"><button type="button" class="mw-settings-opt" id="mw-dev-pgs-probe">PLAY GAMES PROBE</button><button type="button" class="mw-settings-opt" id="mw-dev-pgs-fake">Fake sign-in</button></div><pre id="mw-dev-pgs-out" hidden></pre></div>
     </div>
   </div>
 </div>
@@ -2342,8 +2348,8 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 <!-- ============ ACCOUNT BOTTOM SHEET (Phase 67, ACCT-02, D-09/D-10) ============
      The account sheet, in the legend-sheet family's chrome
      (.mw-legend-sheet/-scrim/-panel/-head/-close, above). Its rows (the
-     @handle identity, COMPETE ON/OFF, RE-ROLL HANDLE, ERASE MY RUNS,
-     SETTINGS — Phase 85, 85-CONTEXT group 1) are rendered by
+     Play Games identity, COMPETE ON/OFF, SIGN IN WITH PLAY GAMES when
+     signed out, ERASE MY RUNS, SETTINGS — Phase 91.2) are rendered by
      src/browser/accountChip.js into #mw-acct-rows, and the title text comes
      from content through the module script, so the markup carries none.
      Phase 70 (D-03/D-04): opened only from the title screen's corner chip
@@ -2505,9 +2511,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
            first row under the account block, above MARKS; the order is
            MAKE CAMP, MARKS, SETTINGS, REPORT A BUG, PATCH NOTES.
            Phase 70 (POLISH-02, D-03/D-04, superseding Phase 67 D-05): the
-           button wears the handle's initials avatar while Compete is ON
-           (this static plain ☰ while Compete is OFF or before the handle
-           is known; painted by src/browser/accountChip.js#renderMenuFace
+           button wears the Play Games name's initials avatar while Compete
+           is ON (this static plain ☰ while Compete is OFF or before the
+           name is known; painted by src/browser/accountChip.js#renderMenuFace
            through the module script), and the dropdown opens on the
            ACCOUNT block (the group host below, rendered by
            renderAccountMenu). The separate band-2 account chip is
@@ -7132,14 +7138,14 @@ window.__mzClassicBoot = async function classicBoot() {
   import { createFakeBoardFetch } from "./src/browser/fakeBoardServer.js";
   import { devBoardRuns } from "./src/browser/devBoardSeed.js";
   // Phase 85 (ACCT-03/05, 85-CONTEXT group 1): the account chip, sheet and
-  // controller, over the @handle-and-Compete account — no third-party
-  // provider seam.
+  // controller, over the Play Games name and the Compete switch (Phase
+  // 91.2) — the identity seam is the PlayIdentity below.
   import { createAccountController, renderAccountChip, renderAccountSheet, renderMenuFace, renderAccountMenu } from "./src/browser/accountChip.js";
   // Phase 85 (ACCT-04/05/06, RETIRE-03): the board-side engine room — every
-  // board-side decision (death-time submission, flush with a pending handle
-  // rewrite, re-roll, erase-keeps-handle, the bounded 2.1.0 backfill, the
-  // retired queue-key drop, DEPTH-rank placement reports) lives here; the
-  // shell only wires taps and lifecycle events into it.
+  // board-side decision (death-time submission, the Play Games session and
+  // sign-in hold, erase, the bounded 2.1.0 backfill, the retired queue-key
+  // drop, DEPTH-rank placement reports) lives here; the shell only wires
+  // taps and lifecycle events into it.
   import { createBoardSync } from "./src/browser/boardSync.js";
   // Phase 85 (ACCT-04, 85-CONTEXT group 2): the adapter's run-recorded hook
   // and placementOutcome, the one rule that turns boardSync's placement
@@ -7163,6 +7169,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // checks before ever calling sendBugReport — see sharedIdentity() and
   // sendReportNow below.
   import { createIdentity } from "./src/browser/firebaseAuth.js";
+  // Phase 91.2 (BOARD-31, D-02, D-10): the Play Games sign-in seam (native
+  // plugin, or its in-memory fake in the browser dev loop) and the dev-row
+  // spike probe — each on its own line per this file's import convention.
+  import { createPlayIdentity, createFakePlayIdentity } from "./src/browser/playIdentity.js";
+  import { runPgsProbe } from "./src/browser/pgsProbe.js";
   import { LOCAL_LIMIT_KEY, sanitizeLocalLimit, checkLocalLimit } from "./src/browser/reportLimits.js";
   // Phase 79.3 (NOTES-02, D-20/D-21): the bundled release notes and the
   // pure Markdown-subset parser/renderer/auto-show decision they're read
@@ -7997,7 +8008,7 @@ window.__mzClassicBoot = async function classicBoot() {
       account.sheetView(),
       {
         onCompete: (value) => account.setCompete(value),
-        onReroll: () => account.reroll(),
+        onSignIn: () => account.signInTap(),
         onErase: () => account.eraseTap(),
         onSettings: () => {
           closeAccountSheet();
@@ -8048,9 +8059,23 @@ window.__mzClassicBoot = async function classicBoot() {
         storage: window.mzStorage,
         fetchFn: typeof globalThis.fetch === "function" ? globalThis.fetch.bind(globalThis) : null,
         competeOn: competeIsOn,
+        playIdentity: playIdentity(),
       });
     }
     return sharedIdentityInstance;
+  }
+  // Phase 91.2 (BOARD-31, D-02): the ONE Play Games sign-in seam — the
+  // native plugin on Android, the in-memory fake in the browser dev loop.
+  // Creating it starts nothing: no plugin method runs and the Play Games
+  // SDK stays untouched until the Compete-gated board session (boardSync)
+  // asks, so a Compete-OFF launch never reaches it, and a bug report keeps
+  // its anonymous path.
+  let playIdentityInstance = null;
+  function playIdentity() {
+    if (!playIdentityInstance) {
+      playIdentityInstance = window.Capacitor?.isNativePlatform?.() ? createPlayIdentity() : createFakePlayIdentity();
+    }
+    return playIdentityInstance;
   }
   // Phase 85 (85-CONTEXT "Claude's discretion", T-85-06): the board's own
   // identity seam. On a native platform this IS sharedIdentity() — the
@@ -8069,7 +8094,7 @@ window.__mzClassicBoot = async function classicBoot() {
         setItem: (key, value) => window.mzStorage?.setItem?.(`dev.${key}`, value),
         removeItem: (key) => window.mzStorage?.removeItem?.(`dev.${key}`),
       };
-      boardIdentityInstance = createIdentity({ storage: devStorage, fetchFn: boardFetch, competeOn: competeIsOn });
+      boardIdentityInstance = createIdentity({ storage: devStorage, fetchFn: boardFetch, competeOn: competeIsOn, playIdentity: playIdentity() });
     }
     return boardIdentityInstance;
   }
@@ -8313,6 +8338,8 @@ window.__mzClassicBoot = async function classicBoot() {
     devPressTimer = setTimeout(() => {
       const row = document.getElementById("mw-dev-row");
       if (row) row.hidden = false;
+      const pgsRow = document.getElementById("mw-dev-pgs-row");
+      if (pgsRow) pgsRow.hidden = false;
     }, DEV_LONG_PRESS_MS);
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
@@ -8323,6 +8350,52 @@ window.__mzClassicBoot = async function classicBoot() {
     const raw = parseInt(document.getElementById("mw-dev-start-depth")?.value, 10);
     const depth = Number.isInteger(raw) ? Math.min(999, Math.max(1, raw)) : 20;
     window.mzDevStartAtDepth?.(depth);
+  });
+  // Phase 91.2 (BOARD-31, D-10): the Play Games spike probe, in the same
+  // hidden dev row family. PLAY GAMES PROBE runs the device checks (G1/G3/
+  // G4/A3/A4/A6 of the spike) through the one PlayIdentity seam and prints
+  // the report on screen and as one compact [pgs-probe] logcat line; the
+  // report carries no token or code. The fake sign-in toggle exists in the
+  // browser dev loop only.
+  const pgsProbeBtn = document.getElementById("mw-dev-pgs-probe");
+  const pgsFakeBtn = document.getElementById("mw-dev-pgs-fake");
+  const pgsOut = document.getElementById("mw-dev-pgs-out");
+  const pgsNative = window.Capacitor?.isNativePlatform?.() === true;
+  function pgsFakeLabel(signedIn) {
+    return `Fake sign-in: ${signedIn ? "ON" : "OFF"}`;
+  }
+  let pgsFakeSignedIn = true;
+  if (pgsFakeBtn) {
+    if (pgsNative) pgsFakeBtn.hidden = true;
+    else pgsFakeBtn.textContent = pgsFakeLabel(pgsFakeSignedIn);
+  }
+  pgsProbeBtn?.addEventListener("click", async () => {
+    if (pgsProbeBtn.disabled) return;
+    pgsProbeBtn.disabled = true;
+    let text;
+    try {
+      const report = await runPgsProbe({
+        playIdentity: playIdentity(),
+        fetchFn: pgsNative ? globalThis.fetch.bind(globalThis) : boardFetch,
+      });
+      text = JSON.stringify(report, null, 2);
+      console.info(`[pgs-probe] ${JSON.stringify(report)}`);
+    } catch (err) {
+      text = `probe failed: ${err && err.message ? err.message : "unknown"}`;
+      console.info(`[pgs-probe] ${text}`);
+    }
+    if (pgsOut) {
+      pgsOut.textContent = text;
+      pgsOut.hidden = false;
+    }
+    pgsProbeBtn.disabled = false;
+  });
+  pgsFakeBtn?.addEventListener("click", () => {
+    if (pgsNative) return;
+    pgsFakeSignedIn = !pgsFakeSignedIn;
+    playIdentity().setSignedIn?.(pgsFakeSignedIn);
+    pgsFakeBtn.textContent = pgsFakeLabel(pgsFakeSignedIn);
+    boardSync.session();
   });
 
   // 04-DR9: one delegated click handler for every settings row — reads
@@ -8603,9 +8676,9 @@ window.__mzClassicBoot = async function classicBoot() {
   }
 
   // Phase 85 (ACCT-03/04/05/06, RETIRE-03; 85-CONTEXT groups 1 and 3): the
-  // account — our own @handle-and-Compete identity, over boardSync (the
-  // board-side engine room, wired below). The controller persists compete
-  // and boardWelcomed through settings.js; re-applying keeps the module's
+  // account — the Play Games name and the Compete switch (Phase 91.2), over
+  // boardSync (the board-side engine room, wired below). The controller
+  // persists compete and nameWelcomed through settings.js; re-applying keeps the module's
   // settings mirror coherent (competeIsOn()'s fallback reads it before
   // boot() settles).
   async function writeAccountSetting(key, value) {
@@ -8669,9 +8742,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 85 (ACCT-04/05/06, RETIRE-03): the board-side engine room, wired
   // to our own identity/client/fetch seams above. 85-05 adds liveHash,
   // onAcked and onPlacement for the death screen's rank line and the
-  // deferred rail card; this plan's onChange keeps the LEADERBOARD panel in
-  // sync with every acknowledged board write (a reroll's handle rewrite, an
-  // erase).
+  // deferred rail card; onChange keeps the LEADERBOARD panel in sync with
+  // every acknowledged board write (an erase, a rename); Phase 91.2's
+  // onSession hands boardSync's Play Games sign-in state to the account.
   const boardSync = createBoardSync({
     storage: window.mzStorage,
     fetchFn: boardFetch,
@@ -8689,6 +8762,7 @@ window.__mzClassicBoot = async function classicBoot() {
     liveHash: () => liveDeathHash,
     onAcked: () => account?.boardAcked(),
     onPlacement: handlePlacement,
+    onSession: (info) => account?.sessionChanged(info),
     onChange: () => {
       boardFeed.clear();
       boardsPanel.refresh();
@@ -8704,11 +8778,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 70 (POLISH-02, D-03/D-04/D-07): the three account surfaces, all
   // from the controller's views on every account change. The title's corner
   // chip shows the chip view (Phase 67 D-06); the ☰ button wears the menu
-  // view (the handle's initials avatar while Compete is ON, the plain ☰
-  // otherwise); the ☰ dropdown's ACCOUNT block shows the sheet view's rows.
-  // Phase 85 (85-CONTEXT "Claude's discretion"): COMPETE and RE-ROLL keep
-  // the ☰ open (the player sees the new state and can re-roll again — it is
-  // unlimited); only the confirming ERASE tap closes it. Every handler stops
+  // view (the Play Games name's initials avatar while Compete is ON, the
+  // plain ☰ otherwise); the ☰ dropdown's ACCOUNT block shows the sheet
+  // view's rows.
+  // Phase 85 (85-CONTEXT "Claude's discretion"), Phase 91.2: COMPETE and
+  // SIGN IN WITH PLAY GAMES keep the ☰ open (the player sees the new state
+  // and the rail card); only the confirming ERASE tap closes it. Every handler stops
   // the click event's own propagation first, so the ☰'s own outside-tap
   // close listener never double-fires.
   function renderAccountSurfaces() {
@@ -8719,9 +8794,9 @@ window.__mzClassicBoot = async function classicBoot() {
         event?.stopPropagation?.();
         account.setCompete(value);
       },
-      onReroll: (event) => {
+      onSignIn: (event) => {
         event?.stopPropagation?.();
-        account.reroll();
+        account.signInTap();
       },
       onErase: (event) => {
         event?.stopPropagation?.();
@@ -8772,9 +8847,12 @@ window.__mzClassicBoot = async function classicBoot() {
   window.addEventListener("online", () => boardSync.flush({ force: true }));
   // Kept the FIRST visibilitychange listener in the file on purpose
   // (shell-board.test.js requires it; the title-music observer further
-  // below is added after it for the same reason).
+  // below is added after it for the same reason). Phase 91.2: coming back
+  // runs the board session, which re-checks the Play Games name (a rename
+  // is followed) and flushes any held runs; it is quiet and cheap while
+  // signed out or with Compete OFF.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") boardSync.flush();
+    if (document.visibilityState === "visible") boardSync.session();
   });
 
   // Phase 85 (ACCT-04, 85-CONTEXT group 2): boardSync's placement report
@@ -10179,10 +10257,11 @@ window.__mzClassicBoot = async function classicBoot() {
     if (notesTitleEl) notesTitleObserver.observe(notesTitleEl, { attributes: true, attributeFilter: ["hidden"] });
   }
 
-  // Phase 67 (D-01/D-02): the launch handle roll, deliberately not awaited.
-  // It never blocks boot, the title or play; the handle rolls locally with
-  // no network (identity.ensureHandle()). boot() never rejects; the catch
-  // is defence in depth against an unhandled rejection.
+  // Phase 67 (D-01/D-02), Phase 91.2: the account's launch read, deliberately
+  // not awaited. It never blocks boot, the title or play; it reads the saved
+  // settings and the stored Play Games name (identity.snapshot()) with no
+  // network and no Play Games call. boot() never rejects; the catch is
+  // defence in depth against an unhandled rejection.
   account.boot().catch(() => {});
   // Phase 85 (RETIRE-03, ACCT-04): boardSync's own boot — drops the retired
   // pre-2.2 submission-queue key silently, runs the once-only 2.1.0 backfill

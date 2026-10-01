@@ -17,7 +17,6 @@ import url from "node:url";
 import { SEASON } from "../../content/season.js";
 import { FIREBASE_CONFIG } from "../../src/browser/firebaseConfig.js";
 import { FIRESTORE_BASE, IDENTITY_BASE, documentsPath, firestoreUrl } from "../../src/browser/firestoreRest.js";
-import { rollHandle } from "../../src/browser/handles.js";
 import { RUN_CLIENT_FIELDS, RUN_DOC_FIELDS, rankKeys, deepKeyOf, legacyDeepKeyOf, runDocId, createRunCommit } from "../../src/browser/runDoc.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import {
@@ -43,7 +42,9 @@ const NOW_MS = Date.parse("2026-09-28T12:00:00.000Z");
 function baseValidPartial(over = {}) {
   return {
     uid: "u1",
-    handle: rollHandle(() => 0.15, null),
+    // A 2.2.0-style "@" handle: these seeds go through the fake in its
+    // transition mode, which only accepts that shape.
+    handle: "@lanternjaw",
     season: SEASON,
     name: "Aldric Vane",
     race: "Human",

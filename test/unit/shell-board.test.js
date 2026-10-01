@@ -268,6 +268,8 @@ test("(S1) SOURCE: exactly one createBoardSync block wires storage/fetchFn/ident
   assert.match(region, /liveHash: \(\) => liveDeathHash,/);
   assert.match(region, /onAcked: \(\) => account\?\.boardAcked\(\),/);
   assert.match(region, /onPlacement: handlePlacement,/);
+  // Phase 91.2 (91.2-08): the board session's answer feeds the account controller.
+  assert.match(region, /onSession: \(info\) => account\?\.sessionChanged\(info\),/);
   assert.match(region, /onChange: \(\) => \{/);
   assert.match(region, /boardFeed\.clear\(\);/);
   assert.match(region, /boardsPanel\.refresh\(\);/);
@@ -298,13 +300,48 @@ test("(S2) SOURCE: setRunRecordedListener(onRunRecorded) is wired and onRunRecor
   assert.match(region, /boardSync\.record\(summary\);/);
 });
 
-test("(S3) SOURCE: the online listener forces a flush; boardSync's own visibilitychange listener is the FIRST one in the file and flushes while visible", () => {
+test("(S3) SOURCE: the online listener forces a flush; boardSync's own visibilitychange listener is the FIRST one in the file and runs the board session (name re-check plus flush) while visible", () => {
   assert.match(MODULE, /window\.addEventListener\("online", \(\) => boardSync\.flush\(\{ force: true \}\)\);/);
-  const boardVisMarker = 'document.addEventListener("visibilitychange", () => {\n    if (document.visibilityState === "visible") boardSync.flush();\n  });';
+  const boardVisMarker = 'document.addEventListener("visibilitychange", () => {\n    if (document.visibilityState === "visible") boardSync.session();\n  });';
   assert.equal(occurrences(MODULE, boardVisMarker), 1);
   const boardVisIdx = MODULE.indexOf(boardVisMarker);
   const anyVisIdx = MODULE.indexOf('document.addEventListener("visibilitychange"');
   assert.equal(boardVisIdx, anyVisIdx, "boardSync's own visibilitychange listener is the first one in the file");
+});
+
+test("(S3b) SOURCE: one lazy PlayIdentity seam (native plugin on Android, the fake in the dev loop) is handed to both identities, and creating it calls no plugin method (D-02)", () => {
+  assert.equal(occurrences(MODULE, "function playIdentity()"), 1);
+  const seam = sliceBetween(MODULE, "function playIdentity() {", "\n  }");
+  assert.match(seam, /window\.Capacitor\?\.isNativePlatform\?\.\(\) \? createPlayIdentity\(\) : createFakePlayIdentity\(\)/);
+  assert.match(seam, /if \(!playIdentityInstance\)/);
+  for (const method of ["init(", "status(", "signIn(", "serverAuthCode("]) {
+    assert.equal(seam.includes(method), false, `the seam builder must not call ${method}`);
+  }
+  assert.equal(
+    (MODULE.match(/createIdentity\(\{[^}]*playIdentity: playIdentity\(\)/g) || []).length,
+    2,
+    "sharedIdentity() and the dev boardIdentity() both get it",
+  );
+  assert.equal(occurrences(HTML, 'import { createPlayIdentity, createFakePlayIdentity } from "./src/browser/playIdentity.js";'), 1);
+  assert.equal(occurrences(HTML, 'import { runPgsProbe } from "./src/browser/pgsProbe.js";'), 1);
+});
+
+test("(S3c) SOURCE: the PLAY GAMES PROBE and its fake sign-in toggle live only in #mw-dev-pgs-row, a sibling after #mw-dev-row, revealed by the same long-press; the toggle is hidden on native", () => {
+  assert.equal(occurrences(HTML, 'id="mw-dev-pgs-row" hidden'), 1);
+  assert.equal(occurrences(HTML, 'id="mw-dev-pgs-probe"'), 1);
+  assert.equal(occurrences(HTML, 'id="mw-dev-pgs-fake"'), 1);
+  assert.equal(occurrences(HTML, 'id="mw-dev-pgs-out" hidden'), 1);
+  const devIdx = HTML.indexOf('id="mw-dev-row" hidden');
+  const pgsRowIdx = HTML.indexOf('id="mw-dev-pgs-row" hidden');
+  const devRowEnd = HTML.indexOf('<div id="mw-dev-perf"></div></div>', devIdx);
+  assert.ok(devIdx !== -1 && devRowEnd !== -1 && pgsRowIdx > devRowEnd, "the probe row follows #mw-dev-row, never inside it");
+  const pgsRow = sliceBetween(HTML, 'id="mw-dev-pgs-row" hidden', "</pre></div>");
+  assert.ok(pgsRow.includes("mw-dev-pgs-probe") && pgsRow.includes("mw-dev-pgs-fake"));
+  assert.match(MODULE, /const pgsRow = document\.getElementById\("mw-dev-pgs-row"\);\s*if \(pgsRow\) pgsRow\.hidden = false;/);
+  assert.match(MODULE, /runPgsProbe\(\{\s*playIdentity: playIdentity\(\),\s*fetchFn: pgsNative \? globalThis\.fetch\.bind\(globalThis\) : boardFetch,\s*\}\)/);
+  assert.match(MODULE, /console\.info\(`\[pgs-probe\] \$\{JSON\.stringify\(report\)\}`\)/);
+  assert.match(MODULE, /if \(pgsNative\) pgsFakeBtn\.hidden = true;/);
+  assert.match(MODULE, /playIdentity\(\)\.setSignedIn\?\.\(pgsFakeSignedIn\);/);
 });
 
 test("(S4) SOURCE: boardSync.boot({ history: getRunHistory() }) runs once, right after account.boot(), and is never awaited", () => {

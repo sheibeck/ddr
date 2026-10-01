@@ -15,7 +15,6 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs } from "../../tools/ident-sweep.mjs";
-import { rollHandle } from "../../src/browser/handles.js";
 import { SEASON } from "../../content/season.js";
 import {
   IDENTITY_BASE,
@@ -53,8 +52,11 @@ const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey
 
 /* ---------------- helpers ---------------- */
 
+// 2.2.0-style "@" handles (the transition rules still accept this shape); the
+// seed picks one of a few literals so a test can tell two handles apart.
+const LEGACY_HANDLES = Object.freeze(["@lanternjaw", "@mosstoe", "@embergoblet", "@gravepouch"]);
 function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
+  return LEGACY_HANDLES[Math.min(LEGACY_HANDLES.length - 1, Math.floor(seed * LEGACY_HANDLES.length))];
 }
 
 function baseValidPartial(overrides = {}) {

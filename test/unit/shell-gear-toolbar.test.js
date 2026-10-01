@@ -234,8 +234,9 @@ test("UIF-05: settings.js has no trace of handedness and exposes exactly 12 fiel
     // Phase 67 (D-01): Compete, appended after dressing.
     "compete",
     // Phase 85 (RETIRE-03): the welcome-card flag, in the slot the two
-    // retired Phase 67 fields used to occupy.
-    "boardWelcomed",
+    // retired Phase 67 fields used to occupy; Phase 91.2 renamed it
+    // nameWelcomed (91.2-07).
+    "nameWelcomed",
     // Phase 71 (D-03): the MASTER / MUSIC / EFFECTS volume sliders
     // (integers 0-100, default 100), appended in this order.
     "volMaster",
