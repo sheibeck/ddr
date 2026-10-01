@@ -16,7 +16,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { castSpell, readScroll } from "../../engine/magic.js";
-import { useItem, TARGETED_KINDS } from "../../engine/items.js";
+import { useItem, TARGETED_KINDS, memberUseItem } from "../../engine/items.js";
 import { playerStrike, flee, parley, sing } from "../../engine/combat.js";
 import { makeCamp } from "../../engine/movement.js";
 import { SPELLS, POTIONS, STAVES, CLOAKS, JEWELRY, TREASURE_ACTIVATION_OF } from "../../content/index.js";
@@ -531,11 +531,74 @@ CASES.push({
   expect: { refused: { type: "campFailed", reason: "noRations" } },
 });
 
+// §4b The Joiner's items (Phase 89, ITEM-07; docs/ITEM-AUDIT.md Q2) — the
+// Company panel's DRINK and USE dispatch `memberUseItem`. Every refusal draws
+// nothing (a throwing rng) and changes nothing (`before` is the state's JSON
+// taken before the call, compared after by the runner below); one success each
+// for a potion and a worn item.
+const joinerSheet = (over = {}) => ({
+  name: "Grum", cls: "Fighter", sub: "Soldier", race: "Human", level: 1, wp: 20, maxWP: 40,
+  potions: 2, timers: {}, worn: {}, items: [], halfNext: false, skills: {}, ...over,
+});
+const wornCloak = (n) => ({ kind: "cloak", ...CLOAKS.find((r) => r.n === n) });
+
+/** memberCase(name, setup, ref, expect) — a `memberUseItem` row: `setup()` builds the state, the call is made against a throwing rng for a refusal. */
+function memberCase(name, setup, ref, expect) {
+  CASES.push({
+    name: `memberUseItem: ${name}`,
+    run: () => {
+      const state = setup();
+      const before = JSON.stringify(state);
+      const rng = expect.refused ? fakeRng([]) : makeRng(21);
+      return { events: memberUseItem(state, 0, ref, rng, [], NOW), state, before: expect.refused ? before : undefined };
+    },
+    expect,
+  });
+}
+memberCase("no Joiner at the index is refused noMember", () => fixedState({ party: [] }), { potion: true }, { refused: { type: "useRefused", reason: "noMember" } });
+memberCase("a downed Joiner is refused noMember", () => fixedState({ party: [joinerSheet({ status: "downed", wp: 0 })] }), { potion: true }, { refused: { type: "useRefused", reason: "noMember" } });
+memberCase(
+  "a fight refuses inCombat",
+  () => {
+    const state = fixedState({ party: [joinerSheet()] });
+    state.combat = fixedCombat([fixedFoe()]);
+    return state;
+  },
+  { potion: true },
+  { refused: { type: "useRefused", reason: "inCombat" } },
+);
+memberCase("a Joiner with no potions is refused noPotions", () => fixedState({ party: [joinerSheet({ potions: 0 })] }), { potion: true }, { refused: { type: "useRefused", reason: "noPotions" } });
+memberCase("a Joiner at full hp is refused fullHealth", () => fixedState({ party: [joinerSheet({ wp: 40 })] }), { potion: true }, { refused: { type: "useRefused", reason: "fullHealth" } });
+memberCase(
+  "a leader-only item (the Cloak of Flying) is refused leaderOnly",
+  () => fixedState({ party: [joinerSheet({ worn: { cloak: wornCloak("Cloak of Flying") } })] }),
+  { slot: "cloak" },
+  { refused: { type: "useRefused", reason: "leaderOnly" } },
+);
+memberCase(
+  "a targeted item outside a fight is refused combatOnly, with member",
+  () => fixedState({ party: [joinerSheet({ worn: { cloak: { kind: "staff", ...STAVES.find((r) => r.n === "Birch Staff"), charges: 2 } } })] }),
+  { slot: "cloak" },
+  { refused: { type: "useRefused", reason: "combatOnly" } },
+);
+memberCase(
+  "an item still cooling is refused cooldown, with member",
+  () =>
+    fixedState({
+      party: [joinerSheet({ worn: { cloak: wornCloak("Cloak of Strength") }, timers: { "item:Cloak of Strength": { cadence: "squares", left: 30, phase: "cooldown" } } })],
+    }),
+  { slot: "cloak" },
+  { refused: { type: "useRefused", reason: "cooldown" } },
+);
+memberCase("a hurt Joiner drinks one of its own potions", () => fixedState({ party: [joinerSheet()] }), { potion: true }, { ok: "memberPotionDrunk" });
+memberCase("a worn Cloak of Strength is used and starts its own effect", () => fixedState({ party: [joinerSheet({ worn: { cloak: wornCloak("Cloak of Strength") } })] }), { slot: "cloak" }, { ok: "itemEffectStarted" });
+
 // --- Run every CASES row -----------------------------------------------------
 
 for (const c of CASES) {
   test(c.name, () => {
-    const { events } = c.run();
+    const { events, state, before } = c.run();
+    if (before !== undefined) assert.equal(JSON.stringify(state), before, "a refusal changes nothing");
     if (c.expect.refused) {
       const { type, reason } = c.expect.refused;
       const hit = events.find((e) => e.type === type && e.reason === reason);
@@ -602,6 +665,15 @@ test("doc-sync: the Elven flip is documented", () => {
   assert.ok(AUDIT_DOC.includes("foeToHit"));
 });
 
+const MEMBER_REASONS = new Set(["inCombat", "noPotions", "fullHealth", "leaderOnly"]);
+
+test("doc-sync: every memberUseItem refusal reason (noMember, inCombat, noPotions, fullHealth, leaderOnly, plus combatOnly and cooldown with member) is in the doc and has its own row here", () => {
+  const rows = new Set(CASES.filter((c) => c.name.startsWith("memberUseItem:") && c.expect.refused).map((c) => c.expect.refused.reason));
+  assert.deepEqual([...rows].sort(), ["combatOnly", "cooldown", "fullHealth", "inCombat", "leaderOnly", "noMember", "noPotions"]);
+  for (const r of rows) assert.ok(AUDIT_DOC.includes(r), `reason "${r}" is missing from the doc`);
+  assert.ok(AUDIT_DOC.includes("memberUseItem") && AUDIT_DOC.includes("§4b"), "the doc has the Joiner section");
+});
+
 test("doc-sync: every refused {type, reason} pair produces distinct, non-empty line/Oracle text across reasons of the same type", () => {
   const byType = new Map();
   for (const c of CASES) {
@@ -614,7 +686,8 @@ test("doc-sync: every refused {type, reason} pair produces distinct, non-empty l
     const lineTexts = new Set();
     const oracleTexts = new Set();
     for (const reason of reasons) {
-      const sampleEvent = { type, reason, item: { n: "Test" }, spell: "Test", action: "sing", left: 42 };
+      // Phase 89 (ITEM-07): the Joiner-only reasons always travel with `member` (the Joiner's name), as memberUseItem pushes them.
+      const sampleEvent = { type, reason, item: { n: "Test" }, spell: "Test", action: "sing", left: 42, ...(MEMBER_REASONS.has(reason) ? { member: "Grum" } : {}) };
       const line = LINE_FOR[type]?.(sampleEvent);
       const lineText = line && "text" in line ? line.text : line?.toasts?.[0]?.text;
       const oracle = EVENT_NARRATION[type]?.(sampleEvent);
