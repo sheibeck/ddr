@@ -239,13 +239,13 @@ Plans:
   3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
   4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
 
-**Plans:** 1/12 plans executed
+**Plans:** 2/12 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 90-01-PLAN.md — SPELL-08/ABIL-06: docs/SPELL-AUDIT.md and docs/SKILL-AUDIT.md (text / engine / rolls / canon / verdict, school gates, who can use it), ONE batched balance checkpoint (Q1 Strength's reach, Q2 Petrify's experience, Q3 which sleeps wake, Q4 Doze's reach, Q5 Ice's shape, Q6 the school square step, Q7+ audit finds); rulings recorded (autonomous: false)
-- [ ] 90-02-PLAN.md — ABIL-07: Pommel Strike is a normal strike and a landed blow stuns (cd 4), for the hero and Joiner Fighters
+- [x] 90-02-PLAN.md — ABIL-07: Pommel Strike is a normal strike and a landed blow stuns (cd 4), for the hero and Joiner Fighters
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -414,7 +414,7 @@ Plans:
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
-| 90. Spell & Skill Audit | 1/12 | In Progress|  |
+| 90. Spell & Skill Audit | 2/12 | In Progress|  |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
