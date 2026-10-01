@@ -195,7 +195,7 @@ function checkDoc(text) {
   return problems;
 }
 
-const DOC_TEXT = fs.readFileSync(DOC_PATH, "utf8");
+const DOC_TEXT = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // a CRLF checkout reads like the LF one
 
 /** doctor(fn) — the real doc, with `fn` applied to its lines (and a finder for a skill's row). */
 function doctor(fn) {
