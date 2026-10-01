@@ -574,12 +574,17 @@ test("Phase 42 (BAL-01 second half): Summon in combat picks the highest-LEVEL ca
   assert.deepStrictEqual(decideAction(level3, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
 });
 
-test("HARN-02: disables score only at 2+ live foes; weaken is skipped once C.weakened is set", () => {
+// Phase 90 plan 05 (SPELL-11), declared: Stun holds ONE foe now, so like Freeze's hold it is allowed against a
+// lone foe (before: every disable, Stun included, needed 2+ live foes; the lone-foe case below was an attack).
+// Doze, Weaken, Shrink and Stupidity keep the two-foe gate.
+test("HARN-02: disables score only at 2+ live foes (Stun, a one-foe hold, excepted); weaken is skipped once C.weakened is set", () => {
   const ctx = makeBotContext();
   const c = mu({ sub: "Sorcerer", level: 2, grimoire: ["Stun", "Doze", "Weaken"] });
 
   const oneFoe = mkState({ combat: fight("Beasts", 1), c });
-  assert.deepStrictEqual(decideAction(oneFoe, fixedPolicyRng, ctx), { type: "attack" });
+  assert.deepStrictEqual(decideAction(oneFoe, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Stun") });
+  const oneFoeNoStun = mkState({ combat: fight("Beasts", 1), c: { ...c, grimoire: ["Doze", "Weaken"] } });
+  assert.deepStrictEqual(decideAction(oneFoeNoStun, fixedPolicyRng, ctx), { type: "attack" });
 
   const twoFoes = mkState({ combat: fight("Beasts", 2), c });
   assert.deepStrictEqual(decideAction(twoFoes, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Stun") });
@@ -1028,5 +1033,45 @@ test("expectedSpellDamage: Freeze and Fireball include the caster's level² at l
   assert.equal(expectedSpellDamage(byName("Fireballs"), c3, 1), 7.5 * 4.5 + 9, "Fireballs vs 1 foe: level² once");
   assert.equal(expectedSpellDamage(byName("Fireballs"), c3, 2), 7.5 * 4.5 + 9 * 1.875, "Fireballs vs 2 foes: level² per foe struck, E[min(2, d8)]");
   assert.equal(expectedSpellDamage(byName("Acid"), c3), 9 * 2 + 9, "Acid: level² on the first tick");
-  assert.equal(expectedSpellDamage(byName("Ice"), c3), 3.5 * 3 + 9, "Ice: level² on the first tick");
+  // Phase 90 plan 05 (SPELL-12): Ice is the area freeze, scored per foe like Lightning (before: three scored tick rounds).
+  assert.equal(expectedSpellDamage(byName("Ice"), c3), 5.5 + 9, "Ice vs 1 foe: d10 + level²");
+  assert.equal(expectedSpellDamage(byName("Ice"), c3, 3), (5.5 + 9) * 3, "Ice: d10 + level² per foe, like Lightning");
+});
+
+// Phase 90 plan 05 (SPELL-11, SPELL-12): the bot plays the new rules.
+test("chooseSpell: Ice is a DAMAGE-tier area spell scored per live foe (never a Freeze-style hold); it beats Fireball in a crowd and loses to it vs one foe", () => {
+  const ctx = makeBotContext();
+  const base = { sub: "Sorcerer", level: 3, grimoire: ["Fireball", "Ice"] };
+  // tough foes (wp 100): no finishing Fireball, so the DAMAGE tier is ordered by expected damage alone
+  const tough = (n) => fight("Beasts", n, 1, { foes: Array.from({ length: n }, (_, i) => ({ name: `foe${i}`, alive: true, wp: 100, maxWP: 100 })) });
+  const crowd = mkState({ combat: tough(3), c: mu(base) });
+  const pick = chooseSpell(crowd, ctx);
+  assert.deepStrictEqual({ idx: pick.idx, tier: pick.tier }, { idx: idx("Ice"), tier: "damage" });
+  assert.equal(pick.score, 300 + (5.5 + 9) * 3);
+  const lone = mkState({ combat: fight("Beasts", 1), c: mu(base) });
+  assert.equal(chooseSpell(lone, ctx).idx, idx("Fireball"));
+  // Even with the Freeze rotation on, Ice scores as damage (its onHit flag is the area freeze, not a Freeze hold).
+  const rotation = makeBotContext({ controlRotation: true });
+  const rot = chooseSpell(mkState({ combat: tough(3), c: mu({ ...base, grimoire: ["Ice"] }) }), rotation);
+  assert.deepStrictEqual({ idx: rot.idx, tier: rot.tier }, { idx: idx("Ice"), tier: "damage" });
+});
+
+test("chooseSpell: Stun is a single-target hold (allowed vs a lone foe, 230 offensive, skipped while the target is held); Doze is a multi-foe sleep that grows with the room and is skipped when everyone sleeps", () => {
+  const ctx = makeBotContext();
+  const stun = mu({ sub: "Sorcerer", level: 2, grimoire: ["Stun"] });
+  const lone = chooseSpell(mkState({ combat: fight("Beasts", 1), c: stun }), ctx);
+  assert.deepStrictEqual({ idx: lone.idx, tier: lone.tier, score: lone.score }, { idx: idx("Stun"), tier: "disable", score: 230 });
+  const held = mkState({ combat: fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, wp: 20, maxWP: 20, held: { kind: "stunned", left: 2 } }] }), c: stun });
+  assert.equal(chooseSpell(held, ctx), null, "a hold never shortens a longer one: do not re-stun a held target");
+
+  const doze = mu({ sub: "Sorcerer", level: 2, grimoire: ["Doze"] });
+  assert.equal(chooseSpell(mkState({ combat: fight("Beasts", 1), c: doze }), ctx), null, "Doze keeps the two-foe gate");
+  // two or more live foes with no one-shot kill is the DEFENSIVE mode (the 430 band); the growth is the same either way
+  const scores = [2, 3, 4, 6, 9].map((n) => chooseSpell(mkState({ combat: fight("Beasts", n), c: doze }), ctx).score);
+  assert.deepStrictEqual(scores, [430, 431, 432, 434, 434], "the band stays 430-434 (below Shrink's 435), growing with the live foes, capped at +4");
+  const asleep = mkState({
+    combat: fight("Beasts", 2, 1, { foes: [{ name: "a", alive: true, wp: 20, maxWP: 20, asleep: 3 }, { name: "b", alive: true, wp: 20, maxWP: 20, asleep: 2 }] }),
+    c: doze,
+  });
+  assert.equal(chooseSpell(asleep, ctx), null, "nothing left to put to sleep");
 });

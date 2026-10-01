@@ -326,7 +326,8 @@ function expectedDamage(sp) {
  *   - Fireballs (volley, d8 bolts): every bolt its dice (mean 4.5 bolts),
  *     plus level² once per foe struck — E[min(nFoes, d8)] foes;
  *   - Acid: two scored rounds of dice, the first tick adds level²;
- *   - Ice (dot): three scored rounds of dice, the first tick adds level².
+ *   - Ice (blast, aoe "all", Phase 90 plan 05): per foe — (d10 + level²) ×
+ *     nFoes, like Lightning (no to-hit roll; the freeze is not scored).
  * Earthquake (kind quake) is never auto-cast, so it is not scored. The bot's
  * tick/bolt constants (2, 3, 4.5) are unchanged. Heals never add level² and
  * keep expectedDamage(sp). Pure, no rng.
@@ -343,10 +344,6 @@ export function expectedSpellDamage(sp, caster, nFoes = 1) {
     return dice * 4.5 + levelSq * struck;
   }
   if (sp.kind === "acid") return dice * 2 + levelSq; // two rounds of ticks
-  // Phase 40 (SPELL-01): Ice is a real per-round DOT — scored with the same
-  // "documented mean tick count" constant Acid uses, per its own d4+1
-  // duration (mean 3.5).
-  if (sp.kind === "dot") return dice * 3 + levelSq;
   return dice + levelSq;
 }
 
@@ -443,11 +440,13 @@ function lowestCastableUtilitySpellIdx(state) {
  *           sp.dmg.n * (sp.dmg.sides + 1) / 2 + sp.dmg.bonus, plus the
  *           caster's level² where the engine adds it (Phase 79.2-02,
  *           expectedSpellDamage; once per cast, per foe for Lightning and
- *           the first Fireballs bolt on each foe, the first Acid/Ice tick).
+ *           the first Fireballs bolt on each foe, the first Acid tick).
  *           `kind==="thrown"` (Mangle/Lightning/Fireball — Freeze scores in
- *           DISABLE) or `kind==="dot"` (Ice, Phase 40): Lightning's own `aoe`
- *           data flag (never the spell's name) multiplies the expected
- *           damage by liveFoes(state).length (it hits every foe).
+ *           DISABLE) or `kind==="blast"` (Ice, Phase 90 plan 05, the area
+ *           freeze, which sits here and not in DISABLE: it is scored for its
+ *           damage): the `aoe` data flag (never the spell's name) of Lightning
+ *           and Ice multiplies the expected damage by liveFoes(state).length
+ *           (each hits every foe).
  *           `kind==="volley"` (Fireballs) x4.5 (mean d8 balls). `kind==="acid"`
  *           (Acid) x2 (a documented "two rounds of ticks" constant — NOTE:
  *           this makes Acid score 318 vs 1 foe, not the 309 a plain-expected
@@ -455,15 +454,13 @@ function lowestCastableUtilitySpellIdx(state) {
  *           would give; the x2 multiplier is this function's actual,
  *           documented behavior — Claude's Discretion per the flagged
  *           assumption above); skipped when the current target already
- *           carries `acid`. `kind==="dot"` (Ice, Phase 40 SPELL-01) x3 — the
- *           mean tick count of the real `d4+1` duration (3.5, rounded to a
- *           documented constant like Acid's own x2); skipped when the
- *           current target already carries `dot`.
+ *           carries `acid`.
  *
  *           Phase 42 (BAL-01 second half, CONTEXT.md "DOT on a tough single
  *           foe, burst on a weak single foe") — both rules below are keyed
  *           on `sp.niche`, never a spell name or `sp.kind` alone:
- *             - DOT-vs-toughness: a `niche==="dot"` spell (Acid, Ice) is
+ *             - DOT-vs-toughness: a `niche==="dot"` spell (Acid; Ice stopped
+ *               being one in Phase 90 plan 05) is
  *               SKIPPED when the target won't outlast the party's own best
  *               castable `niche==="burst"` spell — `target.wp <=
  *               bestBurstExpected(state) + BOT_TACTICS.dotToughMargin`. A
@@ -476,10 +473,15 @@ function lowestCastableUtilitySpellIdx(state) {
  *               every other DAMAGE-tier pick (but never a KILL-tier spell,
  *               scored 400+).
  *   DISABLE (200+ offensive / 420-450 defensive, only when
- *           liveFoes(state).length >= 2): `kind==="stun"` 230/450,
- *           `kind==="weaken"` 220/440 (skipped when `C.weakened`),
- *           `kind==="shrink"` 215/435, `kind==="status"` (Doze) 210/430,
- *           `kind==="stupid"` 205/425.
+ *           liveFoes(state).length >= 2, except Stun and Freeze): `kind==="stun"`
+ *           230/450 (Phase 90 plan 05: Stun holds ONE foe, so like Freeze's
+ *           hold it is allowed against a single foe; skipped while the target
+ *           is already held), `kind==="weaken"` 220/440 (skipped when
+ *           `C.weakened`), `kind==="shrink"` 215/435, `kind==="status"`
+ *           (Doze, a multi-foe sleep that reaches d4 of them) 210/430 plus 0-4 for
+ *           the live foes beyond the first two (its value grows with the room;
+ *           skipped when every live foe already sleeps), `kind==="stupid"`
+ *           205/425.
  *   HEAL    (100 defensive: 460 + expected heal, only when `c.wp / c.maxWP <
  *           ctx.opts.potionThreshold` — potions are drunk earlier in
  *           decideAction, so this fires once potions run out): `kind==="heal"`
@@ -503,8 +505,9 @@ function lowestCastableUtilitySpellIdx(state) {
  * ROTATION (opt-in, Phase 75.3, `ctx.opts.controlRotation`): before the tiers
  * above, a castable spell whose `onHit === "freeze"` data flag is set scores
  * 455; a castable `kind === "weaken"` spell scores 452 unless the combat is
- * already `C.weakened`; a castable `kind === "status"` or `kind === "stun"`
- * spell scores 450 unless the current target's `asleep` is already above 0
+ * already `C.weakened`; a castable `kind === "status"` spell scores 450 unless
+ * the current target's `asleep` is already above 0, and a castable
+ * `kind === "stun"` spell scores 450 unless the target is already held
  * — every check is by data flag/kind, never by spell name, and these three
  * bypass the DISABLE tier's two-live-foe gate (the rotation fires against a
  * single foe too). All three still sit below the defensive HEAL tier
@@ -561,7 +564,9 @@ export function chooseSpell(state, ctx) {
     let tier;
     // ROTATION (opt-in, Phase 75.3): see chooseSpell's own JSDoc above — by
     // data flag/kind, never by spell name, and never gated on nFoes.
-    if (ctx.opts.controlRotation && sp.onHit === "freeze") {
+    // Phase 90 plan 05: Ice carries Freeze's onHit flag but is the area damage
+    // spell (aoe "all"), scored in the DAMAGE tier below, never as a hold.
+    if (ctx.opts.controlRotation && sp.onHit === "freeze" && !sp.aoe) {
       score = 455;
       tier = "rotation";
     } else if (ctx.opts.controlRotation && sp.kind === "weaken" && !(C && C.weakened)) {
@@ -572,11 +577,11 @@ export function chooseSpell(state, ctx) {
       (sp.kind === "status" || sp.kind === "stun") &&
       C &&
       target &&
-      !(target.asleep > 0)
+      (sp.kind === "stun" ? !target.held : !(target.asleep > 0))
     ) {
       score = 450;
       tier = "rotation";
-    } else if (sp.onHit === "freeze") {
+    } else if (sp.onHit === "freeze" && !sp.aoe) {
       // User rulings 2026-09-28: a landed Freeze is its damage plus a
       // d4-round hold at EVERY depth, never a kill — scored exactly like
       // Stun's DISABLE (230 offensive / 450 defensive) and, like the hold it
@@ -598,10 +603,9 @@ export function chooseSpell(state, ctx) {
       if (!C || (C.type !== "Demons" && C.type !== "Walking Dead")) continue;
       score = 402;
       tier = "kill";
-    } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid" || sp.kind === "dot") {
+    } else if (sp.kind === "thrown" || sp.kind === "volley" || sp.kind === "acid" || sp.kind === "blast") {
       if (sp.kind === "acid" && target && target.acid) continue; // already ticking
-      if (sp.kind === "dot" && target && target.dot) continue; // already ticking (Phase 40)
-      // Phase 42 (BAL-01 second half): a DOT (niche "dot" — Acid/Ice) is
+      // Phase 42 (BAL-01 second half): a DOT (niche "dot" — Acid) is
       // skipped against a foe the party's own best castable burst spell
       // could simply finish this turn — see bestBurstExpected/chooseSpell's
       // JSDoc above.
@@ -620,12 +624,25 @@ export function chooseSpell(state, ctx) {
       }
       tier = "damage";
     } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {
-      if (!C || nFoes < 2) continue;
+      // Phase 90 plan 05 (SPELL-11): Stun holds ONE foe (the target), so it is a
+      // single-target hold like Freeze's and is allowed against a lone foe; it
+      // is skipped while the target is already held (a hold never shortens).
+      // Doze is the multi-foe sleep: it keeps the two-foe gate and grows with
+      // the room it can reach (a d4 of foes, the target first), and is skipped
+      // when every live foe already sleeps.
+      if (!C) continue;
+      if (sp.kind === "stun") {
+        if (target && target.held) continue;
+      } else if (nFoes < 2) {
+        continue;
+      }
       if (sp.kind === "weaken" && C.weakened) continue;
+      if (sp.kind === "status" && !liveFoes(state).some((f) => !(f.asleep > 0))) continue;
       // USER RULING D: defensive mode re-ranks DISABLE above DAMAGE.
-      score = mode === "defensive"
+      const dozeGrowth = sp.kind === "status" ? Math.min(4, nFoes - 2) : 0;
+      score = (mode === "defensive"
         ? { stun: 450, weaken: 440, shrink: 435, status: 430, stupid: 425 }[sp.kind]
-        : { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind];
+        : { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind]) + dozeGrowth;
       tier = "disable";
     } else if (sp.kind === "heal") {
       if (!(c.maxWP > 0 && c.wp / c.maxWP < ctx.opts.potionThreshold)) continue;

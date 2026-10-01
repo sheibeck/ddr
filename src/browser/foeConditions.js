@@ -51,20 +51,22 @@ export const FOE_CONDITION_COPY = Object.freeze({
   hamstrung: "Hamstrung",
   marked: "Marked",
   asleep: "Asleep",
+  // Phase 90 plan 05 (SPELL-11): Doze's sleepers (engine/combat.js#dozeFoes sets
+  // `f.dozing`): the same skip as any sleep, but a hit wakes them.
+  dozing: "Dozing",
   frozen: "Frozen",
   acid: "Acid",
   poison: "Poison",
-  ice: "Ice",
   stupid: "Stupefied",
   shrunk: "Shrunk",
   fixated: "Fixated",
   frenzied: "Frenzied",
   weakened: "Weakened",
-  // RULES-18 (Phase 75.3, Plan 04): a landed Freeze HOLDS the foe its rolled
-  // d4 rounds — the Held chip (labelFor picks "Frozen"); since Phase 90 plan
-  // 04 no Petrify or Stupidity holds. A foe that shakes a Bard's song off
-  // shows Unmoved. `held` is this table's own generic fallback label
-  // (labelFor always overrides it in practice).
+  // RULES-18 (Phase 75.3, Plan 04): a landed Freeze (or Ice's freeze) HOLDS the
+  // foe its rolled d4 rounds, and since Phase 90 plan 05 a landed Stun holds it
+  // too — the Held chip (labelFor picks "Frozen" or "Stunned" by the hold's kind).
+  // A foe that shakes a Bard's song off shows Unmoved. `held` is this table's
+  // own generic fallback label (labelFor always overrides it in practice).
   held: "Held",
   unmoved: "Unmoved",
   // Phase 77 (CMBUI-13): the gifts a fumbled helpful scroll hands the
@@ -79,7 +81,7 @@ export const FOE_CONDITION_COPY = Object.freeze({
 });
 
 /** FOE_CONDITION_DESC — one deadpan line per FOE_CONDITION_COPY key (the
- * dot entry reads poison or ice, following its label). Voice-scanned by
+ * dot entry reads poison: Poisoned Edge's tick is the one f.dot left). Voice-scanned by
  * test/unit/foe-conditions.test.js, walked by test/unit/hp-not-wp.test.js. */
 export const FOE_CONDITION_DESC = Object.freeze({
   // engine/abilities.js applyPommel; engine/combat.js foeTurn skips one turn, then clears it.
@@ -94,16 +96,17 @@ export const FOE_CONDITION_DESC = Object.freeze({
   hamstrung: "Its blows do half damage for the rest of the fight. It is limping about it.",
   // applyMark; playerStrike and the party's strikes add 2 damage on a marked target.
   marked: "Every blow that lands on it does 2 more damage for the rest of the fight. It has been studied, and it shows.",
-  // foeTurn skips and counts it down; playerStrike's need rises to 5 against a dozing foe.
-  asleep: "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps.",
-  // Ice's last tick and Petrify (both end the foe); a foe that stands back up is cleared.
+  // foeTurn skips and counts it down; playerStrike's need rises to 5 against a sleeping foe.
+  // Phase 90 plan 05: the plain sleep (Noxious Vapor, Insane, a staff's gas, a song) is not woken by a hit.
+  asleep: "Asleep. It skips its turns until the count runs out, and it is easier to hit while it naps. A hit does not wake it.",
+  // Phase 90 plan 05 (SPELL-11, Q3 A): engine/foeDamage.js#damageFoe wakes a dozing foe the moment it takes damage.
+  dozing: "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps, but the first hit that lands wakes it at once.",
+  // Petrify's stone mark (the foe is dead by then); a foe that stands back up is cleared.
   frozen: "Frozen solid. As conditions go, this one is fairly final.",
   // foeTurn's acid tick: spell damage each round, past armour, until rounds reach 0.
   acid: "Acid eats at it every round until the count runs out. Its armour is no help to it.",
   // Poisoned Edge's f.dot tick in foeTurn: spell damage each round, past armour.
   poison: "Poison works on it every round until the count runs out. Its armour is no help to it.",
-  // Ice's f.dot tick; when it runs out on a standing foe, it freezes solid and falls.
-  ice: "The cold bites every round, and if it is still standing when the count runs out, it freezes solid.",
   // Phase 90 plan 04 (SPELL-12): magic.js sets the foe's intelligence to 1 for
   // the fight; it keeps acting and is no easier to hit, and every later resist
   // it rolls is on that 1.
@@ -119,10 +122,11 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // derived.js#foeSwingChain reads as a cap of three winning faces; the old
   // line left that half of the spell out.
   weakened: "Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well.",
-  // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a Freeze's
-  // rolled hold (the only hold left after Phase 90 plan 04); the foe's own
-  // turn skips run down alongside the chip's count.
-  held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers.",
+  // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a Freeze's or
+  // Ice's rolled freeze, and since Phase 90 plan 05 Stun's rolled hold; the
+  // foe's own turn skips run down alongside the chip's count. Nothing a blow
+  // does ends it (engine/foeDamage.js never touches `held`).
+  held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers. Hitting it does not end the hold.",
   // resistControl (engine/combat.js) — a control shaken off outright (today
   // only a Bard's song); %s is filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",
@@ -208,26 +212,27 @@ export const FOE_CONDITIONS = Object.freeze(
     { key: "hamstrung", label: C.hamstrung, desc: D.hamstrung, tone: "good", fields: ["hamstrung"], when: (f) => !!f.hamstrung, rounds: none },
     // engine/abilities.js applyMark: +2 on every hero strike at this foe.
     { key: "marked", label: C.marked, desc: D.marked, tone: "good", fields: ["marked"], when: (f) => !!f.marked, rounds: none },
-    // Sleep/Doze spells, Sing, items: a countdown decremented each foe turn.
-    { key: "asleep", label: C.asleep, desc: D.asleep, tone: "good", fields: ["asleep"], when: (f) => f.asleep === true || posInt(f.asleep) !== null, rounds: (f) => posInt(f.asleep) },
+    // Noxious Vapor, Insane's nap, Sing, items: a countdown decremented each foe turn.
+    // A Doze's sleepers (`dozing`) show the Dozing chip instead: a hit wakes them.
+    { key: "asleep", label: C.asleep, desc: D.asleep, tone: "good", fields: ["asleep"], when: (f) => !f.dozing && (f.asleep === true || posInt(f.asleep) !== null), rounds: (f) => posInt(f.asleep) },
+    // Phase 90 plan 05 (SPELL-11): combat.js#dozeFoes' mark; damageFoe wakes it, foeTurn clears it with the sleep.
+    { key: "dozing", label: C.dozing, desc: D.dozing, tone: "good", fields: ["dozing", "asleep"], when: (f) => !!f.dozing && posInt(f.asleep) !== null, rounds: (f) => posInt(f.asleep) },
     // RULES-18 (Phase 75.3, Plan 04): holdFoe's `{ kind, left }` record — a
-    // Freeze's rolled hold (the only one since Phase 90 plan 04, kind
-    // "frozen"); the label is the matching permanent condition's own house label.
+    // Freeze's or Ice's rolled freeze (kind "frozen") and Stun's rolled hold
+    // (kind "stunned", Phase 90 plan 05); the label is the matching house label.
     {
       key: "held", label: C.held, desc: D.held, tone: "good", fields: ["held"],
-      labelFor: () => C.frozen,
+      labelFor: (f) => (f.held && f.held.kind === "stunned" ? C.stunned : C.frozen),
       when: (f) => !!f.held && posInt(f.held.left) !== null,
       rounds: (f) => posInt(f.held.left),
     },
-    // Freeze/Ice/Petrify. The engine clears it on a foe that stands back up.
+    // Petrify's mark (the foe is dead). The engine clears it on a foe that stands back up.
     { key: "frozen", label: C.frozen, desc: D.frozen, tone: "good", fields: ["frozen"], when: (f) => !!f.frozen, rounds: none },
     // The Acid spell's `{ rounds, dmg }` record.
     { key: "acid", label: C.acid, desc: D.acid, tone: "good", fields: ["acid"], when: (f) => !!f.acid && posInt(f.acid.rounds) !== null, rounds: (f) => posInt(f.acid.rounds) },
-    // The shared `{ left, dmg, by }` DOT: Poisoned Edge, and Ice (by "ice").
+    // The shared `{ left, dmg, by }` DOT: Poisoned Edge's (Ice, the other one, is the area freeze since Phase 90 plan 05).
     {
       key: "dot", label: C.poison, desc: D.poison, tone: "good", fields: ["dot"],
-      labelFor: (f) => (f.dot.by === "ice" ? C.ice : C.poison),
-      descFor: (f) => (f.dot.by === "ice" ? D.ice : D.poison),
       when: (f) => !!f.dot && typeof f.dot === "object" && posInt(f.dot.left) !== null,
       rounds: (f) => posInt(f.dot.left),
     },

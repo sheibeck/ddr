@@ -1,0 +1,283 @@
+[
+  {
+    "key": "oracle:dozed",
+    "surface": "oracle",
+    "trigger": "dozed — engine/combat.js#dozeFoes",
+    "before": "Viper dozes off for 1 round.",
+    "after": "Viper dozes off for 3 rounds. A hit will wake it.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Doze now reaches d4 foes, one line each, and a hit wakes the sleeper (Q3 A, Q4 A), so the line says the one thing a player needs to plan around: a hit will wake it. A Joiner's Doze names the Joiner first (the corpus renders that branch with a stand-in name)."
+  },
+  {
+    "key": "rail:dozed",
+    "surface": "rail",
+    "trigger": "dozed — engine/combat.js#dozeFoes",
+    "before": "Viper dozes off, 3 rounds.",
+    "after": "Viper dozes off, 3 rounds. A hit wakes it.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: the sleep and the one rule that ends it early."
+  },
+  {
+    "key": "oracle:dozeFailed",
+    "surface": "oracle",
+    "trigger": "dozeFailed — every foe a Doze reached resisted it",
+    "before": "",
+    "after": "Nobody dozes off. Your Doze was a lullaby to an empty room.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "New line: every foe a Doze reached resisted it, so nobody sleeps. The fact first, then the joke."
+  },
+  {
+    "key": "rail:dozeFailed",
+    "surface": "rail",
+    "trigger": "dozeFailed — every foe a Doze reached resisted it",
+    "before": "",
+    "after": "Nobody dozes off.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the nobody-slept line."
+  },
+  {
+    "key": "oracle:foeWoke",
+    "surface": "oracle",
+    "trigger": "foeWoke — a hit wakes a dozing foe",
+    "before": "",
+    "after": "Viper wakes up. Being hit does that to a nap.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "New line: the first damage a dozing foe takes ends its sleep (engine/foeDamage.js#damageFoe), whoever deals it, and the Oracle says so; a Joiner's hit is named."
+  },
+  {
+    "key": "rail:foeWoke",
+    "surface": "rail",
+    "trigger": "foeWoke — a hit wakes a dozing foe",
+    "before": "",
+    "after": "Viper wakes up.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the wake line."
+  },
+  {
+    "key": "oracle:iceCast",
+    "surface": "oracle",
+    "trigger": "iceCast — the hero's or a Joiner's Ice sweeps the room",
+    "before": "",
+    "after": "Ice sweeps the room. Every foe takes a d10 plus level² (no roll to hit), and any survivor may freeze.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "New line: Ice is the area version of Freeze (Q5 A). It has no to-hit roll, so there is no spellThrown line to introduce it; this is the cast line, and each foe's damage and freeze follow as their own lines."
+  },
+  {
+    "key": "rail:iceCast",
+    "surface": "rail",
+    "trigger": "iceCast — the hero's or a Joiner's Ice sweeps the room",
+    "before": "",
+    "after": "Ice sweeps the room: a d10 plus level² each, survivors may freeze.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin of the Ice cast line."
+  },
+  {
+    "key": "oracle:stunned",
+    "surface": "oracle",
+    "trigger": "stunned — engine/magic.js#castSpell",
+    "before": "2 foes drop asleep for d4 rounds each.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Stun holds one foe now (a controlHeld line says so), so the \"N foes drop asleep\" count line is gone with the count it reported."
+  },
+  {
+    "key": "rail:stunned",
+    "surface": "rail",
+    "trigger": "stunned — engine/magic.js#castSpell",
+    "before": "2 foes drop asleep, d4 rounds each.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin: removed with the count line."
+  },
+  {
+    "key": "oracle:iceApplied",
+    "surface": "oracle",
+    "trigger": "iceApplied — engine/magic.js#castSpell",
+    "before": "Ice climbs Viper: d6 a round for 1 round, then it stops moving.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Ice is no longer a damage-over-time spell, so \"d6 a round, then it stops moving\" would be false; the iceCast line replaces it."
+  },
+  {
+    "key": "rail:iceApplied",
+    "surface": "rail",
+    "trigger": "iceApplied — engine/magic.js#castSpell",
+    "before": "Ice climbs Viper: d6 a round, 3 rounds.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: removed with the damage-over-time Ice."
+  },
+  {
+    "key": "oracle:frozenSolid",
+    "surface": "oracle",
+    "trigger": "frozenSolid — engine/combat.js#foeTurn; engine/magic.js#castSpell",
+    "before": "Viper freezes solid.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Nothing freezes solid any more: Ice's last-tick payoff left with the spell's burn, and a Freeze or Ice survivor is frozen for d4 rounds (a controlHeld line), never killed by the cold."
+  },
+  {
+    "key": "rail:frozenSolid",
+    "surface": "rail",
+    "trigger": "frozenSolid — engine/combat.js#foeTurn; engine/magic.js#castSpell",
+    "before": "Viper frozen solid.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: removed with the frozen-solid payoff."
+  },
+  {
+    "key": "bank:RAIL_FAMILY.iceApplied.title",
+    "surface": "rail-cards",
+    "trigger": "a rail card's family title",
+    "before": "ICE",
+    "after": "",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "The family belonged to the retired iceApplied event; the new event has its own family entry."
+  },
+  {
+    "key": "bank:RAIL_FAMILY.iceCast.title",
+    "surface": "rail-cards",
+    "trigger": "a rail card's family title",
+    "before": "",
+    "after": "ICE",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "The rail family title for the Ice cast line."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.ice",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label",
+    "before": "Ice",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Ice no longer leaves a damage-over-time record on a foe, so there is no Ice chip; its freeze reads as the Frozen chip."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.ice",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "The cold bites every round, and if it is still standing when the count runs out, it freezes solid.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The old Ice chip's sentence described a burn that ends in a kill; both are gone."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.dozing",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label",
+    "before": "",
+    "after": "Dozing",
+    "reasons": [
+      "fact"
+    ],
+    "why": "A Doze's sleepers carry their own chip (Dozing) because a hit wakes them; the plain Asleep chip stays for every sleep a hit does not wake."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.dozing",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "",
+    "after": "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps, but the first hit that lands wakes it at once.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The Dozing chip's sentence: the skip, the easier hit, and the one rule that ends it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.asleep",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps.",
+    "after": "Asleep. It skips its turns until the count runs out, and it is easier to hit while it naps. A hit does not wake it.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The plain sleep (Noxious Vapor, Insane's nap, a staff's gas, a song) is not woken by a hit (Q3 A); its sentence now says so, and the word Dozing belongs to the Doze chip."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.held",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers.",
+    "after": "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers. Hitting it does not end the hold.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Stun's hold shares this chip (labelled Stunned; a Freeze's or Ice's reads Frozen), and a hit does not end a hold, so the sentence says it."
+  },
+  {
+    "key": "content:SPELLS.Doze.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · asleep d4 rounds",
+    "after": "control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-11 (user 2026-09-30): Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing foe; Q4 A: exactly d4 foes, your target first; Q3 A: only Doze's sleep wakes."
+  },
+  {
+    "key": "content:SPELLS.Stun.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · up to d6 foes · asleep d4 rounds",
+    "after": "control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-11 (user 2026-09-30): Stun holds one foe for d4 rounds and a hit does not end it (it was Doze's old text and reach)."
+  }
+]

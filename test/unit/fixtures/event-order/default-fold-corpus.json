@@ -570,19 +570,16 @@
      "dmg": 1
     },
     {
-     "type": "stunned",
+     "type": "controlHeld",
      "target": "Imp",
-     "rounds": 1
+     "kind": "stunned",
+     "rounds": 1,
+     "source": "Stun"
     }
    ],
    "lines": [
     {
-     "text": "Orc dozes off, 2 rounds.",
-     "tone": "magic",
-     "priority": 1
-    },
-    {
-     "text": "The stun puts nobody to sleep.",
+     "text": "Orc dozes off, 2 rounds. A hit wakes it.",
      "tone": "magic",
      "priority": 1
     },
@@ -590,28 +587,33 @@
      "text": "Bat hits you (1)",
      "tone": "hurt",
      "priority": 2
+    },
+    {
+     "text": "Imp stunned for 1 round; a hit will not end it.",
+     "tone": "magic",
+     "priority": 2
     }
    ],
    "linesIdx": [
     {
-     "text": "Orc dozes off, 2 rounds.",
+     "text": "Orc dozes off, 2 rounds. A hit wakes it.",
      "tone": "magic",
      "priority": 1,
      "idx": 1,
      "type": "dozed"
     },
     {
-     "text": "The stun puts nobody to sleep.",
-     "tone": "magic",
-     "priority": 1,
-     "idx": 4,
-     "type": "stunned"
-    },
-    {
      "text": "Bat hits you (1)",
      "tone": "hurt",
      "priority": 2,
      "idx": 3
+    },
+    {
+     "text": "Imp stunned for 1 round; a hit will not end it.",
+     "tone": "magic",
+     "priority": 2,
+     "idx": 4,
+     "type": "controlHeld"
     }
    ]
   },

@@ -28,6 +28,8 @@ import { foeRisingResistCheck, isAttackSpell, DAMAGE_SPELL_KINDS, ATTACK_SPELL_K
 import { SPELLS, SCROLL_FUMBLE } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
 import { newRun } from "../../engine/engine.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR, linesForAction } from "../../src/browser/narrationLines.js";
 import { movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
 
 const IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
@@ -587,6 +589,46 @@ test("the new per-foe `dozing` field is carved out of ALL THREE parity *Comparab
     assert.deepStrictEqual(cmp(dirty), cmp(clean), `${cmp.name} must strip foe.dozing down to parity`);
     assert.equal(cmp(dirty).combat.foes[0].asleep, 3, `${cmp.name} still compares the sleep itself`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// The surfaces say what the engine does: the Oracle and the rail (and the fold).
+// ---------------------------------------------------------------------------
+
+test("narration: Doze, the nobody-slept line, the wake line, Ice's cast line and Stun's hold read right on the Oracle and the rail", () => {
+  assert.match(EVENT_NARRATION.dozed({ target: "Orc", rounds: 3 }), /Orc dozes off for 3 rounds\. A hit will wake it\./);
+  assert.match(EVENT_NARRATION.dozed({ target: "Orc", rounds: 1, by: "Ada" }), /Ada's Doze: Orc dozes off for 1 round\./);
+  assert.match(EVENT_NARRATION.dozeFailed({ spell: "Doze" }), /Nobody dozes off\./);
+  assert.match(EVENT_NARRATION.foeWoke({ target: "Orc" }), /Orc wakes up\./);
+  assert.match(EVENT_NARRATION.foeWoke({ target: "Orc", by: "Ada" }), /courtesy of Ada/);
+  assert.match(EVENT_NARRATION.iceCast({ spell: "Ice", foes: 3 }), /Ice sweeps the room\..*d10 plus level².*no roll to hit/);
+  assert.match(EVENT_NARRATION.controlHeld({ target: "Orc", kind: "stunned", rounds: 3, source: "Stun" }), /Orc is stunned for 3 rounds\..*does not end it/);
+  assert.match(EVENT_NARRATION.foeStillHeld({ name: "Orc", kind: "stunned", left: 2 }), /still stunned/);
+  assert.match(LINE_FOR.dozed({ target: "Orc", rounds: 3 }).text, /Orc dozes off, 3 rounds\. A hit wakes it\./);
+  assert.match(LINE_FOR.dozed({ target: "Orc", rounds: 3, by: "Ada" }).text, /^Ada's Doze: /);
+  assert.equal(LINE_FOR.dozeFailed({}).text, "Nobody dozes off.");
+  assert.equal(LINE_FOR.foeWoke({ target: "Orc" }).text, "Orc wakes up.");
+  assert.match(LINE_FOR.iceCast({ spell: "Ice" }).text, /Ice sweeps the room/);
+  assert.match(LINE_FOR.controlHeld({ target: "Orc", kind: "stunned", rounds: 1 }).text, /Orc stunned for 1 round; a hit will not end it\./);
+  for (const type of ["dozed", "dozeFailed", "foeWoke", "iceCast", "controlHeld"]) {
+    assert.ok(EVENT_NARRATION[type]({ type }).trim().length > 0, `${type} survives a bare payload (Oracle)`);
+    assert.ok(LINE_FOR[type]({ type }).text.trim().length > 0, `${type} survives a bare payload (rail)`);
+  }
+});
+
+test("narration: the retired events (stunned count, iceApplied, frozenSolid) have no Oracle or rail builder any more", () => {
+  for (const type of ["stunned", "iceApplied", "frozenSolid"]) {
+    assert.equal(EVENT_NARRATION[type], undefined, `${type} (Oracle)`);
+    assert.equal(LINE_FOR[type], undefined, `${type} (rail)`);
+  }
+});
+
+test("narration: a failed resist folds behind Stun's own hold, so the rail shows the hold once", () => {
+  const lines = linesForAction("castSpell", [
+    { type: "resistFailed", target: "Orc", spell: "Stun", roll: 3, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
+    { type: "controlHeld", target: "Orc", kind: "stunned", rounds: 2, source: "Stun" },
+  ], {});
+  assert.deepEqual(lines.map((l) => l.text), ["Orc stunned for 2 rounds; a hit will not end it."]);
 });
 
 const stripComments = (src) => src.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");

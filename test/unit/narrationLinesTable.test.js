@@ -226,7 +226,8 @@ test("both directions: your spell outcomes and their outcomes", () => {
   assert.ok(LINE_FOR.spellMissed({ type: "spellMissed", spell: "Fireball", target: "Dante" }).text.includes("Fireball misses Dante"));
   // Quick 260927-rsx: "your" (or the Joiner's name) and "no effect" join the line.
   assert.ok(LINE_FOR.spellResisted({ type: "spellResisted", target: "Dante", spell: "Doze" }).text.includes("Dante resists your Doze"));
-  assert.ok(LINE_FOR.frozenSolid({ type: "frozenSolid", target: "Dante" }).text.includes("frozen solid"));
+  // Phase 90 plan 05: frozenSolid is retired (Ice is the area freeze); a Freeze's hold reads "frozen for N rounds".
+  assert.ok(LINE_FOR.controlHeld({ type: "controlHeld", target: "Dante", kind: "frozen", rounds: 2, freeze: true }).text.includes("frozen for 2 rounds"));
   assert.equal(LINE_FOR.foeBolted({ type: "foeBolted", name: "Drudge", dmg: 7 }).text, "Drudge bolts you (7)");
   assert.equal(LINE_FOR.foeBolted({ type: "foeBolted", name: "Drudge", dmg: 7 }).tone, "hurt");
   const resisted = LINE_FOR.heroResisted({ type: "heroResisted", name: "Drudge" });

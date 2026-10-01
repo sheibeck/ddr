@@ -347,7 +347,7 @@ export const RAIL_FAMILY = Object.freeze({
   // Phase 40 (SPELL-01) — combat-only spell events, given a family entry for
   // completeness even though they fire only mid-fight (the fight log, not
   // this out-of-combat rail, is their real destination).
-  iceApplied: { icon: "·", title: "ICE", tone: "odd" },
+  iceCast: { icon: "·", title: "ICE", tone: "odd" },
   weakenFaded: { icon: "·", title: "WEAKEN FADES", tone: "dull" },
   // Phase 42 (FLEE-02) — another combat-only event, given a family entry for
   // completeness — the fight log is the real destination.
