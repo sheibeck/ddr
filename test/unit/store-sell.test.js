@@ -73,10 +73,15 @@ test("sellPriceFor: treasure item with no base value yields a positive fallback 
   assert.ok(price > 0, "a jewel with no cost still sells for something (Phase-15 fallback)");
 });
 
-test("sellPriceFor: race multiplier flows through priceFor (elf half, troll triple)", () => {
+// Phase 91 plan 08 (IDENT-21, audit Q5 A, user 2026-09-30): stores pay every race the ordinary
+// price; the race multiplier is a buying rule only. (It was: elf half, troll triple.)
+test("sellPriceFor: every race is paid the ordinary price (the race multiplier is a buying rule only)", () => {
   const human = sellPriceFor(WEAPON("Long Sword"), "Human"); // 200 (Phase 39 re-price)
-  assert.equal(sellPriceFor(WEAPON("Long Sword"), "Elven"), Math.round(human / 2), "elves get half");
-  assert.equal(sellPriceFor(WEAPON("Long Sword"), "Troll"), human * 3, "trolls get triple");
+  assert.equal(human, 200);
+  for (const race of ["Elven", "Dwarven", "Troll", "Wilmsry", "Fridgian"]) {
+    assert.equal(sellPriceFor(WEAPON("Long Sword"), race), human, race);
+  }
+  assert.equal(sellPriceFor(WEAPON("Long Sword"), "Troll", "Pickpocket"), Math.round(human * 0.75), "a Pickpocket's x0.75 is kept");
 });
 
 test("sellPriceFor: a magic (bonus) weapon is worth more than its plain base", () => {

@@ -235,7 +235,7 @@ test("(e) content/races.js: the Elven/Dwarven/Troll notes state their net size t
   assert.match(RACES.Troll.note, /one face easier to hit/i);
   assert.match(RACES.Troll.note, /two rations/i);
   assert.equal(RACES.Human.note, "No advantages, no penalties. The dungeon's default.");
-  assert.equal(RACES.Wilmsry.note, "Heals twice as fast, learns half as quickly. Magic Users despise them.");
+  assert.equal(RACES.Wilmsry.note, "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.");
   assert.match(RACES.Fridgian.note, /Never wears armour/);
 });
 
@@ -248,7 +248,7 @@ test("(e) content/flavor.js RACE_NOTE: the Elven/Dwarven/Troll entries name thei
   assert.match(RACE_NOTE.Dwarven, /fair trade/i, "the fair-trade line survives");
   assert.match(RACE_NOTE.Troll, /\+11/, "the Troll note states its damage total");
   assert.match(RACE_NOTE.Troll, /one face easier/i);
-  assert.match(RACE_NOTE.Troll, /triple/i, "the triple-price line survives");
+  assert.match(RACE_NOTE.Troll, /double/i, "the price line survives (doubled since Phase 91 plan 08)");
 });
 
 test("(e) the changed rows carry a Phase 75.2 citation in both files", () => {

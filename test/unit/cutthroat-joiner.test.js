@@ -21,7 +21,7 @@ import { newRun } from "../../engine/state.js";
 import { swapPartyMember } from "../../engine/state.js";
 import { rollCharacter } from "../../engine/character.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
-import { cutthroatMurderCheck, descend } from "../../engine/movement.js";
+import { cutthroatMurderCheck, descend, resolveFeature } from "../../engine/movement.js";
 import { makeRng } from "../../engine/rng.js";
 import { narrateEvent, EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, FEATURE_EVENTS, PRIORITY, linesForAction } from "../../src/browser/narrationLines.js";
@@ -102,8 +102,8 @@ test("cutthroatMurderCheck: a natural 1 murders party[0], pushes joinerMurdered,
   assert.deepEqual(state.party, []);
 });
 
-test("cutthroatMurderCheck: 2..20 spares the party (no event, party unchanged, same array length)", () => {
-  for (const roll of [2, 20]) {
+test("cutthroatMurderCheck: 2..10 spares the party (no event, party unchanged, same array length)", () => {
+  for (const roll of [2, 10]) {
     const state = plantMember(hero("Cutthroat"));
     const before = state.party[0];
     const events = cutthroatMurderCheck(state, fakeRng([roll]), []);
@@ -143,7 +143,7 @@ test("cutthroatMurderCheck: fail-open on party undefined/null/non-array — no d
  * descend() — draw order, gating, and a measured murder-via-descend seed
  * ============================================================ */
 
-test("descend: the murder draw is strictly AFTER genFloor/reveal — new floor identical, cursor differs by exactly one d20", () => {
+test("descend: the murder draw is strictly AFTER genFloor/reveal — new floor identical, cursor differs by exactly one d10", () => {
   const A = plantMember(hero("Cutthroat"));
   const B = structuredClone(A);
   B.party = [];
@@ -153,11 +153,11 @@ test("descend: the murder draw is strictly AFTER genFloor/reveal — new floor i
   const rngB = makeRng(5);
   const eventsB = descend(B, rngB, []);
 
-  // B never draws the murder d20 (no party) — consume exactly one more draw
+  // B never draws the murder d10 (no party) — consume exactly one more draw
   // on rngB (standing in for the murder roll A already drew) and the two
   // cursors converge, proving A's extra draw landed strictly after every
   // draw B also made (checkLevel, genFloor).
-  rngB.d(20);
+  rngB.d(10);
   assert.equal(rngA.getState(), rngB.getState());
   assert.deepEqual(A.floor, B.floor, "the new floor is identical with or without the murder draw");
   assert.equal(A.c.sp, B.c.sp);
@@ -370,7 +370,76 @@ test("LINE_FOR.joinerRefused: wilmsry text differs from the generic fallback; SU
   const fallbackText = LINE_FOR.joinerRefused({ type: "joinerRefused", reason: "definitelyNotAReason" }).text;
   assert.notEqual(wilmsryText, fallbackText);
 
-  assert.match(SUB_NOTE.Cutthroat, /one descent in twenty/i);
+  assert.match(SUB_NOTE.Cutthroat, /one descent in ten/i);
   assert.match(SUB_NOTE.Cutthroat, /first landed blow/i);
   assert.doesNotMatch(SUB_NOTE.Cutthroat, /no Joiner will ever/i);
+});
+
+/* ============================================================
+ * Phase 91 plan 08 (IDENT-19, user 2026-09-30): "whenever you descend with a
+ * Joiner, roll a d10; on a 1 that Joiner dies (replaces one-in-twenty)."
+ * ============================================================ */
+
+/** sidesRng(value) — records every `.d(sides)` request and answers `value`. */
+function sidesRng(value) {
+  const sides = [];
+  return { sides, d: (n) => (sides.push(n), value), pick: (a) => a[0], shuffle: (a) => a };
+}
+
+test("IDENT-19: the check rolls ONE d10 (not a d20): a 1 kills the Joiner and says dieN 10; 2 to 10 spare it", () => {
+  const killed = plantMember(hero("Cutthroat"));
+  const r1 = sidesRng(1);
+  const events = cutthroatMurderCheck(killed, r1, []);
+  assert.deepEqual(r1.sides, [10], "one die, ten sides");
+  assert.deepEqual(events.map((e) => e.type), ["joinerMurdered"]);
+  assert.equal(events[0].roll, 1);
+  assert.equal(events[0].atLeast, 2);
+  assert.equal(events[0].dieN, 10);
+  assert.deepEqual(killed.party, []);
+  for (let roll = 2; roll <= 10; roll++) {
+    const spared = plantMember(hero("Cutthroat"));
+    const r = sidesRng(roll);
+    assert.deepEqual(cutthroatMurderCheck(spared, r, []), [], `roll ${roll}`);
+    assert.deepEqual(r.sides, [10]);
+    assert.equal(spared.party.length, 1);
+  }
+});
+
+test("IDENT-19: over a real stream the d10 kills about one descent in ten, not one in twenty", () => {
+  let kills = 0;
+  const N = 4000;
+  const rng = makeRng(2026);
+  for (let i = 0; i < N; i++) {
+    const state = plantMember(hero("Cutthroat"));
+    if (cutthroatMurderCheck(state, rng, []).length) kills++;
+  }
+  assert.ok(kills / N > 0.08 && kills / N < 0.12, `kill rate ${kills / N} is about 1 in 10`);
+});
+
+test("IDENT-19: every descent with a Joiner rolls: the stairs and a legacy gate tile each draw one die, last", () => {
+  for (const feat of ["exit", "gate"]) {
+    const withJoiner = plantMember(hero("Cutthroat"));
+    const without = structuredClone(withJoiner);
+    without.party = [];
+    const ra = makeRng(31);
+    const rb = makeRng(31);
+    resolveFeature(withJoiner, { feat }, ra, []);
+    resolveFeature(without, { feat }, rb, []);
+    rb.d(10); // the one extra draw the Joiner's descent made, after every other draw
+    assert.equal(ra.getState(), rb.getState(), `${feat}: one extra draw, after every other draw`);
+  }
+});
+
+test("IDENT-19: the lost Joiner is named in its own narrated line, and only the exact sub key 'Cutthroat' rolls", () => {
+  const state = plantMember(hero("Cutthroat"));
+  const name = state.party[0].name;
+  const events = cutthroatMurderCheck(state, fakeRng([1]), []);
+  assert.ok(narrateEvent(events[0]).includes(name), "the Oracle line names the Joiner");
+  assert.ok(LINE_FOR.joinerMurdered(events[0]).text.includes(name), "the rail twin names the Joiner");
+  for (const sub of ["cutthroat", " Cutthroat", "Cutthroat "]) {
+    const other = plantMember(hero("Soldier"));
+    other.c.sub = sub;
+    assert.deepEqual(cutthroatMurderCheck(other, fakeRng([]), []), [], JSON.stringify(sub));
+    assert.equal(other.party.length, 1);
+  }
 });

@@ -56,8 +56,9 @@ function assertNoFunctionLeaves(value, label = "value") {
 
 // --- priceFor ---------------------------------------------------------
 
-test("priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise", () => {
-  assert.equal(priceFor(100, "Troll"), 300);
+// Phase 91 plan 08 (IDENT-21, user 2026-09-30): a Troll's prices are DOUBLED (they were tripled).
+test("priceFor: doubles for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise", () => {
+  assert.equal(priceFor(100, "Troll"), 200);
   assert.equal(priceFor(101, "Elven"), 51);
   assert.equal(priceFor(101, "Dwarven"), 51);
   assert.equal(priceFor(100, "Human"), 100);
@@ -68,7 +69,7 @@ test("priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchang
 test("priceFor: Pickpocket marks up x1.25 (rounded) AFTER the race multiplier, floored at 1", () => {
   assert.equal(priceFor(100, "Human", "Pickpocket"), 125);
   assert.equal(priceFor(101, "Elven", "Pickpocket"), 64); // round(51 x 1.25 = 63.75)
-  assert.equal(priceFor(100, "Troll", "Pickpocket"), 375); // 300 x 1.25
+  assert.equal(priceFor(100, "Troll", "Pickpocket"), 250); // 200 x 1.25
   assert.equal(priceFor(1, "Elven", "Pickpocket"), 1); // round(round(0.5)*1.25)=round(1*1.25)=1, floored either way
 });
 
@@ -265,7 +266,13 @@ test("a GameState with an open store round-trips JSON deepStrictEqual (the closu
 // base (Broadsword) re-priced 500 -> 550, so their Pickpocket-marked-up
 // numbers move too (Axe/Studded/Rations are unaffected — their base prices
 // did not change). Measured live, not hand-computed.
-test("seed 3 (a Human Pickpocket): store roll pins Katana 813 / Axe 63 / Studded 938 / Casket 4128 / Rations 38; flat lines unchanged", () => {
+//
+// Phase 91 plan 08 (IDENT-21, audit Q8 A, user 2026-10-01): food, potions and lockpicks
+// now take the same x1.25 as every other routed line: Chicken 20 -> 25, Healing potion
+// 150 -> 188 (round of 187.5), lockpicks 450 -> 563 (round of 562.5). The three flat-priced
+// tools stay flat. The weapon/armour/premium/ration numbers above are untouched (a Human is
+// never doubled).
+test("seed 3 (a Human Pickpocket): store roll pins Katana 813 / Axe 63 / Studded 938 / Casket 4128 / Rations 38; food, potions and lockpicks x1.25 (Q8 A)", () => {
   const state = newRun(3);
   assert.equal(state.c.sub, "Pickpocket", "seed 3's hero must be a Pickpocket for this pin to prove anything");
   const rng = makeRng(state.rngState);
@@ -276,11 +283,10 @@ test("seed 3 (a Human Pickpocket): store roll pins Katana 813 / Axe 63 / Studded
   assert.equal(byName["Studded"], 938);
   assert.equal(byName["Casket, a broadsword"], 4128);
   assert.equal(byName["Rations (+1 ration)"], 38);
-  // flat lines (food/potions/lockpicks) are never routed through priceFor's
-  // Pickpocket markup — unchanged regardless of sub.
-  assert.equal(byName["Chicken (+12 hp)"], 20);
-  assert.equal(byName["Healing potion"], 150);
-  assert.equal(byName["Set of lockpicks"], 450);
+  // Q8 A: food, potions and lockpicks are routed through priceFor too.
+  assert.equal(byName["Chicken (+12 hp)"], 25);
+  assert.equal(byName["Healing potion"], 188);
+  assert.equal(byName["Set of lockpicks"], 563);
 });
 
 test("seed 3 forced to a Cutthroat: same store roll (names/order/subs), un-marked-up costs", () => {

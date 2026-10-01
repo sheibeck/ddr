@@ -354,13 +354,16 @@ test("identity-proof: a Sorcerer forgets one spell that isn't Freeze, Fireball o
   assert.equal(forgets, 1, "exactly one face in eight forgets");
 });
 
-test("identity-proof: a Troll's store weapon line costs six times the base price", () => {
+// Phase 91 plan 08 (IDENT-21, user 2026-09-30): the Troll's weapon lines were SIX times the base
+// (x3 prices, doubled again); they are TWICE the base now, no extra weapon doubling on top. The
+// `troll-weapons` trait this proved is retired; the test stays as the pin on the weapon line.
+test("identity-proof: a Troll's store weapon line costs twice the base price", () => {
   let checked = 0;
   for (let seed = 1; seed <= 20 && checked < 3; seed++) {
     const troll = newRun(seed, [], { force: { race: "Troll", sub: "Soldier" } });
     openStore(troll, makeRng(troll.rngState), []);
     for (const line of troll.store.stock.filter((s) => s.effectId === "buyWeapon")) {
-      assert.equal(line.cost, Math.max(1, Math.round(WEAPONS[line.n].cost * 6)), `seed ${seed}: ${line.n}`);
+      assert.equal(line.cost, Math.max(1, Math.round(WEAPONS[line.n].cost * 2)), `seed ${seed}: ${line.n}`);
       checked++;
     }
   }

@@ -556,12 +556,21 @@ export function meetFaerie(state, rng, events = []) {
  * Cutthroat refusal is REVERSED — a Joiner now travels with a Cutthroat
  * like any other hero (the offer proceeds through resolveJoiner unchanged);
  * the Cutthroat's bad is instead the per-descent murder risk in
- * movement.js#cutthroatMurderCheck (CUT-02). A Magic User Joiner still
- * refuses a Wilmsry (any other class still joins a Wilmsry normally).
+ * movement.js#cutthroatMurderCheck (CUT-02; a 1-in-10 loss since Phase 91
+ * plan 08). A Wilmsry hero still refuses a Magic User Joiner (any other class
+ * still joins a Wilmsry normally).
  * Rationale: "no Joiner ever" made a whole party feature unreachable for
- * one sub-class; a stated 1-in-20 loss keeps the identity (the reputation)
+ * one sub-class; a stated loss keeps the identity (the reputation)
  * and the joke. Zero rng change: the four draws are untouched; the refusal
  * remains a pure read.
+ *
+ * REWORDED (Phase 91 plan 08, IDENT-21, user 2026-09-30): "you refuse to take
+ * Magic User Joiners on (not that they refuse you)." The rule is unchanged: a
+ * Wilmsry hero never takes a Magic User Joiner on; only the wording moved, so
+ * the Wilmsry is the one doing the refusing, on every surface (the
+ * `joinerRefused { reason: "wilmsry" }` narration, the wilmsry-joiners trait,
+ * RACE_NOTE and RACES.Wilmsry.note). The refusal keys on the exact race key
+ * "Wilmsry".
  *
  * DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
  * roll is clamped to the floor it is met on — early floors stop handing the
