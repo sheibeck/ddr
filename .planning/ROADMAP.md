@@ -370,7 +370,7 @@ Plans:
   3. A 2.2.0 client's submission is refused by the live rules; the updated client's queue posts normally.
   4. The store listing, Data safety form text and privacy policy say what the board shows publicly.
 
-**Plans:** 7/10 plans executed
+**Plans:** 8/10 plans executed
 
 Plans:
 
@@ -381,7 +381,7 @@ Plans:
 - [x] 91.2-05-PLAN.md — Replace the rolled-handle identity with a Play Games board session (D-10, D-12): sign in through the PlayIdentity seam, link the 2.2.0 anony
 - [x] 91.2-06-PLAN.md — Make the queue and the board engine room speak the new session: hold runs while the player is not signed in to Play Games (D-03) or has no v
 - [x] 91.2-07-PLAN.md — Rebuild the account surfaces and the board's name display for Play Games names: the account state carries the verified name and a sign-in st
-- [ ] 91.2-08-PLAN.md — **MAZEWORLD.HTML PLAN (merges beside Phase 91).** Wire the shell to the new board identity: one lazy PlayIdentity seam (native or fake) hand
+- [x] 91.2-08-PLAN.md — **MAZEWORLD.HTML PLAN (merges beside Phase 91).** Wire the shell to the new board identity: one lazy PlayIdentity seam (native or fake) hand
 - [ ] 91.2-09-PLAN.md — Say publicly and honestly what the board now shows (BOARD-33, D-07): the store listing and Data safety answers, the darktierstudios.com priv
 - [ ] 91.2-10-PLAN.md — The user-gated, just-in-time live enablement (D-14) for Play Games names: the console batch the user does (D-09 configuration, OAuth web cli
 
