@@ -1063,7 +1063,7 @@ export function playerStrike(state, rng, events = []) {
  * `2 + lvl` faces), `rollTreasureItem`, the bag-upgrade check when a tier is
  * open, and `offerLoot` into the pending pile. killFoe calls it with the main
  * rng; a won parley calls it for every live foe with a derived stream
- * (`derivedRng(cursor, "parleySpoils", acts)`), so the parley never moves the
+ * (`derivedRng(cursor, the parleySpoils key, acts)`), so the parley never moves the
  * main cursor for the spoils. The Cooking ration a slain beast gives stays in
  * killFoe (a parleyed beast walks away alive). Returns `{ gold, items }`: the
  * wilmst credited to the hero (a Pickpocket's extra take included) and the
@@ -2084,7 +2084,7 @@ export function parleyBlockedReason(state, fluencyOverride) {
  * loot pile, with the Humans tip still on top. DRAW LAYOUT: the main rng's
  * draws are unchanged and in the same order (the d20, the experience d6 per
  * live foe, then for Humans the tip d6 and its amount d6); the spoils draw
- * ONLY from `derivedRng(<main cursor>, "parleySpoils", <state.acts>)`. One new
+ * ONLY from `derivedRng(<main cursor>, the parleySpoils key, <state.acts>)`. One new
  * event, `parleyWon { count, sp, gold, items }`, summarises the pay after the
  * spoils and before the fight ends. A Chameleon Tongue's parley is this parley.
  *
