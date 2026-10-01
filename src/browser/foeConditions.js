@@ -75,6 +75,8 @@ export const FOE_CONDITION_COPY = Object.freeze({
   stopped: "Stopped",
   senseless: "Senseless",
   double: "Fighting its double",
+  // Phase 90 plan 09 (SPELL-10): Size of the Behemoth's cower (`f.cowering`, a per-foe flag).
+  cowering: "Cowering",
   unmoved: "Unmoved",
   // Phase 77 (CMBUI-13): the gifts a fumbled helpful scroll hands the
   // targeted foe (engine/scrollFumble.js#resolveHelpful, RULES-10).
@@ -141,6 +143,10 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // (Senseless: at "friends"; Duplicate Foe: at "self"); damageFoe never touches it, so a blow does not end it.
   senseless: "It cannot tell friend from furniture: every swing it takes hits another foe, never your side, and with nobody else to hit it swings at the air. Hitting it does not end this.",
   double: "It is busy with a second one of itself: every swing it takes lands on itself, never on your side. Hitting it does not end this.",
+  // Phase 90 plan 09 (SPELL-10): engine/combat.js#behemothRoar sets `cowering`; derived.js#foeSwingChain
+  // caps its swings at the top three numbers of its die (6–8 on a d8, 18–20 on a d20) and #foeWeakened
+  // halves its damage, for the rest of the fight. A Weaken running out never lifts it.
+  cowering: "It cowers before something the size of a barn: for the rest of the fight it hits only on its die's top three numbers, for half damage, and nothing wears that off.",
   // resistControl (engine/combat.js) — a control shaken off outright (today
   // only a Bard's song); %s is filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",
@@ -270,6 +276,8 @@ export const FOE_CONDITIONS = Object.freeze(
       when: (f) => !!f.misdirect && f.misdirect.at === "self" && posInt(f.misdirect.left) !== null,
       rounds: (f) => posInt(f.misdirect.left),
     },
+    // Phase 90 plan 09 (SPELL-10): Size of the Behemoth's cower lasts the fight, so no count.
+    { key: "cowering", label: C.cowering, desc: D.cowering, tone: "good", fields: ["cowering"], when: (f) => !!f.cowering, rounds: none },
     { key: "shrunk", label: C.shrunk, desc: D.shrunk, tone: "good", fields: ["shrunk"], when: (f) => !!f.shrunk, rounds: none },
     { key: "fixated", label: C.fixated, desc: D.fixated, tone: "good", fields: ["fixated"], when: (f) => !!f.fixated, rounds: none },
     // A foe BUFF: it swings twice.

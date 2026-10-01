@@ -326,7 +326,7 @@ test("tone: every foe debuff is good; every foe buff (Frenzied, the Phase 77 fum
 
 test("order: chips come out in table order — Stunned … Frenzied, the Phase 77 fumble gifts (Shielded, Bubbled, Rebound, Mirrored, Strong, Regenerating, Senses), Weakened, Unmoved", () => {
   assert.deepEqual(FOE_CONDITIONS.map((e) => e.key), [
-    "stunned", "blind", "hamstrung", "marked", "asleep", "dozing", "held", "stopped", "frozen", "acid", "dot", "stupid", "senseless", "double", "shrunk", "fixated", "frenzied",
+    "stunned", "blind", "hamstrung", "marked", "asleep", "dozing", "held", "stopped", "frozen", "acid", "dot", "stupid", "senseless", "double", "cowering", "shrunk", "fixated", "frenzied",
     "shielded", "bubbled", "rebound", "mirror", "might", "regen", "senses",
     "weakened", "resisted",
   ]);
@@ -454,6 +454,7 @@ const NOT_A_CONDITION = Object.freeze({
   spellOpen: "the spell submenu's open flag",
   parleyTried: "the one parley attempt is spent",
   parleyInsulted: "the parley went badly; a fight-wide flag, not a foe status",
+  tongue: "Phase 90 plan 09: Chameleon Tongue's fight-scoped fluency (the hero's own parley source), not a foe status",
   pendingFoes: "summoned foes waiting to join the fight",
   pending: "the pre-join encounter marker",
   // Phase 77 (CMBUI-13): the foe-side fumble gifts 75.1-03 parked here
@@ -594,7 +595,7 @@ const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegE
 test("FOE_CONDITION_COPY: frozen, the house labels, every leaf non-empty and clear of BANNED", () => {
   assert.ok(Object.isFrozen(FOE_CONDITION_COPY));
   assert.deepEqual(Object.values(FOE_CONDITION_COPY).sort(), [
-    "Acid", "Asleep", "Blind", "Bubbled", "Dozing", "Fighting its double", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Marked", "Mirrored", "Poison",
+    "Acid", "Asleep", "Blind", "Bubbled", "Cowering", "Dozing", "Fighting its double", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Marked", "Mirrored", "Poison",
     "Rebound", "Regenerating", "Senseless", "Senses", "Shielded", "Shrunk", "Stopped", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
   ]);
   // House style: one capitalised word. Phase 90 plan 08: the one named exception is Duplicate
@@ -671,8 +672,8 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
   const chips = foeConditionChips(everything, state);
   // One ward shows one chip: a plain pool here (Shielded), so Bubbled is absent; a sleep shows one of
   // Asleep or Dozing (this foe carries no dozing mark), so Dozing is absent too; and this foe is
-  // neither stopped nor misdirected (Phase 90 plan 08), so Stopped, Senseless and Fighting its double are absent.
-  assert.equal(chips.length, FOE_CONDITIONS.length - 5);
+  // neither stopped nor misdirected (Phase 90 plan 08), so Stopped, Senseless and Fighting its double are absent, and nor does it cower (Phase 90 plan 09).
+  assert.equal(chips.length, FOE_CONDITIONS.length - 6);
   const bubble = foeConditionChips(fixedFoe({ ward: { mirror: true, pool: 0, popPool: 25, rounds: null } }), fixedState());
   assert.equal(bubble[0].desc, FOE_CONDITION_DESC.bubbled);
   for (const chip of chips) {
@@ -731,6 +732,22 @@ test("Senseless and Fighting its double: engine/combat.js#misdirectFoe's `misdir
   assert.deepEqual(texts(fixedFoe({ misdirect: { at: "friends", left: 0 } })), []);
   assert.deepEqual(texts(fixedFoe({ alive: false, misdirect: { at: "self", left: 2 } })), []);
   assert.deepEqual(texts(fixedFoe({ misdirect: { at: "nowhere", left: 2 } })), [], "an unknown aim shows nothing");
+});
+
+// Phase 90 plan 09 (SPELL-10): Size of the Behemoth's per-foe cower.
+test("Cowering: engine/combat.js#behemothRoar's `cowering` flag reads one chip with no count (it lasts the fight) and states the rule in one line, top three numbers and half damage", () => {
+  const chips = foeConditionChips(fixedFoe({ cowering: true }), fixedState());
+  assert.deepEqual(chips.map((c) => c.text), ["Cowering"]);
+  assert.equal(chips[0].key, "cowering");
+  assert.equal(chips[0].tone, "good");
+  assert.equal(chips[0].rounds, null);
+  assert.equal(chips[0].desc, FOE_CONDITION_DESC.cowering);
+  assert.match(FOE_CONDITION_DESC.cowering, /top three numbers/);
+  assert.match(FOE_CONDITION_DESC.cowering, /half damage/);
+  assert.match(FOE_CONDITION_DESC.cowering, /rest of the fight/);
+  assert.deepEqual(texts(fixedFoe({ alive: false, cowering: true })), [], "a dead foe shows nothing");
+  // it shows beside the room's Weaken, not instead of it (a Weaken ending never clears it)
+  assert.deepEqual(texts(fixedFoe({ cowering: true }), fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } })), ["Cowering", "Weakened · 3"]);
 });
 
 test("Unmoved: always the bare label (no rounds); its desc names the resisted effect; a dead foe returns []", () => {

@@ -15,6 +15,7 @@ import { makeRng } from "../../engine/rng.js";
 import { rollGrimoire } from "../../engine/character.js";
 import { SPELLS } from "../../content/index.js";
 import { canLearn } from "../../engine/derived.js";
+import { SUB_NOTE } from "../../content/flavor.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -111,4 +112,11 @@ test("only the Illusionist gets the grants: every other sub-class's book holds n
       }
     }
   }
+});
+
+test("SUB_NOTE.Illusionist says the Illusionist starts with three illusions", () => {
+  assert.match(SUB_NOTE.Illusionist, /Mirror Self/);
+  assert.match(SUB_NOTE.Illusionist, /Door Illusion/);
+  assert.match(SUB_NOTE.Illusionist, /one more/);
+  assert.doesNotMatch(SUB_NOTE.Illusionist, /Phantom Host/);
 });

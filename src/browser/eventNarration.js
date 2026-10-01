@@ -729,7 +729,9 @@ export const EVENT_NARRATION = {
         ? `<span class="hit">You slip away before it even sees you.</span>`
         : e.reason === "smoke"
           ? `<span class="hit">You leave through the smoke. Nobody follows.</span>`
-          : `<span class="hit">You get clear.</span>`,
+          : e.reason === "door"
+            ? `<span class="hit">You open a door in the middle of the room, step through, and close it behind you.</span> None of that happened, but they will never prove it.`
+            : `<span class="hit">You get clear.</span>`,
   // Phase 42 (FLEE-02): the roll, every named modifier and the range,
   // narrated BEFORE the outcome line (`fled`/`fleeFailed` keep their own
   // entries above/below). Reuses `modsText` (the same "Guard −1" format
@@ -982,7 +984,12 @@ export const EVENT_NARRATION = {
         // CMBUI-13 (Phase 77, plan 77-07): the reader's own weakening (76-06)
         // names what it does, like a foe's Weaken onset line.
         return `<span class="hurt">${e.spell ?? "The scroll"} weakens you: your blows do half damage, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
+      case "insulted":
+        // Phase 90 plan 09 (SPELL-10): a fumbled Chameleon Tongue is a speech in the wrong accent.
+        return `<span class="hurt">${e.spell ?? "The scroll"} comes out in the wrong accent, and the room takes it personally.</span> Every foe hits you and yours one number easier for the rest of the fight.`;
       default:
+        // Phase 90 plan 09 (SPELL-10): a fumbled Door Illusion is just a wall.
+        if (e.spell === "Door Illusion") return `<span class="beat">The door does not open.</span> It is a wall, and it has been a wall the whole time.`;
         return `<span class="beat">${e.spell ?? "The scroll"} fumbles and does nothing to you. Small mercies.</span>`;
     }
   },
@@ -1206,6 +1213,16 @@ export const EVENT_NARRATION = {
       // VOX-05 (Phase 79, plan 79-08): the reason, then the joke.
       exploreOnly: `<span class="miss">${e.spell ?? "That"} only works out of a fight.</span> It needs quieter surroundings.`,
       noTarget: `<span class="miss">Nothing left to aim at.</span>`,
+      // Phase 90 plan 09 (SPELL-10): Door Illusion and Chameleon Tongue are refused BEFORE any
+      // spell charge is spent (engine/magic.js castSpell, through combat.js#fleeRefusal and
+      // #parleyBlockedReason), and the line says why.
+      samurai: `<span class="miss">A Samurai does not run, and that includes through doors that are not there.</span> No spell charge was spent.`,
+      parleySpent: `<span class="miss">You already said your piece.</span> One parley a fight, and a new accent will not buy a second. No spell charge was spent.`,
+      ninja: `<span class="miss">A Ninja does not speak, in any tongue.</span> No spell charge was spent.`,
+      masterOfArms: `<span class="miss">A Master of Arms has one answer to a question like that, and it is not a sentence.</span> No spell charge was spent.`,
+      walkingDead: `<span class="miss">The Walking Dead do not parley, in any tongue.</span> No spell charge was spent.`,
+      noTalk: `<span class="miss">They will not be talked to, even in their own language.</span> No spell charge was spent.`,
+      wilmsryVsMagical: `<span class="miss">Magic Users hate the Wilmsry, and a new accent will not fix that.</span> No spell charge was spent.`,
     };
     return map[e.reason] ?? `<span class="miss">${e.spell ?? "The spell"} refuses you.</span>`;
   },
@@ -1394,6 +1411,26 @@ export const EVENT_NARRATION = {
     e.at === "self"
       ? `<span class="beat">${possessive(e.name, "Its")} double goes away.</span> It is alone with its decisions again, and it remembers you.`
       : `<span class="beat">${e.name ?? "It"} can tell friend from furniture again.</span> It looks around and remembers you.`,
+  // Phase 90 plan 09 (SPELL-10, the last three of the slate). Door Illusion's cleverest foe saw
+  // through it (the failed-resist line is the spellResisted line before this one): the turn is spent.
+  doorIllusionSeen: (e) => `<span class="miss">${e.foe ?? "The cleverest of them"} is not buying it.</span> You stand there admiring a wall, and your turn is gone.`,
+  // Chameleon Tongue's own cast line; the parley roll (with "+4 for the tongue") follows as parleyRolled.
+  tongueCast: () => `<span class="hit">Your tongue changes shape. So does your accent.</span> They lean in: it is the fight's one parley, at +4.`,
+  // Size of the Behemoth: each foe's own line, then the count.
+  foeRouted: (e) => `<span class="hit">${e.name ?? "One of them"} remembers an appointment elsewhere.</span> It leaves, and your side gets no experience and no spoils out of it.`,
+  foeCowers: (e) => `<span class="hit">${e.name ?? "One of them"} cowers.</span> For the rest of the fight it hits only on its die's top three numbers, for half damage.`,
+  behemothCast: (e) => {
+    const routed = e.routed ?? 0;
+    const cowering = e.cowering ?? 0;
+    const lead = joinerOf(e) ? `${joinerOf(e)}'s Size of the Behemoth: ` : "";
+    if (!routed && !cowering) {
+      return `<span class="miss">${lead}The barn does not impress anybody.</span> Every one of them saw through it.`;
+    }
+    const parts = [];
+    if (routed) parts.push(`${routed === 1 ? "1 foe flees" : `${routed} foes flee`}`);
+    if (cowering) parts.push(cowering === 1 ? "1 cowers" : `${cowering} cower`);
+    return `<span class="hit">${lead}You are, briefly and entirely falsely, the size of a barn: ${parts.join(", ")}.</span> Several of them remember appointments elsewhere.`;
+  },
   // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the HP gained leads; a
   // capped heal names its roll and says full; a heal at full says so.
   healed: (e) =>

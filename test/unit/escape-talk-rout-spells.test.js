@@ -32,6 +32,9 @@ import { foeRisingResistCheck, foeSwingVsHero, foeWeakened, fluency, canCast, sp
 import { SPELLS, SCROLL_FUMBLE } from "../../content/index.js";
 import { FUMBLE_EFFECTS } from "../../content/scroll-fumbles.js";
 import { GW, GH } from "../../engine/maze.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR, linesForAction } from "../../src/browser/narrationLines.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 
 const IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 const SP = Object.fromEntries(SPELLS.map((sp) => [sp.n, sp]));
@@ -520,4 +523,87 @@ test("fumbles: a fumbled Door Illusion does nothing, a fumbled Chameleon Tongue 
   const evBeh = resolveScrollFumble(beh, SP["Size of the Behemoth"], fakeRng([3]), fakeRng([]), []);
   assert.deepEqual(beh.c.foeEffect, { kind: "weakened", rounds: 4 });
   assert.deepEqual(evBeh, [{ type: "fumbleOnReader", spell: "Size of the Behemoth", effect: "weakened", rounds: 4 }]);
+});
+
+// ---------------------------------------------------------------------------
+// The surfaces: the Oracle, the rail twin, the fold, the menu copy
+// ---------------------------------------------------------------------------
+
+const NEW_TYPES = ["doorIllusionSeen", "tongueCast", "foeRouted", "foeCowers", "behemothCast"];
+
+test("narration: every new event has an Oracle line and a rail twin, and a bare payload renders with no undefined", () => {
+  for (const type of NEW_TYPES) {
+    assert.equal(typeof EVENT_NARRATION[type], "function", `${type}: Oracle line`);
+    assert.equal(typeof LINE_FOR[type], "function", `${type}: rail twin`);
+    const oracle = EVENT_NARRATION[type]({ type });
+    const rail = LINE_FOR[type]({ type }).text;
+    for (const text of [oracle, rail]) {
+      assert.ok(text.trim().length > 0, `${type} survives a bare payload`);
+      assert.doesNotMatch(text, /undefined|NaN|\[object/, `${type}: ${text}`);
+    }
+  }
+  // the new reasons and the new fumble effect render, bare
+  for (const reason of ["samurai", "parleySpent", "ninja", "masterOfArms", "walkingDead", "noTalk", "wilmsryVsMagical"]) {
+    const oracle = EVENT_NARRATION.castRefused({ type: "castRefused", reason });
+    const rail = LINE_FOR.castRefused({ type: "castRefused", reason }).text;
+    for (const text of [oracle, rail]) {
+      assert.doesNotMatch(text, /undefined|NaN|\[object|refuses you/, `castRefused ${reason}: ${text}`);
+    }
+    assert.match(oracle, /No spell charge was spent\./, `${reason}: the Oracle says nothing was spent`);
+    assert.match(rail, /Nothing spent\./, `${reason}: the rail says nothing was spent`);
+  }
+  assert.doesNotMatch(EVENT_NARRATION.fled({ reason: "door" }), /You get clear/);
+  assert.doesNotMatch(EVENT_NARRATION.fumbleOnReader({ type: "fumbleOnReader", effect: "insulted" }), /undefined/);
+});
+
+test("narration: Door Illusion's escape, its seen-through line and its fumbles say what happened", () => {
+  assert.match(EVENT_NARRATION.fled({ reason: "door" }), /You open a door in the middle of the room, step through, and close it behind you\..*None of that happened, but they will never prove it\./);
+  assert.equal(LINE_FOR.fled({ reason: "door" }).text, "Gone through a door that was never there.");
+  assert.match(EVENT_NARRATION.doorIllusionSeen({ foe: "Orc" }), /Orc is not buying it\..*admiring a wall, and your turn is gone\./);
+  assert.equal(LINE_FOR.doorIllusionSeen({ foe: "Orc" }).text, "Orc sees through the door. Turn spent.");
+  assert.match(EVENT_NARRATION.fumbleOnReader({ spell: "Door Illusion", effect: "none" }), /The door does not open\..*a wall/);
+  assert.equal(LINE_FOR.fumbleOnReader({ spell: "Door Illusion", effect: "none" }).text, "The door does not open. It is a wall.");
+  assert.match(EVENT_NARRATION.fumbleOnReader({ spell: "Turn Walking Dead", effect: "none" }), /fumbles and does nothing to you/, "other none rows keep their line");
+});
+
+test("narration: Chameleon Tongue says it is the fight's one parley at +4, the roll then shows the tongue, and a fumble insults the room", () => {
+  assert.match(EVENT_NARRATION.tongueCast({}), /Your tongue changes shape\. So does your accent\..*the fight's one parley, at \+4/);
+  assert.equal(LINE_FOR.tongueCast({}).text, "Chameleon Tongue: you talk their language, +4.");
+  assert.match(EVENT_NARRATION.parleyRolled({ roll: 15, atLeast: 8, dieN: 20, fluency: 2 }), /\+4 for the tongue/);
+  assert.match(EVENT_NARRATION.fumbleOnReader({ spell: "Chameleon Tongue", effect: "insulted" }), /Chameleon Tongue comes out in the wrong accent, and the room takes it personally\..*one number easier/);
+  assert.match(LINE_FOR.fumbleOnReader({ spell: "Chameleon Tongue", effect: "insulted" }).text, /Chameleon Tongue insults the room: foes hit one number easier\./);
+});
+
+test("narration: the Behemoth's lines name each foe, then the counts; a count of zero says nobody was impressed; a Joiner's cast names the Joiner", () => {
+  assert.match(EVENT_NARRATION.foeRouted({ name: "Orc" }), /Orc remembers an appointment elsewhere\..*no experience and no spoils/);
+  assert.equal(LINE_FOR.foeRouted({ name: "Orc" }).text, "Orc flees, spoils and all.");
+  assert.match(EVENT_NARRATION.foeCowers({ name: "Orc" }), /Orc cowers\..*top three numbers, for half damage/);
+  assert.equal(LINE_FOR.foeCowers({ name: "Orc" }).text, "Orc cowers for the fight.");
+  assert.match(EVENT_NARRATION.behemothCast({ routed: 1, cowering: 2 }), /the size of a barn: 1 foe flees, 2 cower\./);
+  assert.match(EVENT_NARRATION.behemothCast({ routed: 2, cowering: 1 }), /2 foes flee, 1 cowers\./);
+  assert.match(EVENT_NARRATION.behemothCast({ routed: 0, cowering: 0 }), /The barn does not impress anybody\.\s*<\/span> Every one of them saw through it\./);
+  assert.match(EVENT_NARRATION.behemothCast({ routed: 1, cowering: 0, by: "Ada" }), /Ada's Size of the Behemoth: /);
+  assert.equal(LINE_FOR.behemothCast({ routed: 1, cowering: 2 }).text, "Size of the Behemoth: 1 flees, 2 cower.");
+  assert.equal(LINE_FOR.behemothCast({ routed: 0, cowering: 0 }).text, "The barn impresses nobody.");
+});
+
+test("narration: a failed resist folds behind the Behemoth's per-foe line and behind Door Illusion's escape, so the rail shows each once", () => {
+  const roar = linesForAction("castSpell", [
+    { type: "resistFailed", target: "Orc", spell: "Size of the Behemoth", roll: 3, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
+    { type: "foeRouted", name: "Orc" },
+    { type: "behemothCast", routed: 1, cowering: 0 },
+  ], {});
+  assert.deepEqual(roar.map((l) => l.text).sort(), ["Orc flees, spoils and all.", "Size of the Behemoth: 1 flees."], "the bare resist line is gone");
+  const door = linesForAction("castSpell", [
+    { type: "resistFailed", target: "Orc", spell: "Door Illusion", roll: 3, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
+    { type: "fled", reason: "door" },
+  ], {});
+  assert.deepEqual(door.map((l) => l.text), ["Gone through a door that was never there."]);
+});
+
+test("the Chameleon Tongue and Door Illusion refusal lines never claim a charge was spent, and the menu copy and the Oracle agree on every reason", () => {
+  for (const reason of Object.keys(COMBAT_MENU_COPY.tongueBlocked)) {
+    assert.ok(EVENT_NARRATION.castRefused({ reason, spell: "Chameleon Tongue" }).includes("No spell charge was spent"), reason);
+  }
+  assert.ok(EVENT_NARRATION.castRefused({ reason: "samurai", spell: "Door Illusion" }).includes("No spell charge was spent"));
 });

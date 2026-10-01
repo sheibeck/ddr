@@ -793,6 +793,10 @@ const RESIST_FOLD_EFFECTS = new Set([
   "dozed",
   // Phase 90 plan 08 (SPELL-10): Senseless and Duplicate Foe's own lines fold the failed resist.
   "foeMisdirected",
+  // Phase 90 plan 09 (SPELL-10): Size of the Behemoth's per-foe outcome lines (neither carries a
+  // `target`, so each folds any failed resist in the action: every failed resist lands one of them).
+  "foeRouted",
+  "foeCowers",
   "weakened",
   "stupefied",
   "blinded",
@@ -827,7 +831,8 @@ const RESIST_FOLD_EFFECTS = new Set([
  */
 function foldsResist(oe) {
   // Phase 90 plan 05: Stun's own hold (kind "stunned") folds the failed resist behind it, like a Freeze's.
-  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && (!!oe.freeze || oe.kind === "stunned" || oe.kind === "time"));
+  // Phase 90 plan 09: Door Illusion's escape (`fled`, reason "door") folds the cleverest foe's failed resist.
+  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && (!!oe.freeze || oe.kind === "stunned" || oe.kind === "time")) || (oe.type === "fled" && oe.reason === "door");
 }
 
 /** isFreezeHold(e, target) — a Freeze's d4 hold on `target` (user rulings 2026-09-28). */
@@ -1665,7 +1670,8 @@ export const LINE_FOR = {
   withdrawalDenied: () => block("Slipping away untouched would mean not attacking."),
   vanishDenied: () => block("They have already seen your face."),
   fled: (e) => {
-    const map = { cloaker: "You vanish — clean escape.", tracked: "You slip away before it sees you.", smoke: "Gone through the smoke. Nobody follows." };
+    // Phase 90 plan 09 (SPELL-10): door is Door Illusion's escape.
+    const map = { cloaker: "You vanish — clean escape.", tracked: "You slip away before it sees you.", smoke: "Gone through the smoke. Nobody follows.", door: "Gone through a door that was never there." };
     return { text: map[e?.reason] ?? "You get clear.", tone: "hit", priority: PRIORITY.you };
   },
   // Phase 42 (FLEE-02): named modifiers replace the old flat "+bonus" —
@@ -1881,6 +1887,10 @@ export const LINE_FOR = {
       shrink: `${e?.spell ?? "The scroll"} shrinks you (−${e?.loss ?? 0} hp) for the fight.`,
       // CMBUI-13 (Phase 77, plan 77-07): names what the weakening does.
       weakened: `${e?.spell ?? "The scroll"} weakens you: half damage, ${rounds} round${rounds === 1 ? "" : "s"}.`,
+      // Phase 90 plan 09 (SPELL-10): a fumbled Chameleon Tongue insults the room.
+      insulted: `${e?.spell ?? "The scroll"} insults the room: foes hit one number easier.`,
+      // ... and a fumbled Door Illusion is a wall.
+      none: e?.spell === "Door Illusion" ? "The door does not open. It is a wall." : `${e?.spell ?? "The scroll"} fumbles and does nothing to you.`,
     };
     return { text: texts[e?.effect] ?? `${e?.spell ?? "The scroll"} fumbles and does nothing to you.`, tone: "hurt", priority: PRIORITY.you };
   },
@@ -2120,6 +2130,14 @@ export const LINE_FOR = {
       // VOX-05 (Phase 79, plan 79-08): the reason, in the player's terms.
       exploreOnly: `${e?.spell ?? "That"} only works out of a fight.`,
       noTarget: "Nothing left to aim at.",
+      // Phase 90 plan 09 (SPELL-10): the rail twins of the Door Illusion / Chameleon Tongue refusals.
+      samurai: "A Samurai does not run, not even through a door that is not there. Nothing spent.",
+      parleySpent: "You already said your piece. Nothing spent.",
+      ninja: "A Ninja does not speak, in any tongue. Nothing spent.",
+      masterOfArms: "A Master of Arms has one answer, and it is not a sentence. Nothing spent.",
+      walkingDead: "The Walking Dead do not parley, in any tongue. Nothing spent.",
+      noTalk: "They will not be talked to. Nothing spent.",
+      wilmsryVsMagical: "Magic Users hate the Wilmsry. Nothing spent.",
     };
     return block(map[e?.reason] ?? "The spell refuses you.");
   },
@@ -2299,6 +2317,22 @@ export const LINE_FOR = {
   foeMisdirectedMiss: (e) => ({ text: `${e?.name ?? "It"} misses ${e?.self ? "itself" : (e?.target ?? "its friend")}.`, tone: "dodge", priority: PRIORITY.them }),
   foeSwingsAtAir: (e) => ({ text: `${e?.name ?? "It"} swings at the air.`, tone: "dodge", priority: PRIORITY.them }),
   foeMisdirectEnded: (e) => ({ text: `${e?.name ?? "It"} is itself again.`, tone: "hurt", priority: PRIORITY.them }),
+  // Phase 90 plan 09 (SPELL-10): the rail twins of the Door Illusion, Chameleon Tongue and Size of the
+  // Behemoth lines in eventNarration.js.
+  doorIllusionSeen: (e) => ({ text: `${e?.foe ?? "The cleverest foe"} sees through the door. Turn spent.`, tone: "miss", priority: PRIORITY.you }),
+  tongueCast: () => ({ text: "Chameleon Tongue: you talk their language, +4.", tone: "magic", priority: PRIORITY.you }),
+  foeRouted: (e) => ({ text: `${e?.name ?? "One of them"} flees, spoils and all.`, tone: "magic", priority: PRIORITY.them }),
+  foeCowers: (e) => ({ text: `${e?.name ?? "One of them"} cowers for the fight.`, tone: "magic", priority: PRIORITY.them }),
+  behemothCast: (e) => {
+    const routed = e?.routed ?? 0;
+    const cowering = e?.cowering ?? 0;
+    const lead = joinerOf(e) ? `${joinerOf(e)}'s Behemoth: ` : "";
+    if (!routed && !cowering) return { text: `${lead}The barn impresses nobody.`, tone: "miss", priority: PRIORITY.you };
+    const parts = [];
+    if (routed) parts.push(routed === 1 ? "1 flees" : `${routed} flee`);
+    if (cowering) parts.push(cowering === 1 ? "1 cowers" : `${cowering} cower`);
+    return { text: `${lead}Size of the Behemoth: ${parts.join(", ")}.`, tone: "magic", priority: PRIORITY.you };
+  },
   healed: (e) => ({
     text:
       railGain(e, e?.amount) > 0

@@ -1,0 +1,315 @@
+[
+  {
+    "key": "bank:SUB_NOTE.Illusionist",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Mirror Self from day one, three illusions, and a d20 to strike until level three — let the mirror do the hitting.",
+    "after": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-10 (canon p.17, user-accepted default 2026-09-30): the blurb stops saying only \"three illusions\" and names them (Mirror Self, Door Illusion and one more, the random one rollGrimoire grants), replacing 90-06's interim clause; the joke about the mirror stays."
+  },
+  {
+    "key": "content:SPELLS.Door Illusion.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "",
+    "after": "defensive · the fight · a door that isn't there, and you through it: no flee roll, no parting blow, spoils left behind; the cleverest foe rolls one resist and may see through it, and then you have spent your turn admiring a wall",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30): a new level-1 Illusion escape. The text states the rule (no flee roll, no parting blow, spoils left behind), the cleverest foe's one resist in plain words, then the slate's joke about admiring a wall."
+  },
+  {
+    "key": "content:SPELLS.Chameleon Tongue.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "",
+    "after": "answer · this fight · you speak their tongue like a local and talk at once: a parley at +4 that even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, orchestrator default +4): a new level-3 Illusion parley. The text states the +4, that Magical foes will hear it and the Walking Dead will not, and that it spends the fight's one parley."
+  },
+  {
+    "key": "content:SPELLS.Size of the Behemoth.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "",
+    "after": "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on their die's top three numbers (6–8 on a d8, 18–20 on a d20) for half damage",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30): a new level-4 Illusion control. The text states the resist, the rout of foes below the caster's level (spoils and all), and the cower for everyone else in roll-high form: the top three numbers (6–8 on a d8, 18–20 on a d20) for half damage."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.cowering",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label",
+    "before": "",
+    "after": "Cowering",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The chip for the per-foe cower Size of the Behemoth sets. One word, like every foe chip."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.cowering",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "",
+    "after": "It cowers before something the size of a barn: for the rest of the fight it hits only on its die's top three numbers, for half damage, and nothing wears that off.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The long-press line for the Cowering chip: it hits only on its die's top three numbers, for half damage, for the rest of the fight, and a Weaken running out does not lift it. No rule number is stated, as every foe description does."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.parleySpent",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "You already said your piece. One parley a fight, and it is spent.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line a greyed Chameleon Tongue row shows once the fight's one parley is spent (engine/combat.js#parleyBlockedReason, the same predicate castSpell refuses on before any charge)."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.ninja",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "A Ninja does not speak, in any tongue.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for a Ninja, who never speaks, on the greyed Chameleon Tongue row."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.masterOfArms",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "A Master of Arms has one answer to a question like that, and it is not a sentence.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for a Master of Arms, who attacks without question, on the greyed Chameleon Tongue row (the parley refusal's own wording)."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.walkingDead",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "The Walking Dead do not parley, in any tongue.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for the Walking Dead, who are never parleyed with at any fluency, on the greyed Chameleon Tongue row."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.noTalk",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "They will not be talked to, even in their own language.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for a foe this hero cannot talk to even at fluency 2 (canParley's own gate), on the greyed Chameleon Tongue row."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.tongueBlocked.wilmsryVsMagical",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "Magic Users hate the Wilmsry, and a new accent will not fix that.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for the Wilmsry-versus-Magical refusal, which a fluency-2 Wilmsry still hits (parley's D-12 line), on the greyed Chameleon Tongue row."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.doorBlocked.samurai",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "A Samurai does not run, and that includes through doors that are not there.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The reason line for a hero who never flees (fleeRefusal), on a Door Illusion row; reachable only through the same predicate castSpell refuses on."
+  },
+  {
+    "key": "oracle:castRefused",
+    "surface": "refusals",
+    "trigger": "castRefused — engine/magic.js#castSpell",
+    "before": "The spell refuses you.",
+    "after": "A Ninja does not speak, in any tongue. No spell charge was spent.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-10: Door Illusion and Chameleon Tongue are refused before any charge is spent, and each reason says so (the corpus shows the Ninja, Master of Arms, Walking Dead, Samurai and Wilmsry lines among its renderings; the spent-parley and no-talk lines are in the same map)."
+  },
+  {
+    "key": "rail:castRefused",
+    "surface": "refusals",
+    "trigger": "castRefused — engine/magic.js#castSpell",
+    "before": "The spell refuses you.",
+    "after": "A Ninja does not speak, in any tongue. Nothing spent.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin of the refusal lines: the reason, short, then \"Nothing spent.\""
+  },
+  {
+    "key": "oracle:doorIllusionSeen",
+    "surface": "oracle",
+    "trigger": "doorIllusionSeen — engine/combat.js#doorIllusionEscape",
+    "before": "",
+    "after": "Viper is not buying it. You stand there admiring a wall, and your turn is gone.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "SPELL-10: when the cleverest foe resists Door Illusion, the line names it, says the door was not bought and that the turn is gone, then the slate's wall joke."
+  },
+  {
+    "key": "rail:doorIllusionSeen",
+    "surface": "rail",
+    "trigger": "doorIllusionSeen — engine/combat.js#doorIllusionEscape",
+    "before": "",
+    "after": "Viper sees through the door. Turn spent.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin: who saw through the door, and that the turn is spent."
+  },
+  {
+    "key": "oracle:tongueCast",
+    "surface": "oracle",
+    "trigger": "tongueCast — engine/magic.js#castSpell",
+    "before": "",
+    "after": "Your tongue changes shape. So does your accent. They lean in: it is the fight's one parley, at +4.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: Chameleon Tongue's cast line states the +4 and that it is the fight's one parley, after the slate's own cast line; the parley roll follows as the existing \"Talk it down\" line with \"+4 for the tongue\"."
+  },
+  {
+    "key": "rail:tongueCast",
+    "surface": "rail",
+    "trigger": "tongueCast — engine/magic.js#castSpell",
+    "before": "",
+    "after": "Chameleon Tongue: you talk their language, +4.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin: the cast and its +4."
+  },
+  {
+    "key": "oracle:foeRouted",
+    "surface": "oracle",
+    "trigger": "foeRouted — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "Viper remembers an appointment elsewhere. It leaves, and your side gets no experience and no spoils out of it.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "SPELL-10: a foe below the caster's level that fails its resist to Size of the Behemoth leaves; the line says it remembers an appointment elsewhere (the slate's joke) and that this pays no experience and no spoils."
+  },
+  {
+    "key": "rail:foeRouted",
+    "surface": "rail",
+    "trigger": "foeRouted — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "Viper flees, spoils and all.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin: who fled, and that the spoils went with it."
+  },
+  {
+    "key": "oracle:foeCowers",
+    "surface": "oracle",
+    "trigger": "foeCowers — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "Viper cowers. For the rest of the fight it hits only on its die's top three numbers, for half damage.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "SPELL-10: any other foe that fails its resist cowers; the line says what that costs it in roll-high terms (the top three numbers of its die, half damage) and that it lasts the fight."
+  },
+  {
+    "key": "rail:foeCowers",
+    "surface": "rail",
+    "trigger": "foeCowers — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "Viper cowers for the fight.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin: who cowers, for the fight."
+  },
+  {
+    "key": "oracle:behemothCast",
+    "surface": "oracle",
+    "trigger": "behemothCast — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "The barn does not impress anybody. Every one of them saw through it.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: Size of the Behemoth's closing line counts the foes that fled and the foes that cower (the corpus reads the nobody-impressed branch; the counted line is \"You are, briefly and entirely falsely, the size of a barn: 1 foe flees, 2 cower.\"), and a Joiner's cast names the Joiner."
+  },
+  {
+    "key": "rail:behemothCast",
+    "surface": "rail",
+    "trigger": "behemothCast — engine/combat.js#behemothRoar",
+    "before": "",
+    "after": "The barn impresses nobody.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin: the counts, short (the corpus reads the nobody-impressed branch; the counted line is \"Size of the Behemoth: 1 flees, 2 cower.\")."
+  },
+  {
+    "key": "raw:engine/character.js#rollGrimoire",
+    "surface": "oracle",
+    "trigger": "inline literal in engine/character.js#rollGrimoire",
+    "before": "",
+    "after": "Door Illusion",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "The Illusionist's must-have grant: rollGrimoire now appends the literal \"Door Illusion\" beside Mirror Self (and one random Illusion spell on the derived stream)."
+  }
+]
