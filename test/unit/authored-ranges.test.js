@@ -70,7 +70,9 @@ const REPO_ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)),
 import { useAbility } from "../../engine/abilities.js";
 import { openChest } from "../../engine/encounters.js";
 import { openStore } from "../../engine/economy.js";
-import { rollTreasureItem } from "../../engine/items.js";
+import { rollTreasureItem, useItem } from "../../engine/items.js";
+import { makeRng } from "../../engine/rng.js";
+import { FOE_COUNT_TABLE } from "../../engine/difficulty.js";
 import { facesRangeText, hitRangeText, signedText } from "../../src/browser/rollRange.js";
 // Quick 260927-rsx / 260928-hrs: the one resist scale (both sides) and the
 // foe card copy.
@@ -461,6 +463,32 @@ test("the Gauntlet states the size step's cost as a to-hit number: foes +1 to hi
   const txt = row(JEWELRY, "Gauntlet of the Giant");
   assert.ok(txt.includes(`foes ${toHitShift(faces)} to hit you`), txt);
   assert.doesNotMatch(txt, /\bface\b/);
+});
+
+/** foesReached(item, slotRef, cOverrides) — how many of five live foes a real useItem of `item` rolls a resist for (one event each). */
+function foesReached(item, ref, cOverrides) {
+  const foes = Array.from({ length: 5 }, (_, i) => fixedFoe({ name: `Foe${i}`, intel: 1 }));
+  const state = fixedState({ cls: "Magic User", items: [], timers: {}, ...cOverrides }, { combat: fixedCombat(foes) });
+  const events = useItem(state, ref, makeRng(1), [], () => 1);
+  assert.ok(events.some((e) => e.type === "itemUsed"), `${item.n} was used: ${events.map((e) => e.type)}`);
+  return events.filter((e) => e.type === "spellResisted" || e.type === "resistFailed").length;
+}
+
+test("the area items' texts state how many foes they reach, measured with a real useItem against five foes (Phase 89, TEXT-01)", () => {
+  const amulet = { kind: "jewel", ...JEWELRY.find((j) => j.n === "Amulet of Stone") };
+  assert.equal(foesReached(amulet, { slot: "jewelry1" }, { worn: { jewelry1: amulet } }), 4);
+  assert.match(amulet.txt, /up to 4 foes/);
+  for (const [name, count] of [["Birch Staff", 2], ["Oak Staff", 2]]) {
+    const staff = { kind: "staff", charges: ACTIVATION_OF[name].charges, ...STAVES.find((s) => s.n === name) };
+    assert.equal(foesReached(staff, { slot: "weapon" }, { weapon: name, staff }), count, name);
+    assert.match(staff.txt, new RegExp(`up to ${count} foes`), name);
+  }
+  // The Cedar Staff reaches every foe in the fight; a fight holds at most three (engine/difficulty.js#FOE_COUNT_TABLE), which its text says.
+  const cedar = { kind: "staff", charges: ACTIVATION_OF["Cedar Staff"].charges, ...STAVES.find((s) => s.n === "Cedar Staff") };
+  assert.equal(foesReached(cedar, { slot: "weapon" }, { weapon: "Cedar Staff", staff: cedar }), 5);
+  assert.match(cedar.txt, /every foe in the fight/);
+  assert.match(cedar.txt, /a fight holds at most 3/);
+  assert.ok(FOE_COUNT_TABLE.every((row) => row.every((n) => n <= 3)), "no fight is dealt more than three foes");
 });
 
 test("ITEM_STAT_COPY.text.crit: a precise blade crits on exactly the top N numbers of the strike die its stat line states (Phase 89, TEXT-01)", () => {
