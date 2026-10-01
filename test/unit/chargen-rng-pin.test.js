@@ -112,11 +112,17 @@ function countingRng(inner) {
 // rollCharacter on makeRng(seed)), ONE seed moves, before -> after:
 //   seed 35 (Cleric)  1447918666 -> 440012114
 // The other 19 cursors are byte-identical (no other pin seed rolls a Cleric).
+//
+// Phase 91.1 plan 03 (V20 B, user ruling 2026-10-01: a Cleric may learn Strength): the Cleric's low pool and its
+// day-one spare pool each gain Strength, so rollGrimoire draws 10 -> 12 for a Cleric. Re-measured live (node,
+// rollCharacter on makeRng(seed)), ONE seed moves, before -> after:
+//   seed 35 (Cleric)  440012114 -> -191823556
+// The other 19 cursors are byte-identical (no other pin seed rolls a Cleric).
 const ROLL_CHARACTER_PINS = {
   1: -2023389403, 2: -759718062, 3: 1071847752, 4: -759718060, 6: 440012085,
   7: -1647318515, 8: 1447918639, 13: -2023389391, 14: -2023389390, 15: -1647318507,
   17: 1071847766, 19: 816082980, 24: 184247315, 29: 1447918660, 32: -2023389372,
-  35: 440012114, 38: 1071847787, 160: 1071847909, 256: -759717808, 303: 1071848052,
+  35: -191823556, 38: 1071847787, 160: 1071847909, 256: -759717808, 303: 1071848052,
 };
 
 // Pinned via `newRun(seed).rngState` — a DIFFERENT (larger) cursor than the
@@ -135,11 +141,14 @@ const ROLL_CHARACTER_PINS = {
 // Phase 91 plan 02 (IDENT-15): the same Cleric cause, re-measured live
 // (newRun(seed).rngState), one seed moves, before -> after:
 //   seed 35 (Cleric)   642742802 ->  898507590
+//
+// Phase 91.1 plan 03 (V20 B): the same Cleric cause, re-measured live (newRun(seed).rngState), one seed moves:
+//   seed 35 (Cleric)   898507590 -> -365163750
 const NEW_RUN_PINS = {
   1: -1692776321, 2: 266671887, 3: 1466402031, 4: 266671889, 6: 202730694,
   7: 1778531720, 8: 10907105, 13: -365163772, 14: 2034296515, 15: -1252764228,
   17: 1466402045, 19: -1188823027, 24: 10907121, 29: -1820658687, 32: -1692776290,
-  35: 898507590, 38: -996999417, 160: -1564893768, 256: 2098237954, 303: -429104679,
+  35: -365163750, 38: -996999417, 160: -1564893768, 256: 2098237954, 303: -429104679,
 };
 
 // Pinned per-sub rollGrimoire draw counts (constant across seeds — proven by
@@ -167,9 +176,13 @@ const NEW_RUN_PINS = {
 // 4 + 4 + 1 (the d10) + 1 = 10, the same formula the test below derives. Wizard
 // stays 36: its day-one damage step (topUpWizardDamage) draws from the derived
 // stream only.
+//
+// Phase 91.1 plan 03 (V20 B, user 2026-10-01: a Cleric may learn Strength, one named exception in the gate data):
+// Cleric 10 -> 12, measured live. Strength (a level-1 offense spell) joins the low pool (5 -> 6 spells) and the
+// day-one spare pool (2 -> 3), so 5 + 4 + 1 + 2 = 12, the same formula the test below derives.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
   Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 12, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 test("rollCharacter leaves the rng at the pinned cursor for every parity-fixture seed", () => {

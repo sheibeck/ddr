@@ -145,14 +145,15 @@ test("IDENT-20 Q6 A (edge, empty): a first swing that kills its foe ends the str
   assert.equal(next.wp, 999, "the frenzy swing does not carry to the next live foe");
 });
 
-test("IDENT-20: a Fridgian still wears no armour, and the hero's hide soaks 2 from a landed blow (7 takes 5)", () => {
+// Phase 91.1 plan 03 (V17 B, 2026-10-01): the hide soaks 3 (was 2), so a 7 takes 4.
+test("IDENT-20: a Fridgian still wears no armour, and the hero's hide soaks 3 from a landed blow (7 takes 4)", () => {
   assert.equal(RACES.Fridgian.noArmor, true);
-  assert.equal(RACES.Fridgian.hide, 2);
+  assert.equal(RACES.Fridgian.hide, 3);
   const state = heroState({ cls: "Fighter", sub: "Soldier", race: "Fridgian" });
   state.c.skills = {};
   const before = state.c.wp;
   applyFoeDamageToPlayer(state, foeFrom("Humans", 1, "Ned"), { d: () => 1, pick: (a) => a[0], shuffle: (a) => a, getState: () => 1 }, [], { dmg: 7, roll: 20, atLeast: 12, dieN: 20, mods: [] });
-  assert.equal(before - state.c.wp, 5, "max(1, 7 - 2) = 5");
+  assert.equal(before - state.c.wp, 4, "max(1, 7 - 3) = 4");
 });
 
 test("IDENT-20 text: the footer names the d6, the 4-6 and the -1 to hit; nothing the player reads promises the corpse rule", () => {
@@ -162,7 +163,7 @@ test("IDENT-20 text: the footer names the d6, the 4-6 and the -1 to hit; nothing
   assert.match(line, /d6/);
   assert.match(line, /4–6/);
   assert.match(line, /−1 to hit/);
-  assert.ok(good.includes("thick hide soaks 2 from every blow"));
+  assert.ok(good.includes("thick hide soaks 3 from every blow"));
   assert.ok(identityFooter("race", "Fridgian").bad.includes("can never wear armour"));
   const all = [...good, ...identityFooter("race", "Fridgian").bad, RACE_NOTE.Fridgian, RACES.Fridgian.note].join(" ");
   assert.doesNotMatch(all, /corpse|already dead|five times in eight/i);

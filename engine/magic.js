@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
+import { eff, canCast, canLearn, spellClosed, schoolBonus, healBonusFor, wardBonusFor, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe, fleeRefusal, parleyBlockedReason, parley, doorIllusionEscape, behemothRoar } from "./combat.js";
@@ -130,7 +130,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
   if (!free && !c.scrollCast && !canCast(state, sp)) {
     if (!c.grimoire || !c.grimoire.includes(sp.n)) {
       events.push({ type: "spellNotKnown", spell: sp.n });
-    } else if (schoolClosed(c.sub, sp.s)) {
+    } else if (spellClosed(c.sub, sp)) {
       // Phase 90 plan 06 (SPELL-10): the book holds a spell whose school this
       // sub-class can NEVER learn (an old or tampered book — a dealt book is
       // gated at grant time). No level opens it, so the refusal names no level:
@@ -576,11 +576,15 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
     // soak pool. Every other ward spell (Shield) is unchanged: no reflect
     // key is ever set again.
     if (sp.mirror) {
-      c.ward = { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool, rounds: null };
-      events.push({ type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool: sp.popPool });
+      // Phase 91.1 plan 03 (V18 B): the caster's protection bonus enlarges the Bubble's film (5 HP a point).
+      const popPool = sp.popPool + wardBonusFor(c.sub);
+      c.ward = { name: sp.n, mirror: true, pool: 0, popPool, rounds: null };
+      events.push({ type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool });
     } else {
-      c.ward = { pool: sp.pool, rounds: sp.rounds, name: sp.n };
-      events.push({ type: "wardRaised", spell: sp.n, pool: sp.pool });
+      // ... and Shield's soak pool (the same 5 HP a point).
+      const pool = sp.pool + wardBonusFor(c.sub);
+      c.ward = { pool, rounds: sp.rounds, name: sp.n };
+      events.push({ type: "wardRaised", spell: sp.n, pool });
     }
   } else if (sp.kind === "might") {
     // Phase 90 (SPELL-09, report #8, user 2026-09-30): Strength is a
@@ -683,7 +687,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
       }
     }
   } else if (sp.kind === "heal") {
-    let amt = rollDice(rng, sp.dmg) + (c.sub === "Cleric" ? 3 : 0);
+    // Phase 91.1 plan 03 (V18 B): the chart's healing bonus is added to every heal the caster casts (Cleric +4,
+    // which replaces the old separate +3, Court Mage +1), before a heal2x race's doubling and the healMul.
+    let amt = rollDice(rng, sp.dmg) + healBonusFor(c.sub);
     if (RACES[c.race].heal2x) amt *= 2;
     // RULES-03 (Phase 75, user 2026-09-25): the Summoner's healing weakness
     // — applyCasterHealMul reads the chart's healMul flag (never a name

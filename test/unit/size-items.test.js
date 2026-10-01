@@ -155,13 +155,13 @@ test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +13 damage (the
   assert.equal(sizeStepOf(state.c), 2, "still exactly 2 steps — the record was refreshed, not duplicated");
 });
 
-test("masks never touch items: a Dwarf drinking Enlarge gains exactly +11 damage (Human + 13 in all; was +2 and Human + 4, Phase 89) and its foe need goes from 4 to 5", () => {
+test("masks never touch items: a Dwarf drinking Enlarge gains exactly +11 damage (Human + 14 in all; Phase 91.1 plan 03 V16: the race's own +3, was +2 and Human + 13; Phase 89: Human + 4) and its foe need goes from 4 to 5", () => {
   const human = weaponDamage(fixedFighter({ race: "Human" }), fakeRng([3]));
   const dwarvenState = fixedState({ c: fixedFighter({ race: "Dwarven", items: [enlargePotion()] }) });
   dwarvenState.combat = { foes: [{ alive: true }] };
   const dwarvenNeedBefore = foeToHitVs(dwarvenState);
   useItem(dwarvenState, 0, fakeRng([]), []);
-  assert.equal(weaponDamage(dwarvenState.c, fakeRng([3])), human + 13);
+  assert.equal(weaponDamage(dwarvenState.c, fakeRng([3])), human + 14);
   dwarvenState.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(dwarvenState), dwarvenNeedBefore + 1, "the item's face step is never masked, even though the Dwarven RACE base is unmasked on this axis already");
 });

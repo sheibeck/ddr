@@ -85,7 +85,8 @@ test("a spell of a school the sub-class can never learn is dropped (a Warlock ho
   assert.deepStrictEqual(loadHero("Warlock", ["Freeze", "Summon"]), ["Freeze"]);
   // Phase 91 plan 02 (IDENT-15): the Cleric's offense school is closed (chart value null), so an
   // old save's Fireball and Strength load out of the book; Heal and Major Heal stay, in saved order.
-  assert.deepStrictEqual(loadHero("Cleric", ["Heal", "Fireball", "Strength", "Major Heal"]), ["Heal", "Major Heal"], "Cleric never learns offense: dropped on load");
+  // Phase 91.1 plan 03 (V20 B, 2026-10-01): Strength is the Cleric's one named exception, so it now stays.
+  assert.deepStrictEqual(loadHero("Cleric", ["Heal", "Fireball", "Strength", "Major Heal"]), ["Heal", "Strength", "Major Heal"], "Cleric never learns offense (but Strength): the rest is dropped on load");
 });
 
 test("a save with none of these is byte-identical after load (a genuine no-op)", () => {

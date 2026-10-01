@@ -357,8 +357,9 @@ test("applyFoeDamageToPlayer: soaked.hide for a Fridgian; final dmg reflects the
   const events = [];
   applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 5, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
-  assert.deepEqual(struck.soaked, { hide: 2 });
-  assert.equal(struck.dmg, 3);
+  // Phase 91.1 plan 03 (V17 B, 2026-10-01): the hide soaks 3 (was 2), so a 5 takes 2.
+  assert.deepEqual(struck.soaked, { hide: 3 });
+  assert.equal(struck.dmg, 2);
 });
 
 test("applyFoeDamageToPlayer: soaked.hardiness for a Hardiness hero", () => {
@@ -379,8 +380,8 @@ test("applyFoeDamageToPlayer: soaked stacks Hardiness then hide for a Fridgian w
   const events = [];
   applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 10, roll: 18, atLeast: 16, dieN: 20 });
   const struck = events.find((e) => e.type === "struckByFoe");
-  assert.deepEqual(struck.soaked, { hardiness: 3, hide: 2 });
-  assert.equal(struck.dmg, 5);
+  assert.deepEqual(struck.soaked, { hardiness: 3, hide: 3 }); // V17: hide 3 (was 2)
+  assert.equal(struck.dmg, 4);
 });
 
 test("applyFoeDamageToPlayer: soaked.ward for a ward pool 4 vs dmg 9", () => {
@@ -414,8 +415,8 @@ test("applyFoeDamageToPlayer: an ability bolt (foeBolted) also carries soaked", 
   const events = [];
   applyFoeDamageToPlayer(state, foe, fakeRng([]), events, { dmg: 6, ability: "krupkeFreeze" });
   const bolted = events.find((e) => e.type === "foeBolted");
-  assert.deepEqual(bolted.soaked, { hide: 2 });
-  assert.equal(bolted.dmg, 4);
+  assert.deepEqual(bolted.soaked, { hide: 3 }); // V17: hide 3 (was 2)
+  assert.equal(bolted.dmg, 3);
 });
 
 // --- 4. soldierCrit -----------------------------------------------------

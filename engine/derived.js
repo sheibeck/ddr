@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, JEWELRY, CLOAKS, STAVES, TOOLS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, MU_SPELL_EXCEPTIONS, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, JEWELRY, CLOAKS, STAVES, TOOLS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
 import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor, controlResistFacesFor } from "./difficulty.js";
 import { derivedRng } from "./rng.js";
@@ -1331,7 +1331,10 @@ export function strikeDie(c) {
   let idx = c.level - 1;
   const R = RACES[c.race];
   if (R.strikeStep) idx = Math.min(4, idx + R.strikeStep);
-  if (c.sub === "Illusionist" && c.level < 3) idx = 0; // d20 until level three
+  // Phase 91.1 plan 03 (V15 B, user 2026-10-01): the Illusionist's d20 no longer cancels the Elf's smaller die:
+  // a race with a strike step keeps its own die at levels 1 and 2 (an Elf Illusionist strikes a d12, then a
+  // d10, like any Elf); every other Illusionist still strikes a d20 until level three.
+  if (c.sub === "Illusionist" && c.level < 3 && !R.strikeStep) idx = 0; // d20 until level three
   // Phase 39 (GEAR-02): the retired c.acute counter — a live "acute" item
   // effect (Potion of Acuteness) reads through c.timers now.
   if (itemEffectActive(c, "acute")) idx = 4; // strike on a d6
@@ -2913,6 +2916,49 @@ export function schoolBonus(sub, school) {
 }
 
 /**
+ * SCHOOL_WARD_HP — Phase 91.1 plan 03 (V18 B, user 2026-10-01): the hit points each point of the caster's
+ * protection bonus adds to a Shield's soak pool and to a Bubble's film.
+ */
+export const SCHOOL_WARD_HP = 5;
+
+/**
+ * healBonusFor(sub) — Phase 91.1 plan 03 (V18 B): the extra HP every healing spell the caster casts heals: the
+ * chart's healing bonus (Cleric 4, Court Mage 1). Replaces the Cleric's separate +3 rule. A sub-class with no
+ * chart row, a never-learned healing school or a 0 bonus reads 0 (never NaN). Pure, no rng.
+ */
+export function healBonusFor(sub) {
+  return schoolBonus(sub, "healing");
+}
+
+/**
+ * wardBonusFor(sub) — Phase 91.1 plan 03 (V18 B): the extra HP a caster's Shield soaks and Bubble's film holds:
+ * the chart's protection bonus times SCHOOL_WARD_HP (Cleric 15, Summoner and Court Mage 10, Sorcerer 5). 0 for
+ * everyone else, a Bard and a scroll's non-caster included. Pure, no rng.
+ */
+export function wardBonusFor(sub) {
+  return schoolBonus(sub, "protection") * SCHOOL_WARD_HP;
+}
+
+/**
+ * spellException(sub, sp) — Phase 91.1 plan 03 (V20 B): true when the chart's named-exception table
+ * (content/mu-chart.js#MU_SPELL_EXCEPTIONS) lets `sub` learn the spell `sp` although its school is closed.
+ * The one reader behind canLearn and spellClosed; no sub-class name is checked here.
+ */
+export function spellException(sub, sp) {
+  const names = MU_SPELL_EXCEPTIONS[sub];
+  return !!(names && sp && names.includes(sp.n));
+}
+
+/**
+ * spellClosed(sub, sp) — Phase 91.1 plan 03 (V20 B): schoolClosed for one spell: its school is closed to the
+ * Magic User sub-class and the chart's named exceptions do not let it in. A sub-class with no chart row is not
+ * a Magic User and nothing is closed to it.
+ */
+export function spellClosed(sub, sp) {
+  return schoolClosed(sub, sp.s) && !spellException(sub, sp);
+}
+
+/**
  * SCHOOL_STRETCH_SQUARES — Phase 90 plan 07 (SPELL-10; 90-CONTEXT.md "School
  * bonus stretches the new spells", Q6 A in docs/SPELL-AUDIT.md Rulings, user
  * 2026-09-30): the squares each point of the caster's school bonus adds to a
@@ -2948,7 +2994,7 @@ export function spellEffectRounds(sub, sp, base) {
 }
 
 export function canLearn(sub, sp) {
-  return schoolAllowed(sub, sp.s);
+  return schoolAllowed(sub, sp.s) || spellException(sub, sp);
 }
 
 /**
@@ -3082,7 +3128,7 @@ export function castableAttackSpells(state) {
 export function canCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
-  if (schoolClosed(c.sub, sp.s)) return false;
+  if (spellClosed(c.sub, sp)) return false;
   // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-03/IDENT-04): routed
   // through spellLevelFor so the per-sub override table can lower a spell's
   // effective level (Phase 90 plan 06: the Summoner's Summon); byte-

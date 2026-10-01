@@ -91,7 +91,8 @@ test("Cleric: Bad names never learning offense spells (generated), Good names th
   assert.ok(f.good.includes("always starts with Heal in the book"), JSON.stringify(f.good));
   assert.match(SUB_NOTE.Cleric, /offense spell/i);
   assert.match(SUB_NOTE.Cleric, /Heal/);
-  assert.doesNotMatch(SUB_NOTE.Cleric, /shield/i, "the game has no shields (user 2026-10-01)");
+  // Phase 91.1 plan 03 (V18 B, 2026-10-01): the Shield SPELL's soak is stated by name; only an armour shield is still banned.
+  assert.doesNotMatch(SUB_NOTE.Cleric.replace(/your Shield soaks [0-9]+ more HP/g, ""), /shield/i, "the game has no shields (user 2026-10-01)");
 });
 
 test("Wizard: Good names the day-one damage spell, Bad names never learning Illusion; the blurb no longer claims every school", () => {
@@ -150,9 +151,11 @@ test("chart (deliberate): the engine reads schoolBonus only in the thrown-spell 
   // combat.js (a member's thrown cast) are the only other readers. A new
   // reader means the footer's BONUS_SCHOOLS rule has to be revisited (91-02
   // owns whether a footer line states the Special stretch).
-  assert.deepEqual(readers, { "combat.js": 1, "derived.js": 3, "magic.js": 1 });
+  // Phase 91.1 plan 03 (V18 B, user 2026-10-01): derived.js reads it two more times, in healBonusFor and wardBonusFor (the chart's
+  // healing and protection bonuses are real now, so the footer states them: BONUS_SCHOOLS still names only the thrown school).
+  assert.deepEqual(readers, { "combat.js": 1, "derived.js": 5, "magic.js": 1 });
   assert.deepEqual([...THROWN_SCHOOLS], ["offense"]);
-  // Summoner divination +4 changes no roll, so it is not claimed.
+  // Divination changes no roll (Phase 91.1 plan 03, V18 B: every divination number is 0), so it is not claimed.
   assert.ok(!identityFooter("sub", "Summoner").good.some((t) => /divination/.test(t)));
 });
 
@@ -230,9 +233,9 @@ test("coverage: a scratch RACES field nobody phrased is reported", () => {
   assert.deepEqual(unphrasedRaceFields(scratch), ["zapFactor"]);
 });
 
-test("race lines: the size signature reads the engine's net truth (Dwarven +2 kept, foes −1 to hit you; Elven 2 less damage, no size to-hit line; Troll +11 with 2 of it for being large, foes +1 to hit you)", () => {
+test("race lines: the size signature reads the engine's net truth (Dwarven +3 kept (V16, was +2), foes −1 to hit you; Elven 2 less damage, no size to-hit line; Troll +11 with 2 of it for being large, foes +1 to hit you)", () => {
   const dwarven = identityFooter("race", "Dwarven");
-  assert.ok(dwarven.good.includes("+2 damage with every weapon"));
+  assert.ok(dwarven.good.includes("+3 damage with every weapon"));
   assert.ok(dwarven.good.includes("being small means foes −1 to hit you"));
   assert.ok(!dwarven.bad.some((t) => /damage/.test(t) && /small/.test(t)), "the Dwarven damage axis is masked");
   const elven = identityFooter("race", "Elven");
@@ -402,8 +405,8 @@ test("TEXT-01 pin: the Elven notes' to-hit floor is RACES.Elven.toHit; the Dwarv
   assert.ok(RACES.Elven.note.includes(`the top ${FACE_WORD[n]} numbers of it (${facesRangeText(n, D20)} on a d20) whatever the class`));
   assert.equal(RACES.Dwarven.upkeep, 1);
   assert.match(RACE_NOTE.Dwarven, /a single Hit Point a night when the rations run out/);
-  assert.equal(RACES.Dwarven.dmg, 2);
-  assert.match(RACE_NOTE.Dwarven, /^Two extra damage/);
+  assert.equal(RACES.Dwarven.dmg, 3); // Phase 91.1 plan 03 (V16 B, 2026-10-01): was 2
+  assert.match(RACE_NOTE.Dwarven, /^Three extra damage/);
 });
 
 test("TEXT-01 pin: the Guard note's damage and to-hit numbers come from weaponDamage and foeToHitVs", () => {

@@ -13,6 +13,11 @@
 // Bard songs and staves are not Cleric casting. Q3 B (user 2026-09-30, RULES-10):
 // a SCROLL that rolls an offense spell still free-casts for a Cleric; the ban is
 // the Cleric's own book (learn, deal, copy, cast), pinned below.
+//
+// Phase 91.1 plan 03 (V20 B, user 2026-10-01): ONE named exception, Strength (a buff, not an
+// attack): content/mu-chart.js#MU_SPELL_EXCEPTIONS. The school gate (offense: null) is unchanged, so every other
+// offense spell stays closed exactly as above; the pins below say "no offense spell but the named exception"
+// and the exception itself is pinned in test/unit/value-identity.test.js (V20).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,14 +27,15 @@ import { newRun } from "../../engine/engine.js";
 import { rollGrimoire, checkLevel } from "../../engine/character.js";
 import { findGrimoire, meetJoiner } from "../../engine/encounters.js";
 import { castSpell, readScroll } from "../../engine/magic.js";
-import { SPELLS, MU_CHART, CLASSES } from "../../content/index.js";
+import { SPELLS, MU_CHART, CLASSES, MU_SPELL_EXCEPTIONS } from "../../content/index.js";
 import { canCast, canLearn, schoolAllowed, castableAttackSpells, bestAttackSpell } from "../../engine/derived.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { maxCharges } from "../../engine/movement.js";
 
 const byName = (n) => SPELLS.find((sp) => sp.n === n);
-const OFFENSE = SPELLS.filter((sp) => sp.s === "offense");
-const isOffense = (n) => byName(n).s === "offense";
+// V20: the offense spells the Cleric's gate still closes (every one but the named exception).
+const OFFENSE = SPELLS.filter((sp) => sp.s === "offense" && !MU_SPELL_EXCEPTIONS.Cleric.includes(sp.n));
+const isOffense = (n) => byName(n).s === "offense" && !MU_SPELL_EXCEPTIONS.Cleric.includes(n);
 const SEEDS_1000 = Array.from({ length: 1000 }, (_, i) => i + 1);
 const clericOf = (seed) => newRun(seed, [], { force: { cls: "Magic User", sub: "Cleric" } });
 
@@ -38,6 +44,7 @@ test("IDENT-15 gate data: the Cleric's offense school is never learned, and ever
   assert.equal(schoolAllowed("Cleric", "offense"), false);
   assert.ok(OFFENSE.length > 0);
   for (const sp of OFFENSE) assert.equal(canLearn("Cleric", sp), false, sp.n);
+  assert.deepEqual(MU_SPELL_EXCEPTIONS, { Cleric: ["Strength"] }, "V20: the one named exception");
   // the rest of the row is what Phase 90 left
   assert.deepEqual(MU_CHART.Cleric, {
     offense: null, protection: 3, healing: 4, divination: 0, special: null, illusion: null,
@@ -106,20 +113,24 @@ test("IDENT-15 scribe gate: a scroll never copies an offense spell into a Cleric
   }
 });
 
-test("Q3 B (RULES-10): a scroll that rolls an offense spell STILL casts for a Cleric (not copied, free cast), the ban is the book's", () => {
+// Phase 91.1 plan 03 (V20 B): a scroll of Strength is a scroll of a spell the Cleric may now learn, so it is copied into the book
+// like any learnable spell's scroll (the scribe gate follows canLearn). The Q3 B rule itself (a scroll that rolls a spell the
+// book still CLOSES, a thrown Freeze, free-casts and is never copied) is pinned in a fight in test/unit/identity-rulings.test.js.
+test("Q3 B (RULES-10) + V20: a Cleric's scroll of Strength is copied into the book (the named exception), and a scroll of a closed offense spell is never copied", () => {
   const state = clericOf(1);
-  const strength = byName("Strength"); // an offense-school spell that is not combat-only, so it fires outside a fight
-  const before = [...state.c.grimoire];
+  state.c.grimoire = state.c.grimoire.filter((n) => n !== "Strength");
   state.c.scrolls = 1;
   const events = readScroll(state, { pick: (a) => a.find((sp) => sp.n === "Strength"), d: () => 1, shuffle: (a) => a }, []);
   assert.ok(events.some((e) => e.type === "scrollRead" && e.spell === "Strength"));
-  assert.equal(events.some((e) => e.type === "scrollCopiedToGrimoire"), false, "the book never copies it");
-  assert.equal(events.some((e) => e.type === "spellSchoolLocked"), false, "the scroll path is not school-locked");
-  assert.ok(events.some((e) => e.type === "scrollCast" && e.spell === "Strength"), JSON.stringify(events));
-  assert.ok(events.some((e) => e.type === "strengthCast"), "the free cast took effect");
-  assert.ok(state.c.timers && state.c.timers["spell:Strength"], "Strength's timed effect started");
-  assert.deepEqual(state.c.grimoire, before);
-  assert.equal(canCast(state, strength), false);
+  assert.ok(events.some((e) => e.type === "scrollCopiedToGrimoire" && e.spell === "Strength"), JSON.stringify(events));
+  assert.ok(state.c.grimoire.includes("Strength"));
+  assert.equal(canCast(state, byName("Strength")), true);
+  const closed = clericOf(1);
+  closed.c.scrolls = 1;
+  const before = [...closed.c.grimoire];
+  const ev2 = readScroll(closed, { pick: (a) => a.find((sp) => sp.n === "Freeze"), d: () => 1, shuffle: (a) => a }, []);
+  assert.equal(ev2.some((e) => e.type === "scrollCopiedToGrimoire"), false, "a closed spell is never copied");
+  assert.deepEqual(closed.c.grimoire, before);
 });
 
 test("IDENT-15 cast gate: an old book that holds an offense spell never casts it (spellSchoolLocked, forbidden, no charge spent)", () => {
@@ -162,7 +173,8 @@ test("IDENT-15 Joiner: a Joiner Cleric (meetJoiner) holds no offense spell, and 
   assert.ok(seen >= 10, `only ${seen} Cleric Joiners found in the scan`);
 });
 
-test("IDENT-15: rollGrimoire's Cleric draws a pinned, smaller main-rng count (ten: the offense school left both shuffles) and never throws", () => {
+// Phase 91.1 plan 03 (V20 B): ten -> twelve: the one named exception, Strength, rejoined the low and day-one spare pools.
+test("IDENT-15: rollGrimoire's Cleric draws a pinned, smaller main-rng count (twelve: the offense school left both shuffles but Strength) and never throws", () => {
   for (let seed = 1; seed <= 200; seed++) {
     const rng = makeRng(seed);
     let draws = 0;
@@ -174,7 +186,7 @@ test("IDENT-15: rollGrimoire's Cleric draws a pinned, smaller main-rng count (te
       setState: rng.setState,
     };
     const book = rollGrimoire(counting, "Cleric");
-    assert.equal(draws, 10, `seed ${seed}`);
+    assert.equal(draws, 12, `seed ${seed}`);
     assert.ok(book.includes("Heal"));
   }
 });

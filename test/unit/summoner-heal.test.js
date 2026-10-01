@@ -156,12 +156,13 @@ test("castSpell: a heal2x (Wilmsry) Summoner rolling 5 restores 5 — doubled to
   assert.deepEqual(healed, { type: "healed", amount: 5, spell: "Heal", halved: true, gained: 5 });
 });
 
-test("castSpell: a Cleric's own +3 bonus is folded in before the (unrelated) mul — a non-Summoner Cleric heals normally", () => {
+// Phase 91.1 plan 03 (V18 B, 2026-10-01): the Cleric's bonus is the chart's healing 4 (was a separate +3), so 8 + 4 = 12.
+test("castSpell: a Cleric's own +4 bonus is folded in before the (unrelated) mul — a non-Summoner Cleric heals normally", () => {
   const state = fixedState({ c: { sub: "Cleric", grimoire: ["Heal"], level: 1, wp: 10, maxWP: 100 } });
   const events = castSpell(state, SPELL_IDX.Heal, fakeRng([8]), []);
-  assert.equal(state.c.wp, 21, "10 + 8 + 3 = 21, no halving for a Cleric");
+  assert.equal(state.c.wp, 22, "10 + 8 + 4 = 22, no halving for a Cleric");
   const healed = events.find((e) => e.type === "healed");
-  assert.deepEqual(healed, { type: "healed", amount: 11, spell: "Heal", gained: 11 });
+  assert.deepEqual(healed, { type: "healed", amount: 12, spell: "Heal", gained: 12 });
 });
 
 test("castSpell: Heal still caps at maxWP after halving", () => {

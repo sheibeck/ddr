@@ -48,6 +48,9 @@ import {
   schoolAllowed,
   schoolGate,
   schoolBonus,
+  healBonusFor,
+  wardBonusFor,
+  spellException,
   healMulFor,
   spellLevelFor,
   spellEffectSquares,
@@ -119,11 +122,17 @@ function chartLines(sub) {
     out.push(entry("chart-open", "good", "every school of magic from level 1"));
   }
   const never = schools.filter((s) => !schoolAllowed(sub, s));
+  // Phase 91.1 plan 03 (V20 B): a closed school with a named exception (MU_SPELL_EXCEPTIONS) reads "offense (except
+  // Strength)", the names from the chart's own data via the engine's spellException.
+  const neverText = (school) => {
+    const names = SPELLS.filter((sp) => sp.s === school && spellException(sub, sp)).map((sp) => sp.n);
+    return names.length ? `${school} (except ${andList(names)})` : school;
+  };
   let neverDone = false;
   for (const school of schools) {
     if (!schoolAllowed(sub, school)) {
       if (!neverDone) {
-        out.push(entry("chart-never", "bad", `never learns ${orList(never)} spells`));
+        out.push(entry("chart-never", "bad", `never learns ${orList(never.map(neverText))} spells`));
         neverDone = true;
       }
       continue;
@@ -132,6 +141,13 @@ function chartLines(sub) {
     if (bonus > 0 && BONUS_SCHOOLS.has(school)) {
       out.push(entry(`chart-bonus-${school}`, "good", `${signedText(bonus)} to hit with thrown ${school} spells`));
     }
+    // Phase 91.1 plan 03 (V18 B): a protection bonus is real (5 HP a point on a Shield's soak and a Bubble's film), as
+    // is a healing bonus (added to every heal the caster casts); both numbers come from the engine's own helpers.
+    if (school === "protection" && wardBonusFor(sub) > 0) {
+      const w = wardBonusFor(sub);
+      out.push(entry("chart-bonus-protection", "good", `your Shield soaks ${w} more HP and your Bubble's film holds ${w} more`));
+    }
+    if (school === "healing" && healBonusFor(sub) > 0) out.push(entry("chart-bonus-healing", "good", `every healing spell you cast heals ${healBonusFor(sub)} more`));
     const gate = schoolGate(sub, school);
     if (gate > 1) out.push(entry(`chart-gate-${school}`, "bad", `no ${school} spells until level ${gate}`));
     const stretch = stretchLine(sub, school);

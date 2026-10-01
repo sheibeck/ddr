@@ -23,7 +23,7 @@ import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILI
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
 import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow } from "../../engine/derived.js";
 // Phase 90 plan 06 (SPELL-10): its own line, so the pinned line above (test/unit/shell-worn-slots.test.js) is untouched.
-import { schoolClosed } from "../../engine/derived.js";
+import { spellClosed } from "../../engine/derived.js";
 // Phase 90 plan 11 (TEXT-01): a spell cast on a foe can be resisted; its row says so in one place (below).
 import { spellTargetsFoe } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
@@ -401,7 +401,7 @@ export function grimoireViewModel(state) {
         disabledReason = "On the combat screen";
       } else if (sp.combatOnly) {
         disabledReason = "Combat only";
-      } else if (schoolClosed(c.sub, sp.s)) {
+      } else if (spellClosed(c.sub, sp)) {
         // Phase 90 plan 06 (SPELL-10): a school this sub-class can never learn
         // (only a tampered book holds one; the load drops it) is never castable.
         disabledReason = "Not your school";

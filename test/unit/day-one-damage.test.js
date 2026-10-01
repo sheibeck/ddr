@@ -80,7 +80,7 @@ function countingRng(inner) {
 // declaration as that file's.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
   Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 12, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 // --- table shape ----------------------------------------------------------

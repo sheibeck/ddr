@@ -491,7 +491,9 @@ test("91-10 pin: a Cleric starts in chain mail and every other Magic User in clo
   assert.equal(e.side, "good");
   assert.match(e.text, /chain mail/);
   assert.match(SUB_NOTE.Cleric, /chain mail/);
-  assert.doesNotMatch(SUB_NOTE.Cleric, /shield/i, "the game has no shields (user 2026-10-01)");
+  // Phase 91.1 plan 03 (V18 B, 2026-10-01): the Shield SPELL is real and the chart's protection bonus is stated by name
+  // ("your Shield soaks 15 more HP"); the guard is still that no armour shield is claimed.
+  assert.doesNotMatch(SUB_NOTE.Cleric.replace(/your Shield soaks [0-9]+ more HP/g, ""), /shield/i, "the game has no shields (user 2026-10-01)");
   assert.doesNotMatch(SUB_NOTE.Woodsman, /shield/i, "the game has no shields (user 2026-10-01)");
 });
 

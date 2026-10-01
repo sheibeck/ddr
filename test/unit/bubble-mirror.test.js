@@ -84,12 +84,15 @@ function fixedCombat(foes, overrides = {}) {
   return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
 }
 
+// Phase 91.1 plan 03 (V18 B, 2026-10-01): the three cast pins below used a Cleric, whose protection bonus (3) now
+// enlarges the Shield (65) and the film (40); they cast as a Wizard (bonus 0) so they still pin the BASE shape (50, 25).
+// The enlarged numbers are pinned in test/unit/value-identity.test.js (V18).
 const ARMED_MIRROR = { name: "Bubble", mirror: true, pool: 0, popPool: 25, rounds: null };
 
 // ─── 1: casting Bubble/Shield ───────────────────────────────────────────────
 
 test("castSpell: Bubble raises an armed mirror; wardRaised carries mirror true and popPool 25", () => {
-  const state = fixedState({ c: { cls: "Magic User", sub: "Cleric", grimoire: ["Bubble"], level: 3 } });
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", grimoire: ["Bubble"], level: 3 } });
   const events = castSpell(state, SPELL_IDX.Bubble, fakeRng([]), []);
   assert.deepStrictEqual(state.c.ward, ARMED_MIRROR);
   const raised = events.find((e) => e.type === "wardRaised");
@@ -98,14 +101,14 @@ test("castSpell: Bubble raises an armed mirror; wardRaised carries mirror true a
 });
 
 test("castSpell: Shield sets exactly the old pool/rounds shape, no reflect key ever", () => {
-  const state = fixedState({ c: { cls: "Magic User", sub: "Cleric", grimoire: ["Shield"], level: 1 } });
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", grimoire: ["Shield"], level: 1 } });
   const events = castSpell(state, SPELL_IDX.Shield, fakeRng([]), []);
   assert.deepStrictEqual(state.c.ward, { pool: 50, rounds: 5, name: "Shield" });
   assert.equal("reflect" in state.c.ward, false);
 });
 
 test("a Bubble raised out of combat waits, untouched, for the next fight's first landed blow", () => {
-  const state = fixedState({ c: { cls: "Magic User", sub: "Cleric", grimoire: ["Bubble"], level: 3 } });
+  const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", grimoire: ["Bubble"], level: 3 } });
   state.combat = null;
   castSpell(state, SPELL_IDX.Bubble, fakeRng([]), []);
   assert.deepStrictEqual(state.c.ward, ARMED_MIRROR, "armed and waiting, no combat needed to raise it");

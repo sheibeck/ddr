@@ -410,7 +410,8 @@ const CONTRACT = [
     key: "Cleric",
     kind: "sub",
     good: {
-      name: "heals 3 more than anyone else, rolls 4 to hit",
+      // Phase 91.1 plan 03 (V18 B, 2026-10-01): the chart's healing bonus (4) replaces the separate +3 rule.
+      name: "heals 4 more than anyone else, rolls 4 to hit",
       run() {
         const heal = SPELLS.find((sp) => sp.n === "Heal");
         const cleric = hero("Cleric");
@@ -423,7 +424,7 @@ const CONTRACT = [
         const controlEvents = castSpell(control, SPELLS.indexOf(heal), fakeRng([5]), []);
         const controlHealed = expectEvent(controlEvents, "healed");
 
-        assert.equal(clericHealed.amount, controlHealed.amount + 3);
+        assert.equal(clericHealed.amount, controlHealed.amount + 4);
         assert.equal(toHit(cleric), 4);
       },
     },
@@ -431,11 +432,12 @@ const CONTRACT = [
       // IDENT-15 (Phase 91 plan 02, user 2026-09-30): the soft bad ("no offensive
       // bonus at all") is now the hard one — the Cleric never learns the offense
       // school, so no offense spell is dealt, copied or cast from its book.
+      // Phase 91.1 plan 03 (V20 B, 2026-10-01): one named exception, Strength (MU_SPELL_EXCEPTIONS).
       name: "never learns an offense spell: the offense school is closed in the chart",
       run() {
         assert.equal(schoolAllowed("Cleric", "offense"), false);
         assert.equal(schoolBonus("Cleric", "offense"), 0);
-        for (const sp of SPELLS.filter((s) => s.s === "offense")) assert.equal(canLearn("Cleric", sp), false, sp.n);
+        for (const sp of SPELLS.filter((s) => s.s === "offense")) assert.equal(canLearn("Cleric", sp), sp.n === "Strength", sp.n);
       },
     },
   },
@@ -1221,7 +1223,8 @@ const CONTRACT = [
     key: "Dwarven",
     kind: "race",
     good: {
-      name: "+2 damage (small size never takes it); armour built to be hit wears at half the rate; small: one face harder for foes to hit",
+      // Phase 91.1 plan 03 (V16 B, 2026-10-01): +3 damage (was +2).
+      name: "+3 damage (small size never takes it); armour built to be hit wears at half the rate; small: one face harder for foes to hit",
       run() {
         const dwarven = withWeapon(hero("Soldier", "Dwarven"), "Club", 0, 0);
         const control = withWeapon(hero("Soldier", "Human"), "Club", 0, 0);
@@ -1231,7 +1234,7 @@ const CONTRACT = [
         // (the +2 is unchanged from before this plan); Small's harder-to-hit
         // face axis is NOT opposed by anything Dwarven-specific, so it
         // applies in full (assert below).
-        assert.equal(weaponDamage(dwarven.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 2);
+        assert.equal(weaponDamage(dwarven.c, fakeRng([3])), weaponDamage(control.c, fakeRng([3])) + 3);
 
         const state = hero("Soldier", "Dwarven");
         state.c.armor = "Leather";
@@ -1329,7 +1332,8 @@ const CONTRACT = [
     good: {
       // Phase 91 plan 09 (IDENT-20): the old "never wastes its second swing" promise is retired
       // with the corpse rule; the frenzy is a 4-6 on a d6 (test/unit/fridgian-frenzy.test.js).
-      name: "a 4-6 on a d6 frenzies into a second swing; thick hide soaks 2 from every blow",
+      // Phase 91.1 plan 03 (V17 B, 2026-10-01): the hide soaks 3 (was 2).
+      name: "a 4-6 on a d6 frenzies into a second swing; thick hide soaks 3 from every blow",
       run() {
         const state = hero("Soldier", "Fridgian");
         withCombat(
@@ -1348,7 +1352,7 @@ const CONTRACT = [
         const hideState = hero("Soldier", "Fridgian");
         hideState.c.skills = { Hardiness: 1 };
         applyFoeDamageToPlayer(hideState, fixedFoe(), fakeRng([]), [], { dmg: 7, roll: 3, need: 5 });
-        assert.equal(hideState.c.wp, hideState.c.maxWP - 2, "max(1, max(1, 7-3) - 2) = 2");
+        assert.equal(hideState.c.wp, hideState.c.maxWP - 1, "max(1, max(1, 7-3) - 3) = 1");
       },
     },
     bad: {

@@ -25,6 +25,8 @@ import {
   schoolGate,
   schoolAllowed,
   schoolClosed,
+  spellClosed,
+  canLearn,
 } from "../../engine/derived.js";
 
 /** Minimal state fixture — canCast/castableAttackSpells read only
@@ -84,7 +86,7 @@ test("spellLevelFor: the one override cell returns 1, every other cell (includin
 function oldCanCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
-  if (schoolClosed(c.sub, sp.s)) return false;
+  if (spellClosed(c.sub, sp)) return false; // Phase 91.1 plan 03 (V20 B): the named exceptions (the Cleric's Strength)
   if (sp.lvl > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);
 }
@@ -111,7 +113,7 @@ test("canCast school check (SPELL-10): a spell of a school the sub-class can nev
     for (let level = 1; level <= 5; level++) {
       const state = stateFor(sub, level, ALL_NAMES);
       for (const sp of SPELLS) {
-        if (schoolAllowed(sub, sp.s)) continue;
+        if (canLearn(sub, sp)) continue; // Phase 91.1 plan 03 (V20 B): the Cleric's named Strength exception is learnable
         assert.equal(canCast(state, sp), false, `${sub}/${sp.n}/L${level}: school ${sp.s} is closed to it`);
       }
     }

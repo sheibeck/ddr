@@ -283,7 +283,8 @@ test("heals never add level²: Heal and Major Heal restore their dice at levels 
     const sp = row(n);
     for (const level of LEVELS) {
       for (const [face, want] of [[1, lo(sp.dmg)], [sp.dmg.sides, hi(sp.dmg)]]) {
-        const s = fight({ ...caster(n, level), sub: "Court Mage", wp: 100, maxWP: 999 }, [foe("F1")]);
+        // Phase 91.1 plan 03 (V18 B, 2026-10-01): a Wizard (healing bonus 0), not the Court Mage (+1 on every heal now), so the dice alone are pinned.
+        const s = fight({ ...caster(n, level), sub: "Wizard", wp: 100, maxWP: 999 }, [foe("F1")]);
         const events = castSpell(s, idx(n), rngBy((sides) => (sides === sp.dmg.sides ? face : 1)), []);
         assert.equal(events.find((e) => e.type === "healed").amount, want, `${n} L${level} face ${face}`);
       }

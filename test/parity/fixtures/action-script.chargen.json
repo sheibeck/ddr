@@ -548,7 +548,7 @@
       "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 69 -> 77, wp 69 -> 77 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "35": {
-      "phase": "54+79.2+91",
+      "phase": "54+79.2+91+91.1",
       "requirements": [
         "BAND-02",
         "IDENT-15"
@@ -576,20 +576,17 @@
       },
       "after": {
         "grimoire": [
-          "Turn Walking Dead",
-          "Shield",
           "Heal",
-          "Sense Presence",
-          "Regeneration",
-          "Plane Gate",
-          "Bubble",
+          "Turn Walking Dead",
+          "Strength",
+          "Shield",
           "Major Heal"
         ],
         "maxWP": 105,
         "wp": 105,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged). Phase 91 plan 02 (IDENT-15, user ruling 2026-09-30: a Cleric cannot cast offensive spells, always starts with Heal): the offense school left the Cleric's main-rng pool shuffles (rollGrimoire draws 34 -> 10), so this Cleric's grimoire is a different book from the prototype's (no Freeze, Stupidity, Weaken or Insane; Heal and Major Heal still present). Measured live: the grimoire is the only field that moves, because nothing but the carved-out name is drawn after the grimoire; every other compared field is byte-identical."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged). Phase 91 plan 02 (IDENT-15, user ruling 2026-09-30: a Cleric cannot cast offensive spells, always starts with Heal): the offense school left the Cleric's main-rng pool shuffles (rollGrimoire draws 34 -> 10), so this Cleric's grimoire is a different book from the prototype's (no Freeze, Stupidity, Weaken or Insane; Heal and Major Heal still present). Measured live: the grimoire is the only field that moves, because nothing but the carved-out name is drawn after the grimoire; every other compared field is byte-identical. Phase 91.1 plan 03 (V20 B, user ruling 2026-10-01: a Cleric may learn Strength, one named exception in the gate data): Strength joined the Cleric's lowest-level pool, so the level-1 shuffle is one entry longer (rollGrimoire draws 10 -> 12) and this Cleric's book is a different, five-spell book (Heal, Turn Walking Dead, Strength, Shield, Major Heal). Measured live via newRun(35); the grimoire is again the only field that moves (nothing but the carved-out name is drawn after it). The prototype side is unchanged."
     }
   }
 }

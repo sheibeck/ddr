@@ -28,7 +28,7 @@ import {
   effectSourceOf,
   sourceSlotItem,
   SOURCE_SLOTS,
-  schoolClosed,
+  spellClosed,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { DIRV } from "./movement.js";
@@ -818,7 +818,7 @@ function migrateSpellNames(c) {
     const name = resolve(n);
     const row = name === null ? undefined : SPELLS.find((sp) => sp.n === name);
     if (!row) return null;
-    if (schoolClosed(c.sub, row.s)) return null;
+    if (spellClosed(c.sub, row)) return null;
     return name;
   };
   // A book that needs no change is left completely untouched (not reassigned).

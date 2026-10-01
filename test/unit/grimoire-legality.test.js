@@ -171,7 +171,7 @@ test("every gated sub-class's chargen grimoire holds no spell whose school gate 
 // measured live (the offense school left both pool shuffles) — declared there too.
 const ROLL_GRIMOIRE_DRAW_COUNTS_NON_SUMMONER = {
   Wizard: 36, Warlock: 33, Sorcerer: 35,
-  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 12, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 test("rollGrimoire's main-rng draw count is UNCHANGED for every non-Summoner sub, over seeds 1..50 (RULES-03 adds zero draws)", () => {

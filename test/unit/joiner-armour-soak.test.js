@@ -174,8 +174,9 @@ test("edge (empty): a Joiner with no armour (AR 0, 0 durability, a Fridgian) dra
     const { events } = blow(state, foe, member, 0);
     assert.deepEqual(types(events), ["memberStruck"], JSON.stringify(over));
     assert.equal(events[0].soak, undefined);
-    // Phase 91 plan 09 (IDENT-20, Q7 A): the Fridgian Joiner's hide soaks 2 of the 7.
-    assert.equal(member.wp, over.race === "Fridgian" ? 25 : 23, JSON.stringify(over));
+    // Phase 91 plan 09 (IDENT-20, Q7 A): the Fridgian Joiner's hide soaks 2 of the 7; Phase 91.1 plan 03 (V17 B,
+    // 2026-10-01): it soaks 3 of the 7 (a 4 lands: 30 - 4 = 26).
+    assert.equal(member.wp, over.race === "Fridgian" ? 26 : 23, JSON.stringify(over));
   }
 });
 
@@ -422,8 +423,9 @@ test("memberStruck states the failed soak die when one was drawn; a bare payload
 
 const noArmour = (over = {}) => joinerSheet({ ar: 0, armorWP: 0, armorMax: 0, armorMin: 0, armor: "Nothing", ...over });
 
-test("IDENT-20 hide: a foe's 7-damage hit on an unarmoured Fridgian Joiner takes 5 HP; a Human Joiner takes 7", () => {
-  for (const [race, taken] of [["Fridgian", 5], ["Human", 7]]) {
+// Phase 91.1 plan 03 (V17 B, 2026-10-01): the hide soaks 3 (was 2): a 7 takes 4, and with Hardiness 7 -> 4 -> 1.
+test("IDENT-20 hide: a foe's 7-damage hit on an unarmoured Fridgian Joiner takes 4 HP (V17); a Human Joiner takes 7", () => {
+  for (const [race, taken] of [["Fridgian", 4], ["Human", 7]]) {
     const { state, foe, member } = scene({ sheet: noArmour({ race }) });
     const { events, res } = blow(state, foe, member, 0);
     assert.deepEqual(types(events), ["memberStruck"], race);
@@ -432,10 +434,10 @@ test("IDENT-20 hide: a foe's 7-damage hit on an unarmoured Fridgian Joiner takes
   }
 });
 
-test("IDENT-20 hide: it stacks with Hardiness (7 -> 4 -> 2) and floors at 1", () => {
+test("IDENT-20 hide: it stacks with Hardiness (7 -> 4 -> 1) and floors at 1", () => {
   const hardy = scene({ sheet: noArmour({ race: "Fridgian", skills: { Hardiness: 1 } }) });
   const a = blow(hardy.state, hardy.foe, hardy.member, 0);
-  assert.equal(a.res.applied, 2, "max(1, max(1, 7-3) - 2) = 2");
+  assert.equal(a.res.applied, 1, "max(1, max(1, 7-3) - 3) = 1");
   const small = scene({ sheet: noArmour({ race: "Fridgian" }) });
   const b = blow(small.state, small.foe, small.member, 0, { dmg: 2 });
   assert.equal(b.res.applied, 1, "a blow of 2 still costs 1");

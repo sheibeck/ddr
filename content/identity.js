@@ -68,8 +68,9 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Cleric": side(
       [
-        trait("cleric-heal", "every healing spell heals 3 more", CONTRACT, "heals 3 more than anyone else, rolls 4 to hit"),
-        trait("cleric-hit", "+1 to hit over other Magic Users (17–20 on a d20 at level 1)", CONTRACT, "heals 3 more than anyone else, rolls 4 to hit"),
+        // Phase 91.1 plan 03 (V18 B, user 2026-10-01): the Cleric's separate "heals 3 more" trait (cleric-heal) is retired:
+        // the chart's healing bonus (4) is the Cleric's heal bonus now, a generated footer line (chart-bonus-healing).
+        trait("cleric-hit", "+1 to hit over other Magic Users (17–20 on a d20 at level 1)", CONTRACT, "heals 4 more than anyone else, rolls 4 to hit"),
         trait("cleric-heal-start", "always starts with Heal in the book", "test/unit/cleric-offense-ban.test.js", "IDENT-15: every new Cleric holds Heal and can cast it on day one, seeds 1 to 1000"),
         // Phase 91 plan 10 (Q2 A, user 2026-09-30): the real trade the "more hit points" ruling asked the text to state.
         trait("cleric-mail", "starts in chain mail, where every other Magic User starts in cloth", "test/unit/identity-text.test.js", "91-10 pin: a Cleric starts in chain mail and every other Magic User in cloth (cleric-mail, Q2 A)"),
@@ -279,6 +280,7 @@ export const BLURB_ANCHORS = Object.freeze({
       "sorcerer-arm": A(R`arm caps out at 9 damage`),
       "sorcerer-forgets": A(R`one-in-eight chance per level of simply forgetting`),
       "chart-bonus-offense": A(R`\+4 to hit`),
+      "chart-bonus-protection": A(R`Shield soaks 5 more HP and your Bubble's film holds 5 more`),
       "chart-gate-healing": A(R`healing waits until level 4`),
       "chart-stretch-special": A(R`10 squares longer, Stop Time 1 round longer`),
       "chart-never": A(R`Illusion is closed to you for good`),
@@ -287,17 +289,19 @@ export const BLURB_ANCHORS = Object.freeze({
       "summoner-summon": A(R`Summon is always in your book`),
       "summoner-doubled": A(R`a level stronger and longer-lived`),
       "summoner-backfire": A(R`one time in eight it arrives on the wrong side`),
+      "chart-bonus-protection": A(R`Shield soaks 10 more HP and your Bubble's film holds 10 more`),
       "chart-stretch-special": A(R`10 squares longer, Stop Time 1 round longer`),
       "chart-never": A(R`Illusion is closed to you for good`),
       "chart-healmul": A(R`heal at half strength`),
       "chart-override-Summon": A(R`from your very first day \(everyone else waits for level 2\)`),
     },
     "Cleric": {
-      "cleric-heal": A(R`heal 3 more`),
       "cleric-hit": A(R`\+1 to hit over other Magic Users`),
       "cleric-heal-start": A(R`Heal always on the first page`),
       "cleric-mail": A(R`chain mail`),
-      "chart-never": A(R`never learn offense, special or illusion spells`),
+      "chart-bonus-protection": A(R`Shield soaks 15 more HP and your Bubble's film holds 15 more`),
+      "chart-bonus-healing": A(R`healing spells heal 4 more`),
+      "chart-never": A(R`never learn offense \(except Strength\), special or illusion spells`),
       "chart-gate-divination": A(R`Divination waits until level 3`),
     },
     "Illusionist": {
@@ -307,12 +311,15 @@ export const BLURB_ANCHORS = Object.freeze({
       "chart-gate-protection": A(R`protection waits until level 3`),
       "chart-never": A(R`healing is closed to you for good`),
       "chart-stretch-special": A(R`40 squares longer, Stop Time 4 rounds longer`),
+      "chart-stretch-illusion": A(R`Senseless and Duplicate Foe last 1 round longer`),
     },
     "Court Mage": {
       "court-mage-boredom": A(R`one creature in six dies of boredom`),
       "court-mage-humans": A(R`can always parley with Humans`),
       "court-mage-first": A(R`everyone else gets there first`),
       "chart-bonus-offense": A(R`\+2 to hit`),
+      "chart-bonus-protection": A(R`Shield soaks 10 more HP and your Bubble's film holds 10 more`),
+      "chart-bonus-healing": A(R`healing spells heal 1 more`),
       "chart-gate-divination": A(R`divination waits until level 4`),
       "chart-never": A(R`Special and Illusion are closed to you for good`),
     },
@@ -423,7 +430,7 @@ export const BLURB_ANCHORS = Object.freeze({
       "dwarven-prices": A(R`halve their prices`, R`prices halved`),
       "race-size-face": A(R`foes get −1 to hit you`, R`foes get −1 to hit it`),
       "race-upkeep": A(R`single Hit Point a night`, R`1 HP/night`),
-      "race-dmg": A(R`two extra damage`, R`\+2 damage`),
+      "race-dmg": A(R`three extra damage`, R`\+3 damage`),
       "race-foe-strike-step": A(R`a die one size smaller, so a level 1 foe rolls a d12`, R`foes strike on a smaller die`),
       "race-armor-wear": A(R`wear at half the rate`, R`wears at half the rate`),
     },
@@ -439,7 +446,7 @@ export const BLURB_ANCHORS = Object.freeze({
       "race-no-samurai": A(R`no Fridgian Samurai`, R`never a Samurai`),
       "race-frenzy": A(R`a 4, 5 or 6 on a d6.*−1 to hit.*second is simply lost with it`, R`a 4, 5 or 6 on a d6.*−1 to hit.*lost if the first one fells its target`),
       "race-slow": A(R`will not strike first`, R`never strikes first`),
-      "race-hide": A(R`soaks two points off every blow`, R`soaks 2 from every blow`),
+      "race-hide": A(R`soaks three points off every blow`, R`soaks 3 from every blow`),
     },
     "Troll": {
       "troll-prices": A(R`charge you double`, R`prices doubled`),

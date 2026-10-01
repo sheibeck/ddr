@@ -157,8 +157,8 @@ test("the school stretch: Stop Time is 2 rounds for a Wizard or Apprentice, 3 fo
   assert.equal(rounds("Summoner"), 3);
   assert.equal(rounds("Illusionist"), 6);
   assert.equal(rounds("Soldier"), 2, "no chart row, no stretch");
-  // The chart gives the Illusion school +0 to both sub-classes that learn it.
-  assert.equal(spellEffectRounds("Illusionist", SP.Senseless, 3), 3);
+  // The chart gives the Illusion school +1 to the Illusionist and +0 to the Apprentice (Phase 91.1 plan 03 (V19 B, 2026-10-01): was +0 for both).
+  assert.equal(spellEffectRounds("Illusionist", SP.Senseless, 3), 4);
   assert.equal(spellEffectRounds("Apprentice", SP["Duplicate Foe"], 4), 4);
 });
 
@@ -270,18 +270,18 @@ test("Senseless: a target that fails its resist gets misdirect { at: friends, le
   const rng = fakeRng([3]);
   const ev = [];
   const rounds = misdirectFoe(s, s.combat.foes[0], SP.Senseless, rng, ev, { sub: "Illusionist" });
-  assert.equal(rounds, 3);
+  assert.equal(rounds, 4, "d4 (3) + the Illusionist's Illusion bonus 1 (Phase 91.1 plan 03 (V19 B, 2026-10-01))");
   assert.equal(rng.count(), 1, "one main draw: the duration die");
-  assert.deepEqual(s.combat.foes[0].misdirect, { at: "friends", left: 3 });
-  assert.deepEqual(ev, [{ type: "foeMisdirected", target: "F1", at: "friends", rounds: 3 }]);
+  assert.deepEqual(s.combat.foes[0].misdirect, { at: "friends", left: 4 });
+  assert.deepEqual(ev, [{ type: "foeMisdirected", target: "F1", at: "friends", rounds: 4 }]);
 });
 
-test("Duplicate Foe: d4+1 rounds, aimed at itself", () => {
+test("Duplicate Foe: d4+1 rounds (+1 more for the Illusionist's Illusion bonus, Phase 91.1 plan 03 (V19 B, 2026-10-01)), aimed at itself", () => {
   const s = spellState("Duplicate Foe", 1);
   const ev = [];
   misdirectFoe(s, s.combat.foes[0], SP["Duplicate Foe"], fakeRng([4]), ev, {});
-  assert.deepEqual(s.combat.foes[0].misdirect, { at: "self", left: 5 });
-  assert.deepEqual(ev.map((e) => [e.type, e.at, e.rounds]), [["foeMisdirected", "self", 5]]);
+  assert.deepEqual(s.combat.foes[0].misdirect, { at: "self", left: 6 });
+  assert.deepEqual(ev.map((e) => [e.type, e.at, e.rounds]), [["foeMisdirected", "self", 6]]);
 });
 
 test("Senseless through castSpell: the picked foe's one resist is rolled up front; a resist ends the cast with no duration draw and no misdirect", () => {
@@ -301,7 +301,7 @@ test("Senseless through castSpell: it lands on the picked foe, which spends its 
   s.acts = failActs("Senseless", 1);
   const ev = castSpell(s, IDX.Senseless, fakeRng([3, ...ONES(40)]), []);
   assert.equal(ev.filter((e) => e.type === "foeMisdirected").length, 1);
-  assert.deepEqual(s.combat.foes[0].misdirect, { at: "friends", left: 2 }, "d4 3, one turn taken");
+  assert.deepEqual(s.combat.foes[0].misdirect, { at: "friends", left: 3 }, "d4 3 + 1 (Illusionist), one turn taken");
   assert.equal(ev.filter((e) => e.type === "foeMisdirectedHit").length, 1);
   assert.equal(s.c.wp, 60, "the hero was never swung at");
 });
@@ -330,11 +330,11 @@ test("a new misdirect never shortens a longer live one (the longer record, its a
   misdirectFoe(s, f, SP.Senseless, fakeRng([2]), ev, { sub: "Illusionist" });
   assert.deepEqual(f.misdirect, { at: "self", left: 5 });
   assert.deepEqual(ev, [{ type: "foeMisdirected", target: "F1", at: "self", rounds: 5 }]);
-  misdirectFoe(s, f, SP.Senseless, fakeRng([4]), [], { sub: "Illusionist" });
-  assert.deepEqual(f.misdirect, { at: "self", left: 5 }, "a d4 of 4 is still shorter than 5");
+  misdirectFoe(s, f, SP.Senseless, fakeRng([3]), [], { sub: "Illusionist" });
+  assert.deepEqual(f.misdirect, { at: "self", left: 5 }, "a d4 of 3 (+1 for the Illusionist = 4) is still shorter than 5");
   f.misdirect = { at: "self", left: 1 };
   misdirectFoe(s, f, SP.Senseless, fakeRng([3]), [], { sub: "Illusionist" });
-  assert.deepEqual(f.misdirect, { at: "friends", left: 3 }, "a longer new cast replaces a shorter one");
+  assert.deepEqual(f.misdirect, { at: "friends", left: 4 }, "a longer new cast replaces a shorter one");
 });
 
 // ---------------------------------------------------------------------------

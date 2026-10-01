@@ -55,18 +55,22 @@ import { newRun } from "../../engine/engine.js";
 import { GW, GH } from "../../engine/maze.js";
 import { canCast, canLearn, schoolAllowed, schoolGate, spellLevelFor } from "../../engine/derived.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
-import { SPELLS, MU_CHART, CLASSES, THRESHOLDS, SPELL_LEVEL_OVERRIDES } from "../../content/index.js";
+import { SPELLS, MU_CHART, CLASSES, THRESHOLDS, SPELL_LEVEL_OVERRIDES, MU_SPELL_EXCEPTIONS } from "../../content/index.js";
 
 const MU_SUBS = Object.keys(MU_CHART);
 const SCHOOLS = ["offense", "protection", "healing", "divination", "special", "illusion"];
 const byName = (n) => SPELLS.find((sp) => sp.n === n);
+// Phase 91.1 plan 03 (V20 B, user 2026-10-01): the NAMED exceptions to a closed school (the Cleric's Strength), content/mu-chart.js
+// #MU_SPELL_EXCEPTIONS. The test reads the same data table the engine does, never a sub-class name.
+const excepted = (sub, name) => (MU_SPELL_EXCEPTIONS[sub] || []).includes(name);
+const learnable = (sub, sp) => schoolAllowed(sub, sp.s) || excepted(sub, sp.n);
 const seedRange = (n) => Array.from({ length: n }, (_, i) => i + 1);
 
 /** problem(sub, name, level, how) — why `name` may not sit in `sub`'s book at `level`, or null. */
 function bookProblem(sub, name, level) {
   const sp = byName(name);
   if (!sp) return `"${name}" is not a SPELLS row`;
-  if (!schoolAllowed(sub, sp.s)) return `${sub} can never learn the ${sp.s} school (${name})`;
+  if (!learnable(sub, sp)) return `${sub} can never learn the ${sp.s} school (${name})`;
   if (schoolGate(sub, sp.s) > level) return `${sub} opens ${sp.s} at level ${schoolGate(sub, sp.s)}, above level ${level} (${name})`;
   return null;
 }
@@ -147,7 +151,7 @@ test("sweep, Joiner meeting: meetJoiner -> resolveJoiner (which reads the Joiner
     const member = state.party.find((m) => m.name === pending.name);
     if (!member) continue;
     for (const name of member.grimoire) {
-      assert.ok(schoolAllowed(member.sub, byName(name).s), `seed ${seed}: Joiner ${member.sub} holds ${name}`);
+      assert.ok(learnable(member.sub, byName(name)), `seed ${seed}: Joiner ${member.sub} holds ${name}`);
       assert.ok(schoolGate(member.sub, byName(name).s) <= Math.max(1, level), `seed ${seed}: Joiner ${member.sub} holds ${name} above level ${level}`);
     }
   }
@@ -322,7 +326,7 @@ test("sweep, menu: the combat spell menu over a book holding EVERY spell (every 
         const sp = SPELLS[Number(row.id.replace("spell-", ""))];
         assert.ok(sp, `${sub} L${level}: row ${row.id} names no spell`);
         assert.equal(canCast(state, sp), true, `${sub} L${level}: the menu offers ${sp.n}, which canCast refuses`);
-        assert.ok(schoolAllowed(sub, sp.s), `${sub} L${level}: the menu offers ${sp.n} from the closed ${sp.s} school`);
+        assert.ok(learnable(sub, sp), `${sub} L${level}: the menu offers ${sp.n} from the closed ${sp.s} school`);
         assert.ok(level >= schoolGate(sub, sp.s), `${sub} L${level}: the menu offers ${sp.n} before its school opens`);
       }
       // ...and every spell canCast allows IS offered (the menu hides nothing castable).
@@ -402,11 +406,25 @@ test("guard: grantableAt agrees with the gate data for every sub-class, spell an
   for (const sub of MU_SUBS) {
     for (const sp of SPELLS) {
       for (let level = 1; level <= 5; level++) {
-        const expected = schoolAllowed(sub, sp.s) && schoolGate(sub, sp.s) <= level;
+        const expected = learnable(sub, sp) && schoolGate(sub, sp.s) <= level;
         assert.equal(grantableAt(sub, sp, level), expected, `${sub}/${sp.n}/L${level}`);
       }
     }
   }
+});
+
+test("the Cleric's exception is data, not code (V20): exactly one named spell, Strength, an offense spell whose school the chart closes; every other sub-class has none", () => {
+  assert.deepStrictEqual(MU_SPELL_EXCEPTIONS, { Cleric: ["Strength"] });
+  for (const [sub, names] of Object.entries(MU_SPELL_EXCEPTIONS)) {
+    assert.ok(MU_SUBS.includes(sub), `unknown sub-class ${sub}`);
+    for (const n of names) {
+      const sp = byName(n);
+      assert.ok(sp, `unknown spell ${n}`);
+      assert.equal(schoolAllowed(sub, sp.s), false, `${sub} already learns the ${sp.s} school: ${n} needs no exception`);
+      assert.equal(canLearn(sub, sp), true);
+    }
+  }
+  for (const sub of MU_SUBS) for (const sp of SPELLS) assert.equal(canLearn(sub, sp), learnable(sub, sp), `${sub}/${sp.n}`);
 });
 
 test("the Summoner's exception is data, not code: exactly one named override, read through spellLevelFor, and no other sub-class is touched", () => {

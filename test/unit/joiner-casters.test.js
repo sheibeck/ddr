@@ -169,14 +169,15 @@ test("heal first: a Joiner Wizard at 40% hp with Heal and Stop Time against thre
   assert.ok(healed[0].gained >= 1 && healed[0].gained <= 10, "a d10 for a Wizard");
 });
 
-test("heal: a Cleric Joiner adds its +3, the dice come from a derived stream, and the heal clamps to the Joiner's own maximum", () => {
+// Phase 91.1 plan 03 (V18 B, 2026-10-01): the Cleric's heal bonus is the chart's healing 4 (replacing the separate +3), a Joiner's too.
+test("heal: a Cleric Joiner adds its +4, the dice come from a derived stream, and the heal clamps to the Joiner's own maximum", () => {
   const sheet = mu(["Heal"], { sub: "Cleric", wp: 4, maxWP: 20 });
   const s = fightWith([sheet], [foe("A")]);
   const roll = rollDice(derivedRng(4242, "memberHeal", 1, 0, 1), SP.Heal.dmg);
   const events = alliesTurn(s, fakeRng([]), []);
   const healed = events.find((e) => e.type === "memberHealed");
-  assert.equal(healed.amount, roll + 3);
-  assert.equal(s.combat.allies[0].wp, Math.min(20, 4 + roll + 3));
+  assert.equal(healed.amount, roll + 4);
+  assert.equal(s.combat.allies[0].wp, Math.min(20, 4 + roll + 4));
   assert.equal(healed.gained, s.combat.allies[0].wp - 4);
 });
 
@@ -321,7 +322,7 @@ test("single control: a level-5 Joiner Illusionist against a lone level-5 foe ab
   assert.ok(m, "foeMisdirected");
   assert.equal(m.by, "Ada");
   assert.equal(m.at, "self");
-  assert.equal(m.rounds, 3 + 1, "d4 (3) + 1 for a +0 Illusion bonus");
+  assert.equal(m.rounds, 3 + 1 + 1, "d4 (3) + 1 + 1 for the Illusionist's +1 Illusion bonus (Phase 91.1 plan 03, V19 B, 2026-10-01; was +0)");
   assert.equal(f.misdirect.at, "self");
 });
 

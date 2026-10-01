@@ -229,7 +229,7 @@ test("(e) content/races.js: the Elven/Dwarven/Troll notes state their net size t
   assert.match(RACES.Elven.note, /thin-boned/i);
   assert.match(RACES.Elven.note, /easy to hit/i);
   assert.match(RACES.Elven.note, /2 damage/);
-  assert.match(RACES.Dwarven.note, /\+2 damage/);
+  assert.match(RACES.Dwarven.note, /\+3 damage/); // Phase 91.1 plan 03 (V16 B, 2026-10-01): was +2
   // Phase 91 plan 10 (TEXT-01): "one face harder / easier to hit" reads "foes −1 / +1 to hit".
   assert.match(RACES.Dwarven.note, /foes get −1 to hit it/);
   assert.match(RACES.Troll.note, /\+11 damage/);

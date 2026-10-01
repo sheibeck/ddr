@@ -40,7 +40,8 @@ export const RACES = {
   "Dwarven": {
     // armorWear: fraction of a soaked blow charged to armour durability,
     // Math.ceil'd, read by applyFoeDamageToPlayer.
-    size: "Small", upkeep: 1, dmg: 2, foeStrikeStep: 1, armorWear: 0.5,
+    size: "Small", upkeep: 1, dmg: 3, foeStrikeStep: 1, armorWear: 0.5,
+    // Phase 91.1 plan 03 (V16 B, user 2026-10-01): +3 damage (was +2).
     // RULES-11 (Phase 75.2, "Race signatures and Joiners", user ruling
     // 2026-09-25): Small's -2 damage axis would cancel this row's own `dmg:
     // 2` trait, so the base size step's damage axis is dropped for Dwarven —
@@ -50,10 +51,10 @@ export const RACES = {
     // base step sign.
     sizeAxes: { dmg: false },
     // RULES-11 (Phase 75.2, Plan 04): states the net truth under the size
-    // rule — the masked damage axis leaves the +2 untouched; the face axis
+    // rule — the masked damage axis leaves the +3 untouched; the face axis
     // is NOT masked, so being small also makes foes −1 to hit it (TEXT-01,
     // Phase 91 plan 10: no "faces").
-    note: "+2 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
+    note: "+3 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
@@ -62,8 +63,9 @@ export const RACES = {
   "Fridgian": {
     // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer
     // and (Phase 91 plan 09, Q7 A) by applyFoeDamageToMember for a Joiner of the race.
-    size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 2,
-    note: "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+    size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 3,
+    // Phase 91.1 plan 03 (V17 B, user 2026-10-01): the hide soaks 3 (was 2), hero and Joiner alike.
+    note: "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 3 from every blow.",
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,

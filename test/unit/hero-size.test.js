@@ -252,20 +252,21 @@ test("heroSize(c): a Human with the Gauntlet reads step 1, base 0, name Large, b
   assert.deepEqual(hs, { step: 1, base: 0, name: "Large", baseName: "Human", dmgStep: 1, faceStep: 1 });
 });
 
-test("weaponDamage, same scripted die, level-1 Club Soldier prof 0 magicWpn 0: Troll +11, Dwarven +2, Elven -2 vs Human", () => {
+// Phase 91.1 plan 03 (V16 B, 2026-10-01): Dwarven +3 (was +2); the +2 below is +3 now.
+test("weaponDamage, same scripted die, level-1 Club Soldier prof 0 magicWpn 0: Troll +11, Dwarven +3, Elven -2 vs Human", () => {
   const human = weaponDamage(soldier("Human"), fakeRng([3]));
   assert.equal(weaponDamage(soldier("Troll"), fakeRng([3])), human + 11);
-  assert.equal(weaponDamage(soldier("Dwarven"), fakeRng([3])), human + 2, "Small's damage axis is dropped for Dwarven — only the race's own +2 dmg applies");
+  assert.equal(weaponDamage(soldier("Dwarven"), fakeRng([3])), human + 3, "Small's damage axis is dropped for Dwarven — only the race's own +3 dmg applies");
   assert.equal(weaponDamage(soldier("Elven"), fakeRng([3])), human - 2, "Small's damage axis applies in full for Elven (only the face axis is masked)");
 });
 
-test("weaponDamage with a live Gauntlet: the item's step applies in full on top of the resolved race base — Human +2, Dwarven +4 total, Elven +0 total (unchanged from Human)", () => {
+test("weaponDamage with a live Gauntlet: the item's step applies in full on top of the resolved race base — Human +2, Dwarven +5 total (V16: was +4), Elven +0 total (unchanged from Human)", () => {
   const human = weaponDamage(soldier("Human"), fakeRng([3]));
   const dwarvenNoItem = weaponDamage(soldier("Dwarven"), fakeRng([3]));
   const elvenNoItem = weaponDamage(soldier("Elven"), fakeRng([3]));
   assert.equal(weaponDamage(withGauntlet(soldier("Human")), fakeRng([3])), human + 2);
-  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), dwarvenNoItem + 2, "the item's step stacks on top of the race's own unmasked +2, reaching Human + 4 total");
-  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), human + 4);
+  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), dwarvenNoItem + 2, "the item's step stacks on top of the race's own unmasked +3, reaching Human + 5 total");
+  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), human + 5);
   assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), elvenNoItem + 2, "the item's step applies in full despite the Elven face-axis mask (this is the damage axis, never masked for Elven)");
   assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), human);
 });
@@ -289,7 +290,7 @@ test("Sorcerer cap: a Troll Sorcerer's damage never exceeds 9 even with the size
   }
 });
 
-test("expectedStrike moves by exactly the same flat term as weaponDamage for each race (Troll +11, Dwarven +2, Elven -2 vs Human) — isolated from any hitP/die difference; only the SIZE-attributable portion of that shift is new this plan (0 for Dwarven, +2 for Troll, -2 for Elven — sizeDamage's own delta from a non-item character's old contribution, which was always 0)", () => {
+test("expectedStrike moves by exactly the same flat term as weaponDamage for each race (Troll +11, Dwarven +3 [V16, was +2], Elven -2 vs Human) — isolated from any hitP/die difference; only the SIZE-attributable portion of that shift is new this plan (0 for Dwarven, +2 for Troll, -2 for Elven — sizeDamage's own delta from a non-item character's old contribution, which was always 0)", () => {
   const base = "Club";
   // inner(c) reconstructs expectedStrike's own (flat + avg + bonus + prof)
   // sum from its returned value and the SAME hitP arithmetic
@@ -305,7 +306,7 @@ test("expectedStrike moves by exactly the same flat term as weaponDamage for eac
   };
   const human = inner(soldier("Human"));
   assert.ok(Math.abs(inner(soldier("Troll")) - (human + 11)) < 1e-9, "matches weaponDamage's own Troll = Human + 11");
-  assert.ok(Math.abs(inner(soldier("Dwarven")) - (human + 2)) < 1e-9, "matches weaponDamage's own Dwarven = Human + 2");
+  assert.ok(Math.abs(inner(soldier("Dwarven")) - (human + 3)) < 1e-9, "matches weaponDamage's own Dwarven = Human + 3");
   assert.ok(Math.abs(inner(soldier("Elven")) - (human - 2)) < 1e-9, "matches weaponDamage's own Elven = Human - 2");
 
   // sizeDamage's own contribution (the part of that shift this plan adds):

@@ -99,8 +99,8 @@ function fixedCombat(foes, overrides = {}) {
 
 // --- RACES flags -------------------------------------------------------
 
-test("RACES: Fridgian carries hide 2, Dwarven carries armorWear 0.5, and no other race carries either flag", () => {
-  assert.equal(RACES.Fridgian.hide, 2);
+test("RACES: Fridgian carries hide 3 (Phase 91.1 plan 03 (V17 B, 2026-10-01): was 2), Dwarven carries armorWear 0.5, and no other race carries either flag", () => {
+  assert.equal(RACES.Fridgian.hide, 3);
   assert.equal(RACES.Dwarven.armorWear, 0.5);
   for (const r of ["Human", "Elven", "Wilmsry", "Troll"]) {
     assert.ok(!("hide" in RACES[r]), `${r} should not carry hide`);
@@ -108,11 +108,11 @@ test("RACES: Fridgian carries hide 2, Dwarven carries armorWear 0.5, and no othe
   }
 });
 
-test("RACES: Fridgian still carries noArmor and slow; Dwarven still carries dmg 2, upkeep 1, foeStrikeStep 1", () => {
+test("RACES: Fridgian still carries noArmor and slow; Dwarven still carries dmg 3 (Phase 91.1 plan 03, V16 B, 2026-10-01: was 2), upkeep 1, foeStrikeStep 1", () => {
   assert.equal(RACES.Fridgian.noArmor, true);
   assert.equal(RACES.Fridgian.slow, true);
   assert.equal(RACES.Fridgian.frenzy, true);
-  assert.equal(RACES.Dwarven.dmg, 2);
+  assert.equal(RACES.Dwarven.dmg, 3);
   assert.equal(RACES.Dwarven.upkeep, 1);
   assert.equal(RACES.Dwarven.foeStrikeStep, 1);
 });
@@ -123,29 +123,29 @@ test("RACES: Human carries exactly size/upkeep/note, no mechanic flags", () => {
 
 // --- Fridgian hide: flat -2, floor 1, stacks with Hardiness -------------
 
-test("applyFoeDamageToPlayer: a Fridgian's hide soaks 2 flat from every blow, floor 1, zero draws", () => {
+test("applyFoeDamageToPlayer: a Fridgian's hide soaks 3 flat from every blow, floor 1, zero draws (V17: was 2)", () => {
   const state = fixedState({ c: { race: "Fridgian" } });
   const events = [];
   applyFoeDamageToPlayer(state, fixedFoe(), fakeRng([]), events, { dmg: 5, roll: 3, need: 5 });
-  assert.equal(state.c.wp, 52, "55 - (5 - 2) = 52");
+  assert.equal(state.c.wp, 53, "55 - (5 - 3) = 53");
   const struck = events.find((e) => e.type === "struckByFoe");
-  assert.equal(struck.dmg, 3);
+  assert.equal(struck.dmg, 2);
 });
 
 test("applyFoeDamageToPlayer: a Fridgian's hide floors at 1, never negative or zero", () => {
   const state1 = fixedState({ c: { race: "Fridgian" } });
   applyFoeDamageToPlayer(state1, fixedFoe(), fakeRng([]), [], { dmg: 2, roll: 3, need: 5 });
-  assert.equal(state1.c.wp, 54, "55 - max(1, 2-2) = 55 - 1 = 54");
+  assert.equal(state1.c.wp, 54, "55 - max(1, 2-3) = 55 - 1 = 54");
 
   const state2 = fixedState({ c: { race: "Fridgian" } });
   applyFoeDamageToPlayer(state2, fixedFoe(), fakeRng([]), [], { dmg: 1, roll: 3, need: 5 });
-  assert.equal(state2.c.wp, 54, "55 - max(1, 1-2) = 55 - 1 = 54");
+  assert.equal(state2.c.wp, 54, "55 - max(1, 1-3) = 55 - 1 = 54");
 });
 
 test("applyFoeDamageToPlayer: a Fridgian's hide stacks with Hardiness (hide applied after Hardiness's -3)", () => {
   const state = fixedState({ c: { race: "Fridgian", skills: { Hardiness: 1 } } });
   applyFoeDamageToPlayer(state, fixedFoe(), fakeRng([]), [], { dmg: 7, roll: 3, need: 5 });
-  assert.equal(state.c.wp, 53, "55 - max(1, max(1, 7-3) - 2) = 55 - 2 = 53");
+  assert.equal(state.c.wp, 54, "55 - max(1, max(1, 7-3) - 3) = 55 - 1 = 54 (V17: hide 3)");
 });
 
 test("applyFoeDamageToPlayer: a Human takes the full blow — no hide, zero draws", () => {

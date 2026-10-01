@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -3388,7 +3388,8 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
   if (sp.kind === "heal") {
     const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
     const healRng = derivedRng(cursor, "memberHeal", state.combat ? state.combat.round : 0, ally.partyIdx, sheet.spellsUsed);
-    let amt = rollDice(healRng, sp.dmg) + (view.sub === "Cleric" ? 3 : 0);
+    // Phase 91.1 plan 03 (V18 B): the chart's healing bonus, the hero's own rule (Cleric +4, Court Mage +1).
+    let amt = rollDice(healRng, sp.dmg) + healBonusFor(view.sub);
     if (RACES[view.race] && RACES[view.race].heal2x) amt *= 2;
     const healed = applyCasterHealMul(view.sub, amt);
     const before = ally.wp;
@@ -3410,13 +3411,15 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
   if (sp.kind === "ward") {
     // Shield's soak pool and rounds, or Bubble's armed mirror (pool 0, never ticks
     // until it pops), exactly the hero's records (magic.js's ward branch).
+    // Phase 91.1 plan 03 (V18 B): the Joiner's own protection bonus enlarges it, as the hero's does.
+    const wardHp = wardBonusFor(view.sub);
     ally.ward = sp.mirror
-      ? { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool, rounds: null }
-      : { pool: sp.pool, rounds: sp.rounds, name: sp.n };
+      ? { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool + wardHp, rounds: null }
+      : { pool: sp.pool + wardHp, rounds: sp.rounds, name: sp.n };
     events.push(
       sp.mirror
-        ? { type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool: sp.popPool, member: ally.name }
-        : { type: "wardRaised", spell: sp.n, pool: sp.pool, member: ally.name },
+        ? { type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool: sp.popPool + wardHp, member: ally.name }
+        : { type: "wardRaised", spell: sp.n, pool: sp.pool + wardHp, member: ally.name },
     );
     return;
   }
