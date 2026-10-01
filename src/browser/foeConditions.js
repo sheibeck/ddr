@@ -68,6 +68,13 @@ export const FOE_CONDITION_COPY = Object.freeze({
   // A foe that shakes a Bard's song off shows Unmoved. `held` is this table's
   // own generic fallback label (labelFor always overrides it in practice).
   held: "Held",
+  // Phase 90 plan 08 (SPELL-10): Stop Time's hold (engine/combat.js#stopTime sets
+  // `held.kind` "time"), the misdirected foes Senseless (swings at its own side)
+  // and Duplicate Foe (fights itself). `double` is the one label that is more than
+  // a word, as the spell's own name is ("Fighting its double").
+  stopped: "Stopped",
+  senseless: "Senseless",
+  double: "Fighting its double",
   unmoved: "Unmoved",
   // Phase 77 (CMBUI-13): the gifts a fumbled helpful scroll hands the
   // targeted foe (engine/scrollFumble.js#resolveHelpful, RULES-10).
@@ -127,6 +134,13 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // foe's own turn skips run down alongside the chip's count. Nothing a blow
   // does ends it (engine/foeDamage.js never touches `held`).
   held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers. Hitting it does not end the hold.",
+  // Phase 90 plan 08 (SPELL-10): engine/combat.js#stopTime holds it kind "time"; the
+  // same skip as any hold, and damageFoe never touches `held`, so a blow neither ends nor restarts it.
+  stopped: "Time has stopped for it: it takes no turns until the count runs out, and it is easier to hit. Hitting it does not start time again.",
+  // Phase 90 plan 08 (SPELL-10): engine/combat.js#resolveMisdirectedTurn reads `misdirect`
+  // (Senseless: at "friends"; Duplicate Foe: at "self"); damageFoe never touches it, so a blow does not end it.
+  senseless: "It cannot tell friend from furniture: every swing it takes hits another foe, never your side, and with nobody else to hit it swings at the air. Hitting it does not end this.",
+  double: "It is busy with a second one of itself: every swing it takes lands on itself, never on your side. Hitting it does not end this.",
   // resistControl (engine/combat.js) — a control shaken off outright (today
   // only a Bard's song); %s is filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",
@@ -223,7 +237,14 @@ export const FOE_CONDITIONS = Object.freeze(
     {
       key: "held", label: C.held, desc: D.held, tone: "good", fields: ["held"],
       labelFor: (f) => (f.held && f.held.kind === "stunned" ? C.stunned : C.frozen),
-      when: (f) => !!f.held && posInt(f.held.left) !== null,
+      when: (f) => !!f.held && f.held.kind !== "time" && posInt(f.held.left) !== null,
+      rounds: (f) => posInt(f.held.left),
+    },
+    // Phase 90 plan 08 (SPELL-10): Stop Time's hold is its own chip (kind "time"), so
+    // the Held chip above never shows it too: one hold, one chip.
+    {
+      key: "stopped", label: C.stopped, desc: D.stopped, tone: "good", fields: ["held"],
+      when: (f) => !!f.held && f.held.kind === "time" && posInt(f.held.left) !== null,
       rounds: (f) => posInt(f.held.left),
     },
     // Petrify's mark (the foe is dead). The engine clears it on a foe that stands back up.
@@ -237,6 +258,18 @@ export const FOE_CONDITIONS = Object.freeze(
       rounds: (f) => posInt(f.dot.left),
     },
     { key: "stupid", label: C.stupid, desc: D.stupid, tone: "good", fields: ["stupid"], when: (f) => !!f.stupid, rounds: none },
+    // Phase 90 plan 08 (SPELL-10): `f.misdirect = { at, left }` (combat.js#misdirectFoe),
+    // counted down by resolveMisdirectedTurn; one chip per aim, rounds from `left`.
+    {
+      key: "senseless", label: C.senseless, desc: D.senseless, tone: "good", fields: ["misdirect"],
+      when: (f) => !!f.misdirect && f.misdirect.at === "friends" && posInt(f.misdirect.left) !== null,
+      rounds: (f) => posInt(f.misdirect.left),
+    },
+    {
+      key: "double", label: C.double, desc: D.double, tone: "good", fields: ["misdirect"],
+      when: (f) => !!f.misdirect && f.misdirect.at === "self" && posInt(f.misdirect.left) !== null,
+      rounds: (f) => posInt(f.misdirect.left),
+    },
     { key: "shrunk", label: C.shrunk, desc: D.shrunk, tone: "good", fields: ["shrunk"], when: (f) => !!f.shrunk, rounds: none },
     { key: "fixated", label: C.fixated, desc: D.fixated, tone: "good", fields: ["fixated"], when: (f) => !!f.fixated, rounds: none },
     // A foe BUFF: it swings twice.

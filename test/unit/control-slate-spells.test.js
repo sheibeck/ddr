@@ -32,6 +32,10 @@ import { foeRisingResistCheck, targetStrikeFaces, spellEffectRounds, foeSwingVsF
 import { atLeastFor } from "../../engine/dice.js";
 import { SPELLS, SCROLL_FUMBLE } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
+import fs from "node:fs";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR, linesForAction } from "../../src/browser/narrationLines.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 
 const IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 const SP = Object.fromEntries(SPELLS.map((sp) => [sp.n, sp]));
@@ -597,4 +601,91 @@ test("the scroll pool includes the three at their level (the pool is every SPELL
   const rng = { ...fakeRng(ONES(120)), pick };
   const ev = readScroll(s, rng, []);
   assert.ok(ev.some((e) => e.type === "scrollRead" && e.spell === "Stop Time") || ev.some((e) => e.type === "scrollCast" && e.spell === "Stop Time"), "the scroll names Stop Time");
+});
+
+// ---------------------------------------------------------------------------
+// The surfaces: the Oracle, the rail twin, the fold, the hero chip
+// ---------------------------------------------------------------------------
+
+const NEW_TYPES = ["timeStopped", "foeMisdirected", "foeMisdirectedHit", "foeMisdirectedMiss", "foeSwingsAtAir", "foeMisdirectEnded"];
+
+test("narration: every new event has an Oracle line and a rail twin, and a bare payload renders with no undefined", () => {
+  for (const type of NEW_TYPES) {
+    assert.equal(typeof EVENT_NARRATION[type], "function", `${type}: Oracle line`);
+    assert.equal(typeof LINE_FOR[type], "function", `${type}: rail twin`);
+    const oracle = EVENT_NARRATION[type]({ type });
+    const rail = LINE_FOR[type]({ type }).text;
+    for (const text of [oracle, rail]) {
+      assert.ok(text.trim().length > 0, `${type} survives a bare payload`);
+      assert.doesNotMatch(text, /undefined|NaN|\[object/, `${type}: ${text}`);
+    }
+  }
+});
+
+test("narration: Stop Time says the count and the rounds, and names a Joiner's cast; a count of zero says nobody stopped", () => {
+  assert.match(EVENT_NARRATION.timeStopped({ count: 2, rounds: 6 }), /Time stops for 2 foes, 6 rounds: no turns for them.*Somewhere a clock is very upset about this\./);
+  assert.match(EVENT_NARRATION.timeStopped({ count: 1, rounds: 2 }), /Time stops for 1 foe, 2 rounds/);
+  assert.match(EVENT_NARRATION.timeStopped({ count: 1, rounds: 2, by: "Ada" }), /^<span class="hit">Ada's Stop Time: /);
+  assert.match(EVENT_NARRATION.timeStopped({ count: 0, rounds: 2 }), /Time declines to stop for anyone\./);
+  assert.equal(LINE_FOR.timeStopped({ count: 2, rounds: 6 }).text, "Time stops for 2 foes, 6 rounds.");
+  assert.equal(LINE_FOR.timeStopped({ count: 0, rounds: 2 }).text, "Time declines to stop for anyone.");
+  // each foe's own hold line, the count down and the end
+  assert.match(EVENT_NARRATION.controlHeld({ target: "Orc", kind: "time", rounds: 2 }), /Orc is stopped for 2 rounds\..*no turns.*does not start time again/);
+  assert.match(EVENT_NARRATION.foeStillHeld({ name: "Orc", kind: "time", left: 1 }), /Orc is still stopped\./);
+  assert.match(EVENT_NARRATION.foeHoldBroken({ name: "Orc", kind: "time" }), /Time starts again for Orc\./);
+  assert.match(LINE_FOR.controlHeld({ target: "Orc", kind: "time", rounds: 2 }).text, /Orc stopped for 2 rounds; a hit will not start time again\./);
+  assert.equal(LINE_FOR.foeStillHeld({ name: "Orc", kind: "time", left: 1 }).text, "Orc still stopped (1).");
+  assert.equal(LINE_FOR.foeHoldBroken({ name: "Orc", kind: "time" }).text, "Time starts again for Orc.");
+  assert.equal(LINE_FOR.foeHoldBroken({ name: "Orc", kind: "frozen" }).text, "Orc breaks free.", "other holds keep their line");
+});
+
+test("narration: the misdirect cast lines say the aim, the rounds and who is left alone; the blow lines name who hit whom, for how much", () => {
+  assert.match(EVENT_NARRATION.foeMisdirected({ target: "Orc", at: "friends", rounds: 3 }), /Orc can no longer tell friend from furniture\..*3 rounds.*never yours/);
+  assert.match(EVENT_NARRATION.foeMisdirected({ target: "Orc", at: "self", rounds: 4 }), /A second Orc appears\..*first Orc finds this unacceptable.*4 rounds.*leaves you alone/);
+  assert.match(EVENT_NARRATION.foeMisdirected({ target: "Orc", at: "friends", rounds: 1, by: "Ada" }), /Ada's Senseless: Orc/);
+  assert.match(LINE_FOR.foeMisdirected({ target: "Orc", at: "friends", rounds: 3 }).text, /Orc is senseless, 3 rounds: it swings at its own side\./);
+  assert.match(LINE_FOR.foeMisdirected({ target: "Orc", at: "self", rounds: 1 }).text, /Orc fights its double, 1 round\./);
+  const hit = { name: "Orc", target: "Elf", dmg: 7, self: false, roll: 15, atLeast: 12, dieN: 20 };
+  assert.match(EVENT_NARRATION.foeMisdirectedHit(hit), /15<\/span> vs 12–20\..*Orc hits Elf instead of you for <span class="hit">7 hp<\/span>/);
+  assert.match(EVENT_NARRATION.foeMisdirectedHit({ ...hit, target: "Orc", self: true }), /Orc hits itself for <span class="hit">7 hp<\/span>/);
+  assert.match(EVENT_NARRATION.foeMisdirectedHit({ ...hit, crit: true }), /Critical!/);
+  assert.equal(LINE_FOR.foeMisdirectedHit(hit).text, "Orc hits Elf (7).");
+  assert.equal(LINE_FOR.foeMisdirectedHit({ ...hit, self: true }).text, "Orc hits itself (7).");
+  assert.match(EVENT_NARRATION.foeMisdirectedMiss({ name: "Orc", target: "Elf", self: false, roll: 3, atLeast: 12, dieN: 20 }), /Orc swings at Elf, <span class="roll">3<\/span> vs 12–20, and misses\./);
+  assert.equal(LINE_FOR.foeMisdirectedMiss({ name: "Orc", self: true }).text, "Orc misses itself.");
+  assert.match(EVENT_NARRATION.foeSwingsAtAir({ name: "Orc" }), /Orc swings at the air\./);
+  assert.equal(LINE_FOR.foeSwingsAtAir({ name: "Orc" }).text, "Orc swings at the air.");
+  assert.match(EVENT_NARRATION.foeMisdirectEnded({ name: "Orc", at: "friends" }), /Orc can tell friend from furniture again\./);
+  assert.match(EVENT_NARRATION.foeMisdirectEnded({ name: "Orc", at: "self" }), /Orc's double goes away\./);
+  assert.equal(LINE_FOR.foeMisdirectEnded({ name: "Orc" }).text, "Orc is itself again.");
+});
+
+test("narration: a failed resist folds behind Senseless's own line, and behind each stopped foe's hold, so the rail shows each once", () => {
+  const folded = linesForAction("castSpell", [
+    { type: "resistFailed", target: "Orc", spell: "Senseless", roll: 3, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
+    { type: "foeMisdirected", target: "Orc", at: "friends", rounds: 3 },
+  ], {});
+  assert.deepEqual(folded.map((l) => l.text), ["Orc is senseless, 3 rounds: it swings at its own side."]);
+  const stopped = linesForAction("castSpell", [
+    { type: "resistFailed", target: "Orc", spell: "Stop Time", roll: 3, atLeast: 16, dieN: 20, intel: 10, faces: 5 },
+    { type: "controlHeld", target: "Orc", kind: "time", rounds: 2, source: "Stop Time" },
+    { type: "timeStopped", count: 1, rounds: 2 },
+  ], {});
+  assert.deepEqual(stopped.map((l) => l.text).sort(), ["Orc stopped for 2 rounds; a hit will not start time again.", "Time stops for 1 foe, 2 rounds."], "the bare resist line is gone; the hold and the closing line stay (the rail orders them by priority)");
+});
+
+test("a fumbled Stop Time reads as the reader stopped for two turns on both surfaces", () => {
+  const e = { type: "fumbleOnReader", spell: "Stop Time", effect: "out", kind: "stopped", rounds: 2 };
+  assert.match(EVENT_NARRATION.fumbleOnReader(e), /Stop Time stops the room, and you are standing in it: you cannot act for 2 turns\./);
+  assert.equal(LINE_FOR.fumbleOnReader(e).text, "Stop Time stops you in place, 2 turns.");
+  // the other out kinds keep their lines
+  assert.match(EVENT_NARRATION.fumbleOnReader({ ...e, spell: "Insane", kind: "maddened", rounds: 3 }), /takes you out of the fight, maddened for 3 turns/);
+});
+
+test("the hero's chip for a fumbled Stop Time: the combat menu words it STOPPED, and the shell labels and explains it", () => {
+  assert.equal(COMBAT_MENU_COPY.heroOutKind.stopped, "STOPPED");
+  const html = fs.readFileSync("mazeworld.html", "utf8").replace(/\r\n/g, "\n");
+  assert.match(html, /heroOut: \{ label: "Helpless", unit: "rds", kinds: \{[^}]*stopped: "Stopped"/);
+  assert.match(html, /HERO_OUT_EXPLAIN = \{ stopped: "Time has stopped around you: you cannot act for two turns/);
+  assert.match(html, /EXPLAIN_BY_KIND = \{ foeEffect: FOE_EFFECT_EXPLAIN, heroOut: HERO_OUT_EXPLAIN \}/);
 });

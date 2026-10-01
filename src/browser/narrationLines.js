@@ -791,6 +791,8 @@ function killFold(events, consumed, built) {
  */
 const RESIST_FOLD_EFFECTS = new Set([
   "dozed",
+  // Phase 90 plan 08 (SPELL-10): Senseless and Duplicate Foe's own lines fold the failed resist.
+  "foeMisdirected",
   "weakened",
   "stupefied",
   "blinded",
@@ -825,7 +827,7 @@ const RESIST_FOLD_EFFECTS = new Set([
  */
 function foldsResist(oe) {
   // Phase 90 plan 05: Stun's own hold (kind "stunned") folds the failed resist behind it, like a Freeze's.
-  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && (!!oe.freeze || oe.kind === "stunned"));
+  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && (!!oe.freeze || oe.kind === "stunned" || oe.kind === "time"));
 }
 
 /** isFreezeHold(e, target) — a Freeze's d4 hold on `target` (user rulings 2026-09-28). */
@@ -1873,7 +1875,7 @@ export const LINE_FOR = {
     const texts = {
       damage: `${e?.spell ?? "The scroll"} turns on you (−${e?.amount ?? 0} hp).`,
       dot: `${e?.spell ?? "The scroll"} burns you, ${rounds} round${rounds === 1 ? "" : "s"} of it.`,
-      out: `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
+      out: e?.kind === "stopped" ? `${e?.spell ?? "The scroll"} stops you in place, ${rounds} turn${rounds === 1 ? "" : "s"}.` : `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
       vapor: `${e?.spell ?? "The scroll"} takes you out (${e?.kind ?? "out"}), ${rounds} turn${rounds === 1 ? "" : "s"}.`,
       blind: `${e?.spell ?? "The scroll"} blinds you for the fight.`,
       shrink: `${e?.spell ?? "The scroll"} shrinks you (−${e?.loss ?? 0} hp) for the fight.`,
@@ -2280,6 +2282,23 @@ export const LINE_FOR = {
   }),
   insaneStruckAlly: (e) => ({ text: `The maddened thing turns on ${e?.target ?? "an ally"} (${e?.dmg ?? 0}).`, tone: "hurt", priority: PRIORITY.you }),
   insaneFled: (e) => ({ text: `${e?.target ?? "It"} bolts, mad with fear.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 90 plan 08 (SPELL-10): the rail twins of the control-spell lines in eventNarration.js.
+  timeStopped: (e) => ({
+    text: (e?.count ?? 0) > 0 ? `${joinerOf(e) ? `${joinerOf(e)}'s Stop Time: ` : ""}Time stops for ${e.count === 1 ? "1 foe" : `${e.count} foes`}, ${railPlural(e?.rounds ?? 0, "round")}.` : "Time declines to stop for anyone.",
+    tone: (e?.count ?? 0) > 0 ? "magic" : "miss",
+    priority: PRIORITY.you,
+  }),
+  foeMisdirected: (e) => ({
+    text: e?.at === "self"
+      ? `${joinerOf(e) ? `${joinerOf(e)}'s Duplicate Foe: ` : ""}${e?.target ?? "It"} fights its double, ${railPlural(e?.rounds ?? 0, "round")}.`
+      : `${joinerOf(e) ? `${joinerOf(e)}'s Senseless: ` : ""}${e?.target ?? "It"} is senseless, ${railPlural(e?.rounds ?? 0, "round")}: it swings at its own side.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
+  foeMisdirectedHit: (e) => ({ text: `${e?.name ?? "It"} hits ${e?.self ? "itself" : (e?.target ?? "its friend")} (${e?.dmg ?? 0}).`, tone: "hit", priority: PRIORITY.them }),
+  foeMisdirectedMiss: (e) => ({ text: `${e?.name ?? "It"} misses ${e?.self ? "itself" : (e?.target ?? "its friend")}.`, tone: "dodge", priority: PRIORITY.them }),
+  foeSwingsAtAir: (e) => ({ text: `${e?.name ?? "It"} swings at the air.`, tone: "dodge", priority: PRIORITY.them }),
+  foeMisdirectEnded: (e) => ({ text: `${e?.name ?? "It"} is itself again.`, tone: "hurt", priority: PRIORITY.them }),
   healed: (e) => ({
     text:
       railGain(e, e?.amount) > 0
@@ -2333,14 +2352,16 @@ export const LINE_FOR = {
   controlHeld: (e) => ({
     text: e?.kind === "stunned"
       ? `${joinerOf(e) ? `${joinerOf(e)}'s Stun: ` : ""}${e?.target ?? "It"} stunned for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}; a hit will not end it.`
+      : e?.kind === "time"
+      ? `${e?.target ?? "It"} stopped for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}; a hit will not start time again.`
       : e?.freeze
       ? `${e?.target ?? "It"} frozen for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`
       : `${e?.target ?? "It"} held ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`,
     tone: "magic",
     priority: PRIORITY.them,
   }),
-  foeStillHeld: (e) => ({ text: `${e?.name ?? "It"} still held (${e?.left ?? "?"}).`, tone: "dodge", priority: PRIORITY.them }),
-  foeHoldBroken: (e) => ({ text: `${e?.name ?? "It"} breaks free.`, tone: "hurt", priority: PRIORITY.them }),
+  foeStillHeld: (e) => ({ text: `${e?.name ?? "It"} still ${e?.kind === "time" ? "stopped" : "held"} (${e?.left ?? "?"}).`, tone: "dodge", priority: PRIORITY.them }),
+  foeHoldBroken: (e) => ({ text: e?.kind === "time" ? `Time starts again for ${e?.name ?? "it"}.` : `${e?.name ?? "It"} breaks free.`, tone: "hurt", priority: PRIORITY.them }),
   spellMissed: (e) => ({ text: `${e?.spell ?? "It"} misses ${e?.target ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
   // Phase 25 (FEED-01): `doubled` names the heal2x race when the dose was doubled.
   potionDrunk: (e) => ({

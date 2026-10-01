@@ -115,7 +115,7 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // whole grid with one honest action, LET THE ROUND PLAY. heroOutKind is
   // the frozen kind-to-word map heroOutViewModel (below) reads; an
   // unrecognized kind falls back to the raw value rather than throwing.
-  heroOutKind: Object.freeze({ asleep: "ASLEEP", stupefied: "STUPEFIED", maddened: "MADDENED" }),
+  heroOutKind: Object.freeze({ asleep: "ASLEEP", stupefied: "STUPEFIED", maddened: "MADDENED", stopped: "STOPPED" }),
   heroOutPrompt: "CANNOT ACT · {kind} · {turns} LEFT",
   heroOutReasonSub: "CANNOT ACT · {kind}",
   heroOutTurn: "1 TURN",
