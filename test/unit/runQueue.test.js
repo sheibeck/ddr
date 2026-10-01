@@ -117,10 +117,10 @@ function stubWrites(sequence) {
 // The named flow (Phase 91.2): the shared rig is the fake server (final rules),
 // a signed-in fake Play Games player and the real identity; every run posts
 // under the player's verified name.
-function makeFullStack({ competeOn = true, fakeOpts = {} } = {}) {
+function makeFullStack({ competeOn = true, fakeOpts = {}, play = {} } = {}) {
   const clock = clockBox();
   let competing = competeOn;
-  const rig = makeBoardRig({ now: clock, fakeOpts, competeOn: () => competing });
+  const rig = makeBoardRig({ now: clock, fakeOpts, play, competeOn: () => competing });
   const writes = createBoardWrites({ fetchFn: rig.fetchFn, identity: rig.identity, config: rig.config });
   return { clock, fake: rig.fake, identity: rig.identity, writes, rig, setCompeting: (v) => (competing = v) };
 }
@@ -486,6 +486,166 @@ test("enqueueMany: Compete OFF resolves off and stores nothing", async () => {
   const res = await queue.enqueueMany([baseSummary()], { version: "1" });
   assert.deepEqual(res, { ok: false, reason: "off" });
   assert.equal(storage.calls.setItem, 0);
+});
+
+/* ================================================================
+   91.2: the sign-in hold (D-03, D-06) and requeue (D-05)
+   ================================================================ */
+
+test("signin hold: a signed-out player's run stays first with no attempt, failure or backoff; after sign-in it posts under the verified name", async () => {
+  const stack = makeFullStack({ play: { signedIn: false, interactive: false } });
+  const storage = makeStorage();
+  const queue = createRunQueue({ storage, writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock });
+
+  const s = baseSummary({ steps: 601 });
+  const enq = await queue.enqueue(s, { version: "2.3.0 (13)" });
+  assert.equal(enq.queued, true);
+  const first = await enq.flushed;
+  assert.equal(first.ok, false);
+  assert.equal(first.reason, "signin");
+  assert.equal(first.sent, 0);
+  assert.equal(first.dropped, 0);
+  assert.equal("retryAt" in first, false, "no backoff is reported");
+
+  const snap = await queue.snapshot();
+  assert.equal(snap.entries.length, 1);
+  assert.equal(snap.entries[0].hash, s.hash);
+  assert.equal(snap.entries[0].attempts, 0);
+  assert.equal(snap.failures, 0);
+  assert.equal(snap.retryAt, 0);
+  assert.equal(stack.fake.docs().length, 0);
+
+  // an unforced second flush is not delayed by any backoff
+  const again = await queue.flush();
+  assert.equal(again.reason, "signin");
+
+  stack.rig.play.setSignedIn(true);
+  const after = await queue.flush();
+  assert.equal(after.ok, true);
+  assert.equal(after.sent, 1);
+  assert.equal(stack.fake.docs().length, 1);
+  assert.equal(stack.fake.docs()[0].handle, "Dev Delver");
+});
+
+test("signin hold: several deaths while signed out are all held in order and all post after sign-in", async () => {
+  const stack = makeFullStack({ play: { signedIn: false, interactive: false } });
+  const queue = createRunQueue({ storage: makeStorage(), writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock });
+  const runs = [baseSummary({ steps: 611 }), baseSummary({ steps: 612 }), baseSummary({ steps: 613 })];
+  for (const r of runs) await (await queue.enqueue(r, { version: "1" })).flushed;
+
+  const held = await queue.snapshot();
+  assert.deepEqual(
+    held.entries.map((e) => e.hash),
+    runs.map((r) => r.hash),
+  );
+  assert.ok(held.entries.every((e) => e.attempts === 0));
+  assert.equal(held.failures, 0);
+  assert.equal(held.retryAt, 0);
+
+  stack.rig.play.setSignedIn(true);
+  const res = await queue.flush();
+  assert.equal(res.ok, true);
+  assert.equal(res.sent, 3);
+  assert.equal(stack.fake.docs().length, 3);
+});
+
+test("signin hold: only signin holds without backoff; offline and server answers still back off", async () => {
+  const writes = stubWrites([{ ok: false, reason: "signin" }, { ok: false, reason: "server" }]);
+  const clock = clockBox(1000000);
+  const queue = createRunQueue({ storage: makeStorage(), writes, competeOn: () => true, online: () => true, now: clock });
+  await queue.enqueueMany([baseSummary({ steps: 621 })], { version: "1" });
+
+  const held = await queue.flush();
+  assert.equal(held.reason, "signin");
+  assert.equal((await queue.snapshot()).failures, 0);
+
+  const failed = await queue.flush();
+  assert.equal(failed.reason, "server");
+  assert.equal(failed.retryAt, clock() + 30000);
+  const snap = await queue.snapshot();
+  assert.equal(snap.failures, 1);
+  assert.equal(snap.entries[0].attempts, 1);
+});
+
+test("signin hold: a held run is discarded when Compete turns OFF (purge)", async () => {
+  const writes = stubWrites([{ ok: false, reason: "signin" }]);
+  const storage = makeStorage();
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => true });
+  await queue.enqueueMany([baseSummary({ steps: 631 })], { version: "1" });
+  assert.equal((await queue.flush()).reason, "signin");
+
+  await queue.purge();
+  assert.equal(storage.map.has(RUN_QUEUE_KEY), false);
+  assert.equal((await queue.snapshot()).entries.length, 0);
+});
+
+test("requeue: a settled hash absent from the entries is queued again with versionOf's version and leaves settled; others are skipped; one persist", async () => {
+  const storage = makeStorage();
+  const writes = stubWrites([{ ok: true, status: "created" }]);
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => true });
+
+  const settledRun = baseSummary({ steps: 641 });
+  const settledNoVersion = baseSummary({ steps: 642 });
+  const neverSettled = baseSummary({ steps: 643 });
+  const stillQueued = baseSummary({ steps: 644 });
+  const invalid = baseSummary({ steps: 645, hash: "nope" });
+
+  await queue.enqueueMany([settledRun, settledNoVersion], { version: "1" });
+  await queue.flush(); // both acknowledged -> settled
+  await queue.enqueueMany([stillQueued], { version: "1" });
+  assert.deepEqual((await queue.snapshot()).settled, [settledRun.hash, settledNoVersion.hash]);
+  const writesBefore = storage.calls.setItem;
+
+  const res = await queue.requeue([settledRun, settledNoVersion, neverSettled, stillQueued, invalid, null], {
+    versionOf: (h) => (h === settledRun.hash ? "2.2.0 (12)" : null),
+    version: "2.3.0 (13)",
+  });
+  assert.deepEqual(res, { ok: true, queued: 2, skipped: 4 });
+  assert.equal(storage.calls.setItem - writesBefore, 1, "one storage write per call");
+
+  const snap = await queue.snapshot();
+  const byHash = Object.fromEntries(snap.entries.map((e) => [e.hash, e]));
+  assert.equal(byHash[settledRun.hash].version, "2.2.0 (12)");
+  assert.equal(byHash[settledNoVersion.hash].version, "2.3.0 (13)", "falls back to the current version");
+  assert.equal(byHash[settledRun.hash].attempts, 0);
+  assert.equal(snap.settled.includes(settledRun.hash), false);
+  assert.equal(snap.settled.includes(settledNoVersion.hash), false);
+  assert.equal(snap.entries.some((e) => e.hash === neverSettled.hash), false);
+});
+
+test("requeue: a requeued run posts with the version it was requeued with", async () => {
+  const stack = makeFullStack();
+  const queue = createRunQueue({ storage: makeStorage(), writes: stack.writes, competeOn: () => true, online: () => true, now: stack.clock });
+  const s = baseSummary({ steps: 651 });
+  await queue.enqueueMany([s], { version: "2.2.0 (12)" });
+  await queue.flush();
+  assert.equal(stack.fake.docs().length, 1);
+
+  const res = await queue.requeue([s], { versionOf: () => "2.2.0 (12)", version: "2.3.0 (13)" });
+  assert.equal(res.queued, 1);
+  const flushed = await queue.flush();
+  assert.equal(flushed.ok, true);
+  assert.equal(flushed.sent, 1, "an already-existing doc is acknowledged, never duplicated");
+  assert.equal(stack.fake.docs().length, 1);
+});
+
+test("requeue: Compete OFF resolves off and stores nothing", async () => {
+  const storage = makeStorage();
+  const queue = createRunQueue({ storage, writes: stubWrites([]), competeOn: () => false, online: () => true });
+  const res = await queue.requeue([baseSummary()], { version: "1" });
+  assert.deepEqual(res, { ok: false, reason: "off" });
+  assert.equal(storage.calls.setItem, 0);
+  assert.equal(storage.calls.getItem, 0);
+});
+
+test("requeue: nothing eligible stores nothing and starts no network call", async () => {
+  const storage = makeStorage();
+  const writes = stubWrites([]);
+  const queue = createRunQueue({ storage, writes, competeOn: () => true, online: () => true });
+  const res = await queue.requeue([baseSummary({ steps: 661 })], { version: "1" });
+  assert.deepEqual(res, { ok: true, queued: 0, skipped: 1 });
+  assert.equal(storage.calls.setItem, 0);
+  assert.equal(writes.calls.length, 0);
 });
 
 /* ================================================================

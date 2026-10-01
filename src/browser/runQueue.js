@@ -38,6 +38,19 @@
 // (30 s doubling to a 30-minute cap); flush({force:true}) ignores retryAt
 // (reserved for the shell's `online` event, Phase 85); a fully drained flush
 // resets both to zero.
+//
+// Phase 91.2 (D-03, D-06, D-05). A run posts only under a verified Play Games
+// name, so a submitRun answer of reason "signin" (the player is not signed in,
+// or has no verified name yet) is a HOLD, not a failure: the entry stays first,
+// its attempts, the record's failures and retryAt are untouched (no backoff)
+// and flush resolves { ok: false, reason: "signin", sent, dropped }; the next
+// flush after a sign-in posts it. Only "signin" holds without backoff — offline
+// and server answers still advance the backoff exactly as before.
+// requeue() serves the D-05 re-post of Compete-ON runs a 2.2.0 client settled
+// while its writes were refused: it moves a settled hash back into the entries
+// list (the hash leaves `settled` only as it re-enters `entries`, so the
+// never-double-submit ledger still holds at every instant) and the doc id makes
+// a duplicate an "exists" acknowledgement anyway.
 
 import { isValidHash } from "../../engine/records.js";
 import { SEASON } from "../../content/season.js";
@@ -285,6 +298,47 @@ export function createRunQueue(opts = {}) {
     return { ok: true, queued, skipped };
   }
 
+  /**
+   * requeue(list, { versionOf, version }) — the 91.2 D-05 re-post: every valid
+   * summary in `list` whose hash is in the settled ledger and not already an
+   * entry leaves `settled` and is queued again, in ONE persist call, no
+   * network. Its version is `versionOf(hash)` when that returns a valid
+   * version string (1..64 chars), else `version`. Resolves { ok: true,
+   * queued, skipped } or { ok: false, reason: "off" } with nothing stored.
+   */
+  async function requeue(list, requeueOpts = {}) {
+    const { versionOf, version } = requeueOpts && typeof requeueOpts === "object" ? requeueOpts : {};
+    if (!competeGateOk()) return { ok: false, reason: "off" };
+
+    await load();
+    const items = Array.isArray(list) ? list : [];
+    let queued = 0;
+    let skipped = 0;
+    for (const summary of items) {
+      const hash = isPlainObject(summary) ? summary.hash : null;
+      if (!isValidHash(hash) || !record.settled.includes(hash) || record.entries.some((e) => e.hash === hash)) {
+        skipped += 1;
+        continue;
+      }
+      let v;
+      try {
+        v = typeof versionOf === "function" ? versionOf(hash) : undefined;
+      } catch {
+        v = undefined;
+      }
+      const useVersion = typeof v === "string" && v.length >= 1 && v.length <= 64 ? v : version;
+      if (!isValidEntry(summary, useVersion)) {
+        skipped += 1;
+        continue;
+      }
+      record.settled.splice(record.settled.indexOf(hash), 1);
+      pushEntry(hash, summary, useVersion);
+      queued += 1;
+    }
+    if (queued > 0) await persist();
+    return { ok: true, queued, skipped };
+  }
+
   async function runFlush(flushOpts) {
     const force = !!flushOpts && flushOpts.force === true;
     await load();
@@ -334,6 +388,15 @@ export function createRunQueue(opts = {}) {
 
       if (reason === "off") {
         return { ok: false, reason: "off", sent, dropped };
+      }
+
+      // 91.2 D-03 / D-06: the player is not signed in to Play Games (or has no
+      // verified name yet). That is not a failure: the entry stays first, its
+      // attempts, the record's failures and retryAt are untouched (no
+      // backoff), and nothing is persisted — the next flush after a sign-in
+      // posts it.
+      if (reason === "signin") {
+        return { ok: false, reason: "signin", sent, dropped };
       }
 
       // Transient (offline, server, auth, unavailable, or a missing reason):
@@ -399,5 +462,5 @@ export function createRunQueue(opts = {}) {
     }
   }
 
-  return Object.freeze({ enqueue, enqueueMany, flush, purge, snapshot, waitForPending });
+  return Object.freeze({ enqueue, enqueueMany, requeue, flush, purge, snapshot, waitForPending });
 }
