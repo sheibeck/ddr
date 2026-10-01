@@ -72,6 +72,9 @@ The known questions in 90-01's batched checkpoint were put to the user ahead of 
 - **Q5 Ice's shape: A.** No to-hit roll; every foe takes d10 + level²; a survivor is frozen d4 rounds unless it resists (the resist stops only the freeze). -> 90-05
 - **Q6 The school bonus's step: A.** +10 squares per point on a square-timed new spell, +1 round per point on a round-timed one. -> 90-07, 90-08
 
+### Rising resist confirmed for damage spells (user, 2026-09-30, after 89-08)
+Shown the effect (a spell that today faces only the intelligence resist gets the depth part too: an intelligence-10 foe on floor 20 goes from 25% to 55% resisted, as the Pine Staff did in 89-08), the user confirmed: "I'm good with that." Every spell a foe can resist uses the shared helper from 89-08 (`foeResistsEffect` / `risingResistFaces`); control spells keep today's deep odds and lose their floor-12 caps.
+
 ### Gates (milestone)
 - Greenfield: no dual code paths; old saves tolerant-load only (a saved book holding a removed spell loads tolerantly).
 - New rolls from derived streams; existing draws never reorder.
