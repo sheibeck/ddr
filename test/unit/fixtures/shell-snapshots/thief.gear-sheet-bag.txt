@@ -10,7 +10,7 @@
 ## #mw-gear-sheet-stats
 <div id="mw-gear-sheet-stats" class="mw-gsheet-stats">
   <p class="mw-gsheet-note mw-gsheet-stat">
-    text="used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight"
+    text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
 ## #mw-gear-sheet-why
 <div id="mw-gear-sheet-why" hidden>
   text=""

@@ -103,6 +103,8 @@
     <div class="mw-gear-pip">
   <p class="mw-gear-free">
     text="potions & scrolls ride free"
+  <p class="mw-gear-free">
+    text="this bag carries up to 2000 wilmst and 10 rations"
 ## #gear-bag
 <div id="gear-bag">
   <li class="mw-empty">

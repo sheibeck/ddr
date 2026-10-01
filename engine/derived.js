@@ -7,7 +7,7 @@
 // read with an explicit passed `c` (character) or `state` parameter. No global
 // S, no DOM, no Math.random — only pure reads and arithmetic.
 
-import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
+import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, JEWELRY, CLOAKS, STAVES, TOOLS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
 import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor, controlResistFacesFor } from "./difficulty.js";
 import { derivedRng } from "./rng.js";
@@ -601,6 +601,47 @@ export function activationKeyFor(it) {
     return p ? p.n : null;
   }
   return typeof it.n === "string" ? it.n : null;
+}
+
+/**
+ * canonItemText(it) — Phase 89 plan 09 (TEXT-01): the CURRENT content text for
+ * a known item, or `null` when the item has no content row of its own. A
+ * potion resolves by its `eff2` (the activationKeyFor rule: the store's "X
+ * potion" and a find's "X potion (colour)" share one POTIONS row); a jewel, a
+ * cloak and a staff resolve by their display name `n` in JEWELRY, CLOAKS and
+ * STAVES; a tool by its `tool` key (else its name) in TOOLS. A weapon, an
+ * armour, a bag, lockpicks, a scroll or anything unrecognised is `null`: their
+ * text is built from live fields, not read from a row. The one place a saved
+ * item's words are compared with the game's (engine/saveState.js#
+ * refreshItemTexts), so a reworded row reaches an old save. Pure, no rng,
+ * never mutates `it`, never throws on a hostile value.
+ */
+export function canonItemText(it) {
+  if (!it || typeof it !== "object" || Array.isArray(it)) return null;
+  let row = null;
+  switch (it.kind) {
+    case "potion":
+      row = POTIONS.find((p) => p.eff === it.eff2);
+      break;
+    case "jewel":
+      row = JEWELRY.find((r) => r.n === it.n);
+      break;
+    case "cloak":
+      row = CLOAKS.find((r) => r.n === it.n);
+      break;
+    case "staff":
+      row = STAVES.find((r) => r.n === it.n);
+      break;
+    case "tool":
+      row =
+        typeof it.tool === "string" && Object.prototype.hasOwnProperty.call(TOOLS, it.tool)
+          ? TOOLS[it.tool]
+          : Object.values(TOOLS).find((t) => t.n === it.n);
+      break;
+    default:
+      return null;
+  }
+  return row && typeof row.txt === "string" ? row.txt : null;
 }
 
 /** activationFor(it) — Phase 39 (GEAR-02): the item's own activation record

@@ -22,7 +22,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Set of lockpicks<i>6–10 on d10 against any lock</i></span>\n        <span class=\"g-c\">315 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Flail<i>d10+2 · (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.7 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
+    html="<span class=\"g-n\">Flail<i>d10+2 · −1 to hit · (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.7 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6/2 · −1 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.4 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
   <button class="goods" disabled onclick>
@@ -58,7 +58,7 @@
     <b>
       text="Anklet of Invisibility · READY"
     <i>
-      text="used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight"
+      text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 750 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>

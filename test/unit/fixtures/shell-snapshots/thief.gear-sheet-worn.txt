@@ -37,7 +37,7 @@
       <span class="mw-gsheet-act-label">
         text="SWAP FOR Anklet of Invisibility"
       <span id="mw-gear-sheet-sub-2" class="mw-gsheet-act-sub">
-        text="used, for fifty squares every foe has two fewer faces that hit you; then fifty squares back in plain sight"
+        text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
     <span class="mw-gsheet-chev" aria-hidden="true">
       text="›"
 ## #mw-gear-sheet-cancel

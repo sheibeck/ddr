@@ -81,11 +81,25 @@ test("weapon: the damage label from WEAPONS[base].lab, then usable-by — no '+0
   for (const l of lines) assert.doesNotMatch(l.text, /\+0\b/);
 });
 
-test("weapon: an unrestricted weapon carries no usable-by entry", () => {
+test("weapon: an unrestricted weapon carries no usable-by entry (a Dagger: its +1 to hit and its two crit numbers, Phase 89 TEXT-01)", () => {
   const c = fixedChar();
   const it = shopWeapon("Dagger");
   assert.equal(usableBy(it, c), "");
-  assert.deepStrictEqual(itemStatLines(it, c).map((l) => l.key), ["damage"]);
+  const lines = itemStatLines(it, c);
+  assert.deepStrictEqual(lines.map((l) => l.key), ["damage", "toHit", "crit"]);
+  assert.equal(lines[1].text, "+1 to hit");
+  assert.equal(lines[2].text, "crits on the top 2 numbers of your strike die");
+});
+
+test("weapon: a heavy weapon states its minus to-hit with U+2212, a plain weapon states none, never '+0' or '−0' (Phase 89, TEXT-01)", () => {
+  const c = fixedChar();
+  const text = (name) => itemStatLines(shopWeapon(name), c).map((l) => l.text);
+  assert.ok(text("Mace").includes("−1 to hit"));
+  assert.ok(text("Bardiche").includes("−2 to hit"));
+  assert.ok(text("Rapier").includes("+1 to hit"));
+  assert.ok(!text("Long Sword").some((t) => /to hit/.test(t)), "a shift of zero prints no to-hit line");
+  assert.ok(!text("Mace").some((t) => /crits on/.test(t)), "a one-number crit prints no crit line");
+  for (const name of Object.keys(WEAPONS)) for (const t of text(name)) assert.doesNotMatch(t, /[+−]0 to hit|-\d+ to hit/, `${name}: ${t}`);
 });
 
 test("weapon: an enchanted blade reads '<lab> +N' then the enchanted mark (the store's premium line)", () => {
@@ -94,18 +108,32 @@ test("weapon: an enchanted blade reads '<lab> +N' then the enchanted mark (the s
   const lines = itemStatLines(PREMIUM_BLADE, c);
   assert.equal(lines[0].key, "damage");
   assert.equal(lines[0].text, `${WEAPONS[PREMIUM_BLADE.base].lab} +${PREMIUM_BLADE.bonus}`);
-  assert.equal(lines[1].key, "enchanted");
-  assert.equal(lines[1].text, ITEM_STAT_COPY.text.enchanted);
+  // Phase 89 (TEXT-01): the blade's own to-hit and crit lines (when its base has any) sit between the damage and the mark.
+  const enchanted = lines.find((l) => l.key === "enchanted");
+  assert.ok(enchanted, "an enchanted blade carries the mark");
+  assert.equal(enchanted.text, ITEM_STAT_COPY.text.enchanted);
+  assert.ok(lines.indexOf(enchanted) > 0);
 });
 
 test("armour: 'AR n', then 'left/wp hp' (a fresh drop reads left = wp), then usable-by", () => {
   const c = fixedChar();
   const it = shopArmor("Plate");
   const lines = itemStatLines(it, c);
-  assert.deepStrictEqual(lines.map((l) => l.key), ["ar", "wear", "usable"]);
+  // Phase 89 plan 09 (TEXT-01): Plate is bulk 2, so its agility cost is stated between the durability and usable-by.
+  assert.deepStrictEqual(lines.map((l) => l.key), ["ar", "wear", "bulk", "usable"]);
   assert.equal(lines[0].text, `AR ${it.ar}`);
   assert.equal(lines[1].text, `${it.wp}/${it.wp} hp`);
-  assert.equal(lines[2].text, usableBy(it, c));
+  assert.equal(lines[2].text, "−2 to climb, leap and flee rolls");
+  assert.equal(lines[3].text, usableBy(it, c));
+});
+
+test("armour: an armour with no bulk (Cloth, Leather) states no agility cost; Studded and Mail state −1 (Phase 89, TEXT-01)", () => {
+  const c = fixedChar();
+  const bulk = (name) => itemStatLines(shopArmor(name), c).find((l) => l.key === "bulk")?.text;
+  assert.equal(bulk("Cloth"), undefined);
+  assert.equal(bulk("Leather"), undefined);
+  assert.equal(bulk("Studded"), "−1 to climb, leap and flee rolls");
+  assert.equal(bulk("Mail"), "−1 to climb, leap and flee rolls");
 });
 
 test("armour: a worn-down piece reads its own left; exactly 0 left reads destroyed", () => {
@@ -150,10 +178,11 @@ test("cloak, jewel, potion, tool, lockpicks: the item's own effect text, and not
   }
 });
 
-test("bag: its slot count from BAGS[tier]", () => {
+test("bag: its slot count from BAGS[tier], then the wilmst and rations it carries (Phase 89, TEXT-01)", () => {
   const lines = itemStatLines(BAG, fixedChar());
-  assert.deepStrictEqual(lines.map((l) => l.key), ["slots"]);
+  assert.deepStrictEqual(lines.map((l) => l.key), ["slots", "carry"]);
   assert.equal(lines[0].text, `${BAGS.medium.slots} slots`);
+  assert.equal(lines[1].text, `carries up to ${BAGS.medium.wilmst} wilmst and ${BAGS.medium.rations} rations`);
 });
 
 test("every entry is { key, label, value, text } with label from ITEM_STAT_COPY.label", () => {

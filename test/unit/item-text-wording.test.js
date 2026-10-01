@@ -291,8 +291,8 @@ test("weapons state their to-hit and crit, armour its bulk, a bag its caps (ITEM
   assert.ok(lines({ kind: "weapon", n: "Bardiche", base: "Bardiche" }).includes("−2 to hit"));
   assert.ok(lines({ kind: "weapon", n: "Mace", base: "Mace" }).includes("−1 to hit"));
   assert.ok(lines({ kind: "weapon", n: "Rapier", base: "Rapier" }).includes("+1 to hit"));
-  assert.ok(lines({ kind: "weapon", n: "Rapier", base: "Rapier" }).includes("crits on 19–20 on a d20"));
-  assert.ok(!lines({ kind: "weapon", n: "Whip", base: "Whip" }).some((t) => /crits on/.test(t)), "a one-face crit is not stated (it is the ordinary 20)");
+  assert.ok(lines({ kind: "weapon", n: "Rapier", base: "Rapier" }).includes("crits on the top 2 numbers of your strike die"));
+  assert.ok(!lines({ kind: "weapon", n: "Whip", base: "Whip" }).some((t) => /crits on/.test(t)), "a one-number crit is not stated (it is every weapon's ordinary top number)");
   const plate = ARMORS.find((a) => a.name === "Plate");
   assert.ok(lines({ kind: "armor", n: "Plate", armor: "Plate", ar: plate.ar, wp: plate.wp, left: plate.wp, cls: "F" }).includes("−2 to climb, leap and flee rolls"));
   assert.ok(lines({ kind: "bag", tier: "large", n: "Large bag" }).includes("carries up to 8000 wilmst and 40 rations"));

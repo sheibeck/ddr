@@ -41,6 +41,8 @@ test("GEAR_COPY carries the exact frozen literal shape (260918-w4n: no staff lea
     alsoOnYou: "ALSO ON YOU",
     bag: "BAG",
     freeRide: "potions & scrolls ride free",
+    // Phase 89 plan 09 (TEXT-01): the caps a bag holds besides slots.
+    bagCaps: "this bag carries up to {wilmst} wilmst and {rations} rations",
     empty: {
       weapon: "fists — nothing in hand. Free, always with you, and not very good.",
       armor: "armour — nothing. The wind is your armour, and the wind is not on your side.",
