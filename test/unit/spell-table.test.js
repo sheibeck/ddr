@@ -94,7 +94,8 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
   const EXPECTED = {
     Heal: { dmg: { n: 1, sides: 10, bonus: 0 }, combatOnly: false },
     Shield: { pool: 50, rounds: 5, combatOnly: false },
-    Strength: { dmg: { n: 1, sides: 10, bonus: 0 }, combatOnly: false },
+    // Phase 90 (SPELL-09): Strength's die moved from `dmg` to its `act.dice` (an extra d10 on every damage roll for 100 squares).
+    Strength: { act: { kind: "strength", effect: 100, dice: { n: 1, sides: 10, bonus: 0 } }, combatOnly: false },
     Doze: { combatOnly: true },
     Freeze: { dmg: { n: 1, sides: 6, bonus: 0 }, combatOnly: true },
     "Map the Floor": { combatOnly: false },

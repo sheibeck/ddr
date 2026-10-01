@@ -230,7 +230,7 @@ test("Bridges: derived.js import carries conditionsOf/hasTool/mapViewRadius/inVi
   // RULES-13 (Phase 75): weaponRow/wieldedStaff joined the same line — the
   // weapon row and every bag-card family/swap check now read the wielded
   // staff too, not just an ordinary WEAPONS lookup.
-  assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff \} from "\.\.\/\.\.\/engine\/derived\.js";/);
+  assert.match(GEAR_SRC, /import \{ WORN_SLOTS, WORN_KEYS_OF, activationFor, itemTimerId, chargesTimerId, slotFor, weaponRow, wieldedStaff, liveItemEffects \} from "\.\.\/\.\.\/engine\/derived\.js";/);
 });
 
 test("Bridge: window.mzEquipItem forwards an optional targeted swap key (260918-wy1)", () => {

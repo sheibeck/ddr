@@ -175,7 +175,8 @@ test("(b) no combat: the chip's tap pushes the plain line card (no kind, 8400 ho
   assert.equal(card.tone, "info");
   // CMBUI-13 (Phase 77, plan 77-08): the one shared tap text adds how long
   // the chip lasts and where it came from after the explanation.
-  assert.equal(card.lines[0].text, `${r.explain(r.descriptor("might"), "Strong")} Until the day ends, from a spell.`);
+  // Phase 90 (SPELL-09): a source-less might chip is the phobia rage (c.might), no longer the Strength spell.
+  assert.equal(card.lines[0].text, `${r.explain(r.descriptor("might"), "Strong")} Until the day ends, from your fear.`);
   assert.equal(card.lines[0].text, r.sandbox.context.conditionTapText(r.descriptor("might"), "Strong", r.w.__mzState.get()));
   assert.equal(r.w.__mzTypewriter.active("rail"), true, "the out-of-combat card still types");
 });
