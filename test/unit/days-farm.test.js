@@ -306,8 +306,18 @@ test("Task 2: playFarmRun — floor-1 farming", async (t) => {
   // probe seed — a solo start that recruits a Joiner whose extra appetite
   // the fair bot's own camp gate (hero-only eats) does not account for,
   // triggering campFailed(noRations) before this plan's guard existed.
-  await t.test("camp-guard regression on a real run: seed 55434, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
-    const row = playFarmRun(55434, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
+  //
+  // Re-pinned (Phase 90 plan 02, ABIL-07, 2026-09-30): a Joiner Fighter's
+  // Pommel Strike now strikes as well as stuns, so the run seed 55434 plays
+  // out differently and its campGuard count went 200 -> 0 (campFailed 0
+  // either way; its hero is a Summoner, so the Pommel Strike is a Joiner's);
+  // the sibling seed 15839 (a Barbarian) went 195 -> 0 as well. The new
+  // pin is the first seedList(120) Summoner solo start whose measured run
+  // fires the guard: seed 293004 (index 37), campGuard 139, campFailed 0,
+  // the same shape of run (a solo Magic User start, a Joiner's appetite). The
+  // assertion itself is unchanged.
+  await t.test("camp-guard regression on a real run: seed 293004, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
+    const row = playFarmRun(293004, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
     assert.ok(row.campGuard >= 1, `campGuard was ${row.campGuard}`);
     assert.equal(row.campFailed, 0);
   });

@@ -46,7 +46,7 @@ cooldown); `target` is `foe` / `self` / `foes`; `tag` is `opener` / `damage`
 | kata | Kata | Fighter | table | fight | foe | damage | one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight |
 | deathTouch | Death Touch | Fighter | table | 5 | foe | damage | call it: your next landed blow doubles, and finishes anything under 15 hp |
 | sidestep | Sidestep | Fighter | table | 4 | self | defensive | two rounds of not being where the blade is: every foe needs two better |
-| pommelStrike | Pommel Strike | Fighter | table | 4 | foe | opener | the blunt end, to the temple: the target loses its next turn |
+| pommelStrike | Pommel Strike | Fighter | table | 4 | foe | opener | the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn |
 | battleRoar | Battle Roar | Fighter | table | 5 | self | opener | loud enough to matter: for two rounds every foe needs two better to hit anyone on your side |
 | secondWind | Second Wind | Fighter | table | fight | self | defensive | remember why you came: heal d8 + level |
 | sweep | Sweep | Fighter | table | 4 | foes | damage | one wide arc: every living foe takes half damage; needs two or more foes |
@@ -340,7 +340,7 @@ ability without a rounds figure.
 | silentStep | strike | `{ autoHit: true, forceCrit: true }` |
 | overheadBlow | strike | `{ dmgMul: 2, needShift: -2 }` |
 | lastStand | strike | gated by `notLowEnough`; `lastStandCalled` then `{ attacks: 3 }` |
-| pommelStrike | foe | `t.stunned = true` → `pommelStruck` |
+| pommelStrike | strike | `{ key, stunOnHit: true }` (Phase 90, ABIL-07, report #4) → `playerStrike`: the plain strike, then if any blow landed and the target still stands, `applyPommel(t)` (`t.stunned = true`) and one `pommelStruck` after the hit events. cd 4 spent on use, hit or miss. A double strike stuns once; a killing blow, a shatter or a miss stuns nobody; no draw of its own |
 | dirtyTrick | foe | `t.blind = true; t.blindFor = 2` → `dirtyTrickLanded` |
 | poisonedEdge | foe | `t.dot = { left: 3, dmg: {n:1,sides:4,bonus:0}, by: "poisonedEdge" }` → `poisonedEdgeApplied` |
 | hamstring | foe | `t.hamstrung = true` → `hamstrung` |
@@ -351,7 +351,7 @@ ability without a rounds figure.
 | brace | self | `C.braced = true` → `braced` |
 | riposte / taunt / sidestep / battleRoar / smoke | self | starts the timer → `riposteReady`/`taunted`/`sidestepped`/`battleRoarRaised`/`smokeThrown` |
 
-Strike-kind abilities delegate ENTIRELY to `combat.js#playerStrike` (which
+Strike-kind abilities (Kata, Feint, Death Touch, Silent Step, Overhead Blow, Last Stand and, since Phase 90, Pommel Strike) delegate ENTIRELY to `combat.js#playerStrike` (which
 already tail-calls `afterPlayerAction`) — `useAbility` never also calls
 `afterPlayerAction` on that branch (would double-run the foe's turn). Every
 other kind resolves its own effect and calls `afterPlayerAction` itself,
@@ -449,7 +449,8 @@ primitives the hero's `useAbility` uses:
 | silentStep | `memberStrike(..., { autoHit: true, forceCrit: true })` (denied by the same heavy-armor list) |
 | overheadBlow | `memberStrike(..., { dmgMul: 2, needShift: -2 })` |
 | lastStand | up to 3 `memberStrike` calls while the target is alive (the loop is the CALLER's — `mod.attacks` is never read inside `memberStrike`) |
-| pommelStrike / dirtyTrick / poisonedEdge / hamstring / mark | the shared `applyPommel`/`applyDirtyTrick`/`applyPoison`/`applyHamstring`/`applyMark` appliers (Plan 03), same foe fields, event gains `member` |
+| pommelStrike | `memberStrike(..., { key, stunOnHit: true })` (Phase 90, ABIL-07): one blow, and a landed blow that leaves the target standing applies `applyPommel`; `pommelStruck` carries `member` |
+| dirtyTrick / poisonedEdge / hamstring / mark | the shared `applyDirtyTrick`/`applyPoison`/`applyHamstring`/`applyMark` appliers (Plan 03), same foe fields, event gains `member` |
 | cutpurse | `rng.d(10) * ally.lvl` gold, paid to the HERO via `gainWilmst` |
 | secondWind | `rng.d(8) + ally.lvl`, capped at the member's own `maxWP` |
 | sweep | never picked with fewer than two live foes (`pickMemberAbility`, quick 260928-nrf); else `ceil(weaponDamage(view, rng) / 2)` to every live foe via `damageFoe` |
