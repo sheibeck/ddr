@@ -224,6 +224,10 @@ const PHASE_79_TOGGLES = [
   { only: ["wardRaised"], mirror: false, spell: "Shield", pool: 50, member: null },
   { only: ["strengthCast"], restarted: true, squares: 100 },
   { only: ["strengthCast"], restarted: true, squares: 100, member: null },
+  // Phase 91.1 plan 02 (user ruling V5, 2026-10-01), appended so every earlier toggle keeps
+  // its id: Hamstring refused on a foe that already carries it (the target comes from the
+  // event), so the voice guards read the new `alreadyOn` refusal.
+  { only: ["abilityRefused"], reason: "alreadyOn", name: "Hamstring", target: "Goblin" },
 ];
 
 /**

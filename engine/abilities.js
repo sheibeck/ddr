@@ -8,11 +8,13 @@
 // Refusal ladder (CMB-01/CMB-02 discipline, mirroring castSpell): notFought
 // (refuseIfPending, FIRST) -> unknown (not in the catalog, or not owned) ->
 // notInCombat -> cooldown (or spent, a used once-per-fight ability — quick
-// 260927-opf) -> noTarget (structurally unreachable in combat,
+// 260927-opf; Phase 91.1 plan 02: only Death Touch, Silent Step and Cutpurse
+// are still once per fight) -> noTarget (structurally unreachable in combat,
 // same reasoning castSpell's own comment documents — normalizeTarget always
 // finds a live foe while state.combat exists) -> tooFewFoes (Sweep with
-// fewer than SWEEP_MIN_FOES living foes, quick 260928-nrf) -> notLowEnough
-// (Last Stand's own gate). A refusal is a single event, spends no action, starts no timer,
+// fewer than SWEEP_MIN_FOES living foes, quick 260928-nrf) -> alreadyOn
+// (Hamstring or Mark on a foe that already carries it, Phase 91.1 plan 02) ->
+// notLowEnough (Last Stand's own gate). A refusal is a single event, spends no action, starts no timer,
 // and never touches state.rngState (no draw ever happens before the ladder
 // clears).
 //
@@ -123,6 +125,41 @@ export const KATA_FEINT_NEED_SHIFT = 3;
  */
 export function abilityShortfall(key, liveCount) {
   if (key === "sweep" && liveCount < SWEEP_MIN_FOES) return "tooFewFoes";
+  return null;
+}
+
+/**
+ * abilityReadyAfter(key) — Phase 91.1 plan 02 (user rulings V1 to V5,
+ * 2026-10-01): the rounds after the use round an ability is usable again, the
+ * ONE read of "ready again N rounds after you use it" (the text guard, the
+ * menu tests and the Joiner pins read this, never a number typed twice). An
+ * ability used in round R is usable again in round R + N: the use round's own
+ * foe turn ticks the fresh timer once, so a plain cooldown of `cd` rounds is
+ * `cd`, and a duration ability (Smoke) runs its effect first (abilityEffectTicks
+ * rounds) and its cooldown after, so it is the two added. `null` for a
+ * once-per-fight ability (`cd: "fight"`: no wait, spent until the fight ends)
+ * and for an id not in the catalog. Pure, no rng.
+ */
+export function abilityReadyAfter(key) {
+  const meta = ABILITY_BY_ID[key];
+  if (!meta || meta.cd === "fight") return null;
+  return abilityEffectTicks(key) + meta.cd;
+}
+
+/**
+ * abilityTargetShortfall(key, foe) — Phase 91.1 plan 02 (V5): `"alreadyOn"`
+ * for Hamstring on a foe that is already hamstrung and Mark on a foe that is
+ * already marked, else `null`. Hamstring and Mark come back 3 rounds after the
+ * use, but only to work a foe that does not carry the effect yet (a second foe
+ * in a crowd); the hero (useAbility), the combat menu, a Joiner
+ * (combat.js#pickMemberAbility) and the bot all read this one rule. Reads the
+ * foe's own flag, not the timer, so a flag a Joiner set counts too. Pure, no
+ * rng.
+ */
+export function abilityTargetShortfall(key, foe) {
+  if (!foe) return null;
+  if (key === "hamstring" && foe.hamstrung) return "alreadyOn";
+  if (key === "mark" && foe.marked) return "alreadyOn";
   return null;
 }
 
@@ -260,6 +297,15 @@ export function useAbility(state, key, rng, events = []) {
   if (shortfall) {
     events.push({ type: "abilityRefused", key, reason: shortfall, name: meta.name, need: SWEEP_MIN_FOES, have: liveFoes(state).length });
     return events;
+  }
+  // Phase 91.1 plan 02 (V5): Hamstring and Mark only on a foe that does not
+  // carry the effect yet; refused before anything is spent, like the rungs above.
+  if (needsFoe) {
+    const t = C.foes[C.target];
+    if (abilityTargetShortfall(key, t) === "alreadyOn") {
+      events.push({ type: "abilityRefused", key, reason: "alreadyOn", name: meta.name, target: t.name });
+      return events;
+    }
   }
   if (key === "lastStand" && c.wp > c.maxWP * DEATH_PANIC_THRESHOLD) {
     events.push({ type: "abilityRefused", key, reason: "notLowEnough", name: meta.name, have: c.wp, max: c.maxWP });

@@ -1183,6 +1183,10 @@ export const EVENT_NARRATION = {
       // Quick 260928-nrf (user ruling 2026-09-28): Sweep needs two or more
       // living foes; refused, nothing is spent.
       tooFewFoes: `<span class="miss">${name}: needs two or more foes, and ${e.have === undefined || e.have === 1 ? "there is only one" : `there are ${e.have}`}.</span> A wide arc at a single foe is a swing with extra steps.`,
+      // Phase 91.1 plan 02 (user ruling V5, 2026-10-01): Hamstring and Mark come
+      // back every 3 rounds, but only on a foe that does not carry the effect;
+      // refused, nothing is spent. The target comes from the event.
+      alreadyOn: `<span class="miss">${name}: ${e.target ?? "that foe"} already has it.</span> Pick another one, or enjoy the first.`,
     };
     return map[e.reason] ?? `<span class="miss">${name} refuses you.</span>`;
   },

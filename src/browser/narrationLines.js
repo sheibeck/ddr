@@ -2053,6 +2053,8 @@ export const LINE_FOR = {
       notLowEnough: `Last Stand: only at a quarter of your hp or less (you have ${e?.have ?? "?"} of ${e?.max ?? "?"}).`,
       // Quick 260928-nrf: Sweep needs two or more living foes.
       tooFewFoes: `${name}: needs two or more foes.`,
+      // Phase 91.1 plan 02 (V5): the rail twin of the Oracle's alreadyOn line.
+      alreadyOn: `${name}: ${e?.target ?? "that foe"} already has it.`,
     };
     return block(map[e?.reason] ?? `${name} refuses you.`);
   },

@@ -137,28 +137,31 @@ const CATALOG_TXT = {
   // with three more faces; Sweep needs two or more foes.
   // Phase 90 plan 11 (TEXT-01, user 2026-09-30): a shift reads "+N to hit" / "foes −N to hit you", a hard cap names its d20 range,
   // and every once-per-fight ability says so (test/unit/spell-skill-text-wording.test.js pins the numbers to the engine).
-  kata: "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  // Phase 91.1 plan 02 (user rulings V1 to V5, 2026-10-01): Kata, Feint, Overhead Blow, Last Stand,
+  // Second Wind, Smoke, Hamstring and Mark are ready again after a wait and say so
+  // ("ready again N rounds after you use it"); Death Touch, Silent Step and Cutpurse stay once per fight.
+  kata: "one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
   deathTouch: "call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight",
   // VOX-05/ROLL-04 (79-05): sidestep, battleRoar, overheadBlow and smoke read
   // roll-high in faces; feint and mark name what they add (damage).
   sidestep: "two rounds of not being where the blade is: foes −2 to hit you",
   pommelStrike: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn",
   battleRoar: "loud enough to matter: for two rounds foes −2 to hit anyone on your side",
-  secondWind: "remember why you came: heal d8 + level; once per fight",
+  secondWind: "remember why you came: heal d8 + level; ready again 5 rounds after you use it",
   sweep: "one wide arc: every living foe takes half damage; needs two or more foes",
   brace: "halve the next blow that lands on you",
   riposte: "for one round every foe that misses you eats your weapon damage",
   taunt: "every foe swings at you this round and your armour soaks double",
-  overheadBlow: "everything into one swing: double damage, but −2 to hit; once per fight",
-  lastStand: "under a quarter hp: three attacks this round; once per fight",
+  overheadBlow: "everything into one swing: double damage, but −2 to hit; ready again 4 rounds after you use it",
+  lastStand: "under a quarter hp: three attacks this round; ready again 4 rounds after you use it",
   silentStep: "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling",
-  feint: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  feint: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
   dirtyTrick: "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical",
-  smoke: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+  smoke: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it",
   cutpurse: "lift d10 × level gold off the target mid-fight; it has other problems; once per fight",
   poisonedEdge: "the blade weeps: d4 a round to the target for three rounds",
-  hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight; once per fight",
-  mark: "study it: every strike on the target adds +2 damage for the rest of the fight; once per fight",
+  hamstring: "cut the tendon: the target's blows do half damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already hamstrung",
+  mark: "study it: every strike on the target adds +2 damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
 };
 
 test("ABILITIES: 20 unique entries, valid shape/enums, canon txt lines pinned", () => {
