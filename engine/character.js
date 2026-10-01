@@ -313,6 +313,33 @@ export function grantableAt(sub, sp, level) {
 }
 
 /**
+ * topUpWizardDamage(book, sub, dr) — IDENT-13 (Phase 91 plan 02, user ruling
+ * 2026-09-30: "not having a direct damage spell makes the class very not-fun"):
+ * a WIZARD always opens with a direct-damage level-1 spell it can cast on day
+ * one. Wizard only: every other sub-class keeps the Phase 40 best-effort
+ * top-up inside rollGrimoire and gets its book back untouched here.
+ *
+ * "Direct damage" is engine/derived.js#dealsDamage (a spell whose own kind
+ * deals damage to a foe; never a summon or a buff). "Usable now" is the same
+ * rule rollGrimoire's `usableNow` uses (effective level 1 through
+ * spellLevelFor, school gate open at level 1). When the book already holds such
+ * a spell it is returned as is, with no draw. Otherwise one spell is drawn from
+ * the FULL level-1 direct-damage pool (every SPELLS row the Wizard can learn,
+ * in SPELLS order, not only what the book rolled) with the DERIVED stream `dr`
+ * and pushed. `dr` is the grimoire derived stream rollGrimoire already owns;
+ * the main rng is never passed, so the main-rng draw count is unchanged.
+ * Mutates and returns `book`.
+ */
+export function topUpWizardDamage(book, sub, dr) {
+  if (sub !== "Wizard") return book;
+  const usableDamage = (sp) => dealsDamage(sp) && spellLevelFor(sub, sp) === 1 && schoolGate(sub, sp.s) <= 1;
+  if (book.some((n) => { const sp = SPELLS.find((s2) => s2.n === n); return sp && usableDamage(sp); })) return book;
+  const pool = SPELLS.filter((sp) => canLearn(sub, sp) && usableDamage(sp));
+  if (pool.length) book.push(pool[dr.d(pool.length) - 1].n); // roll:selection
+  return book;
+}
+
+/**
  * rollGrimoire(rng, sub) — d10 spells (minimum 4) drawn from what the subclass
  * may ever learn, with the subclass "must-have" grants, the first-day
  * usability top-up, and a guaranteed day-one DAMAGE-dealing spell. Ports
@@ -441,6 +468,11 @@ export function rollGrimoire(rng, sub, level = 1) {
     if (damageReady()) break;
     if (dealsDamage(sp) && !book.includes(sp.n)) book.push(sp.n);
   }
+  // Phase 91 plan 02 (IDENT-13): the Wizard's named day-one guarantee, last
+  // word after the best-effort top-up above (derived stream only; see
+  // topUpWizardDamage). A no-op for every other sub-class and for any Wizard
+  // book that already holds a castable level-1 damage spell.
+  topUpWizardDamage(book, sub, dr);
   // Phase 90 plan 09 (SPELL-10, canon p.17: an Illusionist starts with "3 illusion
   // spells on top of the beginning roll"; the user-accepted default of
   // 2026-09-30): Mirror Self (pushed above, with the other must-haves), Door
