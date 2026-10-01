@@ -510,9 +510,16 @@ test("castSpell: a Cleric's Fireball deals double to a Demons foe (CANON-04, D-1
   // Quick 260928-sq2 (re-pinned): every Fireball below is 2d10+4 = 14 + the
   // level-3 caster's level² (9) = 23, so the foes carry 60 wp (not 40) to
   // survive a doubled 46 and keep the 4-draw sequence.
+  //
+  // Phase 91 plan 02 (IDENT-15, user 2026-09-30): a Cleric never learns the
+  // offense school, so Fireball can no longer sit in its book. The doubling
+  // survives only where a Cleric can still cast one: a SCROLL (Q3 B, RULES-10:
+  // the scroll's free cast ignores the book), so the cast below is a scroll cast
+  // (`scrollCast`, the flag engine/magic.js#scrollFreeCast sets), with an empty
+  // book. The damage numbers are unchanged.
   const foe = fixedFoe({ type: "Demons", wp: 60, maxWP: 60, intel: 1 });
   const state = fixedState({
-    c: { sub: "Cleric", grimoire: ["Fireball"], level: 3 },
+    c: { sub: "Cleric", grimoire: [], level: 3, scrollCast: true },
     combat: fixedCombat([foe]),
   });
   // toHit d8=1 (Cleric offense bonus 0, 1-0<=4 hits); dmg 2d10+4 = 5+5+4=14,

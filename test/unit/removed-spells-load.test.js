@@ -81,9 +81,11 @@ test("an Illusionist keeps Mirror Self; an Apprentice keeps it too (they still l
   assert.deepStrictEqual(loadHero("Apprentice", ["Mirror Self", "Heal"]), ["Mirror Self", "Heal"]);
 });
 
-test("a spell of a school the sub-class can never learn is dropped (a Warlock holding Summon); a Cleric still learns offense, so its Fireball stays", () => {
+test("a spell of a school the sub-class can never learn is dropped (a Warlock holding Summon); an old Cleric's offense spells go too (IDENT-15, Phase 91 plan 02), the rest of its book stays", () => {
   assert.deepStrictEqual(loadHero("Warlock", ["Freeze", "Summon"]), ["Freeze"]);
-  assert.deepStrictEqual(loadHero("Cleric", ["Heal", "Fireball", "Major Heal"]), ["Heal", "Fireball", "Major Heal"], "Cleric learns offense (chart value 0): kept");
+  // Phase 91 plan 02 (IDENT-15): the Cleric's offense school is closed (chart value null), so an
+  // old save's Fireball and Strength load out of the book; Heal and Major Heal stay, in saved order.
+  assert.deepStrictEqual(loadHero("Cleric", ["Heal", "Fireball", "Strength", "Major Heal"]), ["Heal", "Major Heal"], "Cleric never learns offense: dropped on load");
 });
 
 test("a save with none of these is byte-identical after load (a genuine no-op)", () => {

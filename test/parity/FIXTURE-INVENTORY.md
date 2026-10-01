@@ -7275,3 +7275,76 @@ practice or wits"). The new guard is `spell-skill-text-wording.test.js`. `docs/n
 63 rows from a corpus diff of the plan base against the change (and folds the nine `q-260927-opf`, four
 `q-260928-z4-nrf` and two `q-260927-rsx` rows it supersedes, the 89-09 precedent: 90-11 sorts before `q-`).
 `node tools/narrative-review.mjs` regenerated the review pages (744 rows) and `--check` is in sync.
+
+### Phase 91 plan 02: the Wizard's day-one damage and the Cleric's offense ban (IDENT-13, IDENT-15)
+
+**The rules (the user's 2026-09-30 rulings).** IDENT-13: "not having a direct damage spell makes the class very
+not-fun": a Wizard always starts with at least one direct-damage level-1 spell it can cast on day one, drawn from
+the full level-1 pool, pinned across 1,000 seeds. IDENT-15: a Cleric "cannot cast offensive spells" (they gain more
+hit points) and "always starts with the level-1 Heal spell". The engine side: `character.js#topUpWizardDamage`
+(Wizard only, after rollGrimoire's existing day-one top-up, drawing from the call's grimoire DERIVED stream only) and
+`MU_CHART.Cleric.offense` is `null`, the same gate data Phase 90 plan 06 wrote for the Wizard's Illusion, so
+`canLearn`, `grantableAt`, `readScroll`'s scribe gate, `canCast`, `castSpell`, the combat menu and the tolerant
+save load all follow it with no Cleric name check. A scroll that rolls an offense spell still free-casts for a
+Cleric (Q3 B, RULES-10). The user's Q2 A means no Cleric hit-point rule was built. No new serialized field (nothing
+to carve out of the three `*Comparable()` functions); `test/parity/prototype-master.js.txt` is untouched and
+`roll-high-baseline.mjs save` was never run.
+
+**The predictor.** (1) The Wizard step moves nothing when the existing top-up already covers every seed. Measured
+on the base commit before any change: 1,000 forced-Wizard seeds and every race x 200 seeds all already held a
+castable Freeze (the level-1 direct-damage pool is Freeze alone), so the step never fires and every Wizard book is
+byte-identical to the base commit's (sha256 over seeds 1 to 1000 pinned in `wizard-day-one.test.js`, as is the
+digest of every other non-Cleric Magic User sub, seeds 1 to 200). Its one new draw is a derived-stream selection
+draw, so the Wizard's main-rng count stays 36. (2) The Cleric loses the offense school from both main-rng pool
+shuffles: low 13 spells to 5 (Heal, Shield, Map the Floor, Turn Walking Dead, Sense Presence), high 16 to 5 (Major
+Heal, Bubble, Sense Danger, Plane Gate, Regeneration), the day-one spare pool 7 to 2 (Heal, Shield), so
+`rollGrimoire` draws 4 + 4 + 1 + 1 = 10 values where it drew 12 + 15 + 1 + 6 = 34. Every later chargen draw of a Cleric lands on a
+different value: any fixture or pin whose hero is a Cleric moves, and nothing else does.
+
+**The live scan (measured at the plan's end, against the base 1823e0ed).**
+
+- `node tools/fixture-inventory.mjs --json`: byte-identical to the same command run on an extracted tree of
+  1823e0ed (the fixture roster did not move).
+- Fixture seeds that roll a Cleric: of every seed in the six `action-script.*.json` fixtures, only chargen seed 35
+  (Magic User / Cleric / Troll). No combat, magic, economy, encounter or movement scenario has a Cleric hero.
+- `node --test "test/parity/**/*.test.js"`: 66 tests. Before the declaration below, 3 failed exactly where
+  predicted (chargen seed 35 and the full-suite chargen leg); after it, 66 pass.
+- `node tools/roll-high-baseline.mjs pins` semantics (`roll-high-state-pins.test.js`, `roll-high-save-compat.test.js`):
+  **0 of 8 labels moved** (solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer, party-1, party-fighter-knight,
+  deep-8, deep-14: none rolls a Cleric, and the Sorcerer's book is byte-identical). Proven by the unmoved pins, not
+  re-recorded; the save-compat `expected` hash did not move either.
+- `test/determinism`, `test/persistence`, `test/roundtrip` and `test/voice`: 139 tests, 139 pass unchanged.
+
+**Moved entries (each measured live, declared with before/after, regenerated alone).**
+
+1. `action-script.chargen.json`, seed 35 (the Cleric): the record gains `grimoire` (phase now `54+79.2+91`,
+   requirement IDENT-15). The prototype's book (before): Freeze, Stupidity, Sense Presence, Weaken, Insane, Shield,
+   Heal, Major Heal. The engine's (after): Turn Walking Dead, Shield, Heal, Sense Presence, Regeneration, Plane
+   Gate, Bubble, Major Heal. `maxWP`, `wp` and `rations` keep their existing BAND-02 values. The grimoire is the only
+   other compared field that moves: only the carved-out `name` is drawn after it. Rationale in the record.
+2. `chargen-rng-pin.test.js`: `ROLL_CHARACTER_PINS[35]` 1447918666 -> 440012114; `NEW_RUN_PINS[35]` 642742802 ->
+   898507590; `ROLL_GRIMOIRE_DRAW_COUNTS.Cleric` 34 -> 10 (the formula test derives the same 10 from the pools). The
+   other 19 cursors and the other seven counts are byte-identical. The same Cleric count is restated, with the same
+   declaration, in `day-one-damage.test.js`, `grimoire-legality.test.js` and `guaranteed-attack-spell.test.js`.
+3. `roll-high-guard.test.js#DRAW_INVENTORY`: `engine/character.js` selection 14 -> 15 (topUpWizardDamage's
+   `dr.d(pool.length)`, a derived-stream selection draw).
+4. Shell snapshot `mu.hero` (1 of 8 moved, regenerated alone with `MZ_SNAPSHOT_UPDATE=1`; the other seven
+   re-wrote identically and were restored): the Wizard's Subclass blurb ("Every school of magic, and a flat refusal
+   to teach anybody who isn't an Apprentice ..." -> "Offense, protection, healing, divination and special, and never
+   Illusion, which the Illusionist keeps for itself like a family recipe. Your book always opens with something
+   that hurts ...") and its footer Good line gains "always starts with a level 1 direct-damage spell it can cast on
+   day one".
+5. Unit pins moved with the rule (each before/after in its test): `magic.test.js` (a Cleric's Fireball doubling
+   against Demons is now exercised as a scroll cast, `scrollCast: true` with an empty book: the damage numbers are
+   unchanged, 46), `removed-spells-load.test.js` (an old Cleric's offense spells drop on load, Heal and Major Heal
+   stay), `guaranteed-attack-spell.test.js` and `day-one-damage.test.js` (the day-one damage sweeps skip the Cleric
+   by name in the test and assert it holds none), `identity-contract.test.js` (the Cleric's bad is the never-learns
+   assertion, not "no offensive bonus"), `identity-footer.test.js` (two new pins), `identity-audit.test.js` (the two
+   built traits left the pre-registered list; the non-live-row probe clones a live row instead), `spell-audit`'s
+   gate table (`docs/SPELL-AUDIT.md` and `docs/SPELLS.md` Cleric offense is never).
+6. `docs/narrative-pass/why/91-02.json` holds 6 rows (SUB_NOTE Wizard and Cleric, the two new trait lines, the two
+   footers), each `after` taken from the live corpus; `node tools/narrative-review.mjs` regenerated the pages and
+   `--check` is in sync.
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): the Cleric is the one class
+whose book, and so whose bot behaviour, changed. The Wizard's books and cursors did not move.
