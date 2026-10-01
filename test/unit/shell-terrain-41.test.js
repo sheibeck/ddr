@@ -59,8 +59,9 @@ test("import: the ./engine/derived.js import line carries mapViewRadius and inVi
 
 // Phase 78 (HUD-07): the bridge gained heardSquares (Acute Hearing's pure
 // read) alongside the two render-window reads; still assigned exactly once.
-test("bridge: window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares }; exactly once", () => {
-  assert.equal((CODE.match(/window\.__mzMapView = \{ mapViewRadius, inViewWindow, heardSquares \};/g) || []).length, 1);
+test("bridge: window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares, teleportTargets }; exactly once", () => {
+  // Phase 91 (IDENT-14) re-pin: teleportTargets joined the bridge (the teleport pick's glow and tap).
+  assert.equal((CODE.match(/window\.__mzMapView = \{ mapViewRadius, inViewWindow, heardSquares, teleportTargets \};/g) || []).length, 1);
   assert.equal((CODE.match(/window\.__mzMapView = /g) || []).length, 1);
 });
 

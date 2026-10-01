@@ -1,0 +1,79 @@
+[
+  {
+    "key": "bank:TELEPORT_CARD_COPY.title",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "THE TELEPORT WAITS",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (report #3: \"I have a deserved illusionist. It says I choose where teleports takes me, but when I stepped on a teleport I didn't get to choose.\"; user ruling 2026-09-30): an Illusionist who steps on a teleport now gets a decision card, because the engine holds the teleport until the player picks. The title says what is happening: the teleport is waiting on them."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.intro.many",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "{count} squares glow on the map. Tap one and the party goes there. Tap anywhere else and the party goes nowhere, on principle.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (report #3, CONTEXT \"Map pick\"): the card opens by naming how many squares glow and how to pick (tap one on the map). The second sentence is the rule that a stray tap never picks for the player, said in the house voice. Shown when the step's own Oracle narration is not to hand (after a relaunch)."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.intro.one",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "One square glows on the map. Tap it. It is a short menu, but it is yours.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (report #3): the singular of the count line, so one explored square in reach never reads \"1 squares glow\". The joke is the size of the menu; the choice is still the player's."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.intro.none",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "Nothing you have explored is in reach, so nothing glows. Your only vote is LET IT CHOOSE.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (user ruling 2026-09-30, \"Explored squares only\"): the pick lights only reachable floor the hero has already explored, so with none in reach the card says nothing glows and that LET IT CHOOSE is the only answer, rather than showing an empty map and a silent button."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.reach",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "Reach: up to {reach} squares, straight or diagonal, explored floor only.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (CONTEXT: the reach stays 12; \"Explored squares only\"): the card states the real rule in plain words, with the number read from the engine's TELEPORT_REACH so the card can never promise a different reach than the engine allows."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.auto.label",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "LET IT CHOOSE",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (CONTEXT \"LET IT CHOOSE\"): the button that takes today's automatic landing instead of a map pick. The name is the CONTEXT's own."
+  },
+  {
+    "key": "bank:TELEPORT_CARD_COPY.auto.line",
+    "surface": "rail-cards",
+    "trigger": "the Illusionist's teleport decision card",
+    "before": "",
+    "after": "LET IT CHOOSE: the teleporter takes the longest clear run, up to {reach} squares, and you take what you get.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-14 (CONTEXT \"LET IT CHOOSE: a button takes today's automatic best direction\"): the card says what the button does (the longest clear run, up to the engine's reach, the old automatic rule) and what it costs the player: the say in where they land."
+  }
+]

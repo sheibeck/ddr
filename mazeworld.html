@@ -3263,6 +3263,33 @@ function glideParty(from) {
 window.mzGlideParty = glideParty;
 window.mzPartyShown = partyShown;
 
+// Phase 91 (IDENT-14, user 2026-09-30 "Explored squares only"): while the
+// Illusionist's teleport pick is open, every square teleportTargets lists
+// (reachable floor the hero has already explored, up to 12 along the eight
+// rays) takes a soft glow fill and a thin ring in P.teleport, so the player
+// can see where a tap lands. Fog stays fog: only listed squares are touched
+// and nothing unexplored is drawn. Never an icon and never an encounter
+// colour. draw() calls it once per paint, after the heard ripple, so it is
+// gone on the first paint after the pick commits. No animation. A missing
+// bridge draws nothing. A separate function so draw() itself only gains the
+// one call (test/unit/phase59-gates.test.js keeps draw() from growing).
+function paintTeleportPick(ctx, P, view) {
+  const lit = S.pendingTeleport && view && typeof view.teleportTargets === "function" ? view.teleportTargets(S) : [];
+  if (!lit.length) return;
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  for (const t of lit) {
+    const X = t.x * CELL, Y = t.y * CELL;
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = P.teleport;
+    ctx.fillRect(X + 3, Y + 3, CELL - 6, CELL - 6);
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = P.teleport;
+    ctx.strokeRect(X + 2.5, Y + 2.5, CELL - 5, CELL - 5);
+  }
+  ctx.restore();
+}
+
 // Phase 35 (decision 3), reversed 2026-09-16 UAT: the canvas chrome
 // palette (fog / bevelled walls / floor inset / border) still comes from
 // src/browser/mapMarks.js via the window.__mzMapMarks bridge; the marks
@@ -3290,7 +3317,7 @@ function draw() {
   // Phase 40 (SPELL-05): floorSpell (a spell-revealed cell's "borrowed
   // sight" tint) mirrors src/browser/mapMarks.js#MAP_PALETTE.floorSpell —
   // same hex, so a missing module never paints an undefined fillStyle.
-  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", water: "#2f5f7a", waterDark: "#1f3a4a", floorDarkLit: "#4f4531", waterDarkLit: "#2d4a57", border: "#443a26", heard: "#e6d9b0", party: "#f4dc94" };
+  const P = M ? M.MAP_PALETTE : { fog: "#0b0a08", wall: "#2c261c", wallLight: "#4a3f2c", wallDark: "#16120c", floor: "#645c48", floorDark: "#3d372a", floorInset: "#554d3b", floorSpell: "#4e5a6a", water: "#2f5f7a", waterDark: "#1f3a4a", floorDarkLit: "#4f4531", waterDarkLit: "#2d4a57", border: "#443a26", heard: "#e6d9b0", teleport: "#8fe3e0", party: "#f4dc94" };
   // TERR-03 — a dark square without Night Vision/light/torch shows only the
   // 3x3 around the party; explored cells outside it are fogged at RENDER
   // time only (`seen` untouched) and return the moment the player steps off
@@ -3400,6 +3427,10 @@ function draw() {
     }
     ctx.restore();
   }
+
+  // Phase 91 (IDENT-14): the Illusionist's teleport pick lights the squares
+  // it lists (paintTeleportPick, above draw()); re-read every paint.
+  paintTeleportPick(ctx, P, view);
 
   // Phase 59 (ANIM-01, D-01): the party marker is the DOM sprite
   // #mw-party-sprite, placed by positionPartySprite() from positionCanvas()
@@ -4399,9 +4430,13 @@ function hidePanel(el, onHidden) {
 // the direction that produced it. The mock's "walking away declines" is
 // rejected: there is no decline-by-ignoring here, only answer or pulse.
 // The wall/crevice card's own buttons (mzResolveHazard/mzUseTool) answer
-// their record directly, so this lock never refuses them.
+// their record directly, so this lock never refuses them. Phase 91
+// (IDENT-14): the Illusionist's teleport pick (S.pendingTeleport, out of
+// store) is a decision too, so it locks the pad, the keys and the camp sheet
+// the same way; the map takes its own tap through tapStep's first branch and
+// LET IT CHOOSE answers through mzTeleportPick, neither behind this lock.
 function railLocked() {
-  return !!(S && !S.combat && (S.pendingJoiner || S.pendingFind || (S.pendingHazard && !S.store))) || !!(window.__mzRail && window.__mzRail.pending);
+  return !!(S && !S.combat && (S.pendingJoiner || S.pendingFind || (S.pendingHazard && !S.store) || (S.pendingTeleport && !S.store))) || !!(window.__mzRail && window.__mzRail.pending);
 }
 
 // Phase 32 (CMBUI-04/05, design §6.3) — the two Date.now() tap-safety
@@ -5782,7 +5817,27 @@ function renderRail() {
   // from S.pendingHazard alone (null out of any pause, in combat, in a
   // store, or dead), so a relaunch with the record saved shows the same card.
   const hz = S.pendingHazard && vm.hazardCard ? vm.hazardCard(S) : null;
-  if (hz) {
+  // Phase 91 (IDENT-14): the Illusionist's teleport pick, built from
+  // S.pendingTeleport alone (null out of any pick, in combat, in a store, or
+  // dead), so a relaunch with the record saved shows the same card.
+  const tp = S.pendingTeleport && vm.teleportCard ? vm.teleportCard(S) : null;
+  if (tp) {
+    // Report #3: "when I stepped on a teleport I didn't get to choose." Now
+    // the engine holds the teleport until the player picks: a tap on a
+    // glowing map square (tapStep, in either movement mode) or LET IT
+    // CHOOSE here. A decision card: it never auto-clears, and railLocked()
+    // keeps a body tap from dismissing it. Nothing else moves the party
+    // until then (the engine holds every other action). The step's own
+    // narration (the teleportPickOffered line) heads it; on a relaunch,
+    // the card's own intro line does. It wins over an older joiner/find
+    // card below, which re-shows untouched on the NEXT paint once this
+    // one clears.
+    key = tp.key;
+    tone = "info"; icon = tp.icon; iconKey = tp.iconKey; title = tp.title;
+    const narrated = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
+    lines = [...(narrated.length ? narrated : [{ text: tp.intro, roll: null }]), ...tp.lines];
+    buttons = tp.buttons.map((b) => ({ id: b.id, label: b.label, onTap: () => window.mzTeleportPick({ auto: true }) }));
+  } else if (hz) {
     // Every step toward a wall or crevice pauses here before any die is
     // drawn (the user's "option B" ruling): CLIMB IT / LEAP IT with its
     // odds, USE LADDER / USE ROPE only while the tool is carried, and TURN
@@ -6678,8 +6733,29 @@ function tapMovementOff() {
   const settings = window.__mzSettings;
   return !!(settings && settings.movement === "arrows");
 }
+// tapTeleportPick(clientX, clientY) (Phase 91, IDENT-14) — a map tap while
+// the Illusionist's teleport pick is open. A tap on a glowing square picks
+// it through the same step path a move uses (window.mzTeleportPick); a tap
+// on any other square moves nothing and re-shows the card (a stray tap
+// never picks for the player). The glowing squares are exactly the ones
+// window.__mzMapView.teleportTargets lists, the engine's own list.
+function tapTeleportPick(clientX, clientY) {
+  const view = window.__mzMapView;
+  const lit = (view && typeof view.teleportTargets === "function" && view.teleportTargets(S)) || [];
+  const vpRect = document.getElementById("mw-maze-viewport").getBoundingClientRect();
+  const hit = window.__mzControls.screenToCell(clientX, clientY, vpRect, { x: S.floor.px, y: S.floor.py }, cameraPan(), CELL, CANVAS_PAD);
+  if (lit.some((t) => t.x === hit.x && t.y === hit.y)) window.mzTeleportPick({ x: hit.x, y: hit.y });
+  else railPulse();
+}
 function tapStep(clientX, clientY) {
   if (!S || hasActiveEncounter()) return;
+  // Phase 91 (IDENT-14): while the Illusionist's teleport pick is open the
+  // map takes the tap in BOTH movement modes, ahead of the arrow-mode and
+  // rail-lock checks below (the arrow-pad default must never decide whether
+  // an Illusionist gets to choose). tapTeleportPick, above, answers it and
+  // nothing past this line runs. Hold-inspect, drag-to-pan and pinch-to-zoom
+  // never reach here, so they keep working.
+  if (S.pendingTeleport) { tapTeleportPick(clientX, clientY); return; }
   // Phase 78 (HUD-08): in arrow mode (Settings › Movement › ARROWS) a map
   // tap never moves the party and says nothing; the pad and the keys step
   // instead. Hold-inspect, drag-to-pan and pinch-to-zoom never reach here,
@@ -6981,6 +7057,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
+  // Phase 91 (IDENT-14) — the Illusionist's teleport decision card's pure
+  // view model (bridged onto window.__mzRailVM.teleportCard below) and the
+  // pure answer-to-action map window.mzTeleportPick dispatches through.
+  import { teleportCardViewModel, teleportPickAction } from "./src/browser/teleportCard.js";
   // Phase 78 (HUD-03) — the FINAL SHEET's pure, read-only view model and
   // text-only renderer (window.mzOpenFinalSheet, below).
   import { finalSheetViewModel, renderFinalSheet } from "./src/browser/finalSheet.js";
@@ -7225,6 +7305,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // precedent) so the pinned lines above stay byte-identical; Acute
   // Hearing's heard squares, bridged below on window.__mzMapView.
   import { heardSquares } from "./engine/derived.js";
+  // Phase 91 (IDENT-14) — a SEPARATE import line (same module, same
+  // precedent) so the pinned nightlyEats line stays byte-identical; the
+  // Illusionist's teleport pick lists its glowing squares through
+  // teleportTargets, bridged below on window.__mzMapView.
+  import { teleportTargets } from "./engine/movement.js";
   // Phase 57 (LAYOUT-06) — a SEPARATE import line (same module, same
   // precedent as the two above) so the pinned `conditionsOf, hasTool,
   // mapViewRadius, inViewWindow` import line stays byte-identical for
@@ -7316,7 +7401,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (HUD-07): heardSquares rides the same bridge — draw() strokes
   // the heard ripple from it and inspectAt() asks it whether a held square
   // is heard. Pure, no rng; a missing bridge draws no ripple.
-  window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares };
+  // Phase 91 (IDENT-14): teleportTargets rides the same bridge — draw()
+  // lights every square it lists while a teleport pick is open, and tapStep
+  // asks it whether a tapped square is one. Pure, no rng; a missing bridge
+  // lights and accepts nothing (LET IT CHOOSE still answers).
+  window.__mzMapView = { mapViewRadius, inViewWindow, heardSquares, teleportTargets };
 
   // Phase 57 (LAYOUT-06), DARK-02 (Phase 76) — bridges the engine's OWN
   // inDark/revealRadius/mapViewRadius reads and its one darkWaiver predicate
@@ -7489,7 +7578,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // combat-legal test for the foe card and the status-chit card.
   // Phase 78 (CLIMB-01/02): hazardCard joins it too — renderRail's
   // pre-roll wall/crevice decision card, built from S.pendingHazard alone.
-  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard, hazardCard: hazardCardViewModel };
+  // Phase 91 (IDENT-14): teleportCard joins it too — renderRail's
+  // Illusionist teleport decision card, built from S.pendingTeleport alone.
+  window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard, hazardCard: hazardCardViewModel, teleportCard: teleportCardViewModel };
   window.__mzRail = emptyRail();
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
@@ -9301,6 +9392,21 @@ window.__mzClassicBoot = async function classicBoot() {
     stepWith({ type: "resolveHazard", cross: cross === true });
   };
 
+  // window.mzTeleportPick(pick) (Phase 91, IDENT-14) — the Illusionist's
+  // answer to the teleport decision card: `{ x, y }` (a tap on a glowing map
+  // square, from tapStep) or `{ auto: true }` (LET IT CHOOSE). Same rule as
+  // mzResolveHazard above: it answers only a live pending pick with nothing
+  // covering the map (teleportPickAction is null otherwise), so a second tap
+  // after the landing dispatches nothing. Through stepWith, so the
+  // narration, haptics, paint, keep-in-view and the recentre a teleport
+  // landing gets all run as for a step. The engine re-validates a square
+  // against its own target list and refuses a stranger.
+  window.mzTeleportPick = (pick) => {
+    const action = teleportPickAction(window.__mzState.get(), pick);
+    if (!action || hasActiveEncounter()) return;
+    stepWith(action);
+  };
+
   // window.__mzDescend (Phase 35, MAP-05, decision 5) — THE STAIR DOWN's GO
   // DOWN button: clears the flag and calls the SAME stepNow(dir) every step
   // uses (identical engine call, identical rng); the guards were already
@@ -9382,9 +9488,11 @@ window.__mzClassicBoot = async function classicBoot() {
     // no pending prompt so it never leaks into a later prompt. Phase 78
     // (CLIMB-01): a pendingHazard is ALSO a rail decision (the pre-roll
     // wall/crevice card), so the pause's own narration (the hazardChoice
-    // line) stashes the same way and heads that card.
+    // line) stashes the same way and heads that card. Phase 91 (IDENT-14):
+    // a pendingTeleport is the Illusionist's decision card, so its
+    // teleportPickOffered line stashes and heads that card too.
     window.__mzPendingNarration =
-      (state.pendingJoiner || state.pendingFind || state.pendingHazard) && html.length
+      (state.pendingJoiner || state.pendingFind || state.pendingHazard || state.pendingTeleport) && html.length
         ? stripRollDetail(html)
         : null;
     if (diedOnMove && html.length) {

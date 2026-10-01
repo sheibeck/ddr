@@ -60,6 +60,12 @@ export const MAP_PALETTE = Object.freeze({
   // (engine/derived.js#heardSquares). Deliberately none of the encounter
   // mark's red, and never a glyph: the ripple must not say what is there.
   heard: "#e6d9b0",
+  // Phase 91 (IDENT-14): the Illusionist's teleport pick — a pale cyan glow
+  // (a soft fill plus a thin ring) draw() lays over each square the pick
+  // lists while it is open. Deliberately none of the encounter mark's red,
+  // the heard ripple's parchment, the party's gold or the teleport tile's
+  // violet, and never an icon: it marks where a tap lands, nothing more.
+  teleport: "#8fe3e0",
   party: "#f4dc94",
   partyGlow: "rgba(232,201,122,.55)",
 });

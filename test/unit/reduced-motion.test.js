@@ -862,8 +862,16 @@ test("reduced-motion/audit: nothing lost under reduced (smoke) — a pan nudge, 
 // per heard square inside a save/restore. The ripple is not animated, so
 // reduced motion has nothing to settle. Previous digest
 // b59a98cb9d7839d512fcbed85f4cb7570a9fc6acccf83283a947b98c0db0a5a6.
+//
+// DRAW_SHA256 (Phase 91, Plan 04 re-pin, IDENT-14): the Illusionist's
+// teleport pick glow. Exactly two changes, no motion: the fallback palette
+// literal gains `teleport`, and one statement, `paintTeleportPick(ctx, P,
+// view);`, follows the heard ripple block. The glow itself (a static soft
+// fill and thin ring per listed square, inside a save/restore) lives in its
+// own function above draw(), so draw() only gains the call. Previous digest
+// adc11ef1de7d1e3986191d41a02a812fdb1428777cc39aa922900e5b72c4bd2f.
 const PAINT_SHA256 = "18f608035e48a2e92ec611a05893a6be0c493e8b6d23a3ae6eb1b1b9380848b5";
-const DRAW_SHA256 = "adc11ef1de7d1e3986191d41a02a812fdb1428777cc39aa922900e5b72c4bd2f";
+const DRAW_SHA256 = "e65e7c3d09ae8d67f1079d3190422b0dbc62fc6a4721f266e1ed0049ddc861f5";
 
 test("reduced-motion/audit: modularity — paint() is re-pinned for Phase 63 Plan 04 (the one gearSheetTarget-gated refreshGearSheet() call, nothing else); draw() is re-pinned for Phase 76 Plan 02 (Phase 59's party-paint removal and dressing-layer call, plus DARK-02's waived-dark tint, nothing else) — both pinned by SHA-256, unchanged by any OTHER plan", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");

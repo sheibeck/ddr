@@ -373,7 +373,8 @@ test("(j.2) lock: engineMove/stepNow carry the exact Task 2 shapes — the lock 
   assert.match(stepRegion, /const darkFell = events\.some\(\(e\) => e\.type === "darknessFell"\);/);
   assert.match(stepRegion, /const torch = window\.__mzHasTool\(state\.c, "torch"\);/);
   assert.match(stepRegion, /pending: state\.dead \? null : darkFell && torch \? \{ kind: "dark" \} : null,/);
-  assert.match(stepRegion, /\(state\.pendingJoiner \|\| state\.pendingFind \|\| state\.pendingHazard\) && html\.length/);
+  // Phase 91 (IDENT-14) re-pin: the Illusionist's pending teleport pick stashes its narration too.
+  assert.match(stepRegion, /\(state\.pendingJoiner \|\| state\.pendingFind \|\| state\.pendingHazard \|\| state\.pendingTeleport\) && html\.length/);
   assert.match(stepRegion, /preDeath: true/);
   const stepNowRegionText = stepNowRegion();
   assert.match(stepNowRegionText, /stepWith\(\{ type: "move", dir \}\);/);

@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, 91-04, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug.
 
 ## How to ask for changes
 
@@ -43,7 +43,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | oracle (the Oracle log) | 327 | 105 | 222 | 25 | 146 | 9 |
 | rail (rail lines and the fight log) | 287 | 90 | 197 | 24 | 124 | 9 |
 | refusals (refusals: why the game said no) | 38 | 13 | 25 | 2 | 26 | 0 |
-| rail-cards (rail cards and decision cards) | 140 | 3 | 137 | 4 | 7 | 2 |
+| rail-cards (rail cards and decision cards) | 140 | 3 | 137 | 11 | 14 | 2 |
 | combat-screen (the combat screen and its chips) | 203 | 20 | 183 | 22 | 59 | 6 |
 | items (item, gear and store text) | 110 | 29 | 81 | 8 | 40 | 0 |
 | spells (spells, abilities and skills) | 87 | 58 | 29 | 11 | 69 | 2 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 74 | 56 |
 | other (everything else) | 32 | 5 | 27 | 11 | 16 | 0 |
-| **Total** | **1871** | **404** | **1467** | **231** | **751** | **109** |
+| **Total** | **1871** | **404** | **1467** | **238** | **758** | **109** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -507,7 +507,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## rail-cards — rail cards and decision cards
 
-7 changed lines.
+14 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -518,6 +518,13 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `bank:RAIL_FAMILY.spellEffectFaded.title`<br>the rail family title for spellEffectFaded (src/browser/rail.js) | *(new line)* | WORN OFF | **90-03** (naming ruling): The new spellEffectFaded event joins the item effect's WORN OFF family, so a spell effect ending reads like an item effect ending. |
 | `bank:RAIL_FAMILY.spellEffectStarted.title`<br>the rail family title for spellEffectStarted (src/browser/rail.js) | *(new line)* | IN EFFECT | **90-07** (naming ruling): The new spellEffectStarted event joins the item effect's IN EFFECT family, so a spell taking hold reads like an item effect taking hold. |
 | `bank:RAIL_FAMILY.teleportPickOffered.title`<br>a rail card's family title | *(new line)* | A TELEPORT | **91-03** (naming ruling): IDENT-14: the rail family title for the Illusionist's teleport pick, the twin of hazardChoice's A CHOICE (the decision card itself is built from state in plan 91-04). |
+| `bank:TELEPORT_CARD_COPY.auto.label`<br>the Illusionist's teleport decision card | *(new line)* | LET IT CHOOSE | **91-04** (what happened, to whom): IDENT-14 (CONTEXT "LET IT CHOOSE"): the button that takes today's automatic landing instead of a map pick. The name is the CONTEXT's own. |
+| `bank:TELEPORT_CARD_COPY.auto.line`<br>the Illusionist's teleport decision card | *(new line)* | LET IT CHOOSE: the teleporter takes the longest clear run, up to {reach} squares, and you take what you get. | **91-04** (what happened, to whom): IDENT-14 (CONTEXT "LET IT CHOOSE: a button takes today's automatic best direction"): the card says what the button does (the longest clear run, up to the engine's reach, the old automatic rule) and what it costs the player: the say in where they land. |
+| `bank:TELEPORT_CARD_COPY.intro.many`<br>the Illusionist's teleport decision card | *(new line)* | {count} squares glow on the map. Tap one and the party goes there. Tap anywhere else and the party goes nowhere, on principle. | **91-04** (what happened, to whom): IDENT-14 (report #3, CONTEXT "Map pick"): the card opens by naming how many squares glow and how to pick (tap one on the map). The second sentence is the rule that a stray tap never picks for the player, said in the house voice. Shown when the step's own Oracle narration is not to hand (after a relaunch). |
+| `bank:TELEPORT_CARD_COPY.intro.none`<br>the Illusionist's teleport decision card | *(new line)* | Nothing you have explored is in reach, so nothing glows. Your only vote is LET IT CHOOSE. | **91-04** (what happened, to whom): IDENT-14 (user ruling 2026-09-30, "Explored squares only"): the pick lights only reachable floor the hero has already explored, so with none in reach the card says nothing glows and that LET IT CHOOSE is the only answer, rather than showing an empty map and a silent button. |
+| `bank:TELEPORT_CARD_COPY.intro.one`<br>the Illusionist's teleport decision card | *(new line)* | One square glows on the map. Tap it. It is a short menu, but it is yours. | **91-04** (what happened, to whom): IDENT-14 (report #3): the singular of the count line, so one explored square in reach never reads "1 squares glow". The joke is the size of the menu; the choice is still the player's. |
+| `bank:TELEPORT_CARD_COPY.reach`<br>the Illusionist's teleport decision card | *(new line)* | Reach: up to {reach} squares, straight or diagonal, explored floor only. | **91-04** (what happened, to whom): IDENT-14 (CONTEXT: the reach stays 12; "Explored squares only"): the card states the real rule in plain words, with the number read from the engine's TELEPORT\_REACH so the card can never promise a different reach than the engine allows. |
+| `bank:TELEPORT_CARD_COPY.title`<br>the Illusionist's teleport decision card | *(new line)* | THE TELEPORT WAITS | **91-04** (what happened, to whom): IDENT-14 (report #3: "I have a deserved illusionist. It says I choose where teleports takes me, but when I stepped on a teleport I didn't get to choose."; user ruling 2026-09-30): an Illusionist who steps on a teleport now gets a decision card, because the engine holds the teleport until the player picks. The title says what is happening: the teleport is waiting on them. |
 
 ## combat-screen — the combat screen and its chips
 
