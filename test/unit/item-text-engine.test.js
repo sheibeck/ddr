@@ -74,6 +74,7 @@ import { FOE_COUNT_TABLE } from "../../engine/difficulty.js";
 import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { itemStatLines, ITEM_STAT_COPY } from "../../src/browser/viewModels.js";
+import { gearBagMeterModel, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { facesRangeText, signedText } from "../../src/browser/rollRange.js";
 import {
   JEWELRY,
@@ -1190,4 +1191,28 @@ test("party-wide reach, Poplar Staff: a real use heals the hero and every Joiner
   assert.equal(s.state.c.wp, 3 + healed.heals[0].gained);
   assert.equal(mates[0].wp, 5 + healed.heals[1].gained);
   assert.equal(mates[1].wp, 9 + healed.heals[2].gained);
+});
+
+// ---------------------------------------------------------------------------
+// tests: bags (the small starting bag has no item text; the Gear tab meter states it)
+// ---------------------------------------------------------------------------
+
+test("bags: the Gear tab's bag meter and the bag's stat lines state the slots, wilmst and rations the engine caps, for every tier including the small starting bag", () => {
+  for (const tier of ["small", "medium", "large", "exlarge"]) {
+    const caps = bagCaps(tier);
+    const meter = gearBagMeterModel({ c: fixedFighter({ bag: tier }) });
+    assert.equal(meter.slots, caps.slots, `${tier}: the meter's slot count`);
+    assert.equal(
+      meter.capsLine,
+      GEAR_COPY.bagCaps.replace("{wilmst}", caps.wilmst).replace("{rations}", caps.rations),
+      `${tier}: the meter's caps line`,
+    );
+    const lines = itemStatLines({ kind: "bag", tier, n: `${tier} bag` });
+    assert.equal(lines.find((l) => l.key === "slots").text, `${caps.slots} slots`, `${tier}: the stat line's slots`);
+    assert.equal(
+      lines.find((l) => l.key === "carry").text,
+      `carries up to ${caps.wilmst} wilmst and ${caps.rations} rations`,
+      `${tier}: the stat line's caps`,
+    );
+  }
 });
