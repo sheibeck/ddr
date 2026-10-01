@@ -151,9 +151,29 @@ test("DROID-02 (Task 2): AppTheme.NoActionBar sets colorPrimaryDark #1b170f and 
   assert.doesNotMatch(block[0], /android:navigationBarColor/, "navigationBarColor is deprecated on Android 15 and must not be set");
 });
 
-test("DROID-02 (Task 2): MainActivity.java is a plain BridgeActivity subclass with an empty body", () => {
+test("DROID-02 (Task 2): MainActivity.java only registers the PlayIdentity plugin before super.onCreate and makes no window or bar-colour call", () => {
   const mainActivity = readRepoFile(
     "android/app/src/main/java/com/darktierstudios/delvedierepeat/MainActivity.java",
   );
-  assert.match(mainActivity, /class MainActivity extends BridgeActivity\s*\{\s*\}/);
+  assert.match(mainActivity, /class MainActivity extends BridgeActivity/);
+  const reg = mainActivity.indexOf("registerPlugin(PlayIdentityPlugin.class)");
+  const sup = mainActivity.indexOf("super.onCreate(savedInstanceState)");
+  assert.ok(reg >= 0, "MainActivity must register PlayIdentityPlugin");
+  assert.ok(sup > reg, "registerPlugin must come before super.onCreate (Capacitor 8 local-plugin order)");
+  for (const banned of ["setStatusBarColor", "setNavigationBarColor", "setDecorFitsSystemWindows", "getWindow"]) {
+    assert.ok(!mainActivity.includes(banned), `MainActivity must not call ${banned} (DROID-02)`);
+  }
+});
+
+test("91.2-01: PlayIdentityPlugin.java is the four-method lazy plugin with the no-extra-scopes server code and no reject", () => {
+  const plugin = readRepoFile(
+    "android/app/src/main/java/com/darktierstudios/delvedierepeat/PlayIdentityPlugin.java",
+  );
+  assert.match(plugin, /@CapacitorPlugin\(name = "PlayIdentity"\)/);
+  const methods = [...plugin.matchAll(/@PluginMethod\s+public void (\w+)\(/g)].map((m) => m[1]);
+  assert.deepEqual(methods, ["init", "status", "signIn", "serverAuthCode"]);
+  assert.match(plugin, /requestServerSideAccess\([^,()]+(\([^)]*\))?[^,()]*,\s*false\)/, "two-argument overload, no extra scopes");
+  assert.ok(!/AuthScope|PROFILE|OPEN_ID/.test(plugin.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")), "no scope constants outside comments");
+  assert.ok(!plugin.includes("call.reject("), "every method resolves, none rejects");
+  assert.ok(!/Log\.[a-z]\(/.test(plugin), "the plugin never logs");
 });
