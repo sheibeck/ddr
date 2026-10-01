@@ -145,7 +145,7 @@ test("foeHitOddsVs: a level-1 foe against a Soldier, then a Guard, gets the hone
   assert.equal(guardOdds.text, "17–20 (d20; Guard +1)");
 });
 
-test("foeHitOddsVs: Sidestep + an insult stack; a blind foe's insult still reads player-signed", () => {
+test("foeHitOddsVs: Sidestep + an insult stack; a blind foe's cap is last, so an insult cannot raise it (both read player-signed)", () => {
   const sidestepState = fixedState({
     c: { timers: { "ability:sidestep": { phase: "effect", left: 2, cadence: "rounds" } } },
     combat: { parleyInsulted: true },
@@ -157,7 +157,8 @@ test("foeHitOddsVs: Sidestep + an insult stack; a blind foe's insult still reads
   const blindState = fixedState({ combat: { parleyInsulted: true } });
   const blindFoe = fixedFoe({ blind: true });
   const blindOdds = foeHitOddsVs(blindState, blindFoe);
-  assert.equal(blindOdds.text, "19–20 (d20; blind +4, insulted −1)");
+  // Phase 90 plan 04 (SPELL-12): the blind cap is the last term, so the insulted party still needs only the top face (before: 19–20, blind +4 then insulted −1).
+  assert.equal(blindOdds.text, "20 (d20; insulted −1, blind +5)");
 });
 
 test("foeHitOddsVs: a Weaken cap (combat.foeToHitPenalty) shows the relabelled mod; plainText omits it", () => {

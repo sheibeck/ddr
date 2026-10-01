@@ -109,7 +109,20 @@ const CONTROL_ASSIGNMENT =
  * holdFoe is the hold itself (its caller has already run resistControl).
  */
 const EXEMPT = {
-  "combat.js": { holdFoe: "the hold itself: every caller runs resistControl first (C1-C6, C17)" },
+  // Phase 90 plan 04 (SPELL-12, user 2026-09-30, "rising resists ... should apply
+  // to ALL spells ... remove the floor-12 special effects only"): every spell
+  // (the hero's castSpell, a scroll's cast through it, a Joiner's allyCast) and
+  // foeTurn's Ice payoff resist through the ONE depth-rising resist
+  // (foeResistsSpell = foeResistsEffect), with no resistControl, no hold and no
+  // cap. Only the Bard's sing keeps resistControl, until Phase 91 (IDENT-17).
+  "combat.js": {
+    holdFoe: "the hold itself: a Freeze's rolled hold (freezeFoe resists first)",
+    allyCast: "X10: a Joiner's Doze, Stun and Weaken roll the one depth-rising resist (foeResistsSpell); no knee, no hold",
+    foeTurn: "X10: Ice's last tick freezes solid at every depth; no knee, no hold",
+  },
+  "magic.js": {
+    castSpell: "X10: every spell the hero or a scroll casts rolls the one depth-rising resist (foeResistsSpell); no knee, no hold, no cap",
+  },
   "abilities.js": {
     applyPommel: "X5: Pommel Strike, a one-turn ability effect",
     applyDirtyTrick: "X5: Dirty Trick, a two-round ability effect",

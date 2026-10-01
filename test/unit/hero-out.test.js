@@ -89,7 +89,7 @@ function fixedCombat(foes, overrides = {}) {
 
 test("loseTurn: counts down C.heroOut.left by one per call, narrating heroLostTurn then heroCameTo, and never wakes on a hit", () => {
   const state = fixedState();
-  state.combat = fixedCombat([fixedFoe({ stupid: true })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
+  state.combat = fixedCombat([fixedFoe({ asleep: 9 })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
 
   const e1 = loseTurn(state, fakeRng([]), []);
   assert.deepEqual(e1.find((e) => e.type === "heroLostTurn"), { type: "heroLostTurn", kind: "asleep", spell: "Doze", left: 1 });
@@ -104,7 +104,7 @@ test("loseTurn: counts down C.heroOut.left by one per call, narrating heroLostTu
 
 test("loseTurn: a tampered left (9) is clamped to HERO_OUT_MAX (4) before it counts down", () => {
   const state = fixedState();
-  state.combat = fixedCombat([fixedFoe({ stupid: true })], { heroOut: { kind: "stupefied", left: 9, spell: "Stupidity" } });
+  state.combat = fixedCombat([fixedFoe({ asleep: 9 })], { heroOut: { kind: "stupefied", left: 9, spell: "Stupidity" } });
   const events = loseTurn(state, fakeRng([]), []);
   assert.equal(state.combat.heroOut.left, HERO_OUT_MAX - 1);
   assert.deepEqual(events.find((e) => e.type === "heroLostTurn"), { type: "heroLostTurn", kind: "stupefied", spell: "Stupidity", left: HERO_OUT_MAX - 1 });
@@ -124,7 +124,7 @@ test("loseTurn: with no C.heroOut (in or out of combat), refuses with actionRefu
 });
 
 test("loseTurn: with a party member, a summoned ally and two live foes, one call produces events from the summon, the member and the foes, and advances C.round by one", () => {
-  const foes = [fixedFoe({ name: "Foe1", stupid: true }), fixedFoe({ name: "Foe2", stupid: true })];
+  const foes = [fixedFoe({ name: "Foe1", asleep: 9 }), fixedFoe({ name: "Foe2", asleep: 9 })];
   const state = fixedState();
   state.combat = fixedCombat(foes, {
     heroOut: { kind: "asleep", left: 2, spell: "Doze" },
@@ -136,8 +136,8 @@ test("loseTurn: with a party member, a summoned ally and two live foes, one call
   assert.ok(events.some((e) => e.type === "heroLostTurn"));
   assert.ok(events.some((e) => e.type === "allyMissed" && e.name === "Summon"), "the summon acted");
   assert.ok(events.some((e) => e.type === "allyMissed" && e.name === "Ada"), "the party member acted");
-  assert.ok(events.some((e) => e.type === "foeStupefied" && e.name === "Foe1"), "the foes acted");
-  assert.ok(events.some((e) => e.type === "foeStupefied" && e.name === "Foe2"), "the foes acted");
+  assert.ok(events.some((e) => e.type === "foeSlept" && e.name === "Foe1"), "the foes acted");
+  assert.ok(events.some((e) => e.type === "foeSlept" && e.name === "Foe2"), "the foes acted");
   assert.equal(state.combat.round, roundBefore + 1);
 });
 
@@ -189,7 +189,7 @@ test("applyAction: every hero combat action becomes loseTurn while C.heroOut is 
   };
   for (const type of CONVERTED) {
     const state = fixedState();
-    state.combat = fixedCombat([fixedFoe({ stupid: true })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
+    state.combat = fixedCombat([fixedFoe({ asleep: 9 })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
     const { events } = applyAction(state, actionFor(type));
     assert.ok(events.some((e) => e.type === "heroLostTurn"), `${type}: expected heroLostTurn`);
     for (const forbidden of FORBIDDEN_BY_TYPE[type] || []) {
@@ -200,7 +200,7 @@ test("applyAction: every hero combat action becomes loseTurn while C.heroOut is 
 
 test("applyAction: loseTurn itself is a known action, and dispatches through engine/combat.js#loseTurn", () => {
   const state = fixedState();
-  state.combat = fixedCombat([fixedFoe({ stupid: true })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
+  state.combat = fixedCombat([fixedFoe({ asleep: 9 })], { heroOut: { kind: "asleep", left: 2, spell: "Doze" } });
   const { events } = applyAction(state, { type: "loseTurn" });
   assert.ok(events.some((e) => e.type === "heroLostTurn"));
 });
@@ -211,7 +211,7 @@ test("applyAction: loseTurn itself is a known action, and dispatches through eng
 
 test("soft-lock driver (a): a lone hero, every foe stupefied — repeating applyAction(loseTurn) reaches an acting hero after exactly 4 calls", () => {
   const state = fixedState();
-  state.combat = fixedCombat([fixedFoe({ stupid: true })], { heroOut: { kind: "stupefied", left: 4, spell: "Stupidity" } });
+  state.combat = fixedCombat([fixedFoe({ asleep: 9 })], { heroOut: { kind: "stupefied", left: 4, spell: "Stupidity" } });
   let current = state;
   for (let i = 0; i < 4; i++) {
     assert.ok(current.combat && current.combat.heroOut, `still out before call ${i + 1}`);

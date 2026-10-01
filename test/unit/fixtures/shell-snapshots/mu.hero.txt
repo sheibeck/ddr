@@ -96,7 +96,7 @@
       text="Combat only"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L2</span>Stupidity</b><i>control · one foe · does nothing at all for the rest of the fight; past floor 12, only for three rounds</i>"
+      html="<b><span class=\"grim-lvl\">L2</span>Stupidity</b><i>control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging</i>"
     <span class="grim-hint">
       text="Combat only"
   <li>

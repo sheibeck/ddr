@@ -131,10 +131,10 @@ test("targetStrikeFaces: a plain target returns faces unchanged", () => {
   assert.equal(targetStrikeFaces(c, t, 5), 5);
 });
 
-test("targetStrikeFaces: a dozing or stupid target floors faces at 5", () => {
+test("targetStrikeFaces: a dozing target floors faces at 5; a stupid target no longer does (Phase 90 plan 04, SPELL-12)", () => {
   const c = fixedFighter();
   assert.equal(targetStrikeFaces(c, fixedFoe({ asleep: 1 }), 3), 5);
-  assert.equal(targetStrikeFaces(c, fixedFoe({ stupid: true }), 3), 5);
+  assert.equal(targetStrikeFaces(c, fixedFoe({ stupid: true }), 3), 3);
   // A Fighter already at 5+ is unaffected (clamp, not an override).
   assert.equal(targetStrikeFaces(c, fixedFoe({ asleep: 1 }), 7), 7);
 });

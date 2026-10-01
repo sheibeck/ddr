@@ -469,49 +469,39 @@ test("Joiner Freeze (C2): floor 12, a standing hit is frozen for its d4 and surv
 
 // --- C9: allyCast status/stun (Doze/Stun) and weaken (a Joiner's) ----------
 
-test("Joiner Doze (C9): floor 20, the d4 is drawn whether or not the foe resists; a landed sleep lasts its rolled d4 (not capped)", () => {
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30: one depth-rising resist for every
+// spell, no floor-12 extras): re-pinned. A Joiner's Doze rolls ONE resist
+// (foeResistsSpell, the depth-rising one, keyed on the Joiner's own name); there
+// is no second control resist after the d4, so a resisted Doze ends at once and
+// draws NO d4 (before: the d4 was drawn first and the control resist followed),
+// and there is no Unmoved mark and no controlResisted line.
+test("Joiner Doze (C9): floor 20, one depth-rising resist; a resisted Doze draws no d4 and marks nothing; a landed sleep lasts its rolled d4 (not capped)", () => {
   const foeR = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateR = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  stateR.acts = forceControlResist("sleep:Doze", 0, 20, 1, 0, true);
+  stateR.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 0, true);
   stateR.combat = fixedCombat([foeR], { allies: [fixedAlly()] });
-  const eventsR = alliesTurn(stateR, fakeRng([3]), []); // d4 raw draw -> 3
+  const rngR = trackingRng([3]);
+  const eventsR = alliesTurn(stateR, rngR, []); // d4 raw draw -> 3 (never taken)
   assert.equal(foeR.asleep, 0);
-  assert.equal(foeR.resisted, "sleep");
-  assert.ok(eventsR.some((e) => e.type === "controlResisted"));
+  assert.equal("resisted" in foeR, false, "no Unmoved mark: there is no separate control resist");
+  const line = eventsR.find((e) => e.type === "spellResisted");
+  assert.ok(line);
+  assert.equal(line.by, "Ada");
+  assert.equal(line.depthFaces, 8);
+  assert.equal(eventsR.some((e) => e.type === "controlResisted"), false);
+  assert.equal(rngR.getState(), 0, "the one resist ended the cast: no d4 was drawn");
 
   const foeL = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateL = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  stateL.acts = forceControlResist("sleep:Doze", 0, 20, 1, 0, false);
+  stateL.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 0, false);
   stateL.combat = fixedCombat([foeL], { allies: [fixedAlly()] });
-  const eventsL = alliesTurn(stateL, fakeRng([3]), []);
+  const rngL = trackingRng([3]);
+  const eventsL = alliesTurn(stateL, rngL, []);
   assert.equal(foeL.asleep, 3, "the d4's own rolled duration, never capped");
   assert.equal("resisted" in foeL, false);
   const hit = eventsL.find((e) => e.type === "allySpellHit");
   assert.equal(hit.rounds, 3);
-});
-
-test("Joiner Doze (C9): draw parity — the main rng cursor after a resisted cast equals a landed one, for the same scripted main sequence", () => {
-  const cursorAtCall = 1; // resistRoll: 0 draws (intel 1); the d4 "rolled" draw: 1
-  const actsResisted = forceControlResist("sleep:Doze", 0, 20, 1, cursorAtCall, true);
-  const actsLanded = forceControlResist("sleep:Doze", 0, 20, 1, cursorAtCall, false);
-
-  const foe1 = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
-  const state1 = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  state1.acts = actsResisted;
-  state1.combat = fixedCombat([foe1], { allies: [fixedAlly()] });
-  const rng1 = trackingRng([3]);
-  alliesTurn(state1, rng1, []);
-
-  const foe2 = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
-  const state2 = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  state2.acts = actsLanded;
-  state2.combat = fixedCombat([foe2], { allies: [fixedAlly()] });
-  const rng2 = trackingRng([3]);
-  alliesTurn(state2, rng2, []);
-
-  assert.equal(foe1.resisted, "sleep");
-  assert.ok(foe2.asleep > 0);
-  assert.equal(rng1.getState(), rng2.getState(), "the main cursor advances identically regardless of the resist outcome");
+  assert.equal(rngL.getState(), 1, "a landed Doze takes exactly its d4");
 });
 
 // Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The Joiner's Weaken has no extra
@@ -544,49 +534,24 @@ test("Joiner Weaken (C15): floor 20, the d4+1 is always drawn; every foe resisti
 
 // --- C3: foeTurn's Ice payoff -----------------------------------------------
 
-test("Ice's last tick (C3): floor 20, a resisted foe takes its turn as normal", () => {
-  const foe = fixedFoe({ wp: 30, maxWP: 30, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
-  const state = fixedState({ floor: { depth: 20 } });
-  state.acts = forceControlResist("freeze:Ice", 0, 20, 1, 0, true);
-  state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([3, ...PAD(5)]), []);
-  assert.equal(foe.alive, true);
-  assert.equal("held" in foe, false);
-  assert.equal(foe.resisted, "freeze");
-  assert.equal(events.some((e) => e.type === "frozenSolid"), false);
-  assert.ok(events.some((e) => e.type === "controlResisted"));
-});
-
-test("Ice's last tick (C3): floor 20, a held foe skips this turn and the next two (3 skips total, holdRounds)", () => {
-  const foe = fixedFoe({ wp: 30, maxWP: 30, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
-  const state = fixedState({ floor: { depth: 20 } });
-  state.acts = forceControlResist("freeze:Ice", 0, 20, 1, 0, false);
-  state.combat = fixedCombat([foe]);
-  // The SAME foeTurn call that sets the hold falls through into the held-
-  // skip block below it (no `continue` between holdFoe and the skip check),
-  // so "this turn" is already the first of the 3 skips: left 3 -> 2.
-  const events = foeTurn(state, fakeRng([3, ...PAD(5)]), []);
-  assert.deepEqual(foe.held, { kind: "frozen", left: 2 });
-  assert.ok(events.some((e) => e.type === "controlHeld"));
-  assert.ok(events.some((e) => e.type === "foeStillHeld" && e.left === 2));
-  assert.equal(events.some((e) => e.type === "frozenSolid"), false);
-
-  foeTurn(state, fakeRng(PAD(5)), []);
-  assert.deepEqual(foe.held, { kind: "frozen", left: 1 });
-
-  const e3 = foeTurn(state, fakeRng(PAD(5)), []);
-  assert.equal("held" in foe, false);
-  assert.ok(e3.some((e) => e.type === "foeHoldBroken"));
-});
-
-test("Ice's last tick (C3): floor 12, it freezes and dies as today", () => {
-  const foe = fixedFoe({ wp: 30, maxWP: 30, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
-  const state = fixedState({ floor: { depth: 12 } });
-  state.combat = fixedCombat([foe]);
-  const events = foeTurn(state, fakeRng([3, ...PAD(5)]), []);
-  assert.equal(foe.alive, false);
-  assert.ok(events.some((e) => e.type === "frozenSolid"));
-  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false);
+// Phase 90 plan 04 (SPELL-12, user 2026-09-30: no floor-12 special effects):
+// re-pinned. The Ice payoff has no knee branch any more (no control resist, no
+// three-round hold): a survivor of the last tick freezes solid and dies at EVERY
+// depth, as it did at or below floor 12 (the one resist it rolled was the cast's
+// own). Plan 90-05 replaces Ice with its area form. Before: floor 20 resisted ->
+// the foe took its turn, marked Unmoved; floor 20 landed -> a 3-round hold.
+test("Ice's last tick (C3): floor 20 freezes solid and dies exactly as at floor 12 — no control resist, no hold, no Unmoved mark", () => {
+  for (const depth of [12, 13, 20]) {
+    const foe = fixedFoe({ wp: 30, maxWP: 30, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
+    const state = fixedState({ floor: { depth } });
+    state.combat = fixedCombat([foe]);
+    const events = foeTurn(state, fakeRng([3, ...PAD(5)]), []);
+    assert.equal(foe.alive, false, `depth ${depth}`);
+    assert.ok(events.some((e) => e.type === "frozenSolid"), `depth ${depth}`);
+    assert.equal("held" in foe, false);
+    assert.equal("resisted" in foe, false);
+    assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, `depth ${depth}`);
+  }
 });
 
 // --- C13: sing() Lullaby and Thunder ----------------------------------------
@@ -669,14 +634,13 @@ test("LINE_FOR: the four events carry their own tones (miss/magic/dodge/hurt)", 
   assert.equal(LINE_FOR.foeHoldBroken({ type: "foeHoldBroken" }).tone, "hurt");
 });
 
-test("chips: a held foe shows 'Stone · n' / 'Frozen · n' / 'Stupefied · n' (tone good); an unmoved foe shows 'Unmoved' (tone bad) naming the effect", () => {
-  const stoneChip = foeConditionChips(fixedFoe({ held: { kind: "stone", left: 2 } }), fixedState())[0];
-  assert.equal(stoneChip.text, "Stone · 2");
-  assert.equal(stoneChip.tone, "good");
+// Phase 90 plan 04 (SPELL-12): re-pinned. A Freeze's hold is the only hold left
+// (Petrify kills, Stupidity drops intelligence), so the Held chip reads
+// 'Frozen · n'; the 'Stone · n' and 'Stupefied · n' hold chips are gone.
+test("chips: a held foe shows 'Frozen · n' (tone good); an unmoved foe shows 'Unmoved' (tone bad) naming the effect", () => {
   const frozenChip = foeConditionChips(fixedFoe({ held: { kind: "frozen", left: 1 } }), fixedState())[0];
   assert.equal(frozenChip.text, "Frozen · 1");
-  const stupidChip = foeConditionChips(fixedFoe({ held: { kind: "stupid", left: 3 } }), fixedState())[0];
-  assert.equal(stupidChip.text, "Stupefied · 3");
+  assert.equal(frozenChip.tone, "good");
 
   const unmovedChip = foeConditionChips(fixedFoe({ resisted: "weaken" }), fixedState())[0];
   assert.equal(unmovedChip.text, "Unmoved");

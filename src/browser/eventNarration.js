@@ -181,9 +181,12 @@ function tableFourTail(e) {
 // (controlResisted/controlHeld/foeStillHeld/foeHoldBroken) share these two
 // word maps — an effect name (freeze/stone/sleep/weaken/stupid/blind/shrink,
 // engine/combat.js's own `resistControl` vocabulary) reads as a noun phrase
-// ("the frost", not "the freeze"), and a held `kind` (frozen/stone/stupid,
-// `holdFoe`'s vocabulary) reads as its own short adjective. Both fall back
-// to a generic word rather than printing the raw engine string verbatim.
+// ("the frost", not "the freeze"), and a held `kind` (`holdFoe`'s vocabulary)
+// reads as its own short adjective. Both fall back to a generic word rather
+// than printing the raw engine string verbatim. Phase 90 plan 04: only a Freeze
+// ("frozen") holds now; the stone and stupid words stay because the frozen
+// corpus variants (tools/lib/event-variants.mjs) still render those kinds, and
+// dropping them would remove two lines from the voice corpus for no gain.
 const CONTROL_EFFECT_WORD = Object.freeze({
   freeze: "the frost", stone: "the stone", sleep: "the sleep", weaken: "the weakening",
   stupid: "the stupidity", blind: "the blindness", shrink: "the shrinking",
@@ -1213,20 +1216,18 @@ export const EVENT_NARRATION = {
   // Phase 40 (SPELL-01) — combat.js#foeTurn's tail narrates this on the
   // `spell:weaken` timer's own effect->null transition.
   weakenFaded: () => `<span class="hit">Their arms remember how to swing.</span>`,
-  // VOX-05 (Phase 79, plan 79-08): the fight-long effect is stated (past the
-  // knee the spell holds instead, and controlHeld narrates that).
-  stupefied: (e) => `<span class="hit">${e.target ?? "It"} forgets what it is doing, for the rest of the fight.</span>`,
-  // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's own per-round skip
-  // (the cast-time `stupefied` line above narrates the moment it lands; this
-  // one narrates every subsequent turn it does nothing).
-  foeStupefied: (e) => `${e.name ?? "It"} stands there, thinking about nothing.`,
-  // RULES-18 (Phase 75.3): past the knee the Blind spell is timed — `rounds`
-  // rides on the event and the line says so; without it, blind for the fight.
+  // Phase 90 plan 04 (SPELL-12): Stupidity drops the foe's intelligence to 1
+  // for the fight (`was` is what it had); the foe keeps acting, so there is no
+  // per-turn "stands there" line any more (foeStupefied is gone).
+  stupefied: (e) =>
+    e.was === 1
+      ? `<span class="hit">${e.target ?? "It"} had an intelligence of 1 already, and it is still 1 for the rest of the fight.</span> There was nothing left to forget.`
+      : `<span class="hit">${e.target ?? "It"} forgets most of what it knew: ${Number.isFinite(e.was) ? `intelligence ${e.was} down to 1` : "its intelligence is down to 1"} for the rest of the fight.</span> It still swings, but it resists almost nothing now.`,
   // VOX-05 (Phase 79, plan 79-08): what blindness does to a foe's swing
-  // (engine/derived.js#foeSwingChain: its die's top face only), and the
-  // duration, "1 round" or the fight.
+  // (engine/derived.js#foeSwingChain: its die's top face only). Phase 90 plan
+  // 04 (SPELL-12): for the fight at every depth, and never a critical.
   blinded: (e) =>
-    `<span class="hit">${e.target ?? "It"} cannot see a thing ${e.rounds ? `for ${plural(e.rounds, "round")}` : "for the rest of the fight"}: it hits only on its die's top face.</span>`,
+    `<span class="hit">${e.target ?? "It"} cannot see a thing for the rest of the fight: it hits only on its die's top face and never lands a critical.</span>`,
   // VOX-05 (Phase 79, plan 79-08): who and what: half hp, half damage.
   shrunk: (e) =>
     (e.count ?? 0) > 0
@@ -1256,7 +1257,9 @@ export const EVENT_NARRATION = {
         ? `Noxious vapor: <span class="roll">${e.roll}</span>. Every foe falls asleep for d6+2 rounds.`
         : `Noxious vapor: <span class="roll">?</span>.`,
   volley: (e) => `<span class="roll">${e.rolls ?? 0}</span> shots, <span class="roll">${e.totalDamage ?? 0}</span> total damage.`,
-  petrified: (e) => `<span class="hit">${e.target ?? "It"} turns to stone.</span>`,
+  // Phase 90 plan 04 (SPELL-12, Q2 A): the stone foe dies and pays its
+  // experience (the foeKilled line after this one); a statue carries no spoils.
+  petrified: (e) => `<span class="hit">${e.target ?? "It"} turns to stone and does not get back up.</span> A statue carries no spoils.`,
   walkingDeadTurned: (e) => `<span class="hit">${e.count ?? 0} of the dead turn and flee.</span>`,
   nothingToTurn: () => `<span class="miss">Nothing here to turn.</span>`,
   // VOX-05 (Phase 79, plan 79-08): who (foes), and "1 is", never "1 are".

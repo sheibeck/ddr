@@ -67,6 +67,16 @@
 // Freeze, Ice, Blind, Petrify, Birch/Walnut/Oak/Cedar Staff or Amulet of
 // Stone row.
 //
+// Phase 90 (SPELL-12), Plan 04: ONE declared change, hand-pasted (not
+// regenerated), every other fixture byte-for-byte unchanged: mu.hero's
+// grimoire row for Stupidity moves from "control · one foe · does nothing at
+// all for the rest of the fight; past floor 12, only for three rounds" to
+// "control · one foe · its intelligence drops to 1 for the fight, so it resists
+// almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps
+// swinging" (content/spells.js: Stupidity is the intelligence-1 rework and has
+// no floor-12 clause). No other committed fixture renders Stupidity, Blind,
+// Petrify or Ice.
+//
 // Phase 87 (STORE-04), Plan 03: TWO declared regenerations, every other
 // fixture byte-identical (confirmed with `git diff --stat` at regeneration
 // time). The store's Rations row now shows the stock count the d10 roll left

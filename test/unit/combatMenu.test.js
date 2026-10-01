@@ -875,3 +875,24 @@ test("VOX-05 (79-07): potion, flee, parley and sing descriptions state the engin
   assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /permanent/);
   assert.match(COMBAT_MENU_COPY.singDesc, /best song your level knows/);
 });
+
+// Phase 90 plan 04 (SPELL-12): the spell rows' resist hint reads the same
+// depth-rising faces the engine rolls (engine/derived.js#risingResistFaces), so
+// it shows the real odds at the current floor for the same foe: intelligence 10 is
+// 16–20 up to floor 12, 15–20 at floor 13 and 10–20 at floor 20.
+test("(Phase 90 plan 04) a spell row's resist hint names the depth-rising range for the current floor", () => {
+  const want = { 1: "16–20 (d20)", 12: "16–20 (d20)", 13: "15–20 (d20)", 20: "10–20 (d20)" };
+  for (const [depth, range] of Object.entries(want)) {
+    const foe = { name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 };
+    const state = fixedState({
+      c: { cls: "Magic User", sub: "Wizard", level: 3, grimoire: ["Fireball", "Heal"], spellsUsed: 0 },
+      floor: { depth: Number(depth) },
+      combat: fixedCombat([foe]),
+    });
+    const rows = combatMenuViewModel(state).submenus.spells.rows;
+    const fireball = rows.find((r) => r.label === "FIREBALL");
+    assert.ok(fireball.desc.includes(`Target resists on ${range}`), `floor ${depth}: ${fireball.desc}`);
+    const heal = rows.find((r) => r.label === "HEAL");
+    assert.ok(!heal.desc.includes("resists"), "a self spell carries no resist clause");
+  }
+});

@@ -375,7 +375,8 @@ test("[hero-strike:dozing] the same dozing floor, absorbed by a Fighter's alread
   assertSame(withMod, without, { label: "hero-strike:dozing (Fighter, clamp)" });
 });
 
-test("[hero-strike:stupid] Stupidity is hit exactly like dozing (Phase 40 SPELL-01) — a bonus against an MU", () => {
+// Phase 90 plan 04 (SPELL-12): Stupidity no longer makes a foe easier to hit — it drops its intelligence to 1 and nothing else, so a stupid foe is hit EXACTLY like a plain one (the Phase 40 floor of 5 is gone).
+test("[hero-strike:stupid] a stupid foe is hit exactly like a plain foe (Phase 90 plan 04: no floor) — no bonus even against an MU", () => {
   const stupid = () => {
     const s = withClub(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human" }), [NEUTRAL_FOE()]));
     s.combat.foes[0].stupid = true;
@@ -384,10 +385,10 @@ test("[hero-strike:stupid] Stupidity is hit exactly like dozing (Phase 40 SPELL-
   const plain = () => withClub(inCombat(heroState({ cls: "Magic User", sub: "Wizard", race: "Human" }), [NEUTRAL_FOE()]));
   const withMod = faceOdds((rng) => landed(stupid(), rng), { label: "hero-strike:stupid (MU)" });
   const without = faceOdds((rng) => landed(plain(), rng), { label: "hero-strike:stupid (MU, baseline)" });
-  assertBonus(withMod, without, { label: "hero-strike:stupid (MU)" });
+  assertSame(withMod, without, { label: "hero-strike:stupid (MU)" });
 });
 
-test("[hero-strike:stupid] the same floor, absorbed by a Fighter's already-5 need — OK (clamp)", () => {
+test("[hero-strike:stupid] a Fighter's need is the same against a stupid foe and a plain one (Phase 90 plan 04: no floor to absorb)", () => {
   const stupid = () => {
     const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
     s.combat.foes[0].stupid = true;
@@ -918,14 +919,15 @@ test('[foe-vs-hero:insult-after-invisibility] a live invis effect overrides, the
   assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-invisibility] insulted-plus-invisible must win on exactly two faces");
 });
 
-test('[foe-vs-hero:insult-after-blind] a blinded foe overrides, then the insult adds one — exactly two faces (passing today)', () => {
+// Phase 90 plan 04 (SPELL-12): the blind cap is the LAST term of the swing (a hard cap), so an insulted party still faces ONLY the top face.
+test('[foe-vs-hero:insult-after-blind] a blinded foe is capped to one face AFTER the insult — exactly one face, the insult cannot raise it', () => {
   const build = () => {
     const s = inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()], { parleyInsulted: true });
     s.combat.foes[0].blind = true;
     return s;
   };
   const result = faceOdds((rng) => foeHitsHero(build(), rng), { label: "foe-vs-hero:insult-after-blind" });
-  assert.equal(result.wins, 2, "[foe-vs-hero:insult-after-blind] insulted-plus-blind must win on exactly two faces");
+  assert.equal(result.wins, 1, "[foe-vs-hero:insult-after-blind] insulted-plus-blind must win on exactly one face (the top face)");
 });
 
 // Phase 75.2 (RULES-11) reworks this row: a plain Dwarf now ALSO carries the
@@ -1384,14 +1386,15 @@ test("[pursuit:insult] a live parleyInsulted flag is exactly one more winning fa
   assert.equal(insulted.wins, plain.wins + 1, "[pursuit:insult] the insult must be exactly one more winning face");
 });
 
-test("[pursuit:insult-after-blind] a blinded pursuer, insulted, wins on exactly two faces", () => {
+// Phase 90 plan 04 (SPELL-12): the blind cap is last, so an insulted blind pursuer still needs only the top face.
+test("[pursuit:insult-after-blind] a blinded pursuer, insulted, wins on exactly one face (the blind cap is last)", () => {
   const build = () => {
     const s = pursuitState({ parleyInsulted: true });
     s.combat.foes[0].blind = true;
     return s;
   };
   const result = faceOdds((rng) => pursuitLanded(build(), rng), { isProbe: (i) => i === 1, fill: alwaysMax, label: "pursuit:insult-after-blind" });
-  assert.equal(result.wins, 2, "[pursuit:insult-after-blind] a blinded-and-insulted pursuer must win on exactly two faces");
+  assert.equal(result.wins, 1, "[pursuit:insult-after-blind] a blinded-and-insulted pursuer must win on exactly one face");
 });
 
 // --- Member and ally strikes (roller = the member/ally) ---------------------

@@ -61,7 +61,7 @@ import { RAIL_HOLD } from "./rail.js";
 import { heroHitOddsVs, foeHitOddsVs } from "./rollOdds.js";
 // Quick 260927-rsx: the foe card states the foe's spell resist from the
 // engine's own faces helper, printed through the one range formatter.
-import { resistFaces } from "../../engine/derived.js";
+import { risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 
 function deepFreeze(o) {
@@ -302,13 +302,16 @@ function multWho(row) {
   return who ? fill(C.blowsBy, { who }) : C.blows;
 }
 
-function resistLine(foe, type, name) {
+function resistLine(foe, type, name, state) {
   const parts = [];
   const intel = num(rd(foe, "intel"));
   parts.push(fill(C.int, { n: intel === null ? "?" : intel }));
   // Quick 260927-rsx: the foe's resist against a spell cast on it, from
-  // engine/derived.js#resistFaces (a missing intel reads the floor).
-  parts.push(fill(C.resistsSpells, { range: hitRangeText(resistFaces(intel === null ? undefined : intel), 20) }));
+  // engine/derived.js#risingResistFaces at the current floor (Phase 90 plan
+  // 04: the same depth-rising faces the engine rolls; a missing intel reads
+  // the floor, a missing floor reads depth 1).
+  const depth = num(rd(rd(state, "floor"), "depth"));
+  parts.push(fill(C.resistsSpells, { range: hitRangeText(risingResistFaces(depth === null ? undefined : depth, intel === null ? undefined : intel), 20) }));
   for (const row of DAMAGE_MULTIPLIERS) {
     const hit = (row.foeType && row.foeType === type) || (row.foeName && row.foeName === name);
     if (!hit) continue;
@@ -320,7 +323,7 @@ function resistLine(foe, type, name) {
 }
 
 // Phase 74 (ROLL-02/03): the foeConditions.js chips that move a to-hit
-// roll — asleep/stupid floor the hero's own swing at 5 faces (the you-part
+// roll — asleep (and held) floor the hero's own swing at 5 faces (the you-part
 // effect); blind/weakened move the foe's swing at the hero (the it-part
 // effect). Every other chip has no to-hit effect (null).
 //
@@ -330,7 +333,7 @@ function resistLine(foe, type, name) {
 // hero's swing at the top face, stated as "you hit it only on {range}".
 // Shielded, Bubbled, Rebound, Strong, Regenerating and Senses move no
 // to-hit roll and stay null.
-const EFFECT_YOU_KEYS = new Set(["asleep", "stupid", "held"]);
+const EFFECT_YOU_KEYS = new Set(["asleep", "held"]);
 const EFFECT_YOU_ONLY_KEYS = new Set(["mirror"]);
 const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
 
@@ -338,7 +341,7 @@ const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
  * foeConditionEffect(chip, foe, state) — Phase 74 (ROLL-02/03): a
  * foeConditionChips chip's to-hit effect, stated from the player's side
  * with its resulting range (74-CONTEXT condition chips), or null for a
- * chip with no to-hit effect. asleep/stupid/held read heroHitOddsVs(state,
+ * chip with no to-hit effect. asleep/held read heroHitOddsVs(state,
  * foe).text ("you hit it on {range}"); mirror reads the same measured
  * range as "you hit it only on {range}" (Phase 77); blind/weakened read
  * foeHitOddsVs(state, foe).plainText ("it hits you only on {range}") — the
@@ -414,7 +417,7 @@ export function foeDetailsCard(i, state) {
   if (odds) lines.push(line(odds));
   lines.push(line(attackLine(foe, sp, state)));
   lines.push(line(abilitiesLine(foe, sp)));
-  lines.push(line(resistLine(foe, type, name)));
+  lines.push(line(resistLine(foe, type, name, state)));
   for (const text of effectLines(foe, state)) lines.push(line(text));
   lines.push(line((type && C.flavour[type]) || C.flavour.default));
 

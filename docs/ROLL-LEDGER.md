@@ -341,7 +341,7 @@ One row per modifier source per site, keyed by the `[site:source]` id the 72-02/
 | `[resist:intel]` | resist | the hero's `intel` against a foe's spell or ability | stat | a smarter hero shrugs off more effects; quick 260928-hrs (user ruling 2026-09-28): the same half-intel scale a foe resists on | roll-high: `resisted = roll >= 21 - faces`, `faces = resistFaces(intel) = max(1, round(intel / 2))`, every hero rolls (no gate) | wider resist range for a higher-intel hero; intel 1–2 still resists on one face | OK (quick 260928-hrs) |
 | `[resist:intel-gate]` | resist | `intel >= 12` gate | stat | below the threshold, resistance is never rolled for | retired: every hero rolls since quick 260928-hrs | no gate | N/A (retired by quick 260928-hrs, user ruling 2026-09-28: the gate no longer exists, so there is nothing to probe) |
 | `[resist:depth]` | resist | floor depth past CONTROL_AT_DEPTH.kneeDepth | depth | RULES-18 (Phase 75.3, user ruling 2026-09-25): from floor 12, foes increasingly RESIST control | roll-high: `resisted = roll >= 21 - faces`, faces growing with depth past the knee | wider resist range for a deeper foe past the knee | OK (RULES-18, Phase 75.3) |
-| `[resist:foe-intel]` | resist | a foe's `intel` against a spell cast on it | stat | quick 260927-rsx (user ruling 2026-09-27): every spell cast on an enemy can be resisted, more often by a smarter foe; half-intel scale | roll-high: `resisted = roll >= 21 - faces`, `faces = max(1, round(intel / 2))`, every foe rolls (no gate) | wider resist range for a higher-intel foe; intel 1–2 still resists on one face | OK (quick 260927-rsx) |
+| `[resist:foe-intel]` | resist | a foe's `intel` against a spell cast on it | stat | quick 260927-rsx (user ruling 2026-09-27): every spell cast on an enemy can be resisted, more often by a smarter foe; half-intel scale | roll-high: `resisted = roll >= 21 - faces`, `faces = max(1, round(intel / 2))`, every foe rolls (no gate) | wider resist range for a higher-intel foe; intel 1–2 still resists on one face | OK (quick 260927-rsx) | Phase 90 plan 04 (SPELL-12): the faces are `risingResistFaces(depth, intel)`, the half-intel faces up to floor 12 and rising with depth after it, rolled by the one gate `combat.js#foeResistsEffect` (`foeResistsSpell` is its spell name); no spell rolls the RULES-18 `[resist:depth]` extra resist any more.
 | `[resist:member-intel]` | resist | a Joiner's own `intel` against a foe's bolt or drain | stat | quick 260928-nrf (user ruling 2026-09-28, Joiners resist: "Yes, same scale"): a smarter Joiner shrugs off more, on the scale the hero and foes use | roll-high: `resisted = roll >= 21 - faces`, `faces = resistFaces(intel)`, every Joiner rolls (no gate); main rng, between the target pick and the damage dice | wider resist range for a higher-intel Joiner; intel 1–2 still resists on one face | OK (quick 260928-nrf) |
 | `[initiative:samurai]` | initiative | Samurai forced-foe | sub-class | Samurai never gets the jump on a fight's first round (a documented BAD trait) | forces `first="foe"` | the foe always acts first | OK |
 | `[initiative:fridgian-slow]` | initiative | Fridgian `slow` forced-foe | race | Fridgians are slow to react | forces `first="foe"` | the foe always acts first | OK |
@@ -837,23 +837,23 @@ mutation (a miss, or no roll at the knee or above it) or marks
 |---|---|---|---|---|---|---|
 | C1 | freeze | Freeze (hero) | magic.js castSpell thrown `onHit` | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold; a blow that leaves the foe at 0 hp still kills. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): `freezeFoe` rolls the one depth-rising resist (`foeResistsEffect`), no separate control resist | 75.3-05 |
 | C2 | freeze | Freeze (Joiner) | combat.js allyCast | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the same `freezeFoe` tail | 75.3-04 |
-| C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold | 75.3-04 |
+| C3 | freeze | Ice's last tick | combat.js foeTurn dot payoff | resist; a hold instead of the kill | APPLIED: resist, then a frozen hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): no knee branch: an iced foe that survives its last tick freezes solid and dies at every depth; the one resist it rolled was the cast's own | 75.3-04 |
 | C4 | freeze (asleep 99) | Birch Staff | items.js freeze | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the staff's freeze is `freezeFoe` (its d4 hold at every depth since 2026-09-28) with the one depth-rising resist; see X9 | 75.3-05 |
-| C5 | stone | Petrify | magic.js petrify | resist; a stone hold instead of the removal | APPLIED: resist, then a stone hold | 75.3-05 |
+| C5 | stone | Petrify | magic.js petrify | resist; a stone hold instead of the removal | APPLIED: resist, then a stone hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist, then a kill through `killFoe` with spoils off (the experience is paid, Q2 A); no hold at any depth | 75.3-05 |
 | C6 | stone | Oak Staff, Amulet of Stone | items.js stone | resist per foe; a stone hold instead of the kill | APPLIED: resist per target, then a stone hold; `foeStoned` names only the killed foes. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per target, then the stone KILLS at every depth; no hold; see X9 | 75.3-05 |
-| C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
-| C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept | 75.3-05 |
-| C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-04 |
-| C10 | sleep | Noxious Vapor's sleep outcome | magic.js vapor | resist per foe (its d6+2 stays) | APPLIED: resist per foe | 75.3-05 |
-| C11 | sleep | Insane's sleep face | magic.js insane | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist | 75.3-05 |
+| C7 | sleep | Doze | magic.js status | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist BEFORE the d4, no second control resist; a resisted Doze draws no d4 | 75.3-05 |
+| C8 | sleep | Stun | magic.js stun | resist per foe (its d4 stays) | APPLIED: resist per foe; `stunned.count` counts only the foes that slept. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe before its d4, no second control resist | 75.3-05 |
+| C9 | sleep | Doze / Stun (Joiner) | combat.js allyCast | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist (foeResistsSpell, keyed on the Joiner's name) before the d4, no second control resist | 75.3-04 |
+| C10 | sleep | Noxious Vapor's sleep outcome | magic.js vapor | resist per foe (its d6+2 stays) | APPLIED: resist per foe. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe before its d6, no second control resist | 75.3-05 |
+| C11 | sleep | Insane's sleep face | magic.js insane | resist (its d4 stays) | APPLIED: the d4 is drawn, then the resist. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): the one depth-rising resist is rolled up front (SINGLE_TARGET_KINDS) before the madness d6; the nap's d4 has no second resist | 75.3-05 |
 | C12 | sleep | Cedar Staff gas | items.js gas | resist per foe; asleep capped (was 99) | APPLIED: resist per foe; a landed sleep lasts `controlCapRounds(depth, 99)`. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): one depth-rising resist per foe, then asleep for the fight (99) at every depth; see X9 | 75.3-05 |
 | C13 | sleep | Bard's Lullaby and Thunder songs | combat.js sing | resist per foe; the Lullaby's 24 capped, Thunder's d8 stays | APPLIED: resist per foe; the Lullaby lasts `controlCapRounds(depth, 24)` | 75.3-04 |
 | C14 | weaken | Weaken (hero) | magic.js weaken | one resist for the room (its d4+1 stays) | APPLIED: one resist keyed on the aimed foe; shaken off, every live foe is marked Unmoved. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): `roomWeakenResists` has each live foe roll its own depth-rising resist and no extra room resist; no Unmoved marks | 75.3-05 |
 | C15 | weaken | Weaken (Joiner) | combat.js allyCast | one resist for the room (its d4+1 stays) | APPLIED: one resist for the room, as C14. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the same `roomWeakenResists` tail | 75.3-04 |
 | C16 | weaken | Walnut Staff | items.js weaken | one resist for the room; timed (was the whole fight) | APPLIED: one resist for the room; a landed weaken starts a `holdRounds` `spell:weaken` timer. SUPERSEDED (Phase 89 plan 08, ITEM-01, user Q1 2026-09-30): the staff casts the full Weaken (half damage and `foeToHitPenalty` 3) for the whole fight at every depth, no timer (Q6 B); see X9 | 75.3-05 |
-| C17 | stupid | Stupidity | magic.js stupid | resist; a stupid hold (was the whole fight) | APPLIED: resist, then a stupid hold | 75.3-05 |
-| C18 | blind | Blind | magic.js blind | resist; timed blind (was the whole fight) | APPLIED: resist; a landed Blind lasts `blindFor` = `holdRounds` and `blinded` carries `rounds` | 75.3-05 |
-| C19 | shrink | Shrink | magic.js shrink | resist per foe (an instant halving; nothing to cap) | APPLIED: resist per foe; `shrunk.count` counts only the halved | 75.3-05 |
+| C17 | stupid | Stupidity | magic.js stupid | resist; a stupid hold (was the whole fight) | APPLIED: resist, then a stupid hold. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): Stupidity drops the foe's intelligence to 1 for the fight; no hold, no cap | 75.3-05 |
+| C18 | blind | Blind | magic.js blind | resist; timed blind (was the whole fight) | APPLIED: resist; a landed Blind lasts `blindFor` = `holdRounds` and `blinded` carries `rounds`. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): Blind is blindness for the fight at every depth, no blindFor, no rounds on the line | 75.3-05 |
+| C19 | shrink | Shrink | magic.js shrink | resist per foe (an instant halving; nothing to cap) | APPLIED: resist per foe; `shrunk.count` counts only the halved. SUPERSEDED (Phase 90 plan 04, SPELL-12, user 2026-09-30): one depth-rising resist per foe, no second control resist | 75.3-05 |
 | X1 | kill outright | Death | magic.js death | OUT: an instant kill, not control (flagged) | OUT (flagged for the user) | — |
 | X2 | kill / flee faces | Noxious Vapor's face 4, Insane's faces 1, 3, 6 | magic.js | OUT: chaos-table outcomes (flagged) | OUT (flagged for the user) | — |
 | X3 | sent away | Turn Walking Dead, Plane Gate | magic.js | OUT: answers, not control (flagged) | OUT (flagged for the user) | — |
@@ -863,6 +863,7 @@ mutation (a miss, or no roll at the knee or above it) or marks
 | X7 | on the hero | foe abilities (c.foeEffect) | foeAbilities.js | OUT: the hero's own intel resist governs | OUT | — |
 | X8 | weaken | a fumbled Weaken scroll (Phase 75.1) | scrollFumble.js resolveHarmful, case `weakened` | OUT: a fumble effect (the scroll misfiring), not the hero's control | RESOLVED (user ruling 2026-09-26, "weaken the reader"; Plan 76-06's dispatch). Found by 75.3-07's scan: it used to set the foe-side `C.weakened` / `C.foeToHitPenalty` / `spell:weaken` fields, so the harmful fumble helped the reader. It now sets the reader's own `c.foeEffect` `{ kind: "weakened", rounds }` (d4+1), the debuff a foe's Weaken inflicts, and assigns no foe control, so the guard exemption is gone. Out of combat the fumble still fizzles (Phase 75.1) | 76-06 |
 | X9 | item controls | Amulet of Stone, Oak Staff, Cedar Staff, Birch Staff, Walnut Staff (and Pine Staff's fire resist) | items.js useItem | OUT of RULES-18: no floor-12 knee, no hold, no separate control resist (user Q1, 2026-09-30) | RESOLVED: every item effect a foe can resist rolls the one depth-rising resist (`combat.js#foeResistsEffect`, `derived.js#risingResistFaces`), not `resistControl`; `items.js#useItem` is exempt in the guard for that reason. Phase 90 moves the spells onto the same helper | 89-08 |
+| X10 | spell controls | every spell a foe can resist (the hero's, a scroll's free cast, a Joiner's) and foeTurn's Ice payoff | magic.js castSpell, combat.js allyCast and foeTurn | OUT of RULES-18: no floor-12 knee, no hold, no cap, no separate control resist (user 2026-09-30, "rising resists ... should apply to ALL spells ... remove the floor-12 special effects only") | RESOLVED: every spell rolls the one depth-rising resist (`combat.js#foeResistsSpell`, which IS `foeResistsEffect`; `derived.js#risingResistFaces`), not `resistControl`; `castSpell`, `allyCast` and `foeTurn` are exempt in the guard for that reason. Only the Bard's `sing` still calls `resistControl` (Phase 91, IDENT-17) | 90-04 |
 
 **The standing guard.** `test/unit/control-at-depth-rules.test.js`
 (75.3-07) scans every comment-stripped `engine/*.js` file and fails when a
@@ -1375,3 +1376,41 @@ makes, for 100 squares, no hit points, a recast restarts it.
   AMOUNT draw count drops by one (the might branch), and the fumbled-scroll Strength rolls its
   foe's flat d10 from the fumble stream (`srng`) as before.
 - **No check-direction change.** No check or threshold was added or flipped.
+
+## Phase 90 plan 04: one depth-rising resist for every spell; Petrify, Blind, Stupidity (SPELL-12, user 2026-09-30)
+
+"Rising resists on higher floors should apply to ALL spells and spell-like effects (staves
+included) ... remove the floor-12 special effects only." (the Phase 89 checkpoint, confirmed
+for damage spells after 89-08: "I'm good with that"). Phase 89 plan 08 built the shared helper
+for items and staves; this plan moves every spell onto it.
+
+- **The spell resist row.** Every spell a foe can resist (the hero's cast, a scroll's free cast,
+  a Joiner's `allyCast`) rolls `combat.js#foeResistsSpell`, which now IS
+  `foeResistsEffect`: `derived.js#risingResistFaces(depth, intel)` on the `spellResist`
+  derived stream (faces = `min(19, round(a + c - a*c/20))`, `a` the half-intel faces, `c` the
+  floor faces from floor 13). At or below floor 12 it is `resistFaces(intel)` byte for byte.
+  Intelligence 10: 16–20 up to floor 12, 15–20 at floor 13, 10–20 at floor 20. No spell rolls
+  the RULES-18 control resist (`resistControl`) any more, and no spell keeps a hold (`holdFoe`
+  with `controlHoldRoundsFor`) or a cap (`controlCapRounds`); the Bard's `sing` is the one
+  caller left (Phase 91, IDENT-17). Display: the combat menu's resist hint and the foe card read
+  `risingResistFaces(depth, intel)`.
+- **Main-rng draws that moved (floors 13 and deeper only).** The one resist is a derived-stream
+  roll, so it draws nothing itself. What moved is WHEN a resisted foe stops drawing: the old
+  past-floor-12 control resist came AFTER the effect's own draw (a Doze's d4, a Stun or Shrink or
+  Noxious Vapor foe's d4 / d6, Insane's nap d4), so a control-resisted foe still consumed it; the
+  one resist comes BEFORE it, so a resisted foe draws none of them. At or below floor 12 nothing
+  moved (the half-intel resist already came first).
+- **Petrify (Q2 A) skips draws.** A landed Petrify calls `killFoe(..., { spoils: false })`: the
+  experience `rng.d(6)` ([roll:amount], unchanged position) is taken, and the coin
+  `rng.d(10)`, the treasure gate d20, the bag gate d20 and the cooking d6 are NOT. The old
+  removal (no `killFoe`) drew nothing. Net: a Petrify takes one main draw more than before and
+  three to five fewer than a normal kill of the same foe. `DRAW_INVENTORY`'s tagged draws are
+  unmoved (`killFoe`'s lines keep their tags; the skip is an early return).
+- **Stupidity** sets `t.intel = 1` (no draw) and no longer skips the foe's turn: a stupid
+  foe's `foeTurn` now takes its to-hit draw and its damage draw like any foe (before: none).
+  **Blind** deletes `blindFor` and never lets a blind foe crit (no draw changes: the to-hit and
+  damage draws are unchanged, only the doubling is dropped).
+- **Check direction.** No check or threshold was flipped. The blind cap moved from the first term
+  of `foeSwingChain` to the last, so an insulted party faces one winning face (the top face) of a
+  blind foe where it used to face two; the `foeToHitVs` mods read `penalty`, `insulted`,
+  `blind` in that order. FLAGGED ASSUMPTION for the user's review.

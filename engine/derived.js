@@ -2241,9 +2241,11 @@ export function foeToHitBreakdown(state, vs = "hero", sheet) {
  * display reads the same rule the engine rolls against. `c` is the wielder:
  * this reads only `c.magicWpn` and `c.weapon`, never mutates `c`/`t`.
  *
- * In order: a dozing (`t.asleep > 0`) or stupid target floors `faces` at 5
- * (Phase 40, SPELL-01, Stupidity — p.27: 5 winning faces to hit a dozing or
- * stupid creature); `t.sp.toHit` caps `faces` down (hard to hit); `t.sp.fast`
+ * In order: a dozing (`t.asleep > 0`) or held (`t.held`, a Freeze) target
+ * floors `faces` at 5 (p.27: 5 winning faces to hit a dozing creature; Phase
+ * 90 plan 04, SPELL-12: a Stupid foe is NO LONGER floored — Stupidity now
+ * drops its intelligence to 1 and nothing else, so it is no easier to hit);
+ * `t.sp.toHit` caps `faces` down (hard to hit); `t.sp.fast`
  * removes one winning face (floor 1); `t.sp.magicOnly` without `c.magicWpn`
  * zeroes `faces` (untouchable without a magic weapon); `t.sp.daggerOnly`
  * without `c.magicWpn` and without `c.weapon === "Dagger"` also zeroes
@@ -2256,11 +2258,11 @@ export function foeToHitBreakdown(state, vs = "hero", sheet) {
  * untouchable; `Math.min(faces, 1)` is `0` when `faces` is already `0`). A
  * plain `t` (no matching `sp` fields, no `mirror`) returns `faces`
  * unchanged. RULES-18 (Phase 75.3): a held foe (`t.held`, engine/combat.js's
- * timed Freeze/Stone/Stupidity hold past floor 12) is hit like a dozing foe,
- * folded into the SAME first line as `asleep`/`stupid`. Pure, zero rng.
+ * timed Freeze hold) is hit like a dozing foe, folded into the SAME first line
+ * as `asleep`. Pure, zero rng.
  */
 export function targetStrikeFaces(c, t, faces) {
-  if (t.asleep > 0 || t.stupid || t.held) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or stupid, or held) creature
+  if (t.asleep > 0 || t.held) faces = Math.max(faces, 5); // p.27: 5 winning faces to hit a dozing (or held) creature
   if (t.sp && t.sp.toHit !== undefined) faces = Math.min(faces, t.sp.toHit); // hard to hit
   if (t.sp && t.sp.fast) faces = Math.max(1, faces - 1); // one more winning face to strike
   if (t.sp && t.sp.magicOnly && !c.magicWpn) faces = 0; // only magic touches it
@@ -2290,12 +2292,12 @@ export function heroStrikeFacesVs(state, t) {
  * base `foeToHitVs(state)`, mods copied from `foeToHitBreakdown(state).mods`
  * (Phase 75.2, RULES-11: this copy is where a non-zero "size" entry rides
  * along, signed for the foe — a Troll's `+1`, a Dwarf's `-1`, an Elf's
- * absent, its signature mask having dropped the face axis), then blind
- * (override to 1), the combat's `foeToHitPenalty` cap, and the insult (+1,
- * applied LAST — Phase 72 ROLL-01 (a)) — recording `{ name, delta }` entries
- * named "blind"/"penalty"/"insulted", pushed only when the value actually
- * changed for blind/penalty (insulted always pushes, matching both call
- * sites). Deltas are signed for the FOE (the roller), same convention as
+ * absent, its signature mask having dropped the face axis), then the combat's
+ * `foeToHitPenalty` cap, the insult (+1, Phase 72 ROLL-01 (a)) and, LAST
+ * since Phase 90 plan 04, blind (override to 1: a hard cap) — recording
+ * `{ name, delta }` entries named "penalty"/"insulted"/"blind", pushed only
+ * when the value actually changed for blind/penalty (insulted always pushes,
+ * matching both call sites). Deltas are signed for the FOE (the roller), same convention as
  * `foeToHitBreakdown`. `state.combat` may be missing/null — the two
  * combat-wide terms (penalty, insulted) are then skipped and this never
  * throws. Returns `{ faces, mods }`. Pure, zero rng, never mutates `state`/`f`.
@@ -2323,17 +2325,19 @@ export function foeSwingVsMember(state, f, sheet) {
 
 /**
  * foeSwingChain(state, f, faces, mods) — the combat-wide tail of every foe
- * melee swing (hero or Joiner): blind (override to 1), the combat's
- * `foeToHitPenalty` cap, then the insult (+1, LAST). See foeSwingVsHero's
- * JSDoc for the ordering and sign conventions. Mutates only the `mods`
- * array it was handed (a fresh copy at both callers). Pure, zero rng.
+ * melee swing (hero or Joiner): the combat's `foeToHitPenalty` cap, the insult
+ * (+1), then — LAST — blind (override to 1). See foeSwingVsHero's JSDoc for
+ * the sign conventions. Mutates only the `mods` array it was handed (a fresh
+ * copy at both callers). Pure, zero rng.
+ *
+ * Phase 90 plan 04 (SPELL-12, user 2026-09-30: "Blind limits a foe to its
+ * to-hit die's maximum roll"): the blind cap is the LAST term, so it is a hard
+ * cap that nothing raises. FLAGGED ASSUMPTION for the user's review: "hits only
+ * on the maximum roll" is read as absolute, so an insulted party (the +1 that
+ * Phase 72 puts last) still faces only the top face of a blind foe. A blind
+ * foe never lands a critical either (engine/combat.js's three foe crit sites).
  */
 function foeSwingChain(state, f, faces, mods) {
-  if (f && f.blind) {
-    const before = faces;
-    faces = 1;
-    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
-  }
   const C = state.combat;
   // Quick 260927-rsx: a foe that resisted the landed Weaken keeps its faces.
   if (C && C.foeToHitPenalty && !(f && f.weakenResisted)) {
@@ -2345,6 +2349,11 @@ function foeSwingChain(state, f, faces, mods) {
     const before = faces;
     faces += 1;
     mods.push({ name: "insulted", delta: faces - before });
+  }
+  if (f && f.blind) {
+    const before = faces;
+    faces = 1;
+    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
   }
   return { faces, mods };
 }

@@ -2167,13 +2167,17 @@ export const LINE_FOR = {
   }),
   // Phase 40 (SPELL-01) — combat.js#foeTurn's `spell:weaken` expiry.
   weakenFaded: () => ({ text: "Their arms remember how to swing.", tone: "magic", priority: PRIORITY.you }),
-  // VOX-05 (Phase 79, plan 79-08): for how long.
-  stupefied: (e) => ({ text: `${e?.target ?? "It"} forgets what it is doing, for the fight.`, tone: "magic", priority: PRIORITY.you }),
-  // Phase 40 (SPELL-01, Stupidity) — combat.js#foeTurn's per-round skip.
-  foeStupefied: (e) => ({ text: `${e?.name ?? "It"} stands there, thinking about nothing.`, tone: "dodge", priority: PRIORITY.them }),
-  // VOX-05 (Phase 79, plan 79-08): what blindness does, and for how long.
+  // Phase 90 plan 04 (SPELL-12): the intelligence it had and the 1 it has now
+  // (foeStupefied, the per-turn skip line, is gone: a stupid foe keeps acting).
+  stupefied: (e) => ({
+    text: e?.was === 1 ? `${e?.target ?? "It"} was at intelligence 1 already, and stays there for the fight.` : `${e?.target ?? "It"} forgets most of it: ${Number.isFinite(e?.was) ? `intelligence ${e.was} down to 1` : "intelligence down to 1"} for the fight.`,
+    tone: "magic",
+    priority: PRIORITY.you,
+  }),
+  // VOX-05 (Phase 79, plan 79-08): what blindness does. Phase 90 plan 04
+  // (SPELL-12): for the fight at every depth, and never a critical.
   blinded: (e) => ({
-    text: `${e?.target ?? "It"} is blind ${e?.rounds ? `for ${railPlural(e.rounds, "round")}` : "for the fight"}: it hits only on its top face.`,
+    text: `${e?.target ?? "It"} is blind for the fight: it hits only on its top face and never crits.`,
     tone: "magic",
     priority: PRIORITY.you,
   }),
@@ -2206,7 +2210,7 @@ export const LINE_FOR = {
     priority: PRIORITY.other,
   }),
   volley: (e) => ({ text: `${e?.rolls ?? 0} shots, ${e?.totalDamage ?? 0} total.`, tone: "magic", priority: PRIORITY.you }),
-  petrified: (e) => ({ text: `${e?.target ?? "It"} turns to stone.`, tone: "magic", priority: PRIORITY.you }),
+  petrified: (e) => ({ text: `${e?.target ?? "It"} turns to stone and dies. No spoils from a statue.`, tone: "magic", priority: PRIORITY.you }),
   walkingDeadTurned: (e) => ({ text: `${e?.count ?? 0} of the dead flee.`, tone: "magic", priority: PRIORITY.you }),
   nothingToTurn: () => block("Nothing here to turn."),
   planeGated: (e) => ({ text: `${e?.count ?? 0} gated straight back out.`, tone: "magic", priority: PRIORITY.you }),
