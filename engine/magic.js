@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe, fleeRefusal, parleyBlockedReason, parley, doorIllusionEscape, behemothRoar } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -158,6 +158,29 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   // isn't, the encounter has already cleared). Phase 36 (TGT-01): the rule
   // now lives in combat.js#normalizeTarget.
   if (C) normalizeTarget(C);
+
+  // Phase 90 plan 09 (SPELL-10): a spell whose whole point cannot happen is
+  // refused BEFORE the charge is spent, and says why (the fairness rule: a
+  // refused Chameleon Tongue or Door Illusion never costs a charge unexplained).
+  // The turn is not spent either (as the combatOnly refusal above). A scroll's
+  // free cast of one is still consumed by readScroll (RULES-10), and the line
+  // tells the reader why. Door Illusion reads the same never-flee predicate
+  // flee() does; Chameleon Tongue reads the same parley predicate parley() does,
+  // at the fluency the spell is about to give the fight.
+  if (C && sp.kind === "door") {
+    const why = fleeRefusal(state);
+    if (why) {
+      events.push({ type: "castRefused", spell: sp.n, reason: why });
+      return events;
+    }
+  }
+  if (C && sp.kind === "tongue") {
+    const why = parleyBlockedReason(state, sp.fluency);
+    if (why) {
+      events.push({ type: "castRefused", spell: sp.n, reason: why });
+      return events;
+    }
+  }
 
   c.spellsUsed++;
   if (C) C.spellOpen = false;
@@ -582,6 +605,31 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const aimedFoe = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
     const t = C && (aimedFoe || liveFoes(state)[0]);
     if (t) misdirectFoe(state, t, sp, rng, events, { sub: c.sub });
+  } else if (sp.kind === "door") {
+    // Phase 90 plan 09 (SPELL-10, Door Illusion): the cleverest foe rolls the one
+    // resist; if it fails, the fight is over (the Smoke flee path: no roll, no
+    // parting blow, spoils left behind) and there is no turn left to spend. If
+    // it resists, doorIllusionSeen is narrated and the turn falls through to the
+    // foes' as usual. Combat-only. No main-rng draw.
+    if (C && doorIllusionEscape(state, sp, rng, events)) return events;
+  } else if (sp.kind === "tongue") {
+    // Phase 90 plan 09 (SPELL-10, Chameleon Tongue): the spell IS the fight's one
+    // parley, made at fluency 2 (the fight-scoped C.tongue that derived.js#fluency
+    // reads). The refusal ladder above already proved the parley can happen, so
+    // parley() rolls it; it pays what parley pays, ends the fight on a success,
+    // and on a failure insults the room and runs the foes' turn itself, so this
+    // branch returns without the shared tail (the foe turn never runs twice).
+    if (C) {
+      C.tongue = sp.fluency;
+      events.push({ type: "tongueCast" });
+      parley(state, rng, events);
+      return events;
+    }
+  } else if (sp.kind === "behemoth") {
+    // Phase 90 plan 09 (SPELL-10, Size of the Behemoth): every live foe rolls
+    // its resist; a failer below the caster's level flees, any other failer
+    // cowers for the fight. Combat-only. No main-rng draw.
+    if (C) behemothRoar(state, sp, rng, events, { level: c.level });
   } else if (sp.kind === "regen") {
     c.regen = true;
     events.push({ type: "regenerationCast" });

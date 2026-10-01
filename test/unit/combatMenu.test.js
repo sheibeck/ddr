@@ -900,3 +900,48 @@ test("(Phase 90 plan 04) a spell row's resist hint names the depth-rising range 
     assert.ok(!heal.desc.includes("resists"), "a self spell carries no resist clause");
   }
 });
+
+// Phase 90 plan 09 (SPELL-10): the Chameleon Tongue row reads the same parley predicate castSpell
+// refuses on (engine/combat.js#parleyBlockedReason), and the Door Illusion row the same never-flee
+// predicate (#fleeRefusal), so a row that would be refused before any charge is spent reads disabled
+// with the reason, and stays tappable (the refusal line then explains).
+test("(Phase 90 plan 09) Chameleon Tongue: enabled with a parley to spend, disabled with the reason once the fight's parley is spent", () => {
+  const foe = { name: "Target", type: "Humans", lvl: 3, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 };
+  const cast = { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Chameleon Tongue", "Heal"], spellsUsed: 0 };
+  const row = (combat) => combatMenuViewModel(fixedState({ c: cast, combat })).submenus.spells.rows.find((r) => r.label === "CHAMELEON TONGUE");
+  const open = row(fixedCombat([foe]));
+  assert.equal(open.enabled, true);
+  assert.equal(open.blocked, undefined);
+  assert.match(open.desc, /^answer · this fight · /);
+  assert.ok(!open.desc.includes("resists"), "a self-kind spell carries no resist clause");
+  const spent = row(fixedCombat([foe], { parleyTried: true }));
+  assert.equal(spent.enabled, false);
+  assert.equal(spent.blocked, "parleySpent");
+  assert.ok(spent.desc.startsWith(COMBAT_MENU_COPY.tongueBlocked.parleySpent), spent.desc);
+  assert.match(spent.desc, /already said your piece/);
+  assert.equal(spent.dispatch.type, "castSpell", "still tappable: the engine's own castRefused line explains");
+  const dead = row(fixedCombat([{ ...foe, type: "Walking Dead" }]));
+  assert.equal(dead.enabled, false);
+  assert.equal(dead.blocked, "walkingDead");
+  assert.match(dead.desc, /do not parley/);
+  const magical = row(fixedCombat([{ ...foe, type: "Magical" }]));
+  assert.equal(magical.enabled, true, "Magical foes can be talked to through the Tongue");
+});
+
+test("(Phase 90 plan 09) every tongue and door reason has one non-empty copy line", () => {
+  for (const reason of ["parleySpent", "ninja", "masterOfArms", "walkingDead", "noTalk", "wilmsryVsMagical"]) {
+    assert.ok(typeof COMBAT_MENU_COPY.tongueBlocked[reason] === "string" && COMBAT_MENU_COPY.tongueBlocked[reason].length > 0, reason);
+  }
+  assert.ok(COMBAT_MENU_COPY.doorBlocked.samurai.length > 0);
+});
+
+test("(Phase 90 plan 09) Door Illusion: enabled for a hero who may flee, with the cleverest foe's resist on the row", () => {
+  const foe = { name: "Target", type: "Humans", lvl: 1, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 };
+  const rows = combatMenuViewModel(fixedState({
+    c: { cls: "Magic User", sub: "Illusionist", level: 1, grimoire: ["Door Illusion", "Heal"], spellsUsed: 0 },
+    combat: fixedCombat([foe]),
+  })).submenus.spells.rows;
+  const door = rows.find((r) => r.label === "DOOR ILLUSION");
+  assert.equal(door.enabled, true);
+  assert.ok(door.desc.includes("Target resists on"), "Door Illusion is cast on foes: a resist reads on the row");
+});

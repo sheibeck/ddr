@@ -103,6 +103,9 @@ outcome for every gated circumstance.
 | Stop Time (new, Phase 90 plan 08) | 3 | special | timestop | true | `castRefused combatOnly` | `resistFailed`/`controlHeld` (kind time) per foe, then `timeStopped` | `castRefused notFought` | casts at the penalty |
 | Senseless (new, Phase 90 plan 08) | 2 | illusion | misdirect | true | `castRefused combatOnly` | `foeMisdirected` | `castRefused notFought` | casts at the penalty |
 | Duplicate Foe (new, Phase 90 plan 08) | 5 | illusion | misdirect | true | `castRefused combatOnly` | `foeMisdirected` | `castRefused notFought` | casts at the penalty |
+| Door Illusion (new, Phase 90 plan 09) | 1 | illusion | door | true | `castRefused combatOnly` | `resistFailed` then `fled` (reason door), or `spellResisted` then `doorIllusionSeen`; `castRefused samurai` before any charge | `castRefused notFought` | casts at the penalty |
+| Chameleon Tongue (new, Phase 90 plan 09) | 3 | illusion | tongue | true | `castRefused combatOnly` | `tongueCast`, then the parley (`parleyRolled`); `castRefused` with the parley's reason before any charge | `castRefused notFought` | casts at the penalty |
+| Size of the Behemoth (new, Phase 90 plan 09) | 4 | illusion | behemoth | true | `castRefused combatOnly` | per foe `foeRouted` or `foeCowers`, then `behemothCast` | `castRefused notFought` | casts at the penalty |
 
 Every combat-only cast outside combat is `castRefused {spell, reason:
 "combatOnly"}` — no charge spent, zero rng, and (Earthquake/Death) no

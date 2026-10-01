@@ -1059,7 +1059,15 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
   // live, all six still resolve) — expected, since neither race carries a
   // size step.
   const forces = [
-    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [2, 3, 4] },
+    // Phase 90 plan 09 (SPELL-10, user 2026-09-30): Thief/Pilfer seed 2 swapped for seed 5. The
+    // spell list is three rows longer (Door Illusion, Chameleon Tongue, Size of the Behemoth joined
+    // it), so the scroll pool a Pilfer reads from is bigger (19, 29, 36 and 41 rows at depths 1 to
+    // 4 and deeper) and a scroll's pick(options) lands on another row: seed 2 now falls into a
+    // loop the bot never leaves (stuck at depth 7, re-measured live to 5000 actions under identity
+    // dials; seed 1 stalls too). Seed 5 is the smallest untaken seed that dies naturally (505
+    // actions, depth 4); seeds 3 and 4 still die naturally (263 and 380 actions). The Sorcerer and
+    // Troll Knight trios are unaffected (re-confirmed live, in the test's own order).
+    { cls: "Thief", sub: "Pilfer", race: "Human", seeds: [5, 3, 4] },
     // Quick 260927-rsx / 260927-opf (user rulings 2026-09-27): Sorcerer
     // seed 4 swapped for seed 6. Every spell cast on a foe can now be
     // resisted, so this caster's long run plays out differently and seed 4

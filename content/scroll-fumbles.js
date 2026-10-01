@@ -4,7 +4,7 @@
 // engine/scrollFumble.js#resolveScrollFumble and nothing else — the design
 // lives here, in one reviewable table, rather than scattered across the
 // resolver. Keyed by each spell's exact content/spells.js#SPELLS `n` string
-// (38 rows as of Phase 90 plan 08, no normalisation — a renamed or added spell fails
+// (41 rows as of Phase 90 plan 09, no normalisation — a renamed or added spell fails
 // test/unit/scroll-fumble-table.test.js's coverage check).
 //
 // Row shape: `{ side, effect }` plus, where listed:
@@ -37,7 +37,7 @@ export const FUMBLE_SIDES = Object.freeze(["harmful", "area", "helpful"]);
 
 export const FUMBLE_EFFECTS = Object.freeze({
   harmful: Object.freeze([
-    "damage", "dot", "heavy", "out", "blind", "shrink", "weakened", "vapor", "none",
+    "damage", "dot", "heavy", "out", "blind", "shrink", "weakened", "vapor", "none", "insulted",
   ]),
   area: Object.freeze(["damage", "volley"]),
   helpful: Object.freeze([
@@ -99,4 +99,13 @@ export const SCROLL_FUMBLE = Object.freeze({
   "Stop Time": Object.freeze({ side: "harmful", effect: "out", kind: "stopped", rounds: TWO_ROUNDS }),
   "Senseless": Object.freeze({ side: "harmful", effect: "out", kind: "maddened", rounds: D4 }),
   "Duplicate Foe": Object.freeze({ side: "harmful", effect: "out", kind: "maddened", rounds: D4_PLUS_1 }),
+  // Phase 90 plan 09 (SPELL-10): the last three of the slate. A fumbled Door
+  // Illusion changes nothing (the door does not open: the Turn Walking Dead
+  // shape); a fumbled Chameleon Tongue insults the room (the `insulted` effect
+  // sets the parley insult, +1 on every foe's winning faces for the fight); a
+  // fumbled Size of the Behemoth shrinks the READER's nerve: the existing
+  // `weakened` effect, d4+1 rounds.
+  "Door Illusion": Object.freeze({ side: "harmful", effect: "none" }),
+  "Chameleon Tongue": Object.freeze({ side: "harmful", effect: "insulted" }),
+  "Size of the Behemoth": Object.freeze({ side: "harmful", effect: "weakened", rounds: D4_PLUS_1 }),
 });

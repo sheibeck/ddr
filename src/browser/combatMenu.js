@@ -18,7 +18,7 @@ import { itemRowState } from "./gearTab.js";
 import { canCast, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
-import { canParley } from "../../engine/combat.js";
+import { canParley, parleyBlockedReason, fleeRefusal } from "../../engine/combat.js";
 import { abilityRoundsLeft, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
@@ -108,6 +108,20 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // insults the group for the rest of the fight (C.parleyInsulted, +1 face
   // to every foe swing at the hero and the party), not permanently.
   parleyDesc: "One try per fight. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
+  // Phase 90 plan 09 (SPELL-10): why a Chameleon Tongue or Door Illusion row is greyed
+  // (engine/combat.js#parleyBlockedReason and #fleeRefusal, the same predicates castSpell
+  // refuses on BEFORE any charge is spent). One line per reason, in the player's terms.
+  tongueBlocked: Object.freeze({
+    parleySpent: "You already said your piece. One parley a fight, and it is spent.",
+    ninja: "A Ninja does not speak, in any tongue.",
+    masterOfArms: "A Master of Arms has one answer to a question like that, and it is not a sentence.",
+    walkingDead: "The Walking Dead do not parley, in any tongue.",
+    noTalk: "They will not be talked to, even in their own language.",
+    wilmsryVsMagical: "Magic Users hate the Wilmsry, and a new accent will not fix that.",
+  }),
+  doorBlocked: Object.freeze({
+    samurai: "A Samurai does not run, and that includes through doors that are not there.",
+  }),
   back: "BACK",
   // RULES-10 (Phase 75.1, user ruling 2026-09-25): the hero-cannot-act shape.
   // A fumbled Doze/Stun (asleep), Stupidity (stupefied) or Insane (maddened)
@@ -275,17 +289,24 @@ function combatMenuViewModelUnlocked(state) {
       ? COMBAT_MENU_COPY.spellResist.replace("{target}", liveTarget.name).replace("{range}", hitRangeText(risingResistFaces(state.floor?.depth, liveTarget.intel), 20))
       : "";
     const spellRows = castableSpells.map(({ sp, idx }) => {
+      // Phase 90 plan 09 (SPELL-10): a Chameleon Tongue the fight's parley rules refuse,
+      // and a Door Illusion a hero who never flees would be refused, read disabled with the
+      // reason. They stay tappable (the rule above), and a tap lands castSpell's own
+      // castRefused line, which spends no charge.
+      const blockedBy = sp.kind === "tongue" ? parleyBlockedReason(state, sp.fluency) : sp.kind === "door" ? fleeRefusal(state) : null;
+      const blockedLine = blockedBy ? (sp.kind === "tongue" ? COMBAT_MENU_COPY.tongueBlocked : COMBAT_MENU_COPY.doorBlocked)[blockedBy] : null;
       return {
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
         cost: `LVL ${spellLevelFor(c.sub, sp)}`,
-        desc: `${sp.txt || ""}${resistHint && spellTargetsFoe(sp) ? ` · ${resistHint}` : ""}`,
+        desc: blockedLine ? `${blockedLine} · ${sp.txt || ""}` : `${sp.txt || ""}${resistHint && spellTargetsFoe(sp) ? ` · ${resistHint}` : ""}`,
         // Phase 40 (SPELL-01): the same niche/nicheLabel pair the Hero-tab
         // Grimoire rows carry (src/browser/heroTab.js#grimoireViewModel) —
         // desc stays sp.txt, unchanged.
         niche: sp.niche,
         nicheLabel: NICHE_LABELS[sp.niche] ?? sp.niche,
-        enabled: charges > 0,
+        enabled: charges > 0 && !blockedBy,
+        ...(blockedBy ? { blocked: blockedBy } : {}),
         dispatch: { type: "castSpell", idx },
       };
     });

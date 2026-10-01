@@ -342,6 +342,7 @@ const NOT_A_CONDITION = Object.freeze({
   pendingFoes: "foes waiting to join: they arrive as foe cards",
   spellOpen: "the spell submenu's open flag",
   parleyTried: "the one parley attempt is spent",
+  tongue: "Phase 90 plan 09: Chameleon Tongue's fight-scoped fluency (the parley's own bonus, spent by the cast itself): the roll line says \"+4 for the tongue\"; not a condition the hero carries",
   foeToHitPenalty: "the to-hit half of Weaken: the foe cards' Weakened chip shows it",
   // ── a party member's combat entry ──
   backstabUsed: "the member's once-a-fight backstab is spent",

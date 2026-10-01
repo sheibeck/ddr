@@ -173,4 +173,18 @@ export const SPELLS = [
   { n: "Stop Time", lvl: 3, s: "special", kind: "timestop", holdRounds: 2, stretch: "rounds", roll: "derived", niche: "control", txt: "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and you hit it on at least the top five numbers of your die; then time resumes, and so do they", combatOnly: true },
   { n: "Senseless", lvl: 2, s: "illusion", kind: "misdirect", at: "friends", rounds: { n: 1, sides: 4, bonus: 0 }, stretch: "rounds", roll: "derived", niche: "control", txt: "control · one foe · loses its senses for d4 rounds, +1 round per school bonus point, unless it resists: each swing it takes hits another foe at its own damage, never your side; with nobody else to hit, it hits the air, which never complains", combatOnly: true },
   { n: "Duplicate Foe", lvl: 5, s: "illusion", kind: "misdirect", at: "self", rounds: { n: 1, sides: 4, bonus: 1 }, stretch: "rounds", roll: "derived", niche: "control", txt: "control · one foe · meets its double and fights it for d4+1 rounds, +1 round per school bonus point, unless it resists: every swing it takes lands on itself, at its own damage; it leaves you alone, being busy", combatOnly: true },
+  // Phase 90 plan 09 (SPELL-10, the slate accepted as drafted; the last three of
+  // the ten): the Illusion spells that end or tilt a fight. All three are
+  // combat-only and `roll: "derived"` (they join the day-one pools through a
+  // derived stream). Door Illusion (`kind: "door"`) leaves the fight through the
+  // flee path Smoke uses (combat.js#doorIllusionEscape); Chameleon Tongue
+  // (`kind: "tongue"`, `fluency: 2`) IS the fight's one parley, made at fluency 2
+  // (combat.js#parley reading the fight-scoped C.tongue); Size of the Behemoth
+  // (`kind: "behemoth"`) routs the weaker foes and cows the rest for the fight
+  // (combat.js#behemothRoar). None stretches: the chart gives the Illusion school
+  // +0 to both sub-classes that learn it, and none of them is round- or
+  // square-timed.
+  { n: "Door Illusion", lvl: 1, s: "illusion", kind: "door", roll: "derived", niche: "defensive", txt: "defensive · the fight · a door that isn't there, and you through it: no flee roll, no parting blow, spoils left behind; the cleverest foe rolls one resist and may see through it, and then you have spent your turn admiring a wall", combatOnly: true },
+  { n: "Chameleon Tongue", lvl: 3, s: "illusion", kind: "tongue", fluency: 2, roll: "derived", niche: "answer", txt: "answer · this fight · you speak their tongue like a local and talk at once: a parley at +4 that even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley", combatOnly: true },
+  { n: "Size of the Behemoth", lvl: 4, s: "illusion", kind: "behemoth", roll: "derived", niche: "control", txt: "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on their die's top three numbers (6–8 on a d8, 18–20 on a d20) for half damage", combatOnly: true },
 ];

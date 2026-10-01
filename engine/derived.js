@@ -2368,6 +2368,15 @@ function foeSwingChain(state, f, faces, mods) {
     faces = Math.min(faces, C.foeToHitPenalty);
     if (faces !== before) mods.push({ name: "penalty", delta: faces - before });
   }
+  // Phase 90 plan 09 (SPELL-10, Size of the Behemoth): a foe that cowers hits
+  // only on its die's top three numbers for the rest of the fight. The flag is
+  // the FOE's own (`f.cowering`), not the room's Weaken fields, so a later
+  // Weaken's expiry (which clears C.foeToHitPenalty) never lifts it.
+  if (f && f.cowering) {
+    const before = faces;
+    faces = Math.min(faces, COWER_FACES);
+    if (faces !== before) mods.push({ name: "cowering", delta: faces - before });
+  }
   if (C && C.parleyInsulted) {
     const before = faces;
     faces += 1;
@@ -2530,7 +2539,7 @@ export function intelBonus(c) {
  * rolls `resistRoll` (through `foeSpellResistCheck`); these kinds are never
  * resisted.
  */
-export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses", "timed"]));
+export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses", "timed", "tongue"]));
 
 /**
  * spellTargetsFoe(sp) — true when SPELLS row `sp` is cast on an enemy (its
@@ -2681,8 +2690,18 @@ export function foeRisingResistCheck(state, rng, source, idx, intel, caster = "y
  * by every foe-damage halving site and the `foeToHitPenalty` cap. Pure.
  */
 export function foeWeakened(combat, f) {
+  // Phase 90 plan 09 (SPELL-10, Size of the Behemoth): a cowering foe deals half
+  // damage for the rest of the fight, whatever the room's Weaken is doing.
+  if (f && f.cowering) return true;
   return !!(combat && combat.weakened && !(f && f.weakenResisted));
 }
+
+/**
+ * COWER_FACES — Phase 90 plan 09 (SPELL-10, Size of the Behemoth): the winning
+ * faces a cowering foe keeps (its die's top three numbers: 6-8 on a d8, 18-20 on
+ * a d20), the same cap a landed Weaken puts on the room.
+ */
+export const COWER_FACES = 3;
 
 /**
  * controlResistRoll(rng, faces) — RULES-18 (Phase 75.3, user ruling
@@ -2815,9 +2834,18 @@ export function killSpFor(c, f, roll) {
  * docs/ABILITIES.md — canParley's fluency-2 branch is left in place, since
  * it is a data-driven threshold, not a dead read). Returns 0 or 1. Pure read
  * (`eff`), no rng, no mutation.
+ *
+ * Phase 90 plan 09 (SPELL-10, Chameleon Tongue): a second, fight-scoped source.
+ * `combat.tongue` (set by castSpell's tongue branch to the spell's `fluency`, 2)
+ * lifts the result to that value for the rest of the fight, so the fluency-2
+ * Magical branch of canParley is reachable at last and `parley` adds +4 to its
+ * roll. The larger of the two sources wins (they never stack). `combat` is
+ * optional: with none, this is the item source alone, as before.
  */
-export function fluency(c) {
-  return eff(c, "tongue") > 0 ? 1 : 0;
+export function fluency(c, combat) {
+  const item = eff(c, "tongue") > 0 ? 1 : 0;
+  const spell = combat && Number.isInteger(combat.tongue) ? combat.tongue : 0;
+  return Math.max(item, spell);
 }
 
 /**

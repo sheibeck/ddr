@@ -1522,3 +1522,37 @@ point on a round-timed new spell, `derived.js#spellEffectRounds`). Two shared ta
 - **Check direction.** One new check, the misdirected to-hit, read roll-high through `rollCheck` like every
   other foe swing (a bigger need is more winning faces, the foe's); nothing flipped. The resist is the one
   shared rising resist, no floor-12 extras.
+
+## Phase 90 plan 09: Door Illusion, Chameleon Tongue, Size of the Behemoth, and the Illusionist's book (SPELL-10, user 2026-09-30)
+
+The last three of the accepted slate (`90-SPELL-SLATE-DRAFT.md` wiring D: the flee path Smoke uses,
+`parley()` at fluency 2, Insane's flee outcome) and the Illusionist's canon p.17 grants. No new main-rng draw
+anywhere in the three spells.
+
+- **Door Illusion: `combat.js#doorIllusionEscape`.** No main-rng draw. The cleverest live foe (highest
+  `intel`, the first in `C.foes` order on a tie) rolls the one depth-rising resist (`foeResistsSpell`, a
+  derived stream); a resist is `doorIllusionSeen` and nothing else, otherwise the Smoke flee path: no flee
+  roll, no `pursuitStrike` (no parting blow), `forfeitLoot`, `fled { reason: "door" }`, `endCombat`. A hero
+  `combat.js#fleeRefusal` names (the Samurai) is refused in `castSpell` before the charge, with no draw.
+- **Chameleon Tongue.** The cast sets the fight-scoped `C.tongue = 2` and calls `parley()`, which draws
+  exactly what an ordinary parley draws, in the same positions: the parley roll (one `rollCheck` on a d20,
+  `engine/combat.js`, an existing site), then, on a success, the experience d6 per foe (`killSpFor`) and, for
+  Humans, the wilmst `d6 === 6` check and its amount. `fluency(c, C)` is 2, so the roll's bonus has `2 × 2`
+  = +4 and the Magical gate opens. `castSpell` returns after `parley()`: a failed parley already runs the
+  foes' turn (`afterPlayerAction`), so it is never run twice. A cast `parleyBlockedReason` refuses is
+  refused before the charge and draws nothing.
+- **Size of the Behemoth: `combat.js#behemothRoar`.** No main-rng draw. Each live foe in `C.foes` order rolls
+  the one resist; a failer below the caster's level is routed (`alive = false`, `fled = true`), any other
+  failer gets `f.cowering = true` (no draw: `derived.js#foeSwingChain` caps its swings at 3 faces and
+  `foeWeakened` halves its damage, a swing it takes draws exactly what its normal swing draws).
+- **The Illusionist's book: `character.js#rollGrimoire`.** One new DERIVED draw, `dr.d(rest.length)`
+  [roll:selection, +1 in `engine/character.js`], the pick of one Illusion spell the book does not hold, made
+  at the very end of the function (after every existing `dr` draw, so none of them moves; the main rng is
+  untouched, `chargen-rng-pin` stays 33 for the Illusionist). Door Illusion is pushed with no draw when it
+  was not rolled.
+- **A fumbled scroll.** `insulted` (a fumbled Chameleon Tongue) sets `C.parleyInsulted`, no draw; a fumbled
+  Behemoth is the existing `weakened` effect (one d4+1 on the fumble's own derived stream); a fumbled Door
+  Illusion draws nothing.
+- **DRAW_INVENTORY** (`test/unit/roll-high-guard.test.js`): `engine/character.js` `selection` 13 -> 14.
+- **Check direction.** The Tongue's parley check is the existing roll-high parley; nothing flipped. Every
+  resist is the one shared rising resist, no floor-12 extras.

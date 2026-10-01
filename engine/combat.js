@@ -1745,6 +1745,95 @@ function wardCrit(body, foe, roll, dieN, events, member = null) {
 }
 
 /**
+ * fleeRefusal(state) — Phase 90 plan 09 (SPELL-10): THE never-flee predicate.
+ * Returns the reason this hero can never leave a fight by running ("samurai": a
+ * Samurai never runs) or null. `flee` reads it for its refusal (behaviour
+ * unchanged) and Door Illusion reads it so a hero who may not flee may not
+ * conjure an exit either (castSpell refuses the cast before the charge is
+ * spent). Phase 91's IDENT-16 (Master of Arms) extends THIS function, so the
+ * rule is edited in one place. Pure, zero rng.
+ */
+export function fleeRefusal(state) {
+  return state.c.sub === "Samurai" ? "samurai" : null;
+}
+
+/**
+ * doorIllusionEscape(state, sp, rng, events) — Phase 90 plan 09 (SPELL-10, Door
+ * Illusion at Illusion 1): the hero conjures a door that is not there and walks
+ * through it. The fight's CLEVEREST live foe (highest `intel`; the first in
+ * C.foes order on a tie) rolls the one depth-rising resist
+ * (foeResistsSpell, a derived stream). When it resists it sees through the
+ * door: `doorIllusionSeen { foe }` is pushed, nothing else changes and the
+ * caller spends the turn (returns false). Otherwise the fight ends through the
+ * flee path Smoke uses: no flee roll, no parting blow (pursuitStrike is never
+ * called), the pending spoils forfeited (`forfeitLoot "fled"`), `fled { reason:
+ * "door" }`, `endCombat` (a Joiner in the party leaves with the hero, as in any
+ * flee). Returns true when the fight is over. Zero main-rng draws.
+ */
+export function doorIllusionEscape(state, sp, rng, events) {
+  const C = state.combat;
+  if (!C) return false;
+  const live = liveFoes(state);
+  if (!live.length) return false;
+  let clever = live[0];
+  for (const f of live) {
+    const a = Number.isFinite(f.intel) ? f.intel : 0;
+    const b = Number.isFinite(clever.intel) ? clever.intel : 0;
+    if (a > b) clever = f;
+  }
+  if (foeResistsSpell(state, clever, sp.n, rng, events)) {
+    events.push({ type: "doorIllusionSeen", foe: clever.name });
+    return false;
+  }
+  forfeitLoot(state, "fled", events);
+  events.push({ type: "fled", reason: "door" });
+  endCombat(state, events);
+  return true;
+}
+
+/**
+ * behemothRoar(state, sp, rng, events, caster) — Phase 90 plan 09 (SPELL-10, Size
+ * of the Behemoth at Illusion 4): the caster looks enormous. The ONE tail, for
+ * the hero's cast (a scroll's free cast included) and, in 90-10, a Joiner's.
+ * Each live foe in C.foes order rolls the one depth-rising resist
+ * (foeResistsSpell, a derived stream); one that resists is untouched. A foe that
+ * fails and is BELOW the caster's level flees: `alive = false`, `fled = true`
+ * (Insane's flee outcome: no experience, no spoils, no foeKilled) and one
+ * `foeRouted { name }`. Any other foe that fails cowers for the rest of the
+ * fight: `f.cowering = true` (a per-foe flag, derived.js#foeSwingChain caps its
+ * swings at its die's top three numbers and #foeWeakened halves its damage; a
+ * Weaken's expiry never clears it) and one `foeCowers { name }`. Then one
+ * `behemothCast { routed, cowering, by? }` (both 0 when every foe resisted).
+ * `caster` is `{ by, level }` (a Joiner's name and level; the hero's when
+ * absent). If the rout empties the room the fight is over: the encounter clears
+ * through the same path every other routing uses. Zero main-rng draws.
+ * Returns `{ routed, cowering }`.
+ */
+export function behemothRoar(state, sp, rng, events, caster = {}) {
+  const C = state.combat;
+  if (!C) return { routed: 0, cowering: 0 };
+  const by = caster.by;
+  const level = Number.isFinite(caster.level) ? caster.level : state.c.level;
+  let routed = 0;
+  let cowering = 0;
+  for (const f of liveFoes(state)) {
+    if (foeResistsSpell(state, f, sp.n, rng, events, by)) continue;
+    if (f.lvl < level) {
+      f.alive = false;
+      f.fled = true;
+      routed++;
+      events.push({ type: "foeRouted", name: f.name });
+    } else {
+      f.cowering = true;
+      cowering++;
+      events.push({ type: "foeCowers", name: f.name });
+    }
+  }
+  events.push({ type: "behemothCast", routed, cowering, ...(by ? { by } : {}) });
+  return { routed, cowering };
+}
+
+/**
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
  * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
  * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
@@ -1777,8 +1866,9 @@ export function flee(state, rng, events = []) {
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "fleeRefused")) return events;
   if (!C) return events;
-  if (c.sub === "Samurai") {
-    events.push({ type: "fleeRefused", reason: "samurai" });
+  const refusal = fleeRefusal(state);
+  if (refusal) {
+    events.push({ type: "fleeRefused", reason: refusal });
     return events;
   }
   // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-07): the Cloaker's
@@ -1896,7 +1986,7 @@ export function flee(state, rng, events = []) {
  * exists; it is left in place (a data-driven threshold, not a dead read) per
  * docs/ABILITIES.md.
  */
-export function canParley(state) {
+export function canParley(state, fluencyOverride) {
   if (!state.combat) return false;
   const c = state.c;
   const C = state.combat;
@@ -1904,7 +1994,11 @@ export function canParley(state) {
   if (C.parleyTried) return false; // D-05: the encounter's one attempt is spent
   if (c.sub === "Ninja" || c.sub === "Master of Arms") return false; // Phase 24 IDENT-05: a Ninja never speaks; a Master of Arms attacks without question
   if (t === "Walking Dead") return false; // canon, unconditional, for everyone
-  const flu = fluency(c);
+  // Phase 90 plan 09 (SPELL-10): the fight-scoped Chameleon Tongue (C.tongue) is
+  // a second fluency source, so the fluency-2 Magical branch below is reachable.
+  // `fluencyOverride` (optional) is the fluency a cast is ABOUT to give the
+  // fight (parleyBlockedReason), read as if it were already set.
+  const flu = Math.max(fluency(c, C), Number.isInteger(fluencyOverride) ? fluencyOverride : 0);
   if (t === "Magical" && flu < 2) return false; // D-11: Magical opens ONLY at full fluency
   if (c.sub === "Con Artist") return true;
   if (c.sub === "Woodsman" && (t === "Beasts" || t === "Lair Beasts")) return true;
@@ -1921,6 +2015,33 @@ export function canParley(state) {
   // "Most humans treasure the sighting of an elf as a good omen."
   if (c.race === "Elven" && t === "Humans") return true;
   return false;
+}
+
+/**
+ * parleyBlockedReason(state, fluencyOverride) — Phase 90 plan 09 (SPELL-10): THE
+ * one reader of "why can this fight not be parleyed right now", or null when it
+ * can. In parley()'s own order: "parleySpent" (the fight's one attempt is used),
+ * "ninja" and "masterOfArms" (a sub-class that never speaks), "walkingDead"
+ * (canon: never, at any fluency), "noTalk" (canParley's gate says no at this
+ * fluency: this hero cannot open this kind of foe) and "wilmsryVsMagical" (the
+ * D-12 refusal: a Wilmsry never parleys Magical foes even at fluency 2).
+ * `fluencyOverride` is the fluency a Chameleon Tongue cast is about to give the
+ * fight (2), read as if already set, so castSpell and the combat menu can refuse
+ * or grey the spell BEFORE any charge is spent. `parley` reads this for its
+ * refusals (its behaviour is unchanged) and castSpell reads it for the Tongue.
+ * Phase 91's PARLEY-01/IDENT-16 edit this one place. Pure, zero rng.
+ */
+export function parleyBlockedReason(state, fluencyOverride) {
+  const C = state.combat;
+  if (!C) return "noTalk";
+  const c = state.c;
+  if (C.parleyTried) return "parleySpent";
+  if (c.sub === "Ninja") return "ninja";
+  if (c.sub === "Master of Arms") return "masterOfArms";
+  if (C.type === "Walking Dead") return "walkingDead";
+  if (!canParley(state, fluencyOverride)) return "noTalk";
+  if (c.race === "Wilmsry" && C.type === "Magical") return "wilmsryVsMagical";
+  return null;
 }
 
 /**
@@ -1948,7 +2069,10 @@ export function parley(state, rng, events = []) {
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "parleyRefused")) return events;
   if (!C) return events;
-  if (C.parleyTried) {
+  // Phase 90 plan 09 (SPELL-10): every refusal below reads the ONE predicate
+  // (parleyBlockedReason), in the order the checks always ran.
+  const blocked = parleyBlockedReason(state);
+  if (blocked === "parleySpent") {
     // D-05: a re-sent action after the encounter's one attempt (canParley is
     // already false once tried, hiding the button — this is the direct-
     // dispatch rejection for an action that bypassed the button). Zero draws.
@@ -1960,15 +2084,11 @@ export function parley(state, rng, events = []) {
   // vs-Magical refusal below — BEFORE `C.parleyTried` is set, so a refusal
   // never spends the encounter's one attempt) rather than falling through to
   // canParley's silent no-op path. Zero draws.
-  if (c.sub === "Ninja") {
-    events.push({ type: "parleyRefused", reason: "ninja" });
+  if (blocked === "ninja" || blocked === "masterOfArms") {
+    events.push({ type: "parleyRefused", reason: blocked });
     return events;
   }
-  if (c.sub === "Master of Arms") {
-    events.push({ type: "parleyRefused", reason: "masterOfArms" });
-    return events;
-  }
-  if (!canParley(state)) return events; // unchanged silent path for never-eligible cases
+  if (blocked && blocked !== "wilmsryVsMagical") return events; // unchanged silent path for never-eligible cases
   // LO-03: guard the empty-foes edge defensively. Currently unreachable
   // (state.combat is nulled the instant liveFoes empties on every path that
   // could produce it), but Math.max(...[]) === -Infinity would otherwise
@@ -1977,7 +2097,7 @@ export function parley(state, rng, events = []) {
   const foes = liveFoes(state);
   if (!foes.length) return events;
   const top = Math.max(...foes.map((f) => f.lvl));
-  if (c.race === "Wilmsry" && C.type === "Magical") {
+  if (blocked === "wilmsryVsMagical") {
     // PARLEY-04 / D-12: now REACHABLE — a fluency-2 Wilmsry passes canParley
     // for Magical (the fluency branch above, not this racial branch). Zero
     // draws, and this deliberately sits BEFORE C.parleyTried is set: a
@@ -1986,7 +2106,7 @@ export function parley(state, rng, events = []) {
     return events;
   }
   C.parleyTried = true; // D-05: the one attempt is spent here — lazily written, never initialised in startCombat
-  const flu = fluency(c);
+  const flu = fluency(c, C);
   const bonus =
     (c.sub === "Con Artist" ? 4 : 0) + // D-07: was 6
     (c.sub === "Woodsman" ? 3 : 0) +

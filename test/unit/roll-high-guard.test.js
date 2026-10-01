@@ -101,7 +101,11 @@ export const ALL_ENFORCED = true;
 // comparison, exempted from the shapes rule) contributes zero.
 export const DRAW_INVENTORY = {
   "engine/abilities.js": { rollCheck: 0, amount: 2, selection: 0, "mishap-on-1": 0, "already-high": 0, primitive: 0 },
-  "engine/character.js": { rollCheck: 0, amount: 3, selection: 13, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
+  // Phase 90 plan 09 (SPELL-10): selection 13 -> 14. The Illusionist's one random
+  // Illusion spell (rollGrimoire's `dr.d(rest.length)`) is a selection draw on the
+  // call's DERIVED stream `dr`, never the main rng: it picks which spell, so it is
+  // tagged selection, and the main-rng draw counts (chargen-rng-pin) do not move.
+  "engine/character.js": { rollCheck: 0, amount: 3, selection: 14, "mishap-on-1": 1, "already-high": 0, primitive: 0 },
   // User rulings 2026-09-28 (plan 79.2-01): freezeFoe's rng.d(FREEZE_HOLD_DIE)
   // adds one amount draw (a Freeze's d4 hold, drawn whenever a hit foe survives).
   // Phase 89 plan 04 (ITEM-07): applyFoeDamageToMember adds one rollCheck call
