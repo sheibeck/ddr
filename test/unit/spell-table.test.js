@@ -2,7 +2,7 @@
 //
 // Phase 40 (SPELL-01/03/04/05), Plan 01, Task 1 — locks the reshaped
 // SPELLS table (Phase 90 plan 06, SPELL-12: Phantom Host and Lesser Summon were
-// removed, leaving 31 rows): the 32-entry position/lvl/s/kind quadruple pin (measured
+// removed, leaving 31 rows; plan 07 (SPELL-10) appended the four Special rows, 35 rows): the 32-entry position/lvl/s/kind quadruple pin (measured
 // live from `git show HEAD:content/spells.js` at the commit this plan
 // started from, never hand-derived), the two deliberate exceptions (Map the
 // Floor's rename, Ice's kind), the data flags (onHit/aoe), and the `niche`/`txt`/NICHE_LABELS contract
@@ -55,13 +55,21 @@ const PRE_PLAN_QUADRUPLES = [
 
 // Phase 90 plan 06 (SPELL-12): Phantom Host (once row 27) is removed, so the
 // rows after it sit one earlier; Lesser Summon (once row 32) is removed.
-const PRESENT_QUADRUPLES = PRE_PLAN_QUADRUPLES.filter(([n]) => n !== "Phantom Host");
+// Phase 90 plan 07 (SPELL-10): the four Special spells are APPENDED after Death.
+const PLAN_07_QUADRUPLES = [
+  ["Open/Lock", 1, "special", "timed"],
+  ["Fly", 2, "special", "timed"],
+  ["Enchant Character", 4, "special", "timed"],
+  ["Speed of Sound", 5, "special", "timed"],
+];
+const PRESENT_QUADRUPLES = [...PRE_PLAN_QUADRUPLES.filter(([n]) => n !== "Phantom Host"), ...PLAN_07_QUADRUPLES];
 
-test("SPELLS: 31 rows, and neither Lesser Summon nor Phantom Host is among them (no row carries lesser or roll)", () => {
-  assert.equal(SPELLS.length, 31);
+test("SPELLS: 35 rows, and neither Lesser Summon nor Phantom Host is among them (no row carries lesser; only the four Special rows carry roll)", () => {
+  assert.equal(SPELLS.length, 35);
   assert.equal(SPELLS.find((sp) => sp.n === "Lesser Summon"), undefined);
   assert.equal(SPELLS.find((sp) => sp.n === "Phantom Host"), undefined);
-  assert.equal(SPELLS[SPELLS.length - 1].n, "Death");
+  assert.equal(SPELLS[SPELLS.length - 5].n, "Death", "the four plan-07 rows follow Death");
+  assert.equal(SPELLS[SPELLS.length - 1].n, "Speed of Sound");
 });
 
 test("SPELLS: array position, lvl, s, kind are byte-identical to the pre-Phase-40 table (rows 0-26 in place, the rows after Phantom Host one earlier), with exactly two deliberate exceptions", () => {
@@ -127,6 +135,11 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
     Regeneration: { combatOnly: false },
     Mangle: { dmg: { n: 2, sides: 20, bonus: 15 }, combatOnly: true },
     Death: { combatOnly: true },
+    // Phase 90 plan 07 (SPELL-10): the four Special spells that buff and travel.
+    "Open/Lock": { act: { kind: "unlock", effect: 100 }, stretch: "squares", roll: "derived", combatOnly: false },
+    Fly: { act: { kind: "fly", effect: 30 }, stretch: "squares", roll: "derived", combatOnly: false },
+    "Enchant Character": { act: { kind: "enchant", effect: 50, eff: { toHit: 2, foeToHit: -2, critWard: 1 } }, stretch: "squares", roll: "derived", combatOnly: false },
+    "Speed of Sound": { act: { kind: "haste", effect: 50, eff: { first: 1 } }, stretch: "squares", roll: "derived", combatOnly: false },
   };
   for (const [name, fields] of Object.entries(EXPECTED)) {
     const sp = SPELLS.find((s) => s.n === name);
@@ -138,7 +151,7 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
 });
 
 // Phase 90 plan 05 (SPELL-12): Ice, the area version of Freeze, carries Freeze's onHit and Lightning's aoe.
-test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) and no row carries lesser or roll (Phase 90 plan 06 removed Lesser Summon, the one row that did)", () => {
+test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) and only the four plan-07 Special rows carry roll, none carries lesser (Phase 90 plan 06 removed Lesser Summon, the earlier roll row)", () => {
   const freeze = SPELLS.find((sp) => sp.n === "Freeze");
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");
   const ice = SPELLS.find((sp) => sp.n === "Ice");
@@ -156,7 +169,8 @@ test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on
   }
   for (const sp of SPELLS) {
     assert.equal(sp.lesser, undefined, `${sp.n} must not carry lesser`);
-    assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
+    if (!["Open/Lock", "Fly", "Enchant Character", "Speed of Sound"].includes(sp.n)) assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
+    else assert.equal(sp.roll, "derived", `${sp.n} joins the pools through a derived stream`);
   }
 });
 
@@ -185,12 +199,12 @@ test("SPELLS: every row carries a niche key present in NICHE_LABELS, and txt sta
   }
 });
 
-test("NICHE_LABELS: frozen, exactly the 11 documented keys", () => {
+test("NICHE_LABELS: frozen, exactly the 12 documented keys (Phase 90 plan 07 added utility)", () => {
   assert.equal(Object.isFrozen(NICHE_LABELS), true);
   const keys = Object.keys(NICHE_LABELS).sort();
   assert.deepStrictEqual(keys, [
     "answer", "buff", "burst", "chaos", "control", "defensive",
-    "dot", "healing", "multi", "sight", "summon",
+    "dot", "healing", "multi", "sight", "summon", "utility",
   ]);
 });
 

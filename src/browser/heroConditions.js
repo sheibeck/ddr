@@ -125,6 +125,9 @@ export const HERO_CONDITIONS = Object.freeze(
     item("flight", false), // Cloak of Flying / Bracelet of Flight: crossing terrain, not a fight.
     // Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record (a spell-sourced timed effect, derived.js#liveItemEffects): an extra d10 on every damage roll, 100 squares from the cast.
     { key: "strength", fields: ["timers"], timers: ["spell:Strength"], fight: true, lasts: "squares", source: "spell" },
+    // Phase 90 plan 07 (SPELL-10): the Special spells that buff and travel are spell-sourced timed effects too (derived.js#liveItemEffects). Fly reads as the generic flight chip and Speed of Sound as the generic haste chip (both item(...) entries above, their source naming the spell); Open/Lock and Enchant Character have chips of their own.
+    { key: "unlock", fields: ["timers"], timers: ["spell:Open/Lock"], fight: false, lasts: "squares", source: "spell" }, // Open/Lock: the next chest opens with no lock roll; nothing in a fight.
+    { key: "enchant", fields: ["timers"], timers: ["spell:Enchant Character"], fight: true, lasts: "squares", source: "spell" }, // Enchant Character: +2 to hit, foes -2 to hit you, no crits on you.
     // ── duration abilities (engine/abilities.js DURATION_ROUNDS) — changes a foe's swing or your blows ──
     { key: "ability", fields: ["timers"], timers: ["ability:*"], fight: true, lasts: "rounds", source: "ability" },
     // Strength potion (a `might` item effect, with a source) or, with no source, the phobia rage's flat +d10 till the day ends (c.might; the Strength spell has its own `strength` entry since Phase 90).

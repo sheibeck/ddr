@@ -256,7 +256,8 @@ function resolveArea(state, sp, entry, srng, rng, events, now) {
  *     (the reader's level, at most 5 — never doubled), UNLESS a summon
  *     is already pending or the room already holds SUMMON_MAX_LIVE live
  *     foes, in which case it wanders off instead.
- *   - wasted: Map the Floor, Sense Danger — changes nothing.
+ *   - frenzy: Speed of Sound (Phase 90 plan 07) — sets `frenzied`, two swings a turn.
+ *   - wasted: Map the Floor, Sense Danger, Open/Lock, Fly, Enchant Character — changes nothing.
  *
  * With no live foe to target (every foe already fled/dead), pushes
  * fumbleOnFoe with a null target and effect "wasted" instead of throwing.
@@ -320,6 +321,14 @@ function resolveHelpful(state, sp, entry, srng, rng, events, now) {
         C.pendingFoes = [{ by: "you", foe }];
         events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "summon", joined: true, reinforcement: foe.name });
       }
+      break;
+    }
+    case "frenzy": {
+      // Phase 90 plan 07 (SPELL-10): a fumbled Speed of Sound quickens the
+      // foe: it swings twice a turn for the fight (combat.js#foeTurn reads
+      // `f.frenzied`, the flag the Insane table's 5 sets). Zero draws.
+      t.frenzied = true;
+      events.push({ type: "fumbleOnFoe", spell: sp.n, target: t.name, effect: "frenzy" });
       break;
     }
     case "wasted": {

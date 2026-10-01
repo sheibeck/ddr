@@ -1464,3 +1464,77 @@ test/parity/FIXTURE-INVENTORY.md "Phase 90 plan 06"): chargen draws fewer main-r
 Wizard (39 to 36), an Illusionist (34 to 33) and an Apprentice (38 to 37), so chargen seeds 7, 8 and
 24 move and every parity scenario on such a seed was re-picked or re-declared; a scroll's pick comes
 from 31 rows, which moved four bot pins.
+
+
+## Phase 90: Open/Lock, Fly, Enchant Character and Speed of Sound (SPELL-10, plan 90-07)
+
+User 2026-09-30 (SPELL-10): the slate in `90-SPELL-SLATE-DRAFT.md` is "accepted as drafted", and Q6 A
+(`docs/SPELL-AUDIT.md` Rulings) stretches the new spells by the school bonus: each point adds +10 squares to
+a square-timed spell. These are the four Special spells that buff and travel, built on 90-03's
+spell-sourced timed effect (an `act` record on the SPELLS row, one `spell:<name>` squares record, read back
+through `derived.js#liveItemEffects`).
+
+- **The rows.** Four rows are appended after Death (35 rows), each `s: "special"`, `kind: "timed"`, with an
+  `act` record, `stretch: "squares"`, `roll: "derived"` and `combatOnly: false` (castable anywhere):
+
+  | Spell | Lvl | `act` | Window | Niche |
+  |---|---|---|---|---|
+  | Open/Lock | 1 | `{ kind: "unlock", effect: 100 }` | 100 squares | utility |
+  | Fly | 2 | `{ kind: "fly", effect: 30 }` | 30 squares | utility |
+  | Enchant Character | 4 | `{ kind: "enchant", effect: 50, eff: { toHit: 2, foeToHit: -2, critWard: 1 } }` | 50 squares | buff |
+  | Speed of Sound | 5 | `{ kind: "haste", effect: 50, eff: { first: 1 } }` | 50 squares | buff |
+
+  `utility` is a new niche (`NICHE_LABELS.utility`, the orchestrator's default for Open/Lock and Fly). Each
+  text starts with its niche label and says "+10 squares per school bonus point".
+- **The school stretch.** `derived.js#SCHOOL_STRETCH_SQUARES` is 10 (Q6 A; it would be 1 under B).
+  `spellEffectSquares(sub, sp)` is `sp.act.effect` plus, for a `stretch: "squares"` row, the chart's bonus
+  for the spell's school times the step; `spellEffectRounds(sub, sp, base)` is the round-timed twin (+1 round
+  a point; 90-08 uses it). A Wizard or Apprentice (+0) gets the base window, a Sorcerer or Summoner (+1) one
+  step more (Fly 40), an Illusionist (+4) four steps more (Fly 70, Open/Lock 140, Enchant Character and
+  Speed of Sound 90). A scroll's free cast by a non-Magic-User has no chart row, so it gets the base.
+  `schoolBonus` is read for the first time outside a thrown spell, so the identity footer's "the engine
+  reads schoolBonus only in the thrown-spell branches" test now counts two more readers in `derived.js`;
+  whether a footer line states the Special stretch is Phase 91's (91-02) call.
+- **The cast.** `magic.js#castSpell`'s `timed` branch starts the stretched record through
+  `combat.js#startSpellEffect` (an overwrite: a recast restarts the window, never stacks, and the
+  `c.timers` key order is unchanged, so chips keep their order) and pushes `spellEffectStarted { spell, kind,
+  squares, restarted }`. `timed` is in `SPELL_SELF_KINDS`: never resisted. No draw.
+- **Open/Lock (wiring E).** `encounters.js#openChest` checks, right after the Pilfer branch, for a live
+  `unlock` effect: the chest opens with no lock roll and no lock draw (the first draw is the gold d10), for
+  any class, lockpicks or none; `spell:Open/Lock` is deleted and `chestOpened { reason: "openLock" }` is
+  pushed. A Pilfer's free open is checked first and never spends it. A window that meets no chest fades
+  with its line.
+- **Fly.** The `fly` kind is the Cloak of Flying's: `isFlying`, `moveCost` and the climb and gorge branch
+  of `movement.js#move` already read it, so a climb or gorge tile is flown over with no roll and no card
+  (`flownOver`) and water costs one square. The arrow pad and tap-to-move both dispatch the same `move`
+  action, so both work (pinned both ways). It does nothing in a fight. A live Cloak of Flying and the spell
+  are two records: taking the cloak off ends only the item record (`endSourceEffects` walks `item:` ids) and
+  the hero keeps flying on the spell.
+- **Enchant Character.** `toHit` reads `eff(c, "toHit")` (+2), `foeToHitVs` reads `eff(body, "foeToHit")`
+  (-2 faces for the foe) and `critWardOf` names "Enchant Character", so a foe's top-face roll against the
+  hero is an ordinary hit (the Oracle line names the spell, not a cloak). With a Cloak of Strength both
+  ward crits and either alone does.
+- **Speed of Sound.** `playerStrike` already reads `haste` (two blows; a Speed potion gives two, not
+  three). `combat.js#resolveInitiative` reads the new `first` payload through `eff`: a live Speed of Sound
+  joins foresight and senses in the unconditional "you go first" branch AND waives every forced foe-first
+  rule (Samurai, a slow race, a Knight facing a big foe, a Court Mage). `why` is "speed" when it decided
+  (foresight and Acute Hearing name themselves first). The two initiative d20s are still always drawn.
+- **Scrolls and fumbles.** The four join the scroll pool at their level (`readScroll`'s
+  `SPELLS.filter(sp => sp.lvl <= min(5, depth + 1))`: 17, 25, 31 and 35 spells at depths 1 to 4+). A
+  fumbled Open/Lock, Fly or Enchant Character is `wasted`; a fumbled Speed of Sound is the new helpful
+  effect `frenzy`: the target foe swings twice a turn for the fight (`f.frenzied`, the flag the Insane
+  table's 5 sets).
+- **The gates.** Nothing extra: each row carries `s: "special"`, so only sub-classes whose MU_CHART Special
+  school is open (Wizard, Sorcerer, Illusionist, Summoner, Apprentice) learn, are dealt, copy or cast them;
+  `test/unit/school-gates.test.js` iterates SPELLS and passes unchanged.
+- **The chips and words.** `spellEffectStarted` has an Oracle line and a rail twin per kind
+  (`eventNarration.js#SPELL_START`, `narrationLines.js`), the fade clauses name what stops, `chestOpened` has
+  its `openLock` reason, `combatJoined`'s `why: "speed"` its own verdict and `fumbleOnFoe` its `frenzy` line.
+  Open/Lock (`unlock`) and Enchanted (`enchant`) have chips of their own; Fly reads as Flying and Speed of
+  Sound as Hasted, with the spell named as the source. The Grimoire shows the `utility` label.
+
+**Fixtures this moved** (measured, declared and regenerated alone; docs in test/parity/FIXTURE-INVENTORY.md
+"Phase 90 plan 07"): the rows are `roll: "derived"`, so no chargen cursor moved; chargen seeds 15 and 24
+and the magic `cast-damage` book changed in content only, the magic `scroll` scenario was re-picked (a
+longer scroll pool), five roll-high state pins and two bot pins moved, and the Hero-tab snapshot for seed 3's
+Wizard shows Fly.

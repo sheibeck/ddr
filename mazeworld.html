@@ -3477,6 +3477,10 @@ const CONDITION_COPY = {
   // record, an extra d10 on every damage roll, counted in squares like any
   // timed effect (generic detail branch below).
   strength: { label: "Strength", unit: "sq" },
+  // Phase 90 plan 07 (SPELL-10): the Open/Lock and Enchant Character spells' own
+  // chips (Fly reads as Flying and Speed of Sound as Hasted; their tap cards name the spell).
+  unlock: { label: "Open/Lock", unit: "sq" },
+  enchant: { label: "Enchanted", unit: "sq" },
   flight: { label: "Flying"                  },  // detail comes from the flight sub-state
   // CMBUI-13 (Phase 77, plan 77-08): one word, the house style for a chip.
   darkness: { label: "Dark", unit: "sq" },
@@ -3663,7 +3667,7 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   heroOut: "bad", heroBlind: "bad", heroShrunk: "bad",
   // CMBUI-13 (Phase 77, plan 77-08): the new keys, good or bad by what they
   // do to the player.
-  ability: "good", braced: "good", inspired: "good", halfNext: "good", nightVision: "good", strength: "good",
+  ability: "good", braced: "good", inspired: "good", halfNext: "good", nightVision: "good", strength: "good", unlock: "odd", enchant: "good",
   fightDark: "bad", insulted: "bad", selfDot: "bad" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
@@ -3682,6 +3686,9 @@ const CONDITION_EXPLAIN = {
   might: "Extra damage on every blow, from a potion or a rage you did not ask for. Hit things.",
   // Phase 90 (SPELL-09): the Strength spell. The count is on the tap card's lead.
   strength: "Every damage roll you make adds an extra d10 until the count runs out: each blow, each spell that hits. Casting it again starts the count over, not on top of it. It adds no hit points, whatever you were hoping.",
+  // Phase 90 plan 07 (SPELL-10): Open/Lock and Enchant Character. The count is on the tap card's lead.
+  unlock: "Your next chest opens with no lock roll, whoever you are and whatever you are carrying, and the spell is spent on it. Casting it again starts the count over, not on top of it. The lock will not be consulted.",
+  enchant: "You are +2 to hit, foes are −2 to hit you, and no critical lands on you, until the count runs out. Casting it again starts the count over, not on top of it.",
   flight: "Walls and crevices cost nothing while the charge holds. Then they cost the usual.",
   // DARK-02 (Phase 76, user ruling 2026-09-25 "combat too"): one rule for
   // the map and the fight (engine/derived.js#darkWaiver / darkLimited). The
@@ -3781,6 +3788,9 @@ const WAIVER_LABEL = {
  * line — the mirror has nothing to do with a soak pool until it pops.
  */
 const EXPLAIN_BY_KIND = { foeEffect: FOE_EFFECT_EXPLAIN };
+// Phase 90 plan 07 (SPELL-10): a haste chip that comes from the Speed of Sound
+// spell (rather than a Speed item) also says it wins the first move.
+const HASTE_SPELL_EXPLAIN = { "Speed of Sound": "Two blows every swing while it lasts, and you act first in every fight it covers, whatever the dice or the foe's habits say. The noise catches up later." };
 function explainCondition(cn, label) {
   if (cn.key === "ward" && cn.mirror) {
     return "The next blow that lands goes back to whoever threw it; then a small pool for the rest of the round.";
@@ -3789,7 +3799,7 @@ function explainCondition(cn, label) {
   // CMBUI-13 (plan 77-08): a kind-carrying chip reads its kind's own sentence
   // first (a foeEffect's FOE_EFFECT_EXPLAIN[cn.kind]); an unmapped kind falls
   // back to the key's plain sentence.
-  const tail = EXPLAIN_BY_KIND[cn.key]?.[cn.kind] || CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
+  const tail = (cn.key === "haste" && HASTE_SPELL_EXPLAIN[cn.source]) || EXPLAIN_BY_KIND[cn.key]?.[cn.kind] || CONDITION_EXPLAIN[cn.key] || CONDITION_EXPLAIN.default;
   if (!itemName) return tail;
   const unit = cn.cadence === "rounds" ? "rounds" : "squares";
   const what =

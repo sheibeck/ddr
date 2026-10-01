@@ -41,7 +41,7 @@ intent artifact).
 | action-script.magic.json | cast-damage | 243 | startCombat | Beasts | Viper (Beasts lvl 1, wp 4); Shriek (Beasts lvl 1, wp 4) |
 | action-script.magic.json | heal | 110 | none | — | — |
 | action-script.magic.json | potion | 1 | none | — | — |
-| action-script.magic.json | scroll | 19 | none | — | — |
+| action-script.magic.json | scroll | 1295 | none | — | — |
 | action-script.economy.json | (script) | 3 | none | — | — |
 | action-script.encounters.json | trap | 1 | none | — | — |
 | action-script.encounters.json | chest | 2 | none | — | — |
@@ -6948,3 +6948,82 @@ roll-high invariant test (`roll-high-invariant.test.js`) gained `critWarded` in 
 Cloak of Strength's event (quick 260928-cos) carries a roll with no atLeast, and no replay site had met one
 until the moved bot sweep wore one. New pins: `test/unit/removed-spells-load.test.js` and
 `test/unit/school-gates.test.js`.
+
+
+### Phase 90 plan 07: Open/Lock, Fly, Enchant Character, Speed of Sound (SPELL-10)
+
+**The rule (the user's 2026-09-30 slate and Q6 A).** Four Special spells join `SPELLS` (35 rows): Open/Lock
+(level 1), Fly (2), Enchant Character (4) and Speed of Sound (5), each a spell-sourced timed effect
+(`kind: "timed"`, an `act` record, `stretch: "squares"`, `roll: "derived"`). A Special bonus point adds 10
+squares to the window. `derived.js#SCHOOL_STRETCH_SQUARES`, `spellEffectSquares`, `spellEffectRounds`;
+`resolveInitiative` reads a `first` payload (Speed of Sound); `openChest` spends a live Open/Lock before any
+lock roll. No new serialized field (the records ride `c.timers`, already carved out of every comparable), so
+nothing needed a `*Comparable()` carve-out; `test/parity/prototype-master.js.txt` is untouched.
+
+**The predictor.** `roll: "derived"` rows never enter `rollGrimoire`'s main-rng shuffles (they are spliced in
+afterwards through a derived stream), so no chargen cursor moves: the draw counts per sub-class are unchanged
+(`chargen-rng-pin.test.js` and the zero-draw proof in `guaranteed-attack-spell.test.js` are untouched and
+pass). What moves is content, not cursors. (1) The five sub-classes that may learn Special (Wizard,
+Sorcerer, Illusionist, Summoner, Apprentice) can be dealt a spliced Special row in their book, so a parity
+seed on one of them can show a different grimoire. (2) `findGrimoire`'s and the Sorcerer level-up's
+`canLearn` pools are four rows longer for those sub-classes (their shuffles draw more values, in the runs
+that reach them). (3) A scroll's `rng.pick(options)` is over a longer list (17, 25, 31 and 35 rows at depths
+1 to 4+, where it was 15, 23, 28 and 31): the same single draw lands on another row, which moves every run
+that reads a scroll. Nothing else in play changed for a hero holding none of the four.
+
+**The live scan (measured at the plan's end, against the base 6ac6aa63).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass after the declarations below. Before them five
+  fixtures failed exactly where predicted: chargen (seed 15, then 24), magic `cast-damage` (the seed 243
+  Sorcerer's book) and `scroll` (a longer scroll pool), and the aggregate ENG-05 gate.
+- `node tools/roll-high-baseline.mjs pins`: **5 of 8 labels moved** (solo-1, solo-2,
+  solo-magicuser-sorcerer, party-1, deep-8), pasted by hand and traced per bot step against an extracted
+  tree of 6ac6aa63; `save` was never run. solo-thief-pilfer, party-fighter-knight and deep-14 re-measured
+  byte-identical. `roll-high-save-compat.test.js`, `roll-high-guard.test.js` and
+  `test/unit/fixtures/hazard-commit/golden.json`: unchanged.
+
+**Moved parity entries (each measured live against the frozen prototype sandbox, declared with a
+before/after record and regenerated alone).**
+
+1. `action-script.chargen.json`, two records. Seed 15 (Summoner): the engine's book before this plan
+   `[Stupidity, Stun, Shield, Summon, Freeze]` becomes `[Stupidity, Stun, Open/Lock, Shield, Summon,
+   Freeze]` (a derived splice into the low pool). Seed 24 (Apprentice): `[Heal, Strength, Stupidity, Sense
+   Presence, Weaken, Turn Walking Dead, Petrify, Earthquake, Blind, Freeze]` becomes `[Heal, Strength,
+   Stupidity, Sense Presence, Weaken, Open/Lock, Enchant Character, Petrify, Earthquake, Freeze]` (Open/Lock
+   lands in the low walk, Enchant Character in the high walk, displacing Turn Walking Dead and Blind). Seeds
+   7 (Wizard), 8 (Illusionist), 19 (Sorcerer), 29 and 35 are unchanged. The prototype sides are untouched;
+   `requirements` gains SPELL-10.
+2. `action-script.magic.json`. `cast-damage` (seed 243, a Sorcerer): the engine's `chargenDivergence` book
+   `[Acid, Stupidity, Stun, Weaken, Freeze, Fireball]` becomes `[Fly, Acid, Stupidity, Stun, Freeze,
+   Fireball]`; the cast (Freeze, index 4) and the action-path record are unchanged. `scroll` RE-PICKED from
+   seed 19 (a Sorcerer, whose scroll now picks a spell too advanced to copy, free-cast and refused outside a
+   fight) to seed 1295 (a Dwarven Court Mage whose scroll is copied into the book): found by an engine scan of
+   seeds 1-6000 for a Magic User of a sub-class with no Special or Illusion school (or one whose book differs
+   from the prototype's only in the three declared fields) whose engine and prototype scroll picks land on
+   the same spell, and confirmed action by action against the prototype sandbox (`chargenDivergence`
+   maxWP/wp/rations 28/28/4 -> 39/39/6; `floorFeatureShift` re-measured, 13 cells at depth 1). `heal` (seed
+   110) and `potion` (seed 1) are unchanged. The roster table above follows (scroll 19 -> 1295).
+3. Unmoved: every movement, combat, economy and encounters parity scenario, and the other chargen seeds.
+
+**Moved pins and tests (re-recorded alone).**
+
+- `roll-high-state-pins.test.js`: the five labels above (old -> new, actions / dead / depth: solo-1
+  353/true/4 -> 253/true/3; solo-2 368/true/4 -> 368/true/4, hash only; solo-magicuser-sorcerer 400/false/5
+  -> 150/true/2; party-1 400/false/3 -> 400/false/3, hash only; deep-8 300/false/11 -> 109/true/9). First
+  divergence: solo-1 at step 25 (its first scroll read picks Shield, copied, where the base picked Heal);
+  solo-magicuser-sorcerer, party-1 and deep-8 at step 0 (their first scroll read); solo-2 at step 35 (its
+  book now holds spliced Special spells, so it casts Freeze where the base cast Mirror Self).
+- `bot-tactics.test.js`: the Sorcerer trio's seed 4 now stalls (campFailed loop, depth 4, day 8 at 5000
+  actions); swapped for seed 1 (323 actions, depth 3, day 4), the smallest seed that dies naturally.
+- `days-farm.test.js`: the camp-guard pin 380113 (campGuard 300) now measures 0, as does 712711; the one of
+  the 30 Magic User starts in `seedList(120)` that fires the guard is seed 736468 (index 93, an Illusionist,
+  campGuard 100, campFailed 0). The assertion is unchanged.
+- `guaranteed-attack-spell.test.js`: `SPECIAL_BOUND` 7 -> 8 (worst case Illusionist seed 411789; the old
+  reference algorithm does not exclude derived rows), and seed 15's Summoner book re-measured as above.
+- `test/unit/fixtures/shell-snapshots/mu.hero.txt`: seed 3's forced Magic User is a Wizard; its Grimoire now
+  lists Fly (level 2, "Needs level 2") where Stupidity was. The other seven snapshots re-measured
+  byte-identical.
+- Table pins moved by the new rows (not fixtures): `spell-table`, `content-tables`, `scroll-fumble-table`,
+  `scroll-fumble-resolve`, `day-one-damage`, `spell-resist`, `removed-spells-load` (35 rows, 15 non-combat
+  spells, `timed` a self kind, `utility` and `frenzy` in their closed lists) and `identity-footer` (the
+  `schoolBonus` reader count in `derived.js`).

@@ -337,8 +337,17 @@ test("Task 2: playFarmRun — floor-1 farming", async (t) => {
   // campGuard 300, campFailed 0, outcome dead, the same shape of run (a solo
   // Magic User start). The next to fire is seed 712711 (index 90, a Sorcerer,
   // campGuard 100). The assertion itself is unchanged.
-  await t.test("camp-guard regression on a real run: seed 380113, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
-    const row = playFarmRun(380113, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
+  //
+  // Re-pinned a fourth time (Phase 90 plan 07, SPELL-10, 2026-10-01): the spell list is four
+  // rows longer (Open/Lock, Fly, Enchant Character and Speed of Sound joined it), so a scroll's
+  // pick(options) lands on another row and every run that reads one plays out differently:
+  // seed 380113 (a Court Mage) went campGuard 300 -> 0 (campFailed 0 either way), and so did
+  // seed 712711 (campGuard 100 -> 0). A scan of the 30 Magic User starts in seedList(120), in
+  // index order, found the first whose measured run fires the guard: seed 736468 (index 93, an
+  // Illusionist), campGuard 100, campFailed 0, outcome dead, the same shape of run (a solo Magic
+  // User start). It is the only one of the 30 that fires. The assertion itself is unchanged.
+  await t.test("camp-guard regression on a real run: seed 736468, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
+    const row = playFarmRun(736468, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
     assert.ok(row.campGuard >= 1, `campGuard was ${row.campGuard}`);
     assert.equal(row.campFailed, 0);
   });

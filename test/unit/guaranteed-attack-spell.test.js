@@ -192,7 +192,11 @@ test("adjacency: the new algorithm differs from the old by a measured, bounded n
   // filters anything for it; its bound is still entirely the pre-existing
   // Phase-40 derived-splice confound documented above.
   const NO_SPECIAL_BOUND = 2;
-  const SPECIAL_BOUND = 7; // measured worst case (Wizard, seed 190057) — the derived-row reshuffle confound above
+  // Phase 90 plan 07 (SPELL-10): the four Special spells are four more derived rows, so the five
+  // special-school subs (and the old reference algorithm, which does not exclude them) differ by
+  // up to one more spell; re-measured live over this file's 200 seeds, 7 -> 8 (worst case: Illusionist,
+  // seed 411789). NO_SPECIAL_BOUND is unchanged (Warlock, Cleric and Court Mage never see a Special row).
+  const SPECIAL_BOUND = 8; // measured worst case (Illusionist, seed 411789) — the derived-row reshuffle confound above
 
   for (const sub of MU_SUBS) {
     const bound = NO_SPECIAL_SCHOOL.includes(sub) ? NO_SPECIAL_BOUND : SPECIAL_BOUND;
@@ -233,7 +237,12 @@ test("zero-draw proof: rollGrimoire's rng draw count per sub is unchanged, over 
 // -> after: ["Stupidity", "Stun", "Lesser Summon", "Shield", "Summon"] ->
 // ["Stupidity", "Stun", "Shield", "Summon", "Freeze"] (Lesser Summon is gone; the
 // day-one damage top-up adds Freeze, since a summon never counts as damage).
-test("fixture seeds (re-measured, Phase 90 plan 06): seed 24 (Apprentice) ends in Freeze; seed 15 (Summoner) holds Summon and the topped-up Freeze", () => {
+//
+// Phase 90 plan 07 (SPELL-10): seed 15's Summoner book re-measured live, before -> after:
+// ["Stupidity", "Stun", "Shield", "Summon", "Freeze"] -> ["Stupidity", "Stun", "Open/Lock",
+// "Shield", "Summon", "Freeze"] (a Summoner may learn Special, so the derived splice puts Open/Lock
+// in its low walk). Seed 24 still ends in Freeze.
+test("fixture seeds (re-measured, Phase 90 plan 07): seed 24 (Apprentice) ends in Freeze; seed 15 (Summoner) holds Summon and the topped-up Freeze", () => {
   assert.equal(newRun(24).c.grimoire.at(-1), "Freeze", `seed 24: expected Freeze as the last grimoire entry, got ${JSON.stringify(newRun(24).c.grimoire)}`);
-  assert.deepStrictEqual(newRun(15).c.grimoire, ["Stupidity", "Stun", "Shield", "Summon", "Freeze"]);
+  assert.deepStrictEqual(newRun(15).c.grimoire, ["Stupidity", "Stun", "Open/Lock", "Shield", "Summon", "Freeze"]);
 });

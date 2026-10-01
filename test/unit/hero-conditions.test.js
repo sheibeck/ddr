@@ -107,7 +107,7 @@ test("table: exactly one entry per descriptor key conditionsOf and memberConditi
 
 test("table: the scan of emittable keys still sees the CMBUI-13 keys and the old ones", () => {
   const keys = emittableKeys();
-  for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strength", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit"]) {
+  for (const k of ["ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "strength", "fightDark", "nightVision", "ward", "afraid", "foeEffect", "flight", "haste", "lit", "unlock", "enchant"]) {
     assert.ok(keys.has(k), `the scan sees ${k}`);
   }
   assert.ok(!keys.has("strengthBoost"), "the retired doubled-hit-point chip is gone (Phase 90)");
@@ -131,8 +131,9 @@ test("table: frozen; every entry has key, non-empty fields, a boolean fight, a d
 
 test("table: the fight rule — map-only, recharging and waiting chips stay out of YOUR LOT; fight effects are in", () => {
   const fightOf = Object.fromEntries(HERO_CONDITIONS.map((e) => [e.key, e.fight]));
-  for (const k of ["reveal", "itemCooldown", "staffCharges", "fearArmed", "foresight", "flight", "tongue", "ether", "knit"]) assert.equal(fightOf[k], false, `${k} is not a fight chip`);
-  for (const k of ["afraid", "foeEffect", "ward", "mirror", "senses", "regen", "ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "fightDark", "nightVision", "acute", "invis", "unseen", "heroOut", "heroBlind", "heroShrunk"]) {
+  // Phase 90 plan 07 (SPELL-10): Open/Lock (a next-chest charm) is not a fight chip; Enchant Character changes the rolls of a fight.
+  for (const k of ["reveal", "itemCooldown", "staffCharges", "fearArmed", "foresight", "flight", "tongue", "ether", "knit", "unlock"]) assert.equal(fightOf[k], false, `${k} is not a fight chip`);
+  for (const k of ["afraid", "foeEffect", "ward", "mirror", "senses", "regen", "ability", "braced", "inspired", "insulted", "selfDot", "halfNext", "fightDark", "nightVision", "acute", "invis", "unseen", "heroOut", "heroBlind", "heroShrunk", "enchant"]) {
     assert.equal(fightOf[k], true, `${k} is a fight chip`);
   }
 });
@@ -215,6 +216,9 @@ test("chipSheetFacts: every lasts and source phrase", () => {
   assert.deepEqual(f({ key: "insulted", polarity: "bad" }), { lasts: "for the rest of this fight", source: "from your insult", detail: "" });
   // Phase 90 (SPELL-09): the Strength spell's chip counts squares and names the spell as its source.
   assert.deepEqual(f({ key: "strength", polarity: "good", remaining: 61, cadence: "squares", source: "Strength" }), { lasts: "61 squares left", source: "from a spell", detail: "" });
+  // Phase 90 plan 07 (SPELL-10): Open/Lock and Enchant Character count squares and name a spell as their source.
+  assert.deepEqual(f({ key: "unlock", polarity: "good", remaining: 140, cadence: "squares", source: "Open/Lock" }), { lasts: "140 squares left", source: "from a spell", detail: "" });
+  assert.deepEqual(f({ key: "enchant", polarity: "good", remaining: 1, cadence: "squares", source: "Enchant Character" }), { lasts: "1 square left", source: "from a spell", detail: "" });
   assert.deepEqual(f({ key: "halfNext", polarity: "good" }), { lasts: "until the next blow lands", source: "from Pendant of Fortitude", detail: "" });
   assert.deepEqual(f({ key: "fearArmed", polarity: "bad", phobia: "Heights" }), { lasts: "until your next fight", source: "from your fear", detail: "" });
   assert.deepEqual(f({ key: "selfDot", polarity: "bad", remaining: 2, by: "acid", spell: "Acid" }), { lasts: "2 more rounds", source: "from a fumbled scroll", detail: "" });

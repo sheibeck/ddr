@@ -4,7 +4,7 @@
 // engine/scrollFumble.js#resolveScrollFumble and nothing else — the design
 // lives here, in one reviewable table, rather than scattered across the
 // resolver. Keyed by each spell's exact content/spells.js#SPELLS `n` string
-// (31 rows as of Phase 90 plan 06, no normalisation — a renamed or added spell fails
+// (35 rows as of Phase 90 plan 07, no normalisation — a renamed or added spell fails
 // test/unit/scroll-fumble-table.test.js's coverage check).
 //
 // Row shape: `{ side, effect }` plus, where listed:
@@ -41,7 +41,7 @@ export const FUMBLE_EFFECTS = Object.freeze({
   ]),
   area: Object.freeze(["damage", "volley"]),
   helpful: Object.freeze([
-    "heal", "regen", "ward", "might", "mirror", "senses", "summon", "wasted",
+    "heal", "regen", "ward", "might", "mirror", "senses", "summon", "frenzy", "wasted",
   ]),
 });
 
@@ -81,4 +81,13 @@ export const SCROLL_FUMBLE = Object.freeze({
   "Regeneration": Object.freeze({ side: "helpful", effect: "regen" }),
   "Mangle": Object.freeze({ side: "harmful", effect: "damage" }),
   "Death": Object.freeze({ side: "harmful", effect: "heavy", how: "death" }),
+  // Phase 90 plan 07 (SPELL-10): the four Special spells that buff and travel.
+  // A fumbled Open/Lock, Fly or Enchant Character is wasted on the foe (it has
+  // no chest, no walls and no use for a personal enchantment); a fumbled Speed
+  // of Sound makes the target foe swing twice a turn for the fight (`frenzy`,
+  // the same `f.frenzied` read the Insane table's 5 sets).
+  "Open/Lock": Object.freeze({ side: "helpful", effect: "wasted" }),
+  "Fly": Object.freeze({ side: "helpful", effect: "wasted" }),
+  "Enchant Character": Object.freeze({ side: "helpful", effect: "wasted" }),
+  "Speed of Sound": Object.freeze({ side: "helpful", effect: "frenzy" }),
 });

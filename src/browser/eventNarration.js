@@ -42,6 +42,9 @@ import { JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "..
 // — pure content data, no engine/ import, same discipline as the flavor.js
 // import above.
 import { ABILITY_BY_ID } from "../../content/abilities.js";
+// Phase 90 plan 07 (SPELL-10): a spell can ward a critical (Enchant Character),
+// so critWarded's tail names the SPELLS row, not a cloak. Pure content data.
+import { SPELLS } from "../../content/spells.js";
 // 260918-wy1 (jewelry-merge): slotWord (jewelry1/jewelry2 -> "jewelry",
 // cloak -> "cloak", everything else passes through) — imported from
 // narrationLines.js. The import is one-directional: this file imports from
@@ -127,7 +130,40 @@ const possessive = (name, fallback) => (name ? `${name}'s` : fallback);
 // Phase 90 (SPELL-09): what stops when a spell-sourced timed effect of this
 // act kind runs out (spellEffectFaded). A later kind without an entry reads
 // as the spell simply wearing off.
-const SPELL_FADE_WHAT = { strength: "the extra d10 on every damage roll goes with it, and you are back to the dice you were born with" };
+// Phase 90 plan 07 (SPELL-10): the four Special spells' clauses (the next-chest
+// charm fades unused; you land; the enchantment wears off; you slow to ordinary).
+const SPELL_FADE_WHAT = {
+  strength: "the extra d10 on every damage roll goes with it, and you are back to the dice you were born with",
+  unlock: "the next-chest charm fades unused, and locks go back to being locks",
+  fly: "you land, and the walls and crevices are walls and crevices again",
+  enchant: "the +2 to hit, the −2 on foes and the critical ward go with it, and you are plain old you again",
+  haste: "you slow to ordinary, back to one blow a swing and no head start",
+};
+// Phase 90 plan 07 (SPELL-10): the cast line per timed-spell kind (spellEffectStarted).
+// `fact` states the rule and the window; `joke` is the house-voice closer from
+// the accepted slate (90-SPELL-SLATE-DRAFT.md). A recast says it starts over.
+const SPELL_START = {
+  unlock: {
+    fact: (sq) => `Open/Lock: the next chest you reach within ${sq} opens with no lock roll`,
+    again: (sq) => `Open/Lock starts over: ${sq} to reach a chest that opens with no lock roll`,
+    joke: "The next lock you meet is going to have a very confusing day.",
+  },
+  fly: {
+    fact: (sq) => `Fly: ${sq} of flight, so walls and crevices are crossed with no roll and water costs one square`,
+    again: (sq) => `Fly starts over: ${sq} of flight, not double that`,
+    joke: "Your feet leave the floor. The floor takes it personally.",
+  },
+  enchant: {
+    fact: (sq) => `Enchant Character: for ${sq} you are +2 to hit, foes are −2 to hit you, and no critical lands on you`,
+    again: (sq) => `Enchant Character starts over: ${sq} of +2 to hit, foes −2 to hit you and no critical on you`,
+    joke: "You feel more convincing. Your sword agrees. Your personality is unchanged.",
+  },
+  haste: {
+    fact: (sq) => `Speed of Sound: for ${sq} you land two blows every swing and act first in every fight`,
+    again: (sq) => `Speed of Sound starts over: ${sq} of two blows a swing and the first move`,
+    joke: "You move so fast your footsteps have to catch up.",
+  },
+};
 // Phase 89 plan 08 (ITEM-01, Q1): the resist roll's parenthetical — the foe's
 // intelligence, plus the faces the floor added when the depth-rising resist
 // rolled (`depthFaces`, absent on shallow floors and on spells).
@@ -136,6 +172,10 @@ const resistNote = (e) => `intel ${e.intel ?? "?"}${e.depthFaces > 0 ? `, depth 
  * (engine/derived.js#critWardOf); an item object or a missing field reads
  * as its `n` or "cloak" (quick 260928-cos). */
 const wardName = (item) => (typeof item === "string" && item ? item : typeof item?.n === "string" && item.n ? item.n : "cloak");
+/** isSpellWard(item) — Phase 90 plan 07: the warding effect is a spell (Enchant
+ * Character), not a cloak: its name is a SPELLS row, so the line's tail does
+ * not credit a cloak. */
+const isSpellWard = (item) => SPELLS.some((sp) => sp.n === wardName(item));
 
 // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): every gain line leads with
 // the HP actually gained — the engine's additive `gained`, after the clamp
@@ -874,7 +914,7 @@ export const EVENT_NARRATION = {
   // wearing it; the struck/soaked line that follows says what the ordinary
   // hit did.
   critWarded: (e) =>
-    `<span class="hit">${e.member ? `${possessive(e.member, "Their")} ${wardName(e.item)}` : `Your ${wardName(e.item)}`} turns ${possessive(e.name, "the")} critical aside${Number.isFinite(e.roll) && Number.isFinite(e.dieN) ? `: <span class="roll">${e.roll}</span> on the d${e.dieN}` : ""}, an ordinary hit instead.</span> The cloak will not let anyone forget it.`,
+    `<span class="hit">${e.member ? `${possessive(e.member, "Their")} ${wardName(e.item)}` : `Your ${wardName(e.item)}`} turns ${possessive(e.name, "the")} critical aside${Number.isFinite(e.roll) && Number.isFinite(e.dieN) ? `: <span class="roll">${e.roll}</span> on the d${e.dieN}` : ""}, an ordinary hit instead.</span> ${isSpellWard(e.item) ? "The enchantment is earning its keep." : "The cloak will not let anyone forget it."}`,
   // Phase 25 (FEED-01, additive payload): `soldierCrit` renders exactly like
   // `critical` (a Soldier's second-highest face is a crit in every way that
   // matters to the Oracle); `mods`/`soaked` render only when present, so a
@@ -976,6 +1016,8 @@ export const EVENT_NARRATION = {
       might: `strengthens ${t} instead: <span class="roll">+${e.might ?? 0}</span> damage on each of its blows, for the whole fight`,
       mirror: `gives ${t} a mirror image instead: for ${plural(e.rounds ?? 0, "round")} you hit it only on your die's top face`,
       senses: `sharpens ${possessive(e.target, "its")} senses instead, to no effect you can see`,
+      // Phase 90 plan 07 (SPELL-10): a fumbled Speed of Sound quickens the foe (engine/scrollFumble.js's frenzy case).
+      frenzy: `quickens ${t} instead: it swings twice a turn for the whole fight`,
     }[e.effect];
     return helped ? `<span class="miss">${sp} ${helped}.</span>` : `<span class="miss">${sp} helps ${t} instead.</span>`;
   },
@@ -1291,6 +1333,19 @@ export const EVENT_NARRATION = {
     e.restarted
       ? `<span class="hit">Strength starts over: <span class="roll">${squaresText(e.squares ?? 100)}</span> of an extra d10 on every damage roll, not double that.</span> It does not stack, however politely you ask.`
       : `<span class="hit">Might surges: every damage roll you make adds an extra d10 for the next <span class="roll">${squaresText(e.squares ?? 100)}</span>.</span> No extra HP. The spell is about hitting things, not about being hit less.`,
+  // Phase 90 plan 07 (SPELL-10): a timed Special spell (Open/Lock, Fly, Enchant
+  // Character, Speed of Sound) takes hold (engine/magic.js's timed branch):
+  // `kind` is the act kind, `squares` the stretched window, `restarted` a recast
+  // of a live one. The fact (the rule and the window) leads, the joke closes it;
+  // a kind with no table row falls back to the plain spell name and window.
+  spellEffectStarted: (e) => {
+    const row = SPELL_START[e?.kind];
+    const sq = `<span class="roll">${squaresText(e?.squares)}</span>`;
+    if (!row) return `<span class="hit">${e?.spell ?? "The spell"} takes hold for ${sq}.</span>`;
+    return e?.restarted
+      ? `<span class="hit">${row.again(sq)}.</span> It does not stack, however politely you ask.`
+      : `<span class="hit">${row.fact(sq)}.</span> ${row.joke}`;
+  },
   // Phase 90 (SPELL-09): a spell-sourced timed effect running out
   // (engine/items.js#narrateTimerTransitions). SPELL_FADE_WHAT names what stops
   // per effect kind; a kind with no clause here just wears off.
@@ -1516,7 +1571,12 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // VOX-05 (Phase 79, plan 79-11): the line never said "poisoned".
   trapPoisoned: () => `<span class="hurt">Trap: poisoned.</span> It leaves something behind that outlasts the bruise.`,
-  chestOpened: () => `<span class="hit">The box gives up its secrets.</span>`,
+  // Phase 90 plan 07 (SPELL-10): reason "openLock" is a live Open/Lock spent on
+  // this chest (engine/encounters.js#openChest): no lock roll, so the line says why.
+  chestOpened: (e) =>
+    e?.reason === "openLock"
+      ? `<span class="hit">Open/Lock: the lock gives up without a fight, and the spell is spent.</span> The box gives up its secrets.`
+      : `<span class="hit">The box gives up its secrets.</span>`,
   // Phase 73 (ROLL-05): only the drawn face is styled; the range reads plain.
   chestLockRolled: (e) => `Lock: <span class="roll">${Number.isFinite(e.roll) ? e.roll : "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}.`,
   // VOX-05 (Phase 79, plan 79-11): a failed lock roll is the chest's only

@@ -36,9 +36,9 @@ test("RACE_D8: 6 distinct races, Human appears 3 times", () => {
 
 // Phase 40 (SPELL-01/05): the table grew to 33 rows — 32 canon rows plus
 // Lesser Summon. Phase 90 plan 06 (SPELL-12) removed Lesser Summon and Phantom
-// Host: 31 rows.
-test("SPELLS: 31 entries (Phase 90 plan 06 — Lesser Summon and Phantom Host removed)", () => {
-  assert.equal(SPELLS.length, 31);
+// Host: 31 rows. Plan 07 (SPELL-10) appended the four Special spells: 35 rows.
+test("SPELLS: 35 entries (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 appended Open/Lock, Fly, Enchant Character, Speed of Sound)", () => {
+  assert.equal(SPELLS.length, 35);
 });
 
 test("ENC_TYPES: 6 entries", () => {
@@ -130,13 +130,14 @@ test("SPELLS: every entry has a boolean combatOnly field", () => {
 });
 
 // Phase 40: Detect Magic -> Map the Floor (rename, still non-combat). Phase 90
-// plan 06: Lesser Summon and Phantom Host left the list — 11 entries.
-test("SPELLS: 11 non-combat (utility/self) castable outside an encounter", () => {
+// plan 06: Lesser Summon and Phantom Host left the list — 11 entries; plan 07 (SPELL-10)
+// added the four Special spells, all castable anywhere — 15 entries.
+test("SPELLS: 15 non-combat (utility/self) castable outside an encounter", () => {
   const nonCombat = SPELLS.filter((sp) => !sp.combatOnly).map((sp) => sp.n).sort();
   assert.deepStrictEqual(nonCombat, [
-    "Bubble", "Heal", "Major Heal", "Map the Floor",
-    "Mirror Self", "Regeneration", "Sense Danger",
-    "Sense Presence", "Shield", "Strength", "Summon",
+    "Bubble", "Enchant Character", "Fly", "Heal", "Major Heal", "Map the Floor",
+    "Mirror Self", "Open/Lock", "Regeneration", "Sense Danger",
+    "Sense Presence", "Shield", "Speed of Sound", "Strength", "Summon",
   ]);
 });
 

@@ -1,0 +1,113 @@
+[
+  {
+    "key": "content:SPELLS.Open/Lock.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Open/Lock (a new level-1 Special spell)",
+    "before": "",
+    "after": "utility · your next chest · springs open with no lock roll if you reach one within 100 squares, +10 squares per school bonus point; lockpicks everywhere feel threatened",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Special spell. The text states the rule (no lock roll), the window (100 squares) and the school stretch the user ruled (+10 squares per school bonus point), then the house joke about lockpicks. It starts with its niche label like every spell row."
+  },
+  {
+    "key": "content:SPELLS.Fly.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Fly (a new level-2 Special spell)",
+    "before": "",
+    "after": "utility · you · flight for 30 squares, +10 squares per school bonus point: walls to climb and crevices to leap are just scenery, and water costs one square; useless in a fight, where everything can reach you anyway",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Special spell. The text says what flight does (walls, crevices and water, as the Cloak of Flying does), the 30 squares and the +10 per school bonus point, and that it does nothing in a fight."
+  },
+  {
+    "key": "content:SPELLS.Enchant Character.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Enchant Character (a new level-4 Special spell)",
+    "before": "",
+    "after": "buff · you · for 50 squares, +10 squares per school bonus point: +2 to hit, foes −2 to hit you, and no critical lands on you; the enchantment is on you, not on your personality",
+    "reasons": [
+      "fact",
+      "number",
+      "roll-under"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Special spell. Roll-high form: +2 to hit and foes −2 to hit you (never \"faces\"), no critical on you, 50 squares and +10 per school bonus point, then the closing joke."
+  },
+  {
+    "key": "content:SPELLS.Speed of Sound.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Speed of Sound (a new level-5 Special spell)",
+    "before": "",
+    "after": "buff · you · for 50 squares, +10 squares per school bonus point: two blows every time you swing, and you act first in every fight; you arrive before the noise you make",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Special spell. It states both effects (two blows a swing, first move in every fight it covers), the 50 squares and the +10 per school bonus point."
+  },
+  {
+    "key": "bank:NICHE_LABELS.utility",
+    "surface": "spells",
+    "trigger": "the niche label every spell row's text starts with (Open/Lock and Fly)",
+    "before": "",
+    "after": "utility",
+    "reasons": [
+      "naming"
+    ],
+    "why": "The orchestrator's default for the SPELL-10 slate (90-CONTEXT.md): Open/Lock and Fly are maze tools, not fight spells, so they get a niche of their own instead of borrowing answer or sight."
+  },
+  {
+    "key": "oracle:spellEffectStarted",
+    "surface": "oracle",
+    "trigger": "spellEffectStarted — the hero casts Open/Lock, Fly, Enchant Character or Speed of Sound (engine/magic.js, the timed branch)",
+    "before": "",
+    "after": "Fly: a few squares of flight, so walls and crevices are crossed with no roll and water costs one square. Your feet leave the floor. The floor takes it personally.",
+    "reasons": [
+      "fact",
+      "joke",
+      "number"
+    ],
+    "why": "SPELL-10: each of the four timed Special spells says what it does and for how many squares (the school-stretched window; the corpus has no squares, so it reads \"a few squares\"), then the slate's cast line (Open/Lock: \"The next lock you meet is going to have a very confusing day.\"; Enchant Character: \"You feel more convincing. Your sword agrees. Your personality is unchanged.\"; Speed of Sound: \"You move so fast your footsteps have to catch up.\"). A recast says it starts over and does not stack."
+  },
+  {
+    "key": "rail:spellEffectStarted",
+    "surface": "rail",
+    "trigger": "spellEffectStarted — the hero casts one of the four timed Special spells",
+    "before": "",
+    "after": "Fly: a few squares of flight. Walls and crevices are scenery; water costs one.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Oracle line: the rule and the window, short, for each of the four spells (a recast reads \"starts over, not double\"). A kind with no row names the spell and the window."
+  },
+  {
+    "key": "bank:RAIL_FAMILY.spellEffectStarted.title",
+    "surface": "rail-cards",
+    "trigger": "the rail family title for spellEffectStarted (src/browser/rail.js)",
+    "before": "",
+    "after": "IN EFFECT",
+    "reasons": [
+      "naming"
+    ],
+    "why": "The new spellEffectStarted event joins the item effect's IN EFFECT family, so a spell taking hold reads like an item effect taking hold."
+  },
+  {
+    "key": "raw:mazeworld.html#HASTE_SPELL_EXPLAIN",
+    "surface": "other",
+    "trigger": "the tap card of a Hasted chip that comes from the Speed of Sound spell (mazeworld.html)",
+    "before": "",
+    "after": "Two blows every swing while it lasts, and you act first in every fight it covers, whatever the dice or the foe's habits say. The noise catches up later.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "A Speed item only gives two strikes a round; the spell also wins the first move in every fight it covers, so its chip says both."
+  }
+]

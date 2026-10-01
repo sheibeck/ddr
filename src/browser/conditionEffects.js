@@ -77,6 +77,24 @@ function itemSourceWhatIf(source, state) {
 }
 
 /**
+ * spellSourceWhatIf(source, state) — Phase 90 plan 07 (SPELL-10): the
+ * itemSourceWhatIf twin for a chip whose effect is a spell-sourced timed record
+ * (Enchant Character's `spell:<name>`): a shallow copy of `c.timers` with that
+ * one record removed, so the chip's to-hit and foe-to-hit terms drop out of the
+ * what-if. A missing name, a malformed map or no such record yields the state
+ * unchanged (a zero diff, read as "no effect").
+ */
+function spellSourceWhatIf(source, state) {
+  const timers = state.c && state.c.timers;
+  if (typeof source !== "string" || !source || !timers || typeof timers !== "object") return state;
+  const id = `spell:${source}`;
+  if (!Object.prototype.hasOwnProperty.call(timers, id)) return state;
+  const nextTimers = { ...timers };
+  delete nextTimers[id];
+  return withC(state, { timers: nextTimers });
+}
+
+/**
  * abilityWhatIf(state, cn) — CMBUI-13 (Phase 77): a shallow copy of
  * `c.timers` with the chip's own `ability:<cn.ability>` record removed (the
  * same shape as itemSourceWhatIf), so the what-if reads as though that one
@@ -114,6 +132,8 @@ function abilityWhatIf(state, cn) {
  *     (overriding every other modifier).
  *   - ability: the chip's own `ability:<id>` record dropped (abilityWhatIf)
  *     — CMBUI-13 (Phase 77); Riposte and Taunt move no roll, so they read null
+ *   - enchant: the chip's own `spell:<name>` record dropped (spellSourceWhatIf) —
+ *     Phase 90 plan 07; Enchant Character's +2 to hit and −2 on foes both diff
  *   - inspired: state.combat.inspired -> 0 (the Bard's level-2 song)
  *   - fightDark: c.senses -> true — Sense Presence lifts EXACTLY toHit's dark
  *     cap and nothing else this module reads, so the diff is the cap alone
@@ -133,6 +153,8 @@ export const WHAT_IF = Object.freeze({
   // CMBUI-13 (Phase 77, plan 77-03): the new hero chips.
   ability: (state, cn) => abilityWhatIf(state, cn),
   inspired: (state) => (state.combat ? { ...state, combat: { ...state.combat, inspired: 0 } } : state),
+  // Phase 90 plan 07 (SPELL-10): Enchant Character's own `spell:<name>` record dropped.
+  enchant: (state, cn) => spellSourceWhatIf(cn && cn.source, state),
   fightDark: (state) => withC(state, { senses: true }),
   nightVision: (state) => {
     const skills = state.c && state.c.skills && typeof state.c.skills === "object" ? { ...state.c.skills } : {};

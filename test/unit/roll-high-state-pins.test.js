@@ -236,7 +236,25 @@ const PINNED = {
   // Only these four labels were
   // pasted, by hand, from `node tools/roll-high-baseline.mjs pins` (each hashed identically twice);
   // `save` was never run.
-  "solo-1": { actions: 353, dead: true, depth: 4, hash: "2f3b92bb6d16eeabdbe283a5da13917ea2c7e32101080f2d936bacd9f4d195f4" },
+  // "solo-1", "solo-2", "solo-magicuser-sorcerer", "party-1" and "deep-8" re-pinned (Phase 90 plan 07,
+  // SPELL-10, 2026-10-01): the four Special spells (Open/Lock, Fly, Enchant Character, Speed of Sound)
+  // joined the spell list (31 rows -> 35), so a scroll's `rng.pick(options)` lands on another row (17
+  // rows at depth 1, not 15), and a Special-school book (Wizard, Sorcerer, Illusionist, Summoner,
+  // Apprentice) can hold a derived-stream splice of one. Traced with a per-bot-step event trace (playRun's
+  // onStep) against an extracted tree of the plan base 6ac6aa63: solo-1 (a Court Mage) matches for 25
+  // steps, then its first scroll read picks Shield, copied into the book, where the base picked Heal;
+  // solo-magicuser-sorcerer, party-1 and deep-8 differ at step 0, their first scroll read (the Sorcerer:
+  // Turn Walking Dead for Insane; party-1: Strength for Shield; deep-8: Doze for Strength); solo-2 (an
+  // Apprentice) differs at step 35, where its book (Open/Lock and Enchant Character were spliced into
+  // it) lets it cast Freeze where the base cast Mirror Self. No chargen cursor moved (the new rows are
+  // roll: derived), so every divergence is a different spell, never a different draw count. Every draw
+  // in the run moves from there. Old -> new (actions / dead / depth): solo-1 353/true/4 -> 253/true/3;
+  // solo-2 368/true/4 -> 368/true/4 (hash only); solo-magicuser-sorcerer 400/false/5 -> 150/true/2;
+  // party-1 400/false/3 -> 400/false/3 (hash only); deep-8 300/false/11 -> 109/true/9.
+  // "solo-thief-pilfer", "party-fighter-knight" and "deep-14" re-measured byte-identical. Only these five
+  // labels were pasted, by hand, from `node tools/roll-high-baseline.mjs pins` (each hashed identically
+  // twice); `save` was never run.
+  "solo-1": { actions: 253, dead: true, depth: 3, hash: "47082481220cb07ea9857d986d10ca090337de206997be53411bf393261fa91c" },
   // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
   // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
   // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
@@ -250,7 +268,7 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f; actions, dead and depth are unchanged.
-  "solo-2": { actions: 368, dead: true, depth: 4, hash: "f93e9c7c28def19bae5c15c1c9b2bd617f3eed572ca2d7e5e122ffa7c1158e9a" },
+  "solo-2": { actions: 368, dead: true, depth: 4, hash: "4e95c30b4fd3ea12ba94691e017cba9b38edad71991a864bf00a13b5674301f6" },
   // "solo-thief-pilfer" re-recorded (Phase 89 plan 03, ITEM-01, 2026-09-30): this
   // run's bag ends holding a Poplar Staff (a Pilfer can never wield it), and the
   // item object rides the hashed state. Its row changed: use "heal" -> "partyHeal"
@@ -328,12 +346,12 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 992002f4edb013af107541738a89ebcbf6da7dd1afe8bfd4c914d651f0d7ecf6; actions, dead and depth are unchanged.
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 5, hash: "cb8ffa0961cfd632af3b6c888637a6d241d1e55033406f5157b99a9c8885417a" },
+  "solo-magicuser-sorcerer": { actions: 150, dead: true, depth: 2, hash: "00a4aab5299ed0cd75673b24025b474c2f0f9f7c943b4ecbf3227d19b126f54d" },
   // "party-1" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to a2bb10bccfbc83ff5d9d8431b7247c1d382b9d3ff8aa3ddf7c346304d5638faa; actions, dead and depth are unchanged.
-  "party-1": { actions: 400, dead: false, depth: 3, hash: "66bf8e0198fe53ab3b556ec66d2b8a3d0df54a9b5cd81c81a8ac6d1e6f668e1a" },
+  "party-1": { actions: 400, dead: false, depth: 3, hash: "6f678c4bea7c853a6b1c8c111f1c6b2d8739957156bf9f98b67785a1efe23d70" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -465,7 +483,7 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263; actions, dead and depth are unchanged.
-  "deep-8": { actions: 300, dead: false, depth: 11, hash: "8a77e78ca4882b66f0fe35b2c08df5143a7521ed7dee5af5df10492bd7daed6f" },
+  "deep-8": { actions: 109, dead: true, depth: 9, hash: "01bd78033f78384c2cf26332b216ed3f315c15ed5ddd3c05deb1927c97db51a4" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
