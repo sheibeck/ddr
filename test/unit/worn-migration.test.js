@@ -16,19 +16,23 @@ import assert from "node:assert/strict";
 
 import { newRun } from "../../engine/state.js";
 import { serializeRun, validateSave, rehydrate } from "../../engine/saveState.js";
-import { BAGS } from "../../content/index.js";
+import { BAGS, JEWELRY, CLOAKS, STAVES } from "../../content/index.js";
 import { slotItems } from "../../engine/derived.js";
 import { canStow } from "../../engine/items.js";
 
 // ─── fixtures: synthetic jewelry/cloak/potion literals (no `slot` key ever
 // spread onto a constructed item — content/treasure-tables.js's own rule) ──
 
-const ringOfPower = () => ({ kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: "+1 damage to all attacks" });
-const ringOfPowerTagged = (tag) => ({ ...ringOfPower(), txt: tag });
-const cloakOfSpeed = () => ({ kind: "cloak", n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: "double attacks, once every 50 squares" });
+// Phase 89 plan 09 (TEXT-01): a load now refreshes a known item's `txt` to its content row's
+// (engine/saveState.js#refreshItemTexts), so every fixture below that is a REAL item carries its
+// row's current text, and the tag that tells three identical rings apart rides its own field.
+const rowTxt = (table, n) => table.find((r) => r.n === n).txt;
+const ringOfPower = () => ({ kind: "jewel", n: "Ring of Power", eff: { dmg: 1 }, txt: rowTxt(JEWELRY, "Ring of Power") });
+const ringOfPowerTagged = (tag) => ({ ...ringOfPower(), tag });
+const cloakOfSpeed = () => ({ kind: "cloak", n: "Cloak of Speed", eff: {}, use: "haste", every: 50, txt: rowTxt(CLOAKS, "Cloak of Speed") });
 const cloakOfHealing = () => ({ kind: "cloak", n: "Cloak of Healing", eff: { cloakHeal: 1 }, txt: "heals up to 10 wp every 20 squares" });
 const healingPotion = () => ({ kind: "potion", n: "Potion of Healing", txt: "restores wp" });
-const rowanStaff = () => ({ kind: "staff", every: 250, n: "Rowan Staff", use: "dome", txt: "a protective dome of 100 wp" });
+const rowanStaff = () => ({ kind: "staff", every: 250, n: "Rowan Staff", use: "dome", txt: rowTxt(STAVES, "Rowan Staff") });
 
 const CHARGEN_FIXTURE_SEEDS = [1, 2, 3, 4, 6, 7, 8, 13, 15, 19, 24, 29, 32, 35];
 
@@ -116,8 +120,8 @@ test("HEDGE-02 ordering: three identical Rings of Power — the first two in bag
   s.c.items = [ringOfPowerTagged("first"), ringOfPowerTagged("second"), ringOfPowerTagged("third")];
   const json = JSON.stringify(serializeRun(s));
   const check = validateSave(json);
-  assert.equal(check.value.c.worn.jewelry1.txt, "first");
-  assert.equal(check.value.c.worn.jewelry2.txt, "second");
+  assert.equal(check.value.c.worn.jewelry1.tag, "first");
+  assert.equal(check.value.c.worn.jewelry2.tag, "second");
   assert.deepStrictEqual(check.value.c.items, [ringOfPowerTagged("third")]);
   assert.deepStrictEqual(check.wornReport, [{ slot: "jewelry", worn: ["Ring of Power", "Ring of Power"], bagged: ["Ring of Power"] }]);
 });
@@ -229,7 +233,7 @@ test("staff gate (260918-w4n): a staff ALWAYS stays bagged with no report entry 
   // `every`/`usedAt` staff fields and gives a missing `charges` a full pool
   // (Rowan Staff's real pool is 2) — the migrated item is no longer
   // byte-identical to the input literal.
-  const migratedRowanStaff = { kind: "staff", n: "Rowan Staff", use: "dome", txt: "a protective dome of 100 wp", charges: 2 };
+  const migratedRowanStaff = { kind: "staff", n: "Rowan Staff", use: "dome", txt: rowTxt(STAVES, "Rowan Staff"), charges: 2 };
 
   const fighterSave = newRun(1); // Fighter
   fighterSave.c.items = [rowanStaff()];
@@ -252,14 +256,14 @@ test("staff gate (260918-w4n): a staff ALWAYS stays bagged with no report entry 
 // own tolerant-load fold, not the unconditional reconcileWorn bag-scan
 // above.
 
-const gauntletOfGiant = () => ({ kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: "one size larger" });
-const helmOfKnowledge = () => ({ kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 }, txt: "perfect fluency" });
-const ankletOfInvis = () => ({ kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: "foes need two better to land" });
+const gauntletOfGiant = () => ({ kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 }, txt: rowTxt(JEWELRY, "Gauntlet of the Giant") });
+const helmOfKnowledge = () => ({ kind: "jewel", n: "Helm of Knowledge", eff: { tongue: 1 }, txt: rowTxt(JEWELRY, "Helm of Knowledge") });
+const ankletOfInvis = () => ({ kind: "jewel", n: "Anklet of Invisibility", eff: { foeToHit: -2 }, txt: rowTxt(JEWELRY, "Anklet of Invisibility") });
 
 test("260918-wy1: a v1.5-shape save with c.worn under ring/bracelet/amulet/helm folds ring->jewelry1, bracelet->jewelry2, amulet+helm appended to the bag (in that order)", () => {
   const ring = ringOfPower();
-  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: "twenty squares of flight" };
-  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: rowTxt(JEWELRY, "Bracelet of Flight") };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: rowTxt(JEWELRY, "Amulet of Light") };
   const helm = helmOfKnowledge();
   const s = newRun(1); // Fighter, no starting items
   s.c.worn = { ring, bracelet, amulet, helm };
@@ -281,7 +285,7 @@ test("260918-wy1: a v1.5-shape save with c.worn under ring/bracelet/amulet/helm 
 test("260918-wy1: a save already carrying jewelry1/jewelry2 plus a legacy amulet key bags the amulet (both jewelry keys already occupied)", () => {
   const jewelryA = ringOfPower();
   const jewelryB = ankletOfInvis();
-  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: rowTxt(JEWELRY, "Amulet of Light") };
   const s = newRun(1);
   s.c.worn = { jewelry1: jewelryA, jewelry2: jewelryB, amulet };
   s.c.items = [];
@@ -306,8 +310,8 @@ test("260918-wy1: the w4n-interim five-key shape (worn staff already folded, leg
 
 test("260918-wy1: a full bag drops the appended legacy jewelry overflow via clampCarry, not the earlier-folded pieces", () => {
   const ring = ringOfPower();
-  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: "twenty squares of flight" };
-  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: "light and sight" };
+  const bracelet = { kind: "jewel", n: "Bracelet of Flight", eff: { fly: 1 }, txt: rowTxt(JEWELRY, "Bracelet of Flight") };
+  const amulet = { kind: "jewel", n: "Amulet of Light", eff: { sight: 1, light: 1 }, txt: rowTxt(JEWELRY, "Amulet of Light") };
   const s = newRun(1);
   s.c.bag = "small"; // cap 4
   s.c.worn = { ring, bracelet, amulet };
