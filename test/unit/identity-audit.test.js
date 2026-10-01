@@ -458,7 +458,7 @@ test("IDENT-12: the checker fails an owner that is not a plan of this phase", ()
   const bad = mutate(readDoc(), (lines) => {
     const i = rowIndex(lines, "guard-hard");
     assert.ok(i >= 0);
-    lines[i] = lines[i].replace("fix text (91-10)", "fix text (91-11)");
+    lines[i] = lines[i].replace("fixed text (91-10)", "fixed text (91-11)");
   });
   assert.ok(checkDoc(bad).some((p) => /names owner 91-11, not a Phase 91 plan/.test(p)));
 });
