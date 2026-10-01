@@ -20,7 +20,7 @@ import { isReady, remaining } from "../../engine/effects.js";
 import { bagCap, canStow, slotItems } from "../../engine/items.js";
 import { maxCharges } from "../../engine/movement.js";
 import { sellPriceFor } from "../../engine/economy.js";
-import { WEAPONS } from "../../content/index.js";
+import { WEAPONS, BAGS } from "../../content/index.js";
 import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
 import { scrollReadOdds } from "./rollOdds.js";
 
@@ -71,6 +71,8 @@ export const GEAR_COPY = Object.freeze({
   alsoOnYou: "ALSO ON YOU",
   bag: "BAG",
   freeRide: "potions & scrolls ride free",
+  // Phase 89 plan 09 (TEXT-01, ITEM-AUDIT bags): the caps a bag holds besides slots.
+  bagCaps: "this bag carries up to {wilmst} wilmst and {rations} rations",
   empty: Object.freeze({
     weapon: "fists — nothing in hand. Free, always with you, and not very good.",
     armor: "armour — nothing. The wind is your armour, and the wind is not on your side.",
@@ -405,7 +407,9 @@ export function gearBagMeterModel(state) {
   const pips = usage.slots !== null ? Array.from({ length: usage.slots }, (_, i) => i < usage.have) : [];
   const fullLine = usage.full ? GEAR_COPY.bagFull : "";
   const freeRide = usage.slots !== null ? GEAR_COPY.freeRide : "";
-  return { have: usage.have, slots: usage.slots, full: usage.full, countText: usage.text, pips, fullLine, freeRide };
+  const tier = c.bag && BAGS[c.bag] ? BAGS[c.bag] : null;
+  const capsLine = tier ? GEAR_COPY.bagCaps.replace("{wilmst}", tier.wilmst).replace("{rations}", tier.rations) : "";
+  return { have: usage.have, slots: usage.slots, full: usage.full, countText: usage.text, pips, fullLine, freeRide, capsLine };
 }
 
 /**
@@ -951,6 +955,7 @@ export function renderGearTab(host, state, deps = {}) {
   }
   if (meter.fullLine) meterChildren.push(el("p", "mw-gear-full-line", meter.fullLine));
   if (meter.freeRide) meterChildren.push(el("p", "mw-gear-free", meter.freeRide));
+  if (meter.capsLine) meterChildren.push(el("p", "mw-gear-free", meter.capsLine));
   doc.getElementById("gear-bag-meter").replaceChildren(...meterChildren);
 
   // 4. BAG — the item cards. Each card is an opener for the bottom action

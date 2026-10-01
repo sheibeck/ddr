@@ -12,6 +12,7 @@ import { weaponRefusalReason, armorRefusalReason, weaponUpgradeDelta, armorUpgra
 import { storeBuyRefusal } from "../../engine/economy.js";
 import { rationsLeft } from "../../engine/economy.js";
 import { upgradeWhyText, UPGRADE_WHY_COPY } from "./upgradeWhy.js";
+import { signedText, facesRangeText } from "./rollRange.js";
 
 /**
  * armorDisplay(c) — Phase 28 (ARMOR-02/04): the ONE render-ready description
@@ -223,6 +224,12 @@ export const ITEM_STAT_COPY = Object.freeze({
     // and worn read of the same item (wornItemFor(c, "weapon") returns the
     // wielded staff, so itemStatLines formats it identically either way).
     wield: "Wield",
+    // Phase 89 plan 09 (TEXT-01, ITEM-AUDIT "fix text (89-09)"): the numbers a
+    // weapon, an armour and a bag carry that no surface stated.
+    toHit: "To hit",
+    crit: "Critical",
+    bulk: "Bulk",
+    carry: "Carries",
   }),
   text: Object.freeze({
     bonus: "{lab} +{n}",
@@ -233,6 +240,10 @@ export const ITEM_STAT_COPY = Object.freeze({
     charges: "{n}/{max} charges",
     slots: "{n} slots",
     wield: "Fights as a {lab} weapon; its power works only while wielded.",
+    toHit: "{signed} to hit",
+    crit: "crits on {range} on a d20",
+    bulk: "{signed} to climb, leap and flee rolls",
+    carry: "carries up to {wilmst} wilmst and {rations} rations",
   }),
 });
 
@@ -288,6 +299,15 @@ export function itemStatLines(item, c = null) {
     const bonus = Number.isInteger(item.bonus) && item.bonus > 0 ? item.bonus : 0;
     const damage = bonus ? ITEM_STAT_COPY.text.bonus.replace("{lab}", w.lab).replace("{n}", bonus) : w.lab;
     lines.push(statLine("damage", damage, damage));
+    // Phase 89 plan 09 (TEXT-01): the weapon's own to-hit (WEAPONS `need`, a
+    // signed count of winning faces, so "+1 to hit" / "−1 to hit", never "+0")
+    // and, for the precise blades, the range on the d20 that doubles damage.
+    if (Number.isInteger(w.need) && w.need !== 0) {
+      lines.push(statLine("toHit", w.need, ITEM_STAT_COPY.text.toHit.replace("{signed}", signedText(w.need))));
+    }
+    if (Number.isInteger(w.crit) && w.crit > 1) {
+      lines.push(statLine("crit", w.crit, ITEM_STAT_COPY.text.crit.replace("{range}", facesRangeText(w.crit, 20))));
+    }
     if (bonus) lines.push(statLine("enchanted", bonus, ITEM_STAT_COPY.text.enchanted));
     pushUsable();
     return Object.freeze(lines);
@@ -305,6 +325,11 @@ export function itemStatLines(item, c = null) {
     if (base && (item.ar > base.ar || (typeof item.wp === "number" && item.wp > base.wp))) {
       lines.push(statLine("enchanted", item.ar - base.ar, ITEM_STAT_COPY.text.enchanted));
     }
+    // Phase 89 plan 09 (TEXT-01): the agility cost of a bulky armour (ARMORS `bulk`,
+    // taken off the climb, leap and flee rolls: engine/movement.js, combat.js#flee).
+    if (base && Number.isInteger(base.bulk) && base.bulk > 0) {
+      lines.push(statLine("bulk", base.bulk, ITEM_STAT_COPY.text.bulk.replace("{signed}", signedText(-base.bulk))));
+    }
     pushUsable();
     return Object.freeze(lines);
   }
@@ -313,6 +338,10 @@ export function itemStatLines(item, c = null) {
     const bag = BAGS[item.tier];
     if (!bag) return Object.freeze([]);
     lines.push(statLine("slots", bag.slots, ITEM_STAT_COPY.text.slots.replace("{n}", bag.slots)));
+    // Phase 89 plan 09 (TEXT-01): a bag caps wilmst and rations too (BAGS, clampCarry).
+    lines.push(
+      statLine("carry", bag.wilmst, ITEM_STAT_COPY.text.carry.replace("{wilmst}", bag.wilmst).replace("{rations}", bag.rations)),
+    );
     return Object.freeze(lines);
   }
 
