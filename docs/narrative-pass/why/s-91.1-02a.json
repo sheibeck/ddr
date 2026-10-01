@@ -1,0 +1,169 @@
+[
+ {
+  "key": "content:ABILITIES.feint.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  "after": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V1 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Feint is ready again 4 rounds after you use it (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.hamstring.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "cut the tendon: the target's blows do half damage for the rest of the fight; once per fight",
+  "after": "cut the tendon: the target's blows do half damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already hamstrung",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V5 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Hamstring is ready again 3 rounds after you use it, on a foe that is not already hamstrung (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.kata.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  "after": "one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V1 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Kata is ready again 4 rounds after you use it (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.lastStand.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "under a quarter hp: three attacks this round; once per fight",
+  "after": "under a quarter hp: three attacks this round; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V2 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Last Stand is ready again 4 rounds after you use it, still only at a quarter hit points (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.mark.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "study it: every strike on the target adds +2 damage for the rest of the fight; once per fight",
+  "after": "study it: every strike on the target adds +2 damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V5 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Mark is ready again 3 rounds after you use it, on a foe that is not already marked (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.overheadBlow.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "everything into one swing: double damage, but −2 to hit; once per fight",
+  "after": "everything into one swing: double damage, but −2 to hit; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V2 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Overhead Blow is ready again 4 rounds after you use it (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.secondWind.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "remember why you came: heal d8 + level; once per fight",
+  "after": "remember why you came: heal d8 + level; ready again 5 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V3 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Second Wind is ready again 5 rounds after you use it, the heal unchanged (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:ABILITIES.smoke.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+  "after": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V4 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Smoke is ready again 6 rounds after you use it: three rounds of effect, then three of cooldown (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:FIGHTER_SKILLS.Kata.txt",
+  "surface": "spells",
+  "trigger": "a Fighter skill's text",
+  "before": "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  "after": "one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V1 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Kata is ready again 4 rounds after you use it (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:FIGHTER_SKILLS.Second Wind.txt",
+  "surface": "spells",
+  "trigger": "a Fighter skill's text",
+  "before": "remember why you came: heal d8 + level; once per fight",
+  "after": "remember why you came: heal d8 + level; ready again 5 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V3 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Second Wind is ready again 5 rounds after you use it, the heal unchanged (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:THIEF_SKILLS.Feint.txt",
+  "surface": "spells",
+  "trigger": "a Thief skill's text",
+  "before": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+  "after": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V1 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Feint is ready again 4 rounds after you use it (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "content:THIEF_SKILLS.Smoke.txt",
+  "surface": "spells",
+  "trigger": "a Thief skill's text",
+  "before": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+  "after": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V4 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Smoke is ready again 6 rounds after you use it: three rounds of effect, then three of cooldown (was once per fight). The text says the wait in plain words (\"ready again N rounds after you use it\"), N read from the engine (engine/abilities.js#abilityReadyAfter), and the once-per-fight words leave the line because the ability is no longer once per fight. The table skill and the catalog ability carry the same words."
+ },
+ {
+  "key": "oracle:abilityRefused",
+  "surface": "refusals",
+  "trigger": "abilityRefused — engine/abilities.js#useAbility",
+  "before": "",
+  "after": "Hamstring: Goblin already has it. Pick another one, or enjoy the first.",
+  "reasons": [
+   "fact",
+   "joke"
+  ],
+  "why": "V5 (user ruling, 2026-10-01): Hamstring and Mark come back 3 rounds after the use, but only on a foe that does not already carry the effect, so a use on a foe that does is refused (alreadyOn, nothing spent) and the refusal names the foe from the event."
+ },
+ {
+  "key": "rail:abilityRefused",
+  "surface": "refusals",
+  "trigger": "abilityRefused — engine/abilities.js#useAbility",
+  "before": "",
+  "after": "Hamstring: Goblin already has it.",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V5 (user ruling, 2026-10-01): Hamstring and Mark come back 3 rounds after the use, but only on a foe that does not already carry the effect, so a use on a foe that does is refused (alreadyOn, nothing spent) and the refusal names the foe from the event."
+ }
+]

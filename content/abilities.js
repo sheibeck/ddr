@@ -44,6 +44,17 @@
 // Stand (already once a fight) — are `cd: "fight"`, and their text says so.
 // Pommel Strike keeps its cooldown (Phase 90, ABIL-07: it is now a real strike that also stuns on a hit, still cd 4).
 //
+// Phase 91.1 plan 02 (user rulings V1 to V5, 2026-10-01, docs/VALUE-LEDGER.md):
+// the 2026-09-27 once-per-fight list was asked again and part of it came back.
+// Kata, Feint, Overhead Blow and Last Stand are ready again 4 rounds after the
+// use (`cd: 4`), Second Wind after 5, Hamstring and Mark after 3 (and only on a
+// foe that does not already carry the effect: engine/abilities.js#
+// abilityTargetShortfall), and Smoke 6 rounds after the use: Smoke is a
+// duration ability (effect first, three ticks, then its cooldown), so its
+// `cd: 3` after those three ticks is the ruled six. Death Touch, Silent Step
+// and Cutpurse stay `cd: "fight"`. engine/abilities.js#abilityReadyAfter is the
+// ONE read of "ready again N rounds after the use" that the text guard checks.
+//
 // Quick 260928-nrf (user rulings 2026-09-28, after the 260928-abl audit):
 // Kata and Feint roll to hit with three more winning faces instead of never
 // missing (engine/abilities.js#KATA_FEINT_NEED_SHIFT), and Sweep needs two or
@@ -51,26 +62,26 @@
 // no text may promise a Kata or Feint cannot miss.
 
 export const ABILITIES = [
-  { id: "kata", name: "Kata", cls: "Fighter", source: "table", skillKey: "Kata", cd: "fight", target: "foe", tag: "damage", txt: "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight" },
+  { id: "kata", name: "Kata", cls: "Fighter", source: "table", skillKey: "Kata", cd: 4, target: "foe", tag: "damage", txt: "one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it" },
   { id: "deathTouch", name: "Death Touch", cls: "Fighter", source: "table", skillKey: "Death Touch", cd: "fight", target: "foe", tag: "damage", txt: "call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight" },
   { id: "sidestep", name: "Sidestep", cls: "Fighter", source: "table", skillKey: "Sidestep", cd: 4, target: "self", tag: "defensive", txt: "two rounds of not being where the blade is: foes −2 to hit you" },
   { id: "pommelStrike", name: "Pommel Strike", cls: "Fighter", source: "table", skillKey: "Pommel Strike", cd: 4, target: "foe", tag: "opener", txt: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn" },
   { id: "battleRoar", name: "Battle Roar", cls: "Fighter", source: "table", skillKey: "Battle Roar", cd: 5, target: "self", tag: "opener", txt: "loud enough to matter: for two rounds foes −2 to hit anyone on your side" },
-  { id: "secondWind", name: "Second Wind", cls: "Fighter", source: "table", skillKey: "Second Wind", cd: "fight", target: "self", tag: "defensive", txt: "remember why you came: heal d8 + level; once per fight" },
+  { id: "secondWind", name: "Second Wind", cls: "Fighter", source: "table", skillKey: "Second Wind", cd: 5, target: "self", tag: "defensive", txt: "remember why you came: heal d8 + level; ready again 5 rounds after you use it" },
   { id: "sweep", name: "Sweep", cls: "Fighter", source: "table", skillKey: "Sweep", cd: 4, target: "foes", tag: "damage", txt: "one wide arc: every living foe takes half damage; needs two or more foes" },
   { id: "brace", name: "Brace", cls: "Fighter", source: "pool", cd: 3, target: "self", tag: "defensive", txt: "halve the next blow that lands on you" },
   { id: "riposte", name: "Riposte", cls: "Fighter", source: "pool", cd: 4, target: "self", tag: "defensive", txt: "for one round every foe that misses you eats your weapon damage" },
   { id: "taunt", name: "Taunt", cls: "Fighter", source: "pool", cd: 4, target: "self", tag: "defensive", txt: "every foe swings at you this round and your armour soaks double" },
-  { id: "overheadBlow", name: "Overhead Blow", cls: "Fighter", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "everything into one swing: double damage, but −2 to hit; once per fight" },
-  { id: "lastStand", name: "Last Stand", cls: "Fighter", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "under a quarter hp: three attacks this round; once per fight" },
+  { id: "overheadBlow", name: "Overhead Blow", cls: "Fighter", source: "pool", cd: 4, target: "foe", tag: "damage", txt: "everything into one swing: double damage, but −2 to hit; ready again 4 rounds after you use it" },
+  { id: "lastStand", name: "Last Stand", cls: "Fighter", source: "pool", cd: 4, target: "foe", tag: "damage", txt: "under a quarter hp: three attacks this round; ready again 4 rounds after you use it" },
   { id: "silentStep", name: "Silent Step", cls: "Thief", source: "table", skillKey: "Silent Step", cd: "fight", target: "foe", tag: "opener", txt: "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling" },
-  { id: "feint", name: "Feint", cls: "Thief", source: "table", skillKey: "Feint", cd: "fight", target: "foe", tag: "damage", txt: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight" },
+  { id: "feint", name: "Feint", cls: "Thief", source: "table", skillKey: "Feint", cd: 4, target: "foe", tag: "damage", txt: "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it" },
   { id: "dirtyTrick", name: "Dirty Trick", cls: "Thief", source: "table", skillKey: "Dirty Trick", cd: 4, target: "foe", tag: "opener", txt: "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical" },
-  { id: "smoke", name: "Smoke", cls: "Thief", source: "table", skillKey: "Smoke", cd: "fight", target: "self", tag: "defensive", txt: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight" },
+  { id: "smoke", name: "Smoke", cls: "Thief", source: "table", skillKey: "Smoke", cd: 3, target: "self", tag: "defensive", txt: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it" },
   { id: "cutpurse", name: "Cutpurse", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "damage", txt: "lift d10 × level gold off the target mid-fight; it has other problems; once per fight" },
   { id: "poisonedEdge", name: "Poisoned Edge", cls: "Thief", source: "pool", cd: 5, target: "foe", tag: "damage", txt: "the blade weeps: d4 a round to the target for three rounds" },
-  { id: "hamstring", name: "Hamstring", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "opener", txt: "cut the tendon: the target's blows do half damage for the rest of the fight; once per fight" },
-  { id: "mark", name: "Mark", cls: "Thief", source: "pool", cd: "fight", target: "foe", tag: "opener", txt: "study it: every strike on the target adds +2 damage for the rest of the fight; once per fight" },
+  { id: "hamstring", name: "Hamstring", cls: "Thief", source: "pool", cd: 3, target: "foe", tag: "opener", txt: "cut the tendon: the target's blows do half damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already hamstrung" },
+  { id: "mark", name: "Mark", cls: "Thief", source: "pool", cd: 3, target: "foe", tag: "opener", txt: "study it: every strike on the target adds +2 damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked" },
 ];
 
 /** ABILITY_BY_ID — a frozen id -> catalog-entry lookup map. */

@@ -188,11 +188,13 @@ test("ladder: cooldown — an on-cooldown ability names itself and the rounds le
   assert.equal(abilityRoundsLeft(state.c, "pommelStrike"), 2);
 });
 
-test("ladder: spent — a used once-per-fight ability (Kata) refuses spent, with no rounds figure", () => {
-  const state = fixedState({ c: fixedFighter({ abilities: ["kata"], timers: { "ability:kata": { cadence: "rounds", left: 998, phase: "cooldown" } } }) });
+// Phase 91.1 plan 02 (user ruling V1, 2026-10-01): Kata is ready again after 4
+// rounds now, so the spent rung is pinned on Death Touch (still once per fight).
+test("ladder: spent — a used once-per-fight ability (Death Touch) refuses spent, with no rounds figure", () => {
+  const state = fixedState({ c: fixedFighter({ abilities: ["deathTouch"], timers: { "ability:deathTouch": { cadence: "rounds", left: 998, phase: "cooldown" } } }) });
   state.combat = fixedCombat([fixedFoe()]);
-  const events = useAbility(state, "kata", fakeRng([]), []);
-  assert.deepEqual(events, [{ type: "abilityRefused", key: "kata", reason: "spent", name: "Kata" }]);
+  const events = useAbility(state, "deathTouch", fakeRng([]), []);
+  assert.deepEqual(events, [{ type: "abilityRefused", key: "deathTouch", reason: "spent", name: "Death Touch" }]);
 });
 
 test("ladder: noTarget — a hand-built zero-foe combat (structurally unreachable in real play)", () => {
@@ -275,12 +277,25 @@ test("timers: brace starts a plain 3-round cooldown (one tick already spent by t
   assert.equal(isReady(state.c, "ability:brace"), true);
 });
 
-test("timers: kata (once per fight) stays spent however many rounds pass, until endCombat", () => {
+// Phase 91.1 plan 02 (V1): re-pinned from Kata (a 4-round cooldown now) to Death Touch.
+test("timers: deathTouch (once per fight) stays spent however many rounds pass, until endCombat", () => {
+  const state = fixedState({ c: fixedFighter({ abilities: ["deathTouch"] }) });
+  state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
+  useAbility(state, "deathTouch", fakeRng([3, 4, ...FILL]), []);
+  for (let r = 0; r < 20; r++) foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(isReady(state.c, "ability:deathTouch"), false);
+  endCombat(state, []);
+  assert.equal(isReady(state.c, "ability:deathTouch"), true);
+});
+
+test("timers: kata is a plain 4-round cooldown: 3 left after the use round's own tick, ready on the 4th round after, and reset by endCombat", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["kata"] }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   useAbility(state, "kata", fakeRng([3, 4, ...FILL]), []);
-  for (let r = 0; r < 20; r++) foeTurn(state, fakeRng([...FILL]), []);
-  assert.equal(isReady(state.c, "ability:kata"), false);
+  assert.equal(abilityRoundsLeft(state.c, "kata"), 3);
+  for (let r = 0; r < 3; r++) foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(isReady(state.c, "ability:kata"), true);
+  useAbility(state, "kata", fakeRng([3, 4, ...FILL]), []);
   endCombat(state, []);
   assert.equal(isReady(state.c, "ability:kata"), true);
 });
@@ -303,12 +318,16 @@ test("timers: sidestep (duration 2, cd 4) ticks through its effect phase then it
   assert.equal(remaining(state.c, "ability:sidestep"), 4);
 });
 
-test("timers: secondWind is a once-a-fight cooldown, cleared unconditionally by endCombat", () => {
+// Phase 91.1 plan 02 (V3, user ruling 2026-10-01): Second Wind is a 5-round cooldown now.
+test("timers: secondWind is a 5-round cooldown (4 left after the use round's tick), ready after 4 more rounds, cleared by endCombat", () => {
   const state = fixedState({ c: fixedFighter({ abilities: ["secondWind"], wp: 10, maxWP: 55 }) });
   state.combat = fixedCombat([fixedFoe({ wp: 999, maxWP: 999 })]);
   useAbility(state, "secondWind", fakeRng([5, ...FILL]), []);
   assert.equal(isReady(state.c, "ability:secondWind"), false);
-  assert.ok(remaining(state.c, "ability:secondWind") >= 990, "still deep in the once-a-fight cooldown");
+  assert.equal(remaining(state.c, "ability:secondWind"), 4);
+  for (let r = 0; r < 4; r++) foeTurn(state, fakeRng([...FILL]), []);
+  assert.equal(isReady(state.c, "ability:secondWind"), true);
+  useAbility(state, "secondWind", fakeRng([5, ...FILL]), []);
   endCombat(state, []);
   assert.equal(isReady(state.c, "ability:secondWind"), true);
 });

@@ -7741,3 +7741,52 @@ to one in two, which moves every Fridgian run.
 `RACES.Fridgian.note`), each `after` read from the live corpus; the doubled-potion suffix on the `healed` Oracle and rail lines
 shows only on the new `doubled` payload, so no corpus line changed. `node tools/narrative-review.mjs` regenerated the pages and
 `--check` is in sync.
+
+### Phase 91.1 plan 02a: the cooldown family (VALUE-02, VALUE-03, VALUE-04; rulings V1 to V5)
+
+Measured against the plan base `41af8c78` (the same runs before and after), then declared. Eight abilities stop being once per
+fight and become a cooldown in rounds, by the user's rulings of 2026-10-01 (`docs/VALUE-LEDGER.md`): Kata and Feint, Overhead Blow
+and Last Stand ready again 4 rounds after the use (V1, V2), Second Wind 5 (V3), Smoke 6 (V4: three ticks of effect then a
+`cd: 3` cooldown) and Hamstring and Mark 3, only on a foe that does not already carry the effect (V5: `abilities.js#abilityTargetShortfall`,
+a refusal `alreadyOn` that spends nothing). Death Touch, Silent Step and Cutpurse stay `cd: "fight"`. No new roll and no new serialized field
+(a cooldown is the existing `c.timers` record, a combat-scoped `rounds` timer `endCombat` clears), so no `*Comparable()` carve-out is
+needed and every existing draw keeps its place; `test/parity/prototype-master.js.txt` is untouched, and no bot balance run was made.
+
+**Parity: 66 of 66 pass, no record updated.** `node --test "test/parity/**/*.test.js"` exits 0 with no change to a divergence record:
+no parity scenario uses one of the eight abilities (the scripted action scripts never dispatch `useAbility`).
+
+**State pins: 2 of 8 moved, the other six byte-identical. Save-compat: unchanged.** `node tools/roll-high-baseline.mjs pins` was run
+(each label hashed identically twice); only the moved labels were pasted, by hand, with a dated comment; `save` was never run, and
+`test/unit/roll-high-save-compat.test.js` passes with no `expected` change. The bot plays the new cooldowns (it reads the same
+catalog and the same target rule), so a run that used one of the eight abilities twice moves. Counted with a per-run event trace
+(`abilityUsed` and `memberAbilityUsed`):
+
+1. `test/unit/roll-high-state-pins.test.js` `solo-thief-pilfer` (a Pilfer): 400 actions / alive / depth 4 to 395 / dead / depth 4
+   (hash `4f51...db` to `1de5...0d`). Its abilities in the run: Poisoned Edge 5, Smoke 3. Smoke was one use a fight and is a
+   6-round cooldown now, so the run diverges at its second Smoke and ends dead at action 395.
+2. `party-fighter-knight` (a Human Knight and its Joiner): 400 / alive / depth 3 to 268 / dead / depth 3 (hash `a803...4c` to
+   `97e7...34`). Its abilities: Pommel Strike 12, Second Wind 3 (hero) and 1 (Joiner), Riposte 2, Brace 1. Second Wind is a 5-round
+   cooldown now, so the run diverges at its second Second Wind and the party dies at action 268.
+
+The other six labels (`solo-1`, `solo-2`, `solo-magicuser-sorcerer`, `party-1`, `deep-8`, `deep-14`) re-measured byte-identical.
+
+Moved scripted tests (each re-based, before to after; every one reads the catalog, not a fixture):
+
+3. `test/unit/once-per-fight.test.js` and `once-per-fight-copy.test.js`: the spent pins moved from Feint to Silent Step (the hero, the
+   save and the menu row) and to Cutpurse (the Joiner; Silent Step is a round-1 opener, a Joiner's spent pick needs a damage tag);
+   the set pin now reads Death Touch, Silent Step and Cutpurse once per fight and the other nine numeric.
+4. `test/unit/abilities.test.js` (the spent rung and the secondWind timer pin), `abilities-catalog.test.js` (eight text pins),
+   `combatMenu.test.js` (Kata's row reads READY, the spent row is Death Touch), `characterSheetViewModel.test.js` (the once-a-fight
+   rows are Silent Step and Cutpurse), `class-trims-nrf-copy.test.js` (Kata's and Feint's text) and `skill-audit.test.js` (the
+   doctored-copy rows are Silent Step, whose verdict is unchanged).
+5. `test/unit/spell-skill-text-engine.test.js`: eight facts end "ready again (#) rounds after you use it", the number measured by
+   `readyAfter` (use once, play plain rounds until the timer is gone); `spell-skill-text-wording.test.js`: the once-per-fight rule is
+   unchanged and a new rule reads `abilityReadyAfter` for every text that states a wait.
+6. `test/unit/value-ledger.test.js`: a `built (91.1-0N)` verdict part stands for the cited questions no other part names, and the
+   VALUE-03 test reads the three that stay `cd: "fight"`; `test/fixtures/value-ledger-open.md` (the checkpoint copy) quotes the
+   eight live texts so its doctored-copy tests keep running.
+
+**Text and ledger.** `docs/narrative-pass/why/s-91.1-02a.json` holds fourteen rows (the eight catalog texts and the four table-skill twins,
+each `after` read from the live corpus and chained from the key's latest `after`; the new `alreadyOn` refusal on the Oracle and the rail,
+a new line). The file is named `s-` so it sorts after the quick-task ledgers whose `after` it chains from (the same reason as
+`r-91-10.json`); `node tools/narrative-review.mjs` regenerated the pages and `--check` is in sync.

@@ -310,7 +310,8 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca; actions, dead and depth are unchanged.
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "4f510d2220ef9d022210f3165eff5800d941f543f7b88d23ecb19c0960e3c1db" },
+  // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, 4f510d22... -> 395 actions, dead, depth 4, 1de589c1...): the bot's Thief now uses Smoke again after a 6 round wait instead of once a fight (3 uses in the run, measured), so the run diverges at its second Smoke and ends dead at action 395 (measured twice by tools/roll-high-baseline.mjs pins).
+  "solo-thief-pilfer": { actions: 395, dead: true, depth: 4, hash: "1de589c14a54bb6524b03acdb3764581055f7d0906ed24bcfb5fd048c68ad00d" },
   // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
   // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
   // Just like players."): a foe's landed blow on a Joiner now rolls the
@@ -507,7 +508,8 @@ const PINNED = {
   // hash moves at step 102 as well through the transient `opened` flag on her combat entry. 297/dead/3 ->
   // 400/alive/3. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice); `save` was never run.
-  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "a803f03bd07c6eb7c7aa415e67c63185b591ce83c2dd80ef11549ee7682a324c" },
+  // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "party-fighter-knight" re-pinned (400 actions, alive, depth 3, a803f03b... -> 268 actions, dead, depth 3, 97e7955e...): the bot's Knight now uses Second Wind again after a 5 round wait instead of once a fight (3 uses in the run, plus the Joiner's own, measured), so the run diverges at its second Second Wind and the party dies at action 268 (measured twice by tools/roll-high-baseline.mjs pins).
+  "party-fighter-knight": { actions: 268, dead: true, depth: 3, hash: "97e7955e46215bb3567d33d82107c41c66cfe42ea82daced566cae677539ef34" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

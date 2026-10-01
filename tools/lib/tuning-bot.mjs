@@ -34,7 +34,7 @@ import { maxCharges, nightlyEats } from "../../engine/movement.js";
 import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
 import { isReady } from "../../engine/effects.js";
-import { abilityUnavailableReason } from "../../engine/abilities.js";
+import { abilityUnavailableReason, abilityTargetShortfall } from "../../engine/abilities.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
 import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
 import { abilityAblated, applyStartAblation, applyStrikeAblation } from "./ablation.mjs";
@@ -225,8 +225,10 @@ export function liveFoesHaveAbilities(state) {
  * once-a-fight, foe-targeted ability (mark/hamstring/cutpurse/lastStand)
  * should be aimed at — the highest `lvl`, ties broken by higher `wp`, then
  * the lowest index. Returns `null` with no live foe. Pure, no rng.
+ * Phase 91.1 plan 02 (V5): an optional `skip(foe)` predicate leaves a foe out
+ * (Hamstring and Mark never aim at a foe that already carries the effect).
  */
-export function hardestFoeIndex(state) {
+export function hardestFoeIndex(state, skip = null) {
   const C = state.combat;
   if (!C || !Array.isArray(C.foes)) return null;
   let best = -1;
@@ -234,6 +236,7 @@ export function hardestFoeIndex(state) {
   for (let i = 0; i < C.foes.length; i++) {
     const f = C.foes[i];
     if (!f || !f.alive) continue;
+    if (skip && skip(f)) continue;
     if (
       !bestFoe ||
       f.lvl > bestFoe.lvl ||
@@ -246,6 +249,12 @@ export function hardestFoeIndex(state) {
   return best === -1 ? null : best;
 }
 
+// Phase 91.1 plan 02 (V1 to V5): the once-per-fight abilities that are a
+// cooldown now, still aimed at the hardest foe; and the two that must find a
+// foe without the effect (chooseAbility below).
+const HARDEST_FOE_ABILITIES = Object.freeze(new Set(["kata", "feint", "overheadBlow", "lastStand"]));
+const FOE_GUARDED_ABILITIES = Object.freeze(new Set(["hamstring", "mark"]));
+
 /**
  * chooseAbility(state, ctx) — Phase 42 (BAL-01 second half): mirrors
  * engine/combat.js#pickMemberAbility's exact Joiner class-driven use policy
@@ -257,6 +266,11 @@ export function hardestFoeIndex(state) {
  * ability is on cooldown, or when nothing matches the policy. A once-a-fight
  * (`cd === "fight"`) FOE-targeted ability carries `target: hardestFoeIndex(state)`;
  * a self/cooldown-only ability carries no `target`. Pure, no rng.
+ * Phase 91.1 plan 02 (V1 to V5): Kata, Feint, Overhead Blow and Last Stand are
+ * cooldown abilities now and are still aimed at the hardest foe (the targeting
+ * is unchanged, only the wait is new); Hamstring and Mark go to the hardest
+ * live foe that does not already carry the effect, and are not chosen when
+ * every live foe does.
  */
 export function chooseAbility(state, ctx) {
   const C = state.combat;
@@ -273,6 +287,9 @@ export function chooseAbility(state, ctx) {
         // Quick 260928-nrf: the engine's own availability (Sweep refuses
         // with fewer than two living foes) — read, never re-derived.
         !abilityUnavailableReason(state, id) &&
+        // Phase 91.1 plan 02 (V5): Hamstring and Mark come back every 3 rounds,
+        // only for a live foe that does not carry the effect (engine rule).
+        !(FOE_GUARDED_ABILITIES.has(id) && hardestFoeIndex(state, (f) => !!abilityTargetShortfall(id, f)) === null) &&
         !ctx.abilityBlocked.has(id) &&
         // Quick 260928-abl: the off-by-default ablation switch (tools/lib/ablation.mjs).
         !abilityAblated(ctx.opts.ablate, id),
@@ -303,7 +320,9 @@ export function chooseAbility(state, ctx) {
   if (!meta) return null;
 
   const result = { key: meta.id };
-  if (meta.cd === "fight" && meta.target === "foe") {
+  if (FOE_GUARDED_ABILITIES.has(meta.id)) {
+    result.target = hardestFoeIndex(state, (f) => !!abilityTargetShortfall(meta.id, f));
+  } else if ((meta.cd === "fight" || HARDEST_FOE_ABILITIES.has(meta.id)) && meta.target === "foe") {
     result.target = hardestFoeIndex(state);
   }
   return result;

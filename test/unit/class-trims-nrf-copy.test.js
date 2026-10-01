@@ -91,10 +91,10 @@ test("(3) Kata's and Feint's texts state the +3 to hit and never promise a sure 
   for (const txt of [ABILITY_BY_ID.kata.txt, ABILITY_BY_ID.feint.txt, FIGHTER_SKILLS.Kata.txt, THIEF_SKILLS.Feint.txt]) {
     assert.doesNotMatch(txt, NEVER_MISSES, txt);
     assert.match(txt, /\+3 to hit on this strike/, txt);
-    assert.match(txt, /adds your level in damage; once per fight$/, txt);
+    assert.match(txt, /adds your level in damage; ready again 4 rounds after you use it$/, txt); // Phase 91.1 plan 02 (V1)
   }
-  assert.equal(ABILITY_BY_ID.kata.txt, "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight");
-  assert.equal(ABILITY_BY_ID.feint.txt, "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight");
+  assert.equal(ABILITY_BY_ID.kata.txt, "one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it");
+  assert.equal(ABILITY_BY_ID.feint.txt, "look left, stab right: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it");
 });
 
 test("(3) a missed Kata or Feint is an ordinary miss that names the ability, on the Oracle and the rail", () => {

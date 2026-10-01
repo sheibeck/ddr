@@ -52,7 +52,7 @@ import url from "node:url";
 
 import { SPELLS, ABILITIES, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/index.js";
 import { foeToHitVs, foeSwingVsHero, strikeDie, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
-import { useAbility, KATA_FEINT_NEED_SHIFT, SWEEP_MIN_FOES } from "../../engine/abilities.js";
+import { useAbility, abilityReadyAfter, KATA_FEINT_NEED_SHIFT, SWEEP_MIN_FOES } from "../../engine/abilities.js";
 import { playerStrike, applyFoeDamageToPlayer } from "../../engine/combat.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
@@ -304,7 +304,7 @@ test("every d20 range a spell or skill surface states is one number or low–hig
 
 test("Kata and Feint state +3 to hit (KATA_FEINT_NEED_SHIFT), the same words on the skill and the catalog ability; Overhead Blow states −2 to hit", () => {
   assert.equal(KATA_FEINT_NEED_SHIFT, 3);
-  const kata = `${signedText(KATA_FEINT_NEED_SHIFT)} to hit on this strike, and it adds your level in damage; once per fight`;
+  const kata = `${signedText(KATA_FEINT_NEED_SHIFT)} to hit on this strike, and it adds your level in damage; ready again ${abilityReadyAfter("kata")} rounds after you use it`;
   for (const id of ["ABILITIES.kata", "FIGHTER_SKILLS.Kata", "ABILITIES.feint", "THIEF_SKILLS.Feint"]) assert.ok(rowText(id).includes(kata), `${id}: ${rowText(id)}`);
   // Overhead Blow's own shift, measured from a real use (the strike event carries its mods).
   const state = fixedState({ abilities: ["overheadBlow"] }, { combat: fixedCombat([fixedFoe()]) });
@@ -313,7 +313,7 @@ test("Kata and Feint state +3 to hit (KATA_FEINT_NEED_SHIFT), the same words on 
   const strike = events.find((e) => e.type === "strikeMissed" || e.type === "struck");
   const mod = (strike.mods || []).find((m) => m.name === "overhead");
   assert.equal(signedText(mod.delta), `${MINUS}2`);
-  assert.ok(rowText("ABILITIES.overheadBlow").includes(`but ${signedText(mod.delta)} to hit; once per fight`), rowText("ABILITIES.overheadBlow"));
+  assert.ok(rowText("ABILITIES.overheadBlow").includes(`but ${signedText(mod.delta)} to hit; ready again ${abilityReadyAfter("overheadBlow")} rounds after you use it`), rowText("ABILITIES.overheadBlow"));
 });
 
 test("Sidestep and Battle Roar state 'foes −2 to hit' from the engine's shift: skill, ability, Oracle line and rail line say the same", () => {
@@ -463,6 +463,24 @@ test("every once-per-fight ability says 'once per fight' in its text, and no oth
   for (const a of ABILITIES) {
     assert.equal(/once per fight/.test(a.txt), a.cd === "fight", `${a.id}: cd ${a.cd}, txt "${a.txt}"`);
   }
+});
+
+// Phase 91.1 plan 02 (user rulings V1 to V5, 2026-10-01): an ability that comes back after a wait states it as
+// "ready again N rounds after you use it", N read from the engine (abilityReadyAfter: the cooldown, plus the effect
+// rounds first for a duration ability), and never together with "once per fight". A once-per-fight ability has no wait.
+test("an ability that says 'ready again N rounds after you use it' says the engine's N, once, and never beside 'once per fight'", () => {
+  let saying = 0;
+  for (const a of ABILITIES) {
+    const m = a.txt.match(/ready again (\d+) rounds after you use it/g);
+    if (!m) continue;
+    saying += 1;
+    assert.equal(m.length, 1, `${a.id}: says it once`);
+    assert.equal(a.cd === "fight", false, `${a.id}: a once-per-fight ability has no wait`);
+    assert.equal(Number(m[0].match(/\d+/)[0]), abilityReadyAfter(a.id), `${a.id}: ${a.txt}`);
+    assert.equal(/once per fight/.test(a.txt), false, a.id);
+  }
+  assert.equal(saying, 8, "Kata, Feint, Overhead Blow, Last Stand, Second Wind, Smoke, Hamstring and Mark");
+  for (const a of ABILITIES) if (a.cd === "fight") assert.equal(abilityReadyAfter(a.id), null, a.id);
 });
 
 // --- the orchestrator amendment: Q7, Q9, Q10, Q11 -----------------------------------

@@ -84,7 +84,7 @@ import { castSpell } from "./magic.js";
 // (abilities.js imports several combat.js functions; neither module reads
 // the other's binding at top-level module-evaluation time, only inside
 // function bodies, so the cycle is safe).
-import { abilityEffectTicks, abilityShortfall, KATA_FEINT_NEED_SHIFT, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
+import { abilityEffectTicks, abilityShortfall, abilityTargetShortfall, KATA_FEINT_NEED_SHIFT, applyPommel, applyDirtyTrick, applyPoison, applyHamstring, applyMark } from "./abilities.js";
 import { checkDeathPhobia } from "./phobias.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -2849,6 +2849,13 @@ function memberView(sheet, ally) {
  * living-foe count; an ability abilities.js#abilityShortfall refuses at that
  * count (Sweep below two foes) is not READY. Omitted (a direct test call),
  * no shortfall applies.
+ *
+ * Phase 91.1 plan 02 (user rulings V1 to V5, 2026-10-01): Kata, Feint,
+ * Overhead Blow, Last Stand, Second Wind, Smoke, Hamstring and Mark are
+ * cooldown abilities now (they were once per fight), so a Joiner reads their
+ * `isReady` on its own sheet like every other numeric cooldown; Hamstring and
+ * Mark are also not READY against a `target` that already carries the effect
+ * (abilities.js#abilityTargetShortfall).
  */
 export function pickMemberAbility(sheet, ally, round, target, liveCount) {
   const owned = Array.isArray(sheet.abilities) ? sheet.abilities : [];
@@ -2858,7 +2865,10 @@ export function pickMemberAbility(sheet, ally, round, target, liveCount) {
         ABILITY_BY_ID[id] &&
         ABILITY_BY_ID[id].cls === sheet.cls &&
         isReady(sheet, `ability:${id}`) &&
-        !(Number.isInteger(liveCount) && abilityShortfall(id, liveCount)),
+        !(Number.isInteger(liveCount) && abilityShortfall(id, liveCount)) &&
+        // Phase 91.1 plan 02 (V5): Hamstring and Mark never on a foe that
+        // already carries the effect (the hero's own refusal rule).
+        !abilityTargetShortfall(id, target),
     )
     .map((id) => ABILITY_BY_ID[id]);
   if (round === 1) {

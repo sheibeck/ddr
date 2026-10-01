@@ -390,6 +390,9 @@ function checkDoc(text) {
       if ((m = /^built \((91\.1-0[2-5])\)$/.exec(p))) ownerPairs.add(`${name}|${m[1]}`);
     }
     if (pairs.length) {
+      // Phase 91.1 plan 02a: a `built (91.1-0N)` part carries no V number of its own: it stands for every cited question
+      // the row's other parts (question, ruled, ruled keep) do not still name, so a built row keeps its Q cell.
+      if (parts.some((p) => /^built \(/.test(p))) for (const n of cited) if (!verdictNs.includes(n)) verdictNs.push(n);
       const a = [...new Set(verdictNs)].sort((x, y) => x - y).join(",");
       const b = [...new Set(cited)].sort((x, y) => x - y).join(",");
       if (a !== b) add(`row "${name}": the verdict covers V${a || "-"} but the Q cell cites V${b || "-"}`);
@@ -663,13 +666,21 @@ test("ledger abilities: adjacency, Kata and Feint keep their own row and a table
 });
 
 test("ledger abilities: every once-per-fight ability, skill and first-blow system is flagged once-per-fight and asked (VALUE-03)", () => {
+  // Phase 91.1 plan 02a: eight of the eleven came back (V1 to V5), so the live catalog lists three `cd: "fight"` entries;
+  // the ledger keeps the flag on all eleven (the question was asked), and each built row now reads built (91.1-02).
   const fight = Object.values(ABILITY_BY_ID).filter((a) => a.cd === "fight").map((a) => a.name);
+  assert.deepEqual(fight, ["Death Touch", "Silent Step", "Cutpurse"], "the catalog's cd: fight entries after V1 to V5");
+  const askedOnce = ["Kata", "Death Touch", "Second Wind", "Overhead Blow", "Last Stand", "Silent Step", "Feint", "Smoke", "Cutpurse", "Hamstring", "Mark"];
   const flagged = (name) => {
     const row = [...Object.values(DOC.tables)].flat().find((r) => r[0] === name);
     return row && row[2].includes("once-per-fight@");
   };
-  for (const n of [...fight, "Sing", "Stealth", "Cat Burglar", "Cutthroat", "Ninja"]) assert.ok(flagged(n), `${n} carries once-per-fight`);
-  assert.ok(fight.length >= 11, "the catalog's cd: fight entries");
+  for (const n of [...askedOnce, "Sing", "Stealth", "Cat Burglar", "Cutthroat", "Ninja"]) assert.ok(flagged(n), `${n} carries once-per-fight`);
+  for (const n of ["Kata", "Second Wind", "Overhead Blow", "Last Stand", "Feint", "Smoke", "Hamstring", "Mark"]) {
+    const row = [...Object.values(DOC.tables)].flat().find((r) => r[0] === n);
+    assert.match(row[5], /^built \(91\.1-02\)/, `${n} reads built`);
+    assert.match(row[6], /test\/unit\/value-abilities\.test\.js: V[1-5] /, `${n} names its value-abilities pin`);
+  }
   // the 2026-09-27 ruling: a strike that can one-shot a same-depth foe stays once per fight unless the user rules otherwise,
   // so at the checkpoint (the open copy) every one of them carried the recommendation keep
   for (const n of ["Kata", "Death Touch", "Overhead Blow", "Silent Step", "Feint", "Last Stand"]) {

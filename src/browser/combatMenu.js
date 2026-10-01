@@ -19,7 +19,7 @@ import { canCast, neverFlees, spellLevelFor, WORN_SLOTS, activationFor, wieldedS
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
 import { canParley, parleyBlockedReason, fleeRefusal, songReady } from "../../engine/combat.js";
-import { abilityRoundsLeft, abilityUnavailableReason } from "../../engine/abilities.js";
+import { abilityRoundsLeft, abilityUnavailableReason, abilityTargetShortfall } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
 
@@ -52,6 +52,10 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // living foes (engine/abilities.js#abilityUnavailableReason, the same rule
   // the engine refuses on) reads disabled with its reason.
   abilityTooFewFoes: "NEEDS TWO OR MORE FOES",
+  // Phase 91.1 plan 02 (user ruling V5, 2026-10-01): Hamstring and Mark come
+  // back 3 rounds after the use, only on a foe that does not carry the effect
+  // (engine/abilities.js#abilityTargetShortfall, the rule the engine refuses on).
+  abilityAlreadyOn: "ALREADY ON IT",
   abilityRound: "1 ROUND",
   abilityRounds: "{n} ROUNDS",
   abilitiesSub: "{ready}/{n} READY",
@@ -179,10 +183,17 @@ function abilityRows(c, state) {
       // Quick 260928-nrf: a ready ability the fight itself refuses (Sweep
       // with one living foe) shows its reason and reads disabled; it stays
       // dispatchable, so a tap lands the engine's own refusal line.
-      const shortfall = ready ? abilityUnavailableReason(state, key) : null;
+      let shortfall = ready ? abilityUnavailableReason(state, key) : null;
+      // Phase 91.1 plan 02 (V5): the current target already carries the effect.
+      if (ready && !shortfall && state && state.combat) {
+        const aimed = state.combat.foes && state.combat.foes[state.combat.target];
+        if (aimed && aimed.alive && abilityTargetShortfall(key, aimed)) shortfall = "alreadyOn";
+      }
       let cost;
       if (shortfall === "tooFewFoes") {
         cost = COMBAT_MENU_COPY.abilityTooFewFoes;
+      } else if (shortfall === "alreadyOn") {
+        cost = COMBAT_MENU_COPY.abilityAlreadyOn;
       } else if (ready) {
         cost = meta.cd === "fight" ? COMBAT_MENU_COPY.abilityReadyOnce : COMBAT_MENU_COPY.abilityReady;
       } else if (meta.cd === "fight") {

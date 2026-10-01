@@ -3,7 +3,7 @@
 // Quick 260927-opf (user ruling 2026-09-27): the presentation half of the
 // once-per-fight strikes (test/unit/once-per-fight.test.js holds the engine
 // half). A spent ability's refusal reads in voice on the Oracle and the rail
-// ("Feint: spent for this fight"), and the combat menu row says once per
+// ("Silent Step: spent for this fight"; Phase 91.1 plan 02 re-pinned it from Feint, a 4-round cooldown now), and the combat menu row says once per
 // fight, ready or spent; the Hero tab's ability rows use the same words.
 
 import test from "node:test";
@@ -58,24 +58,24 @@ function fightState(abilities) {
 }
 
 test("the spent refusal reads in voice on the Oracle and the rail", () => {
-  const e = { type: "abilityRefused", key: "feint", reason: "spent", name: "Feint" };
-  assert.equal(strip(EVENT_NARRATION.abilityRefused(e)), "Feint: spent for this fight. It works once, and you have had your once.");
-  assert.equal(LINE_FOR.abilityRefused(e).text, "Feint: spent for this fight.");
+  const e = { type: "abilityRefused", key: "silentStep", reason: "spent", name: "Silent Step" };
+  assert.equal(strip(EVENT_NARRATION.abilityRefused(e)), "Silent Step: spent for this fight. It works once, and you have had your once.");
+  assert.equal(LINE_FOR.abilityRefused(e).text, "Silent Step: spent for this fight.");
   assert.equal(LINE_FOR.abilityRefused(e).tone, "block");
 });
 
 test("the combat menu row says once per fight, ready or spent", () => {
-  const s = fightState(["feint", "dirtyTrick"]);
+  const s = fightState(["silentStep", "dirtyTrick"]);
   const rowOf = (st, key) => combatMenuViewModel(st).submenus.abilities.rows.find((r) => r.id === `ability-${key}`);
-  assert.equal(rowOf(s, "feint").cost, COMBAT_MENU_COPY.abilityReadyOnce);
+  assert.equal(rowOf(s, "silentStep").cost, COMBAT_MENU_COPY.abilityReadyOnce);
   assert.equal(COMBAT_MENU_COPY.abilityReadyOnce, "READY · ONCE PER FIGHT");
-  assert.match(rowOf(s, "feint").desc, /once per fight$/);
+  assert.match(rowOf(s, "silentStep").desc, /once per fight/);
   assert.equal(rowOf(s, "dirtyTrick").cost, COMBAT_MENU_COPY.abilityReady);
   assert.equal(combatMenuViewModel(s).actions.find((a) => a.key === "abilities").sub, "2/2 READY");
-  useAbility(s, "feint", fakeRng(FILL), []);
-  assert.equal(rowOf(s, "feint").cost, COMBAT_MENU_COPY.abilityUsedUp);
+  useAbility(s, "silentStep", fakeRng(FILL), []);
+  assert.equal(rowOf(s, "silentStep").cost, COMBAT_MENU_COPY.abilityUsedUp);
   assert.equal(COMBAT_MENU_COPY.abilityUsedUp, "ONCE PER FIGHT · SPENT");
-  assert.equal(rowOf(s, "feint").enabled, true, "still tappable; the engine's refusal explains");
+  assert.equal(rowOf(s, "silentStep").enabled, true, "still tappable; the engine's refusal explains");
   assert.equal(combatMenuViewModel(s).actions.find((a) => a.key === "abilities").sub, "1/2 READY");
 });
 
