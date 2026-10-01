@@ -298,7 +298,7 @@ Plans:
   2. A new Wizard's Grimoire always shows at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled, and this holds across a wide seed sweep.
   3. An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
 
-**Plans:** 8/10 plans executed
+**Plans:** 9/10 plans executed
 
 Plans:
 **Wave 1**
@@ -332,7 +332,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 91-09-PLAN.md — IDENT-20: the Fridgian frenzy on a d6 (4–6), the hide on a Fridgian Joiner (Q7); every other engine ruling and audit fix assigned to 91-09, one pin per row
+- [x] 91-09-PLAN.md — IDENT-20: the Fridgian frenzy on a d6 (4–6), the hide on a Fridgian Joiner (Q7); every other engine ruling and audit fix assigned to 91-09, one pin per row
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -424,7 +424,7 @@ Plans:
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
-| 91. Race & Sub-class Audit | 8/10 | In Progress|  |
+| 91. Race & Sub-class Audit | 9/10 | In Progress|  |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
