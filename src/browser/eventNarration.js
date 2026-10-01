@@ -142,6 +142,12 @@ const SPELL_FADE_WHAT = {
 // Phase 90 plan 07 (SPELL-10): the cast line per timed-spell kind (spellEffectStarted).
 // `fact` states the rule and the window; `joke` is the house-voice closer from
 // the accepted slate (90-SPELL-SLATE-DRAFT.md). A recast says it starts over.
+// Phase 90 plan 10: the rule a Joiner's own timed spell gives THEM (Open/Lock and Fly are never a
+// Joiner's pick): what is on its sheet for the window.
+const MEMBER_SPELL_START = {
+  enchant: "foes −2 to hit them and no critical landing on them",
+  haste: "two blows a swing",
+};
 const SPELL_START = {
   unlock: {
     fact: (sq) => `Open/Lock: the next chest you reach within ${sq} opens with no lock roll`,
@@ -671,7 +677,8 @@ export const EVENT_NARRATION = {
   deathTouch: (e) => `<span class="hit">One touch. ${e.target ?? "It"} drops.</span>`,
   // VOX-05 (Phase 79, plan 79-04): the line says what the armour cost you.
   backstabDenied: () => `<span class="miss">Heavy armour gives you away: no sneak attack.</span>`,
-  stealthStrike: () => `<span class="hit">They never saw you. Critical.</span>`,
+  // Phase 90 plan 10 (Q10 A): a Joiner Fighter's Stealth opens its fight the same way (`member`).
+  stealthStrike: (e) => (e?.member ? `<span class="hit">${e.member}: they never saw it coming. Critical.</span>` : `<span class="hit">They never saw you. Critical.</span>`),
   backstab: () => `<span class="hit">A blade in the back. Critical.</span>`,
   conArtistOpener: () => `<span class="beat">You had the perfect backstab lined up — and announced it instead. All flourish, no follow-through.</span>`,
   ninjaFirstStrike: () => `<span class="hit">One perfect opening strike.</span>`,
@@ -1155,7 +1162,11 @@ export const EVENT_NARRATION = {
       ? `<span class="hit">${e.member}: Every foe swings at them this round. Good luck to them.</span>`
       : `<span class="hit">Every foe looks at you. Armour doubles. Good luck.</span>`,
   lastStandCalled: (e) => `<span class="beat">${e.member ? `${e.member}: ` : ""}Under a quarter. ${e.attacks ?? 3} attacks this round. Make them count.</span>`,
-  dirtyTrickLanded: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is blinded for ${plural(e.rounds ?? 2, "round")}. Sand, thumb, elbow.</span>`,
+  // Phase 90 plan 10: `rounds` 0 is a foe already blind for the fight (a Blind spell): the sand adds nothing.
+  dirtyTrickLanded: (e) =>
+    e.rounds === 0
+      ? `<span class="miss">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} was already blind for the fight.</span> The sand is just sand.`
+      : `<span class="hit">${e.member ? `${e.member}: ` : ""}${e.target ?? "It"} is blinded for ${plural(e.rounds ?? 2, "round")}. Sand, thumb, elbow.</span>`,
   foeSightReturned: (e) => `${e.name ?? "It"} blinks the sand out.`,
   // ROLL-04 (79-04): a foe's strike die scales with its level (engine/
   // derived.js#foeDie), so Smoke speaks in faces, never "a natural 1". Only
@@ -1360,14 +1371,29 @@ export const EVENT_NARRATION = {
   // `kind` is the act kind, `squares` the stretched window, `restarted` a recast
   // of a live one. The fact (the rule and the window) leads, the joke closes it;
   // a kind with no table row falls back to the plain spell name and window.
+  // Phase 90 plan 10 (SPELL-10): a Joiner's own cast (`member`) says whose it is and what it does for THEM
+  // (its blows, the foes' swings at it); a Joiner's recast says it starts over.
   spellEffectStarted: (e) => {
-    const row = SPELL_START[e?.kind];
     const sq = `<span class="roll">${squaresText(e?.squares)}</span>`;
+    // Only the two kinds a Joiner can cast (MEMBER_SPELL_START) read as its own; any other kind keeps the hero's line.
+    const mine = e?.member ? MEMBER_SPELL_START[e?.kind] : null;
+    if (mine) {
+      return e.restarted
+        ? `<span class="hit">${e.member}: ${e.spell ?? "the spell"} starts over, ${sq} of ${mine}.</span> It does not stack, however politely they ask.`
+        : `<span class="hit">${e.member} casts ${e.spell ?? "a spell"} on themselves: ${sq} of ${mine}.</span> The party does not clap, but it notices.`;
+    }
+    const row = SPELL_START[e?.kind];
     if (!row) return `<span class="hit">${e?.spell ?? "The spell"} takes hold for ${sq}.</span>`;
     return e?.restarted
       ? `<span class="hit">${row.again(sq)}.</span> It does not stack, however politely you ask.`
       : `<span class="hit">${row.fact(sq)}.</span> ${row.joke}`;
   },
+  // Phase 90 plan 10 (SPELL-10): a Joiner Magic User heals itself from its own book (engine/combat.js#allyCast).
+  // `gained` is the hp actually added after the clamp to its own maximum; `halved` a Summoner's halved heal.
+  memberHealed: (e) =>
+    gainOf(e, e.amount) > 0
+      ? `<span class="hit">${e.name ?? "Your companion"} casts ${e.spell ?? "a healing spell"} on themselves: +${gainOf(e, e.amount)} hp${cappedNote(gainOf(e, e.amount), e.amount)}.</span> Self-care, in a dungeon. Bold.`
+      : `<span class="miss">${e.name ?? "Your companion"} casts ${e.spell ?? "a healing spell"} on themselves, already at full hp.</span> Thorough, at least.`,
   // Phase 90 (SPELL-09): a spell-sourced timed effect running out
   // (engine/items.js#narrateTimerTransitions). SPELL_FADE_WHAT names what stops
   // per effect kind; a kind with no clause here just wears off.

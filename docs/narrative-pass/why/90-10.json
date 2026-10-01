@@ -1,0 +1,101 @@
+[
+  {
+    "key": "oracle:memberHealed",
+    "surface": "oracle",
+    "trigger": "memberHealed — a Joiner Magic User casts a healing spell on itself (engine/combat.js#allyCast)",
+    "before": "",
+    "after": "Viper casts Heal on themselves: +2 hp. Self-care, in a dungeon. Bold.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: a Joiner Magic User at or below half its hit points now heals itself from its own book. The line names who cast what, leads with the hp actually gained (a heal that was capped names its roll and says back to full; one at full hp says so, never +0), then the joke."
+  },
+  {
+    "key": "rail:memberHealed",
+    "surface": "rail",
+    "trigger": "memberHealed — a Joiner Magic User heals itself",
+    "before": "",
+    "after": "Viper patches itself up: +2 hp (Heal).",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Oracle line: who, how many hp, from which spell; \"back to full\" when the roll was capped."
+  },
+  {
+    "key": "oracle:spellEffectStarted",
+    "surface": "oracle",
+    "trigger": "spellEffectStarted — a Joiner casts Speed of Sound or Enchant Character on itself (the line names the Joiner and what the spell does for it)",
+    "before": "Fly: a few squares of flight, so walls and crevices are crossed with no roll and water costs one square. Your feet leave the floor. The floor takes it personally.",
+    "after": "the companion casts Heal on themselves: a few squares of two blows a swing. The party does not clap, but it notices.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: a Joiner Magic User opens a fight with Speed of Sound or Enchant Character on its own sheet. Its line names the Joiner, the window and the rule that applies to a Joiner (two blows a swing; foes −2 to hit it and no critical on it), not the hero's \"you act first\"; a recast says it starts over. The hero's four lines are unchanged."
+  },
+  {
+    "key": "rail:spellEffectStarted",
+    "surface": "rail",
+    "trigger": "spellEffectStarted — a Joiner casts Speed of Sound or Enchant Character on itself",
+    "before": "Fly: a few squares of flight. Walls and crevices are scenery; water costs one.",
+    "after": "the companion: Heal takes hold, a few squares (two blows a swing).",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Joiner line: who, which spell, how many squares and what it does for them."
+  },
+  {
+    "key": "oracle:stealthStrike",
+    "surface": "oracle",
+    "trigger": "stealthStrike — a Joiner Fighter with Stealth opens its fight with a critical (Q10 A)",
+    "before": "They never saw you. Critical.",
+    "after": "the companion: they never saw it coming. Critical.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "ABIL-06, Q10 A: a Joiner Fighter's Stealth now works as the text says, so its opening critical gets its own line naming it instead of reading as the hero's (\"They never saw you\")."
+  },
+  {
+    "key": "rail:stealthStrike",
+    "surface": "rail",
+    "trigger": "stealthStrike — a Joiner Fighter's Stealth critical",
+    "before": "Unseen strike — critical.",
+    "after": "the companion: unseen strike, critical.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin: the Joiner is named."
+  },
+  {
+    "key": "oracle:dirtyTrickLanded",
+    "surface": "oracle",
+    "trigger": "dirtyTrickLanded — Dirty Trick on a foe the Blind spell already blinded for the fight (rounds 0)",
+    "before": "Viper is blinded for 3 rounds. Sand, thumb, elbow.",
+    "after": "the companion: Viper was already blind for the fight. The sand is just sand.",
+    "reasons": [
+      "fact",
+      "accurate",
+      "joke"
+    ],
+    "why": "ABIL-06 (Dirty Trick): the trick adds no countdown to a foe already blind for the fight, so the line stopped promising \"0 rounds\" and now says what happened. A foe that is not already blind still reads \"blinded for 2 rounds\", which the countdown (now counted on every visit a live foe takes) makes true."
+  },
+  {
+    "key": "rail:dirtyTrickLanded",
+    "surface": "rail",
+    "trigger": "dirtyTrickLanded — Dirty Trick on a foe already blind for the fight",
+    "before": "the companion: Viper is blinded for 0 rounds.",
+    "after": "the companion: Viper was already blind for the fight.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin of the Oracle line: no \"0 rounds\"."
+  }
+]

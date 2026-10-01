@@ -121,6 +121,66 @@ Every path that hands out a spell, and the gate each reads. No race rule forbids
 | The combat spell menu and `castSpell` (`derived.js#canCast`) | book membership, `spellLevelFor(sub, sp) <= level` and `level >= schoolGate(sub, school)`; it also re-checks that the school is allowed for a Magic User sub-class (`schoolClosed`), so an old or tampered book never casts or lists a spell its sub-class can never learn (90-06), and a refused cast names it (`spellSchoolLocked` with `forbidden`); the old save load drops such a spell outright (the hero's book, every Joiner's and a pending Joiner's); the Grimoire row prints the effective level (`spellLevelFor`) and a closed school's row reads "Not your school" | fixed engine (90-06) |
 | A Joiner's cast (`combat.js#alliesTurn`, `bestAttackSpell`) | `canCast({ c: view }, sp)` on the Joiner's own book and level | match |
 
+## Joiner casters
+
+Built in 90-10 (SPELL-10, 90-CONTEXT "Joiner Magic Users cast the new spells when useful"). A Magic User Joiner casts from its OWN book (`canCast({ c: view }, sp)`, so the school gates and levels hold) and pays from its OWN sheet's charges, never the hero's. Its turn runs in this order (`engine/combat.js#alliesTurn`): Phase 89's item policy (a ready worn item in round 1; a potion at or below a third of its hit points), then its class ability (`pickMemberAbility`, Fighters and Thieves), then `pickMemberSpell` (pure, no rng), then its best attack spell (`bestAttackSpell`, Ice included), then its staff. `pickMemberSpell` tries, and the first castable pick wins (the higher effective level inside one step, then `SPELLS` order):
+
+1. **A heal.** At or below half its hit points, a castable healing spell on itself (`memberHealed`: the spell's dice from a derived stream, the Cleric's +3, a heal2x race's doubling, then the sub-class's healMul, clamped to the Joiner's own maximum).
+2. **A room control.** Three or more live foes: the highest-level castable of Stop Time (`timestop`), Size of the Behemoth (`behemoth`) and Doze (`status`), unless it is already in force on every live foe (all held in time, all cowering, all asleep).
+3. **A round-1 buff.** Round 1 only: a `timed` row whose act kind is `haste` (Speed of Sound) or `enchant` (Enchant Character) that is not already live on its sheet; a `spell:` record on its own sheet, stretched by its own school bonus (`spellEffectSquares`), ticking by the squares the party walks and fading with `spellEffectFaded` naming it.
+4. **A single control.** A live foe at or above the Joiner's level with more than half its hit points (the hero's current target first): Duplicate Foe or Senseless (`misdirect`) or Stun (`stun`), whichever is castable and not already on that foe (Senseless needs another live foe to turn it on).
+5. **Nothing:** the best attack spell, then the staff.
+
+Each pick resolves through the hero's own shared tail (`stopTime`, `behemothRoar`, `misdirectFoe`, `stunFoe`, `dozeFoes`, `startSpellEffect`), the Joiner's name on every event (`by`, or `member` on `spellEffectStarted`). A Joiner never backfires (an Apprentice Joiner included; Phase 91 owns that wording). The Joiner column below says, per spell, where a Joiner casts it or why it never does.
+
+| Spell | Joiner |
+|---|---|
+| Heal | casts (step 1: heal first) |
+| Shield | never: a Joiner takes blows through `applyFoeDamageToMember`, which has no ward, so a Shield on it would absorb nothing |
+| Strength | never: its extra d10 joins the HERO's damage rolls only (`derived.js#strengthRoll` is read by the hero's blows and casts) |
+| Doze | casts (step 2 against three or more foes, else the best-attack-spell path) |
+| Freeze | casts (best attack spell) |
+| Map the Floor | never: the map is the party leader's, and the spell has no fight use |
+| Mirror Self | never: nothing counts a Joiner's mirror down or clears it (the hero's `c.mirror` ticks in `foeTurn`; a Joiner's would never end) |
+| Stun | casts (step 4, a single control; also the best-attack-spell path) |
+| Weaken | casts (best attack spell, a room weaken) |
+| Acid | never: outside the Joiner's attack kinds (`ATTACK_SPELL_KINDS`), a standing decision, not a missing read |
+| Stupidity | never: outside the Joiner's attack kinds |
+| Blind | never: outside the Joiner's attack kinds |
+| Shrink | never: outside the Joiner's attack kinds |
+| Ice | casts (best attack spell: d10 + its own level² to every foe, a freeze for each survivor) |
+| Earthquake | never: it hurts the caster and only the hero is hurt, never a Joiner |
+| Noxious Vapor | never: outside the Joiner's attack kinds |
+| Fireballs | never: outside the Joiner's attack kinds |
+| Petrify | never: outside the Joiner's attack kinds |
+| Insane | never: outside the Joiner's attack kinds |
+| Summon | never: the one summoned ally (`C.ally`) is the hero's decision |
+| Fireball | casts (best attack spell) |
+| Major Heal | casts (step 1: heal first) |
+| Bubble | never: no member-side ward read |
+| Sense Danger | never: initiative is the hero's |
+| Turn Walking Dead | never: outside the Joiner's attack kinds (and the answer is the caster's) |
+| Plane Gate | never: outside the Joiner's attack kinds |
+| Sense Presence | never: it reads the hero's own `c.senses` |
+| Lightning | casts (best attack spell; hits every foe, Q8 A) |
+| Regeneration | never: only the hero's `c.regen` ticks in `foeTurn` |
+| Mangle | casts (best attack spell) |
+| Death | never: outside the Joiner's attack kinds, and its 25 hp fee is the caster's own |
+| Lesser Summon | removed (90-06) |
+| Phantom Host | removed (90-06) |
+| Open/Lock | never: a maze tool, the leader's chests |
+| Fly | never: a maze tool, the leader moves the party |
+| Enchant Character | casts (step 3, round 1): foes −2 to hit it and no critical lands on it; its staff blows do not read the +2 to hit (`memberToHit` reads class, race and sub-class alone) |
+| Speed of Sound | casts (step 3, round 1): two blows a swing (a Joiner's haste read); the first move in every fight is the hero's initiative |
+| Stop Time | casts (step 2: room control) |
+| Senseless | casts (step 4: single control, with another foe to hit) |
+| Duplicate Foe | casts (step 4: single control) |
+| Door Illusion | never: leaving the fight is the hero's decision |
+| Chameleon Tongue | never: the fight's one parley is the hero's decision |
+| Size of the Behemoth | casts (step 2: room control; routed and cowering counts from its own level) |
+
+Pinned by `test/unit/joiner-casters.test.js` (the order, each step, the never-list in 200 scripted fights, the charges, the tick, the empty, adjacency, encoding and ordering edges).
+
 ## Cross-cutting rules
 
 **The universal intelligence resist (as it stands).** Every spell cast on a foe, damage spells included, rolls `combat.js#foeResistsSpell` once per targeted foe (user ruling 2026-09-27): half the foe's intelligence in winning faces on a d20, `max(1, round(intelligence / 2))`, so the foe resists on `21 − faces` or better. Intelligence 1–2 resists on 20 (5%), 3 on 19–20, 6 on 18–20 (15%), 10 on 16–20 (25%), 16 on 13–20 (40%), 20 on 11–20 (50%). A resisted spell does nothing to that foe; the turn and the charge are spent. The roll comes from a derived stream, so it never moves the main rng. The caster's own kinds (`SPELL_SELF_KINDS`: summon, ward, might, regen, heal, reveal, foresee, mirror, senses) are never resisted. Until 90-04 the control sites (Doze, Stun, Stupidity, Blind, Shrink, Ice's freeze, Noxious Vapor's sleep, Insane's sleep, Petrify) also rolled `resistControl` past floor 12 (1 face in 20 at floor 13, one more a floor, up to 15) and capped a landed control at three rounds (the RULES-18 knee, `engine/difficulty.js#CONTROL_AT_DEPTH`); both are gone from every spell.
