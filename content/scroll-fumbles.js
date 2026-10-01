@@ -11,17 +11,18 @@
 //   - `rounds` — dice notation `{ n, sides, bonus }` (never a string)
 //   - `kind` — for `out` rows only: "asleep" | "stupefied" | "maddened"
 //   - `how` — for `heavy` rows only: what the spell tried to do
-//   - `then` — Ice only: what happens if its burn runs out mid-fight ("heavy")
 //   - `once` — Earthquake only: it rolls once for everyone, as its own
 //     castSpell branch does
+// (Phase 90 plan 05: Ice's old `then: "heavy"` hand-off is gone with Ice's
+// damage-over-time. Ice is now an area damage row, the Lightning shape: it
+// hits the reader and the reader's side, each its own roll.)
 //
 // User rulings (2026-09-25, two rounds, decided after planning — see
 // .planning/phases/75.1-pilfer-fumbles-scroll-reading/75.1-CONTEXT.md
 // "Fumble severity rulings"):
 //   - No fumble kills outright. Freeze, Petrify and Death are `heavy` (a
 //     derived d10 + depth, unsoaked, plus Afraid) instead of an instant
-//     kill; Ice's end-of-burn and Noxious Vapor's killing face resolve the
-//     same way.
+//     kill; Noxious Vapor's killing face resolves the same way.
 //   - Turn-loss fumbles cost the hero AT MOST d4 turns: Doze, Stun,
 //     Stupidity and Insane are `out` rows, and Noxious Vapor's sleeping face
 //     is also an out for d4. No row costs turns for the whole fight, and
@@ -62,7 +63,7 @@ export const SCROLL_FUMBLE = Object.freeze({
   "Stupidity": Object.freeze({ side: "harmful", effect: "out", kind: "stupefied", rounds: D4 }),
   "Blind": Object.freeze({ side: "harmful", effect: "blind" }),
   "Shrink": Object.freeze({ side: "harmful", effect: "shrink" }),
-  "Ice": Object.freeze({ side: "harmful", effect: "dot", rounds: D4_PLUS_1, then: "heavy" }),
+  "Ice": Object.freeze({ side: "area", effect: "damage" }),
   "Earthquake": Object.freeze({ side: "area", effect: "damage", once: true }),
   "Noxious Vapor": Object.freeze({ side: "harmful", effect: "vapor", rounds: D4 }),
   "Fireballs": Object.freeze({ side: "area", effect: "volley" }),

@@ -333,7 +333,8 @@ function resistLine(foe, type, name, state) {
 // hero's swing at the top face, stated as "you hit it only on {range}".
 // Shielded, Bubbled, Rebound, Strong, Regenerating and Senses move no
 // to-hit roll and stay null.
-const EFFECT_YOU_KEYS = new Set(["asleep", "held"]);
+// Phase 90 plan 05: a Doze's sleepers carry their own `dozing` chip, floored the same way.
+const EFFECT_YOU_KEYS = new Set(["asleep", "dozing", "held"]);
 const EFFECT_YOU_ONLY_KEYS = new Set(["mirror"]);
 const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
 

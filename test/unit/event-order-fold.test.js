@@ -217,7 +217,7 @@ const SYNTHETIC = [
     { type: "dozed", target: "Orc", rounds: 2 },
     { type: "resistFailed", target: "Imp", roll: 4, atLeast: 12, dieN: 20 },
     { type: "struckByFoe", name: "Bat", dmg: 1 },
-    { type: "stunned", target: "Imp", rounds: 1 },
+    { type: "controlHeld", target: "Imp", kind: "stunned", rounds: 1, source: "Stun" }, // Phase 90 plan 05: Stun is a one-foe hold now (the "N foes asleep" stunned line is retired)
   ]],
   ["flee-chains", "flee", [
     { type: "fleeRolled", roll: 3, atLeast: 10, dieN: 20 },

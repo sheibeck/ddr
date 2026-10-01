@@ -174,7 +174,7 @@ function markingEvents(rng, type) {
 }
 
 const FIELDS = ["wp", "maxWP", "alive", "asleep", "stupid", "blind", "blindFor", "frozen", "shrunk", "held", "resisted"];
-const CAST = new Set(["stunned", "dozed", "weakened", "stupefied", "blinded", "shrunk", "petrified", "vaporRolled", "insaneRolled", "spellHit", "frozenSolid", "foeStoned", "controlResisted", "controlHeld"]);
+const CAST = new Set(["dozed", "dozeFailed", "weakened", "stupefied", "blinded", "shrunk", "petrified", "vaporRolled", "insaneRolled", "spellHit", "frozenSolid", "foeStoned", "controlResisted", "controlHeld"]);
 function digest(s, events, rng) {
   return {
     n: rng.count(),
@@ -193,8 +193,8 @@ function digest(s, events, rng) {
 /** The ten spell scenarios: [spell, caster level, foes, main sequence]. */
 const SPELL_SCENARIOS = {
   Freeze: ["Freeze", 1, 2, [1, 4, ...PAD(20)]],
-  Doze: ["Doze", 1, 1, [3, ...PAD(20)]],
-  Stun: ["Stun", 1, 3, [6, 2, 3, 4, ...PAD(20)]],
+  Doze: ["Doze", 1, 1, [1, 3, ...PAD(20)]], // Phase 90 plan 05: the d4 reach (1) first, then the sleeper's own d4 (3)
+  Stun: ["Stun", 1, 3, [3, ...PAD(20)]], // Phase 90 plan 05: one foe held for its d4 (3)
   Weaken: ["Weaken", 1, 2, [3, ...PAD(20)]],
   Stupidity: ["Stupidity", 2, 1, [...PAD(20)]],
   Blind: ["Blind", 3, 1, [...PAD(20)]],
@@ -218,8 +218,10 @@ function castScenario(key, depth, acts = quietActs(SPELL_SCENARIOS[key][0])) {
 // knee (damage, then a d4-round freeze at every depth), so its floor-12 row
 // is gone from this pre-plan table; test/unit/freeze-rule.test.js pins it.
 const PRE_PLAN_FLOOR_12 = {
-  Doze: { n: 1, ev: ["dozed", "foeSlept"], cast: [{ type: "dozed", target: "F1", rounds: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 2 }], weakened: false, timers: [] },
-  Stun: { n: 4, ev: ["stunned", "foeSlept", "foeSlept", "foeSlept"], cast: [{ type: "stunned", count: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 1 }, { wp: 30, maxWP: 30, alive: true, asleep: 2 }, { wp: 30, maxWP: 30, alive: true, asleep: 3 }], weakened: false, timers: [] },
+  // Phase 90 plan 05 (SPELL-11, declared): Doze draws its d4 reach first (n 1 -> 2: the reach, then the sleeper's d4; the sleep itself is unchanged: dozed rounds 3, asleep 2 after one visit).
+  Doze: { n: 2, ev: ["dozed", "foeSlept"], cast: [{ type: "dozed", target: "F1", rounds: 3 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 2 }], weakened: false, timers: [] },
+  // Phase 90 plan 05 (SPELL-11, declared): Stun holds ONE foe (the aimed F1) for its d4 (3): a controlHeld "stunned" line instead of the "N foes asleep" count line, one d4 instead of a d6 and a d4 per foe (n 4 -> 3: the d4, then the two other foes' to-hit draws); F1 skips its turn (held left 2) while F2 and F3 swing instead of sleeping.
+  Stun: { n: 3, ev: ["controlHeld", "foeStillHeld", "foeMissed", "foeMissed"], cast: [{ type: "controlHeld", target: "F1", kind: "stunned", rounds: 3, source: "Stun" }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0, held: { kind: "stunned", left: 2 } }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: false, timers: [] },
   Weaken: { n: 3, ev: ["weakened", "foeMissed", "foeMissed"], cast: [{ type: "weakened", rounds: 4 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0 }, { wp: 30, maxWP: 30, alive: true, asleep: 0 }], weakened: true, timers: ["spell:weaken"] },
   // Phase 90 plan 04 (SPELL-12, declared): Stupidity no longer skips the foe's turns (it acts: foeMissed, one to-hit draw) and its line carries `intel` 1 and `was`.
   Stupidity: { n: 1, ev: ["stupefied", "foeMissed"], cast: [{ type: "stupefied", target: "F1", intel: 1, was: 1 }], foes: [{ wp: 30, maxWP: 30, alive: true, asleep: 0, stupid: true }], weakened: false, timers: [] },
@@ -240,7 +242,8 @@ test("floor 12: every hero control spell (Freeze excepted, user rulings 2026-09-
     if (key === "Freeze") continue; // moved by the 2026-09-28 rulings: freeze-rule.test.js
     const { s, rng, events } = castScenario(key, 12);
     assert.deepEqual(digest(s, events, rng), PRE_PLAN_FLOOR_12[key], key);
-    assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, key);
+    // Stun's own rolled d4 hold is its landed effect (Phase 90 plan 05); no other control line is a hold.
+    assert.equal(events.some((e) => e.type === "controlResisted" || (e.type === "controlHeld" && key !== "Stun")), false, key);
   }
 });
 
@@ -308,36 +311,47 @@ test("Freeze (C1): a blow that drops the foe to 0 hp is a normal kill (no frozen
 test("Doze (C7) floor 20: resisted -> one rising spellResisted, awake, no d4 drawn, no Unmoved mark; landed -> asleep the rolled d4 (never capped)", () => {
   const r = spellState(20, "Doze", 1, 1);
   r.acts = findRisingActs(20, [["Doze", 0, true]]);
-  const rngR = fakeRng([3, ...PAD(10)]);
+  // Phase 90 plan 05: the d4 reach (1) is drawn first, then the sleeper's d4 (3, never taken when it resists).
+  const rngR = fakeRng([1, 3, ...PAD(10)]);
   const evR = castSpell(r, IDX.Doze, rngR, []);
   assert.equal(r.combat.foes[0].asleep, 0);
   assert.equal("resisted" in r.combat.foes[0], false);
   assert.equal(evR.some((e) => e.type === "dozed"), false);
+  assert.equal(evR.filter((e) => e.type === "dozeFailed").length, 1, "the one closing line");
   assert.equal(evR.filter((e) => e.type === "spellResisted").length, 1);
   assert.equal(evR.find((e) => e.type === "spellResisted").depthFaces, 8);
   assert.equal(evR.some((e) => e.type === "controlResisted"), false);
 
   const l = spellState(20, "Doze", 1, 1);
   l.acts = findRisingActs(20, [["Doze", 0, false]]);
-  const evL = castSpell(l, IDX.Doze, fakeRng([3, ...PAD(10)]), []);
+  const evL = castSpell(l, IDX.Doze, fakeRng([1, 3, ...PAD(10)]), []);
   assert.equal(evL.find((e) => e.type === "dozed").rounds, 3, "the rolled d4, never capped");
   assert.equal(l.combat.foes[0].asleep, 2, "one visit already spent this dispatch");
   assert.equal("resisted" in l.combat.foes[0], false);
 });
 
-test("Stun (C8) floor 20: three affected foes, the second resists — 1 and 3 asleep, 2 awake (no mark, no d4); count 2; one d4 per foe that failed its resist", () => {
-  const s = spellState(20, "Stun", 1, 3);
-  s.acts = findRisingActs(20, [["Stun", 0, false], ["Stun", 1, true], ["Stun", 2, false]]);
-  const rng = fakeRng([6, 2, 4, ...PAD(10)]);
-  const events = castSpell(s, IDX.Stun, rng, []);
-  const [f1, f2, f3] = s.combat.foes;
-  assert.equal(f1.asleep, 1); // d4 2, one visit spent
-  assert.equal(f2.asleep, 0);
-  assert.equal("resisted" in f2, false);
-  assert.equal(f3.asleep, 3); // d4 4, one visit spent
-  assert.equal(events.find((e) => e.type === "stunned").count, 2);
-  assert.equal(events.filter((e) => e.type === "spellResisted").length, 1);
-  assert.equal(events.some((e) => e.type === "controlResisted"), false);
+// Phase 90 plan 05 (SPELL-11, declared): Stun holds ONE foe, the aimed one. Before: the d6 x
+// multiplier count of foes asleep d4 each, a resist per foe, a `stunned { count }` line. After:
+// the aimed foe's one depth-rising resist up front (a resister draws no d4 and nothing holds), then a
+// d4 and a "stunned" hold: the foe skips that many turns and a blow does not end it.
+test("Stun (C8) floor 20: one aimed foe; resisted -> awake, no d4, no mark, no hold; landed -> held 'stunned' for the rolled d4 (never capped)", () => {
+  const r = spellState(20, "Stun", 1, 3);
+  r.acts = findRisingActs(20, [["Stun", 0, true]]);
+  const evR = castSpell(r, IDX.Stun, fakeRng([3, ...PAD(10)]), []);
+  assert.equal("held" in r.combat.foes[0], false);
+  assert.equal("resisted" in r.combat.foes[0], false, "no Unmoved mark");
+  assert.equal(evR.filter((e) => e.type === "spellResisted").length, 1, "one resist, on the one foe");
+  assert.equal(evR.some((e) => e.type === "controlHeld" || e.type === "controlResisted"), false);
+
+  const l = spellState(20, "Stun", 1, 3);
+  l.acts = findRisingActs(20, [["Stun", 0, false]]);
+  const evL = castSpell(l, IDX.Stun, fakeRng([3, ...PAD(10)]), []);
+  const held = evL.find((e) => e.type === "controlHeld");
+  assert.deepEqual({ target: held.target, kind: held.kind, rounds: held.rounds }, { target: "F1", kind: "stunned", rounds: 3 });
+  assert.deepEqual(l.combat.foes[0].held, { kind: "stunned", left: 2 }, "one hold turn already spent this dispatch");
+  assert.equal(l.combat.foes[1].asleep + l.combat.foes[2].asleep, 0, "nobody else is touched");
+  assert.equal(evL.filter((e) => e.type === "spellResisted").length, 0);
+  assert.equal(evL.filter((e) => e.type === "resistFailed").length, 1);
 });
 
 // Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The room has no extra resist past
@@ -482,8 +496,8 @@ test("main draws at floor 20: a foe that resists draws nothing for the spell's e
   // draws when none does] — the cast's own main draws, then the regen d8.
   const CASES = [
     ["Freeze", "Freeze", [0], 3, 3], // to-hit, damage, then the hold's d4 (resisted or not)
-    ["Doze", "Doze", [0], 0, 1],
-    ["Stun", "Stun", [0, 1, 2], 1, 4], // the d6 count, then a d4 per foe that failed
+    ["Doze", "Doze", [0], 1, 2], // Phase 90 plan 05: the d4 reach first (drawn either way), then a d4 per foe that failed
+    ["Stun", "Stun", [0], 0, 1], // Phase 90 plan 05: one aimed foe: its d4 only when it fails its resist
     ["Weaken", "Weaken", [0, 1], 1, 1], // the d4 + 1 is drawn before the room resists
     ["Stupidity", "Stupidity", [0], 0, 0],
     ["Blind", "Blind", [0], 0, 0],

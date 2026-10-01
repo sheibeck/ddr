@@ -77,6 +77,14 @@
 // no floor-12 clause). No other committed fixture renders Stupidity, Blind,
 // Petrify or Ice.
 //
+// Phase 90 (SPELL-11), Plan 05: ONE declared change, hand-pasted (not
+// regenerated), every other fixture byte-for-byte unchanged: mu.hero's
+// grimoire row for Doze moves from "control · one foe · asleep d4 rounds" to
+// "control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the
+// sleeper it lands on, because a nap is not armour" (content/spells.js: Doze
+// reaches d4 foes and a hit wakes a dozing foe). No other committed fixture
+// renders Doze, Stun or Ice.
+//
 // Phase 87 (STORE-04), Plan 03: TWO declared regenerations, every other
 // fixture byte-identical (confirmed with `git diff --stat` at regeneration
 // time). The store's Rations row now shows the stock count the d10 roll left

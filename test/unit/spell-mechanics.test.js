@@ -2,8 +2,9 @@
 //
 // Phase 40 Plan 02 (SPELL-01) — direct unit coverage for the offense-school
 // MECHANICS the Plan 01 table promised: engine/magic.js's data-flag thrown
-// branch (Freeze's `onHit`, Lightning's `aoe`), the new `dot` branch (Ice) +
-// combat.js#foeTurn's frozen-solid payoff, the Lesser Summon cast branch
+// branch (Freeze's `onHit`, Lightning's `aoe`), Ice (the `dot` branch and its
+// frozen-solid payoff until Phase 90 plan 05 made it the area freeze: see the
+// re-pinned tests below), the Lesser Summon cast branch
 // (never doubled, never backfires), the Weaken duration timer (+ its
 // combat.js#foeTurn expiry), Stupidity's fight-long skip, and Shrink's real
 // half-damage. Helpers (fakeRng/looseRng/fixedFighter/fixedState/fixedFloor/
@@ -160,22 +161,30 @@ test("Fireball (a plain thrown spell, no aoe flag) targets only C.target, not ev
   assert.equal(thrown[0].target, "B");
 });
 
-test("Ice (dot cast): one draw for the duration, no to-hit roll; the SAME dispatch's trailing foeTurn ticks it once", () => {
+// Phase 90 plan 05 (SPELL-12, Q5 A): Ice is no longer a damage-over-time spell
+// (the `dot` kind, the f.dot ice record, iceApplied and foeTurn's frozen-solid
+// payoff are gone). It is the area freeze: every foe takes d10 + level² with no
+// to-hit roll, and each survivor is frozen d4 rounds unless it resists.
+// test/unit/doze-stun-ice.test.js pins the full rule; these three keep the old
+// per-cast shape pins re-pinned to it.
+test("Ice (area freeze cast): the foe takes d10 + level² with no to-hit roll, then a d4 freeze; the SAME dispatch's trailing foeTurn spends one hold turn", () => {
   const foe = fixedFoe({ name: "Target", intel: 1, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
   state.acts = noResistActs("Ice"); // quick 260927-rsx: the foe does not resist
-  // d4=3 -> rounds 4 (the cast draw); the SAME dispatch's trailing foeTurn
-  // ticks the freshly-applied ice dot once (d6=1 tick dmg) before its own
-  // swing misses (20 vs need 5), then the round-advance initiative (15/10)
-  // — mirrors cast-refusals.test.js's documented Acid-retarget tail exactly.
-  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([3, 1, 20, 15, 10]), []);
-  assert.equal(events.filter((e) => e.type === "spellThrown").length, 0, "no to-hit roll for a dot cast");
-  const applied = events.find((e) => e.type === "iceApplied");
-  assert.ok(applied);
-  assert.equal(applied.target, "Target");
-  assert.equal(applied.rounds, 4, "d4(3)+1, the un-ticked cast-time value");
-  assert.deepStrictEqual(foe.dot && { dmg: foe.dot.dmg, by: foe.dot.by }, { dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" });
-  assert.equal(foe.dot.left, 3, "the SAME dispatch's trailing foeTurn already ticked it once");
+  // d10=3 (the damage dice) + the level-3 caster's level² 9 = 12; the freeze's
+  // d4=2; then the tail: the held foe skips its swing, the round-advance draws
+  // are not this test's claim.
+  const events = castSpell(state, SPELL_IDX.Ice, looseRng([3, 2], 20), []);
+  assert.equal(events.filter((e) => e.type === "spellThrown").length, 0, "no to-hit roll for Ice");
+  const hit = events.find((e) => e.type === "spellHit");
+  assert.ok(hit);
+  assert.equal(hit.target, "Target");
+  assert.equal(hit.dmg, 12, "d10 3 + level² 9");
+  assert.equal(foe.wp, 88);
+  const held = events.find((e) => e.type === "controlHeld");
+  assert.deepStrictEqual({ kind: held.kind, rounds: held.rounds, freeze: held.freeze }, { kind: "frozen", rounds: 2, freeze: true });
+  assert.deepStrictEqual(foe.held, { kind: "frozen", left: 1 }, "the SAME dispatch's trailing foeTurn already spent one hold turn");
+  assert.equal(foe.dot, undefined, "no damage-over-time record any more");
 });
 
 // Quick 260927-rsx (user ruling 2026-09-27): re-pinned from the Phase 19
@@ -183,60 +192,39 @@ test("Ice (dot cast): one draw for the duration, no to-hit roll; the SAME dispat
 // intel in faces on a derived-stream d20 (intel 12: 6 faces, 15–20), so the
 // main sequence carries no resist draw; the outcome is forced with the real
 // check (harness/spellResistActs.js).
-test("Ice: a foe that resists (intel 12, 15–20 on a d20) takes no dot and draws no duration", () => {
+test("Ice: a foe that resists the freeze (intel 12, 15–20 on a d20) still takes the damage and is not frozen", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
   state.acts = actsWhere("Ice", [[0, true]], { intels: { 0: 12 } });
-  // tail only: foe miss (20) + initiative (15/10).
-  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([20, 15, 10]), []);
-  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.roll >= 15 && e.atLeast === 15 && e.dieN === 20));
-  assert.equal(foe.dot, undefined, "a resisted Ice never lands");
+  // d10=3 (damage) and the freeze's d4=2 are drawn either way; the tail is not the claim.
+  const events = castSpell(state, SPELL_IDX.Ice, looseRng([3, 2], 20), []);
+  assert.ok(events.some((e) => e.type === "spellResisted" && e.spell === "Ice" && e.freeze === true && e.roll >= 15 && e.atLeast === 15 && e.dieN === 20));
+  assert.equal(foe.wp, 88, "the damage landed; the resist stops only the freeze");
+  assert.equal(foe.held, undefined, "a resisted freeze holds nothing");
 });
 
-test("Ice: a foe that fails to resist still gets the dot (resistFailed then iceApplied)", () => {
+test("Ice: a foe that fails to resist the freeze is frozen (resistFailed, then the hold)", () => {
   const foe = fixedFoe({ name: "Target", intel: 12, wp: 100, maxWP: 100 });
   const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
   state.acts = actsWhere("Ice", [[0, false]], { intels: { 0: 12 } });
-  // d4=2 (rounds 3, cast draw); tail ticks once (d6=1), foe miss (20),
-  // initiative (15/10).
-  const events = castSpell(state, SPELL_IDX.Ice, fakeRng([2, 1, 20, 15, 10]), []);
+  const events = castSpell(state, SPELL_IDX.Ice, looseRng([3, 2], 20), []);
   assert.ok(events.some((e) => e.type === "resistFailed" && e.roll < 15 && e.atLeast === 15 && e.dieN === 20));
-  const applied = events.find((e) => e.type === "iceApplied");
-  assert.ok(applied);
-  assert.equal(applied.rounds, 3, "d4(2)+1");
+  const held = events.find((e) => e.type === "controlHeld");
+  assert.ok(held);
+  assert.equal(held.rounds, 2, "the freeze's own d4");
 });
 
-test("Ice payoff: a dot's last tick that leaves the foe standing freezes it solid and kills it via killFoe (pays like any kill)", () => {
-  const foe = fixedFoe({ name: "Target", type: "Humans", wp: 200, maxWP: 200, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
-  const state = fixedState({ combat: fixedCombat([foe]) });
-  // tick d6=3 (dmg, 200-3=197, not lethal); killFoe: d6=4 (sp roll), d10=5
-  // (coin roll), d20=20 (treasure check, skips: 20 > 2+1). "Humans" skips
-  // the Beasts-only cooking-check draw.
-  const events = foeTurn(state, fakeRng([3, 4, 5, 20]), []);
-  const types = events.map((e) => e.type);
-  const tickIdx = types.indexOf("dotTick");
-  const frozenIdx = types.indexOf("frozenSolid");
-  const killedIdx = types.indexOf("foeKilled");
-  assert.ok(tickIdx >= 0 && frozenIdx > tickIdx && killedIdx > frozenIdx, "dotTick -> frozenSolid -> foeKilled, in order");
-  assert.equal(events[tickIdx].left, 0);
-  assert.equal(foe.alive, false);
-  assert.equal(foe.frozen, true);
-  assert.equal(foe.dot, undefined, "the dot record is deleted once it runs out");
-});
-
-test("Ice payoff: a foe whose own tick kills it pays through the existing dot-kill path with NO frozenSolid", () => {
-  const foe = fixedFoe({ name: "Target", type: "Humans", wp: 2, maxWP: 10, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
+test("a Poisoned Edge dot (the one f.dot left) ticks, and a lethal tick pays through the dot-kill path", () => {
+  const foe = fixedFoe({ name: "Target", type: "Humans", wp: 2, maxWP: 10, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "poisonedEdge" } });
   const state = fixedState({ combat: fixedCombat([foe]) });
   // tick d6=6 (dmg, 2-6<=0, lethal on the tick itself); killFoe: d6=4, d10=5, d20=20.
   const events = foeTurn(state, fakeRng([6, 4, 5, 20]), []);
-  assert.ok(events.some((e) => e.type === "dotTick"));
+  assert.ok(events.some((e) => e.type === "dotTick" && e.by === "poisonedEdge"));
   assert.ok(events.some((e) => e.type === "foeKilled"));
-  assert.equal(events.some((e) => e.type === "frozenSolid"), false, "the tick itself killed it — freeze never fires");
   assert.equal(foe.alive, false);
-  assert.equal(foe.frozen, undefined);
 });
 
-test("Ice payoff: a by:'poisonedEdge' dot running out never freezes (by is the switch)", () => {
+test("a Poisoned Edge dot running out never freezes the foe (Ice's old payoff is gone)", () => {
   const foe = fixedFoe({ name: "Target", wp: 200, maxWP: 200, asleep: 1, dot: { left: 1, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" } });
   const state = fixedState({ combat: fixedCombat([foe]) });
   // one d4 tick draw; asleep:1 skips the foe's own trailing melee turn with 0 extra draws.
@@ -245,19 +233,20 @@ test("Ice payoff: a by:'poisonedEdge' dot running out never freezes (by is the s
   assert.equal(events.some((e) => e.type === "frozenSolid"), false);
   assert.equal(foe.frozen, undefined);
   assert.equal(foe.alive, true);
+  assert.equal(foe.dot, undefined, "the dot record is deleted once it runs out");
 });
 
-test("Ice payoff: a kill-twice (lives) foe survives the freeze once and is unfrozen", () => {
-  const foe = fixedFoe({ name: "Target", type: "Humans", wp: 200, maxWP: 200, lives: 2, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
-  const state = fixedState({ combat: fixedCombat([foe]) });
-  // tick d6=3 (not lethal alone); killFoe sees lives>1 and returns BEFORE any of its own draws.
-  const events = foeTurn(state, fakeRng([3]), []);
-  const frozenIdx = events.findIndex((e) => e.type === "frozenSolid");
-  const revivedIdx = events.findIndex((e) => e.type === "foeRevived");
-  assert.ok(frozenIdx >= 0 && revivedIdx >= 0 && frozenIdx < revivedIdx);
+test("Ice: a kill-twice (lives) foe whose damage kills it once is revived to full and is not frozen (a Freeze's rule)", () => {
+  const foe = fixedFoe({ name: "Target", type: "Humans", wp: 5, maxWP: 50, lives: 2 });
+  const state = fixedState({ c: fixedCaster({ sub: "Sorcerer", grimoire: ["Ice"], level: 3 }), combat: fixedCombat([foe]) });
+  state.acts = noResistActs("Ice");
+  // d10=3 + 9 = 12 >= 5: killFoe sees lives>1 and returns BEFORE any of its own draws, no freeze d4.
+  const events = castSpell(state, SPELL_IDX.Ice, looseRng([3], 20), []);
+  assert.ok(events.some((e) => e.type === "foeRevived"));
+  assert.equal(events.some((e) => e.type === "controlHeld"), false);
   assert.equal(foe.alive, true);
-  assert.equal(foe.wp, 200, "killFoe's lives rule restores the foe to full wp");
-  assert.equal(foe.frozen, false, "a standing (revived) foe is not frozen");
+  assert.equal(foe.wp, 50, "killFoe's lives rule restores the foe to full wp");
+  assert.equal(foe.held, undefined);
 });
 
 const LESSER_ALLY_NAMES = [
@@ -325,13 +314,12 @@ test("Summon (not Lesser Summon): allyPending never carries a `lesser` key", () 
   assert.equal("lesser" in ally, false);
 });
 
-test("Narration: iceApplied/dotTick(ice)/allySummoned(lesser) render through EVENT_NARRATION and LINE_FOR", () => {
-  assert.match(EVENT_NARRATION.iceApplied({ target: "Ogre", rounds: 4 }), /Ice climbs Ogre/);
-  assert.match(EVENT_NARRATION.dotTick({ target: "Ogre", dmg: 3, by: "ice" }), /the ice/);
+test("Narration: iceCast/dotTick(poison)/allySummoned(lesser) render through EVENT_NARRATION and LINE_FOR", () => {
+  assert.match(EVENT_NARRATION.iceCast({ spell: "Ice", foes: 3 }), /Ice/);
   assert.match(EVENT_NARRATION.dotTick({ target: "Ogre", dmg: 3, by: "poisonedEdge" }), /the poison/);
   assert.match(EVENT_NARRATION.allySummoned({ name: "Thing", lesser: true }), /sort of/);
   assert.match(EVENT_NARRATION.allyPending({ name: "Thing", lesser: true }), /in a small way/);
-  assert.equal(typeof LINE_FOR.iceApplied({ type: "iceApplied", target: "Ogre", rounds: 4 }).text, "string");
+  assert.equal(typeof LINE_FOR.iceCast({ type: "iceCast", spell: "Ice", foes: 3 }).text, "string");
 });
 
 // ─── Task 2: Weaken's duration timer, Stupidity's fight-long skip, Shrink's half damage ───

@@ -478,18 +478,22 @@ test("DFB-05 Magic User: a Freeze miss (d10 10 - 3 > 6) is allySpellMissed { res
   assert.equal(state.party[0].spellsUsed, 1);
 });
 
-test("DFB-05 Magic User: Doze on a dim foe draws no resist roll and puts it to sleep d4", () => {
+// Phase 90 plan 05 (SPELL-11, declared): a Joiner's Doze is the hero's (combat.js#dozeFoes): the d4
+// reach is drawn first (1 here: one foe), then the foe's own sleeping d4 (3), each line carrying `by`,
+// and the sleeper is marked dozing. Before: one d4 (3), an allySpellHit { effect: "asleep" } line.
+test("DFB-05 Magic User: Doze reaches a d4 of foes (here one) and puts it to sleep its own d4, marked dozing, with `by`", () => {
   const foe = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const state = fixedState({ party: [muMember({ grimoire: ["Doze"] })] });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
-  // A single-entry fakeRng proves NO resist roll is drawn (intel 1 < 12).
-  const events = alliesTurn(state, fakeRng([3]), []);
+  // Exactly two main draws: the reach, then the sleeper's d4 (the resist is a derived stream).
+  const events = alliesTurn(state, fakeRng([1, 3]), []);
   const cast = events.find((e) => e.type === "allyCast");
   assert.equal("roll" in cast, false);
-  const hit = events.find((e) => e.type === "allySpellHit");
-  assert.equal(hit.effect, "asleep");
+  const hit = events.find((e) => e.type === "dozed");
   assert.equal(hit.rounds, 3);
+  assert.equal(hit.by, "Ada");
   assert.equal(foe.asleep, 3);
+  assert.equal(foe.dozing, true);
 });
 
 // Quick 260927-rsx (user ruling 2026-09-27): re-pinned — a Joiner's cast is
@@ -501,11 +505,13 @@ test("DFB-05 Magic User: a foe can resist a Joiner's Doze -> spellResisted { by 
   const state = fixedState({ party: [muMember({ grimoire: ["Doze"] })] });
   state.combat = fixedCombat([foe], { allies: [fixedAlly()] });
   state.acts = actsWhere("Doze", [[0, true]], { intels: { 0: 15 }, caster: "Ada" });
-  const events = alliesTurn(state, fakeRng([]), []);
+  // Phase 90 plan 05: the only main draw is Doze's d4 reach; the resisted foe draws no sleeping d4.
+  const events = alliesTurn(state, fakeRng([1]), []);
   const res = events.find((e) => e.type === "spellResisted");
   assert.equal(res.by, "Ada");
   assert.equal(res.atLeast, 13);
   assert.equal(events.some((e) => e.type === "allySpellMissed"), false);
+  assert.equal(events.find((e) => e.type === "dozeFailed").by, "Ada");
   assert.equal(foe.asleep, 0);
   assert.equal(state.party[0].spellsUsed, 1);
 });

@@ -660,7 +660,12 @@ export function stripFoeAbilityState(combat) {
     // on a floor-1 fixture foe (the first resist face is floor 13, far past
     // every fixture's own floor-1 fights) — a structural tripwire, exactly
     // like the abilities/cd/uses/elite strip above.
-    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, held, resisted, ...rest } = f;
+    // Phase 90 plan 05 (SPELL-11): `dozing` is a brand-new per-foe field (the mark
+    // engine/combat.js#dozeFoes puts on a Doze sleeper so a hit wakes it) with NO
+    // prototype-side equivalent — engine-only, never on a fixture foe (no parity
+    // fixture casts Doze) — a structural tripwire like `held`/`resisted`; it is
+    // carved out here, which all three *Comparable() functions share.
+    const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, held, resisted, dozing, ...rest } = f;
     return rest;
   });
   return { ...combatRest, foes };

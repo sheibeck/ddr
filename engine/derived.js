@@ -961,7 +961,7 @@ export function isFlying(state) {
  *   - nightVision {polarity:"good"} — a fight where inDark holds and Night Vision is the waiver (darkWaiver) holding the dark back; fight-only; ends the good block, before itemCooldown/staffCharges
  *   - fightDark {polarity:"bad"} — a fight on a dark square with toHit's dark cap live (darkLimited and no Sense Presence) and NO darkFor counter running (its `darkness` chip covers that case); fight-only
  *   - insulted {polarity:"bad"} — a failed parley's C.parleyInsulted grudge, the rest of the fight
- *   - selfDot {polarity:"bad", remaining:<rounds>, by:<"acid"|"ice">, spell:<name>} — a fumbled Acid/Ice burning the reader (engine/scrollFumble.js C.selfDot), only while left > 0; ends the bad block
+ *   - selfDot {polarity:"bad", remaining:<rounds>, by:<"acid">, spell:<name>} — a fumbled Acid burning the reader (Ice is an area damage fumble since Phase 90 plan 05) (engine/scrollFumble.js C.selfDot), only while left > 0; ends the bad block
  * A party member's own chips come from the sibling memberConditionsOf, with
  * the same shape (one source; no second enumerator anywhere).
  *
@@ -2881,8 +2881,10 @@ export function spellLevelFor(sub, sp) {
  * (Phase 23, IDENT-01/IDENT-02, CONTEXT: "What counts as an attack spell").
  * Exactly the four kinds behind the level-1 offense spells Doze (status),
  * Freeze (thrown), Stun (stun), Weaken (weaken) — plus every OTHER spell
- * that shares one of those four kinds at a higher level (Ice/Fireball/
- * Lightning/Mangle are all `kind: "thrown"`). By deliberate decision, the
+ * that shares one of those four kinds at a higher level (Fireball/Lightning/
+ * Mangle are all `kind: "thrown"`) — and, since Phase 90 plan 05 (SPELL-12),
+ * Ice's own kind "blast" (the area form of Freeze; it was a damage-over-time
+ * spell before and so was not an attack spell). By deliberate decision, the
  * other disabling/offense kinds (acid, volley, quake, death, blind, shrink,
  * petrify, insane, stupid, vapor) are NOT in this set — they do not count as
  * a "guaranteed attack" for the Wizard melee rule or the grimoire top-up.
@@ -2890,7 +2892,7 @@ export function spellLevelFor(sub, sp) {
  * rollGrimoire top-up, and engine/combat.js's Wizard refusal check — a
  * single shared definition so those three call sites can never drift apart.
  */
-export const ATTACK_SPELL_KINDS = new Set(["status", "thrown", "stun", "weaken"]);
+export const ATTACK_SPELL_KINDS = new Set(["status", "thrown", "stun", "weaken", "blast"]);
 
 /** isAttackSpell(sp) — does this spell's kind belong to ATTACK_SPELL_KINDS? */
 export function isAttackSpell(sp) {
@@ -2913,12 +2915,15 @@ export function isAttackSpell(sp) {
  *     rollGrimoire), not a kind-based inclusion here.
  *   - Doze / Stun / Weaken (`status`/`stun`/`weaken`) do NOT count — they
  *     disable, they never move a foe's wp.
+ * Phase 90 plan 05 (SPELL-12): "blast" (Ice, d10 + level² to every foe) joins
+ * the set and "dot" leaves it (no spell row has kind "dot" any more; Poisoned
+ * Edge's `f.dot` is an ability record, not a spell kind).
  * ATTACK_SPELL_KINDS above is UNTOUCHED by this addition — it still gates
  * the Wizard melee-refusal rule and member/ally casts, a different
  * question ("is this a combat spell to lean on") from "does this spell
  * deal damage".
  */
-export const DAMAGE_SPELL_KINDS = new Set(["thrown", "dot", "acid", "volley", "quake", "death"]);
+export const DAMAGE_SPELL_KINDS = new Set(["thrown", "blast", "acid", "volley", "quake", "death"]);
 
 /**
  * dealsDamage(sp) — does casting this spell deal damage to a foe? True for

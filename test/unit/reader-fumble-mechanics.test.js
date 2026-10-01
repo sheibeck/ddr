@@ -133,7 +133,11 @@ test("foeTurn: a burn that reaches 0 hp kills through die(), and no foe acts aft
   assert.equal(events.some((e) => e.type === "foeMissed" || e.type === "struckByFoe" || e.type === "foeBolted"), false, "no foe acts after the death");
 });
 
-test("foeTurn: an Ice selfDot with then 'heavy' fires fumbleHeavyBlow (how 'frozen') when the last tick leaves the hero standing", () => {
+// Phase 90 plan 05 (SPELL-12): Ice's fumble is an area damage row now (no selfDot, no `then: "heavy"`
+// hand-off). Before: an Ice selfDot's last tick, when it left the hero standing, fired fumbleHeavyBlow
+// (how "frozen"; amount 11, Afraid). After: a burn's last tick (Acid's) just ends, and a stray
+// `then` on an old save's record is ignored: no heavy blow fires.
+test("foeTurn: a selfDot's last tick that leaves the hero standing just ends the burn: no heavy blow, even from an old save's `then: 'heavy'` record", () => {
   const state = fixedState({ acts: 7, c: { wp: 50 }, floor: { depth: 4 } });
   state.combat = fixedCombat([], {
     round: 1,
@@ -141,21 +145,16 @@ test("foeTurn: an Ice selfDot with then 'heavy' fires fumbleHeavyBlow (how 'froz
   });
   const events = foeTurn(state, fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "selfDotTick" && e.left === 0));
-  const blow = events.find((e) => e.type === "fumbleHeavyBlow");
-  assert.deepEqual(blow, { type: "fumbleHeavyBlow", spell: "Ice", how: "frozen", amount: 11, depth: 4, afraid: AFRAID_ROUNDS });
+  assert.equal(events.some((e) => e.type === "fumbleHeavyBlow"), false);
   assert.equal(state.combat.selfDot, undefined);
-  assert.equal(state.c.wp, 50 - 5 - 11);
-  // Afraid is set to AFRAID_ROUNDS by fumbleHeavyBlow, then this SAME
-  // foeTurn call's own tail ticks it down by one before returning — exactly
-  // the existing "a foes-first opener that triggers Afraid ticks it 2 -> 1
-  // inside this same call" precedent (engine/combat.js#fight's own JSDoc).
-  assert.equal(state.combat.afraid, AFRAID_ROUNDS - 1);
+  assert.equal(state.c.wp, 50 - 5);
+  assert.ok(!state.combat.afraid);
 });
 
-test("foeTurn: the burn itself killing the hero on the last tick ends the fight before the heavy blow ever fires", () => {
+test("foeTurn: the burn itself killing the hero on the last tick ends the fight", () => {
   const state = fixedState({ c: { wp: 5 } });
   state.combat = fixedCombat([], {
-    selfDot: { left: 1, dmg: { n: 0, sides: 6, bonus: 5 }, by: "ice", spell: "Ice", then: "heavy" },
+    selfDot: { left: 1, dmg: { n: 0, sides: 6, bonus: 5 }, by: "acid", spell: "Acid" },
   });
   const events = foeTurn(state, fakeRng([]), []);
   assert.equal(state.dead, true);

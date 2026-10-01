@@ -52,11 +52,9 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  *   - heavy: fumbleHeavyBlow (d10 + depth, unsoaked, plus Afraid) — the ONE
  *     replacement for every instant-kill fumble (Freeze, Petrify, Death).
  *     Its own event narrates the blow; nothing else is pushed here.
- *   - dot: sets C.selfDot (Acid, Ice) — `left` from the row's own `rounds`
- *     dice, `dmg` from the spell's own dice, `by` the spell's own name
- *     lowercased ("acid"/"ice" — the only two dot rows), carrying the row's
- *     `then: "heavy"` (Ice) so foeTurn's own tick hands off to
- *     fumbleHeavyBlow when the burn's last tick leaves the reader standing.
+ *   - dot: sets C.selfDot (Acid, the one dot row since Phase 90 plan 05 made
+ *     Ice an area damage row) — `left` from the row's own `rounds` dice, `dmg`
+ *     from the spell's own dice, `by` the spell's own name lowercased.
  *   - out: sets C.heroOut { kind, left, spell } — `left` the row's own `d4`,
  *     clamped to [1, HERO_OUT_MAX] (Doze, Stun, Stupidity, Insane).
  *   - blind: sets C.heroBlind (Blind) — no turns lost.
@@ -97,7 +95,6 @@ function resolveHarmful(state, sp, entry, srng, rng, events, now) {
         dmg: sp.dmg,
         by: sp.n.toLowerCase(),
         spell: sp.n,
-        ...(entry.then ? { then: entry.then } : {}),
       };
       events.push({ type: "fumbleOnReader", spell: sp.n, effect: "dot", rounds: left });
       break;
@@ -168,7 +165,9 @@ function resolveHarmful(state, sp, entry, srng, rng, events, now) {
  * (!t.alive) continue;` precedent). A party member loses the hp and is
  * downed through downMember at 0; the summoned ally (no hit points) is
  * unmade by ANY hit, however small; the reader is resolved last, and a
- * lethal hit on the reader ends the resolution at once.
+ * lethal hit on the reader ends the resolution at once. Ice (Phase 90 plan 05)
+ * is an area damage row of the Lightning shape: each victim its own d10 times
+ * the canon multiplier.
  */
 function resolveArea(state, sp, entry, srng, rng, events, now) {
   const c = state.c;

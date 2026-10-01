@@ -99,11 +99,25 @@ test("Poison: engine/abilities.js applyPoison (Poisoned Edge) shows its rounds",
   assert.deepEqual(texts(f), ["Poison · 3"]);
 });
 
-test("Ice: engine/magic.js Ice sets `t.dot = { left, dmg, by: \"ice\" }` and reads Ice", () => {
-  const f = fixedFoe({ dot: { left: 4, dmg: "1d6", by: "ice" } });
-  assert.deepEqual(texts(f), ["Ice · 4"]);
-  f.dot.left = 0;
-  assert.deepEqual(texts(f), []);
+// Phase 90 plan 05 (SPELL-12): Ice is the area freeze, so there is no Ice chip (its dot is gone);
+// Ice's hold shows as a Frozen chip, Stun's as Stunned, Doze's sleepers as Dozing.
+test("Dozing: engine/combat.js#dozeFoes' `f.dozing` shows its own chip with the sleep's rounds, and the plain Asleep chip does not double it", () => {
+  assert.deepEqual(texts(fixedFoe({ asleep: 3, dozing: true })), ["Dozing · 3"]);
+  assert.deepEqual(texts(fixedFoe({ asleep: 0, dozing: true })), [], "a spent sleep shows nothing");
+  assert.deepEqual(texts(fixedFoe({ asleep: 3 })), ["Asleep · 3"], "no dozing mark: the plain sleep chip");
+  const chip = foeConditionChips(fixedFoe({ asleep: 2, dozing: true }), fixedState())[0];
+  assert.equal(chip.key, "dozing");
+  assert.equal(chip.desc, FOE_CONDITION_DESC.dozing);
+  assert.match(chip.desc, /wakes it/, "the description says a hit wakes it");
+  assert.match(FOE_CONDITION_DESC.asleep, /does not wake it/, "the plain sleep says a hit does not");
+});
+
+test("Stunned hold: engine/combat.js#stunFoe's held kind \"stunned\" reads Stunned with its rounds, and says a hit does not end it", () => {
+  const chips = foeConditionChips(fixedFoe({ held: { kind: "stunned", left: 3 } }), fixedState());
+  assert.deepEqual(chips.map((c) => c.text), ["Stunned · 3"]);
+  assert.equal(chips[0].key, "held");
+  assert.match(chips[0].desc, /does not end the hold/);
+  assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 2 } })), ["Frozen · 2"], "Ice's and Freeze's hold still reads Frozen");
 });
 
 test("Asleep: engine/magic.js `f.asleep = Math.max(f.asleep, rng.d(4))` shows its rounds; 0 shows nothing", () => {
@@ -312,7 +326,7 @@ test("tone: every foe debuff is good; every foe buff (Frenzied, the Phase 77 fum
 
 test("order: chips come out in table order — Stunned … Frenzied, the Phase 77 fumble gifts (Shielded, Bubbled, Rebound, Mirrored, Strong, Regenerating, Senses), Weakened, Unmoved", () => {
   assert.deepEqual(FOE_CONDITIONS.map((e) => e.key), [
-    "stunned", "blind", "hamstrung", "marked", "asleep", "held", "frozen", "acid", "dot", "stupid", "shrunk", "fixated", "frenzied",
+    "stunned", "blind", "hamstrung", "marked", "asleep", "dozing", "held", "frozen", "acid", "dot", "stupid", "shrunk", "fixated", "frenzied",
     "shielded", "bubbled", "rebound", "mirror", "might", "regen", "senses",
     "weakened", "resisted",
   ]);
@@ -580,7 +594,7 @@ const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegE
 test("FOE_CONDITION_COPY: frozen, the house labels, every leaf non-empty and clear of BANNED", () => {
   assert.ok(Object.isFrozen(FOE_CONDITION_COPY));
   assert.deepEqual(Object.values(FOE_CONDITION_COPY).sort(), [
-    "Acid", "Asleep", "Blind", "Bubbled", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Ice", "Marked", "Mirrored", "Poison",
+    "Acid", "Asleep", "Blind", "Bubbled", "Dozing", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Marked", "Mirrored", "Poison",
     "Rebound", "Regenerating", "Senses", "Shielded", "Shrunk", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
   ]);
   // House style: one capitalised word.
@@ -614,7 +628,7 @@ test("FOE_CONDITION_DESC: exported, frozen, one sentence per FOE_CONDITIONS key 
   // key is "unmoved", not its own FOE_CONDITIONS key.
   const want = new Set([
     ...FOE_CONDITIONS.map((e) => e.key).filter((k) => k !== "dot" && k !== "resisted"),
-    "poison", "ice", "unmoved",
+    "poison", "unmoved",
   ]);
   assert.deepEqual(Object.keys(FOE_CONDITION_DESC).sort(), [...want].sort());
   // The desc keys are the label keys: each label has exactly one description.
@@ -651,8 +665,9 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   const chips = foeConditionChips(everything, state);
-  // One ward shows one chip: a plain pool here (Shielded), so Bubbled is the one entry absent.
-  assert.equal(chips.length, FOE_CONDITIONS.length - 1);
+  // One ward shows one chip: a plain pool here (Shielded), so Bubbled is absent; a sleep shows one of
+  // Asleep or Dozing (this foe carries no dozing mark), so Dozing is absent too.
+  assert.equal(chips.length, FOE_CONDITIONS.length - 2);
   const bubble = foeConditionChips(fixedFoe({ ward: { mirror: true, pool: 0, popPool: 25, rounds: null } }), fixedState());
   assert.equal(bubble[0].desc, FOE_CONDITION_DESC.bubbled);
   for (const chip of chips) {
@@ -666,19 +681,17 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
     assert.equal(chip.desc, FOE_CONDITION_DESC[descKey], `${chip.key} desc`);
     assert.ok(typeof chip.desc === "string" && chip.desc.length > 0);
   }
-  const ice = foeConditionChips(fixedFoe({ dot: { left: 3, by: "ice" } }), fixedState());
-  assert.equal(ice[0].label, "Ice");
-  assert.equal(ice[0].desc, FOE_CONDITION_DESC.ice);
   const poison = foeConditionChips(fixedFoe({ dot: { left: 3, by: "poison" } }), fixedState());
+  assert.equal(poison[0].label, "Poison");
   assert.equal(poison[0].desc, FOE_CONDITION_DESC.poison);
-  assert.notEqual(FOE_CONDITION_DESC.ice, FOE_CONDITION_DESC.poison);
 });
 
 // RULES-18 (Phase 75.3, Plan 04): held/resisted chip specifics — the label
 // varies by kind (held) or is always Unmoved (resisted), a dead foe still
 // returns [], and both are absent from a live foe carrying neither field.
-test("Held: labelFor is Frozen (a Freeze is the only hold left, Phase 90 plan 04); a dead foe returns []", () => {
+test("Held: labelFor is Frozen (a Freeze's or Ice's freeze) or Stunned (Stun's hold, Phase 90 plan 05); a dead foe returns []", () => {
   assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 3 } })), ["Frozen · 3"]);
+  assert.deepEqual(texts(fixedFoe({ held: { kind: "stunned", left: 3 } })), ["Stunned · 3"]);
   assert.deepEqual(texts(fixedFoe({ alive: false, held: { kind: "frozen", left: 3 } })), []);
   assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 0 } })), [], "left 0 is not a live hold");
 });
@@ -693,12 +706,12 @@ test("Unmoved: always the bare label (no rounds); its desc names the resisted ef
 
 test("chips carry desc: chip text is byte-identical to before (the combat foe cards do not move)", () => {
   const everything = fixedFoe({
-    frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "ice" }, acid: { rounds: 1 },
+    frenzied: true, fixated: true, shrunk: true, stupid: true, dot: { left: 2, by: "poison" }, acid: { rounds: 1 },
     frozen: true, asleep: 2, marked: true, hamstrung: true, blind: true, blindFor: 1, stunned: true,
   });
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   assert.deepEqual(texts(everything, state), [
-    "Stunned", "Blind · 1", "Hamstrung", "Marked", "Asleep · 2", "Frozen", "Acid · 1", "Ice · 2",
+    "Stunned", "Blind · 1", "Hamstrung", "Marked", "Asleep · 2", "Frozen", "Acid · 1", "Poison · 2",
     "Stupefied", "Shrunk", "Fixated", "Frenzied", "Weakened · 3",
   ]);
   for (const chip of foeConditionChips(everything, state)) {
@@ -711,7 +724,7 @@ test("an entry without a description fails: the chip builder reads the desc tabl
   // Every FOE_CONDITIONS entry resolves to a FOE_CONDITION_DESC sentence; a
   // key added to the table with no sentence would give an undefined desc here.
   for (const e of FOE_CONDITIONS) {
-    const keys = e.key === "dot" ? ["poison", "ice"] : e.key === "resisted" ? ["unmoved"] : [e.key];
+    const keys = e.key === "dot" ? ["poison"] : e.key === "resisted" ? ["unmoved"] : [e.key];
     for (const k of keys) assert.ok(typeof FOE_CONDITION_DESC[k] === "string" && FOE_CONDITION_DESC[k].length > 0, `${k} has no description`);
   }
 });

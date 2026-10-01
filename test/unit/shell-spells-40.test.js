@@ -188,7 +188,8 @@ test("foeStatusBadges: reads the table through window.__mzFoeConditions; foeCond
   const FOE_SRC = stripComments(fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "foeConditions.js"), "utf8").replace(/\r\n/g, "\n"));
   assert.match(FOE_SRC, /timers\["spell:weaken"\]/);
   assert.match(FOE_SRC, /f\.dot\.left/);
-  assert.match(FOE_SRC, /f\.dot\.by === "ice" \? C\.ice : C\.poison/);
+  // Phase 90 plan 05 (SPELL-12): Ice is the area freeze, so the dot chip is Poisoned Edge's alone (before: it read Ice for by "ice").
+  assert.doesNotMatch(FOE_SRC, /f\.dot\.by === "ice"/);
 });
 
 // ─── (e) draw(): spellSeen tint + fallback palette parity ─────────────────

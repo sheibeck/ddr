@@ -316,8 +316,18 @@ test("Task 2: playFarmRun — floor-1 farming", async (t) => {
   // fires the guard: seed 293004 (index 37), campGuard 139, campFailed 0,
   // the same shape of run (a solo Magic User start, a Joiner's appetite). The
   // assertion itself is unchanged.
-  await t.test("camp-guard regression on a real run: seed 293004, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
-    const row = playFarmRun(293004, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
+  //
+  // Re-pinned again (Phase 90 plan 05, SPELL-11 and SPELL-12, 2026-10-01): the
+  // fair bot now casts the reworked Doze, Stun and Ice (Stun holds a lone foe,
+  // Ice is scored as area damage, Doze is a multi-foe sleep), so seed 293004's
+  // run plays out differently and its campGuard count went 139 -> 0 (campFailed
+  // 0 either way; seeds 55434 and 15839 stay at 0 too). A scan of the Summoner
+  // solo starts in seedList(120), in index order (55434, 277166, 293004,
+  // 395951, 530574, 681035), found the first whose measured run fires the
+  // guard: seed 530574 (index 67), campGuard 10, campFailed 0, outcome
+  // unbounded, the same shape of run. The assertion itself is unchanged.
+  await t.test("camp-guard regression on a real run: seed 530574, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
+    const row = playFarmRun(530574, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
     assert.ok(row.campGuard >= 1, `campGuard was ${row.campGuard}`);
     assert.equal(row.campFailed, 0);
   });

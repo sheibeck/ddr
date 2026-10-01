@@ -155,11 +155,18 @@ test("harmful dot: Acid sets C.selfDot with left from its d6, by acid", () => {
   assert.deepEqual(events.find((e) => e.type === "fumbleOnReader"), { type: "fumbleOnReader", spell: "Acid", effect: "dot", rounds: 4 });
 });
 
-test("harmful dot: Ice sets C.selfDot with left from its d4+1, by ice, then heavy", () => {
-  const state = fixedState();
+// Phase 90 plan 05 (SPELL-12): Ice is an area damage fumble (the Lightning
+// shape), no longer a burn that ends in a heavy blow. Before: C.selfDot with
+// left d4+1, by ice, then heavy. After: the reader's d10 times the level
+// multiplier, no selfDot.
+test("area damage: a fumbled Ice hits the reader (its own d10 times the canon multiplier) and sets no selfDot", () => {
+  const state = fixedState({ c: { level: 5, wp: 100 } });
   state.combat = fixedCombat([fixedFoe()]);
-  resolveScrollFumble(state, spellRow("Ice"), fakeRng([2]), fakeRng([]));
-  assert.deepEqual(state.combat.selfDot, { left: 3, dmg: spellRow("Ice").dmg, by: "ice", spell: "Ice", then: "heavy" });
+  const events = resolveScrollFumble(state, spellRow("Ice"), fakeRng([4]), fakeRng([]));
+  assert.equal(state.combat.selfDot, undefined);
+  const reader = events.find((e) => e.type === "fumbleOnSide" && e.who === "reader");
+  assert.deepEqual(reader, { type: "fumbleOnSide", spell: "Ice", who: "reader", name: "you", amount: 4 * 2 });
+  assert.equal(state.c.wp, 100 - 8);
 });
 
 test("harmful out: Doze and Stun set C.heroOut { kind: asleep, left: their d4 }", () => {

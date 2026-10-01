@@ -886,7 +886,28 @@ test("SPELLS.Fireballs.txt: 'd10+2 damage each … + your level² damage once to
   }
 });
 
-for (const [n, tick, phrase] of [["Acid", "acidTick", "a round, d6 rounds; the first round adds your level² damage"], ["Ice", "dotTick", "a round for d4+1 rounds, the first adding your level² damage"]]) {
+// Phase 90 plan 05 (SPELL-12, Q5 A): Ice is the area freeze, so its text states a
+// d10 + your level² to EACH foe, no roll to hit, and a d4 freeze (FREEZE_HOLD_DIE),
+// and each of those is the engine's. Before: "a round for d4+1 rounds, the first
+// adding your level² damage" (a damage-over-time spell).
+test("SPELLS.Ice.txt: 'd10 + your level² damage to each', and a d4 freeze, from the engine", () => {
+  const sp = SPELLS.find((s) => s.n === "Ice");
+  assert.equal(sp.kind, "blast");
+  assert.ok(sp.txt.includes(`${diceText(sp.dmg)} + your level² damage to each, no roll to hit`), sp.txt);
+  assert.ok(sp.txt.includes(`frozen for d${FREEZE_HOLD_DIE} rounds`), sp.txt);
+  for (const [level, levelSq] of [[1, 1], [3, 9]]) {
+    for (const face of [1, sp.dmg.sides]) {
+      const { state, events } = areaCast("Ice", level, (sides) => (sides === sp.dmg.sides ? face : 4));
+      assert.equal(events.some((e) => e.type === "spellThrown"), false, "no roll to hit");
+      const hits = events.filter((e) => e.type === "spellHit");
+      assert.deepEqual(hits.map((e) => e.dmg), [sp.dmg.n * face + sp.dmg.bonus + levelSq, sp.dmg.n * face + sp.dmg.bonus + levelSq], `Ice L${level} face ${face}: each foe its own dice + level²`);
+      // the freeze d4 is 4 (every non-damage die answers 4); the cast's own foe turn spent one hold turn
+      assert.deepEqual(state.combat.foes.map((f) => f.held.left), [3, 3], `Ice L${level}: frozen for the d4`);
+    }
+  }
+});
+
+for (const [n, tick, phrase] of [["Acid", "acidTick", "a round, d6 rounds; the first round adds your level² damage"]]) {
   test(`SPELLS.${n}.txt: its first round adds your level², from the engine`, () => {
     const sp = SPELLS.find((s) => s.n === n);
     assert.ok(sp.txt.includes(`${diceText(sp.dmg)} ${phrase}`), sp.txt);

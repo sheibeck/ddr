@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -70,7 +70,7 @@ import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LO
 // pickMemberItem below), so the cycle is safe.
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlHoldRoundsFor, controlCapRounds } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlCapRounds, spellDamageFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
 import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
@@ -1288,35 +1288,41 @@ export function roomWeakenResists(state, spell, rng, events, by) {
 }
 
 /**
- * holdFoe(state, foe, kind, source, events) — RULES-18: the "hold instead of
- * a kill/lock forever" half of the control audit's past-the-knee rule. Sets
- * `foe.held = { kind, left: controlHoldRoundsFor(depth) }` — `kind` one of
- * "frozen" (src/browser/foeConditions.js's Held chip reads
- * it, `foeTurn`'s own held-skip below counts it down) — and pushes `{ type:
- * "controlHeld", target: foe.name, kind, rounds: left, source }`.
- * Phase 90 plan 04 (SPELL-12): no spell or item calls this without `freeze`
- * any more (Petrify and Stupidity no longer hold, the Ice payoff no longer
- * holds), so the `controlHoldRoundsFor` default below has no live caller; it
- * stays only for the unit pins of the held skip, and 90-08 (Stop Time) passes
- * its own rounds.
+ * holdFoe(state, foe, kind, source, events, opts) — the ONE hold: sets
+ * `foe.held = { kind, left: opts.rounds }` and pushes `{ type: "controlHeld",
+ * target: foe.name, kind, rounds: left, source }`. `kind` is "frozen" (a
+ * Freeze's or Ice's d4 freeze) or "stunned" (Stun's d4 hold); both read the
+ * same: `foeTurn`'s held skip below counts it down one foe visit at a time,
+ * `derived.js#targetStrikeFaces` hits a held foe on at least 5 winning faces,
+ * and nothing a blow does ends it (src/browser/foeConditions.js reads `kind`
+ * for the Held chip).
  *
- * User ruling 2026-09-28 (Freeze): `freeze` (optional) is freezeFoe's own
- * rolled hold, `{ rounds, dmg }` — the hold lasts the rolled `rounds` (a
- * FREEZE_HOLD_DIE roll) at EVERY depth, instead of controlHoldRoundsFor, and
- * the event carries `freeze: true` (plus `dmg`, the damage the same hit
- * landed, when there was one) so the line reads "frozen for N rounds".
+ * Phase 90 plan 05 (SPELL-11): `opts.rounds` is REQUIRED, a positive integer
+ * (the old RULES-18 `controlHoldRoundsFor` depth default is gone: nothing
+ * holds for a depth-fixed count any more). A new hold NEVER SHORTENS a longer
+ * one still running: when the foe already holds with more rounds left than
+ * `opts.rounds`, the longer hold (its kind and its rounds) stands, and the
+ * line is still pushed for the new cast, carrying the hold that is in force.
+ * Optional `opts`: `freeze: true` (the event carries `freeze: true`, so the
+ * line reads "frozen for N rounds"), `dmg` (the damage the same hit landed,
+ * with `freeze`), `by` (a Joiner's name).
+ *
+ * Returns the rounds now in force.
  */
-export function holdFoe(state, foe, kind, source, events, freeze) {
-  const left = freeze ? freeze.rounds : controlHoldRoundsFor(state.floor?.depth);
-  foe.held = { kind, left };
+export function holdFoe(state, foe, kind, source, events, opts = {}) {
+  const { rounds, freeze, dmg, by } = opts;
+  if (!Number.isInteger(rounds) || rounds < 1) throw new Error("holdFoe: opts.rounds must be a positive integer");
+  if (!(foe.held && foe.held.left > rounds)) foe.held = { kind, left: rounds };
   events.push({
     type: "controlHeld",
     target: foe.name,
-    kind,
-    rounds: left,
+    kind: foe.held.kind,
+    rounds: foe.held.left,
     source,
-    ...(freeze ? { freeze: true, ...(Number.isFinite(freeze.dmg) ? { dmg: freeze.dmg } : {}) } : {}),
+    ...(by ? { by } : {}),
+    ...(freeze ? { freeze: true, ...(Number.isFinite(dmg) ? { dmg } : {}) } : {}),
   });
+  return foe.held.left;
 }
 
 /**
@@ -1354,8 +1360,108 @@ export function freezeFoe(state, t, source, rng, events, opts = {}) {
   const hasDmg = Number.isFinite(dmg);
   const rounds = rng.d(FREEZE_HOLD_DIE); // roll:amount
   if (foeResistsEffect(state, t, source, rng, events, by, hasDmg ? { freeze: true } : undefined)) return 0;
-  holdFoe(state, t, "frozen", source, events, { rounds, ...(hasDmg ? { dmg } : {}) });
+  holdFoe(state, t, "frozen", source, events, { rounds, freeze: true, ...(hasDmg ? { dmg } : {}), ...(by ? { by } : {}) });
   return rounds;
+}
+
+/**
+ * dozeFoes(state, sp, rng, events, caster) — Phase 90 plan 05 (SPELL-11, user
+ * 2026-09-30: "Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing
+ * foe"; Q4 A: exactly d4 foes, your target first). The ONE Doze tail: the
+ * hero's cast (a scroll's free cast included) and a Joiner's allyCast both
+ * call it. In order:
+ *   1. the reach, one d4 on the main rng, drawn first (no level multiplier);
+ *   2. the reached foes: the current target when it is alive, then the other
+ *      live foes in C.foes order, the first `reach` of them (a reach larger
+ *      than the live foes sleeps every live foe once);
+ *   3. per reached foe, in that order: the one depth-rising resist
+ *      (foeResistsSpell, a derived stream); a foe that resists stays awake and
+ *      draws nothing; else its OWN d4 on the main rng, `f.asleep = max(f.asleep,
+ *      d4)` (a longer sleep it already has stands), `f.dozing = true` (the mark
+ *      damageFoe reads to wake it on a hit, and that foeTurn clears when the
+ *      sleep runs out) and one `dozed { target, rounds, by? }` line;
+ *   4. when nobody slept, one closing `dozeFailed { by? }` line.
+ * `caster` is `{ by }` (a Joiner's name; the hero's when absent): it only
+ * names the caster on the resist and sleep lines, since Doze's reach does not
+ * scale with level.
+ */
+export function dozeFoes(state, sp, rng, events, caster = {}) {
+  const C = state.combat;
+  if (!C) return 0;
+  const by = caster.by;
+  const reach = rng.d(4); // roll:amount
+  const live = liveFoes(state);
+  const aimed = C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+  const order = aimed ? [aimed, ...live.filter((f) => f !== aimed)] : live;
+  let slept = 0;
+  for (const f of order.slice(0, reach)) {
+    if (foeResistsSpell(state, f, sp.n, rng, events, by)) continue;
+    const rolled = rng.d(4); // roll:amount
+    f.asleep = Math.max(f.asleep || 0, rolled);
+    f.dozing = true;
+    slept++;
+    events.push({ type: "dozed", target: f.name, rounds: f.asleep, ...(by ? { by } : {}) });
+  }
+  if (!slept) events.push({ type: "dozeFailed", spell: sp.n, ...(by ? { by } : {}) });
+  return slept;
+}
+
+/**
+ * stunFoe(state, t, sp, rng, events, caster) — Phase 90 plan 05 (SPELL-11,
+ * user 2026-09-30: "Stun holds one foe for d4 rounds and a hit does not end
+ * it"). The ONE Stun tail, shared by the hero's cast and a Joiner's allyCast:
+ * the caller has already rolled the target's one depth-rising resist and the
+ * foe did not resist. One d4 on the main rng (the hold's rounds), then
+ * holdFoe kind "stunned": the foe skips that many of its turns, is hit on at
+ * least 5 winning faces, a hit does not end the hold, and a new hold never
+ * shortens a longer live one. Returns the rounds now in force.
+ */
+export function stunFoe(state, t, sp, rng, events, caster = {}) {
+  const rounds = rng.d(4); // roll:amount
+  return holdFoe(state, t, "stunned", sp.n, events, { rounds, ...(caster.by ? { by: caster.by } : {}) });
+}
+
+/**
+ * iceStorm(state, sp, rng, events, caster) — Phase 90 plan 05 (SPELL-12, user
+ * 2026-09-30: "Ice is an area d10 to every foe with a chance to freeze each
+ * target 1d4 rounds"; Q5 A: no to-hit roll, each foe its own d10 + the
+ * caster's level², a survivor frozen d4 rounds unless it resists, the resist
+ * stopping only the freeze). The ONE Ice tail, shared by the hero's cast (a
+ * scroll's free cast included) and a Joiner's allyCast. `caster` is
+ * `{ by, sheet, level, sub }`; with no `by` it is the hero (`state.c`).
+ *
+ * One `iceCast` line, then for each live foe in C.foes order: its damage dice,
+ * a live Strength's extra d10 (Q1 A), the caster's level² and any spellDmg item
+ * bonus, through Afraid's halving and the difficulty seam (the hero's own
+ * damage, as a thrown spell's), then damageFoe (kind "spell", school "blast")
+ * and a `spellHit` (a Joiner's: `allySpellHit` with effect "damage"); a foe
+ * the damage kills is a normal kill (killFoe, no freeze); a survivor then goes
+ * through freezeFoe (a d4, the resist, a frozen hold), foe by foe, before the
+ * next foe is touched. A damaging hit wakes a dozing foe (damageFoe).
+ */
+export function iceStorm(state, sp, rng, events, caster = {}) {
+  const C = state.combat;
+  if (!C) return;
+  const by = caster.by;
+  const sheet = caster.sheet || state.c;
+  const level = Number.isFinite(caster.level) ? caster.level : sheet.level;
+  const sub = caster.sub !== undefined ? caster.sub : sheet.sub;
+  const levelSq = spellLevelSq({ level });
+  const targets = liveFoes(state);
+  events.push({ type: "iceCast", spell: sp.n, foes: targets.length, ...(by ? { by } : {}) });
+  for (const f of targets) {
+    if (!f.alive) continue;
+    const raw = rollDice(rng, sp.dmg) + strengthRoll(sheet, rng) + levelSq + eff(sheet, "spellDmg");
+    const dmg = by ? raw : afraidDamage(state, spellDamageFor(raw, sheet));
+    const hit = damageFoe(state, f, dmg, { kind: "spell", school: sp.kind, casterSub: sub, ...(by ? { by } : {}) }, rng, events);
+    if (by) events.push({ type: "allySpellHit", name: by, spell: sp.n, target: f.name, effect: "damage", dmg: hit.applied });
+    else events.push({ type: "spellHit", spell: sp.n, target: f.name, dmg: hit.applied, levelSq, ...(C.afraid > 0 ? { afraid: true } : {}) });
+    if (f.wp <= 0) {
+      killFoe(state, f, rng, events);
+      continue;
+    }
+    freezeFoe(state, f, sp.n, rng, events, { dmg: hit.applied, ...(by ? { by } : {}) });
+  }
 }
 
 /**
@@ -2643,7 +2749,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   if (crit) dmg *= 2;
   if (mod && mod.dmgMul) dmg *= mod.dmgMul;
   if (t.marked) dmg += 2;
-  const hit = damageFoe(state, t, dmg, { kind: "ally", crit }, rng, events);
+  const hit = damageFoe(state, t, dmg, { kind: "ally", crit, by: ally.name }, rng, events);
   if (!hit.soaked)
     events.push({
       type: "allyStruck",
@@ -2678,13 +2784,16 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * + eff(throw), damage = rollDice(sp.dmg) + level² (quick 260928-sq2) +
  * eff(spellDmg) through damageFoe kind "spell" (no armor draw), Freeze
  * lands its damage and then freezes a survivor for d4 rounds through
- * freezeFoe, exactly like the hero's cast (user rulings 2026-09-28); every
- * other kind resist-checks first (quick
- * 260927-rsx: foeResistsSpell, every targeted foe rolls; a Weaken rolls
- * per live foe through roomWeakenResists) then sleeps the target
- * (max(asleep, d4) rounds) or weaken the party's `C.weakened`/
- * `C.foeToHitPenalty`. The persistent sheet pays the charge
- * (`sheet.spellsUsed++`), never the transient `view`.
+ * freezeFoe, exactly like the hero's cast (user rulings 2026-09-28). Phase
+ * 90 plan 05: Ice (blast), Doze (status) and Stun (stun) are the hero's rules
+ * through the shared tails below (iceStorm: d10 + the Joiner's level² to every
+ * foe then a freeze for each survivor; dozeFoes: d4 foes, the target first,
+ * each its own d4, marked dozing; stunFoe: the target held d4 rounds after its
+ * resist), the Joiner's name on every line; a Weaken rolls per live foe through
+ * roomWeakenResists (quick 260927-rsx: every targeted foe rolls the one
+ * depth-rising resist) and sets the party's `C.weakened`/`C.foeToHitPenalty`.
+ * The persistent sheet pays the charge (`sheet.spellsUsed++`), never the
+ * transient `view`.
  */
 function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
@@ -2749,12 +2858,31 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     }
     return;
   }
-  // status / stun / weaken — the only other ATTACK_SPELL_KINDS.
+  // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
   events.push({ type: "allyCast", ...base });
+  // Phase 90 plan 05 (SPELL-11, SPELL-12): the Joiner's Ice, Doze and Stun are
+  // the hero's rules through the same shared tails (iceStorm, dozeFoes,
+  // stunFoe), the Joiner's name on every line. Ice has no up-front resist (each
+  // survivor rolls it after its damage, inside the tail); Doze rolls one per
+  // reached foe inside its tail; Stun rolls the target's one resist here.
+  const caster = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
+  if (sp.kind === "blast") {
+    iceStorm(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "status") {
+    dozeFoes(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "stun") {
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
+    stunFoe(state, t, sp, rng, events, caster);
+    return;
+  }
   // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
   // plan 04 the one depth-rising resist, with no second control resist after
-  // it) comes first, per targeted foe; a Doze/Stun that the target resists
-  // draws nothing more. A Weaken's d4+1 is drawn before its room resists.
+  // it) comes first, per targeted foe. A Weaken's d4+1 is drawn before its
+  // room resists.
   if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
     // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
@@ -2771,13 +2899,6 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
       startEffect(state.c, "spell:weaken", { rounds });
     }
     events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
-  } else {
-    // Phase 90 plan 04 (SPELL-12): the one depth-rising resist (inside
-    // foeResistsSpell); the second RULES-18 control resist is gone.
-    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
-    const rolled = rng.d(4); // roll:amount
-    t.asleep = Math.max(t.asleep || 0, rolled);
-    events.push({ type: "allySpellHit", ...base, effect: "asleep", rounds: t.asleep });
   }
 }
 
@@ -3469,17 +3590,9 @@ export function foeTurn(state, rng, events = []) {
       die(state, "scrollFumble", C.selfDot.spell, rng, events);
       return events;
     }
-    if (C.selfDot.left <= 0) {
-      const { spell, then } = C.selfDot;
-      delete C.selfDot;
-      // "then 'heavy'" (Ice): the last tick leaves the hero standing, so the
-      // promised freeze lands as the heavy blow instead of an automatic
-      // death — never both a burn AND a separate kill for the same fumble.
-      if (then === "heavy") {
-        const blow = fumbleHeavyBlow(state, spell, "frozen", rng, events);
-        if (blow.died) return events;
-      }
-    }
+    // Phase 90 plan 05: the burn just ends (Acid's). Ice's old "then heavy"
+    // hand-off is gone: a fumbled Ice is an area damage row now.
+    if (C.selfDot.left <= 0) delete C.selfDot;
   }
   for (const f of C.foes) {
     if (f.acid && f.acid.rounds > 0) {
@@ -3501,18 +3614,14 @@ export function foeTurn(state, rng, events = []) {
       }
     }
     // Phase 38 (ABIL-01, Poisoned Edge) — a generic per-foe DOT record, the
-    // exact f.acid tick template above, so Phase 40's spells can share the
-    // same `f.dot = { left, dmg, by }` shape. Poison bypasses armour like
-    // acid (kind "spell"). Absent on every fixture — only useAbility's
-    // "poisonedEdge" case ever sets f.dot.
+    // exact f.acid tick template above (`f.dot = { left, dmg, by }`). Poison
+    // bypasses armour like acid (kind "spell"). Absent on every fixture — only
+    // useAbility's "poisonedEdge" case ever sets f.dot. Phase 90 plan 05: no
+    // spell sets it any more (Ice, the one that did, is the area freeze now),
+    // so the old ice payoff and its level² first tick are gone with it.
     if (f.dot && f.dot.left > 0 && f.alive) {
-      // Quick 260928-sq2: an Ice record's first tick adds the caster's
-      // level² (then spends it); Poisoned Edge's dot carries none.
-      const d = rollDice(rng, f.dot.dmg) + (f.dot.levelSq || 0);
-      delete f.dot.levelSq;
+      const d = rollDice(rng, f.dot.dmg);
       const tick = damageFoe(state, f, d, { kind: "spell", school: f.dot.by, casterSub: c.sub }, rng, events);
-      // Captured before the delete below — `by` is the switch the ice payoff
-      // reads (Phase 40, SPELL-01), so Poisoned Edge's own dot is unaffected.
       const by = f.dot.by;
       f.dot.left--;
       const dotRanOut = f.dot.left <= 0;
@@ -3522,33 +3631,16 @@ export function foeTurn(state, rng, events = []) {
         killFoe(state, f, rng, events);
         continue;
       }
-      // Phase 40 (SPELL-01, Ice) — the promised "then frozen solid": when the
-      // ICE dot's last tick leaves the foe still standing, it freezes solid
-      // and dies through killFoe (pays like any other kill), mirroring the
-      // thrown Freeze branch's own frozen/killFoe/revive lines exactly.
-      // Zero extra draws before killFoe's own.
-      // Phase 90 plan 04 (SPELL-12, user 2026-09-30: no floor-12 special
-      // effects): the RULES-18 knee branches (a control resist, then a
-      // three-round hold) are gone. An iced foe that survives its last tick
-      // freezes solid and dies at every depth, as it did below the knee; the
-      // one resist it rolled was the cast's own (magic.js). Plan 90-05
-      // replaces Ice with its area form.
-      if (dotRanOut && by === "ice" && f.alive) {
-        f.frozen = true;
-        events.push({ type: "frozenSolid", target: f.name });
-        killFoe(state, f, rng, events);
-        if (f.alive) f.frozen = false; // kill-twice revived it — a standing foe is not frozen
-        continue;
-      }
     }
     if (!f.alive) continue;
-    // RULES-18 (Phase 75.3): a held foe (holdFoe: a Freeze's rolled hold
-    // since Phase 90 plan 04 — Petrify and Stupidity no longer hold) skips
-    // exactly `left` of its own visits, its asleep
-    // count running down alongside so two controls never stack end to end
-    // (checked after the dead-foe skip, before the asleep skip below).
+    // RULES-18 (Phase 75.3): a held foe (holdFoe: a Freeze's or Ice's frozen
+    // hold, or Stun's stunned hold) skips exactly `left` of its own visits, its
+    // asleep count running down alongside so two controls never stack end to end
+    // (checked after the dead-foe skip, before the asleep skip below). A hit
+    // never ends the hold (damageFoe does not touch `held`).
     if (f.held) {
       if (f.asleep > 0) f.asleep--;
+      if (!(f.asleep > 0)) delete f.dozing;
       f.held.left--;
       if (f.held.left > 0) {
         events.push({ type: "foeStillHeld", name: f.name, kind: f.held.kind, left: f.held.left });
@@ -3575,6 +3667,8 @@ export function foeTurn(state, rng, events = []) {
     }
     if (f.asleep > 0) {
       f.asleep--;
+      // Phase 90 plan 05: the dozing mark goes with the sleep when it runs out.
+      if (f.asleep <= 0) delete f.dozing;
       events.push({ type: "foeSlept", name: f.name });
       continue;
     }

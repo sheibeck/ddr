@@ -124,13 +124,15 @@ const KINDS = [
   ["thrown, one foe (Mangle)", "Mangle", 5, 3, "Beasts", 1, ONES(80)],
   ["Freeze's post-damage freeze", "Freeze", 1, 2, "Beasts", 1, ONES(80)],
   ["status (Doze)", "Doze", 1, 3, "Beasts", 1, ONES(80)],
-  ["stun", "Stun", 1, 3, "Beasts", 3, [6, ...ONES(80)]],
+  // Phase 90 plan 05: Stun holds ONE foe (one up-front resist, the picked foe's), Doze reaches a d4 of
+  // foes (here the d4 is 1: one resist) and Ice rolls its resist per surviving foe after its damage.
+  ["stun", "Stun", 1, 3, "Beasts", 1, ONES(80)],
   ["weaken", "Weaken", 1, 3, "Beasts", 3, ONES(80)],
   ["stupid (Stupidity)", "Stupidity", 2, 3, "Beasts", 1, ONES(80)],
   ["blind", "Blind", 3, 3, "Beasts", 1, ONES(80)],
   ["shrink", "Shrink", 3, 3, "Beasts", 3, [6, ...ONES(80)]],
   ["acid", "Acid", 2, 3, "Beasts", 1, ONES(80)],
-  ["dot (Ice)", "Ice", 3, 3, "Beasts", 1, ONES(80)],
+  ["blast (Ice)", "Ice", 3, 3, "Beasts", 3, ONES(80)],
   ["quake (Earthquake)", "Earthquake", 4, 3, "Beasts", 3, ONES(80)],
   ["vapor (Noxious Vapor)", "Noxious Vapor", 4, 3, "Beasts", 3, ONES(80)],
   ["volley (Fireballs)", "Fireballs", 4, 3, "Beasts", 3, ONES(80)],
@@ -156,8 +158,8 @@ for (const depth of [1, 12, 13, 20]) {
         if (depth <= 12) assert.equal("depthFaces" in e, false, `${label}: no depthFaces at or below floor 12`);
         else assert.equal(e.depthFaces, faces - resistFaces(10), `${label}: depthFaces`);
       }
-      assert.equal(events.some((e) => e.type === "controlResisted" || (e.type === "controlHeld" && !e.freeze)), false, `${label}: the RULES-18 control resist and hold are gone (a Freeze's own rolled hold is the one controlHeld left)`);
-      assert.equal(s.combat ? s.combat.foes.some((f) => "resisted" in f || ("held" in f && name !== "Freeze")) : false, false, `${label}: no Unmoved mark and no hold on any foe (a Freeze holds its rolled d4)`);
+      assert.equal(events.some((e) => e.type === "controlResisted" || (e.type === "controlHeld" && !e.freeze && e.kind !== "stunned")), false, `${label}: the RULES-18 control resist and hold are gone (a Freeze's or Ice's rolled freeze and Stun's rolled d4 hold are the controlHeld lines left)`);
+      assert.equal(s.combat ? s.combat.foes.some((f) => "resisted" in f || ("held" in f && !["Freeze", "Ice", "Stun"].includes(name))) : false, false, `${label}: no Unmoved mark and no hold on any foe (a Freeze, Ice or Stun holds its rolled d4)`);
     }
   });
 }
@@ -211,7 +213,7 @@ test("edge (precision): intelligence 1 gives one resist face (max(1, round(1 / 2
 // ---------------------------------------------------------------------------
 
 const DIGEST_FIELDS = ["wp", "maxWP", "alive", "asleep", "stupid", "blind", "blindFor", "frozen", "shrunk", "held", "resisted", "intel", "lives"];
-const CAST_TYPES = new Set(["stunned", "dozed", "weakened", "stupefied", "blinded", "shrunk", "petrified", "vaporRolled", "insaneRolled", "foeKilled"]);
+const CAST_TYPES = new Set(["controlHeld", "dozed", "weakened", "stupefied", "blinded", "shrunk", "petrified", "vaporRolled", "insaneRolled", "foeKilled"]);
 function digest(s, events, rng) {
   return {
     n: rng.count(),
@@ -223,7 +225,7 @@ function digest(s, events, rng) {
 const LAND = [
   // [spell, caster level, foes, foe type, main sequence] — the sequences give each spell a clean landed outcome.
   ["Doze", 1, 1, [3, ...ONES(80)]],
-  ["Stun", 1, 3, [6, 2, 3, 4, ...ONES(80)]],
+  ["Stun", 1, 1, [3, ...ONES(80)]],
   ["Stupidity", 2, 1, ONES(80)],
   ["Blind", 3, 1, ONES(80)],
   ["Shrink", 3, 3, [6, ...ONES(80)]],
@@ -245,8 +247,10 @@ test("no cap: a landed Doze, Stun, Stupidity, Blind, Shrink, Noxious Vapor, Insa
     const shallow = at(1);
     const deep = at(20);
     assert.deepEqual(deep.d, shallow.d, name);
-    assert.equal(deep.events.some((e) => e.type === "controlHeld" || e.type === "controlResisted"), false, name);
-    assert.equal(deep.s.combat ? deep.s.combat.foes.some((f) => "held" in f || "blindFor" in f) : false, false, `${name}: no hold, no blind countdown at floor 20`);
+    // Stun's own rolled d4 hold is its landed effect (Phase 90 plan 05): the same on floor 20 as on floor 1.
+    const stun = name === "Stun";
+    assert.equal(deep.events.some((e) => (e.type === "controlHeld" && !stun) || e.type === "controlResisted"), false, name);
+    assert.equal(deep.s.combat ? deep.s.combat.foes.some((f) => ("held" in f && !stun) || "blindFor" in f) : false, false, `${name}: no hold, no blind countdown at floor 20`);
   }
 });
 
@@ -328,14 +332,15 @@ test("a Joiner's Doze and Weaken roll the same single depth-rising resist per fo
       break;
     }
   }
-  const events = alliesTurn(s, fakeRng([3, ...ONES(40)]), []);
+  // Phase 90 plan 05: a Joiner's Doze is the shared dozeFoes tail: the d4 reach first (1), then the sleeper's d4 (3).
+  const events = alliesTurn(s, fakeRng([1, 3, ...ONES(40)]), []);
   const lines = events.filter(isResistLine);
   assert.equal(lines.length, 1);
   assert.equal(lines[0].by, "Ada");
   assert.equal(lines[0].faces, risingResistFaces(20, 10));
   assert.equal(lines[0].depthFaces, 6);
   assert.equal(events.some((e) => e.type === "controlResisted"), false);
-  assert.equal(events.find((e) => e.type === "allySpellHit").rounds, 3, "the rolled d4, never capped");
+  assert.equal(events.find((e) => e.type === "dozed").rounds, 3, "the rolled d4, never capped");
   assert.equal(f1.asleep, 3);
 
   const w1 = foe("W1", { intel: 10, type: "Humans", wp: 30 });

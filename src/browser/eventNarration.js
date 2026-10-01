@@ -184,14 +184,17 @@ function tableFourTail(e) {
 // ("the frost", not "the freeze"), and a held `kind` (`holdFoe`'s vocabulary)
 // reads as its own short adjective. Both fall back to a generic word rather
 // than printing the raw engine string verbatim. Phase 90 plan 04: only a Freeze
-// ("frozen") holds now; the stone and stupid words stay because the frozen
+// ("frozen") held; the stone and stupid words stay because the frozen
 // corpus variants (tools/lib/event-variants.mjs) still render those kinds, and
 // dropping them would remove two lines from the voice corpus for no gain.
+// Phase 90 plan 05 (SPELL-11): Stun's hold is kind "stunned".
 const CONTROL_EFFECT_WORD = Object.freeze({
   freeze: "the frost", stone: "the stone", sleep: "the sleep", weaken: "the weakening",
   stupid: "the stupidity", blind: "the blindness", shrink: "the shrinking",
 });
-const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied" });
+/** joinerOf(e) — Phase 90 plan 05: the Joiner a spell line names (`by`), or null for the hero's own (an absent `by`, or the resist events' "you"). */
+const joinerOf = (e) => (e.by && e.by !== "you" ? e.by : null);
+const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied", stunned: "stunned" });
 
 // VOX-05 (Phase 79, plan 79-08): what each Insanity face does
 // (engine/magic.js's insane branch). A 2 (strikes a neighbour) and a 3 or 6
@@ -1198,12 +1201,6 @@ export const EVENT_NARRATION = {
     e.lesser
       ? `<span class="beat">${e.name ?? "Something"} is coming, in a small way.</span>`
       : `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
-  // VOX-05 (Phase 79, plan 79-08): who (foes, not a bare count) and what (asleep,
-  // a d4 each: engine/magic.js's stun branch); "1 freeze" no longer reads.
-  stunned: (e) =>
-    (e.count ?? 0) > 0
-      ? `<span class="hit">${e.count === 1 ? "1 foe drops" : `${e.count} foes drop`} asleep for d4 rounds${e.count === 1 ? "" : " each"}.</span>`
-      : `<span class="miss">The stun puts nobody to sleep.</span>`,
   // Phase 40 (SPELL-01, Weaken): names the duration when the payload carries
   // one (a member's own weakened line predates the timer and may not).
   // VOX-05 (Phase 79, plan 79-08): who and what, in the grimoire's own
@@ -1235,12 +1232,11 @@ export const EVENT_NARRATION = {
       : `<span class="miss">Nobody shrinks.</span>`,
   // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
   acidApplied: (e) => `${e.target ?? "It"} starts to dissolve. <span class="roll">${e.rounds ?? 0}</span> round${e.rounds === 1 ? "" : "s"} of it.`,
-  // Phase 40 (SPELL-01, Ice) — the cast-time line; combat.js#foeTurn's
-  // existing dotTick handles every round after (see dotTick's own `by`
-  // branch above), and frozenSolid (below) narrates the payoff.
-  // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
-  // Quick 260928-sq2: the first tick adds the caster's level² (`levelSq`).
-  iceApplied: (e) => `<span class="hit">Ice climbs ${e.target ?? "it"}: d6 a round for ${plural(e.rounds ?? 0, "round")}${(e.levelSq ?? 0) > 1 ? ` (the first +${e.levelSq}, for your level)` : ""}, then it stops moving.</span>`,
+  // Phase 90 plan 05 (SPELL-12, Q5 A): Ice is the area freeze (combat.js#iceStorm).
+  // This is its cast line; each foe's damage reads as spellHit (the hero's) or
+  // allySpellHit (a Joiner's), and each survivor's freeze as controlHeld.
+  iceCast: (e) =>
+    `<span class="banner">${joinerOf(e) ? `${joinerOf(e)}'s ` : ""}${e.spell ?? "Ice"} sweeps the room.</span> Every foe takes a d10 plus level² (no roll to hit), and any survivor may freeze.`,
   // VOX-05 (Phase 79, plan 79-08): the number is damage, and it lands on
   // every foe (the caster's own half is earthquakeSelfDamage's line).
   earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room.`,
@@ -1347,7 +1343,12 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathCast: (e) => `<span class="hurt">Death: the spell takes its fee first.</span> −${e?.cost ?? 25} hp.`,
   // VOX-05 (Phase 79, plan 79-08): "1 round", never "1 rounds".
-  dozed: (e) => `${e.target ?? "It"} dozes off for ${plural(e.rounds ?? 0, "round")}.`,
+  // Phase 90 plan 05 (SPELL-11): Doze reaches d4 foes, one line each, and a hit wakes the sleeper.
+  dozed: (e) => `${joinerOf(e) ? `${joinerOf(e)}'s Doze: ` : ""}${e.target ?? "It"} dozes off for ${plural(e.rounds ?? 0, "round")}. A hit will wake it.`,
+  // Phase 90 plan 05 (SPELL-11): every reached foe resisted, so nobody slept.
+  dozeFailed: (e) => `<span class="miss">Nobody dozes off.</span> ${joinerOf(e) ? `${joinerOf(e)}'s` : "Your"} ${e.spell ?? "Doze"} was a lullaby to an empty room.`,
+  // Phase 90 plan 05 (SPELL-11, Q3 A): damageFoe wakes a dozing foe the moment it takes damage.
+  foeWoke: (e) => `<span class="hit">${e.target ?? "It"} wakes up${joinerOf(e) ? `, courtesy of ${joinerOf(e)}` : ""}.</span> Being hit does that to a nap.`,
   nothingToThrowAt: () => `<span class="miss">Nothing here to throw it at.</span>`,
   spellThrown: (e) =>
     `${e.spell ?? "It"} at ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}.`,
@@ -1357,7 +1358,6 @@ export const EVENT_NARRATION = {
   // clause names it from level 2 up (a level-1 caster's +1 goes unsaid).
   spellHit: (e) =>
     `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${(e.levelSq ?? 0) > 1 ? ` (the roll +${e.levelSq}, for your level)` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
-  frozenSolid: (e) => `<span class="hit">${e.target ?? "It"} freezes solid.</span>`,
   // RULES-18 (Phase 75.3, Plan 04): past floor 12, a control (Freeze, Ice's
   // last tick, a Joiner's Doze/Stun/Weaken, a Bard song) increasingly gets
   // shrugged off outright — this is that resist, always its own Oracle line
@@ -1370,8 +1370,11 @@ export const EVENT_NARRATION = {
   // VOX-05 (Phase 79, plan 79-04): "1 round", never "1 rounds".
   // User rulings 2026-09-28: a Freeze (`freeze: true`) holds for a rolled
   // d4 at every depth, so its line is the plain count, never "not forever".
+  // Phase 90 plan 05 (SPELL-11): Stun's hold (kind "stunned"), and the hold in force when a longer one stood.
   controlHeld: (e) =>
-    e.freeze
+    e.kind === "stunned"
+      ? `<span class="hit">${joinerOf(e) ? `${joinerOf(e)}'s Stun: ` : ""}${e.target ?? "It"} is stunned for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> Hitting it does not end it.`
+      : e.freeze
       ? `<span class="hit">${e.target ?? "It"} is frozen for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> Ice now, grudge later.${e.source ? ` (${e.source})` : ""}`
       : `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
   foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,

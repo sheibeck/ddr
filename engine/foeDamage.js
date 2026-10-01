@@ -62,6 +62,7 @@ export function multiplierFor(source, foe) {
  *   - `casterClass` / `casterSub` (optional): the hero's `c.cls` / `c.sub`
  *     when the hero is the source of the damage.
  *   - `school` (optional): informational only.
+ *   - `by` (optional): the Joiner who dealt it, carried onto a `foeWoke` line.
  *
  * Order (locked): (1) CANON-04 damage-source x creature-type multiplier,
  * (2) Sterling's CANON-03 halfDmg ceil-halving, (3) the CANON-01
@@ -154,5 +155,18 @@ export function damageFoe(state, foe, rawDmg, source, rng, events) {
   // playerStrike's struck) can still report it; absent when no soak draw
   // happened at all (no sp.ar, a crit, or a spell).
   foe.wp -= dmg;
+  // Phase 90 plan 05 (SPELL-11, Q3 A, user 2026-09-30: "a hit wakes a dozing
+  // foe"): the first damage a DOZING foe (Doze's sleepers only: `foe.dozing`,
+  // set by combat.js#dozeFoes) actually takes — a blow, a spell, a burn, from
+  // anyone — ends its sleep at once. A blow the ward or the natural armour
+  // absorbed returned above and wakes nobody. A killing hit clears the sleep
+  // too (a kill-twice foe revives awake) but needs no wake line. Every other
+  // sleep (Noxious Vapor, Insane's nap, a staff's gas, a Joiner's old nap) has
+  // no `dozing` mark and stays a plain sleep a hit does not wake.
+  if (foe.dozing) {
+    foe.asleep = 0;
+    delete foe.dozing;
+    if (foe.wp > 0) events.push({ type: "foeWoke", target: foe.name, ...(source.by ? { by: source.by } : {}) });
+  }
   return { applied: dmg, soaked: false, mult, ...(soakCheck ? { soak: rollFields(soakCheck) } : {}) };
 }

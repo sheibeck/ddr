@@ -523,7 +523,7 @@ export function slotWord(slot) {
 //   3. yourRound        — groups struck/strikeMissed(non-untouchable) by
 //      target into one line per target; untouchable misses stay separate.
 //   4. spellChain       — folds spellThrown->spellHit/spellMissed/
-//      frozenSolid/foeKilled per target (3+ targets collapse into one
+//      foeKilled per target (3+ targets collapse into one
 //      Lightning-style line), and folds a bare resistFailed away when a
 //      resisted-but-failed effect event follows in the same action.
 //   5. fleeChain / parleyChain / chestChain — fold a *Rolled event into its
@@ -563,6 +563,9 @@ export function slotWord(slot) {
 // ONE decision point where the narrative-vs-table choice is made.
 
 const CRIT_SUFFIX = " · CRIT";
+
+/** joinerOf(e) — Phase 90 plan 05: the Joiner a spell line names (`by`), or null for the hero's own (an absent `by`, or the resist events' "you"). */
+const joinerOf = (e) => (e?.by && e.by !== "you" ? e.by : null);
 
 /**
  * lineEvent(e) — CMBUI-10: true when `e` would produce a line of its own
@@ -788,22 +791,16 @@ function killFold(events, consumed, built) {
  */
 const RESIST_FOLD_EFFECTS = new Set([
   "dozed",
-  "stunned",
   "weakened",
   "stupefied",
   "blinded",
   "shrunk",
   "acidApplied",
-  // Phase 40 (SPELL-01, Ice) — resistible exactly like Acid (both kinds are
-  // absent from RESIST_IMMUNE_KINDS), so a resistFailed preceding a landed
-  // Ice cast folds the same way.
-  "iceApplied",
   "petrified",
   "walkingDeadTurned",
   "planeGated",
   "insaneRolled",
   "insaneFled",
-  "frozenSolid",
   // Quick 260927-rsx (user ruling 2026-09-27): every spell cast on a foe now
   // rolls a resist, thrown damage and a Joiner's cast and a staff's power
   // included. A failed resist folds behind the throw, the Joiner's outcome,
@@ -827,7 +824,8 @@ const RESIST_FOLD_EFFECTS = new Set([
  * the freeze it let through. Other holds keep their own resist line.
  */
 function foldsResist(oe) {
-  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && !!oe.freeze);
+  // Phase 90 plan 05: Stun's own hold (kind "stunned") folds the failed resist behind it, like a Freeze's.
+  return RESIST_FOLD_EFFECTS.has(oe.type) || (oe.type === "controlHeld" && (!!oe.freeze || oe.kind === "stunned"));
 }
 
 /** isFreezeHold(e, target) — a Freeze's d4 hold on `target` (user rulings 2026-09-28). */
@@ -2148,15 +2146,6 @@ export const LINE_FOR = {
   // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
   allySummoned: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} answers the call, sort of.` : `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
   allyPending: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} is coming, in a small way.` : `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
-  // VOX-05 (Phase 79, plan 79-08): who and what, twin of the Oracle line.
-  stunned: (e) => ({
-    text:
-      (e?.count ?? 0) > 0
-        ? `${e.count === 1 ? "1 foe drops" : `${e.count} foes drop`} asleep, d4 rounds${e.count === 1 ? "" : " each"}.`
-        : "The stun puts nobody to sleep.",
-    tone: "magic",
-    priority: PRIORITY.you,
-  }),
   // Phase 40 (SPELL-01, Weaken): the rounds count, when the payload carries one.
   // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
   weakened: (e) => ({
@@ -2189,11 +2178,8 @@ export const LINE_FOR = {
   }),
   // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds.
   acidApplied: (e) => ({ text: `${e?.target ?? "It"} starts to dissolve, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
-  // Phase 40 (SPELL-01, Ice) — the cast-time line; dotTick's own `by` branch
-  // (Phase 38's combat.js hooks section, below) narrates every round after.
-  // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds, and the d6 a round.
-  // Quick 260928-sq2: the first tick adds the caster's level² (`levelSq`).
-  iceApplied: (e) => ({ text: `Ice climbs ${e?.target ?? "it"}: d6 a round${(e?.levelSq ?? 0) > 1 ? ` (the first +${e.levelSq})` : ""}, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 90 plan 05 (SPELL-12, Q5 A): the rail twin of the Oracle's iceCast.
+  iceCast: (e) => ({ text: `${joinerOf(e) ? `${joinerOf(e)}'s ` : ""}${e?.spell ?? "Ice"} sweeps the room: a d10 plus level² each, survivors may freeze.`, tone: "magic", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): the number is damage to every foe.
   earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
@@ -2293,7 +2279,10 @@ export const LINE_FOR = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   deathCast: (e) => ({ text: `Death: its fee (−${e?.cost ?? 25} hp).`, tone: "hurt", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): "(3)" now says rounds.
-  dozed: (e) => ({ text: `${e?.target ?? "It"} dozes off, ${railPlural(e?.rounds ?? 0, "round")}.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 90 plan 05 (SPELL-11): a hit wakes it; a Joiner's Doze names the Joiner.
+  dozed: (e) => ({ text: `${joinerOf(e) ? `${joinerOf(e)}'s Doze: ` : ""}${e?.target ?? "It"} dozes off, ${railPlural(e?.rounds ?? 0, "round")}. A hit wakes it.`, tone: "magic", priority: PRIORITY.you }),
+  dozeFailed: (e) => ({ text: `Nobody dozes off${joinerOf(e) ? ` (${joinerOf(e)}'s ${e?.spell ?? "Doze"})` : ""}.`, tone: "miss", priority: PRIORITY.you }),
+  foeWoke: (e) => ({ text: `${e?.target ?? "It"} wakes up${joinerOf(e) ? `, courtesy of ${joinerOf(e)}` : ""}.`, tone: "hit", priority: PRIORITY.you }),
   nothingToThrowAt: () => block("Nothing here to throw it at."),
   spellThrown: (e) => ({ text: `${e?.spell ?? "It"} at ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.you }),
   spellHit: (e) => ({
@@ -2302,7 +2291,6 @@ export const LINE_FOR = {
     tone: "magic",
     priority: PRIORITY.you,
   }),
-  frozenSolid: (e) => ({ text: `${e?.target ?? "It"} frozen solid.`, tone: "magic", priority: PRIORITY.you }),
   // RULES-18 (Phase 75.3, Plan 04): the four control-at-depth events' rail
   // twins of eventNarration.js's own lines — the SAME word maps, kept as a
   // short local copy here (this module never imports from eventNarration.js;
@@ -2315,7 +2303,9 @@ export const LINE_FOR = {
   // User rulings 2026-09-28: a Freeze's d4 hold (`freeze: true`) reads
   // "frozen for N rounds" (spellChain folds it onto the hero's hit line).
   controlHeld: (e) => ({
-    text: e?.freeze
+    text: e?.kind === "stunned"
+      ? `${joinerOf(e) ? `${joinerOf(e)}'s Stun: ` : ""}${e?.target ?? "It"} stunned for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}; a hit will not end it.`
+      : e?.freeze
       ? `${e?.target ?? "It"} frozen for ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`
       : `${e?.target ?? "It"} held ${Number.isFinite(e?.rounds) ? railPlural(e.rounds, "round") : "? rounds"}.`,
     tone: "magic",

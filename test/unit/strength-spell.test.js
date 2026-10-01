@@ -413,13 +413,14 @@ test("reach (Q1 A): a damage-over-time tick adds no d10", () => {
       if (strength) giveStrength(state.c);
       const foe = fixedFoe();
       if (field === "acid") foe.acid = { rounds: 2, dmg: { n: 1, sides: 6, bonus: 0 }, levelSq: 1 };
-      else foe.dot = { left: 2, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice", levelSq: 1 };
+      // Phase 90 plan 05: no spell sets f.dot any more (Ice is the area freeze); Poisoned Edge's dot carries no level².
+      else foe.dot = { left: 2, dmg: { n: 1, sides: 6, bonus: 0 }, by: "poisonedEdge" };
       state.combat = fixedCombat([foe]);
       foeTurn(state, mkRng([4, 20]), []);
       return foe.wp;
     };
     assert.equal(run(true), run(false), `${field}: Strength does not touch the tick`);
-    assert.equal(500 - run(false), 4 + 1, `${field}: the tick is its dice plus level squared, as before`);
+    assert.equal(500 - run(false), field === "acid" ? 4 + 1 : 4, `${field}: the tick is its dice (plus level squared for Acid's first tick), as before`);
   }
 });
 
