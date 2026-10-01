@@ -1,12 +1,19 @@
 // test/unit/compliance-docs.test.js
 //
-// Phase 86 (COMP-03, ROADMAP criterion 5): pins the retirement of
-// docs/PLAY-GAMES-SETUP.md in favour of docs/LEADERBOARDS.md, the Play
-// Console cleanup section and release-day rules cutover LEADERBOARDS.md
-// carries, and the one ordered 2.2.0 release checklist RELEASING.md
-// carries (which the release-day probe results subsection in
-// BUG-REPORTS.md feeds). Replaces test/unit/play-games-runbook.test.js,
-// which pinned the runbook this plan retires.
+// Phase 86 (COMP-03, ROADMAP criterion 5) pinned the retirement of
+// docs/PLAY-GAMES-SETUP.md, the Play Console cleanup section of
+// docs/LEADERBOARDS.md and the one ordered 2.2.0 release checklist in
+// RELEASING.md (which the release-day probe results subsection in
+// BUG-REPORTS.md feeds).
+//
+// Phase 91.2 (BOARD-33, D-09, D-13, D-14) reverses the first two: Play Games
+// sign-in is back, so docs/PLAY-GAMES-SETUP.md is a LIVE runbook again (sign-in
+// only; path A reuses configuration 517177834262, path B is the fallback),
+// LEADERBOARDS.md section 16 says the configuration is in use and must NOT be
+// removed (the Season-1 boards stay listed and optional to delete), and
+// RELEASING.md carries one ordered "Release 2.3.0" checklist: the transition
+// deploy and the boardName function before the Compete-ON device test, the
+// release-day steps, the final rules, then the transition clean-up.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -23,7 +30,7 @@ function read(relPath) {
     .replace(/\r\n/g, "\n");
 }
 
-const RETIRED_RUNBOOK_PATH = "docs/PLAY-GAMES-SETUP.md";
+const RUNBOOK_PATH = "docs/PLAY-GAMES-SETUP.md";
 const LEADERBOARDS_PATH = "docs/LEADERBOARDS.md";
 const RELEASING_PATH = "docs/RELEASING.md";
 const BUG_REPORTS_PATH = "docs/BUG-REPORTS.md";
@@ -60,10 +67,10 @@ function releaseChecklistSection() {
   return nextHeadingOffset >= 0 ? rest.slice(0, nextHeadingOffset + 1) : rest;
 }
 
-/** The Release 2.3.0 DEPTH-key section's own text, up to the next "## " heading. */
-function depthKeySection() {
+/** The Release 2.3.0 ordered checklist's own text, up to the next "## " heading. */
+function release23Section() {
   const doc = read(RELEASING_PATH);
-  const heading = "## Release 2.3.0: the DEPTH-key steps (BOARD-28)";
+  const heading = "## Release 2.3.0: the ordered checklist";
   const start = doc.indexOf(heading);
   assert.ok(start >= 0, `RELEASING.md has "${heading}"`);
   const rest = doc.slice(start);
@@ -71,47 +78,97 @@ function depthKeySection() {
   return nextHeadingOffset >= 0 ? rest.slice(0, nextHeadingOffset + 1) : rest;
 }
 
-// ─── docs/PLAY-GAMES-SETUP.md: the retirement notice ────────────────────────
+// ─── docs/PLAY-GAMES-SETUP.md: the live sign-in runbook (Phase 91.2) ────────
 
-test("docs/PLAY-GAMES-SETUP.md is at most 20 lines and says it is retired", () => {
-  const doc = read(RETIRED_RUNBOOK_PATH);
-  const lineCount = doc.split("\n").filter((l, i, arr) => !(i === arr.length - 1 && l === "")).length;
-  assert.ok(lineCount <= 20, `expected at most 20 lines, got ${lineCount}`);
-  assert.match(doc, /retired/i);
+test("docs/PLAY-GAMES-SETUP.md is a live runbook again: path A, path B, the Game server credential, both SHA-1 kinds, the provider enable", () => {
+  const doc = read(RUNBOOK_PATH);
+  assert.doesNotMatch(doc, /^# Play Games Services setup \(retired\)/m, "no longer the retirement notice");
+  assert.ok(doc.includes("517177834262"), "names the reused configuration (D-09)");
+  assert.match(doc, /Path A/);
+  assert.match(doc, /Path B/);
+  assert.ok(doc.includes("Game server"), "the Game server credential");
+  assert.match(doc, /Play App Signing key's\*{0,2} SHA-1/, "the Play App Signing key's SHA-1");
+  assert.match(doc, /debug keystore's\*{0,2} SHA-1/, "the debug keystore's SHA-1");
+  assert.ok(doc.includes("defaultSupportedIdpConfigs"), "the provider enable");
+  assert.ok(doc.includes("playgames.google.com"), "the provider id");
+  assert.ok(doc.includes("delve-die-repeat-6ba5f"), "path B links the Firebase project");
+  assert.ok(doc.includes("games-ids.xml") && doc.includes("PLAY_GAMES_CONFIG"), "path B changes both APP_ID copies");
+  assert.ok(doc.includes("tools/board-names/deploy.mjs"), "what Claude runs: the function deploy");
+  assert.match(doc, /Do not remove the Play Games configuration/i);
 });
 
-test("docs/PLAY-GAMES-SETUP.md points at docs/LEADERBOARDS.md and the former runbook's git commit", () => {
-  const doc = read(RETIRED_RUNBOOK_PATH);
-  assert.match(doc, /docs\/LEADERBOARDS\.md/);
+test("docs/PLAY-GAMES-SETUP.md keeps the secret out of the repo and still points at the former runbook's git commit", () => {
+  const doc = read(RUNBOOK_PATH);
+  assert.match(doc, /outside the repo/i);
   assert.match(doc, /a217d032/);
+  assert.match(doc, /PROFILE or EMAIL/);
 });
 
-// ─── docs/LEADERBOARDS.md: the Play Console cleanup and the rules cutover ───
+// ─── docs/LEADERBOARDS.md: the Play Games configuration stays, and the rules cutover ───
 
-test("docs/LEADERBOARDS.md carries the Play Console cleanup section and all five Season-1 board IDs", () => {
+test("docs/LEADERBOARDS.md section 16 keeps the Play Games configuration and still lists all five Season-1 board IDs", () => {
   const doc = read(LEADERBOARDS_PATH);
-  assert.match(doc, /Retiring Google Play Games \(Play Console cleanup\)/);
+  const start = doc.indexOf("## 16. The Play Games configuration and the Season-1 boards");
+  assert.ok(start >= 0, "LEADERBOARDS.md has the section 16 heading");
+  const section = doc.slice(start);
+  assert.match(section, /Do NOT remove the Play Games Services configuration/);
+  assert.ok(section.includes("517177834262"));
+  assert.doesNotMatch(doc, /Retiring Google Play Games \(Play Console cleanup\)/, "the old cleanup heading is gone");
+  assert.doesNotMatch(section, /\*\*Remove the Play Games Services configuration/, "no step tells the user to remove it");
   for (const id of SEASON_1_BOARD_IDS) {
     assert.ok(doc.includes(id), `LEADERBOARDS.md mentions board id ${id}`);
   }
 });
 
-test("docs/LEADERBOARDS.md section 6 keeps the 2.2 transition history, and the 2.3 DEPTH-key transition files exist while it runs", () => {
+test("docs/LEADERBOARDS.md describes the names gate, the boardName function, identity v2, the sign-in hold and moderation", () => {
+  const doc = read(LEADERBOARDS_PATH);
+  for (const needle of [
+    "names/{uid}",
+    "boardName",
+    "board-names/deploy.mjs",
+    "ddr.identity.v2",
+    "boardSession",
+    "FEDERATED_USER_ID_ALREADY_LINKED",
+    "ddr.boardRepost.v1",
+    "signin",
+    "names --flagged",
+    "name-override",
+    "name-clear",
+    "delete-run",
+    "Blaze",
+  ]) {
+    assert.ok(doc.includes(needle), `LEADERBOARDS.md mentions "${needle}"`);
+  }
+  assert.doesNotMatch(doc, /content\/handles\.js/, "no table row for the deleted handle module");
+  assert.doesNotMatch(doc, /RE-ROLL HANDLE is unlimited/, "the re-roll paragraph is gone");
+});
+
+test("docs/LEADERBOARDS.md section 6 keeps the 2.2 transition history, and the transition files exist while the 2.3 window runs", () => {
   const doc = read(LEADERBOARDS_PATH);
   assert.match(doc, /The transition period \(over, 2026-09-29\)/);
   assert.match(doc, /Until the 2\.3 cutover: the DEPTH-key transition config/);
-  // Phase 87 recreated these for BOARD-28; the Release 2.3.0 steps delete them
-  // again and flip this assertion back to "gone".
+  assert.ok(doc.includes("legacy branch"), "the transition file now carries the 2.2.0 legacy branch");
+  // Phase 87 recreated these and Phase 91.2 extended them; the Release 2.3.0
+  // clean-up step deletes them again and flips this assertion back to "gone".
   for (const present of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
     assert.ok(fs.existsSync(path.join(REPO_ROOT, present)), `${present} exists until the 2.3 cutover`);
   }
 });
 
+test("the docs name no deleted handle module or flag", () => {
+  const shell = read("docs/SHELL-MODULES.md");
+  assert.doesNotMatch(shell, /handles\.js/);
+  assert.doesNotMatch(shell, /rerollHandle|ensureHandle\(\)/);
+  assert.doesNotMatch(read(RELEASING_PATH), /--with-admin|acceptLegacyDeepKey/);
+});
+
 // ─── docs/RELEASING.md: no stale runbook link, one ordered checklist ────────
 
-test("docs/RELEASING.md carries no reference to the retired runbook's filename", () => {
+test("docs/RELEASING.md points at the live sign-in runbook and cancels the old Play Console cleanup step", () => {
   const doc = read(RELEASING_PATH);
-  assert.ok(!doc.includes("PLAY-GAMES-SETUP"), "no reference to the retired runbook's filename");
+  assert.ok(doc.includes("PLAY-GAMES-SETUP"), "the 2.3.0 console batch is the runbook");
+  assert.match(doc, /Play Console cleanup of the old game service: CANCELLED/);
+  assert.ok(!/^\s*\d+\.\s+\*\*Remove the Play Games Services configuration/im.test(doc), "no step tells the user to remove the configuration");
 });
 
 test("docs/RELEASING.md's checklist section carries its markers in the release's own order", () => {
@@ -138,23 +195,62 @@ test("docs/RELEASING.md's checklist names android:release, not play:release, for
   assert.match(section, /not `npm run play:release`/);
 });
 
-test("docs/RELEASING.md's Release 2.3.0 DEPTH-key section keeps its steps in hard order (BOARD-28)", () => {
-  const section = depthKeySection();
+test("docs/RELEASING.md's Release 2.3.0 checklist keeps its steps in hard order (BOARD-28, BOARD-31..33)", () => {
+  const section = release23Section();
   const orderedMarkers = [
+    "PLAY-GAMES-SETUP",
+    "defaultSupportedIdpConfigs",
+    "board-names/deploy.mjs --setup --yes",
+    "board-names/deploy.mjs --yes",
+    "--config firebase.transition.json",
     "boards-smoke.mjs --transition",
+    "boards-smoke.mjs --function",
+    "PLAY GAMES PROBE",
+    "--name-source games",
+    "patch notes",
+    "android-api-scan.mjs",
+    "releaseRuntimeClasspath",
     "rekey-deep",
     "rekey-deep --yes",
+    "Publish the Play Games configuration",
+    "npm run deploy",
+    "Data safety form",
+    "users interact",
     "firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f",
     "rekey-deep --yes",
-    "firestore.transition.rules",
+    "Delete the transition artefacts",
+    "LEGACY_HANDLE_PATTERN",
   ];
   let pos = 0;
   for (const marker of orderedMarkers) {
     const idx = section.indexOf(marker, pos);
-    assert.ok(idx >= 0, `DEPTH-key section contains "${marker}" after the previous marker`);
+    assert.ok(idx >= 0, `Release 2.3.0 checklist contains "${marker}" after the previous marker`);
     pos = idx + marker.length;
   }
-  assert.match(section, /2\.2\.0 client's run is refused/);
+  assert.match(section, /2\.2\.0\s+client's run is refused/);
+  assert.ok(section.includes("517177834262"), "path A reuses the existing configuration");
+  assert.ok(section.includes("boardName"), "the function is named");
+});
+
+test("docs/RELEASING.md: the transition deploy, the final-rules deploy and the transition clean-up appear in increasing line order", () => {
+  const lines = read(RELEASING_PATH).split("\n");
+  const section0 = lines.findIndex((l) => l.startsWith("## Release 2.3.0: the ordered checklist"));
+  assert.ok(section0 >= 0);
+  const find = (re, from) => {
+    const i = lines.findIndex((l, n) => n >= from && re.test(l));
+    assert.ok(i >= 0, `a line matching ${re} after line ${from + 1}`);
+    return i;
+  };
+  const transition = find(/--config firebase\.transition\.json/, section0);
+  const finalRules = find(/^3\. \*\*When 2\.3 reaches testers/, transition);
+  const cleanup = find(/^4\. \*\*Delete the transition artefacts/, finalRules);
+  assert.ok(transition < finalRules && finalRules < cleanup);
+});
+
+test("docs/RELEASING.md's 2.3.0 checklist asks the user before every live step", () => {
+  const section = release23Section();
+  assert.match(section, /user's go first/);
+  assert.match(section, /Confirm it with the user before deploying/);
 });
 
 // ─── docs/BUG-REPORTS.md: the release-day probe target ──────────────────────

@@ -6,13 +6,16 @@ and `storeScreen.js` (Phase 47), and the character roller mounts from
 `roller.js` (Phase 50). The GEAR tab's bottom action sheet renders from
 `gearSheet.js` (Phase 63). The DEAD tab's LEADERBOARD/YOUR DEAD panel
 renders from `leaderboardPanel.js` over the pure `leaderboardView.js` view
-model (Phase 66; rebuilt as the v3 panel in Phase 84). The rolled-`@handle`
-account comes from two modules: `account.js` (the pure
+model (Phase 66; rebuilt as the v3 panel in Phase 84). The Google
+Play Games-named account comes from two modules: `account.js` (the pure
 view model) and `accountChip.js` (the renderers plus
 `createAccountController`). Our own Firebase-backed leaderboard — which
-replaced Phases 67/68's Play Games modules in v2.2 Phase 85
-(`docs/LEADERBOARDS.md` is the ops runbook) — adds `firebaseAuth.js`/
-`handles.js` (the anonymous identity and the rolled handle),
+replaced Phases 67/68's Play Games modules in v2.2 Phase 85 and, in 2.3 (Phase
+91.2), names every poster by their verified Play Games name
+(`docs/LEADERBOARDS.md` is the ops runbook, `docs/PLAY-GAMES-SETUP.md` the
+console side) — adds `firebaseAuth.js`/`playIdentity.js`/`nameClient.js`
+(the Play Games-linked identity, the sign-in seam and the client of the
+`boardName` function), `nameFilter.js` (the safety-list mask),
 `boardClient.js`/`boardFeed.js` (cached reads and the panel's data feed),
 `boardWrites.js`/`runQueue.js`/`runBackfill.js`/`boardSync.js` (writes, the
 durable queue, the once-only backfill and the controller wiring them
@@ -207,29 +210,46 @@ the account and leaderboard modules below.
 
 ### The account (Phase 83, Phase 85)
 
-`src/browser/firebaseAuth.js#createIdentity` is the anonymous player
-identity: a lazy, DOM-free anonymous Firebase sign-up over plain REST (no
-SDK), kept in durable storage under `ddr.identity.v1`
-(`sanitizeIdentity`, a tolerant load). `ensureHandle()` rolls the
-`@handle` locally, with no network, the first time it is asked;
-`rerollHandle()` and `setHandle(handle)` (which re-seeds the SAME handle
-with no uid, so erasing a player's runs keeps their handle) never touch the
-network either. `getToken()`/`forceRefresh()`/`deleteAccount()` are
-Compete-gated — every call checks `competeOn()` first, unless the caller
+`src/browser/firebaseAuth.js#createIdentity` is the board identity (v2, Phase
+91.2): a lazy, DOM-free Firebase account over plain REST (no SDK), kept in
+durable storage under `ddr.identity.v2` (`sanitizeIdentity`, a tolerant
+load; a v1 record is migrated and its key removed). `boardSession({
+interactive })` is the one call that readies a poster: Compete-gated and
+single-flight, it asks the `PlayIdentity` seam for the Play Games status,
+links the account to the player (in place, or by adopting the old anonymous
+account's runs), claims the verified name from the `boardName` function and
+follows renames and account switches, answering `{ ok, uid, idToken, name }` or
+a reason id (`off | offline | server | refused | unavailable | signin`).
+`snapshot()` is `{ uid, name, linked, playerId }`; there is no handle, no
+re-roll and no `ensureHandle`. `getToken()`/`forceRefresh()`/`deleteAccount()`
+are Compete-gated — every call checks `competeOn()` first, unless the caller
 passes `{ explicit: true }`, the one exception reserved for a player-tapped
-Send on the bug-report sheet. `src/browser/handles.js` (`rollHandle`,
-`isValidHandle`, `handlePatternSource`) builds and validates the handle
-from `content/handles.js`'s `HANDLE_FIRST`/`HANDLE_SECOND` word tables —
-`@` plus two words, shell-side randomness only, never the engine rng.
+Send on the bug-report sheet (which creates an anonymous identity and never
+calls Play Games). `deleteAccount()` releases the name through the function,
+deletes the account and drops both identity keys.
+`src/browser/playIdentity.js` is the Play Games seam
+(`createPlayIdentity({ loadPlugin })` over the in-repo Capacitor plugin
+`PlayIdentityPlugin.java`, and `createFakePlayIdentity` for the browser dev
+loop and tests): `init()`, `status()`, `signIn()`,
+`serverAuthCode({ serverClientId })`, all resolving and never rejecting. The SDK
+starts only on the first call, which only a Compete-ON session makes; building
+the seam calls nothing. `src/browser/nameClient.js` is the client of the
+`boardName` function (claim, release; `NAME_CLIENT_REASONS`), and
+`src/browser/boardName.js` the name sanitizer shared with the function.
+`src/browser/nameFilter.js` (`nameFlagged`, `nameTokens`) is the D-08 matcher
+over `content/safety-wordlist.js`: a flagged name renders as the
+`LEADERBOARD_COPY` placeholder with a neutral avatar. `src/browser/pgsProbe.js`
+is the device probe behind the hidden dev row (`runPgsProbe`).
 
 `src/browser/account.js` is the pure view model: the account state
-(`normalizeAccountState`: `compete`, `handle`, `erase`, `welcomed`), the
+(`normalizeAccountState`: `compete`, `name`, `signin`, `erase`, `welcomed`), the
 title chip and ☰-face views (`accountChipView`, `accountMenuView` — the
-handle's initials avatar with Compete ON, a dim glyph otherwise; the handle
+name's initials avatar with Compete ON, a dim glyph otherwise; the name
 itself shows whether Compete is ON or OFF), the sheet/☰-block rows
-(`accountSheetView`: identity, COMPETE ON/OFF, RE-ROLL HANDLE, ERASE MY
-RUNS) and the rail cards (`accountCard("welcome" | "erased" |
-"eraseFailed")`). It has no DOM, no storage and no network.
+(`accountSheetView`: identity, the sign-in status, COMPETE ON/OFF, a SIGN IN
+row while Compete is ON and the player is not signed in, ERASE MY RUNS) and
+the rail cards (`accountCard("welcome" | "erased" | "eraseFailed" |
+"signinNeeded")`). It has no DOM, no storage and no network.
 
 `src/browser/accountChip.js` exports the DOM renderers
 (`renderAccountChip(button, view)`, `renderAccountSheet({ rows, title },
@@ -238,14 +258,18 @@ static `.mw-hud-menu-face` — and `renderAccountMenu(host, view,
 handlers)`, the ☰ dropdown's ACCOUNT block; `ACCOUNT_CLASSES` lists every
 class they emit) and `createAccountController({ identity, board, settings,
 notify, compete, armMs })`, the one place every account transition is
-decided: `boot()` (reads settings, rolls the handle via
-`identity.ensureHandle()`), `setCompete(value)` (OFF purges the board queue
-and persists at once, ON flushes it), `reroll()` (one `board.reroll()` in
-flight at a time), `eraseTap()`/`disarmErase()` (the two-tap ERASE MY RUNS
+decided: `boot()` (reads settings), `setCompete(value)` (OFF purges the board
+queue and persists at once, ON flushes it), `signInTap()` (the SIGN IN row:
+one `board.signIn()` in flight at a time, its answer fed through
+`sessionChanged`), `sessionChanged(info)` (the board sync's session answer
+drives the signed-in / signed-out state and the once-per-launch held-runs
+card), `eraseTap()`/`disarmErase()` (the two-tap ERASE MY RUNS
 arm/expire/erase, `ERASE_ARM_MS` shared with the ☰ menu's own ABANDON arm
-window) and `boardAcked()` (the once-ever welcome card, `boardWelcomed`
-persisted). Returns `{ boot, setCompete, reroll, eraseTap, disarmErase,
-boardAcked, state, chipView, sheetView, menuView, subscribe }`. The `board`
+window) and `boardAcked()` (the once-ever welcome card saying the Play Games
+name is public, `nameWelcomed` persisted — it replaced `boardWelcomed`, so
+every 2.3 player sees it once). Returns `{ boot, setCompete, signInTap,
+sessionChanged, eraseTap, disarmErase, boardAcked, state, chipView, sheetView,
+menuView, subscribe }`. The `board`
 seam it is handed is `src/browser/boardSync.js#createBoardSync`'s return
 value (below).
 
@@ -254,11 +278,19 @@ The shell wiring (mazeworld.html's module script):
 - A native build gives the account its own `sharedIdentity()` (the same
   identity a bug report uses); the browser dev loop gives it a separate
   `boardIdentity()` over `dev.`-prefixed storage keys, so dev-loop board
-  play can never sign up or touch a live account.
+  play can never sign up or touch a live account. Both receive the one lazy
+  `playIdentity()` seam (the native plugin on Android, the in-memory fake in
+  the dev loop); `sharedIdentity()` hands it over but its anonymous bug-report
+  path never calls it.
 - `account = createAccountController({ identity: boardIdentity(), board:
   boardSync, settings: { read: readSettings, write: writeAccountSetting },
   notify: parkAccountCard, compete: currentSettings?.compete !== false })`
-  is assigned once, after `boardSync`.
+  is assigned once, after `boardSync`, which is built with `onSession: (info)
+  => account?.sessionChanged(info)`. On resume the `visibilitychange`
+  listener calls `boardSync.session()` (quiet); the SIGN IN row in the ☰
+  block and the title sheet call `account.signInTap()`. A hidden dev row
+  (long-press the version label) holds the PLAY GAMES PROBE button and, in the
+  browser dev loop only, a fake sign-in toggle.
 - `account.boot()` starts right after the title screen is initialized and
   is never awaited, so boot, the title and play never wait on the network.
 - `renderAccountSurfaces()` runs on every account change and once before
@@ -273,7 +305,7 @@ The shell wiring (mazeworld.html's module script):
 - Only the title chip opens `#mw-acct-sheet`. The Settings row closes the
   account sheet and opens the settings sheet. The scrim, Close and the
   Android back button close it; the back button closes it first, ahead of
-  every other layer. COMPETE and RE-ROLL HANDLE keep the ☰ open; only the
+  every other layer. COMPETE and SIGN IN keep the ☰ open; only the
   confirming ERASE tap closes it.
 - The controller's `notify` parks the welcome/erased/eraseFailed cards
   (`parkAccountCard`) until the dungeon is visible, then hands them to
@@ -403,13 +435,15 @@ decision; `PATCH_NOTES_COPY` and `PATCH_NOTES_RELEASES_URL`).
 ### The board, the panel and placement (Phase 83, Phase 84, Phase 85)
 
 **Identity and writes.** `src/browser/boardWrites.js#createBoardWrites`
-exports `submitRun` (idempotent run create — the doc id is always
-`{uid}_{hash}`, `runDoc.js`'s stable identity for a run, so a resubmit never
-duplicates), `rewriteHandle` (rewrites `handle` onto every one of the
-caller's own runs, paged) and `eraseMyRuns` (deletes every one of the
-caller's own runs, then the anonymous account best-effort, then drops
-`ddr.identity.v1`). A 401 forces exactly one `identity.forceRefresh()` and
-one retry, shared across a whole call. `src/browser/runDoc.js` is the one
+exports `submitRun` (idempotent run create under the board session's verified
+name — the doc id is always `{uid}_{hash}`, `runDoc.js`'s stable identity for a
+run, so a resubmit never duplicates; a genuine refusal re-claims the name once
+and retries once; a signed-out player answers reason `signin`) and
+`eraseMyRuns` (deletes every one of the caller's own runs, then
+`identity.deleteAccount()`, which releases the name, deletes the account and
+drops `ddr.identity.v2`). There is no rename or handle-rewrite path (D-11). A
+401 forces exactly one `identity.forceRefresh()` and one retry, shared across a
+whole call. `src/browser/runDoc.js` is the one
 definition of the run document: its field set and bounds
 (`RUN_CLIENT_FIELDS`, `FLOOR_MAX`, `GOLD_MAX`, …), the four integer rank
 keys (`deepKeyOf`/`daysKeyOf`/`killsKeyOf`/`goldKeyOf`, and the shared
@@ -417,7 +451,9 @@ keys (`deepKeyOf`/`daysKeyOf`/`killsKeyOf`/`goldKeyOf`, and the shared
 the DAYS anti-farming cap, `docs/DAYS-FARMING.md`), `validateRunDoc` (the JS
 mirror of `firebase/firestore.rules`) and the REST query/commit builders
 (`topTenQuery`, `countQuery`, `ownRunsQuery`, `createRunCommit`,
-`handleUpdateCommit`, `deleteCommit`). `src/browser/firestoreRest.js` is the
+`deleteCommit`; `legacyHandleUpdateCommit` is a transition-only builder that plays a
+2.2.0 client for the smoke probe and the fake's tests, deleted with the transition
+files). `src/browser/firestoreRest.js` is the
 one shared Firestore/Identity REST helper (the typed-value encoder/decoder,
 the URL builders, a never-throwing `timedFetch`); `src/browser/
 firebaseConfig.js` holds the one shared `FIREBASE_CONFIG` (project id and
@@ -439,7 +475,11 @@ enqueued under `ddr.runQueue.v1` and held until `boardWrites.js#submitRun`
 acknowledges it, surviving relaunch and offline play. `flush({force})` is
 single-flight; a transient failure backs off (`backoffMs`: 30 s doubling to
 a 30-minute cap); a rules refusal drops the entry with one logged line;
-`purge()` discards the queue for Compete OFF. `src/browser/runBackfill.js`
+`purge()` discards the queue for Compete OFF. A `signin` answer (Compete ON, not
+signed in or no name yet) is a **hold**, not a failure: the entry stays with no
+attempt count and no backoff, and posts after the sign-in. `requeue(list, {
+versionOf, version })` moves settled runs back into the entries for the D-05
+re-post. `src/browser/runBackfill.js`
 is the once-only import of local runs from the 2.1.0 release on
 (`BACKFILL_SINCE_MS`, the `v2.1.0-play11` tag time; `BACKFILL_VERSION`,
 `"2.1.0 (11)"`), bounded to the hashes `src/browser/runHistory.js`'s own
@@ -448,19 +488,22 @@ with Compete OFF can never ride the backfill onto the board.
 
 **The controller.** `src/browser/boardSync.js#createBoardSync` is the board
 engine room the shell only has to wire up: `boot()` (drops the retired
-`ddr.pgsqueue.v1` key, runs the once-only backfill), `record(summary)` (the
-death-time enqueue), `flush`/`purge`, `reroll()` (the offline-safe handle
-re-roll: `ddr.handleRewrite.v1` marks a pending rewrite until a Compete-ON
-flush rewrites it onto every board run), `erase()` (keeps the handle —
-`identity.setHandle` re-seeds the dropped record with the SAME handle) and
-`waitForPending()` (awaited by the native background-pause path). Every
+`ddr.pgsqueue.v1` and `ddr.handleRewrite.v1` keys, runs the once-only backfill, then
+the quiet session when Compete is ON), `record(summary)` (the
+death-time enqueue), `flush`/`purge`, `session()` (quiet) and `signIn()`
+(interactive), which share one routine reporting `{ state, name }` through
+`onSession` and, on `signedIn`, run the once-only D-05 re-post
+(`ddr.boardRepost.v1`: settled runs missing from the board are re-queued) and a
+forced flush, `erase()` (identity.deleteAccount() drops the record; nothing is
+re-seeded) and `waitForPending()` (awaited by the native background-pause path). Every
 board call is Compete-gated, including a player-tapped erase.
 
 **The panel.** `src/browser/leaderboardView.js#leaderboardView(input)` is
 the pure view model behind both DEAD-tab views: LEADERBOARD (`mode:
 "board"`, Compete ON) and YOUR DEAD (`mode: "mine"`, always forced with
 Compete OFF), fed by `runHistory.js`'s local per-run history and
-`boardFeed.js`'s `BoardSnapshot`. `RACE_IDS`/`SUB_IDS`, `handleInitials` and
+`boardFeed.js`'s `BoardSnapshot`. `RACE_IDS`/`SUB_IDS`, `nameInitials` (one generic initials rule for Play Games
+names and legacy 2.2.0 `@handle` rows) and
 `avatarColour` are shared with `account.js`'s own avatar. Every word comes
 from `content/boards.js#LEADERBOARD_COPY` and
 `content/season.js#SEASON`/`SEASON_NAMES`. `src/browser/leaderboardPanel.js`

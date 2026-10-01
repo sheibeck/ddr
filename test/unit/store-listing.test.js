@@ -1,20 +1,22 @@
 // test/unit/store-listing.test.js
 //
-// Phase 86 (COMP-01): pins store-listing/LISTING.md's 2.2.0 Data safety
-// answers for our own Firebase leaderboard: an own "User IDs" row for the
-// anonymous game ID (collected for app functionality, optional, deletable
-// with ERASE MY RUNS), an "Other actions" row covering the rolled @handle
-// and every run-document field, the two bug-report rows kept, encrypted in
-// transit, not shared (Firebase as service provider), not sold, both
-// refreshed source- and build-level audits, and no trace of the retired
-// Google Play Games service anywhere in the listing. Also pins the 2.2.0
-// full description (an optional public leaderboard, six races) and the
-// 2.2.0 privacy record (the darktier-studio commit, the one-small-database
-// line).
+// Phase 91.2 (BOARD-33, D-07): pins store-listing/LISTING.md's 2.3.0 Data
+// safety answers. The public board shows each player under their Google Play
+// Games name, so: a "Name" row (the gamer name, shown publicly), a reworded
+// "User IDs" row (the game's Firebase account ID linked to the Play Games
+// player ID, which is never shown), an "Other actions" row naming the Play
+// Games name, the Play Games SDK's own collection declared from Google's
+// data-collection page (Diagnostics, plus the avatar as Photos), the two
+// bug-report rows kept, encrypted in transit, not shared, not sold, and the
+// 2.3.0 source-level audit. Also pins the 2.3.0 full description (an
+// optional public leaderboard under the Google Play Games name, six races)
+// and the privacy record (the darktier-studio commit, the one-small-
+// database line).
 //
-// Phase 69 (COMPLY-02, D-04) and Phase 79.3 (BUG-02, D-16) established this
-// file against the 2.0/2.1 Play Games answers; those pins are superseded
-// here.
+// Phase 86 (COMP-01) pinned the 2.2.0 answers, including "no trace of Google
+// Play Games"; that pin is superseded here. Phase 69 (COMPLY-02, D-04) and
+// Phase 79.3 (BUG-02, D-16) established this file against the 2.0/2.1 Play
+// Games answers.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -36,8 +38,12 @@ function section(heading) {
 }
 
 const DATA_SAFETY_REQUIRED = [
+  "Personal info → **Name**",
+  "Google Play Games name",
+  "shown publicly",
   "User IDs",
-  "anonymous game ID",
+  "Firebase Authentication links to your Google Play Games player ID",
+  "never shown publicly",
   "App activity",
   "Other actions",
   "App functionality",
@@ -50,8 +56,8 @@ const DATA_SAFETY_REQUIRED = [
   "privacy/delete-data",
   "ERASE MY RUNS",
   "never uploads runs finished while Compete was off",
-  "Source-level audit",
-  "Build-level audit",
+  "Source-level audit (2.3.0",
+  "play-services-games-v2",
   "Other user-generated content",
   "Diagnostics",
   "REPORT A BUG",
@@ -59,11 +65,57 @@ const DATA_SAFETY_REQUIRED = [
   "Firestore",
 ];
 
-test("Data safety section carries the 2.2.0 answers, the source and both audits", () => {
+test("Data safety section carries the 2.3.0 answers, the sources and the source-level audit", () => {
   const ds = section("Data safety");
+  assert.ok(ds.includes("Answers for 2.3.0"), "the section is titled for 2.3.0");
   for (const needle of DATA_SAFETY_REQUIRED) {
     assert.ok(ds.includes(needle), `Data safety section mentions "${needle}"`);
   }
+});
+
+test("the Name row declares the gamer name as public, optional, not shared", () => {
+  const ds = section("Data safety");
+  const row = ds.split("\n").find((l) => l.startsWith("| Personal info → **Name**"));
+  assert.ok(row, "a Personal info → Name table row");
+  assert.match(row, /Google Play Games name/);
+  assert.match(row, /\| Yes \| No \| Yes \(Compete\) \| App functionality \|/);
+  assert.match(row, /public/i);
+});
+
+test("the User IDs row is reworded: Firebase ID linked to the Play Games player ID, never shown", () => {
+  const ds = section("Data safety");
+  const row = ds.split("\n").find((l) => l.startsWith("| Personal info → **User IDs**"));
+  assert.ok(row, "a Personal info → User IDs table row");
+  assert.match(row, /Firebase account ID/);
+  assert.match(row, /Google Play Games player ID/);
+  assert.match(row, /never shown publicly/);
+  assert.doesNotMatch(row, /carrying no name/, "the 2.2.0 anonymous-only wording is gone");
+});
+
+test("the Other actions row names the Play Games name, not a rolled handle", () => {
+  const ds = section("Data safety");
+  const row = ds.split("\n").find((l) => l.startsWith("| App activity → **Other actions**"));
+  assert.ok(row, "an App activity → Other actions table row");
+  assert.match(row, /Google Play Games name/);
+  assert.doesNotMatch(row, /@handle|rolled handle/);
+});
+
+test("the Play Games SDK's own collection is declared from Google's data-collection page", () => {
+  const ds = section("Data safety");
+  assert.ok(ds.includes("(Play Games SDK)"), "rows are marked as the Play Games SDK's");
+  assert.match(ds, /App info and performance → \*\*Diagnostics\*\* \(Play Games SDK\)/);
+  assert.match(ds, /Photos and videos → \*\*Photos\*\* \(Play Games SDK\)/);
+  assert.ok(ds.includes("developer.android.com/games/pgs/data-collection"), "the page relied on is cited");
+  assert.match(ds, /fetched 2026-10-01/);
+  assert.ok(ds.includes("Gamer Identity (Gamertag, avatar)"));
+  assert.ok(ds.includes("Compete off: the SDK never starts"), "optional because the SDK starts only with Compete on");
+});
+
+test("Deletion covers the board name and the Play Games link, and points at Play Games settings", () => {
+  const ds = section("Data safety").replace(/\s+/g, " ");
+  assert.ok(ds.includes("board name record"));
+  assert.ok(ds.includes("Google Play Games link"));
+  assert.ok(ds.includes("Disconnecting the game in Google Play Games settings"));
 });
 
 test("the pre-2.0 collect answer and the unused-INTERNET claim are gone", () => {
@@ -73,8 +125,11 @@ test("the pre-2.0 collect answer and the unused-INTERNET claim are gone", () => 
   assert.doesNotMatch(LISTING, /INTERNET[^\n]*\bunused\b/i);
 });
 
-test("the whole listing has no trace of the retired Google Play Games service", () => {
-  assert.doesNotMatch(LISTING, /play.games|\bpgs\b/i);
+test("the retired 2.2.0 wording is gone: no rolled @handle, no anonymous-only game ID claim", () => {
+  const ds = section("Data safety");
+  assert.doesNotMatch(ds, /rolled @handle/);
+  assert.doesNotMatch(ds, /An anonymous game ID: a random Firebase account ID/);
+  assert.doesNotMatch(LISTING, /RE-ROLL HANDLE/);
 });
 
 // Phase 69 (D-03, D-05) and Phase 86 (COMP-01): the privacy record, the
@@ -91,7 +146,10 @@ function fullDescription() {
 test("the full description fits Play's 4000-character limit and names the leaderboard", () => {
   const desc = fullDescription();
   assert.ok(desc.length <= 4000, `full description is ${desc.length} characters`);
-  assert.ok(desc.includes("An optional public leaderboard, if you want the whole world to see how you died."));
+  assert.ok(desc.includes("under your Google Play Games name."));
+  assert.ok(
+    desc.includes("An optional public leaderboard, if you want the whole world to see how you died, under your Google Play Games name."),
+  );
   assert.ok(desc.includes("six races"));
 });
 
@@ -128,6 +186,12 @@ test("the Privacy section records the one-small-database backend line and drops 
     ),
   );
   assert.doesNotMatch(LISTING, /Draft for darktierstudios\.com\/privacy\/apps/);
+});
+
+test("the Privacy section records the 2.3.0 reconciliation", () => {
+  const privacy = section("Privacy policy URL");
+  assert.ok(privacy.includes("Reconciled for 2.3.0"));
+  assert.ok(privacy.replace(/\s+/g, " ").includes("Google Play Games name"));
 });
 
 test("the Data safety section names Firebase as the service provider and never uploads Compete-off runs", () => {

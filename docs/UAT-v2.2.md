@@ -18,7 +18,7 @@
 | 0.4 | Delete the three transition files: `firebase/firestore.transition.rules`, `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js` (docs/RELEASING.md step 6). (Claude, on the user's go) | passed (2026-09-29) |
 | 0.5 | Deploy the website (`npm run deploy` in darktier-studio) and check `/privacy/apps`, `/privacy/delete-data`, the Terms and `/delve-die-repeat` live (docs/RELEASING.md step 7). (user) | passed (2026-09-29: deployed with the 2.2.0 patch notes; all five pages serve the new text) |
 | 0.6 | Enter the Data safety answers and the full description from `store-listing/LISTING.md` in Play Console (docs/RELEASING.md step 8; this also closes UAT-v2.1 row 0.1). (user) | open |
-| 0.7 | The Play Console Play Games cleanup, `docs/LEADERBOARDS.md` section 16 (the Season-1 boards and the Play Games configuration; docs/RELEASING.md step 9; this also closes UAT-v2.1 row 15.8). (user) | open |
+| 0.7 | ~~The Play Console Play Games cleanup~~ **Cancelled** (Phase 91.2, D-09): the Play Games configuration is in use again for sign-in and must not be removed (`docs/LEADERBOARDS.md` section 16, `docs/PLAY-GAMES-SETUP.md`). Deleting the Season-1 boards inside it stays optional (and would close UAT-v2.1 row 15.8). (user) | cancelled |
 | 0.8 | Once the Play build reaches the phone, walk docs/RELEASING.md's "First release after R8: Pixel 7 smoke" (docs/RELEASING.md). (user) | open |
 
 At go-live (a later release, not 2.2): the Season 1 reset, `docs/LEADERBOARDS.md` section 10.
