@@ -54,7 +54,8 @@
         "phase": "54+79.2+90",
         "requirements": [
           "BAND-02",
-          "SPELL-12"
+          "SPELL-12",
+          "SPELL-10"
         ],
         "fields": [
           "grimoire",
@@ -77,10 +78,10 @@
         },
         "after": {
           "grimoire": [
+            "Fly",
             "Acid",
             "Stupidity",
             "Stun",
-            "Weaken",
             "Freeze",
             "Fireball"
           ],
@@ -88,7 +89,7 @@
           "wp": 36,
           "rations": 6
         },
-        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 33 -> 36, wp 33 -> 36 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): this scenario's seed was RE-PICKED from 8 (a Illusionist) to 243 (a Sorcerer, Human). Lesser Summon and Phantom Host were removed and the Wizard lost the Illusion school, so a Wizard's, an Illusionist's and an Apprentice's chargen now draws fewer main-rng values than the frozen prototype's; every later draw (the floor, the encounter, the cast) lands on a different value, so a scenario on such a seed can no longer replay in lockstep. The new seed is a Magic User of a sub-class whose chargen draw count is unchanged (a Warlock, Sorcerer, Summoner, Cleric or Court Mage), found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype sandbox. The grimoire differs from the prototype for an earlier, declared reason (not this plan): RULES-03 (Phase 75, user 2026-09-25) grant-time legality skips a spell whose school the sub-class has not opened yet (a Sorcerer's healing school opens at level 4), so Heal is not dealt and Weaken is dealt in its place; zero draws either way."
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 33 -> 36, wp 33 -> 36 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): this scenario's seed was RE-PICKED from 8 (a Illusionist) to 243 (a Sorcerer, Human). Lesser Summon and Phantom Host were removed and the Wizard lost the Illusion school, so a Wizard's, an Illusionist's and an Apprentice's chargen now draws fewer main-rng values than the frozen prototype's; every later draw (the floor, the encounter, the cast) lands on a different value, so a scenario on such a seed can no longer replay in lockstep. The new seed is a Magic User of a sub-class whose chargen draw count is unchanged (a Warlock, Sorcerer, Summoner, Cleric or Court Mage), found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype sandbox. The grimoire differs from the prototype for an earlier, declared reason (not this plan): RULES-03 (Phase 75, user 2026-09-25) grant-time legality skips a spell whose school the sub-class has not opened yet (a Sorcerer's healing school opens at level 4), so Heal is not dealt and Weaken is dealt in its place; zero draws either way. Phase 90 plan 07 (SPELL-10, user 2026-09-30): the four Special spells (Open/Lock, Fly, Enchant Character, Speed of Sound) are roll: \"derived\" rows, so they join a Special-school book through a derived-stream splice, never a main-rng shuffle (zero new main-rng draws, the chargen cursor and every later draw are unchanged). A Sorcerer may learn Special, so this seed's low pool takes one: Fly lands first in the book, ahead of Acid, and the six-spell low walk drops Weaken; the engine's grimoire is re-measured live via newRun(seed) against the frozen prototype sandbox (the prototype side is unchanged). The cast is Freeze (index 4), which every Sorcerer's book holds."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -438,7 +439,7 @@
     },
     {
       "name": "scroll",
-      "seed": 19,
+      "seed": 1295,
       "actions": [
         {
           "type": "readScroll"
@@ -448,7 +449,8 @@
         "phase": "54+79.2+90",
         "requirements": [
           "BAND-02",
-          "SPELL-12"
+          "SPELL-12",
+          "SPELL-10"
         ],
         "fields": [
           "maxWP",
@@ -456,16 +458,16 @@
           "rations"
         ],
         "before": {
-          "maxWP": 35,
-          "wp": 35,
+          "maxWP": 28,
+          "wp": 28,
           "rations": 4
         },
         "after": {
-          "maxWP": 49,
-          "wp": 49,
+          "maxWP": 39,
+          "wp": 39,
           "rations": 6
         },
-        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 44 -> 49, wp 44 -> 49 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): this scenario's seed was RE-PICKED from 7 (a Wizard) to 19 (a Sorcerer, Human). Lesser Summon and Phantom Host were removed and the Wizard lost the Illusion school, so a Wizard's, an Illusionist's and an Apprentice's chargen now draws fewer main-rng values than the frozen prototype's; every later draw (the floor, the encounter, the cast) lands on a different value, so a scenario on such a seed can no longer replay in lockstep. The new seed is a Magic User of a sub-class whose chargen draw count is unchanged (a Warlock, Sorcerer, Summoner, Cleric or Court Mage), found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype sandbox."
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 35 -> 39, wp 35 -> 39 (the engine side, re-measured live; the prototype side is unchanged). Phase 90 plan 06 (SPELL-12, user 2026-09-30): this scenario's seed was RE-PICKED from 7 (a Wizard) to 19 (a Sorcerer, Human). Lesser Summon and Phantom Host were removed and the Wizard lost the Illusion school, so a Wizard's, an Illusionist's and an Apprentice's chargen now draws fewer main-rng values than the frozen prototype's; every later draw (the floor, the encounter, the cast) lands on a different value, so a scenario on such a seed can no longer replay in lockstep. The new seed is a Magic User of a sub-class whose chargen draw count is unchanged (a Warlock, Sorcerer, Summoner, Cleric or Court Mage), found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype sandbox. Phase 90 plan 07 (SPELL-10, user 2026-09-30): this scenario's seed was RE-PICKED again, from 19 (a Sorcerer) to 1295 (a Court Mage, Dwarven). The four Special spells (Open/Lock, Fly, Enchant Character, Speed of Sound) joined SPELLS, so a scroll read now picks from a longer list (17 rows at depth 1, not 15): the same single draw lands on another spell, and seed 19's pick (a spell too advanced to copy, free-cast and refused outside a fight) no longer matched the prototype's. The new seed is a Magic User of a sub-class that cannot learn Special or Illusion (so no derived row ever enters its book), whose engine and prototype picks land on the same spell and whose scroll is copied into the book; found by an engine scan of seeds 1-6000 and confirmed action by action against the prototype sandbox."
       },
       "floorFeatureShift": {
         "phase": "54",
@@ -476,86 +478,86 @@
         "cells": {
           "1": [
             {
-              "x": 2,
-              "y": 5,
-              "before": "gorge",
-              "after": null
+              "x": 18,
+              "y": 1,
+              "before": "trap",
+              "after": "gorge"
             },
             {
               "x": 17,
               "y": 5,
+              "before": "trap",
+              "after": "climb"
+            },
+            {
+              "x": 17,
+              "y": 6,
+              "before": "climb",
+              "after": null
+            },
+            {
+              "x": 4,
+              "y": 7,
+              "before": "tele",
+              "after": "trap"
+            },
+            {
+              "x": 13,
+              "y": 7,
               "before": "dot",
               "after": "tele"
             },
             {
               "x": 3,
-              "y": 7,
-              "before": "chest",
-              "after": "trap"
-            },
-            {
-              "x": 5,
-              "y": 8,
-              "before": "climb",
-              "after": null
-            },
-            {
-              "x": 19,
-              "y": 8,
-              "before": "climb",
-              "after": "gorge"
-            },
-            {
-              "x": 13,
               "y": 9,
               "before": "dot",
               "after": "tele"
             },
             {
-              "x": 19,
-              "y": 9,
-              "before": "tele",
-              "after": "trap"
-            },
-            {
-              "x": 19,
-              "y": 10,
+              "x": 7,
+              "y": 11,
               "before": "dot",
               "after": "chest"
             },
             {
-              "x": 9,
+              "x": 15,
               "y": 11,
-              "before": "trap",
-              "after": "climb"
+              "before": "gorge",
+              "after": null
             },
             {
-              "x": 11,
+              "x": 17,
+              "y": 11,
+              "before": "chest",
+              "after": "trap"
+            },
+            {
+              "x": 4,
               "y": 15,
+              "before": "gorge",
+              "after": null
+            },
+            {
+              "x": 1,
+              "y": 17,
+              "before": "climb",
+              "after": "gorge"
+            },
+            {
+              "x": 13,
+              "y": 19,
               "before": "tele",
               "after": "chest"
             },
             {
-              "x": 15,
-              "y": 15,
+              "x": 16,
+              "y": 19,
               "before": "chest",
               "after": "climb"
-            },
-            {
-              "x": 17,
-              "y": 18,
-              "before": "trap",
-              "after": "gorge"
-            },
-            {
-              "x": 8,
-              "y": 19,
-              "before": "gorge",
-              "after": null
             }
           ]
         },
-        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Phase 90 plan 06: re-measured for the re-picked seed. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
+        "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): ENCOUNTER_DOTS fitted to { base: 7, perDepth: 0.3 } (from identity { base: 9, perDepth: 1 }) changes difficultyCurve(depth).dots — genFloor's feature-scatter loop (engine/maze.js) walks the SAME rng.shuffle(far) result but assigns the first dots array slots to the 'dot' feat before moving on to tele/chest/trap/climb/gorge, so a smaller dots count shifts every later feature category's starting index by the same delta, remapping which cells land on which feat — the rng cursor itself is UNCHANGED (the shuffle runs once regardless of dots; nothing after it draws more or fewer times), so this is a pure, deterministic re-mapping, not new randomness. This scenario never navigates the maze (combat/casting starts immediately at chargen), so only the BOOT floor (depth 1) is measured. Phase 90 plan 06: re-measured for the re-picked seed. Phase 90 plan 07: re-measured again for the seed re-picked to 1295. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed."
       }
     }
   ]

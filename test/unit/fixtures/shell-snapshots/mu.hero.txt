@@ -94,11 +94,13 @@
       html="<b><span class=\"grim-lvl\">L1</span>Stun</b><i>control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned</i>"
     <span class="grim-hint">
       text="Combat only"
-  <li class="grim-locked">
+  <li>
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L2</span>Stupidity</b><i>control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging</i>"
+      html="<b><span class=\"grim-lvl\">L2</span>Fly</b><i>utility · you · flight for 30 squares, +10 squares per school bonus point: walls to climb and crevices to leap are just scenery, and water costs one square; useless in a fight, where everything can reach you anyway</i>"
+    <button class="small" disabled title="Needs level 2" onclick>
+      text="Cast"
     <span class="grim-hint">
-      text="Combat only"
+      text="Needs level 2"
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L2</span>Summon</b><i>summon · one ally · fights beside you d4+2 rounds</i>"

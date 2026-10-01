@@ -96,6 +96,10 @@ outcome for every gated circumstance.
 | Mangle | 5 | offense | thrown | true | `castRefused combatOnly` | `spellThrown`/`spellHit` | `castRefused notFought` | need −3 (4→1), dmg halved |
 | Death | 5 | offense | death | true | `castRefused combatOnly` | `deathCast` | `castRefused notFought` | casts at the penalty |
 | Lesser Summon (new, Phase 40) | 1 | special | summon | false | `allyPending` | `allySummoned` | `castRefused notFought` | casts at the penalty |
+| Open/Lock (new, Phase 90 plan 07) | 1 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
+| Fly (new, Phase 90 plan 07) | 2 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
+| Enchant Character (new, Phase 90 plan 07) | 4 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
+| Speed of Sound (new, Phase 90 plan 07) | 5 | special | timed | false | `spellEffectStarted` | `spellEffectStarted` | `castRefused notFought` | casts at the penalty |
 
 Every combat-only cast outside combat is `castRefused {spell, reason:
 "combatOnly"}` — no charge spent, zero rng, and (Earthquake/Death) no
