@@ -35,6 +35,7 @@ import {
   pickFoeTarget,
   foeTurn,
   applyFoeDamageToPlayer,
+  foeSpoils,
 } from "../../engine/combat.js";
 import {
   foeToHitVs,
@@ -804,13 +805,31 @@ const CONTRACT = [
     key: "Pickpocket",
     kind: "sub",
     good: {
-      name: "an extra take off every kill/chest",
+      name: "an extra item from every kill drop and chest",
       run() {
+        // IDENT-18 (Phase 91 plan 08): the extra ITEM, a second pile entry from every item a
+        // monster or chest gives; test/unit/pickpocket-item.test.js pins every edge. The extra
+        // GOLD take is retired (audit Q1 B): gainWilmst pays a Pickpocket the ordinary amount.
+        let seed = 1;
+        let controlPile;
+        for (; seed <= 3000; seed++) {
+          const control = hero("Cutthroat");
+          control.pendingLoot = [];
+          foeSpoils(control, fixedFoe({ lvl: 3 }), makeRng(seed), []);
+          if (control.pendingLoot.length === 1) {
+            controlPile = control.pendingLoot;
+            break;
+          }
+        }
+        assert.ok(controlPile, "a seed whose drop check passes exists");
         const pickpocket = hero("Pickpocket");
-        const pickpocketAmt = gainWilmst(pickpocket, 100, "test", fakeRng([5, 5, 3]), []);
-        const control = hero("Cutthroat");
-        const controlAmt = gainWilmst(control, 100, "test", fakeRng([5, 5, 3]), []);
-        assert.ok(pickpocketAmt > controlAmt, "a Pickpocket's take is padded beyond the ordinary amount");
+        pickpocket.pendingLoot = [];
+        foeSpoils(pickpocket, fixedFoe({ lvl: 3 }), makeRng(seed), []);
+        assert.equal(pickpocket.pendingLoot.length, 2, "the regular drop plus one extra");
+        assert.deepEqual(pickpocket.pendingLoot[0], controlPile[0]);
+        const pickpocketAmt = gainWilmst(hero("Pickpocket"), 100, "test", fakeRng([]), []);
+        const controlAmt = gainWilmst(hero("Cutthroat"), 100, "test", fakeRng([]), []);
+        assert.equal(pickpocketAmt, controlAmt, "no extra gold take, no draw");
       },
     },
     bad: {
@@ -918,8 +937,10 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "one descent in twenty, the Joiner beside you does not reach the next floor",
+      name: "whenever you descend with a Joiner, a d10 of 1 and that Joiner does not reach the next floor",
       run() {
+        // IDENT-19 (Phase 91 plan 08): a d10 on every descent with a Joiner; test/unit/
+        // cutthroat-joiner.test.js pins the die size and every edge.
         const cutthroat = hero("Cutthroat");
         meetJoiner(cutthroat, makeRng(555), []);
         assert.ok(cutthroat.pendingJoiner, "a Cutthroat is offered a Joiner like anyone else (CUT-01)");
@@ -927,8 +948,11 @@ const CONTRACT = [
         assert.equal(cutthroat.party.length, 1);
         const memberName = cutthroat.party[0].name;
         const memberSub = cutthroat.party[0].sub;
-        const events = cutthroatMurderCheck(cutthroat, fakeRng([1]), []);
-        expectEvent(events, "joinerMurdered", { name: memberName, sub: memberSub });
+        const sides = [];
+        const d10Rng = { d: (n) => (sides.push(n), 1), pick: (a) => a[0], shuffle: (a) => a };
+        const events = cutthroatMurderCheck(cutthroat, d10Rng, []);
+        assert.deepEqual(sides, [10], "one d10, no other draw");
+        expectEvent(events, "joinerMurdered", { name: memberName, sub: memberSub, roll: 1, dieN: 10 });
         assert.equal(cutthroat.party.length, 0);
 
         const control = hero("Soldier");
@@ -1271,7 +1295,7 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "half skill points; Magic User Joiners refuse to travel with you",
+      name: "half skill points; you refuse to take Magic User Joiners on",
       run() {
         const foe = fixedFoe({ lvl: 2 });
         const wilmsry = hero("Soldier", "Wilmsry").c;
@@ -1344,9 +1368,9 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "prices triple, eats two rations a night; large: one face easier for foes to hit",
+      name: "prices double, eats two rations a night; large: one face easier for foes to hit",
       run() {
-        assert.equal(priceFor(100, "Troll"), 300);
+        assert.equal(priceFor(100, "Troll"), 200);
         assert.equal(RACES.Troll.eats, 2);
         const state = hero("Soldier", "Troll");
         state.c.rations = 1;

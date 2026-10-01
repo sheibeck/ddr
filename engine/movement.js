@@ -1394,11 +1394,20 @@ export function bestTeleportDir(state) {
  * cutthroatMurderCheck(state, rng, events) — DELIBERATE RULES CHANGE (Phase
  * 36, 2026-09-17, CUT-02): the Cutthroat's Joiner risk, made real now that
  * Joiners travel with a Cutthroat (CUT-01). Once per descent, a natural 1 on
- * a d20 (one descent in twenty — the blurb states the odds in plain words)
+ * a d10 (one descent in ten — the blurb states the odds in plain words)
  * means the Joiner does not reach the next floor.
  *
+ * DELIBERATE RULES CHANGE (Phase 91 plan 08, IDENT-19, user 2026-09-30):
+ * "whenever you descend with a Joiner, roll a d10; on a 1 that Joiner dies
+ * (replaces one-in-twenty)." The die is a d10 where the d20 sat, at the same
+ * draw position (LAST in descend), so it is not a new roll and needs no
+ * derived stream; `joinerMurdered.dieN` is 10. FLAGGED ASSUMPTION: "descend
+ * with a Joiner" means EVERY descent (the stairs, and a legacy gate tile) with
+ * one or more party members. PARTY_CAP is 1, so that is one d10 per descent,
+ * and the Joiner it kills is named in its own narrated line.
+ *
  * GATE: `state.c.sub === "Cutthroat" && Array.isArray(state.party) &&
- * state.party.length > 0` — the d20 is drawn ONLY inside the gate, so every
+ * state.party.length > 0` — the d10 is drawn ONLY inside the gate, so every
  * fixture (lose-plain seed 1119 is a Cutthroat with party []), every bot run
  * (the bot declines every Joiner) and every pre-Phase-36 save (a Cutthroat
  * could never have accepted one) draws nothing and stays byte-identical.
@@ -1411,10 +1420,10 @@ export function cutthroatMurderCheck(state, rng, events = []) {
   if (state.c.sub === "Cutthroat" && Array.isArray(state.party) && state.party.length > 0) {
     // Phase 73 (ROLL-05): a mishap gate that fires on the natural 1 stays on
     // the 1 — "1 is always the worst face" needs no mirror here.
-    const roll = rng.d(20); // roll:mishap-on-1
+    const roll = rng.d(10); // roll:mishap-on-1
     if (roll === 1) {
       const victim = state.party.splice(0, 1)[0];
-      events.push({ type: "joinerMurdered", name: victim.name, sub: victim.sub, depth: state.floor.depth, roll, atLeast: 2, dieN: 20 });
+      events.push({ type: "joinerMurdered", name: victim.name, sub: victim.sub, depth: state.floor.depth, roll, atLeast: 2, dieN: 10 });
     }
   }
   return events;

@@ -55,7 +55,7 @@ export const RACES = {
   },
   "Wilmsry": {
     size: "Human", upkeep: 4, heal2x: true, spMul: 0.5,
-    note: "Heals twice as fast, learns half as quickly. Magic Users despise them.",
+    note: "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.",
   },
   "Fridgian": {
     // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer.

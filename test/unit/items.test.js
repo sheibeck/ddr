@@ -174,7 +174,10 @@ test("staves only equip for a Magic User; everything else falls through to giveI
 
 // --- gainWilmst ------------------------------------------------------------
 
-test("gainWilmst adds greed-scaled gold and only Pickpockets get the extra take", () => {
+// Phase 91 plan 08 (IDENT-18, audit Q1 B, user 2026-09-30): the Pickpocket's extra take of gold is
+// RETIRED (the extra item replaces it), so a Pickpocket gains exactly what everyone else gains and
+// gainWilmst takes no draw. This test pinned "only Pickpockets get the extra take" (amt2 > 100).
+test("gainWilmst adds greed-scaled gold, takes no draw, and a Pickpocket gets no extra take (Q1 B)", () => {
   const state = fixedState({ c: { sub: "Soldier", gold: 0, items: [] } });
   const rng = makeRng(1);
   const amt = gainWilmst(state, 100, "found on a corpse", rng);
@@ -183,9 +186,11 @@ test("gainWilmst adds greed-scaled gold and only Pickpockets get the extra take"
 
   const pickpocketState = fixedState({ c: { sub: "Pickpocket", gold: 0, items: [] } });
   const rng2 = makeRng(1);
+  const before = rng2.getState();
   const amt2 = gainWilmst(pickpocketState, 100, "found on a corpse", rng2);
-  assert.ok(amt2 > 100, "a Pickpocket must gain more than the base amount");
-  assert.equal(pickpocketState.c.gold, amt2);
+  assert.equal(amt2, 100, "a Pickpocket gains the ordinary amount");
+  assert.equal(pickpocketState.c.gold, 100);
+  assert.equal(rng2.getState(), before, "no draw");
 });
 
 // 260918-w4n (use-activated-only, deviation — this file is not in the

@@ -175,15 +175,23 @@ test("draw isolation: the main rng draws exactly the d20, the experience d6 per 
   assert.deepEqual(ev2.find((e) => e.type === "goldGained" && e.why === "parley"), tip, "the tip never reads it either");
 });
 
-test("a Pickpocket's extra take comes from the derived stream too: it moves no main-rng draw", () => {
-  // a Wilmsry Pickpocket may parley anything but Magical foes; level 18 foes always drop coin
+test("a Pickpocket's extra ITEM comes from the derived stream too: it moves no main-rng draw", () => {
+  // Phase 91 plan 08 (IDENT-18, Q1 B): this test pinned the Pickpocket's extra GOLD take (a d10 +
+  // d10 + d4 off the derived stream, `goldGained why "pickpocket"`); that take is retired and the
+  // extra ITEM replaces it. A Wilmsry Pickpocket may parley anything but Magical foes; level 18
+  // foes always drop an item.
   const foes = [foe({ name: "A", type: "Beasts", lvl: 18 })];
   const s = mk({ c: { sub: "Pickpocket", cls: "Thief", race: "Wilmsry", level: 18 }, foes, depth: 2 });
   const rng = fakeRng([WIN, 3]); // d20, d6: a Beasts parley has no tip draw, and a third draw would throw
   const ev = parley(s, rng, []);
   assert.ok(ev.some((e) => e.type === "parleyWon"));
-  assert.equal(rng.draws, 2, "the Pickpocket's d10 + d10 + d4 extra come off the derived stream");
-  assert.ok(ev.some((e) => e.type === "goldGained" && e.why === "pickpocket"), "the Pickpocket's extra take is still paid");
+  assert.equal(rng.draws, 2, "the Pickpocket's extra item comes off the derived stream");
+  assert.equal(ev.some((e) => e.type === "goldGained" && e.why === "pickpocket"), false, "the extra gold take is retired");
+  const drops = ev.filter((e) => e.type === "lootDropped");
+  assert.equal(drops.length, 2, "the regular drop and the Pickpocket's extra");
+  assert.equal(drops[1].pickpocket, true);
+  assert.equal(s.pendingLoot.length, 2);
+  assert.equal(ev.find((e) => e.type === "parleyWon").items, 2);
 });
 
 test("Humans: a tip d6 of 6 pays the tip AND the spoils; a tip d6 of 1 to 5 pays the spoils only; parleyWon.gold is both", () => {
@@ -280,9 +288,13 @@ const KILL_GOLDEN = [
   { seed: 2, sub: "Knight", race: "Human", depth: 3, type: "Humans", lvl: 3,
     events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":45},{\"type\":\"goldGained\",\"amount\":22,\"why\":\"off the body\"}]",
     gold: 72, sp: 45, rngState: 1199731145, loot: [], rations: 6 },
+  // Phase 91 plan 08 (IDENT-18, audit Q1 B): this one entry MOVED and was re-recorded alone. A
+  // Pickpocket's extra gold take is retired, so the kill loses its `goldGained why "pickpocket"`
+  // beat (83) and the three main-rng draws behind it: before gold 143 / cursor -1895506007 /
+  // off-the-body coin 93; after gold 60 / cursor 1199731146 / coin 10 (the purse alone).
   { seed: 3, sub: "Pickpocket", race: "Human", depth: 4, type: "Demons", lvl: 4,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":60},{\"type\":\"goldGained\",\"amount\":83,\"why\":\"pickpocket\"},{\"type\":\"goldGained\",\"amount\":93,\"why\":\"off the body\"}]",
-    gold: 143, sp: 60, rngState: -1895506007, loot: [], rations: 5 },
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":60},{\"type\":\"goldGained\",\"amount\":10,\"why\":\"off the body\"}]",
+    gold: 60, sp: 60, rngState: 1199731146, loot: [], rations: 5 },
   { seed: 4, sub: "Soldier", race: "Wilmsry", depth: 6, type: "Lair Beasts", lvl: 5,
     events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":25},{\"type\":\"goldGained\",\"amount\":5,\"why\":\"off the body\"},{\"type\":\"cooked\",\"wp\":0,\"rations\":1}]",
     gold: 55, sp: 25, rngState: -1263670336, loot: [], rations: 7 },

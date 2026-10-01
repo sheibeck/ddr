@@ -1687,7 +1687,7 @@ export const EVENT_NARRATION = {
   // (priceFor ×1.25, sellPriceFor ×0.75) are stated here too, as the rail twin
   // already did.
   storeOpened: (e) =>
-    `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay triple.)" : e.elfOrDwarf ? " (Half price, as always.)" : ""}${
+    `<span class="banner">The shop is open.</span>${e.troll ? " (Trolls pay double.)" : e.elfOrDwarf ? " (Half price, as always.)" : ""}${
       e.pickpocket ? " The shopkeeper knows a Pickpocket's face: you pay ×1.25 to buy, and get ×0.75 when you sell." : ""
     }`,
   // Phase 89 plan 08 (ITEM-06, Q4): a Joiner's repair line whose Joiner left
@@ -1860,11 +1860,12 @@ export const EVENT_NARRATION = {
     return `<span class="beat">Nobody answers to that number.</span>`;
   },
   // Phase 24 (IDENT-05), reversed for Cutthroat in Phase 36 (CUT-01): a
-  // Joiner is rolled exactly as normal, then declines to travel ONLY when
-  // it is a Magic User Joiner meeting a Wilmsry.
+  // Joiner is rolled exactly as normal, then is turned away ONLY when it is
+  // a Magic User Joiner meeting a Wilmsry. Phase 91 plan 08 (IDENT-21): the
+  // WILMSRY does the refusing ("you refuse to take Magic User Joiners on").
   joinerRefused: (e) =>
     e.reason === "wilmsry"
-      ? `<span class="beat">${e.name ?? "The Joiner"}, a Magic User, takes one look at a Wilmsry and remembers an appointment elsewhere.</span>`
+      ? `<span class="beat">You take one look at ${e.name ?? "the Joiner"}, a Magic User, and refuse before they finish asking.</span> The Wilmsry keep a long list of grudges, and you are carrying all of it.`
       : `<span class="beat">Word has reached the Joiners.</span> The Joiners have reached the exit.`,
   // A1 (04.2 Text batch): the old template left the roll span mid-sentence
   // ("...you: <roll>N</roll>, Poison."), so stripRollDetail (mazeworld.html,
@@ -2209,8 +2210,12 @@ export const EVENT_NARRATION = {
      take/leave/take-all/leave-all prompt IS the UI (mirrors the find card's
      findOffered/findTaken/findLeft voice above); a forfeit narrates the whole
      pile in one honest line. Deadpan, dark-but-family-friendly (VOX-02). */
+  // Phase 91 plan 08 (IDENT-18): a Pickpocket's extra item (`pickpocket: true`) has its own
+  // line: the second thing the fingers found, whichever chest or monster it came from.
   lootDropped: (e) =>
-    `<span class="beat">Something falls out of the fight: ${e.name ?? "something"}.</span> It will wait. It has nowhere else to be.`,
+    e.pickpocket
+      ? `<span class="hit">Your fingers find a second one: ${e.name ?? "something"}.</span> Nobody saw. Nobody ever does.`
+      : `<span class="beat">Something falls out of the fight: ${e.name ?? "something"}.</span> It will wait. It has nowhere else to be.`,
   lootTaken: (e) => `<span class="hit">Into the bag:</span> ${e.item?.n ?? "something"}. Your back sends its regards.`,
   lootLeft: (e) => `<span class="miss">You leave ${e.item?.n ?? "it"} on the floor.</span> Someone will be thrilled. Not you.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md

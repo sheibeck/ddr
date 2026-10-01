@@ -35,12 +35,12 @@ export const RACE_NOTE = {
   // Small's damage axis is masked (the +2 already claims it), so being
   // small only makes the Dwarf one face harder to hit — the +2 is untouched.
   "Dwarven": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
-  "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.",
+  "Wilmsry": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.",
   "Fridgian": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest — and unlike the stories, neither swing is ever wasted on something already dead. The Game Master has notes about you.",
   // Large points the same way as the Troll's own +9 (dmg+wpnBonus), so
   // nothing is masked: both axes stack in full (+11 damage, one face
   // easier to hit).
-  "Troll": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Everything you own cost triple.",
+  "Troll": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Shops charge you double for everything but the tools.",
 };
 
 // RULES-10 (Phase 75.1, plan 75.1-07): each note gains one short clause
@@ -69,7 +69,7 @@ export const SUB_NOTE = {
   "Samurai": "A magical katana, armour like plate, and enough clatter that you never win the first roll of anything. You never run. The book uses the word suicidal and does not soften it.",
   "Bard": "Once a fight you sing a random offense or defense spell up to your level, at full strength, no charges spent: you pick the moment and the song picks the spell. And every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
 
-  "Pickpocket": "You take a percentage of everything: purses, shop stock, treasure nobody has opened yet. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
+  "Pickpocket": "Whenever a chest or a monster hands over an item, you somehow walk away with one extra item as well: a talent, not a miracle. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
   // RULES-09 (Phase 75.1, user 2026-09-24/25): superseded — the heal-only
   // refusal is gone. A Pilfer now uses rings, amulets, cloaks and staves
   // like anyone, but can't quite leave them alone: about one use in twenty,
@@ -77,7 +77,7 @@ export const SUB_NOTE = {
   // is dust. Potions and scrolls you handle exactly like everyone else.
   "Pilfer": "Traps disarm themselves in your presence and no sealed room has ever held you. Your hands, though, can't leave a magic ring, amulet, cloak or staff alone — use one and, about one time in twenty, it comes apart right there for a d10 of your own hp and is dust. Potions and scrolls you handle like anyone else.",
   "Cat Burglar": "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
-  "Cutthroat": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in twenty, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+  "Cutthroat": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
   "Cloaker": "You can vanish for free, right up until you land your first blow — after that you flee like everyone else, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
   "Ninja": "You never speak — literally; no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage and after that your top two faces open something up. The silence isn't a vow, it's a tactic.",
   "Con Artist": "You talk first, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
@@ -132,7 +132,8 @@ export const JOINER_EXIT_LINES = [
 
 /**
  * JOINER_MURDER_LINES — Phase 36 CUT-02: the Cutthroat's per-descent Joiner
- * risk (a natural 1 on a d20, one descent in twenty). `{name}` is the
+ * risk (a natural 1 on a d10, one descent in ten since Phase 91 plan 08,
+ * IDENT-19; it was a d20). `{name}` is the
  * victim, `{depth}` the floor arrived on; picked by
  * src/browser/eventNarration.js WITHOUT rng, from name length + depth.
  * Family-friendly sarcasm — the joke is the Cutthroat's reputation, never

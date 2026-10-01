@@ -1738,7 +1738,8 @@ export const LINE_FOR = {
   parleyInsulted: () => ({ text: "You have made it personal.", tone: "hurt", priority: PRIORITY.them }),
   parleyExhausted: () => block("You already said your piece."),
   goldGained: (e) => {
-    const suffix = e?.why === "pickpocket" ? " (Pickpocket)" : e?.why === "parley" ? " (parley)" : e?.why === "parley spoils" ? " (parley spoils)" : "";
+    // (Phase 91 plan 08, Q1 B: the Pickpocket's gold take is retired, no more "(Pickpocket)" suffix.)
+    const suffix = e?.why === "parley" ? " (parley)" : e?.why === "parley spoils" ? " (parley spoils)" : "";
     return { text: `+${e?.amount ?? 0} wilmst${suffix}`, tone: "hit", priority: PRIORITY.feature };
   },
   parleyFailed: () => ({ text: "They are not buying it.", tone: "miss", priority: PRIORITY.you }),
@@ -2533,7 +2534,7 @@ export const LINE_FOR = {
       text += " · Pickpocket: buys ×1.25, sells ×0.75";
       tone = "block";
     } else if (e?.troll) {
-      text += " (Trolls pay triple)";
+      text += " (Trolls pay double)";
     } else if (e?.elfOrDwarf) {
       // VOX-05 (Phase 79, plan 79-11): the discount says how much (priceFor: half).
       text += " (half price, as always)";
@@ -2643,9 +2644,10 @@ export const LINE_FOR = {
   joinerDeclined: (e) => ({ text: `You wave ${e?.name ?? "them"} off.`, tone: "beat", priority: PRIORITY.feature }),
   joinerRefused: (e) => {
     const map = {
-      // VOX-05 (Phase 79, plan 79-11): the refusal names why (a Magic User
-      // will not travel with a Wilmsry), as the Oracle twin does.
-      wilmsry: `${e?.name ?? "The Joiner"}, a Magic User, takes one look at a Wilmsry and leaves.`,
+      // VOX-05 (Phase 79, plan 79-11): the refusal names why, as the Oracle
+      // twin does. Phase 91 plan 08 (IDENT-21): the Wilmsry refuses the Magic
+      // User, not the other way round.
+      wilmsry: `You refuse ${e?.name ?? "the Joiner"}, a Magic User. Wilmsry grudge.`,
     };
     return block(map[e?.reason] ?? "Word has reached the Joiners.");
   },
@@ -2923,7 +2925,11 @@ export const LINE_FOR = {
 
   /* ---------------- pending loot pile (LOOT-01/02/06, Phase 29) ---------------- */
 
-  lootDropped: (e) => ({ text: `Dropped: ${e?.name ?? "something"}. It will keep.`, tone: "beat", priority: PRIORITY.other }),
+  // Phase 91 plan 08 (IDENT-18): a Pickpocket's extra item has its own line.
+  lootDropped: (e) =>
+    e?.pickpocket
+      ? { text: `Light fingers: ${e?.name ?? "something"} too.`, tone: "hit", priority: PRIORITY.other }
+      : { text: `Dropped: ${e?.name ?? "something"}. It will keep.`, tone: "beat", priority: PRIORITY.other },
   lootTaken: (e) => ({ text: `Taken: ${e?.item?.n ?? "something"}.`, tone: "hit", priority: PRIORITY.you }),
   lootLeft: (e) => ({ text: `Left behind: ${e?.item?.n ?? "it"}.`, tone: "miss", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md

@@ -520,8 +520,9 @@ test("Joiner armour repair: buying it mends that Joiner's armour to whole, charg
   assert.equal(state.c.armorWP, 30);
 });
 
-test("Joiner armour repair: the hero's store price modifiers apply (a Dwarven hero pays half, a Troll triple)", () => {
-  for (const [race, expected] of [["Dwarven", 175], ["Troll", 1050], ["Human", 350]]) {
+test("Joiner armour repair: the hero's store price modifiers apply (a Dwarven hero pays half, a Troll double)", () => {
+  // Phase 91 plan 08 (IDENT-21): the Troll's line was 1050 (triple); it is 700 (double) now.
+  for (const [race, expected] of [["Dwarven", 175], ["Troll", 700], ["Human", 350]]) {
     const state = storeState([joiner()], { race });
     openStore(state, makeRng(7));
     const [line] = repairLines(state);

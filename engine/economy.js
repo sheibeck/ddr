@@ -55,6 +55,15 @@ import { derivedRng } from "./rng.js";
  * for elves or dwarves." Ports mazeworld.html priceFor() (line 564). Pure
  * arithmetic, no RNG.
  *
+ * DELIBERATE RULES CHANGE (Phase 91 plan 08, IDENT-21, user 2026-09-30:
+ * "Troll store prices doubled (today tripled, weapons doubled again)"): a
+ * Troll pays x2, not x3, on every routed line, and the plain weapon lines are no
+ * longer doubled again in openStore (the old x6). The prototype's triple stays
+ * in test/parity/prototype-master.js.txt. The doubling is for the exact race key
+ * "Troll" only; Elven and Dwarven stay half (rounded). priceFor(0, "Troll") is 0
+ * and priceFor(1, "Troll") is 2. This is a BUYING rule only: what a store PAYS
+ * for an item takes no race multiplier (audit Q5 A, see sellPriceFor).
+ *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Pickpocket's
  * bad — "shopkeepers know your face" — marks up every routed store line
  * x1.25 AFTER the race multiplier, floored at 1 like every other price. A
@@ -62,13 +71,13 @@ import { derivedRng } from "./rng.js";
  * argument) gets a value-identical result to before this change.
  */
 export function priceFor(base, race, sub = null) {
-  const p = race === "Troll" ? base * 3 : race === "Elven" || race === "Dwarven" ? Math.round(base / 2) : base;
+  const p = race === "Troll" ? base * 2 : race === "Elven" || race === "Dwarven" ? Math.round(base / 2) : base;
   if (sub === "Pickpocket") return Math.max(1, Math.round(p * 1.25));
   return p;
 }
 
 // ECON-06 (Phase 14, Economy C): the buy/sell spread. A store buys any carried
-// item back for ~50% of its (race-adjusted) buy value. This is a TUNING KNOB —
+// item back for ~50% of its base value (no race multiplier, Phase 91 plan 08). A TUNING KNOB —
 // Phase 16 (Numbers) tunes the spread. Kept module-local so it is the one place
 // the sell discount lives.
 const SELL_SPREAD = 0.5;
@@ -89,7 +98,7 @@ const TREASURE_FALLBACK_VALUE = 200;
 // a `cost` field to a rolled cloak/jewel/staff would diverge c.items on any
 // fixture that rolls one). Values are set roughly in proportion to each item's
 // power and are a Phase-16 tuning knob, not frozen. sellPriceFor halves these
-// (SELL_SPREAD) and race-adjusts them (priceFor).
+// (SELL_SPREAD); no race multiplier reaches the sale (Phase 91 plan 08, Q5 A).
 const TREASURE_BASE_VALUES = {
   // JEWELRY (content/treasure-tables.js)
   "Ring of Power": 1500,
@@ -164,21 +173,26 @@ function baseValueFor(item) {
 
 /**
  * sellPriceFor(item, race, sub = null) — what a store PAYS for a carried
- * item: ~50% of its buy value (SELL_SPREAD), race-adjusted through the
- * existing priceFor (trolls pay/receive triple, elves/dwarves half). Always
- * at least 1 so a sale never yields nothing. Pure, no rng. Phase 16 tunes
- * SELL_SPREAD; Phase 15 refines the treasure base values baseValueFor falls
- * back on.
+ * item: ~50% of its base value (SELL_SPREAD). Always at least 1 so a sale
+ * never yields nothing. Pure, no rng. Phase 16 tunes SELL_SPREAD; Phase 15
+ * refines the treasure base values baseValueFor falls back on.
+ *
+ * DELIBERATE RULES CHANGE (Phase 91 plan 08, IDENT-21, audit Q5 A, user
+ * 2026-09-30): "stores pay every race the ordinary price; the race multiplier
+ * is a buying rule only." Before this change the sell price ran through
+ * priceFor, so a Troll was paid triple and an Elf or Dwarf half. Now an Elf, a
+ * Dwarf, a Troll and a Human are all paid the same for the same item; the
+ * `race` argument stays in the signature (every caller passes it) but no longer
+ * moves the price. The Pickpocket's x0.75 (below) is kept.
  *
  * DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): a Pickpocket
  * sells back at x0.75 of the ORDINARY sell price (never applied to the
- * marked-up buy value — `priceFor(..., race)` here deliberately omits
- * `sub`, since the markdown rides the same base every other race sells
- * from). A non-Pickpocket (including every existing 2-argument caller) gets
+ * marked-up buy value: the markdown rides the same base every other race
+ * sells from). A non-Pickpocket (including every existing 2-argument caller) gets
  * a value-identical result to before this change.
  */
-export function sellPriceFor(item, race, sub = null) {
-  const buy = priceFor(baseValueFor(item), race);
+export function sellPriceFor(item, _race, sub = null) {
+  const buy = baseValueFor(item);
   return Math.max(1, Math.round(buy * SELL_SPREAD * (sub === "Pickpocket" ? 0.75 : 1)));
 }
 
@@ -417,6 +431,17 @@ export function replaceStockLines(stock, pred, lines) {
  * weapon and magic armor). Haggle (Wilmsry, -30%) is applied last, exactly
  * as the prototype does.
  *
+ * DELIBERATE RULES CHANGE (Phase 91 plan 08, IDENT-21 and audit Q8 A, user
+ * 2026-10-01, against the recommendation): the race and Pickpocket buy rule
+ * (priceFor: Elven/Dwarven half, Troll x2, Pickpocket x1.25) now reaches every
+ * stock line EXCEPT the three flat-priced tools (Torch, Rope, Ladder):
+ * potions, food, lockpicks and the sealed scroll included. A Troll's plain
+ * weapon lines are no longer doubled on top of priceFor (the old x6 is gone;
+ * `troll-weapons` is retired). The Wilmsry's x0.7 haggle still reaches every
+ * line, tools too. Line prices are computed once, here; a saved open store
+ * keeps the prices it was saved with (tolerant load), and the next store
+ * opened prices by these rules.
+ *
  * Phase 33 (STORE-01): when `state.storeRoll === true` (a run the SHELL
  * started — see engine/state.js#newRun / src/browser/engineAdapter.js
  * #startNewRun), the potion/weapon/armor/premium lines are re-rolled
@@ -441,12 +466,19 @@ export function openStore(state, rng, events = []) {
   // Phase 33 (STORE-01): builders shared by both the flag-off path below and
   // the guarded flag-on rewrite near the end of this function — same object
   // shape, same argument expressions, so the flag-off output is unchanged.
+  // Phase 91 plan 08 (IDENT-21, audit Q8 A, user 2026-10-01): EVERY stock line
+  // except the three flat-priced tools goes through the race and Pickpocket buy
+  // rule (`px`): potions, food, lockpicks and the sealed scroll join the weapon,
+  // armour, premium, repair and ration lines (Elven/Dwarven half, Troll double,
+  // Pickpocket x1.25). Each line's price is computed ONCE here, when the store
+  // opens, and stored on the line; nothing re-prices it afterwards.
+  const px = (base) => priceFor(base, race, c.sub);
   const potionLine = (p) =>
-    mk(`${p.n} potion`, p.price, "givePotion", { item: { kind: "potion", n: `${p.n} potion`, txt: p.txt, eff2: p.eff, uses: 1 } }, p.txt);
+    mk(`${p.n} potion`, px(p.price), "givePotion", { item: { kind: "potion", n: `${p.n} potion`, txt: p.txt, eff2: p.eff, uses: 1 } }, p.txt);
   const weaponLine = (w) =>
     mk(
       w,
-      priceFor(WEAPONS[w].cost, race, c.sub) * (race === "Troll" ? 2 : 1),
+      px(WEAPONS[w].cost),
       "buyWeapon",
       { item: { kind: "weapon", n: w, base: w, bonus: 0, txt: WEAPONS[w].lab } },
       WEAPONS[w].lab,
@@ -467,10 +499,10 @@ export function openStore(state, rng, events = []) {
     return mk(p.n, pCost, "buyPremium", { item: p }, `${p.txt} · enchanted`);
   };
 
-  for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} hp)`, f.cost, "eatRation", { wp: f.wp });
+  for (const f of [FOODS[0], FOODS[1], FOODS[5]]) add(`${f.n} (+${f.wp} hp)`, px(f.cost), "eatRation", { wp: f.wp });
   for (const p of [POTIONS[0], POTIONS[3], POTIONS[4], POTIONS[2]]) stock.push(potionLine(p));
   if (!hasPicks(c))
-    add("Set of lockpicks", 450, "giveLockpicks", { item: { kind: "picks", n: "Lockpicks", txt: "6–10 on d10 against any lock" } }, "opens boxes on 6–10");
+    add("Set of lockpicks", px(450), "giveLockpicks", { item: { kind: "picks", n: "Lockpicks", txt: "6–10 on d10 against any lock" } }, "opens boxes on 6–10");
 
   // "The stores will all repair armor for 1/10 of the cost of your armor per point repaired."
   if (c.armorWP > 0 && c.armorWP < c.armorMax) {
@@ -507,7 +539,7 @@ export function openStore(state, rng, events = []) {
     stock.push(armorLine(a));
   }
 
-  if (c.cls === "Magic User") add("Sealed scroll", 900, "buyScroll", null);
+  if (c.cls === "Magic User") add("Sealed scroll", px(900), "buyScroll", null);
 
   // one thing on the shelf you cannot simply buy
   const premium = rng.d(2) === 1 ? rollBlade(rng, d, true) : rollMailPiece(rng); // roll:selection

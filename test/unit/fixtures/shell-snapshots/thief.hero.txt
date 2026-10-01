@@ -50,7 +50,7 @@
   text="5 carried"
 ## #s-trait
 <div id="s-trait">
-  html="<b>Leader</b>, driven by <b>knowledge</b>, afraid of <b>being trapped</b>. Heals twice as fast, learns half as quickly. Magic Users despise them."
+  html="<b>Leader</b>, driven by <b>knowledge</b>, afraid of <b>being trapped</b>. Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners."
 ## #s-vp
 <div id="s-vp">
   text="12 of 12 points spent"
@@ -105,11 +105,11 @@
 <div id="doss">
   html=""
   <section>
-    html="<h3>Race</h3><p class=\"who\">Wilmsry</p><p>You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.</p>"
+    html="<h3>Race</h3><p class=\"who\">Wilmsry</p><p>You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.</p>"
     <p class="doss-rules">
       text="Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; store prices 30% off; rest, potions and your own healing spells heal twice as much."
     <p class="doss-rules">
-      text="Bad: Magic User Joiners refuse to travel with you; half the experience from every kill."
+      text="Bad: you refuse to take Magic User Joiners on; half the experience from every kill."
   <section>
     html="<h3>Class</h3><p class=\"who\">Thief</p><p>Forty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.</p>"
   <section>

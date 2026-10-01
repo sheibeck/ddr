@@ -143,7 +143,7 @@ export const IDENTITY_TRAITS = Object.freeze({
 
     // ---------------- Thief ----------------
     "Pickpocket": side(
-      [trait("pickpocket-take", "an extra take from every kill and chest", CONTRACT, "an extra take off every kill/chest")],
+      [trait("pickpocket-item", "whenever you gain an item from a chest or a monster, you gain one extra item as well", CONTRACT, "an extra item from every kill drop and chest")],
       [trait("pickpocket-shops", "shops charge you a quarter more and pay a quarter less", CONTRACT, "shopkeepers know your face — buys x1.25, sells x0.75")],
     ),
     "Pilfer": side(
@@ -156,7 +156,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Cutthroat": side(
       [trait("cutthroat-crit", "your first landed blow always crits, even in heavy armour", CONTRACT, "the first landed blow always crits, even in armor a backstab would refuse")],
-      [trait("cutthroat-joiner", "one descent in twenty, the Joiner beside you doesn't reach the next floor", CONTRACT, "one descent in twenty, the Joiner beside you does not reach the next floor")],
+      [trait("cutthroat-joiner", "whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner", CONTRACT, "whenever you descend with a Joiner, a d10 of 1 and that Joiner does not reach the next floor")],
     ),
     "Cloaker": side(
       [trait("cloaker-vanish", "vanishes from any fight for free until you land a blow", CONTRACT, "a free vanish while nobody has seen your face")],
@@ -194,13 +194,13 @@ export const IDENTITY_TRAITS = Object.freeze({
     }),
     "Elven": side(
       [
-        trait("elven-prices", "store prices halved", "test/unit/economy.test.js", "priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise"),
+        trait("elven-prices", "store prices halved", "test/unit/economy.test.js", "priceFor: doubles for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise"),
         trait("elven-humans", "can always parley with Humans, +3 on that parley roll", "test/unit/rollDirection-checks.test.js", "[parley:elven-humans]"),
       ],
       [],
     ),
     "Dwarven": side(
-      [trait("dwarven-prices", "store prices halved", "test/unit/economy.test.js", "priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise")],
+      [trait("dwarven-prices", "store prices halved", "test/unit/economy.test.js", "priceFor: doubles for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise")],
       [],
     ),
     "Wilmsry": side(
@@ -208,14 +208,13 @@ export const IDENTITY_TRAITS = Object.freeze({
         trait("wilmsry-talk", "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll", CONTRACT, "camp heals twice as fast; parleys Beasts at fluency 0"),
         trait("wilmsry-haggle", "store prices 30% off", "test/unit/tools.test.js", "openStore: a Wilmsry's haggle (x0.7) applies to the tool lines like every other line"),
       ],
-      [trait("wilmsry-joiners", "Magic User Joiners refuse to travel with you", CONTRACT, "half skill points; Magic User Joiners refuse to travel with you")],
+      [trait("wilmsry-joiners", "you refuse to take Magic User Joiners on", CONTRACT, "half skill points; you refuse to take Magic User Joiners on")],
     ),
     "Fridgian": side([], []),
     "Troll": side(
       [],
       [
-        trait("troll-prices", "store prices triple", CONTRACT, "prices triple, eats two rations a night"),
-        trait("troll-weapons", "weapons cost double on top of that", FOOTER, "identity-proof: a Troll's store weapon line costs six times the base price"),
+        trait("troll-prices", "store prices doubled", CONTRACT, "prices double, eats two rations a night"),
       ],
     ),
   }),

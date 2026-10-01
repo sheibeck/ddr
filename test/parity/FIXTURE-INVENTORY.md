@@ -7596,3 +7596,86 @@ for, so the per-file inventory moves, declared:
 
 **Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a Joiner Bard in a bot run now
 sings once a fight, so a run with one shifts; none of the eight pinned runs has one.
+
+### Phase 91 plan 08: Pickpocket, Cutthroat, Troll and Wilmsry rulings (IDENT-18, IDENT-19, IDENT-21)
+
+Measured against the plan base `f807790c` (the same scenes run before and after), then declared. Five rulings land
+together: the Pickpocket's extra item from every chest and monster drop (IDENT-18; `items.js#pickpocketExtra`, called
+by `combat.js#foeSpoils` and `encounters.js#openChest`, on `derivedRng(cursor, "pickpocket", acts, pile length)`);
+the Pickpocket's extra gold take retired (Q1 B: `gainWilmst` loses its three draws and the `goldGained` pickpocket
+beat); the Cutthroat's Joiner check a d10 where the d20 sat (IDENT-19); a Troll's prices doubled and its weapon line no
+longer doubled again (IDENT-21); selling pays every race the ordinary price (Q5 A); and every stock line but the three
+flat tools routed through the race and Pickpocket buy rule, potions, food, lockpicks and the sealed scroll included
+(Q8 A, user 2026-10-01, against the recommendation). The Wilmsry's refusal of Magic User Joiners is reworded only.
+
+**Parity: 66 of 66 pass, with ONE declared record updated.** `node --test "test/parity/**/*.test.js"` exits 0. The
+economy fixture is a seed-3 Human Pickpocket; Q8 A moves what its store prices (the prototype side is untouched, and
+`test/parity/prototype-master.js.txt` is untouched):
+
+1. `action-script.economy.json` `divergence.stockAfter`: Chicken 20 to 25, Bread 15 to 19, Meat 25 to 31, Healing
+   potion 150 to 188, Xtra Healing 500 to 625, Strength 100 to 125, Speed 500 to 625, lockpicks 450 to 563 (each the
+   old base times 1.25, rounded; the weapon, armour, premium and ration lines and the flat Torch and Rope are
+   unchanged). `divergence.after.gold` 2066 to 1785: the script buys a Chicken, a Healing potion, the lockpicks and a
+   Speed potion, 281 dearer in all. Items, weapon and worn are unchanged; the store roll is still byte-identical to
+   the prototype. The rationale gained a Phase 91 plan 08 paragraph. No fixture draws the Pickpocket's retired gold
+   take (the combat `win` scenario's Shriek pays no coin; the economy script gains none).
+
+**State pins: 8 of 8 unmoved. Save-compat: unchanged.** `node --test test/unit/roll-high-state-pins.test.js
+test/unit/roll-high-save-compat.test.js` passes with no label re-recorded (`node tools/roll-high-baseline.mjs save`
+was never run): none of the eight runs gains coin as a Pickpocket, descends with a Joiner as a Cutthroat or opens a
+store.
+
+**Draws.** The Pickpocket's extra item adds NO main-rng draw (a derived stream). `gainWilmst` loses three main-rng
+draws per coin gain for a Pickpocket (`rng.d(10) + rng.d(10)` and `rng.d(4)`), so a Pickpocket's run moves from its
+first coin gain. The Cutthroat's check swaps `rng.d(20)` for `rng.d(10)` at the same position: the draw count is the
+same, only the face count differs, so a Cutthroat with a Joiner moves at its first descent. Store pricing draws
+nothing.
+
+Moved pins, each re-recorded alone (before to after):
+
+2. `test/determinism/foe-abilities.test.js` FULL_FIGHT_PINS `humans-t2` (seed 3, a Human Pickpocket): 17 draws / 1
+   attack won to 14 / 1 won; the one kill's coin gain no longer draws the take. Every other full-fight pin and every
+   per-visit pin is byte-identical.
+3. `test/unit/roll-high-guard.test.js` DRAW_INVENTORY `engine/items.js`: `amount` 8 to 5 (the three tagged draws on
+   gainWilmst's Pickpocket line); `engine/movement.js` is unchanged (`mishap-on-1` 1, the die is a d10 now).
+4. `test/unit/parley-rewards.test.js` KILL_GOLDEN seed 3 (a Human Pickpocket kill, depth 4, Demons level 4): gold 143
+   to 60, off-the-body coin 93 to 10 (the `goldGained pickpocket` beat of 83 is gone), main-rng cursor -1895506007 to
+   1199731146. Its Pickpocket parley pin now pins the extra ITEM (2 pile entries, `parleyWon.items` 2, still 2 main
+   draws) instead of the extra gold. The other five golden kills are unchanged.
+5. `test/unit/fixtures/event-order/default-fold-corpus.json`: two recorded line texts `+12 wilmst (Pickpocket) ×2`
+   (the `lines` and `linesIdx` of `walk-3-187-attack`) to `+12 wilmst ×2`, pasted by hand. The corpus was NOT
+   regenerated with `MZ_REGEN_EVENT_ORDER_CORPUS=1`: a regeneration rewrites 105 of 182 cases with unrelated drift
+   from earlier Phase 90 and 91 plans, so only the moved label changed.
+6. `test/unit/fixtures/shell-snapshots/thief.hero.txt` (a Wilmsry Thief's Hero tab): three lines moved, all text: the
+   race rules note ("Heals twice as fast, learns half as quickly. Magic Users despise them." to "..., and refuses to
+   take Magic Users on as Joiners."), the race blurb and the footer's "Bad: Magic User Joiners refuse to travel with
+   you" to "Bad: you refuse to take Magic User Joiners on". The other seven snapshots are byte-identical.
+7. `test/unit/economy.test.js`: the priceFor Troll pin 300 to 200 (title "triples" to "doubles"; Troll Pickpocket
+   375 to 250); the seed-3 Pickpocket stock pin: Chicken 20 to 25, Healing potion 150 to 188, lockpicks 450 to 563
+   (the same numbers as 1).
+8. `test/unit/store-sell.test.js`: `sellPriceFor` for an Elf (half the ordinary price) and a Troll (triple) now both
+   equal the Human's (Q5 A); a Pickpocket's x0.75 is kept.
+9. `test/unit/item-audit-fixes.test.js`: the hero's Joiner-armour repair line for a Troll 1050 to 700.
+10. `test/unit/identity-footer.test.js`: "a Troll's store weapon line costs six times the base price" to "twice the base
+    price" (the `troll-weapons` trait it proved is retired).
+11. `test/unit/bot-tactics.test.js` "playRun: nine forced-cell runs": the Troll Knight seed 4 now stalls (the
+    pre-existing campFailed loop, stuck at depth 4 day 4 after 5000 actions) because a Troll's purchases changed; it
+    is swapped for seed 1 (586 actions, depth 5, day 7, dies naturally). Seeds 5 and 2 still die naturally.
+12. `test/unit/items.test.js` ("gainWilmst ... only Pickpockets get the extra take"): a Pickpocket now gains exactly
+    the ordinary amount with no draw. `test/unit/joiner-level-cap.test.js` SC3: the joinerRefused Oracle and rail
+    copy for a Wilmsry. `test/unit/narrationLinesTable.test.js`: the goldGained "(Pickpocket)" clause is retired.
+    `test/unit/size-voice.test.js`: the Wilmsry note and the Troll's "double". `test/unit/cutthroat-joiner.test.js`,
+    `test/unit/identity-contract.test.js`: the d10, `dieN` 10 and the new trait names.
+
+**Text and ledger.** `docs/narrative-pass/why/91-08.json` holds 19 rows (the Pickpocket's extra-item Oracle and rail
+lines, the retired goldGained suffix, both joinerRefused lines, the Pickpocket, Cutthroat, Troll and Wilmsry blurbs
+and rules note, five trait lines and four footers), each `after` read from the live corpus; `node
+tools/narrative-review.mjs` regenerated the pages and `--check` is in sync. `docs/IDENTITY-AUDIT.md`: the Pickpocket,
+Cutthroat, Troll, Elven, Dwarven and Wilmsry price and Joiner rows read `fixed engine (91-08)` / `fixed text
+(91-08)` / `retired (91-08)` with Pinned by; `test/unit/identity-audit.test.js` PRE_REGISTERED now lists the retired
+`pickpocket-take` (the live `pickpocket-item` left the list).
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): the store economy moved for
+Elves, Dwarves, Trolls and Pickpockets (Q5 A, Q8 A, doubled Troll prices), a Pickpocket's gold and items moved
+(Q1 B, IDENT-18) and a Cutthroat with a Joiner now loses it one descent in ten. The user's rule: no bot runs before
+the milestone's final check.

@@ -1112,8 +1112,16 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
     // naturally (1229 actions, depth 11, day 12; seeds 3 and 4 die too, 456 and 318 actions); seeds 6
     // and 5 still die naturally (107 and 410 actions). The Pilfer and Troll Knight trios are
     // unaffected (re-confirmed live, in the test's own order).
+    // Phase 91 plan 08 (IDENT-21, Q5 A, Q8 A, user 2026-09-30 and 2026-10-01): Troll Knight seed 4
+    // swapped for seed 1. A Troll now pays double (it paid triple) and every non-tool store line,
+    // potions, food and lockpicks included, takes the rule, so the bot's purchases and the run behind
+    // them change; seed 4 now falls into the pre-existing campFailed loop the Phase 72 note above
+    // describes (stuck at depth 4, day 4, re-measured live to 5000 actions under identity dials).
+    // Seed 1 is the smallest untaken seed that dies naturally (586 actions, depth 5, day 7); seeds 5
+    // and 2 still die naturally (453 and 534 actions). The Sorcerer trio is unaffected (a Human pays
+    // the ordinary price).
     { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 5] },
-    { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
+    { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 1] },
   ];
   let sawItem = false;
   for (const { seeds, ...force } of forces) {

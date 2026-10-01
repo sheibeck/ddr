@@ -31,7 +31,7 @@ import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { difficultyCurve, scaleHazard, dotHpFor, heroSpFor, lootFor, classTrapAvoidFor, remapEncounterResult } from "./difficulty.js";
 import { checkLevel, rollCharacter, grantLevelAbilities, grantableAt } from "./character.js";
-import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, LOOT_DIVISOR } from "./items.js";
+import { gainWilmst, hasPicks, rollBlade, rollMailPiece, rollTreasureItem, rollStaff, pickpocketExtra, LOOT_DIVISOR } from "./items.js";
 import { startCombat } from "./combat.js";
 import { openStore } from "./economy.js";
 import { teleport } from "./movement.js";
@@ -173,6 +173,13 @@ export function openChest(state, rng, events = []) {
   // point — the DELIBERATE divergence is take→offer, NOT the roll), so
   // determinism is unchanged; offerFind adds no rng. See offerFind's header.
   offerFind(state, rollTreasureItem(rng, state.floor.depth, c), events);
+  // Phase 91 plan 08 (IDENT-18, user 2026-09-30): a Pickpocket gains one extra
+  // item whenever a chest gives it one. The find card holds ONE item, so the
+  // extra goes into the pending loot pile (the spoils screen) through offerLoot
+  // with `pickpocket: true`, rolled from derivedRng(cursor, "pickpocket", acts,
+  // pile length); the main rng is untouched. A locked chest returned above and
+  // never reaches this line; no other hero gets an extra.
+  pickpocketExtra(state, rng, events);
   return events;
 }
 
@@ -549,12 +556,21 @@ export function meetFaerie(state, rng, events = []) {
  * Cutthroat refusal is REVERSED — a Joiner now travels with a Cutthroat
  * like any other hero (the offer proceeds through resolveJoiner unchanged);
  * the Cutthroat's bad is instead the per-descent murder risk in
- * movement.js#cutthroatMurderCheck (CUT-02). A Magic User Joiner still
- * refuses a Wilmsry (any other class still joins a Wilmsry normally).
+ * movement.js#cutthroatMurderCheck (CUT-02; a 1-in-10 loss since Phase 91
+ * plan 08). A Wilmsry hero still refuses a Magic User Joiner (any other class
+ * still joins a Wilmsry normally).
  * Rationale: "no Joiner ever" made a whole party feature unreachable for
- * one sub-class; a stated 1-in-20 loss keeps the identity (the reputation)
+ * one sub-class; a stated loss keeps the identity (the reputation)
  * and the joke. Zero rng change: the four draws are untouched; the refusal
  * remains a pure read.
+ *
+ * REWORDED (Phase 91 plan 08, IDENT-21, user 2026-09-30): "you refuse to take
+ * Magic User Joiners on (not that they refuse you)." The rule is unchanged: a
+ * Wilmsry hero never takes a Magic User Joiner on; only the wording moved, so
+ * the Wilmsry is the one doing the refusing, on every surface (the
+ * `joinerRefused { reason: "wilmsry" }` narration, the wilmsry-joiners trait,
+ * RACE_NOTE and RACES.Wilmsry.note). The refusal keys on the exact race key
+ * "Wilmsry".
  *
  * DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
  * roll is clamped to the floor it is met on — early floors stop handing the

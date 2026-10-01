@@ -60,7 +60,7 @@ import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.
 import { derivedRng } from "./rng.js";
 import { die, forfeitLoot } from "./death.js";
 import { checkLevel } from "./character.js";
-import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions, memberDrinkPotion, memberUseWorn, MEMBER_LEADER_KINDS } from "./items.js";
+import { offerLoot, pickpocketExtra, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LOOT_DIVISOR, narrateTimerTransitions, memberDrinkPotion, memberUseWorn, MEMBER_LEADER_KINDS } from "./items.js";
 // Phase 89 (ITEM-07, plan 06): alliesTurn's Joiner item policy calls
 // memberDrinkPotion / memberUseWorn and reads MEMBER_LEADER_KINDS from
 // items.js. This is the same runtime-only items.js <-> combat.js cycle the
@@ -1061,8 +1061,15 @@ export function playerStrike(state, rng, events = []) {
  * (`derivedRng(cursor, the parleySpoils key, acts)`), so the parley never moves the
  * main cursor for the spoils. The Cooking ration a slain beast gives stays in
  * killFoe (a parleyed beast walks away alive). Returns `{ gold, items }`: the
- * wilmst credited to the hero (a Pickpocket's extra take included) and the
- * number of items offered (0 or 1).
+ * wilmst credited to the hero and the number of items offered (0 or 1; 2 for a
+ * Pickpocket, whose extra item IDENT-18 follows the regular drop).
+ *
+ * Phase 91 plan 08 (IDENT-18, user 2026-09-30): "whenever you gain an item from
+ * a chest or a monster, you gain one extra item as well" - a Pickpocket's
+ * passing drop check offers a second, separate pile entry (`pickpocketExtra`,
+ * `lootDropped { pickpocket: true }`) rolled from
+ * `derivedRng(cursor, "pickpocket", acts, pile length)`. The Pickpocket's old
+ * extra gold take (Q1 B) is gone from `gainWilmst`.
  *
  * DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
  * rollTreasureItem draw are UNCHANGED and still sit first, in the same order
@@ -1090,6 +1097,11 @@ export function foeSpoils(state, f, rng, events = [], opts = {}) {
     if (bagCheck && bagCheck.ok) drop = bagItemFor(tier);
     offerLoot(state, drop, events, { ...rollFields(lootCheck), ...(bagCheck ? { bag: rollFields(bagCheck) } : {}) });
     items = 1;
+    // Phase 91 plan 08 (IDENT-18, user 2026-09-30): a Pickpocket gains one extra
+    // item whenever a monster gives it one, right behind the regular drop, from
+    // the derived "pickpocket" stream (the main rng is not touched). A kill and
+    // a won parley both reach this line; a failed drop check never does.
+    items += pickpocketExtra(state, rng, events);
   }
   return { gold: c.gold - goldBefore, items };
 }
