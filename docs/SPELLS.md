@@ -165,7 +165,7 @@ Summoner's damage source is specifically the GRANTED Lesser Summon, not
 | Warlock | no (special: null) | Freeze — never sees Lesser Summon |
 | Sorcerer | yes | Freeze/Fireball (existing guaranteed grant) |
 | Summoner | yes | Lesser Summon (deterministic grant, always present) |
-| Cleric | no (special: null) | Freeze — never sees Lesser Summon |
+| Cleric | no (special: null) | none since 91-02 (IDENT-15): the offense school is closed to it, so its day-one act is Heal |
 | Illusionist | yes | Freeze, or Lesser Summon when the derived splice lands it in the day-one pool (measured: present in the majority, absent in a real minority of seeds) |
 | Court Mage | no (special: null) | Freeze — never sees Lesser Summon |
 | Apprentice | yes | Freeze, or Lesser Summon (varies by seed, same as Illusionist) |
@@ -1774,7 +1774,7 @@ The school bonus and gate of every Magic User sub-class, read from the live `con
 | Sorcerer | +4 | +1 | +0 (gate 4) | +3 | +1 | never |
 | Court Mage | +2 | +2 | +1 | +0 (gate 4) | never | never |
 | Illusionist | +0 | +0 (gate 3) | never | +1 | +4 | +0 |
-| Cleric | +0 | +3 | +4 | +0 (gate 3) | never | never |
+| Cleric | never | +3 | +4 | +0 (gate 3) | never | never |
 | Summoner | +0 | +2 | +0 | +4 | +1 | never |
 | Apprentice | +0 | +0 | +0 | +0 (gate 3) | +0 | +0 |
 <!-- phase90-close:gates:end -->

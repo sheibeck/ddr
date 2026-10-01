@@ -1,0 +1,72 @@
+[
+  {
+    "key": "bank:SUB_NOTE.Wizard",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+    "after": "Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "User rulings 2026-09-30 (IDENT-13, SPELL-10; rulebook p.17): a Wizard always opens with a direct-damage spell it can cast, and the Illusion school is the Illusionist's, so the blurb no longer claims every school. The invented refusal to teach (nothing in the game trades spells) went with it; the melee refusal and the closing joke stay. The schools it does learn are named, and Illusion is named as the one it never will."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cleric",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. Your top four faces hit instead of three. The gods have rounded up.",
+    "after": "Healing, turning the dead and chain mail: the one Magic User the dungeon cannot simply push over. The gods approve of mending and have ruled out fireballs, so no offense spell ever lands in your book, and Heal is always on the first page. Your top four faces hit instead of three. The gods have rounded up.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "User rulings 2026-09-30 (IDENT-15): \"cannot cast offensive spells\" and \"always starts with the level-1 Heal spell\", so the blurb states both in the house voice (the gods approve of mending and have ruled out fireballs). \"A shield\" is dropped (user 2026-10-01: the game has no shields). No hit-point rule is stated (Q2 A: text only, and the ban is the whole claim)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Wizard.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "always starts with a level 1 direct-damage spell it can cast on day one",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-13 (user 2026-09-30: \"not having a direct damage spell makes the class very not-fun\"): the stated trait, proved by the 1,000-seed sweep in test/unit/wizard-day-one.test.js. Written \"level 1\" with a space because the footer hygiene test bans a hyphen before a digit."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.2.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "",
+    "after": "always starts with Heal in the book",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-15 (user 2026-09-30: \"always starts with the level-1 Heal spell\"): the stated trait, proved by the 1,000-seed sweep in test/unit/cleric-offense-ban.test.js."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Wizard",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells.",
+    "after": "Good: always starts with a level 1 direct-damage spell it can cast on day one; your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "The Wizard footer now leads its Good side with the day-one damage spell (IDENT-13); the generated never-learns-illusion line from Phase 90 plan 06 stays."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cleric",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: every healing spell heals 3 more; your top four faces hit, not a Magic User's three. Bad: no divination spells until level 3; never learns special or illusion spells.",
+    "after": "Good: every healing spell heals 3 more; your top four faces hit, not a Magic User's three; always starts with Heal in the book. Bad: never learns offense, special or illusion spells; no divination spells until level 3.",
+    "reasons": [
+      "fact",
+      "identity"
+    ],
+    "why": "The Cleric footer states the Heal start (IDENT-15, a stated trait) and the offense ban (generated from MU_CHART.Cleric.offense being null: \"never learns offense, special or illusion spells\")."
+  }
+]

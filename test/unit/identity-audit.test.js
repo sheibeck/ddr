@@ -85,8 +85,9 @@ const VERDICT_TOKENS = [
 
 /** The rows a Phase 91 plan adds or removes, pre-registered by this audit. */
 const PRE_REGISTERED = [
-  ["sub", "Wizard", "wizard-day-one", /^ruled \(2026-09-30\) -> 91-02/],
-  ["sub", "Cleric", "cleric-heal-start", /^ruled \(2026-09-30\) -> 91-02/],
+  // Phase 91 plan 02 built wizard-day-one and cleric-heal-start (IDENT-13, IDENT-15):
+  // both are live identityEntries now, so they left this list and sit in their
+  // identity's authored-then-generated order with a fixed verdict.
   ["sub", "Illusionist", "illusionist-book", /^ruled \(2026-09-30\) -> 91-03/],
   ["sub", "Master of Arms", "moa-never-leaves", /^ruled \(2026-09-30\) -> 91-05/],
   ["sub", "Pickpocket", "pickpocket-item", /^ruled \(2026-09-30\) -> 91-08/],
@@ -455,12 +456,16 @@ test("IDENT-12: the checker fails a row that reads match but admits a gap", () =
 });
 
 test("IDENT-12: the checker fails a non-live row that is neither unstated nor owned (a match on a pre-registered trait)", () => {
+  // Phase 91 plan 02 made wizard-day-one a live entry, so the probe no longer
+  // leans on whichever trait a later plan has yet to add: it clones a live row
+  // under an id no footer carries and gives it the verdict match.
   const bad = mutate(readDoc(), (lines) => {
-    const i = rowIndex(lines, "wizard-day-one");
+    const i = rowIndex(lines, "barbarian-two");
     assert.ok(i >= 0);
     const cells = splitCells(lines[i]);
+    cells[0] = "probe-not-live";
     cells[5] = "match";
-    lines[i] = `| ${cells.join(" | ")} |`;
+    lines.splice(i + 1, 0, `| ${cells.join(" | ")} |`);
   });
   assert.ok(checkDoc(bad).some((p) => /is not a live entry and its verdict "match"/.test(p)));
 });

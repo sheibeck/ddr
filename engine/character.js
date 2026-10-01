@@ -400,6 +400,13 @@ export function rollGrimoire(rng, sub, level = 1) {
   // order are unaffected; only a gated spell is left out of the book.
   for (const sp of low) { if (book.length >= Math.min(n, 6)) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
   for (const sp of high) { if (book.length >= n) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
+  // IDENT-15 (Phase 91 plan 02, user ruling 2026-09-30): a Cleric "always
+  // starts with the level-1 Heal spell" (Major Heal rides along, castable from
+  // level 3). Heal is a level-1 healing spell the Cleric's chart opens, so it is
+  // castable on day one. The Cleric's OFFENSE school is closed in the gate data
+  // (content/mu-chart.js), so the pool above never holds an offense spell and
+  // the day-one damage top-up below finds nothing to add for a Cleric: it ends
+  // quietly, with no name check here.
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
   // Phase 90 plan 06 (SPELL-12): the Illusionist's must-have is Mirror Self
   // (Phantom Host is gone). Phase 90 plan 09 appends Door Illusion and one

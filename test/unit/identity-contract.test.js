@@ -43,6 +43,7 @@ import {
   killSpFor,
   strikeDie,
   foeDie,
+  schoolAllowed,
   schoolBonus,
   schoolGate,
   canLearn,
@@ -426,9 +427,14 @@ const CONTRACT = [
       },
     },
     bad: {
-      name: "no offensive bonus at all — the audit's soft bad",
+      // IDENT-15 (Phase 91 plan 02, user 2026-09-30): the soft bad ("no offensive
+      // bonus at all") is now the hard one — the Cleric never learns the offense
+      // school, so no offense spell is dealt, copied or cast from its book.
+      name: "never learns an offense spell: the offense school is closed in the chart",
       run() {
+        assert.equal(schoolAllowed("Cleric", "offense"), false);
         assert.equal(schoolBonus("Cleric", "offense"), 0);
+        for (const sp of SPELLS.filter((s) => s.s === "offense")) assert.equal(canLearn("Cleric", sp), false, sp.n);
       },
     },
   },

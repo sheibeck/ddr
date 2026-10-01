@@ -81,6 +81,28 @@ test("Illusionist: no line names Phantom Host (removed) or a level-1 override; t
   assert.ok(!wiz.good.includes("every school of magic from level 1"), "a Wizard no longer reads every school");
 });
 
+// Phase 91 plan 02 (IDENT-13, IDENT-15): the Wizard's day-one damage and the
+// Cleric's Heal start are stated traits; the Cleric's offense ban is the
+// generated never-learns line (MU_CHART.Cleric.offense is null); the blurbs say
+// the same in the house voice and the Wizard's no longer claims every school.
+test("Cleric: Bad names never learning offense spells (generated), Good names the Heal start; the blurb says both", () => {
+  const f = identityFooter("sub", "Cleric");
+  assert.ok(f.bad.some((t) => t.startsWith("never learns") && t.includes("offense")), JSON.stringify(f.bad));
+  assert.ok(f.good.includes("always starts with Heal in the book"), JSON.stringify(f.good));
+  assert.match(SUB_NOTE.Cleric, /offense spell/i);
+  assert.match(SUB_NOTE.Cleric, /Heal/);
+  assert.doesNotMatch(SUB_NOTE.Cleric, /shield/i, "the game has no shields (user 2026-10-01)");
+});
+
+test("Wizard: Good names the day-one damage spell, Bad names never learning Illusion; the blurb no longer claims every school", () => {
+  const f = identityFooter("sub", "Wizard");
+  assert.ok(f.good.includes("always starts with a level 1 direct-damage spell it can cast on day one"), JSON.stringify(f.good));
+  assert.ok(f.bad.some((t) => t.startsWith("never learns") && t.includes("illusion")), JSON.stringify(f.bad));
+  for (const t of [...f.good, ...f.bad]) assert.ok(!/every school/i.test(t), t);
+  assert.doesNotMatch(SUB_NOTE.Wizard, /every school/i);
+  assert.match(SUB_NOTE.Wizard, /never Illusion/);
+});
+
 // ─── chart-generated lines, re-derived from MU_CHART ────────────────────
 
 test("chart: every gate above level 1, every never-learned school, every healMul below 1, every thrown-school bonus and every override is named", () => {

@@ -32,7 +32,7 @@ export const IDENTITY_TRAITS = Object.freeze({
   sub: Object.freeze({
     // ---------------- Magic User ----------------
     "Wizard": side(
-      [],
+      [trait("wizard-day-one", "always starts with a level 1 direct-damage spell it can cast on day one", "test/unit/wizard-day-one.test.js", "IDENT-13: every new Wizard holds a castable direct-damage level-1 spell on day one, seeds 1 to 1000")],
       [trait("wizard-melee", "won't swing a weapon while a castable attack spell and a charge remain", CONTRACT, "refuses to melee while a castable attack spell sits unused")],
     ),
     "Warlock": side(
@@ -60,6 +60,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       [
         trait("cleric-heal", "every healing spell heals 3 more", CONTRACT, "heals 3 more than anyone else, rolls 4 to hit"),
         trait("cleric-hit", "your top four faces hit, not a Magic User's three", CONTRACT, "heals 3 more than anyone else, rolls 4 to hit"),
+        trait("cleric-heal-start", "always starts with Heal in the book", "test/unit/cleric-offense-ban.test.js", "IDENT-15: every new Cleric holds Heal and can cast it on day one, seeds 1 to 1000"),
       ],
       [],
     ),

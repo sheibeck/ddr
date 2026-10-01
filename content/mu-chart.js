@@ -29,8 +29,17 @@ export const MU_CHART = {
     offense: 0, protection: 0, healing: null, divination: 1, special: 4, illusion: 0,
     gate: { protection: 3 },
   },
+  // DELIBERATE RULES CHANGE (Phase 91 plan 02, IDENT-15, user ruling
+  // 2026-09-30: "cannot cast offensive spells, because they gain more hit
+  // points"): the Cleric never learns the OFFENSE school (including its buff,
+  // Strength). `offense: null` means never learned, the same gate data Phase 90
+  // wrote for the Wizard's Illusion: canLearn / grantableAt / findGrimoire /
+  // the scribe gate (canCast) / the combat menu all follow it, and no Cleric
+  // name check exists anywhere. The prototype's MU_CHART (offense +0) is left
+  // untouched. A scroll that rolls an offense spell still free-casts for a
+  // Cleric (Q3 B, RULES-10): the ban is the book's, not the scroll's.
   "Cleric": {
-    offense: 0, protection: 3, healing: 4, divination: 0, special: null, illusion: null,
+    offense: null, protection: 3, healing: 4, divination: 0, special: null, illusion: null,
     gate: { divination: 3 },
   },
   // RULES-03, Phase 75, user 2026-09-25: the offense gate is removed — a

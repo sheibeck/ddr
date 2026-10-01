@@ -167,10 +167,11 @@ test("every gated sub-class's chargen grimoire holds no spell whose school gate 
 // walking an already-shuffled list, never re-rolls or re-shuffles). Phase 90
 // plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33, Apprentice 38 ->
 // 37 (Phantom Host removed; the Wizard lost Illusion) — see
-// test/unit/chargen-rng-pin.test.js.
+// test/unit/chargen-rng-pin.test.js. Phase 91 plan 02 (IDENT-15): Cleric 34 -> 10,
+// measured live (the offense school left both pool shuffles) — declared there too.
 const ROLL_GRIMOIRE_DRAW_COUNTS_NON_SUMMONER = {
   Wizard: 36, Warlock: 33, Sorcerer: 35,
-  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 test("rollGrimoire's main-rng draw count is UNCHANGED for every non-Summoner sub, over seeds 1..50 (RULES-03 adds zero draws)", () => {

@@ -11,6 +11,12 @@
 // the named exception SPELL_LEVEL_OVERRIDES.Summoner.Summon; a summon never
 // counts as damage, so the Summoner's day-one damage spell comes from the
 // same top-up every other sub-class's does.
+//
+// Phase 91 plan 02 (IDENT-15, user 2026-09-30): the Cleric never learns the
+// offense school, so it holds NO damage spell by ruling; the day-one damage
+// sweeps below skip it by name (a test-side exclusion only, no Cleric check in
+// the engine) and assert it holds none. IDENT-13: the Wizard's own guarantee is
+// pinned across 1,000 seeds in test/unit/wizard-day-one.test.js.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -69,9 +75,12 @@ function countingRng(inner) {
 // pool). Phase 90 plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33,
 // Apprentice 38 -> 37, measured live (Phantom Host removed; the Wizard lost
 // the Illusion school) — same declaration as that file's.
+// Phase 91 plan 02 (IDENT-15): Cleric 34 -> 10, measured live: the offense school
+// left both of its main-rng pool shuffles (low 5, high 5, spare 2) — same
+// declaration as that file's.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
   Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
+  Cleric: 10, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 // --- table shape ----------------------------------------------------------
@@ -132,8 +141,12 @@ test("a fakeRng-style rng lacking getState still works — the derived key falls
 
 // --- the 8-sub x 200-seed day-one damage guarantee (SPELL-04) -------------
 
-test("every Magic User sub holds a castable, damage-dealing spell on day one, over 200 seeds each", () => {
-  for (const sub of MU_SUBS) {
+test("every Magic User sub but the Cleric holds a castable, damage-dealing spell on day one, over 200 seeds each; the Cleric holds none (IDENT-15)", () => {
+  for (const seed of SEEDS) {
+    const state = newRun(seed, [], { force: { sub: "Cleric" } });
+    assert.ok(!state.c.grimoire.some((n) => dealsDamage(byName(n))), `Cleric seed ${seed}: holds a damage spell (${JSON.stringify(state.c.grimoire)})`);
+  }
+  for (const sub of MU_SUBS.filter((s) => s !== "Cleric")) {
     for (const seed of SEEDS) {
       const state = newRun(seed, [], { force: { sub } });
       const ok = state.c.grimoire.some((n) => dealsDamage(byName(n)) && canCast(state, byName(n)));

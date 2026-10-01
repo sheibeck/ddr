@@ -103,7 +103,7 @@ The two spells the user ruled out on 2026-09-30 (SPELL-12) and plan 90-06 delete
 | Sorcerer | +4 | +1 | +0 (gate 4) | +3 | +1 | never | unchanged: the five Special spells yes, no Illusion spell |
 | Court Mage | +2 | +2 | +1 | +0 (gate 4) | never | never | unchanged: neither new school |
 | Illusionist | +0 | +0 (gate 3) | never | +1 | +4 | +0 | unchanged chart; starts with Mirror Self, Door Illusion and one random Illusion spell instead of Mirror Self and Phantom Host (90-09); the Special +4 stretches the new Special spells (Q6) |
-| Cleric | +0 | +3 | +4 | +0 (gate 3) | never | never | unchanged chart; "cannot cast offensive spells" joins the gate data in Phase 91 (IDENT-15) |
+| Cleric | never | +3 | +4 | +0 (gate 3) | never | never | live since 91-02: offense is never (IDENT-15, user 2026-09-30: "cannot cast offensive spells"), the same gate data as the Wizard's Illusion, so the whole offense school including its buff Strength is never dealt, copied or cast from a Cleric's book; a scroll that rolls an offense spell still free-casts for it (Q3 B, RULES-10); pinned by `test/unit/cleric-offense-ban.test.js` |
 | Summoner | +0 | +2 | +0 | +4 | +1 | never | unchanged chart; live since 90-06: casts Summon from level 1 as a named exception in `content/spell-level-overrides.js`, Lesser Summon removed; no Illusion; healing halved (`healMul` 0.5) |
 | Apprentice | +0 | +0 | +0 | +0 (gate 3) | +0 | +0 | unchanged: learns any school (rulebook p.17: "even Illusionist spells") until the level-3 reveal drops what its new sub-class cannot learn |
 
@@ -210,8 +210,8 @@ Every finding the Phase 90 plans left for a later phase, closed here as a hand-o
 - **Phase 91 (identity text, IDENT-NN):**
   - The Bard's Sing still calls `resistControl` twice and `controlCapRounds` once (the RULES-18 helpers 90-04 moved every spell off); the songs become spell echoes under IDENT-17 and move onto the shared resist there (docs/SKILL-AUDIT.md, Sing row).
   - The parley insult chip and `COMBAT_MENU_COPY.parleyDesc` ("one face easier"), the Bard's song chip and the Ninja's "top two faces" crit line still speak in faces; they are race, sub-class, parley and Bard wording, so they are Phase 91's TEXT-01 pass.
-  - The identity footer states only the thrown offense bonuses: it has no line for the chart bonus's other jobs, so the Special stretch (+10 squares or +1 round a point, Q6) is unstated; `SUB_NOTE.Wizard` still says "Every school of magic" and states no lost Illusion school (91-02); the Illusionist's starting-book trait and blurb audit (90-09 built the book: Mirror Self, Door Illusion and one random Illusion spell).
-  - IDENT-15: "cannot cast offensive spells" joins the gate data for the Cleric (`MU_CHART.Cleric.offense` becomes `null`).
+  - The identity footer states only the thrown offense bonuses: it has no line for the chart bonus's other jobs, so the Special stretch (+10 squares or +1 round a point, Q6) is unstated; `SUB_NOTE.Wizard` stated "Every school of magic" and no lost Illusion school until 91-02 rewrote it; the Illusionist's starting-book trait and blurb audit (90-09 built the book: Mirror Self, Door Illusion and one random Illusion spell).
+  - IDENT-15: built in 91-02: `MU_CHART.Cleric.offense` is `null`, so "cannot cast offensive spells" is gate data like the Wizard's Illusion (`test/unit/cleric-offense-ban.test.js`).
   - IDENT-16: the Master of Arms joins `combat.js#fleeRefusal`, so Door Illusion is refused for it as it is for a Samurai (one predicate, edited in one place).
   - PARLEY-01 sets what Chameleon Tongue pays (it pays whatever `parley()` pays).
   - A Joiner Apprentice never backfires while the Apprentice blurb promises it for every spell it casts; a Joiner's Fridgian hide is decided with IDENT-20.

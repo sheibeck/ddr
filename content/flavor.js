@@ -83,12 +83,12 @@ export const SUB_NOTE = {
   "Con Artist": "You talk first, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
   "Acrobat": "Nothing lays a hand on you except on its top four faces, and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
 
-  "Wizard": "Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+  "Wizard": "Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
   "Warlock": "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
   "Sorcerer": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your arm caps out at 9 damage. Nobody hired the arm.",
   "Court Mage": "You talk. Through encounters, through corridors, through other people's turns — which means that when a fight actually starts, everyone else gets there first. One creature in six dies of boredom before it comes to that, and the book counts that as a kill.",
   "Illusionist": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting.",
-  "Cleric": "Healing, turning the dead, chain mail and a shield: the one Magic User the dungeon cannot simply push over. Your top four faces hit instead of three. The gods have rounded up.",
+  "Cleric": "Healing, turning the dead and chain mail: the one Magic User the dungeon cannot simply push over. The gods approve of mending and have ruled out fireballs, so no offense spell ever lands in your book, and Heal is always on the first page. Your top four faces hit instead of three. The gods have rounded up.",
   // VOX-04 (Phase 79, Plan 03): the user's Pixel 7 report ("summoner
   // description doesn't mention...") — the 2026-09-25 healing weakness is in the
   // prose too. Phase 90 plan 06 (SPELL-12): the small Lesser Summon is gone; the
