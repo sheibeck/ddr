@@ -7479,3 +7479,74 @@ run is byte-identical.
 **Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a won bot parley now pays more
 and a Master of Arms bot no longer flees, so death depth and experience curves for those runs shift; none of the
 eight pinned runs does either.
+
+### Phase 91 plan 06: the Bard sings once per fight (IDENT-17)
+
+**The rule (the user's words, 2026-09-30).** "Let's allow this to be used once per fight as a combat action."
+SING is a combat action a Bard hero takes once per fight; its effect is one spell picked uniformly from every offense
+and protection spell at or below the Bard's level (Phase 90's reworks included; Special, Illusion, healing and
+divination never), resolved through `castSpell`'s free mode exactly as a Magic User of the Bard's level casts it
+(same dice, the one shared rising resist, durations, self-costs; no charge, no book gate, no Apprentice backfire),
+under a sung title from `SONG_TITLES`. The pick, the title and every roll the spell makes come from one derived
+stream (`derivedRng(cursor, "song", acts)`); the foe turn after the song runs on the main rng. The five fixed songs,
+`resistControl` x2, `controlCapRounds` and the squares cooldown (`c.songAt`) are gone. The new serialized fact is
+`combat.sang` (it lives and dies with the fight).
+
+**Predictor.** Every non-Bard run is byte-identical: `castSpell` without `opts` is unchanged and nothing else read
+the song. Only a Bard hero's runs can move (the bot sings in every fight it can, a real spell where the old song was
+a level-gated no-op or a squares cooldown). The parity comparables carve out `combat.sang` and the prototype's
+`c.songAt` in all three `*Comparable()` functions, so a Bard parity script that sings would diverge by ruling and
+compare equal on the rest.
+
+**Live scan (measured on the plan-06 tree, before and after the code).**
+
+- `node tools/fixture-inventory.mjs --json` replayed the parity roster: no fixture hero is a Bard and no script holds
+  a `sing` action, so the roster and `FIXTURE-INVENTORY.md`'s generated table are unchanged.
+- `node --test "test/parity/**/*.test.js"`: all pass, no fixture re-recorded; `git diff --stat --
+  test/parity/prototype-master.js.txt` prints nothing.
+- `node tools/roll-high-baseline.mjs pins`: all eight pinned runs hash as before (none of them is a Bard);
+  `roll-high-state-pins.test.js` and `roll-high-save-compat.test.js` pass untouched, so no state pin or save
+  `expected` was re-recorded and `roll-high-baseline.mjs save` was never run.
+- The bot-run pins (`class-matrix`, `ablation-switch`, `band-readout`, `early-floor-targets`, `hazard-exposure`,
+  `roll-high-invariant`, `resume-roundtrip`, `days-farm`, `bot-tactics`, `fight-gate`, `moa-never-leaves`, and the
+  rest of the 19 bot-driven test files): 358 tests, 358 pass, none moved.
+- A smoke (not a balance run) of six forced-Bard bot runs of 300 actions: 34 songs in 44 fights, 0 refusals, nine
+  distinct spells and 23 distinct titles, no exception.
+
+**Moved entries (tests and pins rewritten for the new rule; each measured live, declared with before/after).** No
+parity fixture and no roll-high pin moved; every item below is a unit pin or a guard list that named the old song.
+
+1. `test/unit/combat.test.js` ("songReady", "sing"): before, `songReady` was "only a Bard, and only every 100
+   squares" (`c.songAt`) and a level-3 Bard's `sing` was a fixed Lullaby (`sang { song: "Lullaby" }`, both foes asleep
+   23); after, `songReady` is "only a Bard in a joined fight that has not sung" and `sing` is `sang { title, spell:
+   "Shield", level 1 }` first, then the spell's own events, the main rng untouched by the song.
+2. `test/unit/cast-refusals.test.js`: the "cooldown with a positive integer left" test is now `sungThisFight` with no
+   draw and no `left`; the "ready Bard sings" test runs on a sleeping foe.
+3. `test/unit/control-at-depth.test.js`: the four Bard Lullaby / Thunder tests (C13: resist per foe, capped hold,
+   floor-12 full 24, Thunder's d8) are retired with the songs and replaced by one pin: at floor 20 a sung Doze rolls
+   the shared rising resist (`spellResisted` / `resistFailed`), never `resistControl`, marks no `foe.resisted`.
+   `control-at-depth-rules.test.js`: `combat.js#sing` left the audited control sites (it assigns no foe control
+   any more). `docs/ROLL-LEDGER.md` C13 reads RETIRED.
+4. `test/unit/roll-high-guard.test.js` DRAW_INVENTORY, `engine/combat.js`: `amount` 23 to 20 (Lullaby's d6 and
+   Thunder's d12 and d8 are gone) and `selection` 3 to 5 (the song's pick and title draws, tagged, on the derived
+   stream). `engine/magic.js` counts are unchanged (the Apprentice backfire line is the same draw line).
+5. `test/unit/combatMenu.test.js`: the SING row's second state was `SING (60 sq)` / `60 SQ` and is now `SING · SUNG`
+   / `SUNG THIS FIGHT`; the description pin reads "Once per fight ... random offense or defense spell of your level
+   or lower ... full strength ... no charges spent" (before: "best song your level knows").
+6. `test/unit/tuning-bot.test.js` ("HARN-02: Bard sings"): before, the bot sang at level 2 or against Beasts only
+   and never in a squares cooldown; after, it sings once in every fight at any level and never again in that fight.
+7. `content/identity.js`, `content/flavor.js` (`SUB_NOTE.Bard`) and `docs/IDENTITY-AUDIT.md`: `bard-song` reads
+   `fixed engine (91-06); fixed text (91-06)` (Joiner Bards and the dead Inspire chip's copy stay with 91-07 and
+   91-10), `bard-target` reads `fixed text (91-06)`.
+8. `docs/narrative-pass/why/91-06.json` holds 35 rows (the sang Oracle and rail lines, the `sungThisFight` refusal,
+   the retired `songIgnored`, `beastsSoothed`, `lullabyRolled` and `thunderRolled` builders and the `SONGS` raw table,
+   the SING menu copy, the 16 `SONG_TITLES` lines, the Bard's footer, trait and blurb text), each `after` read from
+   the live corpus; `tools/lib/event-variants.mjs` gained two scoped toggles so the corpus reaches the new lines;
+   `node tools/narrative-review.mjs` regenerated the pages and `--check` is in sync.
+
+**Two stale pins from plan 91-03 fixed first (separate commit).** `combat-gear-lock.test.js`'s payload table gained
+the `teleportPick` row; `rations-audit.test.js`'s `engine/movement.js` rng-line pin was re-measured at 21 (the three
+added matching lines are "Pure; no rng." doc comments, the d8, d8 and d20 teleport draws are the same declared ones).
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a Bard bot now casts a real
+spell every fight, so its death depth and experience curves shift; none of the eight pinned runs is a Bard.
