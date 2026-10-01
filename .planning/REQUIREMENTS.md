@@ -36,17 +36,17 @@
 
 ### Races & sub-classes (IDENT)
 
-- [ ] **IDENT-11**: All 6 races are audited. Each race trait and note is checked against engine behaviour and canon, and each mismatch is fixed or ruled deliberate, with a test.
-- [ ] **IDENT-12**: All 24 sub-classes are audited. Each trait in `content/identity.js`, each blurb and each sub-class note states every advantage and drawback the engine applies, and matches it. Mismatches are fixed with tests.
-- [ ] **IDENT-13**: A Wizard always starts with at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled. This is pinned across a wide seed sweep.
-- [ ] **IDENT-14**: An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
-- [ ] **IDENT-15**: A Cleric cannot cast offensive spells (they gain more hit points), and always starts with the level-1 Heal spell (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-16**: The Master of Arms gets a real drawback in place of "no clean withdrawal in round one", agreed with the user (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-17**: The Bard sings a random song from a song table once every 50 squares; each song has the effect of a random offense or defense spell of the Bard's level or lower. The dim-witted-foes drawback is stated plainly (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-18**: A Pickpocket who gains an item from a chest or a monster gains one extra item as well; the shop drawback stays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-19**: A Cutthroat who descends with a Joiner rolls a d10; on a 1, that Joiner dies (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-20**: Fridgian frenzy: each swing, a 4–6 on a d6 gives a second swing; no armour, thick hide soaks 2; the "never wastes itself on a corpse" line is removed (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **IDENT-21**: Troll store prices are doubled; the text states 75 starting hit points and +11 damage (the Large +2 included). The Wilmsry drawback is reworded: you refuse to take Magic User Joiners on (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-11**: All 6 races are audited. Each race trait and note is checked against engine behaviour and canon, and each mismatch is fixed or ruled deliberate, with a test.
+- [x] **IDENT-12**: All 24 sub-classes are audited. Each trait in `content/identity.js`, each blurb and each sub-class note states every advantage and drawback the engine applies, and matches it. Mismatches are fixed with tests.
+- [x] **IDENT-13**: A Wizard always starts with at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled. This is pinned across a wide seed sweep.
+- [x] **IDENT-14**: An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
+- [x] **IDENT-15**: A Cleric cannot cast offensive spells (they gain more hit points), and always starts with the level-1 Heal spell (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-16**: The Master of Arms gets a real drawback in place of "no clean withdrawal in round one", agreed with the user (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-17**: The Bard sings a random song from a song table once every 50 squares; each song has the effect of a random offense or defense spell of the Bard's level or lower. The dim-witted-foes drawback is stated plainly (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-18**: A Pickpocket who gains an item from a chest or a monster gains one extra item as well; the shop drawback stays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-19**: A Cutthroat who descends with a Joiner rolls a d10; on a 1, that Joiner dies (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-20**: Fridgian frenzy: each swing, a 4–6 on a d6 gives a second swing; no armour, thick hide soaks 2; the "never wastes itself on a corpse" line is removed (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-21**: Troll store prices are doubled; the text states 75 starting hit points and +11 damage (the Large +2 included). The Wilmsry drawback is reworded: you refuse to take Magic User Joiners on (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Spells (SPELL) — backlog 999.15
 
@@ -64,7 +64,7 @@
 ### Plain-language text & parley (TEXT, PARLEY) — user, 2026-09-30
 
 - [x] **TEXT-01**: Rules text reads plainly: "faces" wording becomes "+/− to hit" (hard caps name the d20 range), "squares of enemies" becomes how many foes an area effect hits, and "can talk to" becomes "can always parley with". Each audit phase (89, 90, 91) applies it to its own rows (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [ ] **PARLEY-01**: A successful parley gives experience and loot (recommended: full experience and the fight's normal spoils), and the game explains to the player what a parley is and what it pays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **PARLEY-01**: A successful parley gives experience and loot (recommended: full experience and the fight's normal spoils), and the game explains to the player what a parley is and what it pays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 
 ### Party bug (PARTY)
 
@@ -117,10 +117,10 @@
 | ITEM-04 | Phase 88 | Complete |
 | ITEM-05 | Phase 89 | Complete |
 | ITEM-06 | Phase 89 | Complete |
-| IDENT-11 | Phase 91 | Pending |
-| IDENT-12 | Phase 91 | Pending |
-| IDENT-13 | Phase 91 | Pending |
-| IDENT-14 | Phase 91 | Pending |
+| IDENT-11 | Phase 91 | Complete |
+| IDENT-12 | Phase 91 | Complete |
+| IDENT-13 | Phase 91 | Complete |
+| IDENT-14 | Phase 91 | Complete |
 | SPELL-08 | Phase 90 | Complete |
 | SPELL-09 | Phase 90 | Complete |
 | ABIL-06 | Phase 90 | Complete |
@@ -141,14 +141,14 @@
 | SPELL-10 | Phase 90 | Complete |
 | SPELL-11 | Phase 90 | Complete |
 | SPELL-12 | Phase 90 | Complete |
-| IDENT-15 | Phase 91 | Pending |
-| IDENT-16 | Phase 91 | Pending |
-| IDENT-17 | Phase 91 | Pending |
-| IDENT-18 | Phase 91 | Pending |
-| IDENT-19 | Phase 91 | Pending |
-| IDENT-20 | Phase 91 | Pending |
-| IDENT-21 | Phase 91 | Pending |
-| PARLEY-01 | Phase 91 | Pending |
+| IDENT-15 | Phase 91 | Complete |
+| IDENT-16 | Phase 91 | Complete |
+| IDENT-17 | Phase 91 | Complete |
+| IDENT-18 | Phase 91 | Complete |
+| IDENT-19 | Phase 91 | Complete |
+| IDENT-20 | Phase 91 | Complete |
+| IDENT-21 | Phase 91 | Complete |
+| PARLEY-01 | Phase 91 | Complete |
 | TUNE-10 | Phase 92 | Pending |
 | BOARD-31 | Phase 91.2 | Complete |
 | BOARD-32 | Phase 91.2 | Complete |

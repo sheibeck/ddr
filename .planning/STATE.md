@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 92
-current_phase_name: Store Economy & Balance Close
-status: planning
+status: executing
 stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 COMPLETE (suite 8,682/8,680/0/2; after any shell merge run npm run build:www — the www artefact test reads the gitignored local build). Phase 90 COMPLETE (phase-close suite 9,222/9,220/0/2). TWO TRACKS: Phase 91 executing (91-01 merged: Q8 A engine-to-text, shield dropped; 91-01..09 merged; 91-10 running) and Phase 91.2 executing beside it (10 plans; 91.2-01 merged (Java compile deferred to first APK build), Phase 91.2 COMPLETE (code; live gate deferred to Release 2.3.0 step 1; darktier-studio 0f39ee3 unpushed until step 2.7); 91.2-08 is the only mazeworld.html plan; 91.2-10 live gate deferred to release). Each track one plan at a time; merge each hand-back to master and dispatch that track next on the new HEAD; after Phase 90 closes run 91.2 discuss then its plans IN PARALLEL with Phase 91 (user 2026-10-01; resolve mazeworld.html merge conflicts) (one plan at a time; base = tracking commit after the previous merge; doc-reading tests must CRLF-normalize), then 91 (10 plans), 91.1 discuss, 91.2 discuss (research + early decisions done), 92. Dispatch strictly one plan at a time ( strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1, 91.2 and 92 still need discuss (91.1 after 91; 91.2 = Play Games board names, BOARD-31..33, shell+backend only so it can run beside the audits; RESEARCH done; early decisions in 91.2-DECISIONS-EARLY.md (Blaze Cloud Function, hold+SIGN IN, keep old @handle runs, reuse PGS config); 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots; TESTING (user 2026-10-01): executors run TARGETED tests only, orchestrator skips post-merge npm test and runs the full suite ONCE at phase close); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion)."
-last_updated: "2026-10-01T17:53:28.626Z"
+last_updated: "2026-10-01T20:13:42.179Z"
 last_activity: 2026-10-01
-last_activity_desc: Phase 91.2 complete, transitioned to Phase 92
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 56
-  completed_plans: 52
-  percent: 63
+  completed_phases: 6
+  total_plans: 61
+  completed_plans: 56
+  percent: 75
+current_phase: 91.1
+current_phase_name: "Value Review: Races, Sub-classes & Abilities"
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 
 ## Current Position
 
-Phase: 92 — Store Economy & Balance Close
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-01 — Phase 91.2 complete, transitioned to Phase 92
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-10-01 — Phase null execution started
 
 Progress: [████████░░] 76% (2/7 phases)
 

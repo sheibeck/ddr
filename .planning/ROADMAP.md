@@ -26,7 +26,7 @@
 - [x] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits. (completed 2026-09-30)
 - [x] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled. (completed 2026-09-30)
 - [x] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed. (completed 2026-10-01)
-- [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
+- [x] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands. (completed 2026-10-01)
 - [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
 - [x] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update. (completed 2026-10-01)
 - [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
@@ -298,7 +298,7 @@ Plans:
   2. A new Wizard's Grimoire always shows at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled, and this holds across a wide seed sweep.
   3. An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -336,7 +336,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 91-10-PLAN.md — TEXT-01 for every race and sub-class row (+/− to hit, d20 ranges, "can always parley with"), the blurb guard (every trait anchored in its blurb), the engine-scan guard, the audit closed with a pin per row
+- [x] 91-10-PLAN.md — TEXT-01 for every race and sub-class row (+/− to hit, d20 ranges, "can always parley with"), the blurb guard (every trait anchored in its blurb), the engine-scan guard, the audit closed with a pin per row
 
 **UI hint**: yes
 
@@ -355,6 +355,7 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
+
 - [ ] 91.1-01-PLAN.md — VALUE-01..04: docs/VALUE-LEDGER.md (races, sub-classes, skills, level-up abilities, Sing; systems → exists/gap; value flags; recommendations), its guard test, ONE batched value checkpoint (V1..Vn), rulings recorded and each build plan's worklist (autonomous: false)
 - [ ] 91.1-02-PLAN.md — the approved Fighter and Thief skill and ability changes, text, SKILL-AUDIT, a pin each, declared drift
 - [ ] 91.1-03-PLAN.md — the approved hero race and sub-class changes, text, IDENTITY-AUDIT/SPELL-AUDIT, a pin each, declared drift
@@ -427,7 +428,7 @@ Plans:
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
-| 91. Race & Sub-class Audit | 9/10 | In Progress|  |
+| 91. Race & Sub-class Audit | 10/10 | Complete    | 2026-10-01 |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
