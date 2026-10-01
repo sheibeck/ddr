@@ -346,8 +346,16 @@ test("Task 2: playFarmRun — floor-1 farming", async (t) => {
   // index order, found the first whose measured run fires the guard: seed 736468 (index 93, an
   // Illusionist), campGuard 100, campFailed 0, outcome dead, the same shape of run (a solo Magic
   // User start). It is the only one of the 30 that fires. The assertion itself is unchanged.
-  await t.test("camp-guard regression on a real run: seed 736468, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
-    const row = playFarmRun(736468, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
+  //
+  // Re-pinned a fifth time (Phase 90 plan 08, SPELL-10, 2026-10-01): the spell list is three
+  // rows longer (Stop Time, Senseless and Duplicate Foe joined it), so a scroll's pick(options)
+  // lands on another row again and seed 736468 (an Illusionist) went campGuard 100 -> 0
+  // (campFailed 0 either way, outcome unbounded). A scan of the 30 Magic User starts in
+  // seedList(120), in index order, found the first (and only) one whose measured run fires the
+  // guard: seed 863172 (index 109, a Court Mage), campGuard 200, campFailed 0, outcome dead,
+  // the same shape of run (a solo Magic User start). The assertion itself is unchanged.
+  await t.test("camp-guard regression on a real run: seed 863172, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
+    const row = playFarmRun(863172, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
     assert.ok(row.campGuard >= 1, `campGuard was ${row.campGuard}`);
     assert.equal(row.campFailed, 0);
   });

@@ -234,7 +234,8 @@ const CONTROL_EFFECT_WORD = Object.freeze({
 });
 /** joinerOf(e) — Phase 90 plan 05: the Joiner a spell line names (`by`), or null for the hero's own (an absent `by`, or the resist events' "you"). */
 const joinerOf = (e) => (e.by && e.by !== "you" ? e.by : null);
-const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied", stunned: "stunned" });
+// Phase 90 plan 08 (SPELL-10): Stop Time's hold is kind "time".
+const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied", stunned: "stunned", time: "stopped" });
 
 // VOX-05 (Phase 79, plan 79-08): what each Insanity face does
 // (engine/magic.js's insane branch). A 2 (strikes a neighbour) and a 3 or 6
@@ -968,6 +969,10 @@ export const EVENT_NARRATION = {
         return `<span class="hurt">${e.spell ?? "The scroll"} leaves something burning on you, ${e.rounds ?? 0} round${e.rounds === 1 ? "" : "s"} of it.</span>`;
       case "out":
       case "vapor":
+        // Phase 90 plan 08 (SPELL-10): a fumbled Stop Time stops the reader, not the room.
+        if (e.kind === "stopped") {
+          return `<span class="hurt">${e.spell ?? "The scroll"} stops the room, and you are standing in it: you cannot act for ${e.rounds ?? 0} turn${e.rounds === 1 ? "" : "s"}.</span> The foes carry on.`;
+        }
         return `<span class="hurt">${e.spell ?? "The scroll"} takes you out of the fight, ${e.kind ?? "out"} for ${e.rounds ?? 0} turn${e.rounds === 1 ? "" : "s"}.</span>`;
       case "blind":
         return `<span class="hurt">${e.spell ?? "The scroll"} blinds you for the rest of the fight.</span>`;
@@ -1366,6 +1371,29 @@ export const EVENT_NARRATION = {
   insaneRolled: (e) => `Insanity takes ${e.target ?? "it"}: <span class="roll">${e.roll ?? "?"}</span>${INSANE_FACE[e.roll] ?? ""}.`,
   insaneStruckAlly: (e) => `The maddened thing turns on ${e.target ?? "an ally"} for <span class="roll">${e.dmg ?? 0}</span> hp.`,
   insaneFled: (e) => `<span class="beat">${e.target ?? "It"} bolts, mad with fear.</span>`,
+  // Phase 90 plan 08 (SPELL-10, the control spells). Stop Time's closing line (each foe's own
+  // hold line is controlHeld, kind "time"); a count of 0 means every foe resisted. The cast
+  // line is the slate's.
+  timeStopped: (e) =>
+    (e.count ?? 0) > 0
+      ? `<span class="hit">${joinerOf(e) ? `${joinerOf(e)}'s Stop Time: ` : ""}Time stops for ${e.count === 1 ? "1 foe" : `${e.count} foes`}, ${plural(e.rounds ?? 0, "round")}: no turns for them, and you hit them more easily.</span> The room stops. Somewhere a clock is very upset about this.`
+      : `<span class="miss">Time declines to stop for anyone.</span> The room was not impressed, and the clock is merely embarrassed.`,
+  // Senseless (at "friends") and Duplicate Foe (at "self"): what the foe now does, for how long. A
+  // longer spell already running stands, so `rounds` is the count in force.
+  foeMisdirected: (e) =>
+    e.at === "self"
+      ? `<span class="hit">${joinerOf(e) ? `${joinerOf(e)}'s Duplicate Foe: ` : ""}A second ${e.target ?? "foe"} appears.</span> The first ${e.target ?? "foe"} finds this unacceptable: for ${plural(e.rounds ?? 0, "round")} it fights its double, at its own damage, and leaves you alone.`
+      : `<span class="hit">${joinerOf(e) ? `${joinerOf(e)}'s Senseless: ` : ""}${e.target ?? "It"} can no longer tell friend from furniture.</span> It picks a friend: for ${plural(e.rounds ?? 0, "round")} its swings go at its own side, never yours.`,
+  // A misdirected swing: the foe's own to-hit and damage, aimed at a foe (or itself).
+  foeMisdirectedHit: (e) =>
+    `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}. ${e.crit ? '<span class="hit">Critical!</span> ' : ""}${e.name ?? "It"} ${e.self ? "hits itself" : `hits ${e.target ?? "its friend"} instead of you`} for <span class="hit">${e.dmg ?? 0} hp</span>. ${e.self ? "That is what it gets for being so thorough." : "Friendly fire is still fire."}`,
+  foeMisdirectedMiss: (e) =>
+    `${e.name ?? "It"} swings at ${e.self ? "itself" : e.target ?? "its friend"}, <span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}, and misses. ${e.self ? "Even confused, it keeps itself safe." : "Nobody on your side was ever in danger."}`,
+  foeSwingsAtAir: (e) => `<span class="miss">${e.name ?? "It"} swings at the air.</span> The air takes it well, and that was the turn.`,
+  foeMisdirectEnded: (e) =>
+    e.at === "self"
+      ? `<span class="beat">${possessive(e.name, "Its")} double goes away.</span> It is alone with its decisions again, and it remembers you.`
+      : `<span class="beat">${e.name ?? "It"} can tell friend from furniture again.</span> It looks around and remembers you.`,
   // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): the HP gained leads; a
   // capped heal names its roll and says full; a heal at full says so.
   healed: (e) =>
@@ -1427,11 +1455,16 @@ export const EVENT_NARRATION = {
   controlHeld: (e) =>
     e.kind === "stunned"
       ? `<span class="hit">${joinerOf(e) ? `${joinerOf(e)}'s Stun: ` : ""}${e.target ?? "It"} is stunned for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> Hitting it does not end it.`
+      : e.kind === "time"
+      ? `<span class="hit">${e.target ?? "It"} is stopped for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> It takes no turns, and hitting it does not start time again.`
       : e.freeze
       ? `<span class="hit">${e.target ?? "It"} is frozen for ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}.</span> Ice now, grudge later.${e.source ? ` (${e.source})` : ""}`
       : `<span class="hit">${e.target ?? "It"} is ${CONTROL_HOLD_WORD[e.kind] ?? "held fast"} — ${Number.isFinite(e.rounds) ? plural(e.rounds, "round") : "? rounds"}, not forever.</span>${e.source ? ` (${e.source})` : ""}`,
   foeStillHeld: (e) => `${e.name ?? "It"} is still ${CONTROL_HOLD_WORD[e.kind] ?? "held"}. <span class="roll">${e.left ?? "?"}</span> to go.`,
-  foeHoldBroken: (e) => `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
+  foeHoldBroken: (e) =>
+    e.kind === "time"
+      ? `<span class="beat">Time starts again for ${e.name ?? "it"}.</span> It has a great deal of catching up to do.`
+      : `<span class="beat">${e.name ?? "It"} shakes free and stands.</span>`,
   spellMissed: (e) => `<span class="miss">Missed ${e.target ?? "it"}.</span>`,
   potionDrunk: (e) => {
     const g = gainOf(e, e.amount);

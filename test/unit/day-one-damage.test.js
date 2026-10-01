@@ -155,9 +155,10 @@ test("the Summoner always holds Summon (deterministic grant), castable at level 
   }
 });
 
-// Phase 90 plan 07 (SPELL-10): the four appended Special rows are the only rows flagged roll: derived.
-test("only the four plan-07 Special rows are flagged roll: derived, and no row is lesser (Lesser Summon was the earlier roll row)", () => {
-  const DERIVED = ["Open/Lock", "Fly", "Enchant Character", "Speed of Sound"];
+// Phase 90 plan 07 (SPELL-10): the four appended Special rows are the only rows flagged roll: derived;
+// plan 08 appended three more (Stop Time, Senseless, Duplicate Foe), each flagged the same way.
+test("only the seven appended plan-07 and plan-08 rows are flagged roll: derived, and no row is lesser (Lesser Summon was the earlier roll row)", () => {
+  const DERIVED = ["Open/Lock", "Fly", "Enchant Character", "Speed of Sound", "Stop Time", "Senseless", "Duplicate Foe"];
   for (const sp of SPELLS) {
     assert.equal(sp.roll, DERIVED.includes(sp.n) ? "derived" : undefined, `${sp.n} roll flag`);
     assert.equal(sp.lesser, undefined, `${sp.n} must not carry lesser`);

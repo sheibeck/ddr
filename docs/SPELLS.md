@@ -1538,3 +1538,64 @@ through `derived.js#liveItemEffects`).
 and the magic `cast-damage` book changed in content only, the magic `scroll` scenario was re-picked (a
 longer scroll pool), five roll-high state pins and two bot pins moved, and the Hero-tab snapshot for seed 3's
 Wizard shows Fly.
+
+## Phase 90: Stop Time, Senseless and Duplicate Foe, and the misdirected swing (SPELL-10, plan 90-08)
+
+User 2026-09-30 (SPELL-10): the slate in `90-SPELL-SLATE-DRAFT.md` is "accepted as drafted", and Q6 A
+stretches a round-timed new spell by the school bonus: each point adds +1 round
+(`derived.js#spellEffectRounds`). These are the control spells: one Special, two Illusion tricks that turn
+a foe's blows away from your side.
+
+- **The rows.** Three rows are appended after Speed of Sound (38 rows), each `stretch: "rounds"`,
+  `roll: "derived"`, `niche: "control"`, `combatOnly: true`:
+
+  | Spell | Lvl | School | Kind | What it does |
+  |---|---|---|---|---|
+  | Stop Time | 3 | special | `timestop` (`holdRounds: 2`) | every foe stops for 2 rounds (+1 a bonus point), unless it resists |
+  | Senseless | 2 | illusion | `misdirect` (`at: "friends"`, `rounds` d4) | one foe swings at its own side for d4 rounds, never yours |
+  | Duplicate Foe | 5 | illusion | `misdirect` (`at: "self"`, `rounds` d4+1) | one foe fights its double for d4+1 rounds, every swing on itself |
+
+  The school gates need no code: Stop Time reaches the Special sub-classes (Wizard, Sorcerer, Illusionist,
+  Summoner, Apprentice), Senseless and Duplicate Foe only the Illusionist and the Apprentice (the Wizard has
+  no Illusion), and `school-gates.test.js` passes unchanged with them in `SPELLS`. The Bard's song pool
+  (Phase 91) excludes Special and Illusion spells.
+- **The stretch.** Stop Time: 2 rounds for a Wizard or Apprentice, 3 for a Sorcerer or Summoner, 6 for an
+  Illusionist. The chart gives the Illusion school +0 to both sub-classes that learn it, so Senseless and
+  Duplicate Foe get no stretch from it today (the Illusionist's +4 is Special, so it stretches Stop Time and
+  the 90-07 spells, not these). A scroll's free cast by a non-Magic-User reads the base.
+- **Stop Time** (`combat.js#stopTime`, wiring B). Every live foe, in `C.foes` order, rolls the one
+  depth-rising resist; each that fails is held kind `"time"` (`holdFoe`): it takes no turns, a blow neither
+  ends nor restarts it, strikes against it land on at least the top five faces (`targetStrikeFaces`, as for a
+  sleeper), and a longer live hold (a Stun of 4 rounds) is never shortened. Every foe resisting says so in one
+  line (`timeStopped { count: 0 }`). No main-rng draw.
+- **Senseless and Duplicate Foe** (`combat.js#misdirectFoe` and `resolveMisdirectedTurn`, wiring C, the one
+  new combat system). The picked foe's resist is rolled up front; a landed spell sets `f.misdirect = { at,
+  left }` (one main-rng draw: the duration dice). On each turn the foe takes (a held, sleeping or stunned
+  turn does not count) every swing it has rolls its own to-hit and deals its own damage at the first OTHER
+  live foe (Senseless; natural armour may soak it, as Insane's blow) or at itself (Duplicate Foe), never at
+  you or a Joiner; a Senseless foe with nobody else to hit swings at the air and the turn is lost. A hit on
+  it does not end the spell. A kill pays you its experience and spoils (`killFoe`). To-hit uses the foe's own
+  die and `5 + FOE_ACCURACY`, with no body's defences; a blind misdirected foe hits only on its top face and
+  never crits; Weaken, Shrink and Hamstring halve its blows. Draws and positions: docs/ROLL-LEDGER.md "Phase
+  90 plan 08".
+- **Fumbles and scrolls.** The three join the scroll pool at their level (18, 27, 33 and 38 rows at depths 1
+  to 4+). A fumbled Stop Time stops the READER for two turns (`heroOut` kind `"stopped"`, a flat 2); a
+  fumbled Senseless or Duplicate Foe maddens the reader for d4 or d4+1 turns (`maddened`, clamped to
+  `HERO_OUT_MAX`).
+- **Surfaces.** Foe chips Stopped (the hold, `held.kind` "time"), Senseless and Fighting its double (the
+  `misdirect` record, rounds left), each with a one-line rule; the hero chip kind Stopped (combat menu
+  STOPPED, shell label and tap card). Oracle lines and rail twins for `timeStopped`, `foeMisdirected`,
+  `foeMisdirectedHit`, `foeMisdirectedMiss`, `foeSwingsAtAir` and `foeMisdirectEnded`, and the `time` kind of
+  `controlHeld`, `foeStillHeld` and `foeHoldBroken`. `docs/narrative-pass/why/90-08.json` has 23 rows.
+- **Flagged for the user.** (1) Weaken's to-hit cap (top three faces) is not applied to a misdirected swing,
+  only its damage halving; the plan reads "Weaken halves its blows". (2) A new misdirect never shortens a
+  longer live one, and keeps that record's aim (a 1-round Senseless over a 5-round Duplicate Foe changes
+  nothing): the plan wrote `{ at: sp.at, left: max }`, which would let a short cast change the aim of a long
+  one. (3) The chart's Illusion bonus is +0 for the Illusionist and the Apprentice, so the Q6 A stretch is
+  nothing for the two Illusion tricks until the chart changes. (4) Joiner Magic Users do not cast these yet
+  (90-10 owns the Joiner caster policy); the tails take a `by` for them.
+
+**Fixtures this moved** (measured, declared and regenerated alone; docs in test/parity/FIXTURE-INVENTORY.md
+"Phase 90 plan 08"): the rows are `roll: "derived"`, so no chargen cursor moved; chargen seed 24 and the
+combat `lose-apprentice` book changed in content only, three roll-high state pins and two bot pins moved,
+and `roll-high-guard` gained one `rollCheck` and one `amount` draw for the misdirected swing.

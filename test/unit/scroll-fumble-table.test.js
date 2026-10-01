@@ -60,6 +60,11 @@ const EXPECTED = {
   "Fly": { side: "helpful", effect: "wasted" },
   "Enchant Character": { side: "helpful", effect: "wasted" },
   "Speed of Sound": { side: "helpful", effect: "frenzy" },
+  // Phase 90 plan 08 (SPELL-10): the control spells. Stop Time's fumble is a flat two-turn
+  // "stopped" out (no dice: `n: 0`, bonus 2); the two Illusion tricks are "maddened" outs.
+  "Stop Time": { side: "harmful", effect: "out", kind: "stopped", rounds: { n: 0, sides: 1, bonus: 2 } },
+  "Senseless": { side: "harmful", effect: "out", kind: "maddened", rounds: D4 },
+  "Duplicate Foe": { side: "harmful", effect: "out", kind: "maddened", rounds: D4_PLUS_1 },
 };
 
 // Kinds whose castSpell branch benefits the CASTER (content/spells.js's own
@@ -90,9 +95,9 @@ function coverageHolds(spellNames, table) {
   return true;
 }
 
-test("SCROLL_FUMBLE: exact-name coverage of all 35 SPELLS rows", () => {
-  assert.equal(SPELLS.length, 35);
-  assert.equal(Object.keys(SCROLL_FUMBLE).length, 35);
+test("SCROLL_FUMBLE: exact-name coverage of all 38 SPELLS rows", () => {
+  assert.equal(SPELLS.length, 38);
+  assert.equal(Object.keys(SCROLL_FUMBLE).length, 38);
   assert.ok(coverageHolds(SPELLS.map((sp) => sp.n), SCROLL_FUMBLE));
 });
 
@@ -111,7 +116,7 @@ test("SCROLL_FUMBLE: deep-equals the plan's table, row by row", () => {
   for (const [name, expected] of Object.entries(EXPECTED)) {
     assert.deepEqual(SCROLL_FUMBLE[name], expected, `row mismatch for "${name}"`);
   }
-  // No extra rows beyond the 35 (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 added four).
+  // No extra rows beyond the 38 (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 added four; plan 08 three).
   assert.deepEqual(new Set(Object.keys(SCROLL_FUMBLE)), new Set(Object.keys(EXPECTED)));
 });
 
@@ -180,16 +185,18 @@ test("SCROLL_FUMBLE: no effect list contains a killing effect", () => {
   assert.deepEqual(heavyNames, new Set(["Freeze", "Petrify", "Death"]));
 });
 
-test("SCROLL_FUMBLE: out rows are exactly Doze, Stun, Stupidity and Insane, each rounds d4", () => {
+test("SCROLL_FUMBLE: out rows are exactly Doze, Stun, Stupidity and Insane (each rounds d4) plus the plan-08 control spells (Stop Time two flat turns, Senseless d4, Duplicate Foe d4+1)", () => {
   const outNames = new Set(
     Object.entries(SCROLL_FUMBLE)
       .filter(([, row]) => row.effect === "out")
       .map(([name]) => name)
   );
-  assert.deepEqual(outNames, new Set(["Doze", "Stun", "Stupidity", "Insane"]));
-  for (const name of outNames) {
+  assert.deepEqual(outNames, new Set(["Doze", "Stun", "Stupidity", "Insane", "Stop Time", "Senseless", "Duplicate Foe"]));
+  for (const name of ["Doze", "Stun", "Stupidity", "Insane", "Senseless"]) {
     assert.deepEqual(SCROLL_FUMBLE[name].rounds, D4);
   }
+  assert.deepEqual(SCROLL_FUMBLE["Duplicate Foe"].rounds, D4_PLUS_1);
+  assert.deepEqual(SCROLL_FUMBLE["Stop Time"].rounds, { n: 0, sides: 1, bonus: 2 }, "a flat two turns, no dice");
   // Noxious Vapor is not an out row (its effect is "vapor"), but its
   // sleeping face is also capped at d4 per the same ruling.
   assert.equal(SCROLL_FUMBLE["Noxious Vapor"].effect, "vapor");
@@ -230,7 +237,7 @@ test("SCROLL_FUMBLE: how/kind/then/once extras appear only where the plan places
   const kindNames = new Set(
     Object.entries(SCROLL_FUMBLE).filter(([, row]) => "kind" in row).map(([name]) => name)
   );
-  assert.deepEqual(kindNames, new Set(["Doze", "Stun", "Stupidity", "Insane"]));
+  assert.deepEqual(kindNames, new Set(["Doze", "Stun", "Stupidity", "Insane", "Stop Time", "Senseless", "Duplicate Foe"]));
 
   // Phase 90 plan 05 (SPELL-12): Ice's `then: "heavy"` hand-off is gone with its burn, so no row carries `then`.
   const thenNames = Object.entries(SCROLL_FUMBLE).filter(([, row]) => "then" in row).map(([name]) => name);

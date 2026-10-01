@@ -1,0 +1,281 @@
+[
+  {
+    "key": "content:SPELLS.Stop Time.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Stop Time (a new level-3 Special spell)",
+    "before": "",
+    "after": "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and you hit it on at least the top five numbers of your die; then time resumes, and so do they",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Special control spell. The text states the rule (every foe, 2 rounds, no turns, a hit does not end or restart it, the top five numbers to hit it), the resist in plain words and the school stretch the user ruled (+1 round per school bonus point), then the slate's own closing joke."
+  },
+  {
+    "key": "content:SPELLS.Senseless.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Senseless (a new level-2 Illusion spell)",
+    "before": "",
+    "after": "control · one foe · loses its senses for d4 rounds, +1 round per school bonus point, unless it resists: each swing it takes hits another foe at its own damage, never your side; with nobody else to hit, it hits the air, which never complains",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Illusion control spell. The text states the rule (d4 rounds, each swing hits another foe at its own damage, never your side), the air fallback, the resist and the stretch, then the slate's joke about the air never complaining."
+  },
+  {
+    "key": "content:SPELLS.Duplicate Foe.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Duplicate Foe (a new level-5 Illusion spell)",
+    "before": "",
+    "after": "control · one foe · meets its double and fights it for d4+1 rounds, +1 round per school bonus point, unless it resists: every swing it takes lands on itself, at its own damage; it leaves you alone, being busy",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10 (the slate accepted 2026-09-30, Q6 A): a new Illusion control spell. The text states the rule (d4+1 rounds, every swing lands on itself at its own damage, it leaves you alone), the resist and the stretch, then the slate's joke about it being busy."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.stopped",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label (Stop Time's hold)",
+    "before": "",
+    "after": "Stopped",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The chip for kind \"time\", the hold Stop Time sets. One word, like every foe chip; the rounds left follow it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stopped",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card (Stop Time's hold)",
+    "before": "",
+    "after": "Time has stopped for it: it takes no turns until the count runs out, and it is easier to hit. Hitting it does not start time again.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "Says what the hold does (no turns, easier to hit) and the one thing that surprises: a hit does not start time again. It does not state the five-number floor, which the foe card's odds already show."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.senseless",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label (Senseless)",
+    "before": "",
+    "after": "Senseless",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The chip for a foe whose swings go at its own side (misdirect at friends), with the rounds left after it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.senseless",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card (Senseless)",
+    "before": "",
+    "after": "It cannot tell friend from furniture: every swing it takes hits another foe, never your side, and with nobody else to hit it swings at the air. Hitting it does not end this.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "States the rule in one line: every swing hits another foe, never your side; alone, it swings at the air; a hit does not end it. The slate's friend-from-furniture joke leads."
+  },
+  {
+    "key": "bank:FOE_CONDITION_COPY.double",
+    "surface": "combat-screen",
+    "trigger": "a foe condition chip's label (Duplicate Foe)",
+    "before": "",
+    "after": "Fighting its double",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "The one chip label longer than a word: it says what the spell does in the spell's own words, since \"Doubled\" would read as a damage buff."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.double",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card (Duplicate Foe)",
+    "before": "",
+    "after": "It is busy with a second one of itself: every swing it takes lands on itself, never on your side. Hitting it does not end this.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "States the rule: every swing lands on itself, never on your side; a hit does not end it."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.heroOutKind.stopped",
+    "surface": "combat-screen",
+    "trigger": "the hero-cannot-act prompt after a fumbled Stop Time",
+    "before": "",
+    "after": "STOPPED",
+    "reasons": [
+      "fact",
+      "naming"
+    ],
+    "why": "A fumbled Stop Time stops the reader for two turns; the prompt names the kind in one word like ASLEEP, STUPEFIED and MADDENED."
+  },
+  {
+    "key": "raw:mazeworld.html#HERO_OUT_EXPLAIN",
+    "surface": "other",
+    "trigger": "the tap card of the hero's Stopped chip after a fumbled Stop Time (mazeworld.html)",
+    "before": "",
+    "after": "Time has stopped around you: you cannot act for two turns, and the round goes on without you. Foes hit you exactly as they would if you could still swing back.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The generic heroOut sentence says nothing wakes you early; a fumbled Stop Time is a flat two turns, so this kind says so, and still says foes hit you as they would."
+  },
+  {
+    "key": "oracle:timeStopped",
+    "surface": "oracle",
+    "trigger": "timeStopped — the hero casts Stop Time (engine/combat.js#stopTime)",
+    "before": "",
+    "after": "Time stops for 2 foes, 3 rounds: no turns for them, and you hit them more easily. The room stops. Somewhere a clock is very upset about this.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: Stop Time's closing line says how many foes stopped and for how many rounds (2 base, +1 per school bonus point), what it means for them and for you, then the slate's cast line. A Joiner's cast names the Joiner. When every foe resisted, one line says so (the corpus reads the stopped branch; the nobody-stopped line is \"Time declines to stop for anyone.\")."
+  },
+  {
+    "key": "rail:timeStopped",
+    "surface": "rail",
+    "trigger": "timeStopped — the hero casts Stop Time",
+    "before": "",
+    "after": "Time stops for 2 foes, 3 rounds.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin of the Oracle line: the count and the rounds, short; each foe's own hold line sits beside it."
+  },
+  {
+    "key": "oracle:foeMisdirected",
+    "surface": "oracle",
+    "trigger": "foeMisdirected — the hero casts Senseless or Duplicate Foe (engine/combat.js#misdirectFoe)",
+    "before": "",
+    "after": "Viper can no longer tell friend from furniture. It picks a friend: for 3 rounds its swings go at its own side, never yours.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: the cast line says the aim and the rounds, and the slate's joke. The corpus renders the Senseless branch (\"can no longer tell friend from furniture\"); a Duplicate Foe reads \"A second {Foe} appears. The first {Foe} finds this unacceptable\" and says it fights its double and leaves you alone. A Joiner's cast names the Joiner."
+  },
+  {
+    "key": "rail:foeMisdirected",
+    "surface": "rail",
+    "trigger": "foeMisdirected — the hero casts Senseless or Duplicate Foe",
+    "before": "",
+    "after": "Viper is senseless, 3 rounds: it swings at its own side.",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin: the aim and the rounds, short (a Duplicate Foe reads \"fights its double\")."
+  },
+  {
+    "key": "oracle:foeMisdirectedHit",
+    "surface": "oracle",
+    "trigger": "foeMisdirectedHit — a misdirected foe's swing lands on another foe, or on itself (engine/combat.js#resolveMisdirectedTurn)",
+    "before": "",
+    "after": "7 vs 12–20. Viper hits Viper instead of you for 6 hp. Friendly fire is still fire.",
+    "reasons": [
+      "fact",
+      "number",
+      "joke"
+    ],
+    "why": "SPELL-10: the foe's own roll against its winning range, who it hit instead of you (or itself), and the damage, with a small joke. A critical says so. The corpus has one name for both foes, so it reads \"Viper hits Viper\"."
+  },
+  {
+    "key": "rail:foeMisdirectedHit",
+    "surface": "rail",
+    "trigger": "foeMisdirectedHit — a misdirected foe's swing lands",
+    "before": "",
+    "after": "Viper hits Viper (6).",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "The rail twin: who hit whom, and the damage."
+  },
+  {
+    "key": "oracle:foeMisdirectedMiss",
+    "surface": "oracle",
+    "trigger": "foeMisdirectedMiss — a misdirected foe's swing misses (engine/combat.js#resolveMisdirectedTurn)",
+    "before": "",
+    "after": "Viper swings at Viper, 7 vs 12–20, and misses. Nobody on your side was ever in danger.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "SPELL-10: the foe's own roll and range, then the reassurance that nobody on your side was in danger (a miss at itself reads \"Even confused, it keeps itself safe\")."
+  },
+  {
+    "key": "rail:foeMisdirectedMiss",
+    "surface": "rail",
+    "trigger": "foeMisdirectedMiss — a misdirected foe's swing misses",
+    "before": "",
+    "after": "Viper misses Viper.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin: who it missed."
+  },
+  {
+    "key": "oracle:foeSwingsAtAir",
+    "surface": "oracle",
+    "trigger": "foeSwingsAtAir — a Senseless foe with no other foe to hit (engine/combat.js#resolveMisdirectedTurn)",
+    "before": "",
+    "after": "Viper swings at the air. The air takes it well, and that was the turn.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "SPELL-10: with nobody else to hit, the foe swings at the air and the turn is lost; the line says so and why that is funny."
+  },
+  {
+    "key": "rail:foeSwingsAtAir",
+    "surface": "rail",
+    "trigger": "foeSwingsAtAir — a Senseless foe with no other foe to hit",
+    "before": "",
+    "after": "Viper swings at the air.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin."
+  },
+  {
+    "key": "oracle:foeMisdirectEnded",
+    "surface": "oracle",
+    "trigger": "foeMisdirectEnded — Senseless or Duplicate Foe runs out (engine/combat.js#resolveMisdirectedTurn)",
+    "before": "",
+    "after": "Viper can tell friend from furniture again. It looks around and remembers you.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "SPELL-10: the spell ends with one line. The corpus renders the Senseless branch; Duplicate Foe reads \"Its double goes away\"."
+  },
+  {
+    "key": "rail:foeMisdirectEnded",
+    "surface": "rail",
+    "trigger": "foeMisdirectEnded — Senseless or Duplicate Foe runs out",
+    "before": "",
+    "after": "Viper is itself again.",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin."
+  }
+]

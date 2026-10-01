@@ -326,7 +326,7 @@ test("tone: every foe debuff is good; every foe buff (Frenzied, the Phase 77 fum
 
 test("order: chips come out in table order — Stunned … Frenzied, the Phase 77 fumble gifts (Shielded, Bubbled, Rebound, Mirrored, Strong, Regenerating, Senses), Weakened, Unmoved", () => {
   assert.deepEqual(FOE_CONDITIONS.map((e) => e.key), [
-    "stunned", "blind", "hamstrung", "marked", "asleep", "dozing", "held", "frozen", "acid", "dot", "stupid", "shrunk", "fixated", "frenzied",
+    "stunned", "blind", "hamstrung", "marked", "asleep", "dozing", "held", "stopped", "frozen", "acid", "dot", "stupid", "senseless", "double", "shrunk", "fixated", "frenzied",
     "shielded", "bubbled", "rebound", "mirror", "might", "regen", "senses",
     "weakened", "resisted",
   ]);
@@ -594,11 +594,15 @@ const MATCHERS = BANNED.map((term) => ({ term, re: new RegExp("\\b" + escapeRegE
 test("FOE_CONDITION_COPY: frozen, the house labels, every leaf non-empty and clear of BANNED", () => {
   assert.ok(Object.isFrozen(FOE_CONDITION_COPY));
   assert.deepEqual(Object.values(FOE_CONDITION_COPY).sort(), [
-    "Acid", "Asleep", "Blind", "Bubbled", "Dozing", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Marked", "Mirrored", "Poison",
-    "Rebound", "Regenerating", "Senses", "Shielded", "Shrunk", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
+    "Acid", "Asleep", "Blind", "Bubbled", "Dozing", "Fighting its double", "Fixated", "Frenzied", "Frozen", "Hamstrung", "Held", "Marked", "Mirrored", "Poison",
+    "Rebound", "Regenerating", "Senseless", "Senses", "Shielded", "Shrunk", "Stopped", "Strong", "Stunned", "Stupefied", "Unmoved", "Weakened",
   ]);
-  // House style: one capitalised word.
-  for (const value of Object.values(FOE_CONDITION_COPY)) assert.match(value, /^[A-Z][a-z]+$/, `${value} is one capitalised word`);
+  // House style: one capitalised word. Phase 90 plan 08: the one named exception is Duplicate
+  // Foe's chip, "Fighting its double", which says what the spell does in the spell's own words.
+  for (const value of Object.values(FOE_CONDITION_COPY)) {
+    if (value === "Fighting its double") continue;
+    assert.match(value, /^[A-Z][a-z]+$/, `${value} is one capitalised word`);
+  }
   for (const [key, value] of Object.entries(FOE_CONDITION_COPY)) {
     assert.ok(typeof value === "string" && value.length > 0, `${key} must be a non-empty string`);
     for (const { term, re } of MATCHERS) {
@@ -666,8 +670,9 @@ test("chips carry desc: every entry's chip has its own description; the dot's fo
   const state = fixedState({ combat: { weakened: true }, timers: { "spell:weaken": { left: 3 } } });
   const chips = foeConditionChips(everything, state);
   // One ward shows one chip: a plain pool here (Shielded), so Bubbled is absent; a sleep shows one of
-  // Asleep or Dozing (this foe carries no dozing mark), so Dozing is absent too.
-  assert.equal(chips.length, FOE_CONDITIONS.length - 2);
+  // Asleep or Dozing (this foe carries no dozing mark), so Dozing is absent too; and this foe is
+  // neither stopped nor misdirected (Phase 90 plan 08), so Stopped, Senseless and Fighting its double are absent.
+  assert.equal(chips.length, FOE_CONDITIONS.length - 5);
   const bubble = foeConditionChips(fixedFoe({ ward: { mirror: true, pool: 0, popPool: 25, rounds: null } }), fixedState());
   assert.equal(bubble[0].desc, FOE_CONDITION_DESC.bubbled);
   for (const chip of chips) {
@@ -694,6 +699,38 @@ test("Held: labelFor is Frozen (a Freeze's or Ice's freeze) or Stunned (Stun's h
   assert.deepEqual(texts(fixedFoe({ held: { kind: "stunned", left: 3 } })), ["Stunned · 3"]);
   assert.deepEqual(texts(fixedFoe({ alive: false, held: { kind: "frozen", left: 3 } })), []);
   assert.deepEqual(texts(fixedFoe({ held: { kind: "frozen", left: 0 } })), [], "left 0 is not a live hold");
+});
+
+// Phase 90 plan 08 (SPELL-10): Stop Time's hold and the two misdirected foes.
+test("Stopped: engine/combat.js#stopTime's held kind \"time\" reads Stopped with its rounds, as its own chip (never also Held), and says a hit does not start time again", () => {
+  const chips = foeConditionChips(fixedFoe({ held: { kind: "time", left: 2 } }), fixedState());
+  assert.deepEqual(chips.map((c) => c.text), ["Stopped · 2"]);
+  assert.equal(chips[0].key, "stopped");
+  assert.equal(chips[0].tone, "good");
+  assert.equal(chips[0].desc, FOE_CONDITION_DESC.stopped);
+  assert.match(FOE_CONDITION_DESC.stopped, /no turns/);
+  assert.match(FOE_CONDITION_DESC.stopped, /does not start time again/);
+  assert.deepEqual(texts(fixedFoe({ held: { kind: "time", left: 0 } })), [], "left 0 is not a live hold");
+  assert.deepEqual(texts(fixedFoe({ alive: false, held: { kind: "time", left: 2 } })), []);
+});
+
+test("Senseless and Fighting its double: engine/combat.js#misdirectFoe's `misdirect` reads one chip per aim with the rounds left, and states the rule in one line", () => {
+  const s = foeConditionChips(fixedFoe({ misdirect: { at: "friends", left: 3 } }), fixedState());
+  assert.deepEqual(s.map((c) => c.text), ["Senseless · 3"]);
+  assert.equal(s[0].key, "senseless");
+  assert.equal(s[0].desc, FOE_CONDITION_DESC.senseless);
+  assert.match(FOE_CONDITION_DESC.senseless, /never your side/);
+  assert.match(FOE_CONDITION_DESC.senseless, /swings at the air/);
+  assert.match(FOE_CONDITION_DESC.senseless, /does not end this/);
+  const d = foeConditionChips(fixedFoe({ misdirect: { at: "self", left: 2 } }), fixedState());
+  assert.deepEqual(d.map((c) => c.text), ["Fighting its double · 2"]);
+  assert.equal(d[0].key, "double");
+  assert.equal(d[0].desc, FOE_CONDITION_DESC.double);
+  assert.match(FOE_CONDITION_DESC.double, /lands on itself/);
+  assert.match(FOE_CONDITION_DESC.double, /never on your side/);
+  assert.deepEqual(texts(fixedFoe({ misdirect: { at: "friends", left: 0 } })), []);
+  assert.deepEqual(texts(fixedFoe({ alive: false, misdirect: { at: "self", left: 2 } })), []);
+  assert.deepEqual(texts(fixedFoe({ misdirect: { at: "nowhere", left: 2 } })), [], "an unknown aim shows nothing");
 });
 
 test("Unmoved: always the bare label (no rounds); its desc names the resisted effect; a dead foe returns []", () => {

@@ -805,7 +805,7 @@ function findBannedTerms(text) {
 }
 
 // RULES-10 (Phase 75.1, plan 09): COMBAT_MENU_COPY.heroOutKind is a nested
-// frozen kind-to-word map (asleep/stupefied/maddened), not a flat string
+// frozen kind-to-word map (asleep/stupefied/maddened/stopped), not a flat string
 // leaf like every other entry — this walk flattens one level deep so the
 // scan still covers every string this module actually emits.
 test("COMBAT_MENU_COPY: every string leaf (including heroOutKind's nested map) is non-empty and clear of content/safety-wordlist.js BANNED", () => {

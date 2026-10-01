@@ -312,14 +312,14 @@ test("RULES-10: window.mzLoseTurn appears exactly twice (its own definition, and
 });
 
 // VOX-05 (79-07): the two-word "Can't act" label became one word per kind
-// (Asleep/Stupefied/Maddened, read first by conditionLabel), with "Helpless"
+// (Asleep/Stupefied/Maddened, plus Stopped from Phase 90 plan 08's Stop Time fumble, read first by conditionLabel), with "Helpless"
 // as the fallback; the tap card's own first words still say "You cannot act".
 test("RULES-10: CONDITION_COPY carries heroOut (label \"Helpless\", unit \"rds\", a label per kind), heroBlind (\"Blinded\") and heroShrunk (\"Shrunk\")", () => {
   const start = CODE.indexOf("const CONDITION_COPY = {");
   assert.ok(start !== -1, "const CONDITION_COPY = { not found");
   const end = CODE.indexOf("\n};", start);
   const region = CODE.slice(start, end + "\n};".length);
-  assert.match(region, /heroOut:\s*\{\s*label:\s*"Helpless",\s*unit:\s*"rds",\s*kinds:\s*\{\s*asleep:\s*"Asleep",\s*stupefied:\s*"Stupefied",\s*maddened:\s*"Maddened"\s*\}\s*\}/);
+  assert.match(region, /heroOut:\s*\{\s*label:\s*"Helpless",\s*unit:\s*"rds",\s*kinds:\s*\{\s*asleep:\s*"Asleep",\s*stupefied:\s*"Stupefied",\s*maddened:\s*"Maddened",\s*stopped:\s*"Stopped"\s*\}\s*\}/);
   assert.match(CODE, /cn\.key === "heroOut" \? \(CONDITION_COPY\.heroOut\.kinds\[cn\.kind\] \|\| CONDITION_COPY\.heroOut\.label\)/);
   assert.match(region, /heroBlind:\s*\{\s*label:\s*"Blinded"\s*\}/);
   assert.match(region, /heroShrunk:\s*\{\s*label:\s*"Shrunk"\s*\}/);

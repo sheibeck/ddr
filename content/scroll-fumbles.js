@@ -4,12 +4,12 @@
 // engine/scrollFumble.js#resolveScrollFumble and nothing else — the design
 // lives here, in one reviewable table, rather than scattered across the
 // resolver. Keyed by each spell's exact content/spells.js#SPELLS `n` string
-// (35 rows as of Phase 90 plan 07, no normalisation — a renamed or added spell fails
+// (38 rows as of Phase 90 plan 08, no normalisation — a renamed or added spell fails
 // test/unit/scroll-fumble-table.test.js's coverage check).
 //
 // Row shape: `{ side, effect }` plus, where listed:
 //   - `rounds` — dice notation `{ n, sides, bonus }` (never a string)
-//   - `kind` — for `out` rows only: "asleep" | "stupefied" | "maddened"
+//   - `kind` — for `out` rows only: "asleep" | "stupefied" | "maddened" | "stopped"
 //   - `how` — for `heavy` rows only: what the spell tried to do
 //   - `once` — Earthquake only: it rolls once for everyone, as its own
 //     castSpell branch does
@@ -48,6 +48,8 @@ export const FUMBLE_EFFECTS = Object.freeze({
 const D4 = Object.freeze({ n: 1, sides: 4, bonus: 0 });
 const D4_PLUS_1 = Object.freeze({ n: 1, sides: 4, bonus: 1 });
 const D6 = Object.freeze({ n: 1, sides: 6, bonus: 0 });
+// Stop Time's fumble always costs the reader exactly two turns: no dice, a flat 2.
+const TWO_ROUNDS = Object.freeze({ n: 0, sides: 1, bonus: 2 });
 
 export const SCROLL_FUMBLE = Object.freeze({
   "Heal": Object.freeze({ side: "helpful", effect: "heal" }),
@@ -90,4 +92,11 @@ export const SCROLL_FUMBLE = Object.freeze({
   "Fly": Object.freeze({ side: "helpful", effect: "wasted" }),
   "Enchant Character": Object.freeze({ side: "helpful", effect: "wasted" }),
   "Speed of Sound": Object.freeze({ side: "helpful", effect: "frenzy" }),
+  // Phase 90 plan 08 (SPELL-10): the control spells. A fumbled Stop Time stops
+  // the READER for two turns (`out`, kind "stopped"; foes hit a stopped hero
+  // normally, as for every out); a fumbled Senseless or Duplicate Foe maddens
+  // the reader for d4 or d4+1 turns, the Insane row's own `maddened` out.
+  "Stop Time": Object.freeze({ side: "harmful", effect: "out", kind: "stopped", rounds: TWO_ROUNDS }),
+  "Senseless": Object.freeze({ side: "harmful", effect: "out", kind: "maddened", rounds: D4 }),
+  "Duplicate Foe": Object.freeze({ side: "harmful", effect: "out", kind: "maddened", rounds: D4_PLUS_1 }),
 });

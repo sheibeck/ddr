@@ -3553,7 +3553,7 @@ const CONDITION_COPY = {
   // asleep/stupefied/maddened; conditionLabel reads `kinds` first). The tap
   // card's first words say what it costs ("You cannot act"). "Helpless" is
   // only the fallback for a kind this row has not been taught.
-  heroOut: { label: "Helpless", unit: "rds", kinds: { asleep: "Asleep", stupefied: "Stupefied", maddened: "Maddened" } },
+  heroOut: { label: "Helpless", unit: "rds", kinds: { asleep: "Asleep", stupefied: "Stupefied", maddened: "Maddened", stopped: "Stopped" } },
   heroBlind: { label: "Blinded" },
   heroShrunk: { label: "Shrunk" },
   // CMBUI-13 (Phase 77, plan 77-08): the keys plan 77-03 added to
@@ -3787,7 +3787,10 @@ const WAIVER_LABEL = {
  * `cn.mirror` set) reads its OWN sentence instead of the plain Shield-soak
  * line — the mirror has nothing to do with a soak pool until it pops.
  */
-const EXPLAIN_BY_KIND = { foeEffect: FOE_EFFECT_EXPLAIN };
+// Phase 90 plan 08 (SPELL-10): a fumbled Stop Time stops the reader (heroOut kind "stopped"): the
+// generic heroOut sentence says "nothing wakes you early", which is wrong for a spell that says two turns.
+const HERO_OUT_EXPLAIN = { stopped: "Time has stopped around you: you cannot act for two turns, and the round goes on without you. Foes hit you exactly as they would if you could still swing back." };
+const EXPLAIN_BY_KIND = { foeEffect: FOE_EFFECT_EXPLAIN, heroOut: HERO_OUT_EXPLAIN };
 // Phase 90 plan 07 (SPELL-10): a haste chip that comes from the Speed of Sound
 // spell (rather than a Speed item) also says it wins the first move.
 const HASTE_SPELL_EXPLAIN = { "Speed of Sound": "Two blows every swing while it lasts, and you act first in every fight it covers, whatever the dice or the foe's habits say. The noise catches up later." };

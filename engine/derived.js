@@ -2324,6 +2324,29 @@ export function foeSwingVsMember(state, f, sheet) {
 }
 
 /**
+ * foeSwingVsFoe(state, f) — Phase 90 plan 08 (SPELL-10, Senseless and Duplicate
+ * Foe): the winning faces and mods of a MISDIRECTED swing, a foe `f` swinging at
+ * a foe (another one, or itself) instead of at your side. The swing rolls the
+ * foe's own die (`foeDie(null, f)`, no body's race) against its own base need
+ * `5 + FOE_ACCURACY` (the constant foeToHitVs starts from, before any body's
+ * race, size, class, gear or effect), with none of a body's defences: the
+ * victim is a monster, so no Acrobat, Guard, size, Mirror Self or invisibility
+ * of yours ever reaches it. Blind is the one term that stays, as the hard cap
+ * every foe swing carries (a blind misdirected foe hits only on its top face).
+ * Returns `{ faces, mods }`, the same shape as foeSwingVsHero. Pure, zero rng.
+ */
+export function foeSwingVsFoe(state, f) {
+  let faces = Math.max(1, 5 + foeAccuracyFor());
+  const mods = [];
+  if (f && f.blind) {
+    const before = faces;
+    faces = 1;
+    if (faces !== before) mods.push({ name: "blind", delta: faces - before });
+  }
+  return { faces, mods };
+}
+
+/**
  * foeSwingChain(state, f, faces, mods) — the combat-wide tail of every foe
  * melee swing (hero or Joiner): the combat's `foeToHitPenalty` cap, the insult
  * (+1), then — LAST — blind (override to 1). See foeSwingVsHero's JSDoc for
