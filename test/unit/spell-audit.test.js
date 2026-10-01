@@ -663,7 +663,7 @@ test("School gates: one row per MU_CHART sub-class, each cell equal to the live 
   // The chart facts the audit rests on, read live.
   assert.equal(MU_CHART.Wizard.illusion, null, "the Wizard lost the Illusion school");
   assert.deepEqual(SPELL_LEVEL_OVERRIDES, { Summoner: { Summon: 1 } }, "the one named exception");
-  assert.equal(MU_CHART.Illusionist.illusion, 0, "the Illusion bonus is 0 (Phase 91.1)");
+  assert.equal(MU_CHART.Illusionist.illusion, 1, "the Illusionist's Illusion bonus is 1 (Phase 91.1 plan 03, V19 B, 2026-10-01; was 0)");
   assert.equal(MU_CHART.Apprentice.illusion, 0);
 });
 

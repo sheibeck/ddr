@@ -1770,16 +1770,16 @@ The school bonus and gate of every Magic User sub-class, read from the live `con
 | Sub-class | Offense | Protection | Healing | Divination | Special | Illusion |
 |---|---|---|---|---|---|---|
 | Wizard | +3 | +0 | +0 | +0 | +0 | never |
-| Warlock | +4 | +0 (gate 4) | +0 (gate 3) | +2 | never | never |
-| Sorcerer | +4 | +1 | +0 (gate 4) | +3 | +1 | never |
+| Warlock | +4 | +0 (gate 4) | +0 (gate 3) | +0 | never | never |
+| Sorcerer | +4 | +1 | +0 (gate 4) | +0 | +1 | never |
 | Court Mage | +2 | +2 | +1 | +0 (gate 4) | never | never |
-| Illusionist | +0 | +0 (gate 3) | never | +1 | +4 | +0 |
+| Illusionist | +0 | +0 (gate 3) | never | +0 | +4 | +1 |
 | Cleric | never | +3 | +4 | +0 (gate 3) | never | never |
-| Summoner | +0 | +2 | +0 | +4 | +1 | never |
+| Summoner | +0 | +2 | +0 | +0 | +1 | never |
 | Apprentice | +0 | +0 | +0 | +0 (gate 3) | +0 | +0 |
 <!-- phase90-close:gates:end -->
 
-The one **named exception** is the Summoner's Summon: `content/spell-level-overrides.js` holds `{ Summoner: { Summon: 1 } }`, read only through `derived.js#spellLevelFor`, so a level-1 Summoner casts the level-2 Summon (everyone else needs level 2). The Wizard's Illusion is `null`. The Illusion school's bonus is 0 for both sub-classes that learn it (the Illusionist and the Apprentice), so Q6's stretch gives an Illusion spell nothing today (a Phase 91.1 value call). The sweep (`test/unit/school-gates.test.js`) proves no path (chargen, a Joiner, a level-up, a find, a scroll copy, the combat menu) ever hands a sub-class a spell its chart forbids.
+The one **named exception** is the Summoner's Summon: `content/spell-level-overrides.js` holds `{ Summoner: { Summon: 1 } }`, read only through `derived.js#spellLevelFor`, so a level-1 Summoner casts the level-2 Summon (everyone else needs level 2). The Wizard's Illusion is `null`. The Illusion school's bonus is 1 for the Illusionist and 0 for the Apprentice (Phase 91.1 plan 03, V19 B: Senseless lasts d4+1 rounds and Duplicate Foe d4+2 for the Illusionist). A second named exception, since Phase 91.1 plan 03 (V20 B): `content/mu-chart.js#MU_SPELL_EXCEPTIONS` lets a Cleric learn Strength although its offense school is closed. Every divination number is 0 (V18 B: no divination spell has a number to stretch), and the healing and protection bonuses are real (a healing bonus adds to every heal the caster casts; a protection bonus adds 5 HP per point to Shield's soak and Bubble's film). The sweep (`test/unit/school-gates.test.js`) proves no path (chargen, a Joiner, a level-up, a find, a scroll copy, the combat menu) ever hands a sub-class a spell its chart forbids.
 
 ### The scroll pool by depth band
 

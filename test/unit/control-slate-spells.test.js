@@ -276,7 +276,8 @@ test("Senseless: a target that fails its resist gets misdirect { at: friends, le
   assert.deepEqual(ev, [{ type: "foeMisdirected", target: "F1", at: "friends", rounds: 4 }]);
 });
 
-test("Duplicate Foe: d4+1 rounds (+1 more for the Illusionist's Illusion bonus, Phase 91.1 plan 03 (V19 B, 2026-10-01)), aimed at itself", () => {
+// Phase 91.1 plan 03 (V19 B, 2026-10-01): the Illusionist adds its Illusion bonus (1) to the d4+1, so the cast below lasts 6.
+test("Duplicate Foe: d4+1 rounds, aimed at itself", () => {
   const s = spellState("Duplicate Foe", 1);
   const ev = [];
   misdirectFoe(s, s.combat.foes[0], SP["Duplicate Foe"], fakeRng([4]), ev, {});
