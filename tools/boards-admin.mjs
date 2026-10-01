@@ -16,6 +16,17 @@
 // without any resubmission). Never shipped: tools/ is never copied into
 // www/ by tools/build-www.mjs.
 //
+// Phase 91.2 (BOARD-31, D-08) adds the name moderation commands: `names`
+// (every names/{uid} record the boardName function wrote, with a flagged
+// column from src/browser/nameFilter.js and any moderator override; --flagged
+// keeps only the flagged ones, --json emits JSON), `name-override <uid> <text>`
+// (sets nameOverrides/{uid}, rewrites names/{uid} and restamps every run of
+// that uid through the SAME stamp code the function uses, functions/board-names/
+// core.js, so the board shows the moderator's name at once; the function keeps
+// honouring the override on every later claim) and `name-clear <uid>` (drops
+// the override; the player's Play Games name returns at their next claim).
+// Hiding a run stays the existing `delete-run`. Dry run unless --yes.
+//
 // rekey-deep (BOARD-28): 2.2.0 clients wrote the fewer-steps key, so runs
 // already on the server would keep ranking the old way. It is run at the 2.3
 // release and once more at the final-rules cutover (docs/RELEASING.md,
@@ -46,8 +57,8 @@
 //
 // Exit codes: 0 ok, 1 a command started but failed partway through, 2 usage
 // or an auth/key-safety refusal. Destructive commands (delete-run, ban,
-// unban, rekey-deep) are dry runs by default — printing exactly what would change — and
-// only act with --yes.
+// unban, rekey-deep, name-override, name-clear) are dry runs by default —
+// printing exactly what would change — and only act with --yes.
 //
 // Node built-ins only; zero new dependencies.
 
@@ -87,6 +98,8 @@ import {
   LIST_LIMIT_MAX,
   topTenQuery,
 } from "../src/browser/runDoc.js";
+import { createBoardNameCore, sanitizeName } from "../functions/board-names/core.js";
+import { nameFlagged } from "../src/browser/nameFilter.js";
 import { NAMES } from "../content/names.js";
 import { EPITAPHS } from "../content/epitaphs.js";
 import { SEASON } from "../content/season.js";
@@ -98,7 +111,9 @@ const DEFAULT_PROJECT_ID = FIREBASE_CONFIG.projectId;
 // parseArgs
 // ---------------------------------------------------------------------------
 
-const BOOLEAN_FLAGS = new Set(["yes", "all-seasons"]);
+const BOOLEAN_FLAGS = new Set(["yes", "all-seasons", "flagged", "json"]);
+const NAMES_COLLECTION = "names";
+const NAME_OVERRIDES_COLLECTION = "nameOverrides";
 
 /**
  * parseArgs(argv) — argv[0] is the command; every subsequent `--name value`
@@ -267,12 +282,12 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return rows;
   }
 
-  async function listAll({ where, pageSize = 300 } = {}) {
+  async function listAll({ where, pageSize = 300, collection = RUN_COLLECTION } = {}) {
     const rows = [];
     let afterName = null;
     for (;;) {
       const structuredQuery = {
-        from: [{ collectionId: RUN_COLLECTION }],
+        from: [{ collectionId: collection }],
         orderBy: [{ field: { fieldPath: "__name__" }, direction: "ASCENDING" }],
         limit: pageSize,
       };
@@ -281,7 +296,7 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
       const page = await query(structuredQuery);
       rows.push(...page);
       if (page.length < pageSize) break;
-      afterName = docName(config, RUN_COLLECTION, page[page.length - 1].id);
+      afterName = docName(config, collection, page[page.length - 1].id);
     }
     return rows;
   }
@@ -342,7 +357,50 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return ok;
   }
 
-  return Object.freeze({ query, listAll, getRun, deleteRun, runsOf, deleteRunsOf, patchDeepKey, setBan, clearBan });
+  // Phase 91.2: the names / nameOverrides collections (IAM access, rules
+  // bypassed; clients can neither read nor write them).
+  async function getDocument(collection, id) {
+    const { ok, json } = await request(`/${collection}/${id}`, { method: "GET" });
+    if (!ok || !json) return null;
+    return fromFirestoreFields(json.fields || {});
+  }
+
+  async function setNameRecord(uid, name, updatedAt) {
+    const { ok } = await request(`/${NAMES_COLLECTION}/${uid}`, {
+      method: "PATCH",
+      body: JSON.stringify({ fields: { name: { stringValue: name }, updatedAt: { timestampValue: updatedAt } } }),
+    });
+    return ok;
+  }
+
+  async function setNameOverride(uid, { name, at }) {
+    const { ok } = await request(`/${NAME_OVERRIDES_COLLECTION}/${uid}`, {
+      method: "PATCH",
+      body: JSON.stringify({ fields: { name: { stringValue: name }, at: { timestampValue: at } } }),
+    });
+    return ok;
+  }
+
+  async function clearNameOverride(uid) {
+    const { ok } = await request(`/${NAME_OVERRIDES_COLLECTION}/${uid}`, { method: "DELETE" });
+    return ok;
+  }
+
+  return Object.freeze({
+    query,
+    listAll,
+    getRun,
+    deleteRun,
+    runsOf,
+    deleteRunsOf,
+    patchDeepKey,
+    setBan,
+    clearBan,
+    getDocument,
+    setNameRecord,
+    setNameOverride,
+    clearNameOverride,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -626,6 +684,89 @@ async function cmdRekeyDeep(api, flags, out, err) {
   return failed.length > 0 ? 1 : 0;
 }
 
+// Phase 91.2 (D-08): names, name-override, name-clear.
+
+async function cmdNames(api, flags, out) {
+  const [names, overrides] = await Promise.all([
+    api.listAll({ collection: NAMES_COLLECTION }),
+    api.listAll({ collection: NAME_OVERRIDES_COLLECTION }),
+  ]);
+  const overrideOf = new Map(overrides.map((r) => [r.id, typeof r.doc.name === "string" ? r.doc.name : null]));
+  let rows = names.map((r) => {
+    const override = overrideOf.get(r.id) ?? null;
+    const name = typeof r.doc.name === "string" ? r.doc.name : "";
+    return {
+      uid: r.id,
+      name,
+      override,
+      flagged: nameFlagged(override ?? name),
+      updatedAt: typeof r.doc.updatedAt === "string" ? r.doc.updatedAt : null,
+    };
+  });
+  if (flags.flagged) rows = rows.filter((r) => r.flagged);
+
+  if (flags.json) {
+    out(JSON.stringify(rows, null, 2));
+    return 0;
+  }
+  out("uid  name  flagged");
+  for (const r of rows) {
+    out(`${r.uid}  ${r.name}  ${r.flagged ? "FLAGGED" : "no"}${r.override ? `  override: ${r.override}` : ""}`);
+  }
+  if (rows.length === 0) out("(no names)");
+  return 0;
+}
+
+async function cmdNameOverride(api, ctx, uid, text, flags, now, out, err) {
+  const name = sanitizeName(text);
+  if (name === null) {
+    err("name-override needs text that is not empty once cleaned (control characters and extra spaces are removed).");
+    return 2;
+  }
+  const [current, runs] = await Promise.all([api.getDocument(NAMES_COLLECTION, uid), api.runsOf(uid)]);
+  const changing = runs.filter((r) => (r.doc || {}).handle !== name).length;
+
+  if (!flags.yes) {
+    out(`Current name for ${uid}: ${current && current.name ? current.name : "(none)"}`);
+    out(`Override would be: ${name}`);
+    out(`${changing} run(s) would change handle. Pass --yes to apply.`);
+    return 0;
+  }
+
+  const at = new Date(now()).toISOString();
+  if (!(await api.setNameOverride(uid, { name, at })) || !(await api.setNameRecord(uid, name, at))) {
+    err(`Could not write the name override for ${uid}.`);
+    return 1;
+  }
+  // Restamp through the very code the boardName function stamps with.
+  const { Authorization, ...adminHeaders } = ctx.headers;
+  const core = createBoardNameCore({
+    fetchFn: ctx.fetchFn,
+    getAdminToken: async () => String(Authorization || "").replace(/^Bearer\s+/i, ""),
+    adminHeaders,
+    projectId: ctx.projectId,
+    apiKey: FIREBASE_CONFIG.apiKey,
+    now,
+  });
+  const stamped = await core.stamp(uid, name);
+  if (!stamped.ok) {
+    err(`The override was saved for ${uid}, but restamping their runs failed. Run the command again.`);
+    return 1;
+  }
+  out(`Set the name for ${uid} to ${name}; ${stamped.stamped} run(s) restamped.`);
+  return 0;
+}
+
+async function cmdNameClear(api, uid, flags, out) {
+  if (!flags.yes) {
+    out(`Would clear the name override for ${uid}; their Play Games name returns at their next claim. Pass --yes to clear.`);
+    return 0;
+  }
+  await api.clearNameOverride(uid);
+  out(`Cleared the name override for ${uid}; their Play Games name returns at their next claim.`);
+  return 0;
+}
+
 async function cmdExport(api, flags, out, err, writeFile, repoRoot) {
   const format = flags.format === "json" ? "json" : "csv";
   const allSeasons = flags["all-seasons"] === true;
@@ -656,7 +797,19 @@ async function cmdExport(api, flags, out, err, writeFile, repoRoot) {
 // runCommand
 // ---------------------------------------------------------------------------
 
-const COMMANDS = new Set(["top", "suspicious", "delete-run", "ban", "unban", "export", "rekey-deep", "help"]);
+const COMMANDS = new Set([
+  "top",
+  "suspicious",
+  "delete-run",
+  "ban",
+  "unban",
+  "export",
+  "rekey-deep",
+  "names",
+  "name-override",
+  "name-clear",
+  "help",
+]);
 
 function usage(out) {
   out("tools/boards-admin.mjs — leaderboard moderation and balance export (dev-only)");
@@ -671,7 +824,12 @@ function usage(out) {
   out("  unban <uid> [--yes]");
   out("  export [--format csv|json] [--version V] [--season N|--all-seasons] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--out PATH]");
   out("  rekey-deep [--season N|--all-seasons] [--yes]   (dry run without --yes; moves 2.2.0-keyed runs onto the most-steps DEPTH key)");
+  out("  names [--flagged] [--json]   (every board name, with a flagged column from the safety list and any moderator override)");
+  out("  name-override <uid> <text> [--yes]   (set a moderator name and restamp that player's runs; dry run without --yes)");
+  out("  name-clear <uid> [--yes]   (drop the override; the Play Games name returns at the player's next claim)");
   out("  help");
+  out("");
+  out("To hide a run from the board, use delete-run <id>.");
   out("");
   out("Auth: no --key uses `gcloud auth print-access-token`. --key (or DDR_BOARDS_SA_KEY) must");
   out("point at a service-account key file OUTSIDE the repository — it never enters the repo or www/.");
@@ -728,6 +886,20 @@ export async function runCommand(opts = {}) {
     return 2;
   }
 
+  if (command === "name-override") {
+    const text = positionals.slice(1).join(" ");
+    if (positionals.length < 2 || sanitizeName(text) === null) {
+      err("name-override requires a uid and name text that is not empty once cleaned.");
+      usage(out);
+      return 2;
+    }
+  }
+  if (command === "name-clear" && positionals.length < 1) {
+    err("name-clear requires a uid.");
+    usage(out);
+    return 2;
+  }
+
   const auth = await resolveAdminAuth({ flags, env, execFn, fetchFn, now, repoRoot, readFile, getAccessTokenFn });
   if (!auth.ok) {
     err(auth.message);
@@ -745,6 +917,12 @@ export async function runCommand(opts = {}) {
     if (command === "unban") return await cmdUnban(api, positionals[0], flags, out);
     if (command === "export") return await cmdExport(api, flags, out, err, writeFile, repoRoot);
     if (command === "rekey-deep") return await cmdRekeyDeep(api, flags, out, err);
+    if (command === "names") return await cmdNames(api, flags, out);
+    if (command === "name-override") {
+      const ctx = { fetchFn, headers: auth.headers, projectId };
+      return await cmdNameOverride(api, ctx, positionals[0], positionals.slice(1).join(" "), flags, now, out, err);
+    }
+    if (command === "name-clear") return await cmdNameClear(api, positionals[0], flags, out);
   } catch {
     err("The command failed before it could finish.");
     return 1;

@@ -774,3 +774,146 @@ test("importing the module runs no side effects (main is guarded)", () => {
   assert.equal(typeof runCommand, "function");
   assert.equal(typeof parseArgs, "function");
 });
+
+// --- Phase 91.2-02: names, name-override, name-clear --------------------------
+//
+// The fake board server learns the names collection in 91.2-03, so these drive
+// runCommand against the in-memory upstream stub the boardName core tests use.
+// Flagged names are built at runtime from the safety list: no banned word is
+// spelled out here.
+
+import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { createUpstreamStub, field } from "./harness/boardNameStub.js";
+
+const FLAG_TERM = BANNED.find((t) => /^[a-z]{5,}$/.test(t) && !ALLOWLIST.includes(t));
+const FLAGGED_NAME = `Xx${FLAG_TERM.charAt(0).toUpperCase()}${FLAG_TERM.slice(1)}Xx`;
+
+function nameOpts(stub, extra = {}) {
+  return { env: {}, fetchFn: stub.fetchFn, execFn: () => "admin-token", now: () => NOW_MS, out: noop, err: noop, repoRoot: REPO_ROOT, writeFile: noop, ...extra };
+}
+
+function namesStub() {
+  const stub = createUpstreamStub({ projectId: FIREBASE_CONFIG.projectId });
+  stub.seedDoc("names/uA", { name: "Moss Knuckle", updatedAt: "2026-10-01T00:00:00Z" });
+  stub.seedDoc("names/uB", { name: FLAGGED_NAME, updatedAt: "2026-10-01T00:00:00Z" });
+  stub.seedDoc("names/uC", { name: "Grim Spoon", updatedAt: "2026-10-01T00:00:00Z" });
+  stub.seedDoc("nameOverrides/uC", { name: "Spoonfed", at: "2026-10-02T00:00:00Z" });
+  return stub;
+}
+
+test("names: lists uid, name and a flagged column for every names doc, with the override shown", async () => {
+  const stub = namesStub();
+  const out = [];
+  const code = await runCommand({ argv: ["names"], ...nameOpts(stub, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  const text = out.join("\n");
+  assert.match(out[0], /uid\s+name\s+flagged/i);
+  const rowA = out.find((l) => l.includes("uA"));
+  const rowB = out.find((l) => l.includes("uB"));
+  const rowC = out.find((l) => l.includes("uC"));
+  assert.match(rowA, /Moss Knuckle/);
+  assert.match(rowA, /\bno\b/i);
+  assert.match(rowB, /\bFLAGGED\b/);
+  assert.match(rowC, /Grim Spoon/);
+  assert.match(rowC, /Spoonfed/);
+  assert.equal(text.includes("admin-token"), false);
+  assert.equal(stub.writes.length, 0, "a listing writes nothing");
+});
+
+test("names --flagged shows only flagged names; --json emits JSON", async () => {
+  const stub = namesStub();
+  const flaggedOut = [];
+  await runCommand({ argv: ["names", "--flagged"], ...nameOpts(stub, { out: (l) => flaggedOut.push(l) }) });
+  assert.ok(flaggedOut.some((l) => l.includes("uB")));
+  assert.equal(flaggedOut.some((l) => l.includes("uA")), false);
+  assert.equal(flaggedOut.some((l) => l.includes("uC")), false);
+
+  const jsonOut = [];
+  const code = await runCommand({ argv: ["names", "--json"], ...nameOpts(stub, { out: (l) => jsonOut.push(l) }) });
+  assert.equal(code, 0);
+  const rows = JSON.parse(jsonOut.join("\n"));
+  assert.deepEqual(rows.map((r) => r.uid).sort(), ["uA", "uB", "uC"]);
+  assert.equal(rows.find((r) => r.uid === "uB").flagged, true);
+  assert.equal(rows.find((r) => r.uid === "uA").flagged, false);
+  assert.equal(rows.find((r) => r.uid === "uC").override, "Spoonfed");
+
+  const both = [];
+  await runCommand({ argv: ["names", "--flagged", "--json"], ...nameOpts(stub, { out: (l) => both.push(l) }) });
+  assert.deepEqual(JSON.parse(both.join("\n")).map((r) => r.uid), ["uB"]);
+});
+
+test("names pages the collection (more than one page of names)", async () => {
+  const stub = createUpstreamStub({ projectId: FIREBASE_CONFIG.projectId });
+  for (let i = 0; i < 650; i++) stub.seedDoc(`names/u${String(i).padStart(4, "0")}`, { name: `Player ${i}`, updatedAt: "x" });
+  const out = [];
+  await runCommand({ argv: ["names", "--json"], ...nameOpts(stub, { out: (l) => out.push(l) }) });
+  assert.equal(JSON.parse(out.join("\n")).length, 650);
+});
+
+test("name-override without --yes prints the current name, the sanitized override and the run count, and writes nothing", async () => {
+  const stub = namesStub();
+  stub.seedRun("uA", "aaaa0001", { handle: "Moss Knuckle" });
+  stub.seedRun("uA", "aaaa0002", { handle: "@legacy pair" });
+  const out = [];
+  const code = await runCommand({ argv: ["name-override", "uA", "  The   Overlord "], ...nameOpts(stub, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  const text = out.join("\n");
+  assert.match(text, /Moss Knuckle/);
+  assert.match(text, /The Overlord/);
+  assert.match(text, /2 run\(s\) would change/);
+  assert.match(text, /--yes/);
+  assert.equal(stub.writes.length, 0);
+  assert.equal(stub.getDoc("nameOverrides/uA"), null);
+});
+
+test("name-override --yes writes nameOverrides/{uid} and names/{uid}, and stamps the runs through the core", async () => {
+  const stub = namesStub();
+  stub.seedRun("uA", "aaaa0001", { handle: "Moss Knuckle" });
+  stub.seedRun("uA", "aaaa0002", { handle: "@legacy pair" });
+  stub.seedRun("uB", "bbbb0001", { handle: "@other pair" });
+  const out = [];
+  const code = await runCommand({ argv: ["name-override", "uA", "The", "Overlord", "--yes"], ...nameOpts(stub, { out: (l) => out.push(l) }) });
+  assert.equal(code, 0);
+  assert.equal(field(stub.getDoc("nameOverrides/uA"), "name"), "The Overlord");
+  assert.ok(field(stub.getDoc("nameOverrides/uA"), "at"));
+  assert.equal(field(stub.getDoc("names/uA"), "name"), "The Overlord");
+  assert.ok(field(stub.getDoc("names/uA"), "updatedAt"));
+  assert.equal(field(stub.getDoc("runs/uA_aaaa0001"), "handle"), "The Overlord");
+  assert.equal(field(stub.getDoc("runs/uA_aaaa0002"), "handle"), "The Overlord");
+  assert.equal(field(stub.getDoc("runs/uB_bbbb0001"), "handle"), "@other pair", "another uid is untouched");
+  assert.match(out.join("\n"), /2 run/);
+});
+
+test("name-override: text that sanitizes to nothing is a usage error, and a missing uid or text is exit 2", async () => {
+  const stub = namesStub();
+  const err = [];
+  assert.equal(await runCommand({ argv: ["name-override", "uA", "​   ", "--yes"], ...nameOpts(stub, { err: (l) => err.push(l) }) }), 2);
+  assert.equal(await runCommand({ argv: ["name-override", "uA"], ...nameOpts(stub) }), 2);
+  assert.equal(await runCommand({ argv: ["name-override"], ...nameOpts(stub) }), 2);
+  assert.equal(stub.writes.length, 0);
+});
+
+test("name-clear without --yes writes nothing; with --yes deletes nameOverrides/{uid} only", async () => {
+  const stub = namesStub();
+  const dry = [];
+  assert.equal(await runCommand({ argv: ["name-clear", "uC"], ...nameOpts(stub, { out: (l) => dry.push(l) }) }), 0);
+  assert.ok(stub.getDoc("nameOverrides/uC"));
+  assert.match(dry.join("\n"), /--yes/);
+  assert.equal(stub.writes.length, 0);
+
+  assert.equal(await runCommand({ argv: ["name-clear", "uC", "--yes"], ...nameOpts(stub) }), 0);
+  assert.equal(stub.getDoc("nameOverrides/uC"), null);
+  assert.ok(stub.getDoc("names/uC"), "the next claim restores the Play Games name; names/{uid} is not touched");
+  assert.equal(await runCommand({ argv: ["name-clear"], ...nameOpts(stub) }), 2);
+});
+
+test("usage lists names, name-override and name-clear, and says delete-run is the way to hide a run", async () => {
+  const stub = namesStub();
+  const out = [];
+  assert.equal(await runCommand({ argv: ["help"], ...nameOpts(stub, { out: (l) => out.push(l) }) }), 0);
+  const text = out.join("\n");
+  assert.match(text, /names \[--flagged\]/);
+  assert.match(text, /name-override <uid>/);
+  assert.match(text, /name-clear <uid>/);
+  assert.match(text, /delete-run[^\n]*hide|hide[^\n]*delete-run/i);
+});
