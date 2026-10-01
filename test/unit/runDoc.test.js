@@ -16,7 +16,7 @@ import url from "node:url";
 import { newRun } from "../../engine/state.js";
 import { buildRunSummary } from "../../engine/death.js";
 import { compareRuns } from "../../engine/records.js";
-import { rollHandle } from "../../src/browser/handles.js";
+import { BOARD_NAME_MAX_CHARS } from "../../src/browser/boardName.js";
 import { SEASON } from "../../content/season.js";
 import { FIREBASE_CONFIG } from "../../src/browser/firebaseConfig.js";
 import { docName, toFirestoreFields } from "../../src/browser/firestoreRest.js";
@@ -52,6 +52,8 @@ import {
   isBoardStat,
   deepKeyOf,
   legacyDeepKeyOf,
+  LEGACY_HANDLE_PATTERN,
+  isLegacyHandle,
   daysKeyOf,
   killsKeyOf,
   goldKeyOf,
@@ -77,7 +79,7 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..");
 // --- helpers -----------------------------------------------------------
 
 function validHandle() {
-  return rollHandle(() => 0.15, null);
+  return "Moss Knuckle";
 }
 
 function baseValidPartial() {
@@ -232,7 +234,9 @@ test("validateRunDoc(doc, {uid}) mismatch adds exactly uid", () => {
 const FIELD_BREAKS = [
   ["uid", 123, "uid"],
   ["uid", "", "uid"],
-  ["handle", "@nope-not-a-real-handle", "handle"],
+  ["handle", "", "handle"],
+  ["handle", 42, "handle"],
+  ["handle", "x".repeat(65), "handle"],
   ["season", 2, "season"],
   ["name", "", "name"],
   ["race", "Orcish", "race"],
@@ -580,4 +584,54 @@ test("validateRunDoc: a doc carrying the legacy (2.2.0) deepKey fails exactly [d
   assert.deepEqual(validateRunDoc(valid), []);
   const legacy = { ...valid, deepKey: legacyDeepKeyOf(valid) };
   assert.deepEqual(validateRunDoc(legacy), ["deepkey"]);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 91.2 (BOARD-31, D-13): the handle is the poster's verified name
+// ---------------------------------------------------------------------------
+
+test("handle: a string of 1..BOARD_NAME_MAX_CHARS characters passes, empty / 65 / non-string fail", () => {
+  assert.equal(BOARD_NAME_MAX_CHARS, 64);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "x" })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "x".repeat(BOARD_NAME_MAX_CHARS) })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "" })), ["handle"]);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "x".repeat(BOARD_NAME_MAX_CHARS + 1) })), ["handle"]);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: null })), ["handle"]);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: 7 })), ["handle"]);
+});
+
+test("handle: with a name option it must equal the name exactly; without one a 2.2.0 @handle still passes", () => {
+  const doc = docFrom({ handle: "Moss Knuckle" });
+  assert.deepEqual(validateRunDoc(doc, { name: "Moss Knuckle" }), []);
+  assert.deepEqual(validateRunDoc(doc, { name: "Moss Knuckl" }), ["handle"]);
+  assert.deepEqual(validateRunDoc(doc, { name: "moss knuckle" }), ["handle"]);
+  assert.deepEqual(validateRunDoc(doc, { name: "" }), ["handle"]);
+  assert.deepEqual(validateRunDoc(doc, { name: undefined }), []);
+  assert.deepEqual(validateRunDoc(doc, { name: 5 }), [], "a non-string name is not a given name");
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "@mossjaw" })), []);
+  assert.deepEqual(validateRunDoc(docFrom({ handle: "@mossjaw" }), { name: "Moss Knuckle" }), ["handle"]);
+});
+
+test("buildRunDoc: the handle is copied as given (no name rule at build time)", () => {
+  const summary = buildRunSummary(newRun(11), "combat", 0);
+  const built = buildRunDoc(summary, { uid: "u1", handle: "Moss Knuckle", version: "2.3.0 (13)" });
+  assert.equal(built.ok, true, JSON.stringify(built));
+  assert.equal(built.doc.handle, "Moss Knuckle");
+  const bad = buildRunDoc(summary, { uid: "u1", handle: "", version: "2.3.0 (13)" });
+  assert.deepEqual(bad, { ok: false, reason: "invalid", fails: ["handle"] });
+});
+
+test("LEGACY_HANDLE_PATTERN / isLegacyHandle: the transition-only 2.2.0 regex", () => {
+  assert.equal(typeof LEGACY_HANDLE_PATTERN, "string");
+  assert.ok(LEGACY_HANDLE_PATTERN.startsWith("^@(lantern|moss|") && LEGACY_HANDLE_PATTERN.endsWith("|goblet|pouch)$"));
+  assert.equal(isLegacyHandle("@mossjaw"), true);
+  assert.equal(isLegacyHandle("Moss Knuckle"), false);
+  assert.equal(isLegacyHandle(null), false);
+});
+
+test("purity: runDoc.js no longer imports the rolled-handle module", () => {
+  const raw = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "runDoc.js"), "utf8");
+  assert.equal(/from\s+["']\.\/handles\.js["']/.test(raw), false);
+  assert.equal(raw.includes("handles.js"), false, "not even in a comment");
+  assert.ok(/from\s+["']\.\/boardName\.js["']/.test(raw));
 });
