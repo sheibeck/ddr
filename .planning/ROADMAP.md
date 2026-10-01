@@ -239,7 +239,7 @@ Plans:
   3. The Strength spell's damage bonus, duration ("till tomorrow" or "until you make camp") and granted hp read the same in its text as in the engine (report #8).
   4. Using Pommel Strike gains the hero more than it costs: it no longer trades the hero's own attack for the foe's lost turn (report #4).
 
-**Plans:** 8/12 plans executed
+**Plans:** 9/12 plans executed
 
 Plans:
 **Wave 1**
@@ -273,7 +273,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 90-09-PLAN.md — SPELL-10: Door Illusion, Chameleon Tongue (+4 parley), Size of the Behemoth; the Illusionist's three starting illusions; the scroll roll table pinned per depth band
+- [x] 90-09-PLAN.md — SPELL-10: Door Illusion, Chameleon Tongue (+4 parley), Size of the Behemoth; the Illusionist's three starting illusions; the scroll roll table pinned per depth band
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -414,7 +414,7 @@ Plans:
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
-| 90. Spell & Skill Audit | 8/12 | In Progress|  |
+| 90. Spell & Skill Audit | 9/12 | In Progress|  |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
