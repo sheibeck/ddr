@@ -1,33 +1,42 @@
 // test/unit/spell-audit.test.js
 //
-// Phase 90 (SPELL-08; plan 90-01) — the coverage and consistency test for
-// docs/SPELL-AUDIT.md, the spell audit table. It parses the `### Spells` table
-// under `## Spells`, the two `## School gates` tables, the Balance calls and the
-// Rulings, and checks them against the live content tables, so the doc can
-// never silently lose a spell, double a spell, or leave a cell empty:
+// Phase 90 (SPELL-08; plans 90-01 and 90-12) — the coverage, consistency and CLOSE
+// test for docs/SPELL-AUDIT.md, the spell audit table. It parses the `### Spells`
+// and `### Removed` tables under `## Spells`, the two `## School gates` tables, the
+// Balance calls and the Rulings, and checks them against the live content tables,
+// so the doc can never silently lose a spell, double a spell, leave a cell empty,
+// or reopen:
 //
-//   - every spell in SPELLS (content/spells.js) has exactly one row, and so does
-//     every spell the user ruled in (the ten-spell SLATE) and every spell the
-//     user ruled out (REMOVED, kept as a `removed (90-06)` row after plan 90-06
-//     deletes it from SPELLS);
-//   - no Spell, Lvl · School, Text, Engine, Rolls, Canon or Verdict cell is
-//     empty, and every row has all eight cells;
-//   - every Verdict starts with one accepted token, and every owner `90-NN`
-//     names a Phase 90 plan (01 to 12); slate rows read `new (90-NN)` with the
-//     plan that builds them, removed rows `removed (90-06)`;
-//   - the `## School gates` section has one row per Magic User sub-class
-//     (every MU_CHART key) and a hand-out paths table naming every path that
-//     gives out a spell;
+//   - every spell in SPELLS (content/spells.js) has exactly one row, in SPELLS order
+//     (the ten slate spells last), and the `### Removed` table holds exactly the two
+//     spells the user ruled out (REMOVED), neither of which is in SPELLS;
+//   - no Spell, Lvl · School, Text, Engine, Rolls, Canon, Verdict or Pinned by cell
+//     is empty, every row has all eight cells, and each row's Text cell is the live
+//     `txt` (the final text, after TEXT-01);
+//   - every Verdict is one of the closed vocabulary (match, fixed engine, fixed text,
+//     ruled, removed, Phase 91, Phase 92) and every owner `90-NN` names a Phase 90
+//     plan (01 to 12); slate rows read `fixed engine (90-NN)` with the plan that
+//     built them, removed rows `removed (90-06)`;
+//   - THE CLOSE (plan 90-12): no Verdict reads `fix engine`, `fix text`, `new (` or
+//     `balance call`; every Pinned by is a list of `test/unit/<file>.test.js: <title>`
+//     whose file exists and whose source contains the title (only a `match` row or a
+//     row handed to Phase 91 or 92 may read `—`, and every fixed, ruled or removed
+//     row names at least one title); the header's "Closed" line states the true
+//     number of distinct pins; Findings for other phases names Phases 91, 91.1 and 92;
+//   - the `## School gates` section has one row per Magic User sub-class (every
+//     MU_CHART key), each cell equal to the live chart (the bonus, "never" for a
+//     null, the gate when one is set), a hand-out paths table naming every path that
+//     gives out a spell, and a "pinned by" line whose pins exist;
 //   - a `balance call (Qn)` row needs a Qn question in `## Balance calls` that
 //     has no ruling yet, and a ruled Qn has no `balance call (Qn)` row left;
 //   - a `match` row never carries a cell that admits a gap.
 //
 // Edge coverage (the SPELL-08 fallback probes):
 //   - adjacency: spells that share a kind or a name stem each keep their own
-//     row (Fireball and Fireballs; Summon, Lesser Summon and Phantom Host;
-//     Heal and Major Heal; Doze and Stun; the offensive Death, which is level 5
-//     offense, never the potion Death); the checker is run on doctored copies of
-//     the doc and must fail a merged row and a duplicated row;
+//     row (Fireball and Fireballs; Summon next to the removed Lesser Summon and
+//     Phantom Host; Heal and Major Heal; Doze and Stun; the offensive Death, which is
+//     level 5 offense, never the potion Death); the checker is run on doctored copies
+//     of the doc and must fail a merged row and a duplicated row;
 //   - empty: a spell with no to-hit roll, no damage or no resist says so in its
 //     Rolls cell ("no to-hit roll", "no damage", "never resisted"), and the
 //     checker must fail a doctored empty cell;
@@ -35,14 +44,11 @@
 //     (Open/Lock with its slash, Size of the Behemoth), compared WITHOUT
 //     normalising, and a Rolls cell writes ranges with the en dash and
 //     negative modifiers with the minus sign the rollRange.js formatter uses;
-//   - ordering: rows follow SPELLS array order, then the slate rows in their
-//     planned append order. The test pins the RELATIVE order of every row whose
-//     name is in SPELLS now, so later plans that remove or append SPELLS rows
-//     keep it green without reordering the doc; the checker must fail a
+//   - ordering: rows follow SPELLS array order exactly; the checker must fail a
 //     doctored swap of two rows.
 //
-// The doc is text and the test only reads it (plus content); no engine, rng or
-// shell module runs.
+// The doc is text and the test only reads it (plus content and the named test
+// files); no engine, rng or shell module runs.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -50,13 +56,13 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { SPELLS, MU_CHART } from "../../content/index.js";
+import { SPELLS, MU_CHART, SPELL_LEVEL_OVERRIDES } from "../../content/index.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const DOC_PATH = path.join(REPO_ROOT, "docs", "SPELL-AUDIT.md");
 
-/** SLATE — the ten spells the user ruled in (90-CONTEXT), in their planned append order, with the plan that builds each. */
+/** SLATE — the ten spells the user ruled in (90-CONTEXT), in their append order, with the plan that built each. */
 const SLATE = ["Open/Lock", "Fly", "Enchant Character", "Speed of Sound", "Stop Time", "Senseless", "Duplicate Foe", "Door Illusion", "Chameleon Tongue", "Size of the Behemoth"];
 const SLATE_OWNER = {
   "Open/Lock": "90-07",
@@ -71,21 +77,22 @@ const SLATE_OWNER = {
   "Size of the Behemoth": "90-09",
 };
 
-/** REMOVED — the spells the user ruled out; plan 90-06 deletes them and the doc keeps their row. */
+/** REMOVED — the spells the user ruled out; plan 90-06 deleted them and the doc keeps their row in `### Removed`. */
 const REMOVED = ["Lesser Summon", "Phantom Host"];
 
-/** VERDICT_TOKENS — the accepted verdict cells. */
+/** VERDICT_TOKENS — the accepted verdict cells: the closed vocabulary (no `fix`, `new` or `balance call`). */
 const VERDICT_TOKENS = [
   /^match$/,
-  /^(fix|fixed) (engine|text) \(90-\d\d\)$/,
-  /^balance call \(Q\d+\)$/,
+  /^fixed (engine|text) \(90-\d\d\)$/,
   /^ruled \(Q\d+, 2026-09-30\) -> 90-\d\d( .+)?$/,
   /^ruled \(2026-09-30\) -> 90-\d\d( .+)?$/,
-  /^new \(90-\d\d\)$/,
   /^removed \(90-06\)$/,
   /^Phase 91 \(IDENT-\d\d\)$/,
   /^Phase 92$/,
 ];
+
+/** OPEN_VERDICT — the open states a closed table may not contain. */
+const OPEN_VERDICT = /^(fix engine|fix text|balance call|new \()/;
 
 /** PRE_OWNED — the rows the user already ruled, and the plan that builds each. */
 const PRE_OWNED = {
@@ -102,6 +109,49 @@ const PRE_OWNED = {
 const SECTIONS = ["How to read this table", "Spells", "School gates", "Cross-cutting rules", "Findings for other phases", "Balance calls", "Rulings"];
 const PATH_NEEDLES = ["rollGrimoire", "checkLevel", "findGrimoire", "readScroll", "Sealed scroll", "canCast"];
 const GAP_WORDS = /not stated|not printed|omits/i;
+const SCHOOLS = ["offense", "protection", "healing", "divination", "special", "illusion"];
+
+/** PIN — one pin: a test file, and (required on a fixed, ruled or removed row) the title. */
+const PIN = /^(test\/[A-Za-z0-9_\-/.]+\.test\.js)(?:: (.+))?$/;
+
+const sourceCache = new Map();
+/** sourceOf(relPath) — a test file's source (LF), or null when it is missing. */
+function sourceOf(rel) {
+  if (!sourceCache.has(rel)) {
+    const abs = path.join(REPO_ROOT, rel);
+    sourceCache.set(rel, fs.existsSync(abs) ? fs.readFileSync(abs, "utf8").replace(/\r\n/g, "\n") : null);
+  }
+  return sourceCache.get(rel);
+}
+
+/**
+ * pinProblems(where, pinned, { needTitle, allowDash }) — every problem with a Pinned by
+ * cell: malformed pins, a missing file, a title the file does not contain, and (needTitle)
+ * no pin that names a title at all.
+ */
+function pinProblems(where, pinned, { needTitle, allowDash }) {
+  if (pinned === "—") return allowDash ? [] : [`${where}: is not pinned (—), but it is fixed, ruled or removed`];
+  const out = [];
+  let titled = 0;
+  for (const raw of pinned.split("; ")) {
+    const m = PIN.exec(raw.trim());
+    if (!m) {
+      out.push(`${where}: malformed pin "${raw}" (want test/unit/<file>.test.js: <title>)`);
+      continue;
+    }
+    const src = sourceOf(m[1]);
+    if (src === null) {
+      out.push(`${where}: is pinned by "${m[1]}", which does not exist`);
+      continue;
+    }
+    if (m[2] !== undefined) {
+      titled++;
+      if (!src.includes(m[2])) out.push(`${where}: pin "${m[1]}: ${m[2]}" names a test title that is not in the file`);
+    }
+  }
+  if (needTitle && titled === 0) out.push(`${where}: pinned by file only, but a fixed, ruled or removed row must name a test title`);
+  return out;
+}
 
 /** splitCells(line) — the cells of one table row (cells never hold a pipe). */
 function splitCells(line) {
@@ -117,12 +167,13 @@ const isSeparator = (cells) => /^-+$/.test(cells[0].replace(/\s/g, ""));
 
 /** parseDoc(text) — the audit doc as plain data. */
 function parseDoc(text) {
-  const out = { rows: [], subs: [], paths: [], questions: [], rulings: [], haveSections: {} };
+  const out = { rows: [], removed: [], subs: [], paths: [], questions: [], rulings: [], haveSections: {}, schoolPins: null, findings: "", closedLine: "" };
   let h2 = null;
   let h3 = null;
   let mode = null;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trimEnd();
+    if (/^\*\*Closed:\*\*/.test(line)) out.closedLine = line;
     if (/^## /.test(line)) {
       h2 = line.slice(3).trim();
       out.haveSections[h2] = true;
@@ -138,10 +189,11 @@ function parseDoc(text) {
       }
       continue;
     }
-    if (h2 === "Spells" && h3 === "Spells" && line.startsWith("|")) {
+    if (h2 === "Findings for other phases") out.findings += line + "\n";
+    if (h2 === "Spells" && (h3 === "Spells" || h3 === "Removed") && line.startsWith("|")) {
       const cells = splitCells(line);
       if (cells[0] === "Spell" || isSeparator(cells)) continue;
-      out.rows.push(cells);
+      (h3 === "Spells" ? out.rows : out.removed).push(cells);
     } else if (h2 === "School gates" && line.startsWith("|")) {
       const cells = splitCells(line);
       if (cells[0] === "Sub-class") {
@@ -155,6 +207,8 @@ function parseDoc(text) {
       if (isSeparator(cells)) continue;
       if (mode === "subs") out.subs.push(cells);
       else if (mode === "paths") out.paths.push(cells);
+    } else if (h2 === "School gates" && /^\*\*School gates pinned by:\*\*/.test(line)) {
+      out.schoolPins = line.replace(/^\*\*School gates pinned by:\*\*\s*/, "");
     } else if (h2 === "Rulings") {
       const m = line.match(/^- Q(\d+) \(/);
       if (m) out.rulings.push(Number(m[1]));
@@ -163,7 +217,63 @@ function parseDoc(text) {
   return out;
 }
 
-/** checkDoc(text) — every problem the coverage rules find, as strings. */
+/** chartCell(sub, school) — the School gates cell the live MU_CHART implies: "never", "+N" or "+N (gate G)". */
+function chartCell(sub, school) {
+  const row = MU_CHART[sub];
+  const bonus = row[school];
+  if (bonus === null || bonus === undefined) return "never";
+  const gate = row.gate && row.gate[school];
+  return `${bonus >= 0 ? "+" : "−"}${Math.abs(bonus)}${gate ? ` (gate ${gate})` : ""}`;
+}
+
+/** distinctPins(doc) — every distinct titled pin in the rows, the removed rows and the School gates line. */
+function distinctPins(doc) {
+  const set = new Set();
+  const add = (cell) => {
+    for (const raw of cell.split("; ")) if (PIN.exec(raw.trim()) && raw.includes(": ")) set.add(raw.trim());
+  };
+  for (const cells of [...doc.rows, ...doc.removed]) if (cells.length === 8) add(cells[7]);
+  if (doc.schoolPins) add(doc.schoolPins);
+  return set;
+}
+
+/** rowProblems(cells, where) — the cell-level rules every row (a spell's or a removed spell's) must meet. */
+function rowProblems(cells, add, allVerdicts) {
+  if (cells.length !== 8) {
+    add(`row "${cells[0]}" has ${cells.length} cells, not 8`);
+    return;
+  }
+  const [name, lvl, textCell, engine, rolls, canon, verdict, pinned] = cells;
+  for (const [label, v] of [["Spell", name], ["Lvl · School", lvl], ["Text", textCell], ["Engine", engine], ["Rolls", rolls], ["Canon", canon], ["Verdict", verdict], ["Pinned by", pinned]]) {
+    if (!v) add(`row "${name}" has an empty ${label} cell`);
+  }
+  if (OPEN_VERDICT.test(verdict)) add(`row "${name}" is still open ("${verdict}"): a closed table has no fix engine, fix text, new or balance call`);
+  else if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict))) add(`row "${name}" has an unknown verdict "${verdict}"`);
+  for (const m of verdict.matchAll(/\b90-(\d\d)\b/g)) {
+    const n = Number(m[1]);
+    if (n < 1 || n > 12) add(`row "${name}" names owner 90-${m[1]}, not a Phase 90 plan`);
+  }
+  if (SLATE.includes(name) && verdict !== `fixed engine (${SLATE_OWNER[name]})`) add(`slate row "${name}" must read fixed engine (${SLATE_OWNER[name]}), not "${verdict}"`);
+  if (REMOVED.includes(name) && verdict !== "removed (90-06)") add(`removed row "${name}" must read removed (90-06), not "${verdict}"`);
+  if (PRE_OWNED[name] && !verdict.includes(PRE_OWNED[name])) add(`pre-owned row "${name}" does not name ${PRE_OWNED[name]} in "${verdict}"`);
+  if (verdict === "match" && cells.some((c) => GAP_WORDS.test(c))) add(`row "${name}" reads match but a cell admits a gap`);
+  // Encoding: authored ranges use the en dash and negative modifiers the minus sign.
+  const rollsNoPlans = rolls.replace(/\b90-\d\d\b/g, "90"); // a plan id (90-04) is not a range
+  if (/\d-\d/.test(rollsNoPlans) || /(^|[\s(])-\d/.test(rollsNoPlans)) add(`row "${name}" writes a range or a negative modifier with an ASCII hyphen in its Rolls cell (use – and −)`);
+  // Empty: every Rolls cell says its to-hit, resist, backfire and fumble state, even when the answer is none.
+  if (rolls && !/to-hit|to hit|hits on|\+\d to hit/i.test(rolls)) add(`row "${name}" Rolls cell states no to-hit roll`);
+  if (rolls && !/never resisted|resist|(parley is the roll)/i.test(rolls)) add(`row "${name}" Rolls cell states no resist`);
+  if (rolls && !/damage|heals|absorbs|kill|dies|no hp/i.test(rolls)) add(`row "${name}" Rolls cell states no damage`);
+  if (rolls && !/backfire/i.test(rolls)) add(`row "${name}" Rolls cell states no backfire`);
+  if (rolls && !/fumble/i.test(rolls)) add(`row "${name}" Rolls cell states no scroll fumble`);
+  // The close: no stale draft language, and a real pin on every row.
+  if ([textCell, engine, rolls].some((cell) => /to be added|\bdraft txt\b|^new:/i.test(cell))) add(`row "${name}" still carries draft or to-do language ("draft txt", "new:" or "to be added")`);
+  const dashOk = verdict === "match" || /^Phase 9[12]/.test(verdict);
+  for (const p of pinProblems(`row "${name}"`, pinned, { needTitle: !dashOk, allowDash: dashOk })) add(p);
+  allVerdicts.push([name, verdict]);
+}
+
+/** checkDoc(text) — every problem the coverage and close rules find, as strings. */
 function checkDoc(text) {
   const problems = [];
   const doc = parseDoc(text);
@@ -178,14 +288,12 @@ function checkDoc(text) {
     seen.add(n);
   }
   const contentNames = SPELLS.map((s) => s.n);
-  const known = new Set([...contentNames, ...SLATE, ...REMOVED]);
   for (const n of contentNames) if (!names.includes(n)) add(`missing a row for the spell "${n}"`);
   for (const n of SLATE) if (!names.includes(n)) add(`missing a row for the slate spell "${n}"`);
-  for (const n of REMOVED) if (!names.includes(n)) add(`missing a row for the removed spell "${n}"`);
-  for (const n of names) if (!known.has(n)) add(`row "${n}" is not in SPELLS, the slate or the removed list`);
+  for (const n of names) if (!contentNames.includes(n)) add(`row "${n}" is not in SPELLS (a removed spell belongs in the Removed table)`);
 
-  // Ordering: SPELLS names in SPELLS relative order; slate rows in slate order and after every other row.
-  const inSpells = names.filter((n) => contentNames.includes(n) && !SLATE.includes(n));
+  // Ordering: rows follow SPELLS order exactly (the slate rows are the last ten of SPELLS).
+  const inSpells = names.filter((n) => contentNames.includes(n));
   const idx = inSpells.map((n) => contentNames.indexOf(n));
   for (let i = 1; i < idx.length; i++) {
     if (idx[i] < idx[i - 1]) {
@@ -196,7 +304,7 @@ function checkDoc(text) {
   const slatePos = SLATE.map((n) => names.indexOf(n)).filter((p) => p >= 0);
   for (let i = 1; i < slatePos.length; i++) {
     if (slatePos[i] < slatePos[i - 1]) {
-      add("slate rows out of order (planned append order: " + SLATE.join(", ") + ")");
+      add("slate rows out of order (append order: " + SLATE.join(", ") + ")");
       break;
     }
   }
@@ -205,38 +313,22 @@ function checkDoc(text) {
     if (!SLATE.includes(n) && i > firstSlate) add(`row "${n}" comes after a slate row (slate rows go last)`);
   });
 
+  // The Removed table: exactly the two removed names, neither of them a SPELLS row.
+  const removedNames = doc.removed.map((r) => r[0]);
+  if (!doc.haveSections.Spells || !/^### Removed$/m.test(text)) add('missing the "### Removed" table');
+  if (JSON.stringify(removedNames) !== JSON.stringify(REMOVED)) add(`the Removed table holds ${JSON.stringify(removedNames)}, expected exactly ${JSON.stringify(REMOVED)}`);
+  for (const n of removedNames) if (contentNames.includes(n)) add(`removed spell "${n}" is still in SPELLS`);
+
   const allVerdicts = []; // [name, verdict]
   for (const cells of doc.rows) {
-    if (cells.length !== 8) {
-      add(`row "${cells[0]}" has ${cells.length} cells, not 8`);
-      continue;
-    }
-    const [name, lvl, textCell, engine, rolls, canon, verdict, pinned] = cells;
-    for (const [label, v] of [["Spell", name], ["Lvl · School", lvl], ["Text", textCell], ["Engine", engine], ["Rolls", rolls], ["Canon", canon], ["Verdict", verdict], ["Pinned by", pinned]]) {
-      if (!v) add(`row "${name}" has an empty ${label} cell`);
-    }
-    if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict))) add(`row "${name}" has an unknown verdict "${verdict}"`);
-    for (const m of verdict.matchAll(/\b90-(\d\d)\b/g)) {
-      const n = Number(m[1]);
-      if (n < 1 || n > 12) add(`row "${name}" names owner 90-${m[1]}, not a Phase 90 plan`);
-    }
-    if (SLATE.includes(name) && verdict !== `new (${SLATE_OWNER[name]})`) add(`slate row "${name}" must read new (${SLATE_OWNER[name]}), not "${verdict}"`);
-    if (REMOVED.includes(name) && verdict !== "removed (90-06)") add(`removed row "${name}" must read removed (90-06), not "${verdict}"`);
-    if (PRE_OWNED[name] && !verdict.includes(PRE_OWNED[name])) add(`pre-owned row "${name}" does not name ${PRE_OWNED[name]} in "${verdict}"`);
-    if (verdict === "match" && cells.some((c) => GAP_WORDS.test(c))) add(`row "${name}" reads match but a cell admits a gap`);
-    // Encoding: authored ranges use the en dash and negative modifiers the minus sign.
-    const rollsNoPlans = rolls.replace(/\b90-\d\d\b/g, "90"); // a plan id (90-04) is not a range
-    if (/\d-\d/.test(rollsNoPlans) || /(^|[\s(])-\d/.test(rollsNoPlans)) add(`row "${name}" writes a range or a negative modifier with an ASCII hyphen in its Rolls cell (use – and −)`);
-    // Empty: every Rolls cell says its to-hit, resist, backfire and fumble state, even when the answer is none.
-    if (rolls && !/to-hit|to hit|hits on|\+\d to hit/i.test(rolls)) add(`row "${name}" Rolls cell states no to-hit roll`);
-    if (rolls && !/never resisted|resist|(parley is the roll)/i.test(rolls)) add(`row "${name}" Rolls cell states no resist`);
-    if (rolls && !/damage|heals|absorbs|kill|dies|no hp/i.test(rolls)) add(`row "${name}" Rolls cell states no damage`);
-    if (rolls && !/backfire/i.test(rolls)) add(`row "${name}" Rolls cell states no backfire`);
-    if (rolls && !/fumble/i.test(rolls)) add(`row "${name}" Rolls cell states no scroll fumble`);
-    allVerdicts.push([name, verdict]);
+    rowProblems(cells, add, allVerdicts);
+    // The final Text: the Text cell carries the live txt, so a text change re-opens the row.
+    const sp = SPELLS.find((s) => s.n === cells[0]);
+    if (sp && cells.length === 8 && !cells[2].includes(sp.txt)) add(`row "${sp.n}" Text cell is not the live txt "${sp.txt}"`);
   }
+  for (const cells of doc.removed) rowProblems(cells, add, allVerdicts);
 
-  // School gates: one row per MU_CHART sub-class, then the hand-out paths table.
+  // School gates: one row per MU_CHART sub-class, equal to the live chart, then the hand-out paths table.
   const subNames = doc.subs.map((r) => r[0]);
   const chartKeys = Object.keys(MU_CHART);
   if (new Set(subNames).size !== subNames.length) add("School gates: duplicate sub-class row");
@@ -249,11 +341,18 @@ function checkDoc(text) {
       continue;
     }
     if (cells.some((c) => !c)) add(`School gates: row "${cells[0]}" has an empty cell`);
+    if (MU_CHART[cells[0]]) {
+      SCHOOLS.forEach((school, i) => {
+        const want = chartCell(cells[0], school);
+        if (cells[i + 1] !== want) add(`School gates: ${cells[0]} ${school} reads "${cells[i + 1]}", the live MU_CHART says "${want}"`);
+      });
+    }
   }
   const wizard = doc.subs.find((r) => r[0] === "Wizard");
   if (wizard && wizard.length === 8 && !/Illusion/.test(wizard[7])) add("School gates: the Wizard's After Phase 90 cell must name the lost Illusion school");
   const summoner = doc.subs.find((r) => r[0] === "Summoner");
   if (summoner && summoner.length === 8 && !/Summon/.test(summoner[7])) add("School gates: the Summoner's After Phase 90 cell must name its Summon exception");
+  if (JSON.stringify(SPELL_LEVEL_OVERRIDES) !== JSON.stringify({ Summoner: { Summon: 1 } })) add("School gates: the only named exception must be the Summoner's Summon (SPELL_LEVEL_OVERRIDES changed)");
   if (doc.paths.length < 10) add(`School gates: the hand-out paths table has ${doc.paths.length} rows, expected at least 10`);
   for (const needle of PATH_NEEDLES) {
     if (!doc.paths.some((r) => r[0].includes(needle))) add(`School gates: no hand-out path row names "${needle}"`);
@@ -265,12 +364,18 @@ function checkDoc(text) {
     }
     if (cells.some((c) => !c)) add(`School gates: path row "${cells[0]}" has an empty cell`);
     const verdict = cells[2];
-    if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict))) add(`School gates: path row "${cells[0]}" has an unknown verdict "${verdict}"`);
+    if (OPEN_VERDICT.test(verdict)) add(`School gates: path row "${cells[0]}" is still open ("${verdict}")`);
+    else if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict))) add(`School gates: path row "${cells[0]}" has an unknown verdict "${verdict}"`);
     for (const m of verdict.matchAll(/\b90-(\d\d)\b/g)) {
       const n = Number(m[1]);
       if (n < 1 || n > 12) add(`School gates: path row "${cells[0]}" names owner 90-${m[1]}, not a Phase 90 plan`);
     }
     allVerdicts.push([`path: ${cells[0]}`, verdict]);
+  }
+  if (!doc.schoolPins) add("School gates: no `School gates pinned by:` line (the sweep's and the scroll table's pins)");
+  else {
+    for (const p of pinProblems("School gates pins", doc.schoolPins, { needTitle: true, allowDash: false })) add(p);
+    for (const need of ["test/unit/school-gates.test.js", "test/unit/scroll-pool.test.js"]) if (!doc.schoolPins.includes(need)) add(`School gates: the pinned by line must name ${need}`);
   }
 
   // Balance calls versus rulings.
@@ -294,7 +399,7 @@ function checkDoc(text) {
   }
   for (const q of doc.questions) {
     if (ruled.has(q)) {
-      // A ruled question is carried by a `ruled (Qn, 2026-09-30)` verdict, or (a cross-cutting rule such as Q6) named in a row's Rolls cell.
+      // A ruled question is carried by a `ruled (Qn, 2026-09-30)` verdict, or (a rule that spans rows, built and read `fixed engine`) named in a row's Rolls cell.
       const named = doc.rows.some((r) => r.length === 8 && new RegExp(`\\bQ${q}\\b`).test(r[4]));
       if (!ruledQ.has(q) && !named) add(`Q${q} is ruled but no row reads ruled (Q${q}, 2026-09-30) or names Q${q} in its Rolls cell`);
     } else if (!openQ.has(q)) {
@@ -304,6 +409,12 @@ function checkDoc(text) {
   for (const q of doc.rulings) {
     if (!doc.questions.includes(q)) add(`Rulings records Q${q}, which is not in Balance calls`);
   }
+
+  // The close: the header states the true number of pins, and the hand-offs are named.
+  const stated = /\((\d+) distinct pins\)/.exec(doc.closedLine);
+  if (!stated) add('the header has no "Closed:" line stating "(N distinct pins)"');
+  else if (Number(stated[1]) !== distinctPins(doc).size) add(`the header's Closed line says ${stated[1]} distinct pins, the table holds ${distinctPins(doc).size}`);
+  for (const phase of ["Phase 91", "Phase 91.1", "Phase 92"]) if (!doc.findings.includes(phase)) add(`Findings for other phases does not name ${phase}`);
   return problems;
 }
 
@@ -316,7 +427,7 @@ function doctor(fn) {
   return lines.join("\n");
 }
 
-test("docs/SPELL-AUDIT.md passes every coverage and consistency rule", () => {
+test("docs/SPELL-AUDIT.md passes every coverage, consistency and close rule", () => {
   assert.deepEqual(checkDoc(DOC_TEXT), []);
 });
 
@@ -325,8 +436,75 @@ test("the doc has its required sections and a row for every spell, slate spell a
   for (const s of SECTIONS) assert.ok(doc.haveSections[s], s);
   const names = doc.rows.map((r) => r[0]);
   for (const sp of SPELLS) assert.equal(names.filter((n) => n === sp.n).length, 1, `${sp.n}: one row`);
-  for (const n of [...SLATE, ...REMOVED]) assert.equal(names.filter((x) => x === n).length, 1, `${n}: one row`);
-  assert.equal(names.length, new Set([...SPELLS.map((s) => s.n), ...SLATE, ...REMOVED]).size);
+  assert.deepEqual(names, SPELLS.map((s) => s.n), "the Spells table is SPELLS, row for row");
+  assert.deepEqual(doc.removed.map((r) => r[0]), REMOVED, "the Removed table holds exactly the two removed spells");
+  for (const n of REMOVED) assert.ok(!SPELLS.some((s) => s.n === n), `${n} is not in SPELLS`);
+});
+
+test("the close: no row and no hand-out path reads fix engine, fix text, new or balance call, and the table holds at least 70 titled pins", () => {
+  const doc = parseDoc(DOC_TEXT);
+  for (const cells of [...doc.rows, ...doc.removed]) assert.doesNotMatch(cells[6], OPEN_VERDICT, `${cells[0]}: ${cells[6]}`);
+  for (const cells of doc.paths) assert.doesNotMatch(cells[2], OPEN_VERDICT, `${cells[0]}: ${cells[2]}`);
+  assert.ok(distinctPins(doc).size >= 70, `distinct pins: ${distinctPins(doc).size}`);
+  // every fixed or ruled row names a test title; every row is pinned by the text-vs-engine guard
+  for (const cells of doc.rows) {
+    assert.ok(cells[7].includes("test/unit/spell-skill-text-engine.test.js: every number the text states"), `${cells[0]}: pinned by the text-vs-engine guard`);
+    if (/^(fixed|ruled)/.test(cells[6])) assert.ok(cells[7].split("; ").filter((p) => p.includes(": ")).length >= 2, `${cells[0]}: a fixed row names its fix's test as well as the guard`);
+  }
+});
+
+test("the close: a row turned back into fix engine, fix text, new or balance call fails", () => {
+  for (const [name, from, to] of [["Strength", "| fixed engine (90-03) |", "| fix engine (90-03) |"], ["Fly", "| fixed engine (90-07) |", "| new (90-07) |"], ["Lightning", "| fixed engine (90-10) |", "| balance call (Q8) |"], ["Heal", "| match |", "| fix text (90-11) |"]]) {
+    const reopened = doctor((c, at) => (c[at(name)] = c[at(name)].replace(from, to)));
+    assert.ok(checkDoc(reopened).some((p) => new RegExp(`row "${name}" is still open`).test(p)), name);
+  }
+});
+
+test("the close: a pin naming a missing file or a title the file does not hold fails", () => {
+  const noFile = doctor((c, at) => (c[at("Strength")] = c[at("Strength")].replace("test/unit/strength-spell.test.js:", "test/unit/strength-spells.test.js:")));
+  assert.ok(checkDoc(noFile).some((p) => /strength-spells\.test\.js", which does not exist/.test(p)));
+  const noTitle = doctor((c, at) => (c[at("Strength")] = c[at("Strength")].replace("restart: a recast 40 squares in goes back to 100", "restart: a recast 40 squares in goes back to 200")));
+  assert.ok(checkDoc(noTitle).some((p) => /names a test title that is not in the file/.test(p)));
+  const fileOnly = doctor((c, at) => (c[at("Strength")] = c[at("Strength")].split(" | ").map((cell, i, all) => (i === all.length - 1 ? "test/unit/strength-spell.test.js" : cell)).join(" | ")));
+  assert.ok(checkDoc(fileOnly).some((p) => /pinned by file only/.test(p)));
+  const dash = doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace(/\|[^|]*\|$/, "| — |")));
+  assert.ok(checkDoc(dash).some((p) => /row "Fly": is not pinned/.test(p)));
+  const malformed = doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace("test/unit/special-timed-spells.test.js: Fly:", "special-timed-spells: Fly:")));
+  assert.ok(checkDoc(malformed).some((p) => /malformed pin/.test(p)));
+});
+
+test("the close: a spell with no row, a removed spell back in the table, or a Removed table that is not exactly the two fails", () => {
+  assert.ok(checkDoc(doctor((c, at) => c.splice(at("Mangle"), 1))).some((p) => /missing a row for the spell "Mangle"/.test(p)));
+  const back = doctor((c, at) => {
+    const removedRow = c.find((l) => l.startsWith("| Lesser Summon |"));
+    c.splice(at("Summon") + 1, 0, removedRow);
+  });
+  assert.ok(checkDoc(back).some((p) => /row "Lesser Summon" is not in SPELLS/.test(p)));
+  const oneRemoved = doctor((c) => c.splice(c.findIndex((l) => l.startsWith("| Phantom Host |")), 1));
+  assert.ok(checkDoc(oneRemoved).some((p) => /the Removed table holds/.test(p)));
+  const extra = doctor((c) => {
+    const i = c.findIndex((l) => l.startsWith("| Phantom Host |"));
+    c.splice(i + 1, 0, c[i].replace("| Phantom Host |", "| Wand of Wonder |"));
+  });
+  assert.ok(checkDoc(extra).some((p) => /the Removed table holds/.test(p)));
+  const noTable = DOC_TEXT.replace(/^### Removed$/m, "### Gone");
+  assert.ok(checkDoc(noTable).some((p) => /missing the "### Removed" table/.test(p)));
+});
+
+test("the close: a Text cell that is not the live txt, or one that keeps draft language, fails", () => {
+  const stale = doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace("flight for 30 squares, +10 squares per school bonus point", "flight for 30 squares")));
+  assert.ok(checkDoc(stale).some((p) => /row "Fly" Text cell is not the live txt/.test(p)));
+  const draft = doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace(" | built in 90-07:", " | new: built in 90-07:")));
+  assert.ok(checkDoc(draft).some((p) => /still carries draft or to-do language/.test(p)));
+});
+
+test("the close: the header's Closed line states the true pin count, and Findings names Phases 91, 91.1 and 92", () => {
+  const m = /\((\d+) distinct pins\)/.exec(DOC_TEXT);
+  assert.ok(m, "the Closed line states its pin count");
+  assert.equal(Number(m[1]), distinctPins(parseDoc(DOC_TEXT)).size);
+  assert.ok(checkDoc(DOC_TEXT.replace(/\(\d+ distinct pins\)/, "(7 distinct pins)")).some((p) => /Closed line says 7 distinct pins/.test(p)));
+  assert.ok(checkDoc(DOC_TEXT.replace("**Closed:**", "**Shut:**")).some((p) => /no "Closed:" line/.test(p)));
+  assert.ok(checkDoc(DOC_TEXT.replace("- **Phase 91.1 (value review):**", "- **Phase 99 (value review):**")).some((p) => /does not name Phase 91\.1/.test(p)));
 });
 
 test("encoding: the Spell cell equals the content name code unit for code unit, with no normalising", () => {
@@ -346,13 +524,15 @@ test("encoding: the Spell cell equals the content name code unit for code unit, 
   for (const r of doc.rows) assert.ok(!/\d-\d/.test(r[4].replace(/\b90-\d\d\b/g, "90")), `${r[0]}: no ASCII-hyphen range in Rolls`);
 });
 
-test("adjacency: spells that share a kind or a name stem each keep their own row", () => {
+test("adjacency: spells that share a kind or a name stem each keep their own row, and the removed ones their own table", () => {
   const doc = parseDoc(DOC_TEXT);
   const names = doc.rows.map((r) => r[0]);
-  for (const [a, b] of [["Fireball", "Fireballs"], ["Summon", "Lesser Summon"], ["Summon", "Phantom Host"], ["Heal", "Major Heal"], ["Doze", "Stun"], ["Mirror Self", "Phantom Host"]]) {
+  for (const [a, b] of [["Fireball", "Fireballs"], ["Heal", "Major Heal"], ["Doze", "Stun"]]) {
     assert.ok(names.includes(a) && names.includes(b), `${a} and ${b} each have a row`);
     assert.notEqual(names.indexOf(a), names.indexOf(b));
   }
+  assert.ok(names.includes("Summon"), "Summon keeps its row");
+  for (const n of ["Lesser Summon", "Phantom Host"]) assert.ok(!names.includes(n) && doc.removed.some((r) => r[0] === n), `${n} is in the Removed table only`);
   // The offensive Death is a level-5 offense spell, never the potion of the same name.
   const death = doc.rows.find((r) => r[0] === "Death");
   assert.match(death[1], /^5 · offense$/);
@@ -371,34 +551,69 @@ test("empty: a spell with no to-hit roll, no damage or no resist says so in its 
   assert.match(rolls("Fly"), /no damage/);
   assert.match(rolls("Open/Lock"), /never resisted/);
   assert.match(rolls("Fireball"), /to hit/);
-  for (const r of doc.rows) for (const c of r) assert.ok(c.length > 0, `${r[0]}: no blank cell`);
+  for (const r of [...doc.rows, ...doc.removed]) for (const c of r) assert.ok(c.length > 0, `${r[0]}: no blank cell`);
 });
 
-test("ordering: rows follow SPELLS order, then the ten slate rows in their append order", () => {
+test("ordering: rows follow SPELLS order, which ends with the ten slate rows in their append order", () => {
   const doc = parseDoc(DOC_TEXT);
   const names = doc.rows.map((r) => r[0]);
-  const tail = names.slice(-SLATE.length);
-  assert.deepEqual(tail, SLATE);
-  const contentNames = SPELLS.map((s) => s.n).filter((n) => !SLATE.includes(n));
-  const idx = contentNames.map((n) => names.indexOf(n));
-  assert.ok(idx.every((p, i) => p >= 0 && (i === 0 || p > idx[i - 1])), "SPELLS relative order");
+  assert.deepEqual(names.slice(-SLATE.length), SLATE);
+  assert.deepEqual(names, SPELLS.map((s) => s.n));
 });
 
-test("pre-owned rows name the plan that builds them", () => {
+test("pre-owned rows name the plan that builds them; removed rows read removed (90-06); slate rows read fixed engine with their plan", () => {
   const doc = parseDoc(DOC_TEXT);
   for (const [name, plan] of Object.entries(PRE_OWNED)) {
     const row = doc.rows.find((r) => r[0] === name);
     assert.ok(row[6].includes(plan), `${name}: ${row[6]}`);
   }
-  for (const n of REMOVED) assert.equal(doc.rows.find((r) => r[0] === n)[6], "removed (90-06)");
-  for (const n of SLATE) assert.equal(doc.rows.find((r) => r[0] === n)[6], `new (${SLATE_OWNER[n]})`);
+  for (const n of REMOVED) assert.equal(doc.removed.find((r) => r[0] === n)[6], "removed (90-06)");
+  for (const n of SLATE) assert.equal(doc.rows.find((r) => r[0] === n)[6], `fixed engine (${SLATE_OWNER[n]})`);
+  for (const n of REMOVED) assert.ok(doc.removed.find((r) => r[0] === n)[7].includes("test/unit/removed-spells-load.test.js"), `${n}: pinned by the tolerant-load test`);
 });
 
-test("School gates: one row per MU_CHART sub-class and a hand-out paths table that names every path", () => {
+test("School gates: one row per MU_CHART sub-class, each cell equal to the live chart, and a hand-out paths table that names every path", () => {
   const doc = parseDoc(DOC_TEXT);
   assert.deepEqual(doc.subs.map((r) => r[0]), Object.keys(MU_CHART));
   assert.ok(doc.paths.length >= 10);
   for (const needle of PATH_NEEDLES) assert.ok(doc.paths.some((r) => r[0].includes(needle)), needle);
+  for (const r of doc.subs) SCHOOLS.forEach((school, i) => assert.equal(r[i + 1], chartCell(r[0], school), `${r[0]} ${school}`));
+  // The chart facts the audit rests on, read live.
+  assert.equal(MU_CHART.Wizard.illusion, null, "the Wizard lost the Illusion school");
+  assert.deepEqual(SPELL_LEVEL_OVERRIDES, { Summoner: { Summon: 1 } }, "the one named exception");
+  assert.equal(MU_CHART.Illusionist.illusion, 0, "the Illusion bonus is 0 (Phase 91.1)");
+  assert.equal(MU_CHART.Apprentice.illusion, 0);
+});
+
+test("School gates: a doctored cell that disagrees with MU_CHART, a missing sub-class row, and a path with no verdict fail", () => {
+  const wrongBonus = doctor((c) => {
+    const i = c.findIndex((l) => l.startsWith("| Wizard |"));
+    c[i] = c[i].replace("| +3 |", "| +4 |");
+  });
+  assert.ok(checkDoc(wrongBonus).some((p) => /School gates: Wizard offense reads "\+4", the live MU_CHART says "\+3"/.test(p)));
+  const wrongGate = doctor((c) => {
+    const i = c.findIndex((l) => l.startsWith("| Warlock |"));
+    c[i] = c[i].replace("+0 (gate 4)", "+0 (gate 5)");
+  });
+  assert.ok(checkDoc(wrongGate).some((p) => /Warlock protection reads "\+0 \(gate 5\)"/.test(p)));
+  const wrongNever = doctor((c) => {
+    const i = c.findIndex((l) => l.startsWith("| Wizard |"));
+    c[i] = c[i].replace("| never |", "| +0 |");
+  });
+  assert.ok(checkDoc(wrongNever).some((p) => /Wizard illusion reads "\+0", the live MU_CHART says "never"/.test(p)));
+  const noWizard = doctor((c) => c.splice(c.findIndex((l) => l.startsWith("| Wizard |")), 1));
+  assert.ok(checkDoc(noWizard).some((p) => /missing the sub-class "Wizard"/.test(p)));
+  const noPath = doctor((c) => c.splice(c.findIndex((l) => l.includes("`encounters.js#findGrimoire`")), 1));
+  assert.ok(checkDoc(noPath).some((p) => /findGrimoire/.test(p)));
+  const openPath = doctor((c) => {
+    const i = c.findIndex((l) => l.includes("`encounters.js#findGrimoire`"));
+    c[i] = c[i].replace(/\| match \|$/, "| fix engine (90-09) |");
+  });
+  assert.ok(checkDoc(openPath).some((p) => /path row .* is still open/.test(p)));
+  const noPins = DOC_TEXT.replace(/\*\*School gates pinned by:\*\*[^\n]*/, "");
+  assert.ok(checkDoc(noPins).some((p) => /no `School gates pinned by:` line/.test(p)));
+  const badSweep = DOC_TEXT.replace("sweep, chargen: every Magic User sub-class x seeds 1-500 x levels 1-5", "sweep, chargen: every Magic User sub-class x seeds 1-900");
+  assert.ok(checkDoc(badSweep).some((p) => /School gates pins: pin .* names a test title that is not in the file/.test(p)));
 });
 
 test("the checker fails a missing row, a duplicate row, a merged row, an empty cell and an unknown verdict", () => {
@@ -420,9 +635,9 @@ test("the checker fails a missing row, a duplicate row, a merged row, an empty c
   assert.ok(checkDoc(empty).some((p) => /empty Engine cell/.test(p)));
   // unknown verdict and a non-Phase-90 owner
   assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| sort of |")))).some((p) => /unknown verdict "sort of"/.test(p)));
-  assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| fix text (90-13) |")))).some((p) => /90-13/.test(p)));
+  assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| fixed text (90-13) |")))).some((p) => /90-13/.test(p)));
   // a slate row that does not read its own plan
-  assert.ok(checkDoc(doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace("| new (90-07) |", "| new (90-08) |")))).some((p) => /slate row "Fly"/.test(p)));
+  assert.ok(checkDoc(doctor((c, at) => (c[at("Fly")] = c[at("Fly")].replace("| fixed engine (90-07) |", "| fixed engine (90-08) |")))).some((p) => /slate row "Fly"/.test(p)));
 });
 
 test("the checker fails a doctored swap of two rows and of two slate rows", () => {
@@ -440,7 +655,6 @@ test("the checker fails a doctored swap of two rows and of two slate rows", () =
 
 test("the checker fails a balance call whose question already has a ruling, and a ruling with no question", () => {
   // Q8 is answered: turn its Lightning row back into an open call and the checker must object.
-  // (Phase 90 plans 03 and 10: Strength and Lightning now read fixed engine, so the probe doctors Lightning's fixed cell back into an open call.)
   const reopened = doctor((c, at) => {
     const i = at("Lightning");
     c[i] = c[i].replace("| fixed engine (90-10) |", "| balance call (Q8) |");
@@ -464,11 +678,4 @@ test("the checker fails a match row that admits a gap and a Rolls cell with an A
     c[i] = c[i].replace("hits on 5–10 (60%)", "hits on 5-10 (60%)");
   });
   assert.ok(checkDoc(hyphen).some((p) => /ASCII hyphen/.test(p)));
-});
-
-test("the checker fails a missing sub-class row and a hand-out path with no verdict", () => {
-  const noWizard = doctor((c) => c.splice(c.findIndex((l) => l.startsWith("| Wizard |")), 1));
-  assert.ok(checkDoc(noWizard).some((p) => /missing the sub-class "Wizard"/.test(p)));
-  const noPath = doctor((c) => c.splice(c.findIndex((l) => l.includes("`encounters.js#findGrimoire`")), 1));
-  assert.ok(checkDoc(noPath).some((p) => /findGrimoire/.test(p)));
 });
