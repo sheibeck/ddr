@@ -393,7 +393,8 @@ test("the PARLEY row says what a parley is and what it pays", () => {
   assert.match(d, /full experience/);
   assert.match(d, /spoils/);
   assert.match(d, /Humans sometimes tip on top/);
-  assert.match(d, /Fail and they take it personally: every foe hits you and yours one face easier until it ends\./);
+  // Phase 91 plan 10 (TEXT-01): "one face easier" is "+1 to hit".
+  assert.match(d, /Fail and they take it personally: every foe gets \+1 to hit you and yours until it ends\./);
 });
 
 test("liveFoes is what a parley talks down (a sanity read of the shared helper)", () => {

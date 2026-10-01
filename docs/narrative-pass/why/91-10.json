@@ -1,0 +1,1020 @@
+[
+  {
+    "key": "bank:CLASS_NOTE.Fighter",
+    "surface": "blurbs",
+    "trigger": "the Fighter class blurb: content/flavor.js#CLASS_NOTE",
+    "before": "The best Hit Points in the book, any armour you can lift, and your top five faces to hit — 16–20 on the d20 at skill level I, which still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake. A scroll, for you, is an intelligence roll that can backfire — unless you paid for Runes/Signs.",
+    "after": "The best Hit Points in the book, any armour you can lift, and a hit on 16–20 on the d20 at skill level I, which still means three swings in four hit nothing but corridor. Fighters are the only delvers who die of something other than a mistake. A scroll, for you, is an intelligence roll that can backfire — unless you paid for Runes/Signs.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (91-10): the Fighter blurb states its to-hit as a range on the d20 at skill level I ('a hit on 16–20' / 'a hit only on 18–20') instead of 'your top N faces'; the swings-in-N odds are unchanged."
+  },
+  {
+    "key": "bank:CLASS_NOTE.Magic User",
+    "surface": "blurbs",
+    "trigger": "the Magic User class blurb: content/flavor.js#CLASS_NOTE",
+    "before": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and only your top three faces to hit — 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "after": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (91-10): the Magic User blurb states its to-hit as a range on the d20 at skill level I ('a hit on 16–20' / 'a hit only on 18–20') instead of 'your top N faces'; the swings-in-N odds are unchanged."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.parleyDesc",
+    "surface": "combat-screen",
+    "trigger": "the PARLEY row's description in the combat menu: src/browser/combatMenu.js#COMBAT_MENU_COPY.parleyDesc",
+    "before": "One try per fight. Talk them down and the fight ends as if you had won it, with its full experience and its spoils, and Humans sometimes tip on top. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
+    "after": "One try per fight. Talk them down and the fight ends as if you had won it, with its full experience and its spoils, and Humans sometimes tip on top. Fail and they take it personally: every foe gets +1 to hit you and yours until it ends.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (90-12 hand-off): a failed parley's insult is +1 to hit for every foe (the engine adds one winning number), so 'one face easier' reads '+1 to hit'."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Dwarven",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Dwarven footer: src/browser/identityFooter.js",
+    "before": "Good: store prices halved; being small makes you one face harder to hit; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armour wears at half the rate. Bad: foes strike on a die one size better.",
+    "after": "Good: store prices halved (torches, rope and ladders aside); being small means foes −1 to hit you; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armour wears at half the rate. Bad: foes strike on a die one size smaller (a d12 for a level 1 foe, never below a d8), so they hit you more often.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): being small reads 'foes −1 to hit you', the foe die is named (a d12 for a level 1 foe), and prices say which lines they reach. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Elven",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Elven footer: src/browser/identityFooter.js",
+    "before": "Good: store prices halved; can always parley with Humans, +3 on that parley roll; strikes on a die one size better (a d12 at level 1, not a d20); at least your top five faces hit, whatever the class. Bad: being small costs 2 damage; 60% of the usual HP, at every level; foes land on one face more against you.",
+    "after": "Good: store prices halved (torches, rope and ladders aside); can always parley with Humans, +3 on that parley roll; your strike die is one size smaller (a d12 at level 1, not a d20), so you hit more often; you hit on at least the top five numbers of your strike die (16–20 on a d20), whatever the class. Bad: being small costs 2 damage; 60% of the usual HP, at every level; foes +1 to hit you.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): foes +1 to hit you, the strike die and the to-hit floor read in plain words with the d20 range, prices say which lines they reach, and the parley with Humans is explained. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Fridgian",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Fridgian footer: src/browser/identityFooter.js",
+    "before": "Good: each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit); thick hide soaks 2 from every blow. Bad: can never wear armour; never wins initiative.",
+    "after": "Good: each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit); thick hide soaks 2 from every blow. Bad: can never wear armour; can never be a Samurai (the job comes with plate); never wins initiative.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Samurai exclusion is stated (a Fridgian can never be one), and the frenzy's minus uses the U+2212 sign. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Troll",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Troll footer: src/browser/identityFooter.js",
+    "before": "Good: starts with 75 HP whatever the class; +11 damage with every weapon (2 of it for being large). Bad: store prices doubled; being large makes you one face easier to hit; a night without rations costs 15 HP (a Human's costs 4); eats two rations a night.",
+    "after": "Good: starts with 75 HP whatever the class; +11 damage with every weapon (2 of it for being large). Bad: store prices doubled (torches, rope and ladders aside); being large means foes +1 to hit you; a night without rations costs 15 HP (a Human's costs 4); eats two rations a night.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): 75 starting hit points, +11 damage with the Large +2 inside it, the 15 HP unfed night and foes +1 to hit you are all stated, and prices say which lines they reach. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Apprentice",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Apprentice footer: src/browser/identityFooter.js",
+    "before": "Good: double experience from kills until level 3. Bad: one spell in eight backfires; no divination spells until level 3.",
+    "after": "Good: double experience from kills until level 3; may learn Illusion spells, which no other Magic User but the Illusionist can. Bad: one of your own spells in eight backfires; no divination spells until level 3.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Illusion school is stated (it was an unstated good), and the backfire is 'one of your own spells' (a Joiner Apprentice never backfires). The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cat Burglar",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Cat Burglar footer: src/browser/identityFooter.js",
+    "before": "Good: your first strike of every fight always lands. Bad: every trap that catches you deals double damage.",
+    "after": "Good: your first strike of every fight always lands; starts with the Dirty Trick skill for free. Bad: every trap that catches you deals double damage.",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the double trap damage and the free Dirty Trick are stated. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cleric",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Cleric footer: src/browser/identityFooter.js",
+    "before": "Good: every healing spell heals 3 more; your top four faces hit, not a Magic User's three; always starts with Heal in the book. Bad: never learns offense, special or illusion spells; no divination spells until level 3.",
+    "after": "Good: every healing spell heals 3 more; +1 to hit over other Magic Users (17–20 on a d20 at level 1); always starts with Heal in the book; starts in chain mail, where every other Magic User starts in cloth. Bad: never learns offense, special or illusion spells; no divination spells until level 3.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the +1 to hit over other Magic Users names its range on a d20, the chain-mail start is stated (Q2 A), the blurb states the offense ban and that a scroll will still fire one (Q3 B), and the 'turning the dead' claim is gone. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Court Mage",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Court Mage footer: src/browser/identityFooter.js",
+    "before": "Good: one foe in six dies of boredom before the fight starts; can always parley with Humans; your thrown offense spells land on two more faces. Bad: foes act first in round one; no divination spells until level 4; never learns special or illusion spells.",
+    "after": "Good: one foe in six dies of boredom before the fight starts; can always parley with Humans; +2 to hit with thrown offense spells. Bad: foes act first in round one; no divination spells until level 4; never learns special or illusion spells.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +2 to hit, and the blurb states the parley with Humans, the divination gate and the closed Special and Illusion schools. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Guard",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Guard footer: src/browser/identityFooter.js",
+    "before": "Good: every foe lands on one face fewer against you. Bad: your blows deal 3 less at level 1, one less each level until level 4; your blows never crit.",
+    "after": "Good: foes −1 to hit you. Bad: your blows deal 3 less at level 1, one less each level until level 4; your blows never crit.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): 'foes −1 to hit you' replaces the one-face-fewer wording. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Illusionist",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Illusionist footer: src/browser/identityFooter.js",
+    "before": "Good: you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose; starts with Mirror Self, Door Illusion and one random Illusion spell.",
+    "after": "Good: you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose; starts with Mirror Self, Door Illusion and one random Illusion spell; your Open/Lock, Fly, Enchant Character and Speed of Sound last 40 squares longer, and Stop Time lasts 4 rounds longer. Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Special stretch (40 squares and 4 rounds longer) is stated, and the blurb names the protection gate and the closed healing school. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Ninja",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Ninja footer: src/browser/identityFooter.js",
+    "before": "Good: your opening strike always lands for maximum damage; after that, your top two faces crit. Bad: can never talk a fight down.",
+    "after": "Good: your opening strike always lands for maximum damage, doubled by the backstab unless you are in heavy armour or the dark; after that, you crit on the top two numbers of your strike die (19–20 on a d20); starts with the Silent Step skill for free. Bad: can never talk a fight down.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the crit range reads 'the top two numbers of your strike die (19–20 on a d20)', the opener says the backstab doubles it, and the free Silent Step is stated. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Pickpocket",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Pickpocket footer: src/browser/identityFooter.js",
+    "before": "Good: whenever you gain an item from a chest or a monster, you gain one extra item as well. Bad: shops charge you a quarter more and pay a quarter less.",
+    "after": "Good: whenever you gain an item from a chest or a monster, you gain one extra item as well. Bad: shops charge you a quarter more (torches, rope and ladders aside) and pay a quarter less.",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the three flat-priced tools are named (Q8 A), and the blurb no longer says the shopkeepers remember your 'face'. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Soldier",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Soldier footer: src/browser/identityFooter.js",
+    "before": "Good: camp heals you twice as much; knighted at level 3. Bad: foes crit you on their top two faces, not just the top one; your blows never crit.",
+    "after": "Good: camp heals you twice as much; knighted at level 3: you become a Knight and swap your weapon for an Awl Pike. Bad: foes crit you on 19–20 on a d20, not just 20; your blows never crit.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the foe crit range is 19–20 on a d20, and camp healing and the knighting weapon swap (an Awl Pike) are stated. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Sorcerer",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Sorcerer footer: src/browser/identityFooter.js",
+    "before": "Good: starts with Freeze and Fireball in the book; learns two new spells at every level; your thrown offense spells land on four more faces. Bad: weapon damage never goes above 9; one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning; no healing spells until level 4; never learns illusion spells.",
+    "after": "Good: starts with Freeze and Fireball in the book; learns two new spells at every level; +4 to hit with thrown offense spells; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer. Bad: weapon damage never goes above 9; one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning; no healing spells until level 4; never learns illusion spells.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +4 to hit, the Special stretch (10 squares and 1 round longer) is stated, and the blurb names the healing gate and the closed Illusion school. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Summoner",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Summoner footer: src/browser/identityFooter.js",
+    "before": "Good: a Summon is always in the book from day one; a full Summon arrives a level stronger, and its duration die counts double; Summon castable from level 1 (level 2 for everyone else). Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+    "after": "Good: a Summon is always in the book from day one; a full Summon arrives a level stronger, and its duration die counts double; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer; Summon castable from level 1 (level 2 for everyone else). Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Special stretch is stated, and the blurb states the Summon-from-level-1 exception, the closed Illusion school and the healing weakness. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Warlock",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Warlock footer: src/browser/identityFooter.js",
+    "before": "Good: copies a potion every night it has one; your thrown offense spells land on four more faces. Bad: every Walking Dead foe in the fight gains HP equal to your level; no protection spells until level 4; no healing spells until level 3; never learns special or illusion spells.",
+    "after": "Good: copies a potion every night it has one; +4 to hit with thrown offense spells. Bad: every Walking Dead foe in the fight gains HP equal to your level; no protection spells until level 4; no healing spells until level 3; never learns special or illusion spells.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +4 to hit, and the blurb names the closed schools (Special, Illusion) and both school gates. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Wizard",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Wizard footer: src/browser/identityFooter.js",
+    "before": "Good: always starts with a level 1 direct-damage spell it can cast on day one; your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells.",
+    "after": "Good: always starts with a level 1 direct-damage spell it can cast on day one; +3 to hit with thrown offense spells. Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +3 to hit. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers)."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Dwarven.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Dwarven footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "store prices halved",
+    "after": "store prices halved (torches, rope and ladders aside)",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "Q8 A: the price rule reaches every stock line but the three flat-priced tools, and the line now says so."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Elven.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Elven footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "store prices halved",
+    "after": "store prices halved (torches, rope and ladders aside)",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "Q8 A: the price rule reaches every stock line but the three flat-priced tools, and the line now says so."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.race.Troll.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Troll footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "store prices doubled",
+    "after": "store prices doubled (torches, rope and ladders aside)",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "Q8 A: the price rule reaches every stock line but the three flat-priced tools, and the line now says so."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Acrobat footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "your top five faces hit, like a Fighter's (six with the dagger)",
+    "after": "you hit on 16–20 on a d20 at level 1, like a Fighter (15–20 with the dagger)",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01: the hit range is named on a d20, 16–20 at level 1 and 15–20 with the dagger, read back through classNeed and the dagger's need."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.good.2.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Acrobat footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "",
+    "after": "dodges traps on 13–20 on a d20, not 16–20",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12: the Acrobat's trap dodge (a 13–20 on the d20 instead of 16–20) was an unstated advantage; it is a stated trait now."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Apprentice.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Apprentice footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "one spell in eight backfires",
+    "after": "one of your own spells in eight backfires",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "IDENT-12: a Joiner Apprentice never backfires, so the line says whose spell: yours."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Apprentice.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Apprentice footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "",
+    "after": "may learn Illusion spells, which no other Magic User but the Illusionist can",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "IDENT-12: the Apprentice may learn Illusion spells (the Wizard lost the school in Phase 90); it was an unstated advantage."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Cleric footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "your top four faces hit, not a Magic User's three",
+    "after": "+1 to hit over other Magic Users (17–20 on a d20 at level 1)",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and Q2 A: '+1 to hit over other Magic Users' with its d20 range replaces 'top four faces'."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.3.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Cleric footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "",
+    "after": "starts in chain mail, where every other Magic User starts in cloth",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "Q2 A (user 2026-09-30): the real trade the 'more hit points' ruling asked the text to state: the Cleric starts in chain mail."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Guard.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Guard footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "every foe lands on one face fewer against you",
+    "after": "foes −1 to hit you",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01: 'foes −1 to hit you' replaces 'one face fewer'."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Ninja footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "your opening strike always lands for maximum damage",
+    "after": "your opening strike always lands for maximum damage, doubled by the backstab unless you are in heavy armour or the dark",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "IDENT-12: the Thief's backstab doubles the opening strike (unless heavy armour or the dark stops it), which the line omitted."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Ninja footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "after that, your top two faces crit",
+    "after": "after that, you crit on the top two numbers of your strike die (19–20 on a d20)",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (user 2026-09-30): the crit range is the top two numbers of the strike die, said plainly with its d20 range, never 'top two faces'."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Pickpocket.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Pickpocket footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "shops charge you a quarter more and pay a quarter less",
+    "after": "shops charge you a quarter more (torches, rope and ladders aside) and pay a quarter less",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "Q8 A: the buying markup reaches every stock line but the three flat-priced tools, and the line now says so."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.bad.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Soldier footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "foes crit you on their top two faces, not just the top one",
+    "after": "foes crit you on 19–20 on a d20, not just 20",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01: 'top two faces' is the d20 range 19–20 (atLeastFor(2, 20))."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Soldier.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Soldier footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "knighted at level 3",
+    "after": "knighted at level 3: you become a Knight and swap your weapon for an Awl Pike",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12: the knighting swaps the weapon for an Awl Pike with no choice, which the line omitted."
+  },
+  {
+    "key": "bank:RACE_NOTE.Dwarven",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Dwarven blurb: content/flavor.js#RACE_NOTE",
+    "before": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising — but your armour shrugs off wear at half the rate everyone else's does, and being small makes you one face harder to hit besides. Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+    "after": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising (a die one size smaller, so a level 1 foe rolls a d12) — but your armour shrugs off wear at half the rate everyone else's does, and being small means foes get −1 to hit you besides. Shops halve their prices for you (torches, rope and ladders aside). Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): being small reads 'foes −1 to hit you', the foe die is named (a d12 for a level 1 foe), and prices say which lines they reach; every advantage and drawback the footer lists is now in the blurb."
+  },
+  {
+    "key": "bank:RACE_NOTE.Elven",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Elven blurb: content/flavor.js#RACE_NOTE",
+    "before": "Thin-boned, easy to hit, and carrying not much more than half a person's Hit Points — but you strike a die better than anyone has a right to, and your top five faces land whatever the class. Small costs you two points of damage and nothing else; the size rule has nothing left to add to how thin-boned or easy to hit you already were. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+    "after": "Thin-boned and carrying not much more than half a person's Hit Points (60%, at every level), so foes get +1 to hit you — but you strike on a die one size smaller than anyone has a right to, and you hit on at least the top five numbers of it whatever the class (16–20 on a d20). Small costs you two points of damage and nothing else; the size rule has nothing left to add to how thin-boned or easy to hit you already were. Shops halve their prices for you (torches, rope and ladders aside), and you can always parley with Humans, which is talking a fight down, at +3 on the roll: most humans treasure the sighting of an elf as a good omen. The elven plan is to kill it before it notices how little you can take. The plan holds until it doesn't.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): foes +1 to hit you, the strike die and the to-hit floor read in plain words with the d20 range, prices say which lines they reach, and the parley with Humans is explained; every advantage and drawback the footer lists is now in the blurb."
+  },
+  {
+    "key": "bank:RACE_NOTE.Fridgian",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Fridgian blurb: content/flavor.js#RACE_NOTE",
+    "before": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (-1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
+    "after": "You will not wear armour — which is why there are no Fridgian Samurai — though your hide alone soaks two points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (−1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Samurai exclusion is stated (a Fridgian can never be one), and the frenzy's minus uses the U+2212 sign; every advantage and drawback the footer lists is now in the blurb."
+  },
+  {
+    "key": "bank:RACE_NOTE.Troll",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Troll blurb: content/flavor.js#RACE_NOTE",
+    "before": "Seventy-five Hit Points, +11 damage per swing (nine Troll, two more for being Large), and an appetite that goes through two rations a night. The strongest thing on most floors, one face easier for anything to hit, and the first to starve on all of them. Shops charge you double for everything but the tools.",
+    "after": "75 starting hit points whatever the class, and +11 damage per swing (nine for being a Troll, the Large +2 inside the 11), and an appetite that goes through two rations a night: a night without them costs you 15 HP. The strongest thing on most floors, +1 to hit you for anything down here because you are large, and the first to starve on all of them. Shops charge you double for everything but the tools.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): 75 starting hit points, +11 damage with the Large +2 inside it, the 15 HP unfed night and foes +1 to hit you are all stated, and prices say which lines they reach; every advantage and drawback the footer lists is now in the blurb."
+  },
+  {
+    "key": "bank:RACE_NOTE.Wilmsry",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Wilmsry blurb: content/flavor.js#RACE_NOTE",
+    "before": "You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.",
+    "after": "You heal twice as fast (rest, potions and your own healing spells) and learn half as quickly, so you will survive a great deal and understand almost none of it. You can always parley, which is talking a fight down, with anything but Magical foes and the Walking Dead, at +4 on every parley roll, and shops take 30% off for you: everyone wants to bargain with a Wilmsry. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the blurb states the parley (+4), the haggle and what the heal covers; every advantage and drawback the footer lists is now in the blurb."
+  },
+  {
+    "key": "bank:SUB_NOTE.Apprentice",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Apprentice blurb: content/flavor.js#SUB_NOTE",
+    "before": "Double experience points until level three, one spell in eight goes off in your hands, and at level three you finally roll to discover what you actually are. Assuming you get there.",
+    "after": "Double experience points until level three, one of your spells in eight goes off in your hands, and at level three you finally roll to discover what you actually are. You may learn Illusion spells, which no other Magic User but the Illusionist can, and divination waits until level 3. Assuming you get there.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Illusion school is stated (it was an unstated good), and the backfire is 'one of your own spells' (a Joiner Apprentice never backfires); every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Bard",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Bard blurb: content/flavor.js#SUB_NOTE",
+    "before": "Once a fight you sing a random offense or defense spell up to your level, at full strength, no charges spent: you pick the moment and the song picks the spell. And every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
+    "after": "Once a fight you sing a random offense or defense spell up to your level, at full strength, no charges spent: you pick the moment and the song picks the spell. And you can always parley with Humans, which is talking a fight down: every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the parley with Humans says what a parley is; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cat Burglar",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Cat Burglar blurb: content/flavor.js#SUB_NOTE",
+    "before": "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it. These two facts are related.",
+    "after": "Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it: every trap that catches you deals double damage. These two facts are related. You start knowing Dirty Trick for free, which is the only perk anyone has ever mentioned.",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the double trap damage and the free Dirty Trick are stated; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cleric",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Cleric blurb: content/flavor.js#SUB_NOTE",
+    "before": "Healing, turning the dead and chain mail: the one Magic User the dungeon cannot simply push over. The gods approve of mending and have ruled out fireballs, so no offense spell ever lands in your book, and Heal is always on the first page. Your top four faces hit instead of three. The gods have rounded up.",
+    "after": "Healing, chain mail and a better aim than the rest of the book: your healing spells heal 3 more and you get +1 to hit over other Magic Users (17–20 on a d20 at level 1). You start in chain mail, with Heal always on the first page. The gods approve of mending and have ruled out fireballs: you can never learn offense, special or illusion spells, so no offense spell ever lands in your book — though a scroll will still fire one, because the gods do not proofread scrolls. Divination waits until level 3. The gods have rounded up.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the +1 to hit over other Magic Users names its range on a d20, the chain-mail start is stated (Q2 A), the blurb states the offense ban and that a scroll will still fire one (Q3 B), and the 'turning the dead' claim is gone; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Con Artist",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Con Artist blurb: content/flavor.js#SUB_NOTE",
+    "before": "You talk first, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+    "after": "You talk first: you can always parley, which is talking a fight down, with anything but Magical foes and the Walking Dead, at +4 on every parley roll, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the parley says what a parley is and states its +4; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Court Mage",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Court Mage blurb: content/flavor.js#SUB_NOTE",
+    "before": "You talk. Through encounters, through corridors, through other people's turns — which means that when a fight actually starts, everyone else gets there first. One creature in six dies of boredom before it comes to that, and the book counts that as a kill.",
+    "after": "You talk. Through encounters, through corridors, through other people's turns — you can always parley with Humans, which is talking a fight down, and when a fight actually starts, everyone else gets there first. One creature in six dies of boredom before it comes to that, and the book counts that as a kill. Your thrown offense spells land at +2 to hit, divination waits until level 4, and Special and Illusion are closed to you for good.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +2 to hit, and the blurb states the parley with Humans, the divination gate and the closed Special and Illusion schools; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Cutthroat blurb: content/flavor.js#SUB_NOTE",
+    "before": "Double damage on your first landed blow, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "after": "Double damage on your first landed blow, even in heavy armour, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the first-blow crit says it works in heavy armour; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Guard",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Guard blurb: content/flavor.js#SUB_NOTE",
+    "before": "No critical strike, ever, and three damage off every blow at level one, one less each level until it is gone at four — but every creature down here lands on one face fewer against you. You are a professional. The profession is standing there.",
+    "after": "No critical strike, ever, and three damage off every blow at level one, one less each level until it is gone at four — but foes get −1 to hit you, every creature down here included. You are a professional. The profession is standing there.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): 'foes −1 to hit you' replaces the one-face-fewer wording; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Illusionist",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Illusionist blurb: content/flavor.js#SUB_NOTE",
+    "before": "Step on a teleport square and you choose where it puts you: any explored floor square up to 12 squares away in the eight directions, or let it choose, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting.",
+    "after": "Step on a teleport square and you choose where it puts you: any explored floor square up to 12 squares away in the eight directions, or let it choose, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting. Your Special spells run very long (40 squares longer, Stop Time 4 rounds longer), protection waits until level 3, and healing is closed to you for good: the mirror can't bandage anyone.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Special stretch (40 squares and 4 rounds longer) is stated, and the blurb names the protection gate and the closed healing school; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Ninja",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Ninja blurb: content/flavor.js#SUB_NOTE",
+    "before": "You never speak — literally; no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage and after that your top two faces open something up. The silence isn't a vow, it's a tactic.",
+    "after": "You never speak — literally; no parley, no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage (the Thief's backstab doubles it, unless you are in heavy armour or the dark), and after that you crit on the top two numbers of your strike die (19–20 on a d20). You start knowing Silent Step for free. The silence isn't a vow, it's a tactic.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the crit range reads 'the top two numbers of your strike die (19–20 on a d20)', the opener says the backstab doubles it, and the free Silent Step is stated; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Pickpocket",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Pickpocket blurb: content/flavor.js#SUB_NOTE",
+    "before": "Whenever a chest or a monster hands over an item, you somehow walk away with one extra item as well: a talent, not a miracle. You have never been caught, but every shopkeeper in the maze remembers your face all the same — a quarter more to buy from them, a quarter less when you sell. You have never been thanked either.",
+    "after": "Whenever a chest or a monster hands over an item, you somehow walk away with one extra item as well: a talent, not a miracle. You have never been caught, but every shopkeeper in the maze remembers you all the same — a quarter more to buy from them (torches, rope and ladders cost the same for everyone), a quarter less when you sell. You have never been thanked either.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the three flat-priced tools are named (Q8 A), and the blurb no longer says the shopkeepers remember your 'face'; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Soldier",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Soldier blurb: content/flavor.js#SUB_NOTE",
+    "before": "Foes crit you on their top two faces instead of one, and you deal criticals never. Serve to skill level III and they knight you, which is the army conceding that the first three levels were a waste of you.",
+    "after": "Foes crit you on 19–20 on a d20 instead of just 20, and you deal criticals never. Camp heals you twice as much. Serve to skill level III and they knight you, swapping your weapon for an Awl Pike, which is the army conceding that the first three levels were a waste of you.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the foe crit range is 19–20 on a d20, and camp healing and the knighting weapon swap (an Awl Pike) are stated; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Sorcerer",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Sorcerer blurb: content/flavor.js#SUB_NOTE",
+    "before": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your arm caps out at 9 damage. Nobody hired the arm.",
+    "after": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your thrown offense spells land at +4 to hit, and your Special spells run long: Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, Stop Time 1 round longer. Healing waits until level 4, Illusion is closed to you for good, and your arm caps out at 9 damage. Nobody hired the arm.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +4 to hit, the Special stretch (10 squares and 1 round longer) is stated, and the blurb names the healing gate and the closed Illusion school; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Summoner",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Summoner blurb: content/flavor.js#SUB_NOTE",
+    "before": "You can call a full Summon from your very first day — a level stronger and longer-lived than anyone else's, and one time in eight it arrives on the wrong side. Your own healing spells, meanwhile, heal at half strength. The book declines to say whose fault any of that is.",
+    "after": "A Summon is always in your book, and you can call it from your very first day (everyone else waits for level 2) — a full Summon, a level stronger and longer-lived than anyone else's, and one time in eight it arrives on the wrong side. Your Special spells run long (10 squares longer, Stop Time 1 round longer), your own healing spells heal at half strength, and Illusion is closed to you for good. The book declines to say whose fault any of that is.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the Special stretch is stated, and the blurb states the Summon-from-level-1 exception, the closed Illusion school and the healing weakness; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Warlock",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Warlock blurb: content/flavor.js#SUB_NOTE",
+    "before": "Evil, and productive with it — a potion copied every day and a standing bonus to every walking dead thing in the room. The dead don't know you're helping. You haven't told them.",
+    "after": "Evil, and productive with it — a potion copied every night it has one, +4 to hit with thrown offense spells, and a standing bonus to every walking dead thing in the room (hit points equal to your level). The dead don't know you're helping. You haven't told them. Evil keeps the books closed on Special and Illusion, and holds protection back until level 4 and healing until level 3.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +4 to hit, and the blurb names the closed schools (Special, Illusion) and both school gates; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Wizard",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Wizard blurb: content/flavor.js#SUB_NOTE",
+    "before": "Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+    "after": "Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the thrown-spell bonus reads +3 to hit; every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "bank:SUB_NOTE.Woodsman",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Woodsman blurb: content/flavor.js#SUB_NOTE",
+    "before": "No mail, no plate — the store won't offer it and your own hands won't take it — no shield, and a quarter staff you are genuinely superb with. You speak to every beast in here, the Drake included; whether it listens is the Drake's business.",
+    "after": "No mail, no plate — the store won't offer it and your own hands won't take it — and a quarter staff you are genuinely superb with. You can always parley with every beast in here, the Drake included, which is talking a fight down, and every parley you try gets +3 on the roll; whether the Drake listens is the Drake's business.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the beast parley says what a parley is and states its +3, and 'no shield' is gone (the game has no shields); every advantage and drawback the footer lists is now in the blurb, in the house voice."
+  },
+  {
+    "key": "content:RACES.Dwarven.note",
+    "surface": "blurbs",
+    "trigger": "the Dwarven row's own note: content/races.js#RACES.Dwarven.note",
+    "before": "+2 damage and 1 hp/day upkeep; foes strike at a better die; armour wears at half the rate; being small makes it one face harder to hit.",
+    "after": "+2 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12 and TEXT-01 (91-10): the Dwarven note states every trait the footer lists (being small reads 'foes −1 to hit you', the foe die is named (a d12 for a level 1 foe), and prices say which lines they reach)."
+  },
+  {
+    "key": "content:RACES.Elven.note",
+    "surface": "blurbs",
+    "trigger": "the Elven row's own note: content/races.js#RACES.Elven.note",
+    "before": "Strikes a die better and lands on its top five faces whatever the class — but thin-boned and easy to hit, and being small costs it 2 damage.",
+    "after": "Thin-boned and easy to hit (foes get +1 to hit it), with 60% of the usual HP, and being small costs it 2 damage; but it strikes on a smaller die and hits on at least the top five numbers of it (16–20 on a d20) whatever the class; store prices halved (torches, rope and ladders aside); can always parley with Humans (talking a fight down) at +3 on that parley roll.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12 and TEXT-01 (91-10): the Elven note states every trait the footer lists (foes +1 to hit you, the strike die and the to-hit floor read in plain words with the d20 range, prices say which lines they reach, and the parley with Humans is explained)."
+  },
+  {
+    "key": "content:RACES.Fridgian.note",
+    "surface": "blurbs",
+    "trigger": "the Fridgian row's own note: content/races.js#RACES.Fridgian.note",
+    "before": "Never wears armour, never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at -1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+    "after": "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12 and TEXT-01 (91-10): the Fridgian note states every trait the footer lists (the Samurai exclusion is stated (a Fridgian can never be one), and the frenzy's minus uses the U+2212 sign)."
+  },
+  {
+    "key": "content:RACES.Troll.note",
+    "surface": "blurbs",
+    "trigger": "the Troll row's own note: content/races.js#RACES.Troll.note",
+    "before": "75 hp regardless of class and +11 damage (being large adds 2), but eats two rations a night and is one face easier to hit.",
+    "after": "75 hp regardless of class and +11 damage (being large adds 2), but eats two rations a night, loses 15 HP on a night without them, and foes get +1 to hit it; store prices doubled (torches, rope and ladders aside).",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12 and TEXT-01 (91-10): the Troll note states every trait the footer lists (75 starting hit points, +11 damage with the Large +2 inside it, the 15 HP unfed night and foes +1 to hit you are all stated, and prices say which lines they reach)."
+  },
+  {
+    "key": "content:RACES.Wilmsry.note",
+    "surface": "blurbs",
+    "trigger": "the Wilmsry row's own note: content/races.js#RACES.Wilmsry.note",
+    "before": "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.",
+    "after": "Heals twice as much (rest, potions, own healing spells) and gets half the experience; can always parley (talking a fight down) with anything but Magical foes and the Walking Dead, at +4 on every parley roll; store prices 30% off; refuses to take Magic Users on as Joiners.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "IDENT-12 and TEXT-01 (91-10): the Wilmsry note states every trait the footer lists (the blurb states the parley (+4), the haggle and what the heal covers)."
+  },
+  {
+    "key": "oracle:struck",
+    "surface": "oracle",
+    "trigger": "a Ninja's later crit on the Oracle: src/browser/eventNarration.js#struck",
+    "before": "7 vs 12–20 (weapon +1, insulted −2). A Ninja's top two faces. Critical! You hit Viper for 6 hp.",
+    "after": "7 vs 12–20 (weapon +1, insulted −2). A Ninja's top two numbers. Critical! You hit Viper for 6 hp.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (90-12 hand-off): a Ninja's crit is the top two numbers of the strike die; 'faces' is plain words now (the footer states the d20 range, 19–20)."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero condition chip's explanation: mazeworld.html#CONDITION_EXPLAIN",
+    "before": "Your song is still ringing in your ears: your own strikes land one face easier. The party is pretending not to have heard it.",
+    "after": "Your song is still ringing in your ears: your own strikes get +1 to hit. The party is pretending not to have heard it.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (90-12 hand-off): the insult chip and the Bard's song chip read '+1 to hit' instead of 'one face easier' (the song chip is dead copy since plan 91-06)."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero condition chip's explanation: mazeworld.html#CONDITION_EXPLAIN",
+    "before": "You insulted them and they took it personally: every foe finds it one face easier to hit you and yours.",
+    "after": "You insulted them and they took it personally: every foe gets +1 to hit you and yours.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (90-12 hand-off): the insult chip and the Bard's song chip read '+1 to hit' instead of 'one face easier' (the song chip is dead copy since plan 91-06)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "… size…",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "your strike die is … … (a d… at level 1, not a d…), so you hit … often",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "… numbers",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "you hit on at least the top … of your strike die (… on a d…), whatever the class",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "foes … to hit you",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "(a d… for a level 1 foe, never below a d…)",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "foes strike on a die … ……, so they hit you … often",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#RACE_FIELD_LINES",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#RACE_FIELD_LINES), shown only inside a composed footer",
+    "before": "",
+    "after": "can never be a Samurai (the job comes with plate)",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's RACE_FIELD_LINES fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#andList",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#andList), shown only inside a composed footer",
+    "before": "",
+    "after": "… and …",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's andList fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#chartLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#chartLines), shown only inside a composed footer",
+    "before": "",
+    "after": "… to hit with thrown … spells",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's chartLines fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#faces",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#faces), shown only inside a composed footer",
+    "before": "… face…",
+    "after": "",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's faces fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#sizeLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#sizeLines), shown only inside a composed footer",
+    "before": "",
+    "after": "being … means foes … to hit you",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's sizeLines fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#sizeLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#sizeLines), shown only inside a composed footer",
+    "before": "being … makes you … harder to hit",
+    "after": "",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's sizeLines fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#stretchLine",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#stretchLine), shown only inside a composed footer",
+    "before": "",
+    "after": "your … last … squares longer",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's stretchLine fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#stretchLine",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#stretchLine), shown only inside a composed footer",
+    "before": "",
+    "after": "…… … … round… longer",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's stretchLine fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#stretchLine",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#stretchLine), shown only inside a composed footer",
+    "before": "",
+    "after": ", and",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's stretchLine fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  },
+  {
+    "key": "raw:src/browser/identityFooter.js#subLines",
+    "surface": "other",
+    "trigger": "a fragment of the generated footer (src/browser/identityFooter.js#subLines), shown only inside a composed footer",
+    "before": "",
+    "after": "starts with the … skill for free",
+    "reasons": [
+      "accurate",
+      "natural"
+    ],
+    "why": "TEXT-01 (91-10): the generator's subLines fragment is written in the to-hit form (or is new: the Special stretch and the free skill)."
+  }
+]

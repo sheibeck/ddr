@@ -119,7 +119,7 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // Phase 91 plan 05 (PARLEY-01, user: "the parley card states what a parley is and what it pays"):
   // what a parley is (one try, talk them down), what winning pays (the fight ends as if won:
   // full experience and its spoils, the Humans tip on top) and what failing costs.
-  parleyDesc: "One try per fight. Talk them down and the fight ends as if you had won it, with its full experience and its spoils, and Humans sometimes tip on top. Fail and they take it personally: every foe hits you and yours one face easier until it ends.",
+  parleyDesc: "One try per fight. Talk them down and the fight ends as if you had won it, with its full experience and its spoils, and Humans sometimes tip on top. Fail and they take it personally: every foe gets +1 to hit you and yours until it ends.",
   // Phase 90 plan 09 (SPELL-10): why a Chameleon Tongue or Door Illusion row is greyed
   // (engine/combat.js#parleyBlockedReason and #fleeRefusal, the same predicates castSpell
   // refuses on BEFORE any charge is spent). One line per reason, in the player's terms.

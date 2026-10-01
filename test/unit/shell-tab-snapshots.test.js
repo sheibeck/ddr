@@ -104,6 +104,21 @@
 // went 75 -> 150, times the Thief's 0.7 haggle). Every other of the eight
 // committed fixtures re-wrote byte-identical (`git diff` empty).
 //
+// Phase 91 (TEXT-01, IDENT-12), Plan 10: TWO declared regenerations, every
+// other fixture byte-identical (confirmed with `git diff --ignore-cr-at-eol
+// --stat` at regeneration time: the other six re-wrote the same bytes).
+// The Hero tab's Dossier paints the race, class and sub-class blurbs and
+// their mechanical footers, which the identity text pass rewrote in the
+// TEXT-01 form ("+N to hit", a d20 range, "can always parley") and completed
+// (every advantage and drawback its footer lists is in the blurb too):
+//   - thief.hero: the Wilmsry blurb and RACES note (the parley, the haggle and
+//     the heal are stated) and the Cat Burglar blurb and footer (the double
+//     trap damage, and the free Dirty Trick the footer now names);
+//   - mu.hero: the Magic User class blurb (a range on the d20, no "faces")
+//     and the Wizard blurb and footer it paints (+3 to hit with thrown
+//     offense spells instead of "three more faces").
+// No DOM structure moved; only the strings the content tables now hold.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

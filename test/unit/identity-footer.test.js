@@ -130,9 +130,10 @@ test("chart: every gate above level 1, every never-learned school, every healMul
   }
 });
 
-test("chart: the bonus line reads the schoolBonus face count exactly (offense bonus 3 -> three more faces)", () => {
-  assert.ok(identityFooter("sub", "Wizard").good.includes(`your thrown offense spells land on three more faces`));
-  assert.ok(identityFooter("sub", "Warlock").good.includes(`your thrown offense spells land on four more faces`));
+// Phase 91 plan 10 (TEXT-01, user 2026-09-30): "land on three more faces" reads "+3 to hit".
+test("chart: the bonus line reads the schoolBonus exactly (offense bonus 3 -> +3 to hit with thrown offense spells)", () => {
+  assert.ok(identityFooter("sub", "Wizard").good.includes("+3 to hit with thrown offense spells"));
+  assert.ok(identityFooter("sub", "Warlock").good.includes("+4 to hit with thrown offense spells"));
 });
 
 test("chart (deliberate): the engine reads schoolBonus only in the thrown-spell branches, so a bonus on a school with no thrown spell is never stated", () => {
@@ -229,20 +230,20 @@ test("coverage: a scratch RACES field nobody phrased is reported", () => {
   assert.deepEqual(unphrasedRaceFields(scratch), ["zapFactor"]);
 });
 
-test("race lines: the size signature reads the engine's net truth (Dwarven +2 kept, one face harder; Elven 2 less damage, no size face line; Troll +11 with 2 of it for being large, one face easier)", () => {
+test("race lines: the size signature reads the engine's net truth (Dwarven +2 kept, foes −1 to hit you; Elven 2 less damage, no size to-hit line; Troll +11 with 2 of it for being large, foes +1 to hit you)", () => {
   const dwarven = identityFooter("race", "Dwarven");
   assert.ok(dwarven.good.includes("+2 damage with every weapon"));
-  assert.ok(dwarven.good.includes("being small makes you one face harder to hit"));
+  assert.ok(dwarven.good.includes("being small means foes −1 to hit you"));
   assert.ok(!dwarven.bad.some((t) => /damage/.test(t) && /small/.test(t)), "the Dwarven damage axis is masked");
   const elven = identityFooter("race", "Elven");
   assert.ok(elven.bad.includes("being small costs 2 damage"));
-  assert.ok(![...elven.good, ...elven.bad].some((t) => /harder to hit/.test(t)), "the Elven face axis is masked");
-  assert.ok(elven.bad.includes("foes land on one face more against you"));
+  assert.ok(![...elven.good, ...elven.bad].some((t) => /^being small means foes/.test(t)), "the Elven face axis is masked");
+  assert.ok(elven.bad.includes("foes +1 to hit you"));
   assert.ok(elven.bad.includes("60% of the usual HP, at every level"));
   const troll = identityFooter("race", "Troll");
   assert.ok(troll.good.includes("+11 damage with every weapon (2 of it for being large)"));
   assert.ok(!troll.good.some((t) => t.startsWith("being large adds")), "the size share joins the damage line");
-  assert.ok(troll.bad.includes("being large makes you one face easier to hit"));
+  assert.ok(troll.bad.includes("being large means foes +1 to hit you"));
 });
 
 test("race lines: the Fridgian frenzy odds match the engine's own frenzy check (a 4-6 on a d6, IDENT-20)", () => {
@@ -379,31 +380,33 @@ function hero(sub, race = "Human") {
   return newRun(1, [], { force: { sub, race } });
 }
 
-test("ROLL-04 pin: the Fighter note's face count, level-1 range and miss odds come from CLASSES.Fighter.toHit", () => {
+// Phase 91 plan 10 (TEXT-01, user 2026-09-30): the ROLL-04 pins below keep their numbers and lose the "faces" wording:
+// a range is named on the d20 (rollRange.js), a shift is a signed to-hit. test/unit/identity-text.test.js is the guard.
+test("TEXT-01 pin: the Fighter note's level-1 range and miss odds come from CLASSES.Fighter.toHit", () => {
   const n = CLASSES.Fighter.toHit;
-  assert.ok(CLASS_NOTE.Fighter.includes(`your top ${FACE_WORD[n]} faces to hit — ${facesRangeText(n, D20)} on the d20 at skill level I`));
+  assert.ok(CLASS_NOTE.Fighter.includes(`a hit on ${facesRangeText(n, D20)} on the d20 at skill level I`));
   assert.equal((D20 - n) / D20, 3 / 4, "three swings in four miss");
   assert.match(CLASS_NOTE.Fighter, /three swings in four hit nothing/);
 });
 
-test("ROLL-04 pin: the Magic User note's face count, level-1 range and miss odds come from CLASSES['Magic User'].toHit", () => {
+test("TEXT-01 pin: the Magic User note's level-1 range and miss odds come from CLASSES['Magic User'].toHit", () => {
   const n = CLASSES["Magic User"].toHit;
-  assert.ok(CLASS_NOTE["Magic User"].includes(`only your top ${FACE_WORD[n]} faces to hit — ${facesRangeText(n, D20)} on the d20 at skill level I`));
+  assert.ok(CLASS_NOTE["Magic User"].includes(`a hit only on ${facesRangeText(n, D20)} on the d20 at skill level I`));
   assert.equal(D20 - n, 17);
   assert.match(CLASS_NOTE["Magic User"], /seventeen swings in twenty are decorative/);
 });
 
-test("ROLL-04 pin: the Elven notes' face floor is RACES.Elven.toHit; the Dwarven note's night costs RACES.Dwarven.upkeep", () => {
+test("TEXT-01 pin: the Elven notes' to-hit floor is RACES.Elven.toHit; the Dwarven note's night costs RACES.Dwarven.upkeep", () => {
   const n = RACES.Elven.toHit;
-  assert.ok(RACE_NOTE.Elven.includes(`your top ${FACE_WORD[n]} faces land whatever the class`));
-  assert.ok(RACES.Elven.note.includes(`lands on its top ${FACE_WORD[n]} faces whatever the class`));
+  assert.ok(RACE_NOTE.Elven.includes(`the top ${FACE_WORD[n]} numbers of it whatever the class (${facesRangeText(n, D20)} on a d20)`));
+  assert.ok(RACES.Elven.note.includes(`the top ${FACE_WORD[n]} numbers of it (${facesRangeText(n, D20)} on a d20) whatever the class`));
   assert.equal(RACES.Dwarven.upkeep, 1);
   assert.match(RACE_NOTE.Dwarven, /a single Hit Point a night when the rations run out/);
   assert.equal(RACES.Dwarven.dmg, 2);
   assert.match(RACE_NOTE.Dwarven, /^Two extra damage/);
 });
 
-test("ROLL-04 pin: the Guard note's damage and face numbers come from weaponDamage and foeToHitVs", () => {
+test("TEXT-01 pin: the Guard note's damage and to-hit numbers come from weaponDamage and foeToHitVs", () => {
   const armed = (sub, level) => {
     const s = hero(sub);
     Object.assign(s.c, { weapon: "Club", prof: 0, magicWpn: 0, level });
@@ -413,27 +416,29 @@ test("ROLL-04 pin: the Guard note's damage and face numbers come from weaponDama
   assert.equal(gap(1), 3, "three off at level one");
   assert.equal(gap(2), 2, "one less each level");
   assert.equal(gap(4), 0, "gone at four");
-  assert.equal(foeToHitVs(hero("Guard")), foeToHitVs(hero("Soldier")) - 1, "one face fewer");
+  assert.equal(foeToHitVs(hero("Guard")), foeToHitVs(hero("Soldier")) - 1, "one winning number fewer: foes −1 to hit");
   assert.match(SUB_NOTE.Guard, /three damage off every blow at level one, one less each level until it is gone at four/);
-  assert.match(SUB_NOTE.Guard, /lands on one face fewer against you/);
+  assert.match(SUB_NOTE.Guard, /foes get −1 to hit you/);
 });
 
 // Quick 260928-nrf (user ruling 2026-09-28): the Acrobat's foe need is four
-// faces (was three).
-test("ROLL-04 pin: the Acrobat's four faces and the Cleric's four are the engine's own numbers", () => {
+// winning numbers (was three), which TEXT-01 writes as the d20 range 17–20.
+test("TEXT-01 pin: the Acrobat's 17–20 and the Cleric's +1 to hit are the engine's own numbers", () => {
   assert.equal(foeToHitVs(hero("Acrobat")), 4);
-  assert.match(SUB_NOTE.Acrobat, /except on its top four faces/);
+  assert.equal(facesRangeText(4, D20), "17–20");
+  assert.match(SUB_NOTE.Acrobat, /^Foes hit you only on a high roll \(17–20 on a d20\)/);
   assert.equal(classNeed({ cls: "Magic User", sub: "Cleric", race: "Human" }), 4);
   assert.equal(classNeed({ cls: "Magic User", sub: "Wizard", race: "Human" }), 3);
-  assert.match(SUB_NOTE.Cleric, /Your top four faces hit instead of three/);
+  assert.match(SUB_NOTE.Cleric, /\+1 to hit over other Magic Users \(17–20 on a d20 at level 1\)/);
 });
 
-test("ROLL-04 pin: the Soldier's and Ninja's two crit faces and the Con Artist's two in three are the engine's own checks", () => {
+test("TEXT-01 pin: the Soldier's and Ninja's two crit numbers and the Con Artist's two in three are the engine's own checks", () => {
   const combat = stripJs(read("engine/combat.js"));
   assert.match(combat, /atLeastFor\(c\.sub === "Soldier" \? 2 : 1, dieN\)/);
-  assert.match(SUB_NOTE.Soldier, /^Foes crit you on their top two faces instead of one/);
+  assert.equal(facesRangeText(2, D20), "19–20");
+  assert.match(SUB_NOTE.Soldier, /^Foes crit you on 19–20 on a d20 instead of just 20/);
   assert.match(combat, /c\.sub === "Ninja" && !opening && roll >= atLeastFor\(2, dieN\)/);
-  assert.match(SUB_NOTE.Ninja, /your top two faces open something up/);
+  assert.match(SUB_NOTE.Ninja, /you crit on the top two numbers of your strike die \(19–20 on a d20\)/);
   const i = combat.indexOf('c.sub === "Con Artist" && f.lvl <= 1');
   assert.ok(i !== -1);
   assert.match(combat.slice(i, i + 400), /rollCheck\(rng, 6, atLeastFor\(4, 6\)\)/, "four faces of six: two times in three");
@@ -479,7 +484,7 @@ test("accuracy pin (79-12): the Thief's armour, the Woodsman's beasts, the Bard'
   const combat = stripJs(read("engine/combat.js"));
   assert.match(combat, /c\.sub === "Woodsman" && \(t === "Beasts" \|\| t === "Lair Beasts"\)\) return true/);
   assert.ok(BESTIARY.Beasts.flat().some((f) => f.n === "Drake"), "the Drake is in the Beasts table");
-  assert.match(SUB_NOTE.Woodsman, /You speak to every beast in here, the Drake included/);
+  assert.match(SUB_NOTE.Woodsman, /You can always parley with every beast in here, the Drake included/);
   assert.doesNotMatch(SUB_NOTE.Woodsman, /dragon/i, "no dragon exception the engine does not make");
   // Bard: parleys Humans; nothing in the engine gives a Bard gifts from dragons.
   assert.match(combat, /c\.sub === "Bard" && t === "Humans"\) return true/);

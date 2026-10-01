@@ -730,7 +730,7 @@ test("fumbleOnFoe (mirror, Oracle and rail): 'you hit it only on the top number 
   assert.doesNotMatch(plainText(EVENT_NARRATION.fumbleOnFoe(ev)) + LINE_FOR.fumbleOnFoe(ev, {}).text, /\bfaces?\b/);
 });
 
-test("struck (critBy ninja): 'A Ninja's top two faces' is the faces a Ninja's later strikes crit on", () => {
+test("struck (critBy ninja): 'A Ninja's top two numbers' is the numbers a Ninja's later strikes crit on (TEXT-01, Phase 91 plan 10)", () => {
   const hero = { cls: "Thief", sub: "Ninja" };
   const dieN = strikeDie(fixedFighter(hero));
   let n = 0;
@@ -743,15 +743,18 @@ test("struck (critBy ninja): 'A Ninja's top two faces' is the faces a Ninja's la
   }
   assert.ok(n > 0, "a Ninja crits on the top face at least");
   const text = plainText(EVENT_NARRATION.struck({ type: "struck", target: "Viper", dmg: 6, critical: true, critBy: "ninja" }));
-  assert.ok(text.includes(`A Ninja's ${topFaces(n)}`), text);
+  assert.equal(n, 2, "the top two numbers crit");
+  assert.ok(text.includes(`A Ninja's top ${WORD[n]} numbers`), text);
+  assert.doesNotMatch(text, /\bfaces?\b/i);
 });
 
-test("COMBAT_MENU_COPY.parleyDesc: a failed parley's insult makes every foe 'one face easier'", () => {
+test("COMBAT_MENU_COPY.parleyDesc: a failed parley's insult gives every foe +1 to hit (TEXT-01, Phase 91 plan 10)", () => {
   const foe = fixedFoe();
   const plain = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe]) }), foe).faces;
   const insulted = foeSwingVsHero(fixedState({}, { combat: fixedCombat([foe], { parleyInsulted: true }) }), foe).faces;
   assert.equal(insulted - plain, 1);
-  assert.ok(COMBAT_MENU_COPY.parleyDesc.includes("every foe hits you and yours one face easier"), COMBAT_MENU_COPY.parleyDesc);
+  assert.ok(COMBAT_MENU_COPY.parleyDesc.includes("every foe gets +1 to hit you and yours"), COMBAT_MENU_COPY.parleyDesc);
+  assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /\bfaces?\b/i);
 });
 
 test("GEAR_COPY.healingDesc: 'Heals 7–25 hp (double for a Wilmsry)' is drinkPotion's own range", () => {
@@ -962,6 +965,9 @@ const PINNED_OUTSIDE_CONTENT = Object.freeze([
   { match: "bank:RACE_NOTE.", proof: "test/unit/identity-footer.test.js", token: "RACE_NOTE" },
   { match: "bank:IDENTITY_FOOTER.", proof: "test/unit/identity-footer.test.js", token: "footerLines" },
   { match: "bank:IDENTITY_TRAITS.", proof: "test/unit/identity-footer.test.js", token: "IDENTITY_TRAITS" },
+  // Phase 91 plan 10 (TEXT-01): the race-field lines state the strike die at level 1 ("a d12 at level 1, not a d20"); the
+  // generator computes both from STRIKE_DICE and foeDie, and identity-text.test.js reads them back through the engine.
+  { match: "raw:src/browser/identityFooter.js#RACE_FIELD_LINES", proof: "test/unit/identity-text.test.js", token: "strikeDie" },
   { match: "bank:EPITAPHS.trap.", proof: "test/unit/death-copy.test.js", token: "EPITAPHS.trap" },
   { match: "bank:MARKS_LEGEND.", proof: "test/unit/mapMarks.test.js", token: "MARKS_LEGEND" },
   { match: "oracle:smokeThrown", proof: "test/unit/roll-sign-consistency.test.js", token: "smokeThrown" },
@@ -989,8 +995,10 @@ const PINNED_OUTSIDE_CONTENT = Object.freeze([
   // Phase 90 plan 11 (TEXT-01): the Behemoth's cower names its range on a d20, plain and insulted, measured in the wording guard.
   { match: "oracle:foeCowers", proof: "test/unit/spell-skill-text-wording.test.js", token: "foeCowers" },
   { match: "bank:FOE_CONDITION_DESC.cowering", proof: "test/unit/spell-skill-text-wording.test.js", token: "FOE_CONDITION_DESC.cowering" },
-  { match: "oracle:struck", proof: "here" },
-  { match: "bank:COMBAT_MENU_COPY.parleyDesc", proof: "here" },
+  // (oracle:struck left this list in Phase 91 plan 10: the Ninja's crit line says "top two numbers" now, so no struck line states a
+  // face count any more; its pin is the "struck (critBy ninja)" test above.)
+  // (bank:COMBAT_MENU_COPY.parleyDesc left this list in Phase 91 plan 10: the insult now reads "+1 to hit", so the card states no face count; its pin is the
+  // "COMBAT_MENU_COPY.parleyDesc" test above.)
   { match: "bank:GEAR_COPY.healingDesc", proof: "here" },
 ]);
 

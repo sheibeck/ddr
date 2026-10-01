@@ -230,12 +230,15 @@ test("(e) content/races.js: the Elven/Dwarven/Troll notes state their net size t
   assert.match(RACES.Elven.note, /easy to hit/i);
   assert.match(RACES.Elven.note, /2 damage/);
   assert.match(RACES.Dwarven.note, /\+2 damage/);
-  assert.match(RACES.Dwarven.note, /one face harder to hit/i);
+  // Phase 91 plan 10 (TEXT-01): "one face harder / easier to hit" reads "foes −1 / +1 to hit".
+  assert.match(RACES.Dwarven.note, /foes get −1 to hit it/);
   assert.match(RACES.Troll.note, /\+11 damage/);
-  assert.match(RACES.Troll.note, /one face easier to hit/i);
+  assert.match(RACES.Troll.note, /foes get \+1 to hit it/);
   assert.match(RACES.Troll.note, /two rations/i);
   assert.equal(RACES.Human.note, "No advantages, no penalties. The dungeon's default.");
-  assert.equal(RACES.Wilmsry.note, "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.");
+  // Phase 91 plan 10 (IDENT-12): the Wilmsry note now states every trait its footer lists (the parley, the haggle, the heal).
+  assert.match(RACES.Wilmsry.note, /^Heals twice as much/);
+  assert.match(RACES.Wilmsry.note, /refuses to take Magic Users on as Joiners/);
   assert.match(RACES.Fridgian.note, /Never wears armour/);
 });
 
@@ -244,10 +247,10 @@ test("(e) content/flavor.js RACE_NOTE: the Elven/Dwarven/Troll entries name thei
   assert.match(RACE_NOTE.Elven, /small/i, "the Elven note names its size");
   assert.match(RACE_NOTE.Elven, /two points? of damage/i);
   assert.match(RACE_NOTE.Dwarven, /small/i, "the Dwarven note names its size");
-  assert.match(RACE_NOTE.Dwarven, /one face harder to hit/i);
+  assert.match(RACE_NOTE.Dwarven, /foes get −1 to hit you/);
   assert.match(RACE_NOTE.Dwarven, /fair trade/i, "the fair-trade line survives");
   assert.match(RACE_NOTE.Troll, /\+11/, "the Troll note states its damage total");
-  assert.match(RACE_NOTE.Troll, /one face easier/i);
+  assert.match(RACE_NOTE.Troll, /\+1 to hit you/);
   assert.match(RACE_NOTE.Troll, /double/i, "the price line survives (doubled since Phase 91 plan 08)");
 });
 

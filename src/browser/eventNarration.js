@@ -726,8 +726,9 @@ export const EVENT_NARRATION = {
     const CRIT_BY_TEXT = {
       stealth: "Unseen. Critical!",
       backstab: "From behind. Critical!",
-      // VOX-05 (Phase 79, plan 79-04): a Ninja crits on the die's top two faces.
-      ninja: "A Ninja's top two faces. Critical!",
+      // VOX-05 (Phase 79, plan 79-04): a Ninja crits on the die's top two numbers (Phase 91 plan 10, TEXT-01:
+      // "faces" is plain words now; the identity footer states the d20 range, 19–20).
+      ninja: "A Ninja's top two numbers. Critical!",
       cutthroat: "The Cutthroat's first blow. Critical!",
       deathTouch: "Called it. Critical!",
       silentStep: "Not a sound. Critical!",

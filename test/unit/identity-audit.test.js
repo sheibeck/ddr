@@ -46,9 +46,20 @@
 //     regenerated table is stable; the checker must fail a doctored swap of
 //     two rows.
 //
+// Phase 91 plan 10 (the audit's close) adds three guards over the closed table:
+//   - every row verdict is final: no `fix engine (`, `fix text (`, `balance call (`
+//     or `retire (` token is left, except a row the Findings section lists by
+//     name as an unbuilt gap row (none today);
+//   - every row whose verdict starts with `fixed` names a test file in Pinned by;
+//   - the engine scan: every engine rule keyed on a sub-class or race name (a
+//     `sub` / `race` string literal compared in engine/*.js, or a name list such
+//     as NEVER_FLEES) is cited, by its file, in that identity's audit section's
+//     Engine cells, so a rule nobody audited cannot hide in the engine.
+//
 // The doc is text and the test only reads it (plus content and the pure
-// identityEntries list); no engine, rng or shell state runs. The doc is read
-// with CRLF normalised (the main checkout keeps CRLF on disk).
+// identityEntries list, and the engine's source text for the scan); no engine,
+// rng or shell state runs. The doc is read with CRLF normalised (the main
+// checkout keeps CRLF on disk).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -58,6 +69,7 @@ import url from "node:url";
 
 import { RACES, CLASSES } from "../../content/index.js";
 import { identityEntries } from "../../src/browser/identityFooter.js";
+import { stripJs } from "../../tools/ident-sweep.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -446,7 +458,7 @@ test("IDENT-12: the checker fails an owner that is not a plan of this phase", ()
   const bad = mutate(readDoc(), (lines) => {
     const i = rowIndex(lines, "guard-hard");
     assert.ok(i >= 0);
-    lines[i] = lines[i].replace("fix text (91-10)", "fix text (91-11)");
+    lines[i] = lines[i].replace("fixed text (91-10)", "fixed text (91-11)");
   });
   assert.ok(checkDoc(bad).some((p) => /names owner 91-11, not a Phase 91 plan/.test(p)));
 });
@@ -520,4 +532,137 @@ test("IDENT-12: the checker fails a Human that is given a good or bad row", () =
     lines.splice(i + 1, 0, "| unstated:human-extra | good | not stated | none | none | fix text (91-10) | — |");
   });
   assert.ok(checkDoc(bad).some((p) => /Human: must have exactly the one row/.test(p)));
+});
+
+// ─── the close (Phase 91 plan 10): final verdicts, pins and the engine scan ──
+
+/** Verdict tokens that mean "still open" (a plan owns it, or the user has not ruled). */
+const OPEN_VERDICT = /^(?:fix engine|fix text|balance call|retire) \(/;
+
+/** gapRows(text) — the rows the Findings section lists by name as unbuilt gap rows: `Section/trait-id`. */
+function gapRows(text) {
+  const out = new Set();
+  let inFindings = false;
+  for (const line of text.split("\n")) {
+    if (/^## /.test(line)) inFindings = /^## Findings for other phases/.test(line);
+    if (inFindings && /unbuilt gap rows/i.test(line)) for (const m of line.matchAll(/`([^`]+)`/g)) out.add(m[1]);
+  }
+  return out;
+}
+
+/** closeProblems(text) — every row's verdict is final, and every fixed row names its pinning test. */
+function closeProblems(text) {
+  const problems = [];
+  const doc = parseDoc(text);
+  const gaps = gapRows(text);
+  for (const section of [...doc.sections.race, ...doc.sections.sub]) {
+    for (const cells of section.rows) {
+      if (cells.length !== HEADER.length) continue;
+      const [trait, , , , , verdict, pinned] = cells;
+      const parts = verdictParts(verdict);
+      const open = parts.filter((p) => OPEN_VERDICT.test(p));
+      if (open.length && !gaps.has(`${section.name}/${trait}`)) problems.push(`${section.name}: row "${trait}" still reads "${open.join("; ")}" (not final, and not listed as an unbuilt gap row)`);
+      if (parts.some((p) => /^fixed /.test(p)) && !/test\/unit\/[\w.-]+\.test\.js/.test(pinned)) problems.push(`${section.name}: row "${trait}" is fixed but Pinned by names no test file`);
+    }
+  }
+  return problems;
+}
+
+const ENGINE_DIR = path.join(REPO_ROOT, "engine");
+const IDENTITY_NAMES = new Set([...RACE_KEYS, ...SUB_KEYS]);
+
+/**
+ * scanEngine(sources) — every (identity name, engine file) pair for a rule keyed on a name: a `sub` / `race`
+ * compared with a string literal (either order, strict or loose), or an array literal of two or more identity
+ * names (NEVER_FLEES). `sources` is { "combat.js": text, ... }, comments read through stripJs.
+ */
+function scanEngine(sources) {
+  const pairs = new Map(); // "kind:Name" -> Set(file)
+  const add = (name, file) => {
+    if (!IDENTITY_NAMES.has(name)) return;
+    const kind = RACE_KEYS.includes(name) ? "race" : "sub";
+    const key = `${kind}:${name}`;
+    if (!pairs.has(key)) pairs.set(key, new Set());
+    pairs.get(key).add(file);
+  };
+  for (const [file, raw] of Object.entries(sources)) {
+    const src = stripJs(raw);
+    for (const m of src.matchAll(/\b(?:sub|race)\s*(?:===|!==|==|!=)\s*"([^"]+)"/g)) add(m[1], file);
+    for (const m of src.matchAll(/"([^"]+)"\s*(?:===|!==|==|!=)\s*[\w.]*\b(?:sub|race)\b/g)) add(m[1], file);
+    for (const m of src.matchAll(/\[\s*("[^"\]]+"(?:\s*,\s*"[^"\]]+")+)\s*\]/g)) {
+      const names = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+      if (names.every((n) => IDENTITY_NAMES.has(n))) for (const n of names) add(n, file);
+    }
+  }
+  return pairs;
+}
+
+function engineSources() {
+  const out = {};
+  for (const f of fs.readdirSync(ENGINE_DIR).filter((x) => x.endsWith(".js"))) out[f] = fs.readFileSync(path.join(ENGINE_DIR, f), "utf8").replace(/\r\n/g, "\n");
+  return out;
+}
+
+/** scanProblems(text, pairs) — every name-keyed engine rule an identity's Engine cells do not cite by file. */
+function scanProblems(text, pairs) {
+  const problems = [];
+  const doc = parseDoc(text);
+  for (const [key, files] of pairs) {
+    const [kind, name] = key.split(":");
+    const section = doc.sections[kind].find((s) => s.name === name);
+    if (!section) {
+      problems.push(`${kind} ${name}: the engine keys a rule on it but the audit has no section`);
+      continue;
+    }
+    const engineCells = section.rows.map((r) => r[3] || "").join(" ");
+    for (const file of [...files].sort()) {
+      if (!engineCells.includes(file)) problems.push(`${kind} ${name}: engine/${file} keys a rule on it but no Engine cell of the audit section cites ${file}`);
+    }
+  }
+  return problems;
+}
+
+test("IDENT-12 (close): every row's verdict is final and every fixed row names its pinning test", () => {
+  const problems = closeProblems(readDoc());
+  assert.deepEqual(problems, [], problems.join("\n"));
+});
+
+test("IDENT-12 (close): the checker fails an open verdict and a fixed row with no pin, and spares a row the Findings list as an unbuilt gap", () => {
+  const open = mutate(readDoc(), (lines) => {
+    const i = rowIndex(lines, "barbarian-two");
+    assert.ok(i >= 0);
+    lines[i] = lines[i].replace("| match |", "| fix text (91-10) |");
+  });
+  assert.ok(closeProblems(open).some((p) => /row "barbarian-two" still reads "fix text \(91-10\)"/.test(p)));
+  const unpinned = mutate(readDoc(), (lines) => {
+    const i = rowIndex(lines, "barbarian-two");
+    const cells = splitCells(lines[i]);
+    cells[5] = "fixed text (91-10)";
+    cells[6] = "—";
+    lines[i] = `| ${cells.join(" | ")} |`;
+  });
+  assert.ok(closeProblems(unpinned).some((p) => /row "barbarian-two" is fixed but Pinned by names no test file/.test(p)));
+  const spared = mutate(readDoc(), (lines) => {
+    const i = rowIndex(lines, "barbarian-two");
+    lines[i] = lines[i].replace("| match |", "| fix engine (91-09) |");
+    const f = lines.findIndex((l) => /^## Findings for other phases/.test(l));
+    lines.splice(f + 1, 0, "", "- **Unbuilt gap rows:** `Barbarian/barbarian-two`");
+  });
+  assert.deepEqual(closeProblems(spared).filter((p) => /barbarian-two/.test(p)), []);
+});
+
+test("IDENT-12 (close): every engine rule keyed on a sub-class or race name is cited, by its file, in that identity's audit section", () => {
+  const pairs = scanEngine(engineSources());
+  assert.ok(pairs.size >= 20, `the scan should see the name-keyed rules, saw ${pairs.size}`);
+  for (const probe of ["sub:Samurai", "sub:Master of Arms", "sub:Cleric", "race:Troll", "race:Fridgian", "sub:Acrobat"]) assert.ok(pairs.has(probe), `${probe} is found by the scan`);
+  const problems = scanProblems(readDoc(), pairs);
+  assert.deepEqual(problems, [], problems.join("\n"));
+});
+
+test("IDENT-12 (close): the scan reads a name list (NEVER_FLEES) and both comparison orders, and the checker fails an uncited file", () => {
+  const pairs = scanEngine({
+    "fake.js": 'export const NEVER_FLEES = Object.freeze(["Samurai", "Master of Arms"]);\nif ("Bard" === c.sub) {}\nif (c.race !== "Troll") {}\nconst n = typeof race !== "string";\n// c.sub === "Wizard"\n',
+  });
+  assert.deepEqual([...pairs.keys()].sort(), ["race:Troll", "sub:Bard", "sub:Master of Arms", "sub:Samurai"]);
+  assert.ok(scanProblems(readDoc(), new Map([["sub:Bard", new Set(["fake.js"])]])).some((p) => /engine\/fake\.js keys a rule on it/.test(p)));
 });

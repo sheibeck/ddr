@@ -1,0 +1,41 @@
+[
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Acrobat",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Acrobat footer: src/browser/identityFooter.js",
+    "before": "Good: foes land only on their top four faces; your top five faces hit, like a Fighter's (six with the dagger). Bad: a dagger and nothing else.",
+    "after": "Good: foes hit you only on a high roll (17–20 on a d20); you hit on 16–20 on a d20 at level 1, like a Fighter (15–20 with the dagger); dodges traps on 13–20 on a d20, not 16–20; starts with the Smoke skill for free. Bad: a dagger and nothing else.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the cap reads 'foes hit you only on a high roll (17–20 on a d20)', the to-hit and trap-dodge ranges are named on a d20, and the free Smoke is stated. The footer's numbers are the engine's own (rollRange over classNeed, foeToHitVs, schoolBonus and the stretch helpers). (Chained after the quick task that last changed this line; its ledger sorts after the numbered plans.)"
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Acrobat.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Acrobat footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "foes land only on their top four faces",
+    "after": "foes hit you only on a high roll (17–20 on a d20)",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 (user 2026-09-30): 'foes land only on their top four faces' is plain words and names the range on a d20, which the engine computes (foeToHitVs 4 of 20). (Chained after the quick task that last changed this line; its ledger sorts after the numbered plans.)"
+  },
+  {
+    "key": "bank:SUB_NOTE.Acrobat",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Acrobat blurb: content/flavor.js#SUB_NOTE",
+    "before": "Nothing lays a hand on you except on its top four faces, and you may carry nothing but a knife. You strike with it like a fighter — nobody armours against a dagger held by someone who will not stand still.",
+    "after": "Foes hit you only on a high roll (17–20 on a d20), you dodge traps on 13–20 on a d20 instead of 16–20, and you may carry nothing but a knife. You hit on 16–20 on a d20 at level 1 like a Fighter (15–20 with the dagger) — nobody armours against a dagger held by someone who will not stand still. You start knowing Smoke for free.",
+    "reasons": [
+      "roll-under",
+      "accurate",
+      "number"
+    ],
+    "why": "TEXT-01 and IDENT-12 (91-10): the cap reads 'foes hit you only on a high roll (17–20 on a d20)', the to-hit and trap-dodge ranges are named on a d20, and the free Smoke is stated; every advantage and drawback the footer lists is now in the blurb, in the house voice. (Chained after the quick task that last changed this line; its ledger sorts after the numbered plans.)"
+  }
+]
