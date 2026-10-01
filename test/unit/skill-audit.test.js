@@ -277,6 +277,27 @@ function checkDoc(text) {
 
 const DOC_TEXT = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // a CRLF checkout reads like the LF one
 
+// ---------------------------------------------------------------------------
+// docs/ABILITIES.md "Phase 90 close": the table there is GENERATED from this audit, so it cannot be re-derived by hand and drift.
+// The generator is exported so the one-off that wrote the section and the test that guards it are the same code.
+// ---------------------------------------------------------------------------
+
+/** skillCloseTable(auditText) — one row per skill and ability: its kind, rule, who can use it (the Joiner cell) and its verdict, from the audit. */
+export function skillCloseTable(auditText) {
+  const doc = parseDoc(auditText);
+  const lines = ["| Skill | Kind · Class | Rule | Joiner use | Verdict |", "|---|---|---|---|---|"];
+  for (const r of doc.rows) lines.push(`| ${r[0]} | ${r[1]} | ${r[4]} | ${r[6]} | ${r[8]} |`);
+  return lines.join("\n");
+}
+
+/** closeBlock(text, name) — the text between `<!-- phase90-close:NAME:start -->` and `<!-- phase90-close:NAME:end -->`, or null. */
+export function closeBlock(text, name) {
+  const a = text.indexOf(`<!-- phase90-close:${name}:start -->\n`);
+  const b = text.indexOf(`\n<!-- phase90-close:${name}:end -->`);
+  if (a < 0 || b < 0) return null;
+  return text.slice(a + `<!-- phase90-close:${name}:start -->\n`.length, b);
+}
+
 /** doctor(fn) — the real doc, with `fn` applied to its lines (and a finder for a skill's row). */
 function doctor(fn) {
   const lines = DOC_TEXT.split(/\r?\n/);
@@ -447,4 +468,32 @@ test("the checker fails a match row that admits a gap and a Rule cell with an AS
     c[i] = c[i].replace("(level 3: 4–11)", "(level 3: 4-11)");
   });
   assert.ok(checkDoc(hyphen).some((p) => /ASCII hyphen/.test(p)));
+});
+
+// ---------------------------------------------------------------------------
+// docs/ABILITIES.md "Phase 90 close" (plan 90-12): the generated table matches the audit
+// ---------------------------------------------------------------------------
+
+const ABILITIES_DOC = fs.readFileSync(path.join(REPO_ROOT, "docs", "ABILITIES.md"), "utf8").replace(/\r\n/g, "\n");
+
+test("docs/ABILITIES.md has one Phase 90 close section, naming Pommel Strike, the Joiner passives and the guard", () => {
+  assert.equal((ABILITIES_DOC.match(/^## Phase 90 close/gm) || []).length, 1);
+  const section = ABILITIES_DOC.slice(ABILITIES_DOC.indexOf("## Phase 90 close"));
+  for (const needle of ["Pommel Strike", "Dirty Trick", "Stealth", "Hardiness", "Ambidextrous", "Death Touch", "TEXT-01", "Joiner", "once per fight"]) {
+    assert.ok(section.includes(needle), `the close section names ${needle}`);
+  }
+});
+
+test("docs/ABILITIES.md Phase 90 close: the skills table is generated from the audit, one row per skill and ability, Joiner use included", () => {
+  assert.equal(closeBlock(ABILITIES_DOC, "skills"), skillCloseTable(DOC_TEXT));
+  const rows = closeBlock(ABILITIES_DOC, "skills").split("\n").slice(2);
+  assert.deepEqual(rows.map((r) => r.split(" | ")[0].replace(/^\| /, "")), EXPECTED_NAMES);
+  for (const r of rows) assert.equal(r.split(" | ").length, 5, `${r.slice(0, 30)}: five cells`);
+  assert.ok(rows.some((r) => /\| cannot/.test(r)), "a skill no Joiner can use says cannot");
+});
+
+test("docs/ABILITIES.md Phase 90 close: a doctored generated table fails", () => {
+  assert.ok(ABILITIES_DOC.includes("| Brace | pool active · Fighter |"), "the generated table carries the Brace row");
+  assert.notEqual(closeBlock(ABILITIES_DOC.replace("| Brace | pool active · Fighter |", "| Brace | pool active · Thief |"), "skills"), skillCloseTable(DOC_TEXT));
+  assert.equal(closeBlock(ABILITIES_DOC, "no-such-block"), null);
 });

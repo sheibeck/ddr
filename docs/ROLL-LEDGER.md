@@ -1590,3 +1590,45 @@ anywhere in the three spells.
 - **Roll-high draw inventory** does not move: no `.d(` or `rollCheck(` call site
   was added to a guarded engine file (the throw code moved within combat.js).
 
+
+## Phase 90 draws (plan 90-12: the phase's draw list in one place)
+
+Every draw Phase 90 added, moved or removed, main or derived, with its site, gathered from the plan
+sections above and the plan summaries (90-01, 90-11 and 90-12 added none: an audit, a wording pass and
+a guard). "Main" is the seeded main rng (`rng.d`, `rollCheck`, `rollDice`); "derived" is a
+`derivedRng(<main cursor>, key, ...)` stream that only READS the main cursor and never advances it.
+No check or threshold was flipped by the phase; the one ordering change in a check chain is Blind's cap
+(applied last in `foeSwingChain`, plan 90-04).
+
+| Plan | Draw | Stream | Site | Change |
+|---|---|---|---|---|
+| 90-02 | Pommel Strike's strike: the to-hit `rollCheck` and the weapon damage dice | main | `combat.js#playerStrike` (hero), `memberStrike` (Joiner), reached from `abilities.js#useAbility` and `resolveMemberAbility` | added (it was a non-strike ability and drew nothing; a landed hit now draws exactly a plain strike's two); the stun itself is a flag, no draw |
+| 90-03 | Strength's d10 on each damage roll | derived (`"strength"`) | `derived.js#strengthRoll`, called from `weaponDamage`, `magic.js#castSpell` (a thrown hit, each Lightning foe, Earthquake's one roll, each Fireballs bolt) and `combat.js#iceStorm` | added; never on a damage-over-time tick |
+| 90-03 | the old Strength cast's d10 into `c.might` | main | `magic.js#castSpell`, the `might` branch | removed (the cast now starts a timer record and draws nothing) |
+| 90-04 | the one depth-rising resist, once per targeted foe | derived (`"spellResist"`) | `combat.js#foeResistsSpell` (= `foeResistsEffect`), called by the hero's cast, a scroll's free cast and a Joiner's `allyCast` | moved: it comes BEFORE the effect's own draw, so a resisted foe draws no sleep, shrink or nap die (floors 13 and deeper; at floor 12 and below the half-intelligence resist already came first) |
+| 90-04 | the second RULES-18 control resist and the hold | derived | `combat.js#resistControl`, `controlCapRounds` (every spell site) | removed from every spell (the Bard's `sing` is the one caller left, Phase 91) |
+| 90-04 | Petrify's spoils draws: coin d10, treasure d20, bag d20, cooking d6 | main | `combat.js#killFoe` with `{ spoils: false }` | removed for Petrify only (the experience d6 and the level check still draw; the old removal drew nothing, so a Petrify takes one main draw more than before and three to five fewer than a normal kill) |
+| 90-04 | a Stupidity'd foe's to-hit and damage draws | main | `combat.js#foeTurn` | added (the foe no longer skips its turn, so it swings like any foe) |
+| 90-05 | Doze's reach, one d4 (drawn first) | main | `combat.js#dozeFoes` | added |
+| 90-05 | Doze's sleep d4, one per reached foe that fails its resist | main | `dozeFoes` | moved (after that foe's resist; the old single first-foe d4 is removed) |
+| 90-05 | Stun's d4, one foe | main | `combat.js#stunFoe` | moved (one d4; the old d6 reach and per-foe d4 are removed) |
+| 90-05 | Ice's damage dice and freeze d4, per foe | main | `combat.js#iceStorm` (dice through `rollDice`) and `freezeFoe` (`FREEZE_HOLD_DIE`) | moved (one damage roll and one freeze d4 per foe; the old dot's one duration d4 is removed) |
+| 90-06 | `rollGrimoire`'s main-rng shuffles | main | `engine/character.js#rollGrimoire` | removed: Wizard 39 to 36, Illusionist 34 to 33, Apprentice 38 to 37 draws (Phantom Host and the Wizard's Illusion spells left the pools); every later draw of those three sub-classes moves; the Summoner's count is unchanged (Lesser Summon was a derived-stream row) |
+| 90-06 to 90-09 | a scroll's spell pick | main | `magic.js` `rng.pick(SPELLS.filter(sp => sp.lvl <= min(5, depth + 1)))` | moved (the same single draw over a longer list: 15, 23, 28, 31 after 90-06; 41 spells from depth 4 after 90-09) |
+| 90-07 | the four Special rows' day-one splice | derived | `character.js#rollGrimoire` (rows flagged `roll: "derived"`) | added (no main cursor moves; every later slate row takes the same path) |
+| 90-07 | the chest's lock roll | main | `encounters.js#openChest` | removed for the one chest a live Open/Lock opens (the first draw is then the gold d10) |
+| 90-08 | Senseless and Duplicate Foe's duration dice | main | `combat.js#misdirectFoe` (`rollDice`, no `.d(`) | added |
+| 90-08 | a misdirected swing's to-hit `rollCheck`, damage dice and the victim's natural-armour soak d20 | main | `combat.js#resolveMisdirectedTurn`, `foeDamage.js#damageFoe` | added (`DRAW_INVENTORY` `engine/combat.js`: `rollCheck` 23 to 24, `amount` 22 to 23) |
+| 90-09 | the Illusionist's random Illusion pick | derived | `character.js#rollGrimoire`, `dr.d(rest.length)` (`DRAW_INVENTORY` `engine/character.js` `selection` 13 to 14) | added, last on the call's derived stream; the Illusionist's main cursor stays 33 |
+| 90-09 | Chameleon Tongue's parley: the d20 roll, the experience d6 per foe, the Humans wilmst d6 and its amount | main | `combat.js#parley` (existing sites) | moved only by the cast reaching them; Door Illusion and Size of the Behemoth draw nothing on the main rng |
+| 90-09 | a fumbled Size of the Behemoth's d4+1 | derived | `scrollFumble.js` (the fumble's own stream) | added |
+| 90-10 | a Joiner's heal | derived (`"memberHeal"`, keyed on round, party index and the Joiner's charges spent) | `combat.js#allyCast`, the `heal` branch | added |
+| 90-10 | a Joiner's other casts: Stun one d4; Doze its reach d4 and a d4 per slept foe; Senseless and Duplicate Foe their duration dice; Stop Time, Size of the Behemoth, Speed of Sound and Enchant Character none | main | the tails the hero's cast shares (`stunFoe`, `dozeFoes`, `misdirectFoe`, `stopTime`, `behemothRoar`) | added only by a Joiner reaching them through the new policy; no existing fight's draws move |
+| 90-10 | a Joiner's Lightning: the d8 to-hit and the damage dice, once per live foe | main | `combat.js#allyThrow` (the throw code moved out of `allyCast` unchanged) | moved (it threw at one foe; Q8 A makes it every foe, each on its own roll) |
+| 90-10 | a Joiner Ambidextrous Fighter's second swing: a strike die and the damage dice | main | `combat.js#memberStrike` (the same positions a Joiner's hasted second swing takes) | added |
+| 90-10 | Death on the picked foe (Q7 A), `pickFoeTarget` under a fixated foe (Q9 B), Stealth and Hardiness for a Joiner (Q10 A), Dirty Trick's `tickBlindFor` countdown | none | `magic.js`, `combat.js#pickFoeTarget`, `memberStrike`, `applyFoeDamageToMember`, `tickBlindFor` | no draw added or moved (the pick die is still drawn once under a fixation) |
+
+The roll-high draw inventory (`test/unit/roll-high-guard.test.js`) moved only as the table says:
+`engine/combat.js` `amount` 20 to 22 (plan 90-05) and, with `rollCheck` 23 to 24, `amount` 22 to 23
+(plan 90-08); `engine/magic.js` `amount` 17 to 13 (plan 90-05); `engine/character.js` `selection` 13 to
+14 (plan 90-09). `test/parity/prototype-master.js.txt` was never edited.

@@ -420,6 +420,88 @@ function checkDoc(text) {
 
 const DOC_TEXT = fs.readFileSync(DOC_PATH, "utf8").replace(/\r\n/g, "\n"); // a CRLF checkout reads like the LF one
 
+// ---------------------------------------------------------------------------
+// docs/SPELLS.md "Phase 90 close": the tables there are GENERATED from this audit and the live content, so they cannot be re-derived by hand
+// and drift. The generators are exported so the one-off that wrote the section and the test that guards it are the same code.
+// ---------------------------------------------------------------------------
+
+/** splitClauses(cell) — the "; "-separated clauses of a Rolls cell, never splitting inside parentheses. */
+export function splitClauses(cell) {
+  const out = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < cell.length; i++) {
+    const ch = cell[i];
+    if (ch === "(") depth++;
+    if (ch === ")") depth = Math.max(0, depth - 1);
+    if (ch === ";" && depth === 0 && cell[i + 1] === " ") {
+      out.push(cur.trim());
+      cur = "";
+      i++;
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+/** rollsBuckets(rolls) — a Rolls cell's clauses sorted into the six columns of the close table, in the cell's own words. */
+export function rollsBuckets(rolls) {
+  const b = { toHit: [], resist: [], damage: [], duration: [], backfire: [], fumble: [] };
+  for (const clause of splitClauses(rolls)) {
+    if (/backfire/i.test(clause)) b.backfire.push(clause);
+    else if (/fumble/i.test(clause)) b.fumble.push(clause);
+    else if (/^(no to-hit roll|to hit\b|no roll|a \+)/i.test(clause) || /\bto-hit roll\b/.test(clause)) b.toHit.push(clause);
+    else if (/resist/i.test(clause)) b.resist.push(clause);
+    else if (/^(no damage|damage|heals|absorbs|an extra|an outright kill|kill chance)/i.test(clause) || /^no hp/i.test(clause)) b.damage.push(clause);
+    else b.duration.push(clause);
+  }
+  return b;
+}
+
+/** spellCloseTable(auditText) — the Phase 90 close table: one row per SPELLS spell, its audit Rolls cell in six columns. */
+export function spellCloseTable(auditText) {
+  const doc = parseDoc(auditText);
+  const lines = ["| Spell | Lvl · School | To hit | Resist | Damage | Duration, reach and effect | Backfire | Scroll fumble |", "|---|---|---|---|---|---|---|---|"];
+  for (const sp of SPELLS) {
+    const row = doc.rows.find((r) => r[0] === sp.n);
+    const b = rollsBuckets(row[4]);
+    const cell = (xs) => (xs.length ? xs.join("; ") : "—");
+    lines.push(`| ${sp.n} | ${row[1]} | ${cell(b.toHit)} | ${cell(b.resist)} | ${cell(b.damage)} | ${cell(b.duration)} | ${cell(b.backfire)} | ${cell(b.fumble)} |`);
+  }
+  return lines.join("\n");
+}
+
+/** scrollPoolTable() — the scroll pool by depth band, from SPELLS (`rng.pick(SPELLS.filter(sp => sp.lvl <= min(5, depth + 1)))`). */
+export function scrollPoolTable() {
+  const lines = ["| Depth | Spell levels | Spells in the pool | Added at this depth |", "|---|---|---|---|"];
+  let before = new Set();
+  for (const depth of [1, 2, 3, 4]) {
+    const top = Math.min(5, depth + 1);
+    const pool = SPELLS.filter((s) => s.lvl <= top);
+    const added = pool.filter((s) => !before.has(s.n)).map((s) => s.n);
+    lines.push(`| ${depth === 4 ? "4 and deeper" : depth} | 1 to ${top} | ${pool.length} | ${added.join(", ")} |`);
+    before = new Set(pool.map((s) => s.n));
+  }
+  return lines.join("\n");
+}
+
+/** gatesTable() — the school bonus and gate of every Magic User sub-class, from the live MU_CHART. */
+export function gatesTable() {
+  const lines = ["| Sub-class | Offense | Protection | Healing | Divination | Special | Illusion |", "|---|---|---|---|---|---|---|"];
+  for (const sub of Object.keys(MU_CHART)) lines.push(`| ${sub} | ${SCHOOLS.map((s) => chartCell(sub, s)).join(" | ")} |`);
+  return lines.join("\n");
+}
+
+/** closeBlock(text, name) — the text between `<!-- phase90-close:NAME:start -->` and `<!-- phase90-close:NAME:end -->`, or null. */
+export function closeBlock(text, name) {
+  const a = text.indexOf(`<!-- phase90-close:${name}:start -->\n`);
+  const b = text.indexOf(`\n<!-- phase90-close:${name}:end -->`);
+  if (a < 0 || b < 0) return null;
+  return text.slice(a + `<!-- phase90-close:${name}:start -->\n`.length, b);
+}
+
 /** doctor(fn) — the real doc, with `fn` applied to its lines (and a finder for a spell's row). */
 function doctor(fn) {
   const lines = DOC_TEXT.split(/\r?\n/);
@@ -678,4 +760,41 @@ test("the checker fails a match row that admits a gap and a Rolls cell with an A
     c[i] = c[i].replace("hits on 5–10 (60%)", "hits on 5-10 (60%)");
   });
   assert.ok(checkDoc(hyphen).some((p) => /ASCII hyphen/.test(p)));
+});
+
+// ---------------------------------------------------------------------------
+// docs/SPELLS.md "Phase 90 close" (plan 90-12): the generated tables match the audit and the live content
+// ---------------------------------------------------------------------------
+
+const SPELLS_DOC = fs.readFileSync(path.join(REPO_ROOT, "docs", "SPELLS.md"), "utf8").replace(/\r\n/g, "\n");
+
+test("docs/SPELLS.md has one Phase 90 close section, summarising every rule the phase changed", () => {
+  assert.equal((SPELLS_DOC.match(/^## Phase 90 close/gm) || []).length, 1);
+  const section = SPELLS_DOC.slice(SPELLS_DOC.indexOf("## Phase 90 close"));
+  for (const needle of ["Strength", "depth-rising resist", "Doze", "Stun", "Ice", "Lesser Summon", "Phantom Host", "Summoner", "Illusion", "Open/Lock", "Stop Time", "Door Illusion", "Joiner", "TEXT-01", "scroll"]) {
+    assert.ok(section.includes(needle), `the close section names ${needle}`);
+  }
+});
+
+test("docs/SPELLS.md Phase 90 close: the rolls table is generated from the audit's Rolls cells, one row per spell", () => {
+  assert.equal(closeBlock(SPELLS_DOC, "rolls"), spellCloseTable(DOC_TEXT));
+  const rows = closeBlock(SPELLS_DOC, "rolls").split("\n").slice(2);
+  assert.deepEqual(rows.map((r) => r.split(" | ")[0].replace(/^\| /, "")), SPELLS.map((s) => s.n));
+  // every row has its eight cells (a dash is the honest "none")
+  for (const r of rows) assert.equal(r.split(" | ").length, 8, `${r.slice(0, 30)}: eight cells`);
+  assert.ok(closeBlock(SPELLS_DOC, "rolls").includes("hits on 5–10"), "a to-hit range in roll-high form");
+});
+
+test("docs/SPELLS.md Phase 90 close: the school gates equal the live MU_CHART and the scroll pool equals SPELLS by depth band", () => {
+  assert.equal(closeBlock(SPELLS_DOC, "gates"), gatesTable());
+  assert.equal(closeBlock(SPELLS_DOC, "pool"), scrollPoolTable());
+  const pool = closeBlock(SPELLS_DOC, "pool").split("\n").slice(2).map((r) => Number(r.split(" | ")[2]));
+  assert.deepEqual(pool, [19, 29, 36, 41], "the scroll pool by band");
+  assert.ok(!/Lesser Summon|Phantom Host/.test(closeBlock(SPELLS_DOC, "pool")), "no removed spell in any band");
+});
+
+test("docs/SPELLS.md Phase 90 close: a doctored generated table fails", () => {
+  assert.notEqual(closeBlock(SPELLS_DOC.replace("hits on 5–10", "hits on 5–11"), "rolls"), spellCloseTable(DOC_TEXT));
+  assert.notEqual(closeBlock(SPELLS_DOC.replace("| Warlock | +4 |", "| Warlock | +5 |"), "gates"), gatesTable());
+  assert.equal(closeBlock(SPELLS_DOC, "no-such-block"), null);
 });
