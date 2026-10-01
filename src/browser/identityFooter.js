@@ -232,30 +232,54 @@ function raceLines(race) {
 // ─── the footer ─────────────────────────────────────────────────────────
 
 /**
- * identityFooter(kind, key) — `kind` is "sub" or "race". Returns
- * { good: string[], bad: string[] } (plus `neutral: string` for the one
- * neutral race, Human). Authored traits first, in table order, then the
- * generated lines; an entry id already taken is skipped. An unknown kind or
- * key returns { good: [], bad: [] } and never throws.
+ * identityEntries(kind, key) — the ordered `[{ id, side, text }]` list the
+ * footer is built from (Phase 91 plan 01, IDENT-11: the identity audit reads
+ * it to know every row an identity must have). Authored traits first, good
+ * then bad, in table order; then the generated lines (a Magic User's chart
+ * lines, a race's field lines); an id already taken is skipped, so an
+ * authored trait and a generated line with the same id are ONE entry. Human's
+ * neutral line is one entry `{ id: "human-neutral", side: "neutral", text }`,
+ * placed first. An unknown kind or key returns []. Pure: no rng, no mutation.
  */
-export function identityFooter(kind, key) {
+export function identityEntries(kind, key) {
   const authored = (IDENTITY_TRAITS[kind] && Object.prototype.hasOwnProperty.call(IDENTITY_TRAITS[kind], key) && IDENTITY_TRAITS[kind][key]) || null;
   const generated = kind === "sub" ? chartLines(key) : kind === "race" ? raceLines(key) : [];
-  if (!authored && !generated.length) return { good: [], bad: [] };
-  const out = { good: [], bad: [] };
-  if (authored && authored.neutral) out.neutral = authored.neutral.text;
+  const out = [];
   const seen = new Set();
+  if (authored && authored.neutral) {
+    seen.add(authored.neutral.id);
+    out.push(entry(authored.neutral.id, "neutral", authored.neutral.text));
+  }
   for (const sideName of ["good", "bad"]) {
     for (const t of (authored && authored[sideName]) || []) {
       if (seen.has(t.id)) continue;
       seen.add(t.id);
-      out[sideName].push(t.text);
+      out.push(entry(t.id, sideName, t.text));
     }
   }
   for (const e of generated) {
     if (seen.has(e.id)) continue;
     seen.add(e.id);
-    out[e.side].push(e.text);
+    out.push(e);
+  }
+  return out;
+}
+
+/**
+ * identityFooter(kind, key) — `kind` is "sub" or "race". Returns
+ * { good: string[], bad: string[] } (plus `neutral: string` for the one
+ * neutral race, Human). Authored traits first, in table order, then the
+ * generated lines; an entry id already taken is skipped. An unknown kind or
+ * key returns { good: [], bad: [] } and never throws. Built on
+ * identityEntries, byte-identical to the pre-audit output.
+ */
+export function identityFooter(kind, key) {
+  const entries = identityEntries(kind, key);
+  if (!entries.length) return { good: [], bad: [] };
+  const out = { good: [], bad: [] };
+  for (const e of entries) {
+    if (e.side === "neutral") out.neutral = e.text;
+    else out[e.side].push(e.text);
   }
   return out;
 }
