@@ -16,7 +16,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { derivedRng, makeRng } from "../../engine/rng.js";
-import { songPool, songReady, sing, startCombat, endCombat, afterPlayerAction } from "../../engine/combat.js";
+import { songPool, songReady, sing, startCombat, endCombat, afterPlayerAction, pickFoeTarget } from "../../engine/combat.js";
+import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { decideAction, makeBotContext } from "../../tools/lib/tuning-bot.mjs";
 import { castSpell } from "../../engine/magic.js";
 import { maxCharges } from "../../engine/movement.js";
 import { applyAction } from "../../engine/engine.js";
@@ -392,4 +394,63 @@ test("IDENT-17 edge (ordering): the sang event comes first, then the spell's own
   assert.ok(weakened > 0, "Weaken's own event follows the song");
   const foeAct = events.findIndex((e, i) => i > weakened && (e.type === "foeMissed" || e.type === "struckByFoe" || e.type === "foeStruck" || e.type === "foeSwing"));
   assert.ok(foeAct === -1 || foeAct > weakened, "any foe action comes after the spell");
+});
+
+// ============================================================================
+// Task 2 (plan 91-06): the combat menu row, the bot, the drawback.
+// ============================================================================
+
+test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then SUNG THIS FIGHT, and describes the song in plain words", () => {
+  const state = bardFight(3, [sleeper()]);
+  const ready = combatMenuViewModel(state);
+  const readyRow = ready.submenus.abilities.rows[0];
+  assert.equal(readyRow.id, "sing");
+  assert.equal(readyRow.cost, "READY");
+  assert.equal(readyRow.enabled, true);
+  assert.equal(ready.actions[1].sub, "SING · READY");
+  assert.equal(readyRow.desc, COMBAT_MENU_COPY.singDesc);
+  assert.match(readyRow.desc, /Once per fight/);
+  assert.match(readyRow.desc, /random offense or defense spell of your level or lower/);
+  assert.match(readyRow.desc, /full strength/);
+  assert.match(readyRow.desc, /no charges spent/);
+
+  sing(state, makeRng(SEED), []);
+  assert.equal(state.combat.sang, true);
+  const sung = combatMenuViewModel(state);
+  const sungRow = sung.submenus.abilities.rows[0];
+  assert.equal(sungRow.cost, "SUNG THIS FIGHT");
+  assert.equal(sungRow.enabled, false);
+  assert.equal(sung.actions[1].sub, "SING · SUNG");
+});
+
+test("IDENT-17 bot: a Bard sings once in every fight (round 1, before its strike logic) and never again in that fight", () => {
+  const policyRng = { pick: (arr) => arr[0] };
+  const ctx = makeBotContext();
+  const dead = (name) => ({ ...sleeper(name, 200), type: "Walking Dead" }); // a Bard talks to Humans first
+  const state = bardFight(2, [dead("A")]);
+  const first = decideAction(state, policyRng, ctx);
+  assert.deepEqual(first, { type: "sing" });
+  const after = applyAction(state, first);
+  assert.equal(after.state.combat.sang, true);
+  const second = decideAction(after.state, policyRng, ctx);
+  assert.notEqual(second.type, "sing", "never again in the same fight");
+  // The next fight sings again.
+  const next = structuredClone(after.state);
+  endCombat(next, []);
+  inCombat(next, [dead("B")]);
+  assert.deepEqual(decideAction(next, policyRng, ctx), { type: "sing" });
+});
+
+test("IDENT-17 drawback: foes with intelligence 3 or less always attack the Bard when a Joiner is in the fight; a Stupidity'd foe (intelligence 1) counts; intelligence 4 does not", () => {
+  const bard = bardFight(3, [awake()]);
+  bard.combat.allies = [{ partyIdx: 0, name: "Ada", wp: 20, maxWP: 20 }];
+  const foe = (intel, extra = {}) => ({ ...awake(), intel, ...extra });
+  const pick = (f, d) => pickFoeTarget(bard, { d: () => d, pick: (a) => a[0] }, f);
+  assert.equal(pick(foe(3), 2), null, "intelligence 3: the Bard, even when the pick die points at the Joiner");
+  assert.equal(pick(foe(1), 2), null, "intelligence 1");
+  assert.equal(pick(foe(1, { stupid: true }), 2), null, "a Stupidity'd foe (intelligence 1, stupid) comes for the Bard");
+  assert.equal(pick(foe(4), 2)?.name, "Ada", "intelligence 4 is not too stupid");
+  // No Joiner in the fight: nothing to override.
+  const solo = bardFight(3, [awake()]);
+  assert.equal(pickFoeTarget(solo, { d: () => 1, pick: (a) => a[0] }, foe(1)), null);
 });

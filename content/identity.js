@@ -131,11 +131,13 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Bard": side(
       [
         trait("bard-humans", "can always parley with Humans", CONTRACT, "courtly enough to talk to anyone — parleys Humans at fluency 0"),
-        trait("bard-song", "a song every 100 squares", "test/unit/combat.test.js", "songReady: only a Bard, and only every 100 squares"),
+        // Phase 91 plan 06 (IDENT-17, user 2026-09-30): replaces "a song every 100 squares".
+        trait("bard-song", "sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent", "test/unit/bard-song.test.js", "IDENT-17 once per fight: songReady is true only for a Bard in a live joined fight that has not sung"),
       ],
       [
         trait("bard-camp", "camp wakes wandering monsters twice as often", CONTRACT, "camp wakes wandering monsters twice as often; dumb foes come for the Bard"),
-        trait("bard-target", "dim-witted foes come for you first, even with a party beside you", CONTRACT, "camp wakes wandering monsters twice as often; dumb foes come for the Bard"),
+        // Phase 91 plan 06 (IDENT-17): the ruling's own words, said plainly (pickFoeTarget: intelligence 3 or less).
+        trait("bard-target", "foes with intelligence no higher than 3 always attack you when a Joiner is in the fight", CONTRACT, "camp wakes wandering monsters twice as often; dumb foes come for the Bard"),
       ],
     ),
 

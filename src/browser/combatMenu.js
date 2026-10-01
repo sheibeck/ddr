@@ -18,7 +18,7 @@ import { itemRowState } from "./gearTab.js";
 import { canCast, neverFlees, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
-import { canParley, parleyBlockedReason, fleeRefusal } from "../../engine/combat.js";
+import { canParley, parleyBlockedReason, fleeRefusal, songReady } from "../../engine/combat.js";
 import { abilityRoundsLeft, abilityUnavailableReason } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
@@ -91,9 +91,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
   scrollDesc: "A random spell, read aloud. No refunds.",
   sing: "SING",
   singReady: "READY",
-  // VOX-05 (79-07): engine/combat.js#sing plays the highest song the level
-  // allows; songReady is the hundred-square cooldown.
-  singDesc: "Sings the best song your level knows, then a hundred squares before the next. Pick the moment.",
+  // Phase 91 (IDENT-17, plan 91-06): SING is once per fight (songReady), and the
+  // song is one random offense or defense spell of your level or lower, at full
+  // strength, no charges spent (engine/combat.js#sing). No squares countdown.
+  singSung: "SUNG THIS FIGHT",
+  singDesc: "Once per fight: sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell.",
   flee: "FLEE",
   withdraw: "WITHDRAW",
   withdrawCost: "CLEAN",
@@ -245,8 +247,9 @@ function combatMenuViewModelUnlocked(state) {
   const isBard = c.sub === "Bard";
   const charges = Math.max(0, maxCharges(c) - (c.spellsUsed || 0));
   const known = (c.grimoire || []).length;
-  const singLeft = 100 - (state.steps - (c.songAt ?? -999));
-  const singReady = isBard && singLeft <= 0;
+  // Phase 91 (IDENT-17): once per fight, read from the engine's own songReady.
+  const singReady = isBard && songReady(state);
+  const singSung = isBard && !!(state.combat && state.combat.sang);
   const heroName = String(c.name || "YOU").toUpperCase();
 
   const submenus = {};
@@ -336,7 +339,7 @@ function combatMenuViewModelUnlocked(state) {
       key: "abilities",
       num: 2,
       label: COMBAT_MENU_COPY.abilities,
-      sub: singReady ? "SING · READY" : `SING (${Math.max(0, singLeft)} sq)`,
+      sub: singSung ? "SING · SUNG" : "SING · READY",
       enabled: true,
       accent: false,
       opens: "abilities",
@@ -347,7 +350,7 @@ function combatMenuViewModelUnlocked(state) {
         {
           id: "sing",
           label: COMBAT_MENU_COPY.sing,
-          cost: singReady ? COMBAT_MENU_COPY.singReady : `${Math.max(0, singLeft)} SQ`,
+          cost: singSung ? COMBAT_MENU_COPY.singSung : COMBAT_MENU_COPY.singReady,
           desc: COMBAT_MENU_COPY.singDesc,
           enabled: singReady,
           dispatch: { type: "sing" },

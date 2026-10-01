@@ -1,0 +1,396 @@
+[
+  {
+    "key": "oracle:sang",
+    "surface": "oracle",
+    "trigger": "sang { title, spell } — engine/combat.js#sing",
+    "before": "You strike up \"a tune\".",
+    "after": "You sing \"An Ode to Freeze\". The song lands as Freeze.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: the song is one random offense or defense spell now, so the line quotes the sung title and names the spell it echoes; it used to name one of five fixed songs."
+  },
+  {
+    "key": "rail:sang",
+    "surface": "rail",
+    "trigger": "sang { title, spell } — engine/combat.js#sing",
+    "before": "You sing a tune.",
+    "after": "Song: An Ode to Freeze (Freeze)",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "The rail twin carries the title and the spell too, short enough for the strip."
+  },
+  {
+    "key": "oracle:actionRefused",
+    "surface": "refusals",
+    "trigger": "actionRefused — engine/combat.js#sing, the once-per-fight refusal",
+    "before": "Your voice needs 3 more squares.",
+    "after": "One song a fight. The audience has had enough.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "IDENT-17: SING is once per fight, so the squares cooldown (a countdown that no longer exists) is replaced by a second-song refusal that says why."
+  },
+  {
+    "key": "rail:actionRefused",
+    "surface": "refusals",
+    "trigger": "actionRefused — engine/combat.js#sing, the once-per-fight refusal",
+    "before": "Your voice needs 3 more squares.",
+    "after": "One song a fight. The audience has had enough.",
+    "reasons": [
+      "fact",
+      "joke"
+    ],
+    "why": "The rail twin reads the same: one song a fight."
+  },
+  {
+    "key": "oracle:songIgnored",
+    "surface": "oracle",
+    "trigger": "the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "They do not care for music.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-17: Soothe the Savage was the only song that could be ignored. Every song is a spell now and the spell's own lines say who it reached."
+  },
+  {
+    "key": "rail:songIgnored",
+    "surface": "rail",
+    "trigger": "the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "They do not care for music.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin goes with it."
+  },
+  {
+    "key": "oracle:beastsSoothed",
+    "surface": "oracle",
+    "trigger": "beastsSoothed — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "2 beasts calm right down and wander off.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Soothe the Savage no longer clears a Beasts fight on its own; it is a song title now, and a parley (parleyWon) is how a fight is talked down."
+  },
+  {
+    "key": "rail:beastsSoothed",
+    "surface": "rail",
+    "trigger": "beastsSoothed — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "2 beasts stand down and leave.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Soothe the Savage no longer clears a Beasts fight on its own; it is a song title now, and a parley (parleyWon) is how a fight is talked down."
+  },
+  {
+    "key": "oracle:lullabyRolled",
+    "surface": "oracle",
+    "trigger": "lullabyRolled — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "The lullaby reaches up to 2 of them. Any not above your level nod off.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Lullaby is a song title now; the spell the song lands as (Doze, Stun and the rest) has its own lines."
+  },
+  {
+    "key": "rail:lullabyRolled",
+    "surface": "rail",
+    "trigger": "lullabyRolled — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "Lullaby: up to 2 nod off.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Lullaby is a song title now; the spell the song lands as (Doze, Stun and the rest) has its own lines."
+  },
+  {
+    "key": "oracle:thunderRolled",
+    "surface": "oracle",
+    "trigger": "thunderRolled — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "Thunder rolls: up to 2 of them freeze for 2 rounds. Any above your level shrug it off.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Cry of Thunder is a song title now; the spell the song lands as has its own lines."
+  },
+  {
+    "key": "rail:thunderRolled",
+    "surface": "rail",
+    "trigger": "thunderRolled — the Bard's fixed song table is gone (engine/combat.js#sing now casts a spell)",
+    "before": "Thunder rolls — up to 2 freeze, 2 rounds.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Cry of Thunder is a song title now; the spell the song lands as has its own lines."
+  },
+  {
+    "key": "raw:engine/combat.js#SONGS",
+    "surface": "oracle",
+    "trigger": "the Bard song table's level-5 note (engine/combat.js#SONGS, removed)",
+    "before": "foes your level or lower drop to 1 hp",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-17: the five fixed songs, with their notes, are retired; the song is a random spell of the Bard's level or lower."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.singDesc",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "Sings the best song your level knows, then a hundred squares before the next. Pick the moment.",
+    "after": "Once per fight: sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: states what tapping SING does now: once per fight, a random offense or defense spell of your level or lower, at full strength, no charges spent."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.singSung",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "",
+    "after": "SUNG THIS FIGHT",
+    "reasons": [
+      "fact"
+    ],
+    "why": "IDENT-17: the SING row's state once the song is spent (it was a squares countdown)."
+  },
+  {
+    "key": "bank:SONG_TITLES.0",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Soothe the Savage",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-17: one of the five old song names, retired into the sung-title list."
+  },
+  {
+    "key": "bank:SONG_TITLES.1",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Inspire the Heart",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-17: one of the five old song names, retired into the sung-title list."
+  },
+  {
+    "key": "bank:SONG_TITLES.2",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Lullaby",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-17: one of the five old song names, retired into the sung-title list."
+  },
+  {
+    "key": "bank:SONG_TITLES.3",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Cry of Thunder",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-17: one of the five old song names, retired into the sung-title list."
+  },
+  {
+    "key": "bank:SONG_TITLES.4",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "An Ode to Death",
+    "reasons": [
+      "naming"
+    ],
+    "why": "IDENT-17: one of the five old song names, retired into the sung-title list."
+  },
+  {
+    "key": "bank:SONG_TITLES.5",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "An Ode to {spell}",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.6",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "The Ballad of {spell}",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.7",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "{spell}, in a Minor Key",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.8",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Ten Verses on {spell}",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.9",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "The {spell} Blues",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.10",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "{spell}: The Musical",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.11",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Hymn to {spell}, Slightly Flat",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.12",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "Variations on {spell}, Mostly Loud",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.13",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "{spell} (The Power Ballad)",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.14",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "A Rousing Chorus of {spell}",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:SONG_TITLES.15",
+    "surface": "oracle",
+    "trigger": "the title a Bard's song is sung under (content/songs.js#SONG_TITLES)",
+    "before": "",
+    "after": "The Ill-Advised {spell} Medley",
+    "reasons": [
+      "joke"
+    ],
+    "why": "IDENT-17: a templated sung title; the {spell} slot is filled with the spell the song lands as."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "a song every 100 squares",
+    "after": "sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: the song is once per fight and a random spell, not 'a song every 100 squares'."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Bard.bad.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "dim-witted foes come for you first, even with a party beside you",
+    "after": "foes with intelligence no higher than 3 always attack you when a Joiner is in the fight",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: states the drawback plainly: foes with intelligence 3 or less always attack the Bard when a Joiner is in the fight (worded 'no higher than 3' to keep the footer roll-under guard honest)."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Bard",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: can always parley with Humans; a song every 100 squares. Bad: camp wakes wandering monsters twice as often; dim-witted foes come for you first, even with a party beside you.",
+    "after": "Good: can always parley with Humans; sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent. Bad: camp wakes wandering monsters twice as often; foes with intelligence no higher than 3 always attack you when a Joiner is in the fight.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: the footer carries the once-per-fight song and the plain dim-witted-foes drawback."
+  },
+  {
+    "key": "bank:SUB_NOTE.Bard",
+    "surface": "blurbs",
+    "trigger": "the sub-class blurb (roller and Hero tab)",
+    "before": "Five songs, one every hundred squares, and every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and once the fighting starts they come for you first — which, down here, is most of them.",
+    "after": "Once a fight you sing a random offense or defense spell up to your level, at full strength, no charges spent: you pick the moment and the song picks the spell. And every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "IDENT-17: the blurb said 'five songs, one every hundred squares'. It now states the once-a-fight random spell and the dim-witted foes (intelligence no higher than 3, when a Joiner is along), keeping the Human parley and the camp clause."
+  }
+]

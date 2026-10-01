@@ -1224,8 +1224,9 @@ function preHazardFlight(state, ctx, dir) {
  *       ready worn staff;
  *   (c) talk-first (HARN-02): the identity talkers (`isTalkFirst`) try
  *       parley once at round 1, before anything else;
- *   (d) sing (HARN-02): a Bard's song, once ready, every round 1 (level 1
- *       only vs Beasts/Lair Beasts — the level-1 song does nothing else);
+ *   (d) sing (HARN-02; Phase 91 IDENT-17): a Bard sings once in every fight,
+ *       the first time songReady allows it (a random offense or defense
+ *       spell of its level or lower, cast free; no level or type condition);
  *   (e) Summon in combat (HARN-02): round 1, no ally yet, charges remain;
  *   (f) Mirror Self opener (HARN-02): round 1, no active mirror — must
  *       precede the scoring table because an Illusionist can also learn
@@ -1366,8 +1367,11 @@ export function decideAction(state, policyRng, ctx) {
       }
     }
 
-    // (d) HARN-02 sing
-    if (songReady(state) && (c.level >= 2 || C.type === "Beasts" || C.type === "Lair Beasts")) return { type: "sing" };
+    // (d) HARN-02 sing — Phase 91 (IDENT-17, plan 91-06): SING is once per fight and
+    // every song is a real offense or defense spell cast free, so a Bard sings the
+    // first time it can in every fight (songReady turns false once it has); the old
+    // "level 2 or Beasts" condition (when the level-1 song did nothing else) is gone.
+    if (songReady(state)) return { type: "sing" };
 
     // (e) HARN-02 Summon in combat
     if (C.round === 1 && !C.ally && chargesLeft > 0) {

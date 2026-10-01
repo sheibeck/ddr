@@ -204,6 +204,8 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/placement.js", "PLACEMENT_CARD", "rail-cards", "the deferred placement rail card"),
   bank("content/placement.js", "PLACEMENT_LINES", "boards", "the DEPTH rank line"),
   bank("content/spells.js", "NICHE_LABELS", "spells", "a spell's niche label"),
+  // Phase 91 plan 06 (IDENT-17): the titles a Bard's song is sung under (content/songs.js).
+  bank("content/songs.js", "SONG_TITLES", "oracle", "the title a Bard's song is sung under"),
   bank("content/treasure-tables.js", "FAERIE", "items", "a Faerie's gift"),
   bank("content/treasure-tables.js", "MISC_MAGIC", "items", "a misc-magic treasure kind"),
   // Pre-registered for wave-1 sibling 79-03 (absent at the phase base).

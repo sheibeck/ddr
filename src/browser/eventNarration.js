@@ -849,17 +849,13 @@ export const EVENT_NARRATION = {
     return `<span class="hit">Talked down.</span> ${n === 1 ? "1 foe" : `${n} foes`} agreed the fight is over, and it pays as if you had won it: ${parts.join(", ")}.`;
   },
   parleyFailed: () => `<span class="miss">They are not buying it.</span>`,
-  sang: (e) => `You strike up "${e.song ?? "a tune"}".`,
-  // VOX-05 (Phase 79, plan 79-04): the three song lines name who the song
-  // reached. Lullaby and Thunder roll how MANY foes the song can reach
-  // (engine/combat.js#sing: `foes.slice(0, n)`, and only a foe not above the
-  // hero's level) — "up to", never a count of foes that actually slept.
-  beastsSoothed: (e) =>
-    `<span class="hit">${(e.count ?? 0) === 1 ? "1 beast calms right down and wanders off" : `${e.count ?? 0} beasts calm right down and wander off`}.</span>`,
-  songIgnored: () => `<span class="miss">They do not care for music.</span>`,
-  lullabyRolled: (e) => `The lullaby reaches up to <span class="roll">${e.n ?? 0}</span> of them. Any not above your level nod off.`,
-  thunderRolled: (e) =>
-    `Thunder rolls: up to <span class="roll">${e.n ?? 0}</span> of them freeze for <span class="roll">${e.r ?? 0}</span> round${e.r === 1 ? "" : "s"}. Any above your level shrug it off.`,
+  // Phase 91 (IDENT-17, plan 91-06): the Bard's song is one random offense or
+  // protection spell, sung under a title (engine/combat.js#sing). The line quotes
+  // the title and names the spell it echoes; the spell's own events (its hit, its
+  // resist, its ward) follow on their own lines. The five per-song lines
+  // (beastsSoothed, songIgnored, lullabyRolled, thunderRolled) retired with the
+  // fixed song table.
+  sang: (e) => `You sing "${e.title ?? "a tune"}". <span class="beat">The song lands as ${e.spell ?? "a spell"}.</span>`,
   combatEnded: () => `<span class="beat">The fight is over.</span>`,
   // DFB-05 (Phase 25.1): extended additively — `weapon`/`crit`/`backstab` on
   // allyStruck and `target`/`roll`/`need`/`weapon` on allyMissed render only
@@ -1300,7 +1296,8 @@ export const EVENT_NARRATION = {
   actionRefused: (e) => {
     const map = {
       notFought: `<span class="miss">Fight! first.</span>`,
-      cooldown: `<span class="miss">Your voice needs ${e.left ?? "more"} more squares.</span>`,
+      // Phase 91 (IDENT-17): once per fight (the old "voice needs N more squares" cooldown is gone).
+      sungThisFight: `<span class="miss">One song a fight. The audience has had enough.</span>`,
       wrongClass: `<span class="miss">Only a Bard sings here.</span>`,
       // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
       notOut: `<span class="miss">There is no turn to lose.</span>`,
