@@ -1164,7 +1164,7 @@ const FIGHT_SITE_SEEDS = [
   { holderId: "action-script.combat.json#lose-plain", seed: 1119 },
   { holderId: "action-script.combat.json#flee", seed: 17 },
   { holderId: "action-script.combat.json#parley", seed: 303 },
-  { holderId: "action-script.magic.json#cast-damage", seed: 8 },
+  { holderId: "action-script.magic.json#cast-damage", seed: 243 },
 ];
 
 /**
@@ -1284,8 +1284,8 @@ const RULES753_FIRST_FLOOR = 5;
 // "frozen", and a foe `held` record). That is not a control-at-depth event,
 // so the guard below excludes it — but only at a site a Phase 79.2 record
 // declares, and exactly FREEZE792_EXPECTED_HOLDERS may declare one. Measured:
-// the one replay that casts Freeze (magic cast-damage, seed 8) freezes the
-// Shriek for 2 rounds; its action-path record carries "79.2".
+// the one replay that casts Freeze (magic cast-damage, seed 8; since Phase 90 plan 06 seed 243) freezes the
+// Shriek (a Viper at seed 243) for 2 rounds; its action-path record carries "79.2".
 const FREEZE792_EXPECTED_HOLDERS = ["action-script.magic.json#cast-damage"];
 
 /** isFreezeHoldEvent(e) — a Freeze's d4 hold and its countdown (user rulings 2026-09-28). */

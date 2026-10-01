@@ -253,7 +253,16 @@ for (const scenario of FIXTURE.scenarios) {
     // c.skills) — wrap the base comparable (including any parley strip)
     // with the shift strip.
     const shift = chargenShiftOf(scenario);
-    const cmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
+    const shiftCmp = shift ? (s) => stripChargenShift(baseCmp(s), shift) : baseCmp;
+    // Phase 90 plan 06 (SPELL-12): a chargenDivergence may declare an `rngShift`
+    // (test/parity/fixtures/action-script.combat.json's lose-apprentice): the
+    // engine's chargen draws FEWER main-rng values than the frozen prototype's
+    // (Phantom Host left the Apprentice's pool), so from chargen on the two sides
+    // play different floors. The boot compare then drops the floor, a LOCAL strip
+    // (test/parity/harness/comparables.js stays untouched per the engine gate), and
+    // the test asserts below that the floors really do differ, so the declaration
+    // can never mask a floor that is in fact identical.
+    const cmp = shift?.rngShift?.floorDiffers ? (s) => { const { floor, ...rest } = shiftCmp(s); return rest; } : shiftCmp;
     // FID-07 (Phase 24, plan 24-02): a scenario MAY carry a generic
     // "action-path" divergence record — declares that the per-action byte
     // diff is skipped from a given action index on (the action path itself
@@ -272,6 +281,13 @@ for (const scenario of FIXTURE.scenarios) {
       assert.equal(shiftDiffs.after, null, `scenario ${scenario.name}: engine chargen shift != declared after at ${shiftDiffs.after}`);
     }
 
+    if (shift?.rngShift?.floorDiffers) {
+      assert.notEqual(
+        diffState(ctx.S.floor, engineState.floor),
+        null,
+        `scenario ${scenario.name}: rngShift.floorDiffers is declared but the two boot floors are identical`,
+      );
+    }
     const initialDivergence = diffState(cmp(ctx.S), cmp(engineState));
     assert.equal(
       initialDivergence,

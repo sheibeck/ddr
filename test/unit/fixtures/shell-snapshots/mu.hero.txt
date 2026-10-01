@@ -3,7 +3,7 @@
   text="Lvl I"
 ## #s-name
 <div id="s-name">
-  text="Petra Holloway"
+  text="Rosa Larkin"
 ## #s-tag
 <div id="s-tag">
   text="Human Wizard · Magic User"
@@ -74,6 +74,11 @@
       html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour</i>"
     <span class="grim-hint">
       text="Combat only"
+  <li class="grim-locked">
+    <div class="grim-info">
+      html="<b><span class=\"grim-lvl\">L1</span>Freeze</b><i>burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry</i>"
+    <span class="grim-hint">
+      text="Combat only"
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Heal</b><i>healing · you · d10 hp</i>"
@@ -81,17 +86,12 @@
       text="Cast"
   <li>
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Lesser Summon</b><i>summon · one small ally · a level under yours, d4 rounds, never backfires</i>"
-    <button class="small" onclick>
-      text="Cast"
-  <li>
-    <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Mirror Self</b><i>defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Map the Floor</b><i>sight · the whole floor · shown until you take a step, then your focus breaks</i>"
     <button class="small" onclick>
       text="Cast"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L2</span>Insane</b><i>chaos · one foe · rolls on the madness table</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Stun</b><i>control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned</i>"
     <span class="grim-hint">
       text="Combat only"
   <li class="grim-locked">
@@ -106,16 +106,9 @@
       text="Cast"
     <span class="grim-hint">
       text="Needs level 2"
-  <li>
-    <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L3</span>Phantom Host</b><i>summon · one ally · a host that isn't there, d4+2 rounds</i>"
-    <button class="small" disabled title="Needs level 3" onclick>
-      text="Cast"
-    <span class="grim-hint">
-      text="Needs level 3"
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L5</span>Mangle</b><i>burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 + your level² damage</i>"
+      html="<b><span class=\"grim-lvl\">L4</span>Earthquake</b><i>multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides</i>"
     <span class="grim-hint">
       text="Combat only"
 ## #doss-who
@@ -133,9 +126,9 @@
   <section>
     html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Every school of magic, and a flat refusal to teach anybody who isn't an Apprentice. You will not raise a hand while an attack spell is left in the book; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
     <p class="doss-rules">
-      text="Good: every school of magic from level 1; your thrown offense spells land on three more faces."
+      text="Good: your thrown offense spells land on three more faces."
     <p class="doss-rules">
-      text="Bad: won't swing a weapon while a castable attack spell and a charge remain."
+      text="Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells."
 ## #hero-party
 <div id="hero-party">
 ## #hero-party-list

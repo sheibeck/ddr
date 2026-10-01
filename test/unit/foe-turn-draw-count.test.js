@@ -300,7 +300,11 @@ const FULL_FIGHTS = [
   // rng-stream-reshuffle cause as every other row here.
   { seed: 303, forced: "Humans", foeNames: ["Ned", "Ned"], totalDraws: 29, attacks: 5, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — 27/4 -> 21/6.
-  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 21, attacks: 6, outcome: "won" },
+  // Phase 90 plan 06 (SPELL-12, user 2026-09-30): re-measured live — this seed's
+  // hero is an Illusionist, whose chargen now draws one fewer main-rng value
+  // (Phantom Host left its pool), so the fight rolls on a shifted stream: 21/6 ->
+  // 20/4 (same roster and outcome).
+  { seed: 8, forced: "Beasts", foeNames: ["Shriek"], totalDraws: 20, attacks: 4, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — this fight FLIPS from
   // died (121/14) to won (45/7). The foe no longer gets a same-cycle second
   // turn (the removed pre-emptive foeTurn in afterPlayerAction), so this
@@ -312,7 +316,12 @@ const FULL_FIGHTS = [
   // cause as seed 17 above (the level-keyed count cap is gone). This seed's
   // count roll now yields a THIRD "Shriek" — draws 45 -> 83, attacks 7 -> 15,
   // outcome unchanged ("won").
-  { seed: 127, forced: "Beasts", foeNames: ["Bat/Rat", "Shriek", "Shriek"], totalDraws: 83, attacks: 15, outcome: "won" },
+  // Phase 90 plan 06 (SPELL-12, user 2026-09-30): re-measured live — this seed's
+  // hero is an Apprentice, whose chargen now draws one fewer main-rng value
+  // (Phantom Host left its pool), so the roster itself moves: ["Bat/Rat",
+  // "Shriek", "Shriek"] -> ["Shriek", "Shriek"], draws 83 -> 81, attacks 15 -> 21,
+  // outcome unchanged ("won").
+  { seed: 127, forced: "Beasts", foeNames: ["Shriek", "Shriek"], totalDraws: 81, attacks: 21, outcome: "won" },
   // Phase 51 (INIT-01, 2026-09-20): re-measured live — this fight ALSO flips
   // died (51/7) -> won (38/11), same cause as seed 127 above. This seed is
   // one of the MOVED SET's `lose-plain` parity fixture holders (a fixed,
@@ -647,7 +656,10 @@ for (const row of GATED_DRAWS) {
 // Phase 72 (ROLL-01 (b), 2026-09-24): re-measured live — only seed 17 (the
 // one Fridgian hero in this table) moves, 88 -> 70 — see FULL_FIGHTS' own
 // per-row comment above.
-test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/70/29/21/83/38) are measured-current and no fixture-roster creature carries a kit", () => {
+// Phase 90 plan 06 (SPELL-12): seeds 8 and 127 re-measured live (an Illusionist and an
+// Apprentice — their chargen draws fewer main-rng values now): totals
+// 12/36/70/29/21/83/38 -> 12/36/70/29/20/81/38.
+test("FID-02 restated post-260918-w4n: the seven FULL_FIGHTS totals (12/36/70/29/20/81/38) are measured-current and no fixture-roster creature carries a kit", () => {
   for (const row of FULL_FIGHTS) {
     const r = runFullFight(row.seed, row.forced);
     assert.equal(r.rng.draws, row.totalDraws, `seed ${row.seed}/${row.forced} pinned total draws`);
@@ -710,7 +722,9 @@ const OPENER_DRAWS = [
   { seed: 17, forced: "Beasts", draws: 13 },
   { seed: 303, forced: "Humans", draws: 13 },
   { seed: 8, forced: "Beasts", draws: 5 },
-  { seed: 127, forced: "Beasts", draws: 10 },
+  // Phase 90 plan 06 (SPELL-12): seed 127 (an Apprentice) re-measured live, 10 -> 8
+  // (its roster is two Shrieks now, no Bat/Rat: one fewer per-foe pass).
+  { seed: 127, forced: "Beasts", draws: 8 },
   { seed: 1119, forced: "Beasts", draws: 8 },
 ];
 

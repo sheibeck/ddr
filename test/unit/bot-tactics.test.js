@@ -1076,7 +1076,17 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
     // smallest untaken seed that dies naturally (374 actions); seeds 6 and 2
     // still die naturally. The Pilfer and Troll Knight trios are unaffected
     // (re-confirmed live).
-    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 2, 1] },
+    // Phase 90 plan 06 (SPELL-12, user 2026-09-30): Sorcerer seeds 2 and 1 swapped for
+    // seeds 4 and 5. The spell list is two rows shorter (Lesser Summon and Phantom Host
+    // left it), so a scroll's pick(options) lands on another row and the bot's long
+    // run plays out differently: seeds 2 and 1 now fall into the pre-existing
+    // campFailed loop the Phase 72 note above describes (stuck at depth 9, days 12 and
+    // 17, re-measured live to 5000 actions under identity dials). Seeds 4 and 5 are the
+    // smallest untaken seeds that die naturally (seed 4: 437 actions, depth 3, day 9;
+    // seed 5: 364 actions, depth 3, day 7; seed 3 also stalls, depth 5); seed 6 still
+    // dies naturally (107 actions, depth 1). The Pilfer and Troll Knight trios are
+    // unaffected (re-confirmed live).
+    { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [6, 4, 5] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [5, 2, 4] },
   ];
   let sawItem = false;

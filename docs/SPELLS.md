@@ -1409,3 +1409,58 @@ holds one foe for d4 rounds and a hit does not end it." The rulings Q3 A, Q4 A a
 A flagged assumption for the user (probe SPELL-11): "a hit wakes it" means ANY damage the dozing foe
 takes through the damage seam, whoever deals it; "d4 foes" starts at the hero's target; each sleeper
 rolls its own d4; Stun's "one foe" is the hero's current target.
+
+## Phase 90: Lesser Summon and Phantom Host removed, Summon from level 1, Wizards lose Illusion, the school-gate guard (SPELL-12, SPELL-10, plan 90-06)
+
+User 2026-09-30 (SPELL-12): "Lesser Summon is removed and the Summoner casts the level-2 Summon from
+level 1 ... Phantom Host is removed", and "Illusion is the Illusionist's alone (rulebook p.17): Wizards
+lose the Illusion school; the Illusionist and the Apprentice keep it." SPELL-10 asks that every new
+Special and Illusion spell is born gated, so a sub-class or race that cannot cast a school is never
+dealt, offered, able to copy or able to cast it.
+
+- **The list.** `SPELLS` holds 31 rows (33 less Lesser Summon and Phantom Host); `SCROLL_FUMBLE` has
+  the same 31 names. Lightning, Regeneration, Mangle and Death sit one row earlier (they keep their
+  relative order; nothing indexes past row 26 any more, every test and tool looks a spell up by name).
+  `roll: "derived"` stays as the zero-draw chargen path for the rows the next plans append; no row
+  uses it now. Nothing in `engine/` or `content/` names a removed spell except the save load's
+  rename table (`engine/saveState.js#RETIRED_SPELL_NAMES`).
+- **The Summoner's exception is data.** `content/spell-level-overrides.js` is
+  `{ Summoner: { Summon: 1 } }`, read only through `derived.js#spellLevelFor`: a level-1 Summoner's
+  Summon passes `canCast` and every other sub-class's still needs level 2. The summon rules are
+  unchanged (a Summoner's ally is level + 1, its rounds are doubled, one cast in eight backfires). The
+  Grimoire row and the combat menu print the effective level (L1 for the Summoner), and the identity
+  footer's override line generates itself ("Summon castable from level 1 (level 2 for everyone else)").
+  The Summoner's day-one book holds Summon (the unchanged must-have grant); a summon never counts as
+  damage (`dealsDamage`), so its day-one damage guarantee comes from the same top-up as every other
+  sub-class's.
+- **The Wizard's chart.** `MU_CHART.Wizard.illusion` is `null`: a Wizard never learns Mirror Self or
+  any later Illusion spell (its generated footer reads "never learns illusion spells"). The
+  Illusionist and the Apprentice keep the school; an Apprentice revealed as a Wizard drops its
+  Illusion spells, as an Illusionist keeps them.
+- **`canCast` re-checks the school.** `derived.js#canCast` returns false for a spell whose school a
+  Magic User sub-class can never learn (`schoolClosed`: a sub-class with no chart row is not a Magic
+  User and is not touched), so an old or tampered book never casts or lists one. `castSpell` names
+  the refusal `spellSchoolLocked` with `forbidden: true` (no level opens it), the Grimoire row reads
+  "Not your school", and the combat menu never lists it.
+- **The tolerant load.** `saveState.js#migrateSpellNames` runs for the hero, every Joiner sheet and a
+  pending Joiner, in both load chains: "Lesser Summon" becomes "Summon" (one copy, at the first one's
+  place), "Phantom Host" and any name no `SPELLS` row carries are dropped, and a spell whose school the
+  sheet's sub-class can never learn is dropped; the surviving names keep their saved order; a book
+  with none of these is untouched. Silent: no event, no rng.
+- **The guard.** `test/unit/school-gates.test.js` sweeps every Magic User sub-class over seeds and
+  levels 1-5 through every path that hands out a spell: chargen `rollGrimoire` (hero, the Wizard's
+  day-one pool, a Joiner's book, `meetJoiner` into `resolveJoiner`), the Sorcerer's level-up picks and
+  the Apprentice reveal, `findGrimoire`, `readScroll`'s copy into the book (a store or loot scroll
+  holds no spell until it is read, so this is the one path a scroll hands a spell to a book) and the
+  combat spell menu over a book holding every spell. It iterates `SPELLS`, never a list of names, so it
+  keeps proving the gates as the ten slate spells are appended. One-shot scroll READING stays RULES-10
+  (anyone may try; the scroll pool is every row, the new schools included): only the copy obeys the
+  gates. A content guard fails when a spell's school is missing from any `MU_CHART` row, when a chart
+  row lacks one of the six schools, or when an override names an unknown sub-class, spell or a school
+  that sub-class cannot learn (its own negative cases prove it can fail).
+
+**Fixtures this moved** (measured, declared and regenerated alone; docs in
+test/parity/FIXTURE-INVENTORY.md "Phase 90 plan 06"): chargen draws fewer main-rng values for a
+Wizard (39 to 36), an Illusionist (34 to 33) and an Apprentice (38 to 37), so chargen seeds 7, 8 and
+24 move and every parity scenario on such a seed was re-picked or re-declared; a scroll's pick comes
+from 31 rows, which moved four bot pins.
