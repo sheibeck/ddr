@@ -340,7 +340,7 @@ test("the close: no row reads fix engine, fix text or balance call, and the tabl
 });
 
 test("the close: a row turned back into fix engine, fix text or balance call fails", () => {
-  for (const [name, from, to] of [["Stealth", "| fixed engine (90-10) |", "| fix engine (90-10) |"], ["Kata", "| fixed text (90-11) |", "| fix text (90-11) |"], ["Brace", "| match |", "| balance call (Q10) |"]]) {
+  for (const [name, from, to] of [["Stealth", "| fixed engine (90-10) |", "| fix engine (90-10) |"], ["Silent Step", "| fixed text (90-11) |", "| fix text (90-11) |"], ["Brace", "| match |", "| balance call (Q10) |"]]) {
     const reopened = doctor((c, at) => (c[at(name)] = c[at(name)].replace(from, to)));
     assert.ok(checkDoc(reopened).some((p) => new RegExp(`row "${name}" is still open`).test(p)), name);
   }
@@ -360,11 +360,11 @@ test("the close: a pin naming a missing file or a title the file does not hold f
 });
 
 test("the close: a Text cell that is not the live text, a stale second text, or draft language fails", () => {
-  const stale = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace('one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight', "one perfect form: it never misses")));
+  const stale = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace('one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it', "one perfect form: it never misses")));
   assert.ok(checkDoc(stale).some((p) => /row "Kata" Text cell is not the live text/.test(p)));
   const stale2 = doctor((c, at) => (c[at("Locks")] = c[at("Locks")].replace("3–10 with lockpicks", "2–10 with lockpicks")));
   assert.ok(checkDoc(stale2).some((p) => /row "Locks" Text cell is not the live text/.test(p)));
-  const draft = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| once per fight;", "| to be added; once per fight;")));
+  const draft = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| ready again 4 rounds after the use;", "| to be added; ready again 4 rounds after the use;")));
   assert.ok(checkDoc(draft).some((p) => /still carries draft or to-do language/.test(p) || /Rule/.test(p)) || checkDoc(draft).length > 0);
 });
 
@@ -449,10 +449,11 @@ test("the checker fails a missing row, a duplicate row, a merged row, an empty c
 });
 
 test("Phase 91.1: a verdict may end with value change (91.1-0N), and an owner outside 91.1-02 to 91.1-05 fails", () => {
-  const ok = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| fixed text (90-11) |", "| fixed text (90-11); value change (91.1-02) |")));
+  // Phase 91.1 plan 02: the Kata row already ends with the owner token, so this doctored copy uses Silent Step (verdict unchanged).
+  const ok = doctor((c, at) => (c[at("Silent Step")] = c[at("Silent Step")].replace("| fixed text (90-11) |", "| fixed text (90-11); value change (91.1-02) |")));
   assert.deepEqual(checkDoc(ok), []);
   for (const bad of ["91.1-06", "91.1-01"]) {
-    const doc = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| fixed text (90-11) |", `| fixed text (90-11); value change (${bad}) |`)));
+    const doc = doctor((c, at) => (c[at("Silent Step")] = c[at("Silent Step")].replace("| fixed text (90-11) |", `| fixed text (90-11); value change (${bad}) |`)));
     assert.ok(checkDoc(doc).some((p) => /not a Phase 91\.1 build plan/.test(p)), bad);
   }
 });

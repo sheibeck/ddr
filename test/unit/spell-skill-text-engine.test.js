@@ -69,7 +69,7 @@ import { useAbility, abilityShortfall, DURATION_ROUNDS, KATA_FEINT_NEED_SHIFT, S
 import { openChest } from "../../engine/encounters.js";
 import { newDay } from "../../engine/movement.js";
 import { GW, GH } from "../../engine/maze.js";
-import { tickSquares } from "../../engine/effects.js";
+import { tickSquares, isReady } from "../../engine/effects.js";
 import { SPELLS, ABILITIES, ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/index.js";
 import { facesRangeText } from "../../src/browser/rollRange.js";
 import { actsWhere } from "./harness/spellResistActs.js";
@@ -669,6 +669,17 @@ function usesPerFight(id, opts = {}) {
   for (let i = 0; i < 4; i++) useAbility(state, id, rngBy(() => 2), events);
   return evs(events, "abilityUsed").length;
 }
+/**
+ * readyAfter(id) — Phase 91.1 plan 02 (V1 to V5): how many rounds after the use an ability is usable again, measured from the engine:
+ * use it once, play plain rounds until the timer is gone, and count the rounds that passed since the use round (used in round R, ready in round R + N).
+ */
+function readyAfter(id, opts = {}) {
+  const state = fightState({ role: ABILITY_BY_ID[id].cls, abilities: [id], foeOver: { wp: 9999, maxWP: 9999 }, ...opts });
+  const start = state.combat.round;
+  useAbility(state, id, rngBy(() => 2), []);
+  for (let i = 0; i < 40 && !isReady(state.c, `ability:${id}`); i++) playerStrike(state, rngBy(() => 2), []);
+  return state.combat.round - start;
+}
 /** liveRounds(id) — the rounds a duration ability's effect still has right after the use (the use round's foe turn already ticked it once). */
 const liveRounds = (id) => use(id).state.c.timers[`ability:${id}`].left;
 /** foeShift(id) — what a live ability puts on every foe's to-hit against the hero, signed from the foe's side. */
@@ -862,7 +873,7 @@ function heftNumbers() {
 }
 
 const AB = (id) => ABILITY_BY_ID[id];
-const kataLike = (id) => [{ says: /: (#) to hit on this strike, and it adds your level in damage; (#) per fight$/, value: () => [shiftOf(id), usesPerFight(id)] }];
+const kataLike = (id) => [{ says: /: (#) to hit on this strike, and it adds your level in damage; ready again (#) rounds after you use it$/, value: () => [shiftOf(id), readyAfter(id)] }];
 
 // --- the facts: every number each ability and skill text states ---------------
 
@@ -876,9 +887,9 @@ export const SKILL_TEXT_FACTS = {
   Sidestep: [{ says: /^(#) rounds of not being where the blade is: foes (#) to hit you$/, value: () => [liveRounds("sidestep"), foeShift("sidestep")] }],
   "Pommel Strike": [],
   "Battle Roar": [{ says: /for (#) rounds foes (#) to hit anyone on your side$/, value: () => [liveRounds("battleRoar"), foeShift("battleRoar")] }],
-  "Second Wind": [{ says: /heal (#) \+ level; (#) per fight$/, value: () => [
+  "Second Wind": [{ says: /heal (#) \+ level; ready again (#) rounds after you use it$/, value: () => [
     extremes((fn) => ev(use("secondWind", { c: { wp: 1, maxWP: 999 } }, fn).events, "secondWindHealed").rolled - 3),
-    usesPerFight("secondWind"),
+    readyAfter("secondWind", { c: { wp: 500, maxWP: 999 } }),
   ] }],
   Sweep: [{ says: /^(#) wide arc: every living foe takes (#) damage; needs (#) or more foes$/, value: () => {
     const s = sweepNumbers();
@@ -887,24 +898,24 @@ export const SKILL_TEXT_FACTS = {
   Brace: [{ says: /^(#) the next blow that lands on you$/, value: () => braceHalf() }],
   Riposte: [{ says: /^for (#) round every foe that misses you eats your weapon damage$/, value: () => liveRounds("riposte") }],
   Taunt: [{ says: /your armour soaks (#)$/, value: () => soakFaces(true) / soakFaces(false) }],
-  "Overhead Blow": [{ says: /^everything into (#) swing: (#) damage, but (#) to hit; (#) per fight$/, value: () => {
+  "Overhead Blow": [{ says: /^everything into (#) swing: (#) damage, but (#) to hit; ready again (#) rounds after you use it$/, value: () => {
     const oh = use("overheadBlow", { foeOver: { wp: 999 } }, () => 2);
-    return [blows(oh.events), ratioOf(strikeDmg(oh.events), strikeDmg(plain().events)), shiftOf("overheadBlow"), usesPerFight("overheadBlow")];
+    return [blows(oh.events), ratioOf(strikeDmg(oh.events), strikeDmg(plain().events)), shiftOf("overheadBlow"), readyAfter("overheadBlow")];
   } }],
-  "Last Stand": [{ says: /^under a (#) hp: (#) attacks this round; (#) per fight$/, value: () => [
+  "Last Stand": [{ says: /^under a (#) hp: (#) attacks this round; ready again (#) rounds after you use it$/, value: () => [
     lastStandQuarter(),
     blows(use("lastStand", { c: { wp: 10, maxWP: 100 } }).events),
-    usesPerFight("lastStand", { c: { wp: 10, maxWP: 100 } }),
+    readyAfter("lastStand", { c: { wp: 2400, maxWP: 10000 } }),
   ] }],
   "Silent Step": [{ says: /never misses and (#) its damage, any round; (#) per fight; .* lose the (#)$/, value: () => [silentStepDoubling(), usesPerFight("silentStep"), silentStepDoubling()] }],
   "Dirty Trick": [{ says: /blinded for (#) rounds, so it hits only on its best roll \((#)\) and never/, value: () => {
     const r = use("dirtyTrick");
     return [ev(r.events, "dirtyTrickLanded").rounds, d20(foeFaces(r.state, r.state.combat.foes[0]).plain)];
   } }],
-  Smoke: [{ says: /for (#) rounds foes hit you only on their best roll \((#); (#) if you insulted them\), and a flee during it just works; (#) per fight$/, value: () => {
+  Smoke: [{ says: /for (#) rounds foes hit you only on their best roll \((#); (#) if you insulted them\), and a flee during it just works; ready again (#) rounds after you use it$/, value: () => {
     const r = use("smoke");
     const f = foeFaces(r.state, r.state.combat.foes[0]);
-    return [liveRounds("smoke"), d20(f.plain), spanOf(f.insulted), usesPerFight("smoke")];
+    return [liveRounds("smoke"), d20(f.plain), spanOf(f.insulted), readyAfter("smoke")];
   } }],
   Cutpurse: [{ says: /^lift (#) × level gold off the target mid-fight; it has other problems; (#) per fight$/, value: () => [
     extremes((fn) => ev(use("cutpurse", {}, fn).events, "cutpursed").amount / 3),
@@ -914,8 +925,8 @@ export const SKILL_TEXT_FACTS = {
     const p = poisonNumbers();
     return [p.dmg, p.ticks];
   } }],
-  Hamstring: [{ says: /blows do (#) damage for the rest of the fight; (#) per fight$/, value: () => [hamstringHalf(), usesPerFight("hamstring")] }],
-  Mark: [{ says: /adds (#) damage for the rest of the fight; (#) per fight$/, value: () => [markPlus(), usesPerFight("mark")] }],
+  Hamstring: [{ says: /blows do (#) damage for the rest of the fight; ready again (#) rounds after you use it, on a foe that is not already hamstrung$/, value: () => [hamstringHalf(), readyAfter("hamstring")] }],
+  Mark: [{ says: /adds (#) damage for the rest of the fight; ready again (#) rounds after you use it, on a foe that is not already marked$/, value: () => [markPlus(), readyAfter("mark")] }],
   Stealth: [{ says: /crits on the top (#) numbers of your die \((#)\)/, value: () => [stealthNumbers(), d20(stealthNumbers())] }],
   Hardiness: [{ says: /^(#) to every blow, bolt and trap that hurts you \(never below (#)\), and a Joiner with it takes (#) less from each blow; phobias (#)$/, value: () => {
     const h = hardinessNumbers();
