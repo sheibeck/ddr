@@ -301,12 +301,13 @@ item (the `memberUseItem` rows).
 castable right now — melee with the staff instead once none is); afraid: to-hit
 need −3, damage halved, never refused.
 
-**Flee:** refused `samurai` (never flees). Cloaker: a free vanish before its
-first landed blow (`fled {reason:"cloaker"}`); once opened, falls through to
-the ordinary Thief roll. Round-1 tracked withdrawal: a clean `fled
-{reason:"tracked"}` for most classes; a Master of Arms is denied
-(`withdrawalDenied {reason:"masterOfArms"}`) and falls through to the
-ordinary roll.
+**Flee:** refused `samurai` (never flees) and, since Phase 91 plan 05
+(IDENT-16), `masterOfArms` (never leaves a fight), both through
+`derived.js#neverFlees` and in every round with no draw. Cloaker: a free
+vanish before its first landed blow (`fled {reason:"cloaker"}`); once opened,
+falls through to the ordinary Thief roll. Round-1 tracked withdrawal: a clean
+`fled {reason:"tracked"}` for every Fighter that may flee (the Phase 24
+`withdrawalDenied` event is retired).
 
 **Parley:** refused `ninja` (never speaks) and `masterOfArms` (attacks
 without question) — narrated directly, before the one-attempt flag is set.

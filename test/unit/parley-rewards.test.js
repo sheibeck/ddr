@@ -23,6 +23,7 @@ import { SPELLS } from "../../content/index.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, linesForAction } from "../../src/browser/narrationLines.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { IDENTITY_TRAITS } from "../../content/identity.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -386,4 +387,37 @@ test("the PARLEY row says what a parley is and what it pays", () => {
 test("liveFoes is what a parley talks down (a sanity read of the shared helper)", () => {
   const s = mk({ foes: [foe({ name: "A" }), foe({ name: "B", alive: false })] });
   assert.deepEqual(liveFoes(s).map((f) => f.name), ["A"]);
+});
+
+// ---------------------------------------------------------------------------
+// The traits that open a parley say so, and say the bonus the engine adds
+// ---------------------------------------------------------------------------
+
+test("the parley traits read \"can always parley with X\" and state the bonus the engine adds", () => {
+  const text = (kind, key, id) => {
+    const t = [...IDENTITY_TRAITS[kind][key].good, ...IDENTITY_TRAITS[kind][key].bad].find((x) => x.id === id);
+    assert.ok(t, `${key} has ${id}`);
+    return t.text;
+  };
+  assert.equal(text("race", "Elven", "elven-humans"), "can always parley with Humans, +3 on that parley roll");
+  assert.equal(text("sub", "Woodsman", "woodsman-talk"), "can always parley with Beasts and Lair Beasts; +3 on every parley roll");
+  assert.equal(text("sub", "Con Artist", "con-artist-talk"), "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll");
+  assert.equal(text("race", "Wilmsry", "wilmsry-talk"), "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll");
+  assert.equal(text("sub", "Bard", "bard-humans"), "can always parley with Humans");
+  assert.equal(text("sub", "Court Mage", "court-mage-humans"), "can always parley with Humans");
+  assert.equal(text("sub", "Master of Arms", "moa-parley"), "can never talk a fight down");
+
+  // the stated bonuses are the engine's own: at equal level against one foe the winning range opens
+  // at 21 minus (9 + bonus) on the d20 (parleyRolled.atLeast), so +4 reads 8, +3 reads 9, none reads 12
+  const atLeast = (c, type) => {
+    const s = mk({ c: { level: 3, ...c }, foes: [foe({ type, lvl: 3, asleep: 5 })] });
+    const ev = parley(s, fakeRng([WIN, 2, 2]), []);
+    return ev.find((e) => e.type === "parleyRolled").atLeast;
+  };
+  assert.equal(atLeast({ sub: "Con Artist", cls: "Thief" }, "Humans"), 8, "Con Artist +4");
+  assert.equal(atLeast({ sub: "Woodsman", cls: "Thief" }, "Beasts"), 9, "Woodsman +3");
+  assert.equal(atLeast({ sub: "Soldier", cls: "Fighter", race: "Wilmsry" }, "Beasts"), 8, "Wilmsry +4");
+  assert.equal(atLeast({ sub: "Soldier", cls: "Fighter", race: "Elven" }, "Humans"), 9, "Elven +3 vs Humans");
+  assert.equal(atLeast({ sub: "Bard", cls: "Thief" }, "Humans"), 12, "the Bard adds nothing");
+  assert.equal(atLeast({ sub: "Court Mage", cls: "Magic User" }, "Humans"), 12, "the Court Mage adds nothing");
 });

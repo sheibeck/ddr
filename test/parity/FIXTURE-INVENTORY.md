@@ -7404,3 +7404,78 @@ exact key set and order (pinned in `teleport-pick.test.js`).
 
 **Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): an Illusionist's bot behaviour
 changes only by the extra answered pick. No existing cursor, pin or fixture moved.
+
+### Phase 91 plan 05: the Master of Arms never leaves a fight; a parley pays (IDENT-16, PARLEY-01)
+
+**The rules (user rulings 2026-09-30).** IDENT-16: a Master of Arms never leaves a live fight. `derived.js#neverFlees`
+(the Samurai and the Master of Arms) is the one predicate; `combat.js#fleeRefusal` reads it, so `flee()` refuses
+with `fleeRefused { reason: "masterOfArms" }` in every round with no draw (which also shuts Smoke and the tracked
+withdrawal), a Door Illusion cast or scroll is refused before any charge (`castRefused` "masterOfArmsStays"), the
+combat menu greys the FLEE row with a reason and no odds, and the bot fights on. The Master of Arms branch of the
+tracked round-1 withdrawal is gone (it was dead code: nothing sets `C.tracked`) and the `withdrawalDenied` event is
+no longer emitted. PARLEY-01: a won parley pays the FULL `killSpFor` sum (it was half), plus, for every live foe,
+the spoils a kill of it rolls (`foeSpoils`: its purse, its item-drop check and the bag-upgrade check) into the
+pending loot pile, from `derivedRng(<main cursor>, "parleySpoils", <state.acts>)`; the Humans tip stays on top and
+`parleyWon { count, sp, gold, items }` says what was paid. The main-rng draws of a parley (the d20, the experience
+d6 per live foe, the tip d6 and its amount d6) are exactly where they were. `killFoe` calls the same `foeSpoils`
+with the main rng, unchanged statement for statement. `test/parity/prototype-master.js.txt` was not edited. No new
+serialized field was added (`parleyWon` is an event, and the spoils reuse `pendingLoot`), so no `*Comparable()`
+needed a carve-out.
+
+**The predictor.** A kill is byte-identical: `test/unit/parley-rewards.test.js` pins `killFoe` against golden values
+recorded from the base commit (events, gold, experience, pile, rations, rng cursor) on six seeded states. Only a run
+with a won parley can move (more experience, spoils into the pile, a derived stream keyed on the cursor), and only a
+Master of Arms run whose bot would have fled (it now fights on) can move through the refusal; every other
+run is byte-identical.
+
+**The live scan (measured at the plan's end, against the base 79740d4c).**
+
+- `node tools/fixture-inventory.mjs --json`: the fixture roster did not move.
+- `node --test "test/parity/**/*.test.js"`: 66 of 66 pass after ONE declared change (entry 1 below). The comparables'
+  `stripParleyDivergence` needed no extension: the `parley` scenario carries an action-path record (`fromAction: 0`),
+  so its per-action byte diff is skipped and only the declared end-state fields are pinned.
+- `roll-high-state-pins.test.js` and `roll-high-save-compat.test.js` (the `roll-high-baseline.mjs pins` semantics):
+  **0 of 8 labels moved**; no bot run in the eight pins wins a parley or is a Master of Arms that tries to flee, and
+  the save-compat `expected` hash did not move. Nothing re-recorded; `roll-high-baseline.mjs save` was never run.
+- `roll-high-guard.test.js` (the draw inventory, `engine/combat.js` counts): passes unchanged; the spoils moved
+  from `killFoe` into `foeSpoils` with every tagged draw kept, and the parley adds no main-rng draw.
+- The 167 test files that mention parley, flee, the Master of Arms, the identity text, the combat menu or the
+  narration tables: 4,211 tests, 4,209 pass. The two failures are not from this plan and sit on the base commit
+  (`combat-gear-lock.test.js` "payload table covers exactly ACTION_TYPES", the new `teleportPick` action of plan
+  91-04; `rations-audit.test.js` "engine/movement.js's rng.-bearing line count", 21 against 18; neither file or
+  `engine/movement.js` / `engine/actions.js` changed here).
+
+**Moved entries (each measured live, declared with before/after, regenerated alone).**
+
+1. `test/parity/fixtures/action-script.combat.json`, scenario `parley` (seed 303, a Con Artist talking down one
+   Ned), the declared engine-side `after`: `sp` 1 to 2 (the full experience of the one live level-1 foe; the old half
+   of 2 was 1) and `gold` 50 to 60 (the talked-down Ned's purse, from the derived `parleySpoils` stream); `wp` 51,
+   `kills` 0 and `rations` 8 unchanged, no item dropped, the prototype-side `before` untouched. The rationale gained
+   a Phase 91 plan 05 sentence.
+2. `test/unit/parley.test.js` (D-21 seed-303 pin): `sp` 5 to 10 and `gold` 50 to 60 on that suite's own cursorless
+   counting rng (the parity entry above runs the fitted dials and a real cursor, so its gold and experience differ
+   from this suite's identity-dial numbers), `parleyWon { count 1, sp 10, gold 10, items 0 }`; the payout test
+   33 to 65 and 8 to 15 (full, not half); the Humans tip test now reads gold as the tip plus the spoils; the D-02
+   property reads "the parley never pays more than the kill". `combat.test.js` ("a Con Artist can always parley"):
+   `spGained` 8 to 15.
+3. `test/unit/identity-contract.test.js` and `identity-combat.test.js`: the Master of Arms entry's bad half is now
+   "cannot parley, ever; never leaves a fight" (before: the round-1 withdrawal denial and the ordinary roll; after:
+   `fleeRefused masterOfArms`, no roll, in a tracked round 1 and in round 2); the Phase 24 `withdrawalDenied` event is
+   retired, so its Oracle and rail builders and the five table lists that named it (`narrationLines.js`'s refusal
+   list, `narrationLinesCoverage`, `narrationLinesTable`, `fightLog`, `shell-fight-log`) lost the entry and
+   `linesForAction.test.js`'s adjacency probe uses `vanishDenied` instead.
+4. `test/unit/identity-audit.test.js`: `moa-never-leaves` left the pre-registered list (it is a live
+   `identityEntries` id now); `moa-withdraw` stays there as the retired record. `docs/IDENTITY-AUDIT.md`: the
+   Master of Arms rows read `fixed engine (91-05); fixed text (91-05)` (`moa-never-leaves`), `fixed engine (91-05)`
+   (`unstated:moa-escape-routes`) and `retired (91-05)` (`moa-withdraw`); the six parley traits and their three
+   unstated bonus rows read `fixed text (91-05)`; the Samurai row names the shared predicate.
+5. `docs/narrative-pass/why/91-05.json` holds 26 rows (the 14 identity footer and trait lines, the Master of Arms
+   blurb, the PARLEY row, the four new menu lines, the Master of Arms' `fleeRefused` Oracle and rail words, the
+   `parleyWon` Oracle and rail words, the two removed `withdrawalDenied` lines), each `after` read from the live
+   corpus; `node tools/narrative-review.mjs` regenerated the pages and `--check` is in sync. `goldGained`
+   "parley spoils" and the `masterOfArmsStays` refusal are pinned in tests (the corpus's frozen variant list does not
+   render them).
+
+**Not moved, by design.** The bot readouts and fit sweeps (Phase 92 runs them once): a won bot parley now pays more
+and a Master of Arms bot no longer flees, so death depth and experience curves for those runs shift; none of the
+eight pinned runs does either.
