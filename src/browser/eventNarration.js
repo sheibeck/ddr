@@ -1646,7 +1646,7 @@ export const EVENT_NARRATION = {
   },
   scrollRead: (e) => `You unroll a scroll: ${e.spell ?? "something unreadable"}.`,
   // Phase 91.1 plan 02 (V14): a Runes/Signs read that does not use the scroll up (one in six); comes before the cast it precedes.
-  scrollKept: (e) => `<span class="hit">The runes behave: the scroll is still whole after that.</span> A one-in-six courtesy${e.spell ? ` (${e.spell}, no charge)` : ""}.`,
+  scrollKept: (e) => `<span class="hit">The scroll is still whole after that.</span> The runes were in a good mood${e.spell ? ` (${e.spell})` : ""}.`,
   // Phase 25 (FEED-02): a scroll refuses to be read out loud, with a reason —
   // never a silent no-op. RULES-10 (Phase 75.1): "pilfer"/"noRunes" are
   // retired — canRead is gone, and a Pilfer/no-Runes reader now READS

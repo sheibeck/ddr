@@ -1,0 +1,181 @@
+[
+ {
+  "key": "content:ABILITIES.brace.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "halve the next blow that lands on you",
+  "after": "halve the next two blows that land on you",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V8 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): Brace halves the next two blows that land on you (was the next one). The count in the line is BRACE_BLOWS (engine/abilities.js), pinned by the text-vs-engine guard, and the plural \"blows that land\" follows it."
+ },
+ {
+  "key": "content:ABILITIES.taunt.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "every foe swings at you this round and your armour soaks double",
+  "after": "every foe swings at you this round and the next, and your armour soaks double both times",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V8 (user ruling, 2026-10-01): Taunt lasts two rounds (was one): this round and the next, and the armour soaks double both times. The two rounds are DURATION_ROUNDS.taunt (engine/abilities.js)."
+ },
+ {
+  "key": "content:ABILITIES.poisonedEdge.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "the blade weeps: d4 a round to the target for three rounds",
+  "after": "the blade weeps: d4 + your level a round to the target for three rounds",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V9 (user ruling, 2026-10-01): Poisoned Edge ticks d4 + your level a round for three rounds (was d4), still with no roll. The level joins the line because the engine stamps the user's level into the poison record (abilities.js#poisonedEdgeDot)."
+ },
+ {
+  "key": "content:ABILITIES.mark.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "study it: every strike on the target adds +2 damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
+  "after": "study it: every strike on the target adds your level in damage for the rest of the fight; ready again 3 rounds after you use it, on a foe that is not already marked",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V10 (user ruling, 2026-10-01): Mark adds your level in damage to every strike on the foe (was +2), a Joiner's strikes included. The flag carries the level of whoever laid the Mark (abilities.js#markBonus), so the text says \"your level\" and states no fixed number."
+ },
+ {
+  "key": "content:ABILITIES.cutpurse.txt",
+  "surface": "spells",
+  "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+  "before": "lift d10 × level gold off the target mid-fight; it has other problems; once per fight",
+  "after": "a normal strike that also lifts d10 × level gold off the target when it lands; it has other problems; once per fight",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V11 (user ruling, 2026-10-01): Cutpurse is a normal strike (the plain strike's roll and damage) that also lifts d10 × level gold when it lands, the way Pommel Strike also stuns; still once per fight. The line says so first, then the gold; the once-per-fight words stay because the ability is still once per fight."
+ },
+ {
+  "key": "content:FIGHTER_SKILLS.Stealth.txt",
+  "surface": "spells",
+  "trigger": "a Fighter skill's text",
+  "before": "your first landed blow of a fight crits on the top two numbers of your die (19–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate",
+  "after": "your first landed blow of a fight crits on the top three numbers of your die (18–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V12 (user ruling, 2026-10-01): Stealth crits on the top three numbers of the strike die (18–20 on a d20), was the top two. Still the first landed blow only, never in plate or the dark. The count and the d20 range come from combat.js#STEALTH_CRIT_FACES, checked by the guard on a real opening blow."
+ },
+ {
+  "key": "content:FIGHTER_SKILLS.Runes/Signs.txt",
+  "surface": "spells",
+  "trigger": "a Fighter skill's text",
+  "before": "reads any scroll without fail; without it, a scroll is an intelligence roll that can backfire",
+  "after": "reads any scroll without fail, and one read in six does not use the scroll up; without it, a scroll is an intelligence roll that can backfire",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V14 (user ruling, 2026-10-01): a scroll read through Runes/Signs is spent only 5 times in 6, so the line says one read in six does not use the scroll up. The one-in-six is RUNES_KEEP_FACES of a d6 (engine/magic.js), counted off real reads by the guard."
+ },
+ {
+  "key": "content:THIEF_SKILLS.Sewing.txt",
+  "surface": "spells",
+  "trigger": "a Thief skill's text",
+  "before": "once on each fed day's rest, patch hurt armour: d6 hp back, 4 times in all",
+  "after": "once on each fed day's rest, patch hurt armour: d6 hp back, 6 times in all",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V13 (user ruling, 2026-10-01): the first tier of Sewing patches 6 times in all instead of 4 (the second tier is unchanged at 6). The count is movement.js#SEWING_PATCHES, counted off real nights by the guard."
+ },
+ {
+  "key": "bank:FOE_CONDITION_DESC.marked",
+  "surface": "combat-screen",
+  "trigger": "a foe condition's line on the long-press foe card",
+  "before": "Every blow that lands on it does 2 more damage for the rest of the fight. It has been studied, and it shows.",
+  "after": "Every blow that lands on it does extra damage for the rest of the fight: the level of whoever studied it. It has been studied, and it shows.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V10 (user ruling, 2026-10-01): a Marked foe takes the level of whoever studied it on every blow, not a flat 2, so the card says extra damage by the marker's level and no longer states the 2."
+ },
+ {
+  "key": "oracle:poisonedEdgeApplied",
+  "surface": "oracle",
+  "trigger": "poisonedEdgeApplied — the hero or a Joiner uses Poisoned Edge",
+  "before": "Viper is poisoned for 3 rounds. The blade weeps into it.",
+  "after": "Viper is poisoned for 3 rounds (d4 + 2 a round). The blade weeps into it.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V9 (user ruling, 2026-10-01): the poison is d4 + the user's level a round, so the line states the per-round die and the level from the event (bonus) instead of leaving the damage unsaid."
+ },
+ {
+  "key": "rail:poisonedEdgeApplied",
+  "surface": "rail",
+  "trigger": "poisonedEdgeApplied — the hero or a Joiner uses Poisoned Edge",
+  "before": "Viper is poisoned for 3 rounds.",
+  "after": "Viper is poisoned for 3 rounds (d4 + 2 a round).",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V9 (user ruling, 2026-10-01): the rail twin of the Oracle line states the per-round die and the level from the event."
+ },
+ {
+  "key": "oracle:taunted",
+  "surface": "oracle",
+  "trigger": "taunted { member } — a Joiner uses Taunt",
+  "before": "the companion: Every foe swings at them this round. Good luck to them.",
+  "after": "the companion: Every foe swings at them for 3 rounds. Good luck to them.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V8 (user ruling, 2026-10-01): Taunt lasts two rounds, so the line says how many from the event (rounds) instead of \"this round\". The hero's line says it too."
+ },
+ {
+  "key": "rail:taunted",
+  "surface": "rail",
+  "trigger": "taunted { member } — a Joiner uses Taunt",
+  "before": "the companion: Every foe swings at them this round.",
+  "after": "the companion: Every foe swings at them for 3 rounds.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V8 (user ruling, 2026-10-01): the rail twin says the rounds from the event."
+ },
+ {
+  "key": "oracle:scrollKept",
+  "surface": "oracle",
+  "trigger": "scrollKept — engine/magic.js#readScroll, a Runes/Signs read that does not use the scroll up",
+  "before": "",
+  "after": "The scroll is still whole after that. The runes were in a good mood (Heal).",
+  "reasons": [
+   "fact",
+   "joke"
+  ],
+  "why": "V14 (user ruling, 2026-10-01): one Runes/Signs read in six does not use the scroll up. The line comes before the cast it precedes and names the spell from the event; the joke is the runes being in a good mood."
+ },
+ {
+  "key": "rail:scrollKept",
+  "surface": "rail",
+  "trigger": "scrollKept — engine/magic.js#readScroll, a Runes/Signs read that does not use the scroll up",
+  "before": "",
+  "after": "The scroll is still whole (Heal).",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V14 (user ruling, 2026-10-01): the rail twin of the Oracle line."
+ }
+]

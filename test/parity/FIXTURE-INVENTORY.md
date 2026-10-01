@@ -7790,3 +7790,62 @@ Moved scripted tests (each re-based, before to after; every one reads the catalo
 each `after` read from the live corpus and chained from the key's latest `after`; the new `alreadyOn` refusal on the Oracle and the rail,
 a new line). The file is named `s-` so it sorts after the quick-task ledgers whose `after` it chains from (the same reason as
 `r-91-10.json`); `node tools/narrative-review.mjs` regenerated the pages and `--check` is in sync.
+
+### Phase 91.1 plan 02b: the effect changes (VALUE-02, VALUE-03, VALUE-04; rulings V8 to V14)
+
+Measured against the plan base `0a7cd181` (the same runs before and after, the base extracted read-only with `git archive` into a
+scratch tree), then declared. Seven effect changes, by the user's rulings of 2026-10-01 (`docs/VALUE-LEDGER.md`): Brace halves the
+next two blows that land (not one) and Taunt lasts two rounds, this one and the next (V8: `abilities.js#BRACE_BLOWS`,
+`DURATION_ROUNDS.taunt`); Poisoned Edge ticks d4 + the user's level a round for three rounds (V9: `poisonedEdgeDot`); Mark adds the
+marker's level to every strike instead of +2, a Joiner's included (V10: `markBonus`); Cutpurse is a normal strike that also lifts
+d10 x level gold when it lands, still once per fight (V11: `cutpurseGold`); Stealth crits on the top three numbers of the strike die
+(V12: `combat.js#STEALTH_CRIT_FACES`); Sewing's first tier patches 6 times in all (V13: `movement.js#SEWING_PATCHES`); a scroll read
+through Runes/Signs is spent 5 times in 6 (V14: `magic.js#RUNES_KEEP_FACES`, the one new roll-high check). `test/parity/prototype-master.js.txt`
+is untouched, no bot balance run was made, and the three `*Comparable()` functions in `test/parity/harness/comparables.js` are
+untouched: no new serialized field is added (`state.combat.braced` and an ally's `braced` become a count of blows left, a foe's
+`marked` carries the marker's level, a foe's `dot.dmg.bonus` carries the level; a flag an older build saved as `true` reads as one
+blow and as the old +2, and no parity scenario reaches any of them).
+
+**New rolls, all derived, no existing draw moved.** The Cutpurse gold d10 draws from `derivedRng(<main cursor>, "cutpurse", <state.acts>, <who>)`
+and only when a blow lands (the strike's own draws are exactly the plain strike's: pinned by a draw count in `value-abilities.test.js`).
+The Runes/Signs keep draws one roll-high d6 (one winning face) from `derivedRng(<main cursor>, "scrollKeep", <state.acts>)`, beside the
+existing `scrollRead` stream. A Joiner's Cutpurse is the same `memberStrike` plus the same derived gold.
+
+**Parity: 66 of 66 pass, no record updated.** `node --test "test/parity/**/*.test.js"` exits 0 with no change to a divergence record (the scripted
+parity scenarios do not dispatch `useAbility`, as in plan 02a, and the Magic User scroll scenarios take the unchanged `magicUser` read path).
+
+**State pins: 2 of 8 moved, the other six byte-identical. Save-compat: `expected.hash` only.** `node tools/roll-high-baseline.mjs pins`
+was run (each label hashed identically twice); only the moved labels were pasted, by hand, by label, with a dated comment; `save`
+was never run. The first divergence of each moved run was found by replaying it on the plan-base tree and on this one, side by side:
+
+1. `test/unit/roll-high-state-pins.test.js` `solo-thief-pilfer` (a Pilfer): 395 actions / dead / depth 4 to 400 / alive / depth 4
+   (hash `1de5...0d` to `c079...1d`). The run uses Poisoned Edge 8 times (18 ticks) and Smoke once. The first poison, at action 46, ticks 2
+   where it ticked 1 (d4 + the level 1 thief's level, V9), so the run diverges there and ends alive at the action budget.
+2. `deep-14` (a deep Thief): 35 actions / dead / depth 14 to 46 / dead / depth 14 (hash `fe2e...f1` to `bbd2...c0`). Its Cutpurse at action 21
+   is a real strike now (V11): it strikes for 56 and kills the foe, where it used to lift 15 gold and leave the foe its swing. The hero
+   lives 11 actions longer and dies on the same floor.
+3. `test/unit/roll-high-save-compat.test.js` / `fixtures/roll-high/pre-switch-save.json`: `expected.hash` re-recorded ONLY
+   (`f113...18` to `2299...3b`; `dead`, `depth` and `actions` still false / 3 / 300; `save` and `dispatched` untouched), with the fixture's own
+   `note` extended. The hero is a level 3 Thief that owns Poisoned Edge and Cutpurse. The first divergence is dispatched index 99, the hero's
+   Poisoned Edge on Drekk: the poison record now stamps the level (`dmg.bonus` 3), so the stored record differs while the events and draws
+   are identical. Index 100 is the hero's Cutpurse (a real strike plus derived gold); 165 and 166 repeat both.
+
+The other six labels (`solo-1`, `solo-2`, `solo-magicuser-sorcerer`, `party-1`, `deep-8`, `party-fighter-knight`) re-measured byte-identical.
+`party-fighter-knight` is the one that exercises two of the changes (a Joiner's Brace held two blows at actions 262 and 267, and two Stealth
+crits fired) and still hashes identically, measured.
+
+Moved scripted tests and pins (each re-based, before to after, with a dated comment naming the question):
+
+4. `test/unit/roll-high-guard.test.js` DRAW_INVENTORY: `engine/combat.js` amount 27 to 26 (a Joiner's Cutpurse gold d10 was an annotated draw
+   in `resolveMemberAbility`; it is `cutpurseGold` in `abilities.js` now, whose count is unchanged at 2: one removed, one added); `engine/magic.js`
+   rollCheck 2 to 3 (the Runes/Signs keep).
+5. `test/unit/abilities-catalog.test.js` (the catalog and skill text pins for Brace, Taunt, Cutpurse, Poisoned Edge, Mark, Stealth, Runes/Signs,
+   Sewing), `abilities.test.js` (the poison record, Mark's flag, the Cutpurse strike, Brace's count, Taunt's two rounds, the poison tick),
+   `ability-strike.test.js` (the marked foe is a level 2 Mark: +2), `ability-duration-rounds.test.js` (Taunt reads 1 after the use and covers two foe
+   turns), `party-abilities.test.js` (a Joiner's flags, Cutpurse as a strike, Brace's count), `authored-ranges.test.js` (Mark is no longer a signed +2:
+   a level 4 Mark adds 4), `scroll-read.test.js` (the Runes read is a spent one: a state.acts where the keep does not fire), `rail.test.js` (the Brace
+   learned line) and `skill-audit.test.js` (the doctored rows are Hardiness and Riposte, whose verdicts are unchanged).
+6. `test/unit/spell-skill-text-engine.test.js`: Brace's two blows (`braceBlows`), Taunt's "both times", Cutpurse's gold die (`cutpurseDie`, over the
+   derived stream), Poisoned Edge's "d4 + your level", Mark's wait (the level itself is pinned in `value-abilities.test.js`) and Runes/Signs'
+   one-in-six (`runesKeep`, counted off 6000 real reads); `spell-skill-text-wording.test.js`: Stealth's top three numbers and Sewing's 6 times.
+7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the checkpoint copy quotes the eight live texts.

@@ -311,7 +311,8 @@ const PINNED = {
   // measurement: with the three content text files at the plan base, this label hashes
   // to 5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca; actions, dead and depth are unchanged.
   // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, 4f510d22... -> 395 actions, dead, depth 4, 1de589c1...): the bot's Thief now uses Smoke again after a 6 round wait instead of once a fight (3 uses in the run, measured), so the run diverges at its second Smoke and ends dead at action 395 (measured twice by tools/roll-high-baseline.mjs pins).
-  "solo-thief-pilfer": { actions: 395, dead: true, depth: 4, hash: "1de589c14a54bb6524b03acdb3764581055f7d0906ed24bcfb5fd048c68ad00d" },
+  // Phase 91.1 plan 02b (user ruling V9 B, 2026-10-01): "solo-thief-pilfer" re-pinned (395 actions, dead, depth 4, 1de589c1... -> 400 actions, alive, depth 4, c07929b4...): the Pilfer's Poisoned Edge now ticks d4 + the user's level a round (a level 1 thief here: +1 a tick, used 8 times for 18 ticks in the run, first at action 46), so the first tick at action 46 reads 2 where it read 1, the run diverges there (measured against the plan base 0a7cd181) and ends alive at the action budget (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "c07929b4785929d05c29c8a5ff79d45610cf6c5136839e53f941f8a4f1f4a21d" },
   // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
   // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
   // Just like players."): a foe's landed blow on a Joiner now rolls the
@@ -623,7 +624,8 @@ const PINNED = {
   // 20cec0b202a6c373cb6eff068d72045cd43c0524ac492e75bcdc2e2c01ed8d75. Only this
   // label was re-recorded (pasted by hand; `roll-high-baseline.mjs save` was not
   // run). 35 / dead / 14 unchanged.
-  "deep-14": { actions: 35, dead: true, depth: 14, hash: "fe2e796aa947d051f39955a2534b9dc0af989fc2af5dbc6da0cd956dc70792f1" },
+  // Phase 91.1 plan 02b (user ruling V11 B, 2026-10-01): "deep-14" re-pinned (35 actions, dead, depth 14, fe2e796a... -> 46 actions, dead, depth 14, bbd29b1f...): the Thief's Cutpurse is a real strike now (the plain strike's roll and damage) that also lifts the gold when it lands (first use at action 21), instead of a turn spent on gold alone, so the Cutpurse at action 21 strikes for 56 and kills the foe where it used to lift 15 gold and leave the foe its swing (measured against the plan base 0a7cd181); the hero lives 11 actions longer and dies on the same floor (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "deep-14": { actions: 46, dead: true, depth: 14, hash: "bbd29b1fbbeb44cf93088a2b2433c0c4e8678ac7de61cd94dc431889a31ee0c0" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

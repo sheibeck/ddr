@@ -498,10 +498,11 @@ test("CMBUI-13 ability: left 1 gives remaining 1; left 0 or the cooldown phase g
   assert.deepEqual(keys(conditionsOf(pommel)).filter((k) => k === "ability"), []);
 });
 
-test("CMBUI-13 braced: engine/abilities.js useAbility('brace') sets C.braced; the chip lasts until the blow consumes it", () => {
+test("CMBUI-13 braced: engine/abilities.js useAbility('brace') sets C.braced; the chip lasts until the blows consume it", () => {
   const state = p77Fight({ c: { abilities: ["brace"] } });
   useAbility(state, "brace", p77Rng(20), []);
-  assert.equal(state.combat.braced, true, "a missed swing leaves the stance up");
+  // Phase 91.1 plan 02 (V8 B): C.braced is the number of blows left (two), not a flag.
+  assert.equal(state.combat.braced, 2, "a missed swing leaves the stance up");
   assert.deepEqual(byKey(conditionsOf(state), "braced"), { key: "braced", polarity: "good" });
   // engine/combat.js applyFoeDamageToPlayer: `state.combat.braced = false` on the next landed blow.
   state.combat.braced = false;
