@@ -494,7 +494,7 @@ A Joiner lacking what the hero has, and the rules that belong to no single entry
 - **A: Leave it: openers are round-1 moves for Joiners (the ruled shape of Pommel Strike).** -> nothing built
 - **B (recommended default): A Joiner uses a ready opener on its first free turn, not only in round 1, so a second opener is used in round 2 and a cooldown opener again once it is ready.** -> 91.1-04
 
-#### V31 Bard and Walking Dead odds and ends (K08, K09, K10, K17)
+#### V31 Four small Bard and Walking Dead gaps
 
 **Rows:** Walking Dead fixation (gap@wd-fixation-bolts, joiner-gap@wd-fixation-joiner-song); Bard (joiner-gap@bard-target, joiner-gap@unstated:joiner-song, joiner-gap@unstated:joiner-death)
 
@@ -552,7 +552,7 @@ A Joiner lacking what the hero has, and the rules that belong to no single entry
 
 **Rows:** Soldier (joiner-gap@soldier-crit); Warlock (joiner-gap@warlock-undead); Apprentice (joiner-gap@apprentice-backfire)
 
-**Today:** Three drawbacks are the hero's only: foes crit a Soldier on 19–20 (a Joiner Soldier on the top face only), every Walking Dead in the fight gains hit points equal to a Warlock's level, and a hero Apprentice's spells backfire one in eight (a Joiner Apprentice never backfires). The first two would make a Joiner worse, the third would make it worse too.
+**Today:** Three drawbacks are the hero's only: foes crit a Soldier on 19–20 (a Joiner Soldier on the top face only), every Walking Dead in the fight gains hit points equal to a Warlock's level, and a hero Apprentice's spells backfire one in eight (a Joiner Apprentice never backfires). Each would make a Joiner weaker or riskier than it is today.
 
 - **A (recommended default): Keep them hero only: you hired a helper, not a punishment.** -> nothing built
 - **B: A Joiner carries them as the hero does.** -> 91.1-04
