@@ -28,7 +28,7 @@
 - [x] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed. (completed 2026-10-01)
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
 - [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
-- [ ] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update.
+- [x] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update. (completed 2026-10-01)
 - [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
 
 **Sequencing (user standing rules):** bots run ONCE, at the milestone end (Phase 92). Every rule change lands in Phases 87–91, STORE-04 included. The audits drive the fixes, so the item systems (Phase 88) come before the item audit (Phase 89). No phase needs research (user, 2026-09-29).
@@ -370,7 +370,7 @@ Plans:
   3. A 2.2.0 client's submission is refused by the live rules; the updated client's queue posts normally.
   4. The store listing, Data safety form text and privacy policy say what the board shows publicly.
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 
@@ -383,7 +383,7 @@ Plans:
 - [x] 91.2-07-PLAN.md — Rebuild the account surfaces and the board's name display for Play Games names: the account state carries the verified name and a sign-in st
 - [x] 91.2-08-PLAN.md — **MAZEWORLD.HTML PLAN (merges beside Phase 91).** Wire the shell to the new board identity: one lazy PlayIdentity seam (native or fake) hand
 - [x] 91.2-09-PLAN.md — Say publicly and honestly what the board now shows (BOARD-33, D-07): the store listing and Data safety answers, the darktierstudios.com priv
-- [ ] 91.2-10-PLAN.md — The user-gated, just-in-time live enablement (D-14) for Play Games names: the console batch the user does (D-09 configuration, OAuth web cli
+- [x] 91.2-10-PLAN.md — The user-gated, just-in-time live enablement (D-14) for Play Games names: the console batch the user does (D-09 configuration, OAuth web cli
 
 ### Phase 92: Store Economy & Balance Close
 
