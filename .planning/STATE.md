@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 89
-current_phase_name: Item Audit & Fixes
-status: executing
-stopped_at: "Phase 88 wave 2 merged (88-02, 88-03; suite 8248/0 on 7ecbad24). Next: wave 3 (88-04 heal-over-time), then orchestrator verification; Phase 89 smart discuss overlaps 88-04"
-last_updated: "2026-10-01T01:06:13.806Z"
+current_phase: 90
+current_phase_name: Spell & Skill Audit
+status: planning
+stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 COMPLETE (suite 8,682/8,680/0/2; after any shell merge run npm run build:www — the www artefact test reads the gitignored local build). NEXT: execute Phase 90 (12 plans, already planned; 90-01 checkpoint asks only audit-found Q7+), then 91 (10 plans), 91.1 discuss, 91.2 discuss (research + early decisions done), 92. Dispatch strictly one plan at a time ( strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1, 91.2 and 92 still need discuss (91.1 after 91; 91.2 = Play Games board names, BOARD-31..33, shell+backend only so it can run beside the audits; RESEARCH done; early decisions in 91.2-DECISIONS-EARLY.md (Blaze Cloud Function, hold+SIGN IN, keep old @handle runs, reuse PGS config); 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion)."
+last_updated: "2026-10-01T01:52:00.370Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 89 execution started
+last_activity_desc: Phase 89 complete, transitioned to Phase 90
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 46
-  completed_plans: 23
-  percent: 25
+  completed_plans: 24
+  percent: 38
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 
 ## Current Position
 
-Phase: 89 (Item Audit & Fixes) — EXECUTING
-Plan: 10 of 10
-Status: Ready to execute
-Last activity: 2026-09-30 — Phase 89 execution started
+Phase: 90 — Spell & Skill Audit
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-30 — Phase 89 complete, transitioned to Phase 90
 
 Progress: [█████░░░░░] 50% (2/7 phases)
 
@@ -277,7 +277,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30T15:00:16.664Z
-Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 executing: 89-01..09 merged (suite 8,644/8,642/0/2; www/ rebuilt with npm run build:www — the www artefact test reads the gitignored local build); 89-10 RUNNING (see git worktree list for its path/branch; base = the tracking commit after the 89-09 merge) — on its hand-back: merge --no-ff, remove worktree + branch, npm test, roadmap.update-plan-progress 89 89-10 complete, state.advance-plan, commit tracking, then 89-VERIFICATION + phase.complete 89 (89-10 is the last strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1, 91.2 and 92 still need discuss (91.1 after 91; 91.2 = Play Games board names, BOARD-31..33, shell+backend only so it can run beside the audits; RESEARCH done; early decisions in 91.2-DECISIONS-EARLY.md (Blaze Cloud Function, hold+SIGN IN, keep old @handle runs, reuse PGS config); 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
+Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88), compacted 2026-09-30 ~14:35. Phase 88 COMPLETE. Phase 89 COMPLETE (suite 8,682/8,680/0/2; after any shell merge run npm run build:www — the www artefact test reads the gitignored local build). NEXT: execute Phase 90 (12 plans, already planned; 90-01 checkpoint asks only audit-found Q7+), then 91 (10 plans), 91.1 discuss, 91.2 discuss (research + early decisions done), 92. Dispatch strictly one plan at a time ( strictly one at a time; each on the new full HEAD hash read from git). Phases 90 (12 plans) and 91 (10 plans) are PLANNED and committed; 91.1, 91.2 and 92 still need discuss (91.1 after 91; 91.2 = Play Games board names, BOARD-31..33, shell+backend only so it can run beside the audits; RESEARCH done; early decisions in 91.2-DECISIONS-EARLY.md (Blaze Cloud Function, hold+SIGN IN, keep old @handle runs, reuse PGS config); 92 needs the ECON-11 readout). User rulings this session live in: 89-CONTEXT/90-CONTEXT/91-CONTEXT.md, docs/ITEM-AUDIT.md ## Rulings (Q1 depth-rising resist on ALL spells+items, no floor-12 extras; Q2-Q5 A; Q6 Walnut full Weaken), 90-SPELL-SLATE-DRAFT.md (accepted), 91 teleport pick explored-only. Dispatch conventions: gsd-executor model sonnet, isolation worktree, run_in_background, embed worktree_branch_check with the FULL base hash from `git rev-parse HEAD`, project_rules block (plain git commit + trailers, no amend, no STATE/ROADMAP/REQUIREMENTS edits, no bots, full npm test re-run after any fix); arm Monitor scratchpad/wtwatch.sh <repo> <phase> 15 after each dispatch; merge only after hand-back. Remaining checkpoints for the user: 90-01 (Q1-Q6 ANSWERED early, recorded in 90-CONTEXT; checkpoint asks only audit-found Q7+), 91-01 (Q1-Q7 ANSWERED early, recorded in 91-CONTEXT; only Q8+), 91.1 rulings, 92 economy target. Phase 92 bot pass must re-read tuning-bot Cloak of Regeneration logic and watch caster depth (Door Illusion).
 
 - (history below is the pre-close record)
 

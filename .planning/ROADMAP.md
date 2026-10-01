@@ -24,7 +24,7 @@
 
 - [x] **Phase 87: Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties** - A Joiner's hp shows every hit it takes, each store stocks a visible d10 ration supply, and DEPTH ties rank by the most steps. (completed 2026-09-30)
 - [x] **Phase 88: Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak** - Item benefits end when the item comes off, the Cloak of Regeneration heals over time, and the Cloak of Strength blocks foe crits. (completed 2026-09-30)
-- [ ] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled.
+- [x] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled. (completed 2026-09-30)
 - [ ] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed.
 - [ ] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands.
 - [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
@@ -187,7 +187,7 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -225,7 +225,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 89-10-PLAN.md — the text-vs-engine guard (every stated number claimed and equal to the engine; surfaces; party-wide reach), the audit table closed with a pin per row, GEAR-BALANCE and USABLE-FEATURES-AUDIT updated, phase gate
+- [x] 89-10-PLAN.md — the text-vs-engine guard (every stated number claimed and equal to the engine; surfaces; party-wide reach), the audit table closed with a pin per row, GEAR-BALANCE and USABLE-FEATURES-AUDIT updated, phase gate
 
 ### Phase 90: Spell & Skill Audit
 
@@ -413,7 +413,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
-| 89. Item Audit & Fixes | 9/10 | In Progress|  |
+| 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
