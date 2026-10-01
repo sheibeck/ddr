@@ -105,6 +105,26 @@ test("grimoireViewModel: every row carries niche + nicheLabel, and txt begins wi
   }
 });
 
+// Phase 90 plan 07 (SPELL-10, user default 2026-09-30: a new `utility` niche for Open/Lock and Fly).
+test("grimoireViewModel: Open/Lock and Fly show the utility niche label; Enchant Character and Speed of Sound are buffs; each is castable outside a fight", () => {
+  const state = fixedState({ c: { grimoire: ["Open/Lock", "Fly", "Enchant Character", "Speed of Sound"], level: 5, sub: "Wizard", spellsUsed: 0 }, combat: null });
+  const vm = grimoireViewModel(state);
+  const by = Object.fromEntries(vm.rows.map((r) => [r.name, r]));
+  assert.equal(NICHE_LABELS.utility, "utility");
+  for (const n of ["Open/Lock", "Fly"]) {
+    assert.equal(by[n].niche, "utility", n);
+    assert.equal(by[n].nicheLabel, "utility", n);
+    assert.ok(by[n].txt.startsWith("utility · "), n);
+  }
+  for (const n of ["Enchant Character", "Speed of Sound"]) assert.equal(by[n].nicheLabel, "buff", n);
+  for (const n of Object.keys(by)) {
+    assert.equal(by[n].combatOnly, false, n);
+    assert.equal(by[n].castable, true, n);
+    assert.ok(by[n].txt.includes("+10 squares per school bonus point"), n);
+  }
+  assert.deepEqual(vm.rows.map((r) => r.lvl), [1, 2, 4, 5]);
+});
+
 test("grimoireViewModel: a non-combat spell outside combat with charges available is castable", () => {
   const state = fixedState({ c: { grimoire: ["Heal"], level: 3, spellsUsed: 0 }, combat: null });
   const vm = grimoireViewModel(state);

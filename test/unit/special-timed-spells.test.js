@@ -38,6 +38,10 @@ import { SPELLS, NICHE_LABELS, SCROLL_FUMBLE, FUMBLE_EFFECTS } from "../../conte
 import { MU_CHART } from "../../content/mu-chart.js";
 import { GW, GH } from "../../engine/maze.js";
 import { resolveStep } from "../../src/browser/tapStep.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR, initiativeVerdictText } from "../../src/browser/narrationLines.js";
+import { HERO_CONDITIONS, lotChips, chipSheetFacts } from "../../src/browser/heroConditions.js";
+import { conditionEffectText } from "../../src/browser/conditionEffects.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -551,4 +555,97 @@ test("scroll pool: every depth band holds the new Special spells whose level is 
     for (const n of expected) assert.ok(names.has(n), `depth ${depth}: the scroll pool holds ${n}`);
     for (const n of NEW_FOUR) if (!expected.includes(n)) assert.equal(names.has(n), false, `depth ${depth}: ${n} is above this band`);
   }
+});
+
+// --- narration, chips and the effect lead (Task 2) ----------------------------------
+
+const plain = (html) => String(html).replace(/<[^>]+>/g, "");
+
+test("narration: each of the four casts says what it does, names the stretched squares and has a rail twin", () => {
+  const wanted = [
+    ["unlock", "Open/Lock", /no lock roll/, /very confusing day/],
+    ["fly", "Fly", /flight/, /Your feet leave the floor/],
+    ["enchant", "Enchant Character", /\+2 to hit, foes are −2 to hit you/, /Your personality is unchanged/],
+    ["haste", "Speed of Sound", /two blows every swing and act first/, /footsteps have to catch up/],
+  ];
+  for (const [kind, spell, fact, joke] of wanted) {
+    const e = { type: "spellEffectStarted", spell, kind, squares: 70, restarted: false };
+    const oracle = plain(EVENT_NARRATION.spellEffectStarted(e));
+    const rail = LINE_FOR.spellEffectStarted(e).text;
+    assert.match(oracle, fact, `${spell} oracle states the rule`);
+    assert.match(oracle, joke, `${spell} oracle keeps the house joke`);
+    assert.ok(oracle.includes("70 squares") && rail.includes("70 squares"), `${spell} names its squares on both surfaces`);
+    const again = { ...e, restarted: true };
+    assert.match(plain(EVENT_NARRATION.spellEffectStarted(again)), /starts over/, `${spell} oracle: a recast starts over`);
+    assert.match(plain(EVENT_NARRATION.spellEffectStarted(again)), /does not stack/, `${spell} oracle: never stacks`);
+    assert.match(LINE_FOR.spellEffectStarted(again).text, /starts over/, `${spell} rail: a recast starts over`);
+  }
+});
+
+test("narration: a bare or unknown-kind payload never prints undefined, and an unknown kind names the spell", () => {
+  for (const bare of [{ type: "spellEffectStarted" }, {}, { spell: "Fly" }, { spell: "Fly", kind: "mystery", squares: 3 }]) {
+    for (const text of [plain(EVENT_NARRATION.spellEffectStarted(bare)), LINE_FOR.spellEffectStarted(bare).text]) {
+      assert.ok(text.length > 0 && !/undefined|NaN|\[object/.test(text), JSON.stringify(bare));
+    }
+  }
+  assert.equal(LINE_FOR.spellEffectStarted({ spell: "Fly", kind: "mystery", squares: 3 }).text, "Fly takes hold for 3 squares.");
+});
+
+test("narration: the fade says what stops, per kind, on both surfaces", () => {
+  const oracleRe = { unlock: /charm fades unused/, fly: /you land/, enchant: /critical ward go with it/, haste: /slow to ordinary/ };
+  const railRe = { unlock: /charm fades unused/, fly: /you land/, enchant: /enchantment is gone/, haste: /back to one swing/ };
+  for (const kind of Object.keys(oracleRe)) {
+    const e = { type: "spellEffectFaded", spell: SPELLS.find((sp) => sp.act && sp.act.kind === kind).n, kind };
+    assert.match(plain(EVENT_NARRATION.spellEffectFaded(e)), oracleRe[kind], `${kind} oracle`);
+    assert.match(LINE_FOR.spellEffectFaded(e).text, railRe[kind], `${kind} rail`);
+  }
+});
+
+test("narration: a chest opened by Open/Lock says the lock gave up, and a plain open does not", () => {
+  const spent = { type: "chestOpened", reason: "openLock" };
+  assert.match(plain(EVENT_NARRATION.chestOpened(spent)), /Open\/Lock: the lock gives up without a fight/);
+  assert.equal(LINE_FOR.chestOpened(spent).text, "Open/Lock: box open, no lock roll.");
+  assert.equal(plain(EVENT_NARRATION.chestOpened({ type: "chestOpened" })), "The box gives up its secrets.");
+  assert.equal(LINE_FOR.chestOpened({ type: "chestOpened", reason: "pilfer" }).text, "Pilfer: box open, no lock roll.");
+});
+
+test("narration: Speed of Sound's first move reads as its own verdict, and the fumble quickens the foe", () => {
+  assert.match(initiativeVerdictText({ why: "speed", first: "you" }), /Speed of Sound/);
+  assert.match(initiativeVerdictText({ why: "speed", first: "you" }), /You go first\.$/);
+  const fumble = { type: "fumbleOnFoe", spell: "Speed of Sound", target: "Wolf", effect: "frenzy" };
+  assert.match(plain(EVENT_NARRATION.fumbleOnFoe(fumble)), /quickens Wolf instead: it swings twice a turn/);
+  assert.match(LINE_FOR.fumbleOnFoe(fumble).text, /quickens Wolf: two swings a turn/);
+});
+
+test("narration: Enchant Character's crit save names the spell and does not credit a cloak", () => {
+  const spell = { type: "critWarded", name: "Wolf", item: "Enchant Character", roll: 20, dieN: 20 };
+  const line = plain(EVENT_NARRATION.critWarded(spell));
+  assert.match(line, /^Your Enchant Character turns Wolf's critical aside/);
+  assert.equal(/cloak/i.test(line), false, "no cloak in a spell's line");
+  assert.match(plain(EVENT_NARRATION.critWarded({ type: "critWarded", name: "Wolf", item: "Cloak of Strength" })), /The cloak will not let anyone forget it\./);
+});
+
+test("chips: Open/Lock and Enchant Character have entries of their own; Fly and Speed of Sound ride the flight and haste entries and name the spell", () => {
+  const byKey = Object.fromEntries(HERO_CONDITIONS.map((e) => [e.key, e]));
+  assert.equal(byKey.unlock.fight, false, "Open/Lock does nothing in a fight");
+  assert.equal(byKey.enchant.fight, true, "Enchant Character changes the rolls of a fight");
+  assert.equal(byKey.unlock.lasts, "squares");
+  assert.equal(byKey.enchant.lasts, "squares");
+  const state = fixedState(fixedCaster("Illusionist"), { combat: fixedCombat([fixedFoe()]) });
+  for (const n of NEW_FOUR) startEffect(state.c, "spell:" + n, { squares: spellEffectSquares("Illusionist", ROW(n)) });
+  const conds = conditionsOf(state);
+  assert.deepEqual(lotChips(conds).map((c) => c.key), ["enchant", "haste"], "in a fight: Enchanted and Hasted show; Fly (map only) and Open/Lock do not");
+  assert.deepEqual({ ...chipSheetFacts(conds.find((c) => c.key === "enchant")) }, { lasts: "90 squares left", source: "from a spell", detail: "" });
+  assert.deepEqual({ ...chipSheetFacts(conds.find((c) => c.key === "unlock")) }, { lasts: "140 squares left", source: "from a spell", detail: "" });
+  assert.deepEqual({ ...chipSheetFacts(conds.find((c) => c.key === "haste")) }, { lasts: "90 squares left", source: "from Speed of Sound", detail: "" });
+});
+
+test("chips: the Enchanted chip's tap lead reads the real +2 to hit and the foes' -2, from its own spell record", () => {
+  const state = fixedState(fixedCaster("Wizard"));
+  cast(state, "Enchant Character");
+  const cn = conditionsOf(state).find((c) => c.key === "enchant");
+  const lead = conditionEffectText(cn, state);
+  assert.match(lead, /^\+2 to hit/, lead);
+  assert.match(lead, /\+2 vs their swings/, lead);
+  assert.equal(conditionEffectText({ ...cn, source: "Nothing" }, state), null, "a chip naming no live record leads with nothing");
 });

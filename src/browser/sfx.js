@@ -169,6 +169,7 @@ export const EVENT_CLIP_GROUP = Object.freeze({
   scrollCast: "spell",
   wardRaised: "spell",
   strengthCast: "spell",
+  spellEffectStarted: "spell", // Phase 90 plan 07 (SPELL-10): the four timed Special spells sound like any other cast
   regenerationCast: "spell",
   deathCast: "spell",
   heroResisted: "resist",

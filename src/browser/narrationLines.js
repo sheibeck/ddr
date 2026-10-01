@@ -1312,6 +1312,9 @@ export function initiativeVerdictText(e) {
       return "A Knight's welcome — it comes straight at you.";
     case "courtMage":
       return "Court Mage — you talk first, they swing first.";
+    case "speed":
+      // Phase 90 plan 07 (SPELL-10): a live Speed of Sound wins the roll outright.
+      return "Speed of Sound — you arrive before the noise you make. You go first.";
     default:
       return e?.first === "you" ? "You go first." : "They go first.";
   }
@@ -1901,6 +1904,8 @@ export const LINE_FOR = {
       might: `strengthens ${t}: +${e?.might ?? 0} damage on its blows, for the fight.`,
       mirror: `mirrors ${t}, ${railPlural(e?.rounds ?? 0, "round")}: you hit it only on your top face.`,
       senses: `sharpens ${railPossessive(e?.target, "its")} senses, to no visible effect.`,
+      // Phase 90 plan 07 (SPELL-10): a fumbled Speed of Sound.
+      frenzy: `quickens ${t}: two swings a turn, for the fight.`,
     };
     return {
       text:
@@ -2234,11 +2239,31 @@ export const LINE_FOR = {
     tone: "magic",
     priority: PRIORITY.you,
   }),
+  // Phase 90 plan 07 (SPELL-10): the rail twin of the Oracle's spellEffectStarted:
+  // the rule and the window, short; a recast says it starts over; a kind with no
+  // row names the spell and the window; a bare payload never prints "undefined".
+  spellEffectStarted: (e) => {
+    const sq = railSquares(e?.squares);
+    const text = {
+      unlock: e?.restarted ? `Open/Lock starts over: ${sq} to find a chest, no lock roll.` : `Open/Lock: your next chest within ${sq} opens with no lock roll.`,
+      fly: e?.restarted ? `Fly starts over: ${sq} of flight, not double.` : `Fly: ${sq} of flight. Walls and crevices are scenery; water costs one.`,
+      enchant: e?.restarted ? `Enchant Character starts over: ${sq}, not double.` : `Enchant Character: ${sq} of +2 to hit, foes −2 to hit you, no crits on you.`,
+      haste: e?.restarted ? `Speed of Sound starts over: ${sq}, not double.` : `Speed of Sound: ${sq} of two blows a swing and the first move.`,
+    }[e?.kind];
+    return { text: text ?? `${e?.spell ?? "The spell"} takes hold for ${sq}.`, tone: "magic", priority: PRIORITY.you };
+  },
   // Phase 90 (SPELL-09): the rail twin of the Oracle's spellEffectFaded; a kind
   // with no clause just wears off, a bare payload never prints "undefined".
   spellEffectFaded: (e) => {
     const owner = e?.member ? `${e.member}'s` : "Your";
-    const what = { strength: "damage is back to plain dice" }[e?.kind];
+    // Phase 90 plan 07 (SPELL-10): the four Special spells' clauses.
+    const what = {
+      strength: "damage is back to plain dice",
+      unlock: "the charm fades unused",
+      fly: "you land",
+      enchant: "the enchantment is gone",
+      haste: "back to one swing",
+    }[e?.kind];
     return {
       text: !e?.spell ? "The spell wears off." : what ? `${owner} ${e.spell} wears off: ${what}.` : `${owner} ${e.spell} wears off.`,
       tone: "beat",
@@ -2439,7 +2464,8 @@ export const LINE_FOR = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   trapPoisoned: () => ({ text: "Trap: poisoned.", tone: "hurt", priority: PRIORITY.other }),
   chestOpened: (e) => ({
-    text: e?.reason === "pilfer" ? "Pilfer: box open, no lock roll." : "The box gives up its secrets.",
+    // Phase 90 plan 07 (SPELL-10): a live Open/Lock spent on this chest.
+    text: e?.reason === "pilfer" ? "Pilfer: box open, no lock roll." : e?.reason === "openLock" ? "Open/Lock: box open, no lock roll." : "The box gives up its secrets.",
     tone: "hit",
     priority: PRIORITY.feature,
   }),
