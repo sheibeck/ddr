@@ -150,7 +150,13 @@ function stripFlightFields(c) {
  * doc comment) rather than removed, since it costs nothing to keep. */
 function stripRetiredCounterFields(c) {
   if (!c) return c;
-  const { haste, invis, ether, acute, ...rest } = c;
+  // Phase 91 (IDENT-17, plan 91-06): `songAt` is the frozen prototype's squares-
+  // based Bard song timestamp (its sing() writes `S.c.songAt = S.steps`, "a song
+  // every 100 squares"). SING is now once per fight (`combat.sang`, carved out in
+  // stripFoeAbilityState) and the engine never writes the timestamp, so a Bard
+  // parity script that sings diverges BY RULING; this strip keeps the timestamp
+  // out of all three comparables (they all route `c` through here).
+  const { haste, invis, ether, acute, songAt, ...rest } = c;
   return rest;
 }
 
@@ -652,10 +658,17 @@ export function stripFoeDamageClosures(combat) {
  * Carved out here beside `pendingFoes` for the same structural-tripwire
  * reason: a no-op on every current fixture that keeps a future
  * fumble-driving fixture from ever reaching the diff on this permanent,
- * deliberate divergence. */
+ * deliberate divergence.
+ *
+ * Phase 91 (IDENT-17, plan 91-06): `sang` is a brand-new combat-level flag (a
+ * Bard's once-per-fight song has been sung; set by engine/combat.js#sing, dies
+ * with the fight) with NO prototype-side equivalent (the prototype's song is a
+ * squares timestamp on the character, `songAt`, stripped in
+ * stripRetiredCounterFields). Engine-only, carved out here, which all three
+ * *Comparable() functions share. */
 export function stripFoeAbilityState(combat) {
   if (!combat || !Array.isArray(combat.foes)) return combat;
-  const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, ...combatRest } = combat;
+  const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, sang, ...combatRest } = combat;
   const foes = combatRest.foes.map((f) => {
     // RULES-17 (Phase 75.3): `elite` is a brand-new per-foe field (a foe's
     // elite rank, present only above rank 0) with NO prototype-side

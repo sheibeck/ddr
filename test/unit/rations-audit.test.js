@@ -306,10 +306,20 @@ test("audit pin: clampCarry caps c.rations at BAGS[c.bag].rations", () => {
 // replaced by `rollCheck(rng, 10, ...)` calls whose own lines still contain
 // "rng." once each — net one fewer matching line. Re-verify against the
 // live file if this ever moves again rather than hand-adjusting.
-test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by rations work (grep -c parity, 18 post-73-09)", () => {
+//
+// Phase 91 plan 06 (2026-10-01, deviation: a stale pin left by 91-03's
+// IDENT-14 teleport pick, logged in deferred-items.md): re-measured live at
+// 21. The three added matching lines are NOT new draws: they are the "Pure; no
+// rng." doc comments on teleportReach / teleportTargets / autoTeleportLanding.
+// The three real draws are the same three declared ones as before (the
+// non-Illusionist teleport's rng.d(8) x2 roll:selection and rng.d(20)
+// roll:amount, now unconditional in that branch; the Illusionist draws
+// nothing until its pick commits and then lands by the fixed 12-square
+// rule). Re-verify against the live file if this ever moves again.
+test("draw-count pin: engine/movement.js's rng.-bearing line count is unchanged by rations work (grep -c parity, 21 post-91-03)", () => {
   const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "movement.js"), "utf8");
   const lineCount = src.split("\n").filter((l) => l.includes("rng.")).length;
-  assert.equal(lineCount, 18, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
+  assert.equal(lineCount, 21, "eatsFor/rationsEaten/wentHungry are all additive reads/pushes, never a new rng draw");
 });
 
 // ─── narration (Task 2): exact Oracle strings, line texts, RATION_RULE_LINE ─

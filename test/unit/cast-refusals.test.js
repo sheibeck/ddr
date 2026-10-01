@@ -148,22 +148,25 @@ test("sing: a non-Bard is refused wrongClass, zero draws", () => {
   assert.equal("left" in events.find((e) => e.type === "actionRefused"), false);
 });
 
-test("sing: a Bard still cooling down is refused cooldown with a positive integer left", () => {
-  const state = fixedState({ c: { sub: "Bard", level: 1, songAt: 0 } });
-  state.steps = 0; // steps - songAt = 0 -> 100 squares left
-  state.combat = fixedCombat([fixedFoe()]);
+// Phase 91 (IDENT-17, plan 91-06): the squares cooldown is retired; the second
+// refusal is "sungThisFight" (once per fight, user 2026-09-30). Rewritten from
+// the old "cooldown with a positive integer left" test.
+test("sing: a Bard that has already sung this fight is refused sungThisFight, zero draws", () => {
+  const state = fixedState({ c: { sub: "Bard", level: 1 } });
+  state.combat = fixedCombat([fixedFoe()], { sang: true });
   const events = sing(state, fakeRng([]), []);
   const refusal = events.find((e) => e.type === "actionRefused" && e.action === "sing");
   assert.ok(refusal);
-  assert.equal(refusal.reason, "cooldown");
-  assert.equal(refusal.left, 100);
-  assert.ok(Number.isInteger(refusal.left) && refusal.left > 0);
+  assert.equal(refusal.reason, "sungThisFight");
+  assert.equal("left" in refusal, false, "no squares countdown any more");
+  assert.equal(events.some((e) => e.type === "sang"), false);
 });
 
 test("sing: a ready Bard sings normally (sang, not actionRefused)", () => {
-  const state = fixedState({ c: { sub: "Bard", level: 1, songAt: -999 } });
-  state.combat = fixedCombat([fixedFoe({ type: "Beasts" })], { type: "Beasts" });
-  const events = sing(state, fakeRng([]), []); // level-1 song has no further draws (Beasts-soothed branch)
+  const state = fixedState({ c: { sub: "Bard", level: 1 } });
+  // A sleeping foe: whichever level-1 spell the song picks, the foe's turn draws nothing from the main rng.
+  state.combat = fixedCombat([fixedFoe({ type: "Beasts", asleep: 5 })], { type: "Beasts" });
+  const events = sing(state, fakeRng([]), []);
   assert.ok(events.some((e) => e.type === "sang"));
   assert.equal(events.some((e) => e.type === "actionRefused"), false);
 });

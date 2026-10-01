@@ -211,6 +211,10 @@ const PHASE_79_TOGGLES = [
   { only: ["strikeMissed"], untouchable: false, via: "kata", mods: [{ name: "Kata", delta: 3 }] },
   { only: ["strikeMissed"], untouchable: false, via: "feint", mods: [{ name: "Feint", delta: 3 }] },
   { only: ["memberResisted", "memberResistFailed"], member: "Ada", intel: 10, roll: 16, atLeast: 16, dieN: 20, faces: 5 },
+  // Phase 91 plan 06 (IDENT-17), appended so every earlier toggle keeps its id: the
+  // Bard's once-per-fight refusal and a sung title with its spell.
+  { only: ["actionRefused"], reason: "sungThisFight" },
+  { only: ["sang"], title: "An Ode to Freeze", spell: "Freeze", level: 1 },
 ];
 
 /**

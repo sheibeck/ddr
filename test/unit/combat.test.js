@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { makeRng } from "../../engine/rng.js";
+import { makeRng, derivedRng } from "../../engine/rng.js";
 import {
   startCombat,
   fight,
@@ -26,6 +26,7 @@ import {
   parley,
   flee,
   songReady,
+  songPool,
   sing,
   endCombat,
   afterPlayerAction,
@@ -1213,29 +1214,44 @@ test("LO-03: parley with zero live foes is a safe no-op, not a Math.max(...[]) c
 
 // --- songReady / sing --------------------------------------------------
 
-test("songReady: only a Bard, and only every 100 squares", () => {
+// Phase 91 (IDENT-17, plan 91-06): SING is once per fight (user 2026-09-30),
+// no longer "every 100 squares", and the song is one random pool spell (the
+// full pins live in test/unit/bard-song.test.js). The two tests below were
+// rewritten from the old per-square-cooldown and fixed-Lullaby versions.
+test("songReady: only a Bard, only in a joined fight, and only until it has sung (once per fight)", () => {
   const bard = fixedState({ c: { sub: "Bard" }, steps: 150 });
-  assert.equal(songReady(bard), true, "no songAt yet -> always ready");
-  bard.c.songAt = 100;
-  assert.equal(songReady(bard), false, "50 squares since the last song");
+  assert.equal(songReady(bard), false, "no fight -> not ready, however many squares were walked");
+  bard.combat = fixedCombat([fixedFoe()]);
+  assert.equal(songReady(bard), true, "a Bard in a joined fight is ready");
+  bard.combat.sang = true;
+  assert.equal(songReady(bard), false, "sung this fight -> not ready");
+  const pending = fixedState({ c: { sub: "Bard" } });
+  pending.combat = fixedCombat([fixedFoe()], { pending: true });
+  assert.equal(songReady(pending), false, "before FIGHT -> not ready");
   const notBard = fixedState({ c: { sub: "Soldier" }, steps: 500 });
+  notBard.combat = fixedCombat([fixedFoe()]);
   assert.equal(songReady(notBard), false);
 });
 
-test("sing: a Bard's highest available song can put foes to sleep", () => {
+test("sing: a Bard's song is one pool spell, sang first, spent once, the main rng untouched by the song itself", () => {
   const state = fixedState({ c: { sub: "Bard", level: 3 } });
-  const foeA = fixedFoe({ name: "A" });
-  const foeB = fixedFoe({ name: "B" });
-  state.combat = fixedCombat([foeA, foeB]);
-  // level 3 -> "Lullaby": n=d6=2 -> both foes asleep for 24 rounds. sing()
-  // then runs afterPlayerAction in the SAME call, whose foeTurn immediately
-  // decrements each now-asleep foe by 1 (23, not 24) without drawing a die;
-  // the round-advance draws nothing — initiative is rolled once, Phase 51.
-  const rng = fakeRng([2]);
-  const events = sing(state, rng, []);
-  assert.ok(events.some((e) => e.type === "sang" && e.song === "Lullaby"));
-  assert.equal(foeA.asleep, 23);
-  assert.equal(foeB.asleep, 23);
+  state.combat = fixedCombat([fixedFoe({ name: "A", asleep: 5 })]);
+  // Pick an `acts` whose derived song stream lands on Shield (a self ward: no
+  // resist, no further draw); the sleeping foe's turn draws nothing from the
+  // main rng, so an empty fakeRng proves the song itself drew nothing from it.
+  const pool = songPool(3);
+  let acts = 0;
+  while (pool[derivedRng(0, "song", acts).d(pool.length) - 1].n !== "Shield") acts++;
+  state.acts = acts;
+  const events = sing(state, fakeRng([]), []);
+  const sang = events.find((e) => e.type === "sang");
+  assert.equal(sang.spell, "Shield");
+  assert.equal(sang.level, 1);
+  assert.equal(typeof sang.title, "string");
+  assert.equal(events.indexOf(sang), 0, "the sang event comes first");
+  assert.ok(events.some((e) => e.type === "wardRaised" && e.spell === "Shield"));
+  assert.equal(state.combat.sang, true);
+  assert.equal(state.c.spellsUsed, 0, "no charge spent");
 });
 
 // --- endCombat / afterPlayerAction / allyTurn ---------------------------

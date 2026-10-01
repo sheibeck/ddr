@@ -325,7 +325,6 @@ const NOT_A_CONDITION = Object.freeze({
   phobiaType: "the fear's trigger family: a trait, shown as Afraid only when it bites",
   phobiaState: "the terrain-phobia bookkeeping behind fearArmed",
   dupAt: "the duplicate-find bookkeeping for loot",
-  songAt: "the Bard's once-a-day song bookkeeping",
   pendingAlly: "a summon queued for the next fight: it appears as its own YOUR LOT card when that fight starts",
   scrollCast: "set and cleared inside one scroll read",
   // ── the fight ──
@@ -333,6 +332,8 @@ const NOT_A_CONDITION = Object.freeze({
   ally: "the summoned ally: its own YOUR LOT card with its rounds",
   abilityStrike: "an ability's strike, consumed inside the same action",
   cut: "the Cutthroat's once-a-fight crit is spent, narrated by its own line",
+  // Phase 91 (IDENT-17, plan 91-06): a Bard's once-per-fight song has been sung; the combat menu's SING row says SUNG THIS FIGHT and the Oracle names the song.
+  sang: "the Bard's once-per-fight song is spent: the SING row says SUNG THIS FIGHT",
   opened: "the Cat Burglar/Ninja free opener is spent, narrated by its own line",
   opened2: "the opening strike has landed (opening-crit bookkeeping)",
   first: "initiative: who swings first",
@@ -455,7 +456,8 @@ test("coverage guard: every DURATION_ROUNDS ability is read by the ability entry
 test("coverage guard self-check: the scan still sees the known hero, combat and member fields and timer ids", () => {
   const { hero: h, combat, member, timers } = scanAll();
   for (const k of ["halfNext", "foeEffect", "ward", "mirror", "senses", "regen", "foresight", "fearArmed", "darkFor", "affliction"]) assert.ok(h.has(k), `hero ${k}`);
-  for (const k of ["braced", "inspired", "parleyInsulted", "selfDot", "heroOut", "heroBlind", "heroShrunk", "afraid", "weakened"]) assert.ok(combat.has(k), `combat ${k}`);
+  // Phase 91 plan 06: "inspired" left this list (nothing assigns C.inspired once the level-2 song retired).
+  for (const k of ["braced", "parleyInsulted", "selfDot", "heroOut", "heroBlind", "heroShrunk", "afraid", "weakened"]) assert.ok(combat.has(k), `combat ${k}`);
   assert.ok(member.has("braced"), "member braced");
   for (const id of ["spell:weaken", "spell:reveal", "ability:*", "item:*", "charges:*"]) assert.ok(timers.has(id), `timer ${id}`);
 });

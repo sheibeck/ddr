@@ -126,7 +126,12 @@ export const DRAW_INVENTORY = {
   // each in the position the foe's normal hero swing draws them. The misdirect duration die
   // (d4 or d4+1, misdirectFoe) goes through dice.js#rollDice, so it adds no `.d(` of its own;
   // Stop Time (stopTime) draws nothing on the main rng.
-  "engine/combat.js": { rollCheck: 24, amount: 23, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  // Phase 91 plan 06 (IDENT-17): amount 23 -> 20, selection 3 -> 5. The Bard's five
+  // fixed songs are gone: Lullaby's d6 and Cry of Thunder's d12 and d8 (three amount
+  // draws, -3). The song is now two selection draws on its DERIVED stream `songRng`
+  // (which spell from songPool, which title from SONG_TITLES), never the main rng
+  // (+2); the spell it echoes draws through castSpell's own existing tagged lines.
+  "engine/combat.js": { rollCheck: 24, amount: 20, selection: 5, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one

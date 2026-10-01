@@ -692,7 +692,11 @@ test("HARN-02: Summon out of combat — no pendingAlly and more than half of max
   assert.strictEqual(decideAction(pendingAlly, fixedPolicyRng, ctx).type, "move");
 });
 
-test("HARN-02: Bard sings on round 1 once ready; a level-1 song only does anything vs Beasts/Lair Beasts", () => {
+// Phase 91 (IDENT-17, plan 91-06): SING is once per fight and every song is a real
+// spell, so the bot sings in EVERY fight as a Bard (no level or Beasts condition,
+// no squares cooldown) and never again once it has. Rewritten from the old
+// "a level-1 song only does anything vs Beasts" test.
+test("HARN-02: a Bard sings once in every fight, at any level, against any type, and never again in that fight", () => {
   const ctx = makeBotContext();
   const bardC = { cls: "Fighter", sub: "Bard", level: 1, grimoire: [], wp: 40, maxWP: 40, potions: 0, rations: 0 };
 
@@ -700,13 +704,13 @@ test("HARN-02: Bard sings on round 1 once ready; a level-1 song only does anythi
   assert.deepStrictEqual(decideAction(level1VsBeasts, fixedPolicyRng, ctx), { type: "sing" });
 
   const level1VsWalkingDead = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: bardC });
-  assert.deepStrictEqual(decideAction(level1VsWalkingDead, fixedPolicyRng, ctx), { type: "attack" });
+  assert.deepStrictEqual(decideAction(level1VsWalkingDead, fixedPolicyRng, ctx), { type: "sing" });
 
   const level2VsWalkingDead = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: { ...bardC, level: 2 } });
   assert.deepStrictEqual(decideAction(level2VsWalkingDead, fixedPolicyRng, ctx), { type: "sing" });
 
-  const notReady = mkState({ steps: 500, combat: fight("Walking Dead", 1, 1), c: { ...bardC, level: 2, songAt: 450 } });
-  assert.deepStrictEqual(decideAction(notReady, fixedPolicyRng, ctx), { type: "attack" });
+  const sung = mkState({ steps: 500, combat: { ...fight("Walking Dead", 1, 1), sang: true }, c: { ...bardC, level: 2 } });
+  assert.deepStrictEqual(decideAction(sung, fixedPolicyRng, ctx), { type: "attack" }, "sung this fight -> back to striking");
 });
 
 test("HARN-02: talk-first identities try parley at round 1, once, before anything else", () => {

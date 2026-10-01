@@ -302,10 +302,6 @@ export const FEATURE_EVENTS = [
   "joinerMurdered",
   "storeOpened",
   "sang",
-  "beastsSoothed",
-  "songIgnored",
-  "lullabyRolled",
-  "thunderRolled",
   "cooked",
   "healed",
   "struck",
@@ -1080,7 +1076,7 @@ function fleeChain(events, consumed, eventOrder = false) {
 
 /**
  * parleyChain(events, consumed, eventOrder = false) — `parleyRolled` + (`goldGained` why
- * "parley" | `parleyFailed` | `beastsSoothed` | `parleyWon`, Phase 91 plan 05) fold into ONE line: the
+ * "parley" | `parleyFailed` | `parleyWon`, Phase 91 plan 05) fold into ONE line: the
  * outcome's own text plus `(${roll} vs ${range})` (Phase 73, ROLL-05: via
  * rollVsText, roll-high).
  */
@@ -1092,7 +1088,7 @@ function parleyChain(events, consumed, eventOrder = false) {
       if (consumed.has(j)) continue;
       const oe = events[j];
       const isOutcome =
-        (oe.type === "goldGained" && oe.why === "parley") || oe.type === "parleyFailed" || oe.type === "beastsSoothed" || oe.type === "parleyWon";
+        (oe.type === "goldGained" && oe.why === "parley") || oe.type === "parleyFailed" || oe.type === "parleyWon";
       if (isOutcome) {
         consumed.add(i);
         consumed.add(j);
@@ -1756,21 +1752,10 @@ export const LINE_FOR = {
     if (items > 0) parts.push(`${items} ${items === 1 ? "item" : "items"} for you`);
     return { text: `Talked down ${n === 1 ? "1 foe" : `${n} foes`}: ${parts.join(", ")}.`, tone: "hit", priority: PRIORITY.you };
   },
-  sang: (e) => ({ text: `You sing ${e?.song ?? "a tune"}.`, tone: "magic", priority: PRIORITY.feature }),
-  // VOX-05 (Phase 79, plan 79-04): the song lines name who the song reached;
-  // Lullaby and Thunder roll how many foes they can reach ("up to").
-  beastsSoothed: (e) => ({
-    text: (e?.count ?? 0) === 1 ? "1 beast stands down and leaves." : `${e?.count ?? 0} beasts stand down and leave.`,
-    tone: "hit",
-    priority: PRIORITY.feature,
-  }),
-  songIgnored: () => ({ text: "They do not care for music.", tone: "miss", priority: PRIORITY.feature }),
-  lullabyRolled: (e) => ({ text: `Lullaby: up to ${e?.n ?? 0} nod off.`, tone: "magic", priority: PRIORITY.feature }),
-  thunderRolled: (e) => ({
-    text: `Thunder rolls — up to ${e?.n ?? 0} freeze, ${railPlural(e?.r ?? 0, "round")}.`,
-    tone: "magic",
-    priority: PRIORITY.feature,
-  }),
+  // Phase 91 (IDENT-17, plan 91-06): the song's title and the spell it echoes; the
+  // spell's own lines follow. The four per-song builders (beastsSoothed, songIgnored,
+  // lullabyRolled, thunderRolled) retired with the fixed song table.
+  sang: (e) => ({ text: `Song: ${e?.title ?? "a tune"} (${e?.spell ?? "a spell"})`, tone: "magic", priority: PRIORITY.feature }),
   // DFB-05 (Phase 25.1): legacy text (no `backstab`/`crit`/`target`) stays
   // byte-identical; a classed member's blow names the target and calls out
   // a backstab/crit. Plan 04 (ABIL-05): an optional `via` clause names the
@@ -2196,7 +2181,8 @@ export const LINE_FOR = {
   actionRefused: (e) => {
     const map = {
       notFought: "Fight! first.",
-      cooldown: `Your voice needs ${e?.left ?? "more"} more squares.`,
+      // Phase 91 (IDENT-17): once per fight (the old "voice needs N more squares" cooldown is gone).
+      sungThisFight: "One song a fight. The audience has had enough.",
       wrongClass: "Only a Bard sings here.",
       // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
       notOut: "There is no turn to lose.",

@@ -135,18 +135,21 @@ test("Phase 74 (ROLL-02): the STRIKE sub's range is exactly characterSheetViewMo
 
 // ─── Bard: ABILITIES opens Sing ────────────────────────────────────────────
 
-test("Bard: ABILITIES opens SING, ready vs. counting-down", () => {
+// Phase 91 (IDENT-17, plan 91-06): SING is once per fight (no squares countdown), so the
+// second state is "SUNG THIS FIGHT" (combat.sang), not "60 SQ". Rewritten from the old
+// counting-down test.
+test("Bard: ABILITIES opens SING, ready vs. sung this fight", () => {
   const ready = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
   assert.deepEqual(ready.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "SING · READY", enabled: true, accent: false, opens: "abilities" });
   assert.deepEqual(ready.submenus.abilities.rows[0], {
     id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" },
   });
 
-  const counting = combatMenuViewModel(fixedState({ c: { sub: "Bard", songAt: 0 }, steps: 40, combat: fixedCombat([]) }));
-  assert.equal(counting.actions[1].sub, "SING (60 sq)");
-  assert.equal(counting.submenus.abilities.rows[0].cost, "60 SQ");
-  assert.equal(counting.submenus.abilities.rows[0].enabled, false);
-  assert.deepEqual(counting.submenus.abilities.rows[0].dispatch, { type: "sing" });
+  const sung = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, steps: 40, combat: { ...fixedCombat([]), sang: true } }));
+  assert.equal(sung.actions[1].sub, "SING · SUNG");
+  assert.equal(sung.submenus.abilities.rows[0].cost, "SUNG THIS FIGHT");
+  assert.equal(sung.submenus.abilities.rows[0].enabled, false);
+  assert.deepEqual(sung.submenus.abilities.rows[0].dispatch, { type: "sing" });
 });
 
 // ─── Magic User: SPELLS grid + submenu rows in SPELLS array order ─────────
@@ -881,7 +884,12 @@ test("VOX-05 (79-07): potion, flee, parley and sing descriptions state the engin
   assert.match(COMBAT_MENU_COPY.parleyDesc, /^One try per fight\./);
   assert.match(COMBAT_MENU_COPY.parleyDesc, /one face easier until it ends/);
   assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /permanent/);
-  assert.match(COMBAT_MENU_COPY.singDesc, /best song your level knows/);
+  // Phase 91 (IDENT-17): once per fight, a random offense or defense spell of your level or lower, full strength, no charges.
+  assert.match(COMBAT_MENU_COPY.singDesc, /^Once per fight: /);
+  assert.match(COMBAT_MENU_COPY.singDesc, /random offense or defense spell of your level or lower/);
+  assert.match(COMBAT_MENU_COPY.singDesc, /full strength/);
+  assert.match(COMBAT_MENU_COPY.singDesc, /no charges spent/);
+  assert.doesNotMatch(COMBAT_MENU_COPY.singDesc, /hundred squares/);
 });
 
 // Phase 90 plan 04 (SPELL-12): the spell rows' resist hint reads the same

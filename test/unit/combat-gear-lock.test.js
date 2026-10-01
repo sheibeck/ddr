@@ -263,6 +263,11 @@ function payloadTable(c) {
     useTool: [{ tool: "rope", dir: "N" }],
     // CLIMB-01 (Phase 78): the pre-roll wall/crevice decision's commit / TURN BACK.
     resolveHazard: [{ cross: true }, { cross: false }],
+    // Phase 91 (IDENT-14, plan 91-03/91-06): the Illusionist's answer to the
+    // teleport pick -- the auto square or a chosen explored square. With no
+    // pending teleport it is a refusal (teleportPickRefused), so it touches
+    // no worn gear on any state here; a row so a future change cannot skip it.
+    teleportPick: [{ auto: true }, { x: 0, y: 0 }],
   };
 }
 

@@ -114,7 +114,8 @@ const EXEMPT = {
   // (the hero's castSpell, a scroll's cast through it, a Joiner's allyCast) and
   // foeTurn's Ice payoff resist through the ONE depth-rising resist
   // (foeResistsSpell = foeResistsEffect), with no resistControl, no hold and no
-  // cap. Only the Bard's sing keeps resistControl, until Phase 91 (IDENT-17).
+  // cap. Phase 91 plan 06 (IDENT-17): the Bard's sing, the last resistControl caller, is now
+  // castSpell's free mode (a random pool spell through that same resist); nothing calls resistControl.
   "combat.js": {
     holdFoe: "the hold itself: a Freeze's or Ice's rolled freeze (freezeFoe resists first) and Stun's rolled hold (stunFoe, after the target's one resist)",
     allyCast: "X10: a Joiner's Weaken rolls the one depth-rising resist (roomWeakenResists); no knee, no hold (its Doze, Stun and Ice go through dozeFoes, stunFoe and iceStorm)",
@@ -204,7 +205,7 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
   const seen = new Set(hits.map((h) => `${h.file}#${h.fn}`));
   // One entry per audited function that assigns a control today: castSpell
   // (C1, C5, C7, C8, C10, C11, C14, C17-C19), useItem (C4, C6, C12, C16),
-  // allyCast (C2, C9, C15), sing (C13), dozeFoes (C7, C9; Phase 90 plan 05), holdFoe, and the
+  // allyCast (C2, C9, C15), dozeFoes (C7, C9; Phase 90 plan 05), holdFoe, and the (sing, C13, left in Phase 91 plan 06: IDENT-17 song is a castSpell free cast)
   // exemptions (X5). X8 left the list in Plan 76-06 (user ruling
   // 2026-09-26): a fumbled Weaken now weakens the READER (c.foeEffect), so
   // scrollFumble.js assigns no foe control at all and needs no exemption.
@@ -212,7 +213,6 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
     "magic.js#castSpell",
     "items.js#useItem",
     "combat.js#allyCast",
-    "combat.js#sing",
     "combat.js#dozeFoes",
     "combat.js#holdFoe",
     "abilities.js#applyPommel",
