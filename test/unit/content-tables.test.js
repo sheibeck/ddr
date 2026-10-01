@@ -36,9 +36,10 @@ test("RACE_D8: 6 distinct races, Human appears 3 times", () => {
 
 // Phase 40 (SPELL-01/05): the table grew to 33 rows — 32 canon rows plus
 // Lesser Summon. Phase 90 plan 06 (SPELL-12) removed Lesser Summon and Phantom
-// Host: 31 rows. Plan 07 (SPELL-10) appended the four Special spells: 35 rows.
-test("SPELLS: 35 entries (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 appended Open/Lock, Fly, Enchant Character, Speed of Sound)", () => {
-  assert.equal(SPELLS.length, 35);
+// Host: 31 rows. Plan 07 (SPELL-10) appended the four Special spells: 35 rows. Plan 08
+// (SPELL-10) appended the three control spells (Stop Time, Senseless, Duplicate Foe): 38 rows.
+test("SPELLS: 38 entries (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 appended Open/Lock, Fly, Enchant Character, Speed of Sound; plan 08 appended Stop Time, Senseless, Duplicate Foe)", () => {
+  assert.equal(SPELLS.length, 38);
 });
 
 test("ENC_TYPES: 6 entries", () => {

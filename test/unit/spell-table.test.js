@@ -2,7 +2,7 @@
 //
 // Phase 40 (SPELL-01/03/04/05), Plan 01, Task 1 — locks the reshaped
 // SPELLS table (Phase 90 plan 06, SPELL-12: Phantom Host and Lesser Summon were
-// removed, leaving 31 rows; plan 07 (SPELL-10) appended the four Special rows, 35 rows): the 32-entry position/lvl/s/kind quadruple pin (measured
+// removed, leaving 31 rows; plan 07 (SPELL-10) appended the four Special rows, 35 rows; plan 08 the three control rows, 38 rows): the 32-entry position/lvl/s/kind quadruple pin (measured
 // live from `git show HEAD:content/spells.js` at the commit this plan
 // started from, never hand-derived), the two deliberate exceptions (Map the
 // Floor's rename, Ice's kind), the data flags (onHit/aoe), and the `niche`/`txt`/NICHE_LABELS contract
@@ -62,14 +62,21 @@ const PLAN_07_QUADRUPLES = [
   ["Enchant Character", 4, "special", "timed"],
   ["Speed of Sound", 5, "special", "timed"],
 ];
-const PRESENT_QUADRUPLES = [...PRE_PLAN_QUADRUPLES.filter(([n]) => n !== "Phantom Host"), ...PLAN_07_QUADRUPLES];
+// Phase 90 plan 08 (SPELL-10): the three control spells are appended after Speed of Sound.
+const PLAN_08_QUADRUPLES = [
+  ["Stop Time", 3, "special", "timestop"],
+  ["Senseless", 2, "illusion", "misdirect"],
+  ["Duplicate Foe", 5, "illusion", "misdirect"],
+];
+const PRESENT_QUADRUPLES = [...PRE_PLAN_QUADRUPLES.filter(([n]) => n !== "Phantom Host"), ...PLAN_07_QUADRUPLES, ...PLAN_08_QUADRUPLES];
 
-test("SPELLS: 35 rows, and neither Lesser Summon nor Phantom Host is among them (no row carries lesser; only the four Special rows carry roll)", () => {
-  assert.equal(SPELLS.length, 35);
+test("SPELLS: 38 rows, and neither Lesser Summon nor Phantom Host is among them (no row carries lesser; only the seven appended rows carry roll)", () => {
+  assert.equal(SPELLS.length, 38);
   assert.equal(SPELLS.find((sp) => sp.n === "Lesser Summon"), undefined);
   assert.equal(SPELLS.find((sp) => sp.n === "Phantom Host"), undefined);
-  assert.equal(SPELLS[SPELLS.length - 5].n, "Death", "the four plan-07 rows follow Death");
-  assert.equal(SPELLS[SPELLS.length - 1].n, "Speed of Sound");
+  assert.equal(SPELLS[SPELLS.length - 8].n, "Death", "the four plan-07 rows follow Death");
+  assert.equal(SPELLS[SPELLS.length - 4].n, "Speed of Sound");
+  assert.deepEqual(SPELLS.slice(-3).map((sp) => sp.n), ["Stop Time", "Senseless", "Duplicate Foe"], "the three plan-08 rows follow Speed of Sound, in that order");
 });
 
 test("SPELLS: array position, lvl, s, kind are byte-identical to the pre-Phase-40 table (rows 0-26 in place, the rows after Phantom Host one earlier), with exactly two deliberate exceptions", () => {
@@ -140,6 +147,10 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
     Fly: { act: { kind: "fly", effect: 30 }, stretch: "squares", roll: "derived", combatOnly: false },
     "Enchant Character": { act: { kind: "enchant", effect: 50, eff: { toHit: 2, foeToHit: -2, critWard: 1 } }, stretch: "squares", roll: "derived", combatOnly: false },
     "Speed of Sound": { act: { kind: "haste", effect: 50, eff: { first: 1 } }, stretch: "squares", roll: "derived", combatOnly: false },
+    // Phase 90 plan 08 (SPELL-10): the three control spells (round-timed, combat-only).
+    "Stop Time": { holdRounds: 2, stretch: "rounds", roll: "derived", combatOnly: true },
+    Senseless: { at: "friends", rounds: { n: 1, sides: 4, bonus: 0 }, stretch: "rounds", roll: "derived", combatOnly: true },
+    "Duplicate Foe": { at: "self", rounds: { n: 1, sides: 4, bonus: 1 }, stretch: "rounds", roll: "derived", combatOnly: true },
   };
   for (const [name, fields] of Object.entries(EXPECTED)) {
     const sp = SPELLS.find((s) => s.n === name);
@@ -151,7 +162,7 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
 });
 
 // Phase 90 plan 05 (SPELL-12): Ice, the area version of Freeze, carries Freeze's onHit and Lightning's aoe.
-test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) and only the four plan-07 Special rows carry roll, none carries lesser (Phase 90 plan 06 removed Lesser Summon, the earlier roll row)", () => {
+test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) and only the seven appended plan-07 and plan-08 rows carry roll, none carries lesser (Phase 90 plan 06 removed Lesser Summon, the earlier roll row)", () => {
   const freeze = SPELLS.find((sp) => sp.n === "Freeze");
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");
   const ice = SPELLS.find((sp) => sp.n === "Ice");
@@ -169,7 +180,7 @@ test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on
   }
   for (const sp of SPELLS) {
     assert.equal(sp.lesser, undefined, `${sp.n} must not carry lesser`);
-    if (!["Open/Lock", "Fly", "Enchant Character", "Speed of Sound"].includes(sp.n)) assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
+    if (!["Open/Lock", "Fly", "Enchant Character", "Speed of Sound", "Stop Time", "Senseless", "Duplicate Foe"].includes(sp.n)) assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
     else assert.equal(sp.roll, "derived", `${sp.n} joins the pools through a derived stream`);
   }
 });

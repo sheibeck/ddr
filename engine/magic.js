@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -80,6 +80,7 @@ const SINGLE_TARGET_KINDS = Object.freeze({
   petrify: "target",
   insane: "target",
   thrown: "target",
+  misdirect: "target", // Phase 90 plan 08 (SPELL-10): Senseless and Duplicate Foe aim at the picked foe
 });
 
 // The summon branch's ally name table (the pre-Phase-40 inline literal,
@@ -567,6 +568,20 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
     const rec = startSpellEffect(c, sp, events, { squares: spellEffectSquares(c.sub, sp) });
     events.push({ type: "spellEffectStarted", spell: sp.n, kind: sp.act.kind, squares: rec ? rec.left : 0, restarted });
+  } else if (sp.kind === "timestop") {
+    // Phase 90 plan 08 (SPELL-10, the accepted slate, Q6 A): Stop Time. Every
+    // live foe rolls its own one depth-rising resist inside combat.js#stopTime;
+    // each that fails is held kind "time" for the base rounds plus the caster's
+    // Special school bonus. Combat-only. No main-rng draw.
+    if (C) stopTime(state, sp, rng, events, { sub: c.sub });
+  } else if (sp.kind === "misdirect") {
+    // Phase 90 plan 08 (SPELL-10, Q6 A): Senseless and Duplicate Foe. The
+    // picked foe's one resist was rolled up front (SINGLE_TARGET_KINDS); a landed
+    // spell is combat.js#misdirectFoe, whose one main-rng draw is the duration
+    // dice. Combat-only.
+    const aimedFoe = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+    const t = C && (aimedFoe || liveFoes(state)[0]);
+    if (t) misdirectFoe(state, t, sp, rng, events, { sub: c.sub });
   } else if (sp.kind === "regen") {
     c.regen = true;
     events.push({ type: "regenerationCast" });

@@ -161,4 +161,16 @@ export const SPELLS = [
   { n: "Fly", lvl: 2, s: "special", kind: "timed", act: { kind: "fly", effect: 30 }, stretch: "squares", roll: "derived", niche: "utility", txt: "utility · you · flight for 30 squares, +10 squares per school bonus point: walls to climb and crevices to leap are just scenery, and water costs one square; useless in a fight, where everything can reach you anyway", combatOnly: false },
   { n: "Enchant Character", lvl: 4, s: "special", kind: "timed", act: { kind: "enchant", effect: 50, eff: { toHit: 2, foeToHit: -2, critWard: 1 } }, stretch: "squares", roll: "derived", niche: "buff", txt: "buff · you · for 50 squares, +10 squares per school bonus point: +2 to hit, foes −2 to hit you, and no critical lands on you; the enchantment is on you, not on your personality", combatOnly: false },
   { n: "Speed of Sound", lvl: 5, s: "special", kind: "timed", act: { kind: "haste", effect: 50, eff: { first: 1 } }, stretch: "squares", roll: "derived", niche: "buff", txt: "buff · you · for 50 squares, +10 squares per school bonus point: two blows every time you swing, and you act first in every fight; you arrive before the noise you make", combatOnly: false },
+  // Phase 90 plan 08 (SPELL-10, the slate accepted as drafted; Q6 A): the control
+  // spells. All three are round-timed (`stretch: "rounds"`: each point of the
+  // caster's school bonus adds one round, engine/derived.js#spellEffectRounds),
+  // `roll: "derived"` (they join the day-one pools through a derived stream) and
+  // combat-only. Stop Time (`kind: "timestop"`, Special 3) holds EVERY foe that
+  // fails its resist for `holdRounds` rounds (combat.js#stopTime, a "time" hold).
+  // Senseless (Illusion 2) and Duplicate Foe (Illusion 5) are `kind: "misdirect"`
+  // (combat.js#misdirectFoe): one foe swings at its own side (`at: "friends"`) or
+  // at itself (`at: "self"`) for the `rounds` dice, and never at yours.
+  { n: "Stop Time", lvl: 3, s: "special", kind: "timestop", holdRounds: 2, stretch: "rounds", roll: "derived", niche: "control", txt: "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and you hit it on at least the top five numbers of your die; then time resumes, and so do they", combatOnly: true },
+  { n: "Senseless", lvl: 2, s: "illusion", kind: "misdirect", at: "friends", rounds: { n: 1, sides: 4, bonus: 0 }, stretch: "rounds", roll: "derived", niche: "control", txt: "control · one foe · loses its senses for d4 rounds, +1 round per school bonus point, unless it resists: each swing it takes hits another foe at its own damage, never your side; with nobody else to hit, it hits the air, which never complains", combatOnly: true },
+  { n: "Duplicate Foe", lvl: 5, s: "illusion", kind: "misdirect", at: "self", rounds: { n: 1, sides: 4, bonus: 1 }, stretch: "rounds", roll: "derived", niche: "control", txt: "control · one foe · meets its double and fights it for d4+1 rounds, +1 round per school bonus point, unless it resists: every swing it takes lands on itself, at its own damage; it leaves you alone, being busy", combatOnly: true },
 ];

@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1433,6 +1433,126 @@ export function dozeFoes(state, sp, rng, events, caster = {}) {
 export function stunFoe(state, t, sp, rng, events, caster = {}) {
   const rounds = rng.d(4); // roll:amount
   return holdFoe(state, t, "stunned", sp.n, events, { rounds, ...(caster.by ? { by: caster.by } : {}) });
+}
+
+/**
+ * stopTime(state, sp, rng, events, caster) — Phase 90 plan 08 (SPELL-10, the
+ * accepted slate: "Stop Time: every foe stops for 2 rounds"; Q6 A: +1 round per
+ * school bonus point). The ONE Stop Time tail, shared by the hero's cast (a
+ * scroll's free cast included) and, later, a Joiner's: for each live foe in
+ * C.foes order, the one depth-rising resist (foeResistsSpell, a derived
+ * stream); a foe that fails it is held kind "time" (holdFoe) for
+ * `spellEffectRounds(sub, sp, sp.holdRounds)` rounds: it skips that many turns,
+ * a blow does not end or restart the hold, strikes against it land on at least
+ * the top five faces (derived.js#targetStrikeFaces, as for a sleeper), and a
+ * longer live hold stands. One closing `timeStopped { count, rounds, by? }`
+ * line (count 0 when every foe resisted). Draws nothing on the main rng.
+ * `caster` is `{ by, sub }` (a Joiner's name and sub-class; the hero's when
+ * absent). Returns the number of foes held.
+ */
+export function stopTime(state, sp, rng, events, caster = {}) {
+  const C = state.combat;
+  if (!C) return 0;
+  const by = caster.by;
+  const sub = caster.sub !== undefined ? caster.sub : state.c.sub;
+  const rounds = spellEffectRounds(sub, sp, sp.holdRounds);
+  let count = 0;
+  for (const f of liveFoes(state)) {
+    if (foeResistsSpell(state, f, sp.n, rng, events, by)) continue;
+    holdFoe(state, f, "time", sp.n, events, { rounds, ...(by ? { by } : {}) });
+    count++;
+  }
+  events.push({ type: "timeStopped", count, rounds, ...(by ? { by } : {}) });
+  return count;
+}
+
+/**
+ * misdirectFoe(state, t, sp, rng, events, caster) — Phase 90 plan 08 (SPELL-10,
+ * Senseless at Illusion 2 and Duplicate Foe at Illusion 5; the slate's wiring C,
+ * the one genuinely new combat system). The ONE tail both spells share, for the
+ * hero's cast (a scroll's free cast included) and, later, a Joiner's: the
+ * target `t` swings at the wrong side for a few rounds. `sp.at` is "friends"
+ * (Senseless: the first other live foe in C.foes order) or "self" (Duplicate
+ * Foe: itself); `sp.rounds` is the duration dice. The hero's cast rolled the
+ * target's one depth-rising resist up front (magic.js SINGLE_TARGET_KINDS); a
+ * Joiner's cast (`caster.by`) rolls it here. One main-rng draw: the duration dice
+ * (the cast's own), plus `spellEffectRounds` (Q6 A: +1 round per school bonus
+ * point of the caster's Illusion). The record is `t.misdirect = { at, left }`,
+ * counted down once per turn the foe actually takes (resolveMisdirectedTurn);
+ * a held, sleeping or stunned turn spends none. A new cast never shortens a
+ * longer live one (the longer record, its `at` and its rounds, stands; the
+ * line still reports what is in force, as holdFoe does). Returns the rounds
+ * now in force, or 0 when a Joiner's target resisted.
+ */
+export function misdirectFoe(state, t, sp, rng, events, caster = {}) {
+  const by = caster.by;
+  if (by && foeResistsSpell(state, t, sp.n, rng, events, by)) return 0;
+  const sub = caster.sub !== undefined ? caster.sub : state.c.sub;
+  const rounds = spellEffectRounds(sub, sp, rollDice(rng, sp.rounds));
+  if (!(t.misdirect && t.misdirect.left > rounds)) t.misdirect = { at: sp.at, left: rounds };
+  events.push({ type: "foeMisdirected", target: t.name, at: t.misdirect.at, rounds: t.misdirect.left, ...(by ? { by } : {}) });
+  return t.misdirect.left;
+}
+
+/**
+ * resolveMisdirectedTurn(state, f, rng, events, curve) — Phase 90 plan 08
+ * (SPELL-10): the whole turn of a foe whose `misdirect.left > 0` (Senseless,
+ * Duplicate Foe). Called from foeTurn right after the held, asleep and stunned
+ * skips (a turn those take never spends `left`) and before the flee check and
+ * the ability gate (the whole turn is misdirected, so a caster does not cast).
+ * Every swing the foe has (`frenzied` doubles, `sp.atk` multiplies, as its
+ * normal turn) is aimed at a foe, NEVER at the hero or a Joiner (pickFoeTarget
+ * is not called): itself (`at: "self"`) or the first other live foe in C.foes
+ * order (`at: "friends"`, as Insane's strike-an-ally picks, so no draw). With no
+ * such foe the foe swings at the air once (`foeSwingsAtAir`) and the turn is
+ * lost. A swing draws exactly what the foe's own swing would, in the same
+ * positions: the to-hit die on the main rng (rollCheck on `foeDie(null, f)`
+ * against derived.js#foeSwingVsFoe's faces, no body's defences, blind caps it
+ * to the top face), then, on a hit, the damage dice (a top-face crit doubles
+ * them unless the foe is blind); damage is the normal chain (foeLevelBase, the
+ * curve and elite, Weaken's, Shrink's and Hamstring's halving; no per-round
+ * ceiling, which guards the hero's side only) dealt through damageFoe as a
+ * foe's blow (kind "foe": the victim's natural armour may soak it) and a kill
+ * through killFoe, so the hero is paid its experience and spoils. After the
+ * swings `left` counts down; at 0 the record goes with one `foeMisdirectEnded`
+ * line.
+ */
+function resolveMisdirectedTurn(state, f, rng, events, curve) {
+  const C = state.combat;
+  const m = f.misdirect;
+  const swings = (f.frenzied ? 2 : 1) * ((f.sp && f.sp.atk) || 1);
+  const dieN = foeDie(null, f);
+  for (let s = 0; s < swings; s++) {
+    if (!f.alive) break;
+    const victim = m.at === "self" ? f : liveFoes(state).find((o) => o !== f);
+    if (!victim) {
+      events.push({ type: "foeSwingsAtAir", name: f.name });
+      break;
+    }
+    const self = victim === f;
+    const { faces } = foeSwingVsFoe(state, f);
+    const check = rollCheck(rng, dieN, atLeastFor(faces, dieN));
+    const { roll, atLeast } = check;
+    if (!check.ok) {
+      events.push({ type: "foeMisdirectedMiss", name: f.name, target: victim.name, self, roll, atLeast, dieN });
+      continue;
+    }
+    const crit = !f.blind && isBestFace(roll, dieN);
+    const dice = f.sp && f.sp.dmg ? rollDice(rng, f.sp.dmg) : rng.d(6); // roll:amount
+    let dmg = foeHitFor(foeLevelBase(f) + (crit ? 2 * dice : dice), curve, f.elite || 0);
+    if (foeWeakened(C, f)) dmg = Math.ceil(dmg / 2);
+    if (f.shrunk) dmg = Math.ceil(dmg / 2);
+    if (f.hamstrung) dmg = Math.ceil(dmg / 2);
+    const hit = damageFoe(state, victim, dmg, { kind: "foe", crit }, rng, events);
+    if (!hit.soaked) {
+      events.push({ type: "foeMisdirectedHit", name: f.name, target: victim.name, dmg: hit.applied, self, roll, atLeast, dieN, ...(crit ? { crit: true } : {}) });
+    }
+    if (victim.wp <= 0) killFoe(state, victim, rng, events);
+  }
+  if (f.alive && f.misdirect === m && --m.left <= 0) {
+    delete f.misdirect;
+    events.push({ type: "foeMisdirectEnded", name: f.name, at: m.at });
+  }
 }
 
 /**
@@ -3697,6 +3817,15 @@ export function foeTurn(state, rng, events = []) {
     if (f.stunned) {
       f.stunned = false;
       events.push({ type: "foeStunned", name: f.name });
+      continue;
+    }
+    // Phase 90 plan 08 (SPELL-10, Senseless and Duplicate Foe): a misdirected
+    // foe spends this turn swinging at a foe (its own side, or itself), never
+    // at the hero's side and never casting (resolveMisdirectedTurn). It sits
+    // after the held, asleep and stunned skips, so only a turn the foe really
+    // takes counts against `misdirect.left`.
+    if (f.misdirect && f.misdirect.left > 0) {
+      resolveMisdirectedTurn(state, f, rng, events, curve);
       continue;
     }
     // Phase 19 (CANON-02/D-03): a caster that has dropped below its own

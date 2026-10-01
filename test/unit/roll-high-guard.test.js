@@ -112,7 +112,13 @@ export const DRAW_INVENTORY = {
   // and allyCast's own sleeping d4 is gone (-1): +3 -1 = +2. Ice's damage dice
   // go through dice.js#rollDice (no `.d(` of its own) and its freeze d4 is
   // freezeFoe's existing draw, so iceStorm adds none.
-  "engine/combat.js": { rollCheck: 23, amount: 22, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  // Phase 90 plan 08 (SPELL-10): rollCheck 23 -> 24, amount 22 -> 23. The misdirected
+  // swing (resolveMisdirectedTurn, Senseless and Duplicate Foe) is a foe's own swing aimed
+  // at a foe: its to-hit is one rollCheck call and its damage line one tagged amount draw,
+  // each in the position the foe's normal hero swing draws them. The misdirect duration die
+  // (d4 or d4+1, misdirectFoe) goes through dice.js#rollDice, so it adds no `.d(` of its own;
+  // Stop Time (stopTime) draws nothing on the main rng.
+  "engine/combat.js": { rollCheck: 24, amount: 23, selection: 3, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one
