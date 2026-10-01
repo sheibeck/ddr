@@ -65,6 +65,12 @@ const EXPECTED = {
   "Stop Time": { side: "harmful", effect: "out", kind: "stopped", rounds: { n: 0, sides: 1, bonus: 2 } },
   "Senseless": { side: "harmful", effect: "out", kind: "maddened", rounds: D4 },
   "Duplicate Foe": { side: "harmful", effect: "out", kind: "maddened", rounds: D4_PLUS_1 },
+  // Phase 90 plan 09 (SPELL-10): the last three of the slate. A fumbled Door Illusion changes nothing
+  // (the door does not open); a fumbled Chameleon Tongue insults the room (the new `insulted` effect);
+  // a fumbled Size of the Behemoth weakens the reader (the existing `weakened` effect, d4+1 rounds).
+  "Door Illusion": { side: "harmful", effect: "none" },
+  "Chameleon Tongue": { side: "harmful", effect: "insulted" },
+  "Size of the Behemoth": { side: "harmful", effect: "weakened", rounds: D4_PLUS_1 },
 };
 
 // Kinds whose castSpell branch benefits the CASTER (content/spells.js's own
@@ -95,9 +101,9 @@ function coverageHolds(spellNames, table) {
   return true;
 }
 
-test("SCROLL_FUMBLE: exact-name coverage of all 38 SPELLS rows", () => {
-  assert.equal(SPELLS.length, 38);
-  assert.equal(Object.keys(SCROLL_FUMBLE).length, 38);
+test("SCROLL_FUMBLE: exact-name coverage of all 41 SPELLS rows", () => {
+  assert.equal(SPELLS.length, 41);
+  assert.equal(Object.keys(SCROLL_FUMBLE).length, 41);
   assert.ok(coverageHolds(SPELLS.map((sp) => sp.n), SCROLL_FUMBLE));
 });
 
@@ -116,7 +122,7 @@ test("SCROLL_FUMBLE: deep-equals the plan's table, row by row", () => {
   for (const [name, expected] of Object.entries(EXPECTED)) {
     assert.deepEqual(SCROLL_FUMBLE[name], expected, `row mismatch for "${name}"`);
   }
-  // No extra rows beyond the 38 (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 added four; plan 08 three).
+  // No extra rows beyond the 41 (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 added four; plan 08 three; plan 09 three).
   assert.deepEqual(new Set(Object.keys(SCROLL_FUMBLE)), new Set(Object.keys(EXPECTED)));
 });
 
@@ -126,7 +132,7 @@ test("FUMBLE_SIDES: exactly harmful, area, helpful", () => {
 
 test("FUMBLE_EFFECTS: closed effect lists per side, no killing effect anywhere", () => {
   assert.deepEqual([...FUMBLE_EFFECTS.harmful], [
-    "damage", "dot", "heavy", "out", "blind", "shrink", "weakened", "vapor", "none",
+    "damage", "dot", "heavy", "out", "blind", "shrink", "weakened", "vapor", "none", "insulted",
   ]);
   assert.deepEqual([...FUMBLE_EFFECTS.area], ["damage", "volley"]);
   assert.deepEqual([...FUMBLE_EFFECTS.helpful], [

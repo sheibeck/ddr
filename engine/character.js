@@ -375,8 +375,8 @@ export function rollGrimoire(rng, sub, level = 1) {
   for (const sp of high) { if (book.length >= n) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
   // Phase 90 plan 06 (SPELL-12): the Illusionist's must-have is Mirror Self
-  // alone (Phantom Host is gone; 90-09 adds Door Illusion and one random
-  // Illusion spell).
+  // (Phantom Host is gone). Phase 90 plan 09 appends Door Illusion and one
+  // random Illusion spell at the very end of this function (see there).
   if (sub === "Illusionist" && !book.includes("Mirror Self")) book.push("Mirror Self");
   // The Summoner's must-have Summon: castable from level 1 through the named
   // exception in content/spell-level-overrides.js (SPELL-12), never a name
@@ -440,6 +440,21 @@ export function rollGrimoire(rng, sub, level = 1) {
   for (const sp of spare) {
     if (damageReady()) break;
     if (dealsDamage(sp) && !book.includes(sp.n)) book.push(sp.n);
+  }
+  // Phase 90 plan 09 (SPELL-10, canon p.17: an Illusionist starts with "3 illusion
+  // spells on top of the beginning roll"; the user-accepted default of
+  // 2026-09-30): Mirror Self (pushed above, with the other must-haves), Door
+  // Illusion, and ONE more Illusion spell it did not roll, picked on the
+  // call's derived stream `dr` (castable once it reaches that spell's level; a
+  // level-5 pick waits in the book). These two come AFTER the day-one top-ups on
+  // purpose: the rolled book, the top-ups and every other draw stay exactly
+  // what they were, so the grants only append (and `dr`'s earlier draws never
+  // move: this pick is its last). Nothing is picked when every Illusion spell
+  // this sub-class may learn is already in the book. Zero MAIN-rng draws.
+  if (sub === "Illusionist") {
+    if (!book.includes("Door Illusion")) book.push("Door Illusion");
+    const rest = SPELLS.filter((sp) => sp.s === "illusion" && !book.includes(sp.n) && grantableAt(sub, sp, level));
+    if (rest.length) book.push(rest[dr.d(rest.length) - 1].n); // roll:selection
   }
   return book;
 }

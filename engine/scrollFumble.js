@@ -69,7 +69,9 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
  *     at reader level 5+, else a rolled d6) draws a d10; anything but a 1
  *     lands the heavy blow (how "vapor"); a 1, OR a d6 that was never 4 to
  *     begin with, sets C.heroOut asleep for the row's own d4.
- *   - none: Turn Walking Dead, Plane Gate — changes nothing.
+ *   - insulted: Chameleon Tongue (Phase 90 plan 09) — the room takes it
+ *     personally: C.parleyInsulted, the flag a failed parley sets.
+ *   - none: Turn Walking Dead, Plane Gate, Door Illusion — changes nothing.
  */
 function resolveHarmful(state, sp, entry, srng, rng, events, now) {
   const c = state.c;
@@ -143,6 +145,15 @@ function resolveHarmful(state, sp, entry, srng, rng, events, now) {
       const left = clamp(rollDice(srng, entry.rounds), 1, HERO_OUT_MAX);
       C.heroOut = { kind: "asleep", left, spell: sp.n };
       events.push({ type: "fumbleOnReader", spell: sp.n, effect: "vapor", kind: "asleep", rounds: left });
+      break;
+    }
+    case "insulted": {
+      // Phase 90 plan 09 (SPELL-10, a fumbled Chameleon Tongue): the room takes
+      // the botched speech personally. The very flag a failed parley sets
+      // (C.parleyInsulted: +1 on every foe's winning faces for the rest of the
+      // fight, derived.js#foeSwingChain). It spends no parley and draws nothing.
+      C.parleyInsulted = true;
+      events.push({ type: "fumbleOnReader", spell: sp.n, effect: "insulted" });
       break;
     }
     case "none": {
