@@ -34,7 +34,9 @@ import {
   foeTurn,
   alliesTurn,
   sing,
+  songPool,
 } from "../../engine/combat.js";
+import { derivedRng } from "../../engine/rng.js";
 import { targetStrikeFaces, controlResistRoll, controlResistCheck, foeRisingResistCheck } from "../../engine/derived.js";
 import {
   DIALS,
@@ -561,57 +563,27 @@ test("Ice's old last tick (C3, retired): a leftover ice dot just ticks and ends 
   }
 });
 
-// --- C13: sing() Lullaby and Thunder ----------------------------------------
+// --- C13: the Bard's song (retired and replaced) -----------------------------
+//
+// Phase 91 plan 06 (IDENT-17): the four tests that stood here pinned the old Lullaby
+// and Cry of Thunder songs (resistControl x2 and controlCapRounds in sing). SING is now
+// one random offense or protection spell cast through castSpell's free mode, so a song
+// that reaches a foe rolls the ONE shared depth-rising resist (spellResisted / resistFailed)
+// like every spell, with no control resist, no hold and no cap. The replacement pin:
 
-test("Bard Lullaby (C13): floor 20, each eligible foe either resists (marked, awake) or sleeps 3 (not 24); ineligible foes are untouched", () => {
-  const eligibleResist = fixedFoe({ name: "ER", lvl: 1, wp: 30, maxWP: 30 });
-  const eligibleLand = fixedFoe({ name: "EL", lvl: 1, wp: 30, maxWP: 30 });
-  const ineligible = fixedFoe({ name: "IN", lvl: 99, wp: 30, maxWP: 30 });
-  const state = fixedState({ c: { sub: "Bard", level: 3 }, floor: { depth: 20 } });
-  state.combat = fixedCombat([eligibleResist, eligibleLand, ineligible]);
-  // n = rng.d(6) draws first; force it to 3 so all three foes are in scope.
-  state.acts = forceControlResist("sleep:Lullaby", 0, 20, 1, 0, true);
-  const events = sing(state, fakeRng([3, ...PAD(20)]), []);
-  assert.equal(eligibleResist.resisted, "sleep");
-  assert.equal(eligibleResist.asleep, 0);
-  assert.equal("resisted" in ineligible, false);
-  assert.equal(ineligible.asleep, 0);
-  assert.ok(events.some((e) => e.type === "lullabyRolled"));
-  assert.ok(events.some((e) => e.type === "controlResisted"));
-});
-
-test("Bard Lullaby (C13): a landed sleep caps at controlHoldRoundsFor(depth), not the full 24", () => {
-  const foe = fixedFoe({ lvl: 1, wp: 30, maxWP: 30 });
+test("Bard song (C13, IDENT-17): at floor 20 a sung Doze rolls the shared rising resist, never resistControl, and caps nothing", () => {
+  const foe = fixedFoe({ name: "Target", lvl: 1, intel: 8, wp: 30, maxWP: 30 });
   const state = fixedState({ c: { sub: "Bard", level: 3 }, floor: { depth: 20 } });
   state.combat = fixedCombat([foe]);
-  state.acts = forceControlResist("sleep:Lullaby", 0, 20, 1, 0, false);
-  sing(state, fakeRng([1, ...PAD(20)]), []);
-  // 3 (the hold cap) minus 1 (foeTurn's own asleep-decrement, same action —
-  // see test/unit/combat.test.js's own "24 -> 23" precedent).
-  assert.equal(foe.asleep, 2);
-});
-
-test("Bard Lullaby (C13): floor 12, the full 24 lands exactly as today (no resist roll)", () => {
-  const foe = fixedFoe({ lvl: 1, wp: 30, maxWP: 30 });
-  const state = fixedState({ c: { sub: "Bard", level: 3 }, floor: { depth: 12 } });
-  state.combat = fixedCombat([foe]);
-  const events = sing(state, fakeRng([1, ...PAD(20)]), []);
-  assert.equal(foe.asleep, 23); // 24 minus the same-action foeTurn decrement
-  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false);
-});
-
-test("Bard Thunder (C13): floor 20, eligible foes resist or keep their rolled sleep; ineligible foes roll nothing", () => {
-  const eligible = fixedFoe({ lvl: 1, wp: 30, maxWP: 30 });
-  const ineligible = fixedFoe({ lvl: 99, wp: 30, maxWP: 30 });
-  const state = fixedState({ c: { sub: "Bard", level: 4 }, floor: { depth: 20 } });
-  state.combat = fixedCombat([eligible, ineligible]);
-  // n = rng.d(12), r = rng.d(8) draw first, in that order.
-  state.acts = forceControlResist("sleep:Cry of Thunder", 0, 20, 1, 0, false);
-  const events = sing(state, fakeRng([1, 4, ...PAD(20)]), []);
-  assert.ok(eligible.asleep > 0, "a landed Thunder keeps its own rolled duration");
-  assert.equal("resisted" in ineligible, false);
-  assert.equal(ineligible.asleep, 0);
-  assert.ok(events.some((e) => e.type === "thunderRolled"));
+  const pool = songPool(3);
+  let acts = 0;
+  while (pool[derivedRng(0, "song", acts).d(pool.length) - 1].n !== "Doze") acts++;
+  state.acts = acts;
+  const events = sing(state, fakeRng([...PAD(30)]), []);
+  assert.ok(events.some((e) => e.type === "sang" && e.spell === "Doze"));
+  assert.ok(events.some((e) => (e.type === "spellResisted" || e.type === "resistFailed") && e.spell === "Doze"), "the one shared resist is rolled and narrated");
+  assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, "no second control resist");
+  assert.equal("resisted" in foe, false, "resistControl never marks the foe");
 });
 
 // ---------------------------------------------------------------------------

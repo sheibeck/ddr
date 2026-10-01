@@ -70,9 +70,14 @@ import { offerLoot, bagUpgradeTier, bagItemFor, gainWilmst, rollTreasureItem, LO
 // pickMemberItem below), so the cycle is safe.
 import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
-import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlCapRounds, spellDamageFor } from "./difficulty.js";
+import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, spellDamageFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
-import { BESTIARY, ENC_TYPES, RACES, SPELLS, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
+import { BESTIARY, ENC_TYPES, RACES, SPELLS, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES, SONG_TITLES, SONG_SCHOOLS } from "../content/index.js";
+// Phase 91 (IDENT-17, plan 91-06): a Bard's song resolves its picked spell through
+// castSpell's free mode. Same runtime-only combat.js <-> magic.js cycle as the
+// items.js one above: magic.js imports combat.js functions and this module
+// reads castSpell only inside sing's body, never while the modules evaluate.
+import { castSpell } from "./magic.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
 // effect-length mapping (abilityEffectTicks) and foe-flag appliers verbatim — the SAME
 // combat.js <-> foeAbilities.js cycle precedent above applies here
@@ -85,16 +90,6 @@ import { checkDeathPhobia } from "./phobias.js";
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const TALKATIVE = ["Humans", "Demons", "Lair Beasts", "Beasts"];
-
-// The Bard's song bank (mazeworld.html lines 2736-2742). Not yet extracted to
-// content/*.js (nothing else in the engine needs it) — kept local, pure data.
-const SONGS = [
-  { lvl: 1, n: "Soothe the Savage", txt: "calms beasts" },
-  { lvl: 2, n: "Inspire the Heart", txt: "+1 to hit this fight" },
-  { lvl: 3, n: "Lullaby", txt: "d6 foes sleep" },
-  { lvl: 4, n: "Cry of Thunder", txt: "d12 foes frozen d8 rounds" },
-  { lvl: 5, n: "An Ode to Death", txt: "foes your level or lower drop to 1 hp" },
-];
 
 /** liveFoes(state) — the still-standing foes in the current encounter. */
 export function liveFoes(state) {
@@ -1185,10 +1180,11 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
  * (Phase 75.3, user ruling 2026-09-25): the past-the-knee control resist.
  * Phase 89 plan 08 moved every item effect and the Freeze and Weaken tails
  * onto `foeResistsEffect`, the depth-rising resist, and Phase 90 plan 04 moved
- * every spell (the hero's, a scroll's, a Joiner's) onto it too; the ONLY
- * caller left is the Bard's `sing` (two sleeps, audit id C13), which Phase 91
- * (IDENT-17) rebuilds as spell echoes and then moves onto the shared helper.
- * Reads
+ * every spell (the hero's, a scroll's, a Joiner's) onto it too; Phase 91 plan
+ * 06 (IDENT-17) moved the last caller, the Bard's `sing` (two sleeps, audit id
+ * C13), onto castSpell's free mode (the one shared rising resist), so NOTHING
+ * in the engine calls this any more; it stays exported for the RULES-18 unit
+ * pins that still exercise it directly. Reads
  * `engine/derived.js#controlResistCheck` — a derived-stream, roll-high check
  * that draws NOTHING from the caller's own `rng` (the main cursor is
  * untouched either way) and returns `false` with no roll and no event at or
@@ -1238,7 +1234,7 @@ export function resistControl(state, foe, effect, source, idx, rng, events) {
  * resist after it and no hold, cap or three-round limit on a landed spell.
  * At or below floor 12 the rising faces ARE the half-intelligence faces, byte
  * for byte, so nothing at those depths moves. (`resistControl` above survives
- * only for the Bard's songs, which Phase 91 reworks.)
+ * for nothing now: the Bard's songs moved onto this gate in Phase 91 plan 06.)
  */
 export function foeResistsSpell(state, foe, spell, rng, events, by, extra) {
   return foeResistsEffect(state, foe, spell, rng, events, by, extra);
@@ -2215,87 +2211,73 @@ export function parley(state, rng, events = []) {
 }
 
 /**
- * songReady(state) — a Bard's song comes back every 100 squares. Ports
- * mazeworld.html songReady() (lines 2743-2745).
+ * songPool(level) — Phase 91 (IDENT-17, plan 91-06): the spells a Bard's song
+ * may echo at `level`: every offense and protection spell whose printed level
+ * is at or below it, in SPELLS order (so a derived pick index is stable). Phase
+ * 90's reworked offense and protection spells are in it; Special, Illusion,
+ * healing and divination spells never are. A Bard has no per-sub level
+ * override, so the printed `lvl` is the gate. Pure, no rng; never empty at
+ * level 1.
  */
-export function songReady(state) {
-  return state.c.sub === "Bard" && state.steps - (state.c.songAt ?? -999) >= 100;
+export function songPool(level) {
+  return SPELLS.filter((sp) => SONG_SCHOOLS.includes(sp.s) && sp.lvl <= level);
 }
 
 /**
- * sing(state, rng, events) — the Bard's action, picking the highest song the
- * character's level allows. Ports mazeworld.html sing() (lines 2746-2770).
+ * songReady(state) — IDENT-17 (Phase 91, plan 91-06), user 2026-09-30: "Let's
+ * allow this to be used once per fight as a combat action." True only for a
+ * Bard in a live, joined fight (not pending, before FIGHT) that has not yet
+ * sung (`state.combat.sang` unset). The flag lives on the fight, so it can
+ * never leak into the next one; squares walked no longer matter. This
+ * supersedes the prototype's "a song every 100 squares" (mazeworld.html
+ * songReady(), lines 2743-2745), a declared canon divergence.
  */
-export function sing(state, rng, events = []) {
+export function songReady(state) {
+  return state.c.sub === "Bard" && !!state.combat && !state.combat.pending && !state.combat.sang;
+}
+
+/**
+ * sing(state, rng, events, now) — the Bard's action, once per fight. IDENT-17
+ * (Phase 91, plan 91-06), user 2026-09-30: the song's effect is one spell
+ * picked uniformly from songPool(level) and resolved at full strength exactly
+ * as a Magic User of the Bard's level would cast it (castSpell's free mode:
+ * same dice, the one shared rising resist, durations, self-costs; no charge, no
+ * book, no Apprentice backfire). The pick, the sung title and every roll the
+ * spell makes come from ONE derived stream, `derivedRng(<main cursor>, "song",
+ * <acts>)`; the foe turn after the song runs on the main rng as after any
+ * other action, so the main rng draws nothing for the song itself. Events: a
+ * `sang { title, spell, level }`, then the spell's own events, then the foe
+ * turn. A second song in the fight is `actionRefused { action: "sing", reason:
+ * "sungThisFight" }` with no draw; a non-Bard is "wrongClass"; before FIGHT it
+ * is "notFought". Replaces the port of mazeworld.html sing() (lines 2746-2770)
+ * and its five fixed per-level songs (RULES-18's resistControl x2 and
+ * controlCapRounds are no longer used here).
+ */
+export function sing(state, rng, events = [], now = Date.now) {
   const c = state.c;
   const C = state.combat;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "actionRefused", { action: "sing" })) return events;
   if (!C) return events;
-  // CMB-02 (Phase 31): songReady() bundles "not a Bard" and "still cooling
-  // down" into one silent no-op — split so each refusal names its own reason
-  // (never fear-related; this is a class/cooldown gate, not a phobia refusal).
-  if (!songReady(state)) {
-    events.push({
-      type: "actionRefused",
-      action: "sing",
-      reason: c.sub === "Bard" ? "cooldown" : "wrongClass",
-      ...(c.sub === "Bard" ? { left: 100 - (state.steps - (c.songAt ?? -999)) } : {}),
-    });
+  // CMB-02 (Phase 31): each refusal names its own reason (never fear-related;
+  // this is a class / once-per-fight gate, not a phobia refusal).
+  if (c.sub !== "Bard") {
+    events.push({ type: "actionRefused", action: "sing", reason: "wrongClass" });
     return events;
   }
-  const song = SONGS.filter((s) => s.lvl <= c.level).pop();
-  c.songAt = state.steps;
-  events.push({ type: "sang", song: song.n, level: song.lvl });
-  const foes = liveFoes(state);
-  if (song.lvl === 1) {
-    if (C.type === "Beasts" || C.type === "Lair Beasts") {
-      foes.forEach((f) => {
-        f.alive = false;
-        f.fled = true;
-      });
-      events.push({ type: "beastsSoothed", count: foes.length });
-    } else {
-      events.push({ type: "songIgnored" });
-    }
-  } else if (song.lvl === 2) {
-    C.inspired = 1;
-  } else if (song.lvl === 3) {
-    const n = rng.d(6); // roll:amount
-    const depth = state.floor.depth;
-    foes.slice(0, n).forEach((f) => {
-      if (f.lvl <= c.level) {
-        // RULES-18 (Phase 75.3, audit C13): past the knee, each eligible foe
-        // gets its own resist roll before the Lullaby lands; a landed sleep
-        // caps at controlHoldRoundsFor(depth) instead of the full 24 (a no-op
-        // at or below the knee — controlCapRounds returns 24 unchanged).
-        const idx = C.foes.indexOf(f);
-        if (resistControl(state, f, "sleep", song.n, idx, rng, events)) return;
-        f.asleep = controlCapRounds(depth, 24);
-      }
-    });
-    events.push({ type: "lullabyRolled", n });
-  } else if (song.lvl === 4) {
-    const n = rng.d(12); // roll:amount
-    const r = rng.d(8); // roll:amount
-    const depth = state.floor.depth;
-    foes.slice(0, n).forEach((f) => {
-      if (f.lvl <= c.level) {
-        // RULES-18 (Phase 75.3, audit C13): a resist per eligible foe; a
-        // landed sleep keeps its own rolled `r` (Thunder's duration was
-        // already short — nothing to cap).
-        const idx = C.foes.indexOf(f);
-        if (resistControl(state, f, "sleep", song.n, idx, rng, events)) return;
-        f.asleep = r;
-      }
-    });
-    events.push({ type: "thunderRolled", n, r });
-  } else {
-    foes.forEach((f) => {
-      if (f.lvl <= c.level) f.wp = 1;
-    });
+  if (C.sang) {
+    events.push({ type: "actionRefused", action: "sing", reason: "sungThisFight" });
+    return events;
   }
-  afterPlayerAction(state, rng, events);
+  C.sang = true;
+  const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+  const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+  const songRng = derivedRng(cursor, "song", acts);
+  const pool = songPool(c.level);
+  const sp = pool[songRng.d(pool.length) - 1]; // roll:selection
+  const raw = SONG_TITLES[songRng.d(SONG_TITLES.length) - 1]; // roll:selection
+  events.push({ type: "sang", title: raw.replace("{spell}", sp.n), spell: sp.n, level: sp.lvl });
+  castSpell(state, SPELLS.indexOf(sp), songRng, events, now, { free: true, afterRng: rng });
   return events;
 }
 

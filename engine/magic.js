@@ -102,20 +102,32 @@ const ALLY_NAMES = ["A horned thing", "Something with too many arms", "A shape t
  * freeze tail) and Lightning's own `aoe` flag (its every-foe case) — so a
  * content-table rename can never silently break either. See the thrown
  * branch below for the exact comparisons.
+ *
+ * Phase 91 (IDENT-17, plan 91-06): a sixth parameter `opts = {}` with
+ * `{ free = false, afterRng = null }`. A Bard's song (combat.js#sing) is
+ * "resolved as if cast by a Magic User of the Bard's level", so it is THIS
+ * code path, not a second resolver. `free: true` skips the charge check, the
+ * book / level / school refusal, the charge spend and the Apprentice backfire
+ * draw (a song is never the caster's own book); every other branch runs
+ * unchanged. `afterRng`, when given, is the rng the trailing foe turn
+ * (`afterPlayerAction`) runs on, so a song's own rolls come from its derived
+ * stream while the foe turn stays on the main rng exactly as after any other
+ * action. A call without `opts` is byte-identical to before.
  */
-export function castSpell(state, idx, rng, events = [], now = Date.now) {
+export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {}) {
   const sp = SPELLS[idx];
   if (!sp) return events;
+  const free = opts.free === true;
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "castRefused", { spell: sp.n })) return events;
   const c = state.c;
   const C = state.combat;
 
-  if (maxCharges(c) - c.spellsUsed <= 0) {
+  if (!free && maxCharges(c) - c.spellsUsed <= 0) {
     events.push({ type: "noChargesLeft" });
     return events;
   }
-  if (!c.scrollCast && !canCast(state, sp)) {
+  if (!free && !c.scrollCast && !canCast(state, sp)) {
     if (!c.grimoire || !c.grimoire.includes(sp.n)) {
       events.push({ type: "spellNotKnown", spell: sp.n });
     } else if (schoolClosed(c.sub, sp.s)) {
@@ -185,7 +197,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     }
   }
 
-  c.spellsUsed++;
+  if (!free) c.spellsUsed++; // IDENT-17: a song spends no charge
   if (C) C.spellOpen = false;
 
   // an Apprentice's spells go wrong one time in eight — Phase 73 (ROLL-05):
@@ -193,7 +205,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   // drawn ONLY for an Apprentice, on its own line so the guard can tag it —
   // the ternary preserves the old `&&` short-circuit exactly (a non-
   // Apprentice draws nothing here).
-  const apprenticeBackfireRoll = c.sub === "Apprentice" ? rng.d(8) : null; // roll:mishap-on-1
+  // IDENT-17: a song (free) is never the caster's own book, so it never backfires.
+  const apprenticeBackfireRoll = !free && c.sub === "Apprentice" ? rng.d(8) : null; // roll:mishap-on-1
   if (apprenticeBackfireRoll === 1) {
     events.push({ type: "spellBackfired", spell: sp.n, roll: apprenticeBackfireRoll, atLeast: 2, dieN: 8 });
     if (sp.dmg && sp.kind === "thrown") {
@@ -207,7 +220,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
         return events;
       }
     }
-    if (state.combat) afterPlayerAction(state, rng, events);
+    if (state.combat) afterPlayerAction(state, opts.afterRng ?? rng, events);
     return events;
   }
 
@@ -227,7 +240,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const aimed = C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
     const t = single === "first" ? liveFoes(state)[0] : aimed || liveFoes(state)[0];
     if (t && foeResistsSpell(state, t, sp.n, rng, events)) {
-      afterPlayerAction(state, rng, events);
+      afterPlayerAction(state, opts.afterRng ?? rng, events);
       return events;
     }
   }
@@ -690,6 +703,13 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const DEATH_SPELL_FEE = 25;
     if (c.wp <= DEATH_SPELL_FEE + 1) {
       events.push({ type: "deathSpellTooWeak", fee: DEATH_SPELL_FEE });
+      if (free) {
+        // IDENT-17: a sung Death the Bard cannot afford fizzles, and the song is
+        // spent (it was never a charge to refund), so the round passes to the
+        // foes as any other fizzled action would.
+        if (state.combat) afterPlayerAction(state, opts.afterRng ?? rng, events);
+        return events;
+      }
       c.spellsUsed--;
       return events;
     }
@@ -813,7 +833,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       }
     }
   }
-  if (state.combat) afterPlayerAction(state, rng, events);
+  if (state.combat) afterPlayerAction(state, opts.afterRng ?? rng, events);
   return events;
 }
 
