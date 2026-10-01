@@ -92,10 +92,22 @@ function countingRng(inner) {
 // below). This is the ONE declared chargen mover for this plan
 // (test/parity/FIXTURE-INVENTORY.md's Phase 75 Plan 05 section); every
 // other seed's cursor is unchanged.
+//
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): Phantom Host and Lesser Summon
+// are removed and the Wizard lost the Illusion school, so the Wizard's,
+// Illusionist's and Apprentice's main-rng pools are shorter and their shuffles
+// draw fewer values. Re-measured live (node, rollCharacter on makeRng(seed)),
+// three seeds move, before -> after:
+//   seed 7 (Wizard)      -447588372  -> -1647318515  (rollGrimoire 39 -> 36 draws)
+//   seed 8 (Illusionist) -1015482844 ->  1447918639  (34 -> 33)
+//   seed 24 (Apprentice)  2015813128 ->   184247315  (38 -> 37)
+// Seed 15 (the Summoner) does not move: Lesser Summon was a derived-stream row,
+// so removing it never touched a main-rng shuffle. The other 16 cursors are
+// byte-identical.
 const ROLL_CHARACTER_PINS = {
   1: -2023389403, 2: -759718062, 3: 1071847752, 4: -759718060, 6: 440012085,
-  7: -447588372, 8: -1015482844, 13: -2023389391, 14: -2023389390, 15: -1647318507,
-  17: 1071847766, 19: 816082980, 24: 2015813128, 29: 1447918660, 32: -2023389372,
+  7: -1647318515, 8: 1447918639, 13: -2023389391, 14: -2023389390, 15: -1647318507,
+  17: 1071847766, 19: 816082980, 24: 184247315, 29: 1447918660, 32: -2023389372,
   35: 1447918666, 38: 1071847787, 160: 1071847909, 256: -759717808, 303: 1071848052,
 };
 
@@ -105,10 +117,16 @@ const ROLL_CHARACTER_PINS = {
 //
 // RULES-03 (Phase 75): seed 15 re-measured live — same cause as
 // ROLL_CHARACTER_PINS above (the Summoner's widened spare pool).
+//
+// Phase 90 plan 06 (SPELL-12): the same three seeds move, re-measured live
+// (newRun(seed).rngState), before -> after:
+//   seed 7   514860380 -> 1778531720
+//   seed 8    74848302 ->   10907105
+//   seed 24 -556987352 ->   10907121
 const NEW_RUN_PINS = {
   1: -1692776321, 2: 266671887, 3: 1466402031, 4: 266671889, 6: 202730694,
-  7: 514860380, 8: 74848302, 13: -365163772, 14: 2034296515, 15: -1252764228,
-  17: 1466402045, 19: -1188823027, 24: -556987352, 29: -1820658687, 32: -1692776290,
+  7: 1778531720, 8: 10907105, 13: -365163772, 14: 2034296515, 15: -1252764228,
+  17: 1466402045, 19: -1188823027, 24: 10907121, 29: -1820658687, 32: -1692776290,
   35: 642742802, 38: -996999417, 160: -1564893768, 256: 2098237954, 303: -429104679,
 };
 
@@ -123,9 +141,15 @@ const NEW_RUN_PINS = {
 // unchanged (none of the six sub-classes that keep a gate has its `spare`
 // pool touched by this plan's grant-time filter, which only skips spells
 // while WALKING low/high — never widens or narrows the spare shuffle).
+//
+// Phase 90 plan 06 (SPELL-12): three subs re-measured live, before -> after.
+// Wizard 39 -> 36 (loses Phantom Host from the high pool, Mirror Self from the
+// low pool and from the day-one spare pool: the Illusion school is closed to it);
+// Illusionist 34 -> 33 and Apprentice 38 -> 37 (each loses Phantom Host from the
+// high pool). The other five are unchanged.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
+  Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
+  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 test("rollCharacter leaves the rng at the pinned cursor for every parity-fixture seed", () => {
@@ -157,7 +181,7 @@ test("rollGrimoire draws a constant, pinned number of rng values per sub-class, 
     // The independently-derived formula: two shuffles (low, high) + one d10
     // + one more shuffle (spare), each shuffle costing max(0, len-1) draws.
     // Phase 40 (SPELL-04): rows flagged `roll: "derived"` (content/spells.js
-    // — today, only Lesser Summon) never enter these MAIN-rng shuffles —
+    // — no row at Phase 90 plan 06; Lesser Summon was the one) never enter these MAIN-rng shuffles —
     // engine/character.js#rollGrimoire splices them in afterward via a
     // separate derived rng stream — so the formula excludes them here; the
     // three pin tables above are otherwise unchanged.

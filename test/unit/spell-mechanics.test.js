@@ -4,8 +4,8 @@
 // MECHANICS the Plan 01 table promised: engine/magic.js's data-flag thrown
 // branch (Freeze's `onHit`, Lightning's `aoe`), Ice (the `dot` branch and its
 // frozen-solid payoff until Phase 90 plan 05 made it the area freeze: see the
-// re-pinned tests below), the Lesser Summon cast branch
-// (never doubled, never backfires), the Weaken duration timer (+ its
+// re-pinned tests below), the summon cast branch (Phase 90 plan 06: Lesser
+// Summon is removed; the Summoner's doubled Summon from level 1), the Weaken duration timer (+ its
 // combat.js#foeTurn expiry), Stupidity's fight-long skip, and Shrink's real
 // half-damage. Helpers (fakeRng/looseRng/fixedFighter/fixedState/fixedFloor/
 // fixedFoe/fixedCombat) mirror test/unit/combat.test.js's established
@@ -136,7 +136,7 @@ function fixedCaster(overrides = {}) {
   });
 }
 
-// ─── Task 1: data flags (Freeze/Lightning), Ice (the `dot` branch), Lesser Summon ───
+// ─── Task 1: data flags (Freeze/Lightning), Ice (the `dot` branch), Summon ───
 
 test("no engine spell branch is name-keyed: Lightning (aoe:'all') pushes one spellThrown per live foe", () => {
   const f1 = fixedFoe({ name: "A" });
@@ -249,76 +249,64 @@ test("Ice: a kill-twice (lives) foe whose damage kills it once is revived to ful
   assert.equal(foe.held, undefined);
 });
 
-const LESSER_ALLY_NAMES = [
-  "A thing with one horn, mostly",
-  "Something with nearly enough arms",
-  "A small grey sulk",
-  "A shape that is mildly upsetting to look at",
-];
+// Phase 90 plan 06 (SPELL-12): Lesser Summon is removed; the Summoner casts the
+// full Summon from level 1 (the named exception), doubled, with the one-in-eight
+// backfire kept. The summon branch has the one ally name table now.
+const ALLY_NAMES = ["A horned thing", "Something with too many arms", "A shape that hurts to look at", "A tall grey silence"];
 
-test("Lesser Summon: a level-1 Summoner draws ONE die (the duration), never doubles/backfires, lvl clamps to 1..3", () => {
+test("Summon (Phase 90 plan 06): a level-1 Summoner draws the d8 backfire check then ONE die (the duration, doubled +2), the ally is level 2", () => {
   // Zero live foes -> afterPlayerAction's own encounterCleared shortcut
-  // fires with 0 further draws, so the strict one-value sequence proves the
-  // cast branch itself drew exactly once (no d8 backfire check, no doubling
-  // multiplier draw) without needing a trailing-tail budget.
-  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Lesser Summon"], level: 1 }), combat: fixedCombat([]) });
-  const events = castSpell(state, SPELL_IDX["Lesser Summon"], fakeRng([3]), []);
+  // fires with 0 further draws, so the strict two-value sequence proves the
+  // cast branch itself drew exactly twice (the d8 check, the d4 duration).
+  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Summon"], level: 1 }), combat: fixedCombat([]) });
+  const events = castSpell(state, SPELL_IDX["Summon"], fakeRng([3, 3]), []);
   const ally = events.find((e) => e.type === "allySummoned");
   assert.ok(ally);
-  assert.equal(ally.lvl, 1, "clamp(max(1, min(3, level-1))) at level 1");
-  assert.equal(ally.rounds, 3, "a plain d4, never doubled/+2");
-  assert.equal(ally.lesser, true);
-  assert.ok(LESSER_ALLY_NAMES.includes(ally.name));
+  assert.equal(ally.lvl, 2, "min(5, level + 1): a Summoner's creatures come doubled");
+  assert.equal(ally.rounds, 8, "2 * d4(3) + 2");
+  assert.ok(ALLY_NAMES.includes(ally.name));
   assert.ok(!events.some((e) => e.type === "summonBackfired"));
+  assert.equal("lesser" in ally, false);
 });
 
-test("Lesser Summon: the persisted ally object itself gains NO new field (no `lesser` key on C.ally)", () => {
+test("Summon: the persisted ally object itself carries only lvl, name and rounds", () => {
   const foe = fixedFoe({ wp: 50, maxWP: 50 });
-  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Lesser Summon"], level: 1 }), combat: fixedCombat([foe]) });
+  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Summon"], level: 1 }), combat: fixedCombat([foe]) });
   // A live foe keeps the encounter open past the cast, so C.ally survives
   // for inspection; the trailing tail's own content-driven draws are not
   // this test's claim.
-  castSpell(state, SPELL_IDX["Lesser Summon"], looseRng([3], 20), []);
+  castSpell(state, SPELL_IDX["Summon"], looseRng([5, 3], 20), []);
   assert.ok(state.combat, "the encounter is still open");
   assert.deepStrictEqual(Object.keys(state.combat.ally).sort(), ["lvl", "name", "rounds"]);
 });
 
-test("Lesser Summon: even a first-draw-of-1 never backfires (the d8 backfire check never runs for a lesser cast)", () => {
-  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Lesser Summon"], level: 1 }), combat: fixedCombat([]) });
-  const events = castSpell(state, SPELL_IDX["Lesser Summon"], fakeRng([1]), []);
-  assert.ok(!events.some((e) => e.type === "summonBackfired"));
-  assert.ok(events.some((e) => e.type === "allySummoned"));
+test("Summon: a level-1 Summoner's first draw of 1 is the one-in-eight backfire (the d8 check runs for the Summoner)", () => {
+  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Summon"], level: 1, wp: 40, maxWP: 40 }), combat: fixedCombat([]) });
+  const events = castSpell(state, SPELL_IDX["Summon"], fakeRng([1, 4]), []);
+  assert.ok(events.some((e) => e.type === "summonBackfired"));
+  assert.ok(!events.some((e) => e.type === "allySummoned"));
 });
 
-test("Lesser Summon: a level-5 Summoner's ally caps at lvl 3", () => {
-  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Lesser Summon"], level: 5 }), combat: fixedCombat([]) });
-  const events = castSpell(state, SPELL_IDX["Lesser Summon"], fakeRng([2]), []);
+test("Summon: a level-5 Summoner's ally caps at lvl 5", () => {
+  const state = fixedState({ c: fixedCaster({ sub: "Summoner", grimoire: ["Summon"], level: 5 }), combat: fixedCombat([]) });
+  const events = castSpell(state, SPELL_IDX["Summon"], fakeRng([2, 2]), []);
   const ally = events.find((e) => e.type === "allySummoned");
-  assert.equal(ally.lvl, 3, "clamp(min(3, 5-1)) = 3");
+  assert.equal(ally.lvl, 5, "min(5, 5+1) = 5");
 });
 
-test("Lesser Summon: a level-1 Wizard's ally is lvl 1 too (never doubled — not a Summoner)", () => {
-  const state = fixedState({ c: fixedCaster({ sub: "Wizard", grimoire: ["Lesser Summon"], level: 1 }), combat: null });
-  const events = castSpell(state, SPELL_IDX["Lesser Summon"], fakeRng([1]), []);
-  const ally = events.find((e) => e.type === "allyPending");
-  assert.ok(ally);
-  assert.equal(ally.lvl, 1);
-  assert.equal(ally.lesser, true);
-});
-
-test("Summon (not Lesser Summon): allyPending never carries a `lesser` key", () => {
+test("Summon: a level-2 Wizard's ally is lvl 2 (never doubled — not a Summoner) and allyPending carries no `lesser` key", () => {
   const state = fixedState({ c: fixedCaster({ sub: "Wizard", grimoire: ["Summon"], level: 2 }), combat: null });
   const events = castSpell(state, SPELL_IDX.Summon, fakeRng([4]), []); // rounds d4=4
   const ally = events.find((e) => e.type === "allyPending");
   assert.ok(ally);
+  assert.equal(ally.lvl, 2);
+  assert.equal(ally.rounds, 6, "1 * d4(4) + 2");
   assert.equal("lesser" in ally, false);
 });
 
-test("Narration: iceCast/dotTick(poison)/allySummoned(lesser) render through EVENT_NARRATION and LINE_FOR", () => {
+test("Narration: iceCast/dotTick(poison) render through EVENT_NARRATION and LINE_FOR", () => {
   assert.match(EVENT_NARRATION.iceCast({ spell: "Ice", foes: 3 }), /Ice/);
   assert.match(EVENT_NARRATION.dotTick({ target: "Ogre", dmg: 3, by: "poisonedEdge" }), /the poison/);
-  assert.match(EVENT_NARRATION.allySummoned({ name: "Thing", lesser: true }), /sort of/);
-  assert.match(EVENT_NARRATION.allyPending({ name: "Thing", lesser: true }), /in a small way/);
   assert.equal(typeof LINE_FOR.iceCast({ type: "iceCast", spell: "Ice", foes: 3 }).text, "string");
 });
 

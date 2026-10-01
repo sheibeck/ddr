@@ -550,8 +550,10 @@ test("helpful might: Strength sets might to its d10 and never touches hit points
   assert.equal(foe.maxWP, 20);
 });
 
-test("helpful summon: Summon/Phantom Host/Lesser Summon queue one Demons reinforcement at the right tier", () => {
-  for (const [name, level, expectedTier] of [["Summon", 3, 3], ["Phantom Host", 6, 5], ["Lesser Summon", 3, 2]]) {
+// Phase 90 plan 06 (SPELL-12): Phantom Host and Lesser Summon are removed; Summon's tier is the
+// reader's level, at most 5.
+test("helpful summon: Summon queues one Demons reinforcement at the reader's level (at most 5)", () => {
+  for (const [name, level, expectedTier] of [["Summon", 3, 3], ["Summon", 6, 5], ["Summon", 1, 1]]) {
     const state = fixedState({ c: { level } });
     const foe = fixedFoe();
     state.combat = fixedCombat([foe]);

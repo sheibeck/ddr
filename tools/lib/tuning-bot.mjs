@@ -368,7 +368,7 @@ function bestBurstExpected(state) {
 
 /**
  * bestCastableSummonIdx(state) — the index of the highest-lvl castable
- * `kind: "summon"` spell (Summon or Phantom Host), or null. Shared by
+ * `kind: "summon"` spell (Summon, castable by a Summoner from level 1), or null. Shared by
  * decideAction's in-combat and out-of-combat Summon branches (HARN-02).
  */
 function bestCastableSummonIdx(state) {

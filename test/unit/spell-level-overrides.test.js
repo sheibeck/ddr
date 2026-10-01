@@ -1,15 +1,16 @@
 // test/unit/spell-level-overrides.test.js
 //
 // Phase 23 Plan 01, Task 3 — proves the spell-level override table
-// (content/spell-level-overrides.js) touches EXACTLY the two intended
-// (sub, spell) pairs and nothing else, and locks castableAttackSpells /
-// ATTACK_SPELL_KINDS's semantics.
+// (content/spell-level-overrides.js) touches EXACTLY the intended (sub, spell)
+// pair and nothing else, and locks castableAttackSpells / ATTACK_SPELL_KINDS's
+// semantics.
 //
-// FLAGGED PLANNER ASSUMPTION (IDENT-03, spec-less probe unresolved): the
-// canCast diff-walk test below is the load-bearing proof that this phase's
-// only behavior change is (Summoner, Summon) at level 1 and (Illusionist,
-// Phantom Host) at levels 1-2 — every other (sub, spell, level) triple stays
-// byte-identical to the pre-Phase-23 predicate.
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): the table is now exactly
+// { Summoner: { Summon: 1 } } (the named exception; Phantom Host is removed),
+// and canCast also re-checks the sub-class's school (SPELL-10). The canCast
+// diff-walk below is the load-bearing proof that, against the pre-Phase-23
+// predicate plus that school check, the ONLY behaviour change is (Summoner,
+// Summon) at level 1.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,6 +23,7 @@ import {
   isAttackSpell,
   ATTACK_SPELL_KINDS,
   schoolGate,
+  schoolAllowed,
 } from "../../engine/derived.js";
 
 /** Minimal state fixture — canCast/castableAttackSpells read only
@@ -34,62 +36,60 @@ const ALL_NAMES = SPELLS.map((sp) => sp.n);
 
 // --- 1. Table shape ----------------------------------------------------
 
-// Phase 40 (SPELL-04, DELIBERATE RULES CHANGE): the Summoner row is retired
-// — its level-1 summon is now its own content row (Lesser Summon,
-// content/spells.js, `roll: "derived"`) rather than a level-override on
-// Summon. Only the Illusionist row remains.
-test("SPELL_LEVEL_OVERRIDES has exactly the Illusionist row, mapping a real spell name to the integer 1", () => {
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): the Summoner casts the level-2
+// Summon from level 1 as a NAMED exception (Phase 40 had retired the row for
+// Lesser Summon, which is now removed with Phantom Host).
+test("SPELL_LEVEL_OVERRIDES has exactly the Summoner row, mapping the real spell name Summon to the integer 1", () => {
   const keys = Object.keys(SPELL_LEVEL_OVERRIDES);
-  assert.deepStrictEqual(keys, ["Illusionist"]);
-  for (const [spellName, level] of Object.entries(SPELL_LEVEL_OVERRIDES.Illusionist)) {
+  assert.deepStrictEqual(keys, ["Summoner"]);
+  for (const [spellName, level] of Object.entries(SPELL_LEVEL_OVERRIDES.Summoner)) {
     assert.ok(
       SPELLS.some((sp) => sp.n === spellName),
-      `Illusionist's override key "${spellName}" must be a real SPELLS[].n`,
+      `Summoner's override key "${spellName}" must be a real SPELLS[].n`,
     );
     assert.equal(Number.isInteger(level), true);
     assert.equal(level, 1);
   }
-  assert.deepStrictEqual(SPELL_LEVEL_OVERRIDES.Illusionist, { "Phantom Host": 1 });
+  assert.deepStrictEqual(SPELL_LEVEL_OVERRIDES.Summoner, { Summon: 1 });
 });
 
 // --- 2. spellLevelFor ----------------------------------------------------
 
-test("spellLevelFor: the one override cell returns 1, every other cell (including Summoner/Summon) falls back to sp.lvl", () => {
+test("spellLevelFor: the one override cell returns 1, every other cell (including every other sub-class's Summon) falls back to sp.lvl", () => {
   const summon = SPELLS.find((sp) => sp.n === "Summon");
-  const phantomHost = SPELLS.find((sp) => sp.n === "Phantom Host");
 
-  // Phase 40: Summon is spell level 2 for the Summoner again (no override).
-  assert.equal(spellLevelFor("Summoner", summon), 2);
-  assert.equal(spellLevelFor("Illusionist", phantomHost), 1);
+  // Phase 90 plan 06: the Summoner casts Summon from level 1 (the named exception).
+  assert.equal(spellLevelFor("Summoner", summon), 1);
 
-  for (const sub of ["Wizard", "Cleric", "Apprentice", "Summoner"]) {
+  for (const sub of ["Wizard", "Cleric", "Apprentice", "Illusionist"]) {
     for (const sp of SPELLS) {
       assert.equal(spellLevelFor(sub, sp), sp.lvl, `${sub}/${sp.n} must fall back to sp.lvl`);
     }
   }
 
-  // An Illusionist is unaffected for every OTHER spell.
+  // The Summoner is unaffected for every OTHER spell.
   for (const sp of SPELLS) {
-    if (sp.n !== "Phantom Host") assert.equal(spellLevelFor("Illusionist", sp), sp.lvl);
+    if (sp.n !== "Summon") assert.equal(spellLevelFor("Summoner", sp), sp.lvl);
   }
 });
 
 // --- 3. canCast diff walk (FLAGGED PLANNER ASSUMPTION, IDENT-03) --------
 
 /** oldCanCast(state, sp) — the pre-Phase-23 predicate, reproduced verbatim
- * (grimoire membership, bare `sp.lvl > c.level`, schoolGate), for the diff
- * walk below to compare against the new spellLevelFor-routed canCast. */
+ * (grimoire membership, bare `sp.lvl > c.level`, schoolGate), PLUS Phase 90
+ * plan 06's school check (a school the sub-class can never learn is never
+ * castable), for the diff walk below to compare against the new
+ * spellLevelFor-routed canCast. */
 function oldCanCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
+  if (!schoolAllowed(c.sub, sp.s)) return false;
   if (sp.lvl > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);
 }
 
-// Phase 40: the Summoner/Summon cell is retired — canCast now agrees with
-// oldCanCast for every (Summoner, *, level) cell (both fall back to sp.lvl).
-// Only the Illusionist/Phantom Host cells still diverge.
-test("canCast diff walk: the override changes EXACTLY the two Illusionist (sub, spell, level) cells", () => {
+// Phase 90 plan 06: the Summoner/Summon cell at level 1 is the one divergence.
+test("canCast diff walk: the override changes EXACTLY the one Summoner (sub, spell, level) cell", () => {
   const subs = [...CLASSES["Magic User"].subs, "Knight", "Pickpocket"];
   const diffs = [];
   for (const sub of subs) {
@@ -102,10 +102,19 @@ test("canCast diff walk: the override changes EXACTLY the two Illusionist (sub, 
       }
     }
   }
-  assert.deepStrictEqual(diffs, [
-    ["Illusionist", "Phantom Host", 1],
-    ["Illusionist", "Phantom Host", 2],
-  ]);
+  assert.deepStrictEqual(diffs, [["Summoner", "Summon", 1]]);
+});
+
+test("canCast school check (SPELL-10): a spell of a school the sub-class can never learn is never castable at any level, even held in the book", () => {
+  for (const sub of CLASSES["Magic User"].subs) {
+    for (let level = 1; level <= 5; level++) {
+      const state = stateFor(sub, level, ALL_NAMES);
+      for (const sp of SPELLS) {
+        if (schoolAllowed(sub, sp.s)) continue;
+        assert.equal(canCast(state, sp), false, `${sub}/${sp.n}/L${level}: school ${sp.s} is closed to it`);
+      }
+    }
+  }
 });
 
 test("canCast diff walk: with an EMPTY grimoire, canCast is false for every (sub, spell, level), including the two override cells", () => {
@@ -137,18 +146,18 @@ test("castableAttackSpells: Wizard L1 with only utility spells returns []", () =
   assert.deepStrictEqual(castableAttackSpells(state), []);
 });
 
-// Phase 40: Summon is spell level 2 again for the Summoner (no override), so
-// canCast(Summon) is still false at level 1 (a spell-LEVEL lock).
+// Phase 90 plan 06 (SPELL-12): Summon is castable at level 1 for the Summoner
+// (the named exception); it is not an attack kind, so it never lists here.
 //
 // RULES-03 (Phase 75, user 2026-09-25): the Summoner's offense SCHOOL gate is
 // retired (content/mu-chart.js) — Stun (offense, gate 1 now) IS castable at
 // level 1, so castableAttackSpells returns [Stun], not [].
-test("castableAttackSpells: Summoner L1 with Stun/Summon returns [Stun] (RULES-03: the offense gate is removed); canCast(Summon) is still false (a spell-LEVEL lock, IDENT-03/Phase 40)", () => {
+test("castableAttackSpells: Summoner L1 with Stun/Summon returns [Stun] (RULES-03: the offense gate is removed); canCast(Summon) is true (the SPELL-12 exception) but a summon is no attack kind", () => {
   const state = stateFor("Summoner", 1, ["Stun", "Summon"]);
   const names = castableAttackSpells(state).map((sp) => sp.n);
   assert.deepStrictEqual(names, ["Stun"]);
   const summon = SPELLS.find((sp) => sp.n === "Summon");
-  assert.equal(canCast(state, summon), false);
+  assert.equal(canCast(state, summon), true);
 });
 
 test("castableAttackSpells: Wizard L4 with Lightning returns [Lightning] (thrown at any level counts)", () => {
@@ -181,7 +190,7 @@ test("ATTACK_SPELL_KINDS is exactly {status, thrown, stun, weaken, blast}", () =
 // kind "blast", which joins ATTACK_SPELL_KINDS, so it moves back to the true-list.
 test("isAttackSpell: true for Doze/Freeze/Stun/Weaken/Ice/Fireball/Lightning/Mangle, false for the rest (Ice is the blast kind, an attack kind again)", () => {
   const trueNames = ["Doze", "Freeze", "Stun", "Weaken", "Ice", "Fireball", "Lightning", "Mangle"];
-  const falseNames = ["Heal", "Shield", "Summon", "Phantom Host", "Acid", "Fireballs", "Earthquake", "Death"];
+  const falseNames = ["Heal", "Shield", "Summon", "Acid", "Fireballs", "Earthquake", "Death"];
   for (const n of trueNames) {
     const sp = SPELLS.find((s) => s.n === n);
     assert.ok(sp, `${n} must exist in SPELLS`);

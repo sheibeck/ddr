@@ -127,8 +127,8 @@ test("grantableAt(sub, sp, level) is true exactly when canLearn(sub, sp) and sch
 test("every must-have grant is from a school whose gate for its own sub-class is 1 (a must-have is never itself illegal)", () => {
   const mustHaves = [
     ["Cleric", ["Heal", "Major Heal"]],
-    ["Illusionist", ["Mirror Self", "Phantom Host"]],
-    ["Summoner", ["Summon", "Lesser Summon"]],
+    ["Illusionist", ["Mirror Self"]],
+    ["Summoner", ["Summon"]],
     ["Sorcerer", ["Freeze", "Fireball"]],
   ];
   for (const [sub, names] of mustHaves) {
@@ -164,10 +164,13 @@ test("every gated sub-class's chargen grimoire holds no spell whose school gate 
 // Pinned at the plan base (test/unit/chargen-rng-pin.test.js /
 // test/unit/day-one-damage.test.js — Summoner alone moves 31 -> 36; every
 // other sub is unchanged because this plan's filter only SKIPS a spell while
-// walking an already-shuffled list, never re-rolls or re-shuffles).
+// walking an already-shuffled list, never re-rolls or re-shuffles). Phase 90
+// plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33, Apprentice 38 ->
+// 37 (Phantom Host removed; the Wizard lost Illusion) — see
+// test/unit/chargen-rng-pin.test.js.
 const ROLL_GRIMOIRE_DRAW_COUNTS_NON_SUMMONER = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35,
-  Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
+  Wizard: 36, Warlock: 33, Sorcerer: 35,
+  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 test("rollGrimoire's main-rng draw count is UNCHANGED for every non-Summoner sub, over seeds 1..50 (RULES-03 adds zero draws)", () => {

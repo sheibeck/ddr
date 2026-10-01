@@ -563,15 +563,23 @@ test("Phase 42 (BAL-01 second half): a burst spell (niche 'burst') expected to f
   assert.deepStrictEqual(chooseSpell(exactMatch, ctx), { idx: fireballIdx, tier: "damage", score: 390 });
 });
 
-test("Phase 42 (BAL-01 second half): Summon in combat picks the highest-LEVEL castable summon spell — level 1 has only Lesser Summon, level 3 also has Summon", () => {
+// Phase 90 plan 06 (SPELL-12): Lesser Summon is removed; the one summon spell is Summon, which a
+// level-1 Summoner casts through the named exception (so the bot finds it castable at level 1) and
+// a Wizard needs level 2 for.
+test("Phase 42 (BAL-01 second half) + SPELL-12: Summon in combat — a level-1 Summoner's bot casts Summon; a level-1 Wizard's cannot, a level-2 Wizard's can", () => {
   const ctx = makeBotContext();
-  const c = mu({ sub: "Summoner", level: 1, grimoire: ["Lesser Summon", "Summon"] });
+  const c = mu({ sub: "Summoner", level: 1, grimoire: ["Summon"] });
 
   const level1 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c });
-  assert.deepStrictEqual(decideAction(level1, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Lesser Summon") });
+  assert.deepStrictEqual(decideAction(level1, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
 
   const level3 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c: { ...c, level: 3 } });
   assert.deepStrictEqual(decideAction(level3, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
+
+  const wizard1 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c: mu({ sub: "Wizard", level: 1, grimoire: ["Summon"] }) });
+  assert.notDeepEqual(decideAction(wizard1, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
+  const wizard2 = mkState({ combat: fight("Beasts", 1, 1, { ally: undefined }), c: mu({ sub: "Wizard", level: 2, grimoire: ["Summon"] }) });
+  assert.deepStrictEqual(decideAction(wizard2, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Summon") });
 });
 
 // Phase 90 plan 05 (SPELL-11), declared: Stun holds ONE foe now, so like Freeze's hold it is allowed against a
@@ -654,7 +662,7 @@ test("HARN-02: Shield/Bubble score a round-1 WARD-OPENER below every other tier,
   assert.deepStrictEqual(decideAction(sorcererShieldVsFreeze, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Freeze") });
 });
 
-test("HARN-02: Summon in combat — round 1, no ally yet, charges remain; Phantom Host follows the same rule", () => {
+test("HARN-02: Summon in combat — round 1, no ally yet, charges remain (Phase 90 plan 06: Phantom Host is removed)", () => {
   const ctx = makeBotContext();
   const c = mu({ sub: "Summoner", level: 2, grimoire: ["Summon"] });
 
@@ -666,12 +674,6 @@ test("HARN-02: Summon in combat — round 1, no ally yet, charges remain; Phanto
 
   const round2 = mkState({ combat: fight("Beasts", 1, 2), c });
   assert.deepStrictEqual(decideAction(round2, fixedPolicyRng, ctx), { type: "attack" });
-
-  const illusionistPhantom = mkState({
-    combat: fight("Beasts", 1, 1),
-    c: mu({ sub: "Illusionist", level: 3, grimoire: ["Phantom Host"] }),
-  });
-  assert.deepStrictEqual(decideAction(illusionistPhantom, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Phantom Host") });
 });
 
 test("HARN-02: Summon out of combat — no pendingAlly and more than half of maxCharges left", () => {

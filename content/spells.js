@@ -6,7 +6,7 @@
 // `pool`/`rounds`/`reflect`/`txt` fields verbatim and simply have no `dmg`
 // field, matching the prototype. Array order preserved for rows 0-31 (the
 // prototype's actual 32-row count; content-tables.test.js locks the total
-// at 33 as of Phase 40).
+// at 31 as of Phase 90 plan 06).
 //
 // 04-DR10: `combatOnly` classifies each spell as castable from the HERO
 // tab's Grimoire OUTSIDE an encounter (false) vs. requiring an active
@@ -36,18 +36,16 @@
 //     (test/unit/spell-table.test.js). Reading the niche key at any engine
 //     call site (bot tactics, UI grouping) should read `sp.niche`, never
 //     parse `sp.txt`.
-//   - Four new data flags, each read by exactly one engine site: `onHit`
-//     (Freeze, row 4 — engine/magic.js's thrown branch, Plan 02) — freezes
-//     solid on a hit; `aoe: "all"` (Lightning, row 28 — engine/magic.js's
-//     thrown branch, Plan 02) — replaces the old `sp.n === "Lightning"`
-//     name-keyed special case with a data flag so a rename can never
-//     silently break it; `lesser: true` (Lesser Summon, row 32 —
-//     engine/magic.js's summon branch, Plan 02) — the Summoner's doubled/
-//     backfire rules do not apply; `roll: "derived"` (Lesser Summon, row 32
-//     — engine/character.js#rollGrimoire, this plan's Task 2) — the row
+//   - Data flags, each read by exactly one engine site: `onHit` (Freeze —
+//     engine/magic.js's thrown branch) freezes solid on a hit; `aoe: "all"`
+//     (Lightning) replaces the old `sp.n === "Lightning"` name-keyed special
+//     case with a data flag so a rename can never silently break it;
+//     `roll: "derived"` (engine/character.js#rollGrimoire) — a row so flagged
 //     joins the day-one chargen pools through a DERIVED rng stream keyed on
 //     the main cursor, never lengthening the main-rng shuffles (so
-//     test/unit/chargen-rng-pin.test.js's pin tables stay byte-unedited).
+//     test/unit/chargen-rng-pin.test.js's pin tables stay byte-unedited). No
+//     row carries `roll: "derived"` at this plan; the path stays in place for
+//     the rows appended after it (Phase 90 plans 07-09).
 //   - Row 5 renamed Detect Magic -> Map the Floor (SPELL-05); row 13 (Ice)
 //     `kind` changed "thrown" -> "dot" (its `dmg` literal is unchanged — Plan
 //     02 wires the actual per-round tick + the promised freeze-on-expiry).
@@ -58,19 +56,26 @@
 //     engine/combat.js#iceStorm reads them. Doze and Stun were swapped the same
 //     phase (SPELL-11): Doze sleeps d4 foes and a hit wakes a sleeper, Stun
 //     holds one foe for d4 rounds and a hit does not end it.
-//   - Row 32 (Lesser Summon, NEW): the Summoner's user-ruled (2026-09-18)
-//     level-1 safe summon — "give the summoner a level 1 summon... keep
-//     level 1 spells without the bad gate" (40-CONTEXT.md Area 3). Learnable
-//     by every sub whose `special` school is open at gate 1 (Wizard,
-//     Sorcerer, Illusionist, Summoner, Apprentice — content/mu-chart.js).
-//   - ARRAY-POSITION / lvl / s INVARIANT (load-bearing, unchanged since
-//     before this phase): `castSpell(state, idx)`, the magic parity
-//     fixture's `spellIndex`, and `readScroll`'s `SPELLS.indexOf` all index
-//     spells by ARRAY POSITION; `rollGrimoire`'s pools filter by `lvl`/`s`.
-//     Rows 0-31 keep their position, `lvl`, and `s` byte-identical to the
-//     pre-Phase-40 table; only `n` (row 5), `kind` (row 13), `txt` (every
-//     row), and the new `niche`/flags fields changed. Row 32 is appended,
-//     never inserted.
+//   - Phase 40 appended a row 32, Lesser Summon (the Summoner's level-1 safe
+//     summon, 40-CONTEXT.md Area 3). Phase 90 plan 06 REMOVED it again (see
+//     below): the Summoner casts the level-2 Summon from level 1 instead.
+//   - ARRAY-POSITION / lvl / s INVARIANT (load-bearing): `castSpell(state,
+//     idx)`, the magic parity fixture's `spellIndex` (it uses only Heal, 0,
+//     and Freeze, 4), and `readScroll`'s `SPELLS.indexOf` all index spells by
+//     ARRAY POSITION; `rollGrimoire`'s pools filter by `lvl`/`s`. Rows 0-26
+//     keep their position, `lvl` and `s`. New rows are APPENDED, never
+//     inserted; a REMOVED row shifts the later rows down, keeping their
+//     relative order (Phase 90 plan 06: Phantom Host, once row 27, left, so
+//     Lightning, Regeneration, Mangle and Death each sit one row earlier).
+//     Look a spell up by NAME in any test or tool, never by a literal index
+//     past row 26.
+//
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon and Phantom Host
+// are REMOVED, and nothing in engine/ or content/ names them but the tolerant
+// save load's rename table (engine/saveState.js). The Summoner casts the
+// level-2 Summon from level 1 through the named exception in
+// content/spell-level-overrides.js; the Wizard lost the Illusion school
+// (content/mu-chart.js). The 31 rows left are the old 33 less those two.
 //
 // Phase 90 (SPELL-09): an `act` record on a SPELLS row makes it a
 // SPELL-SOURCED TIMED EFFECT: casting it starts one `spell:<n>` c.timers
@@ -136,10 +141,8 @@ export const SPELLS = [
   { n: "Turn Walking Dead", lvl: 2, s: "protection", kind: "turn", niche: "answer", txt: "answer · every Walking Dead of your level or lower · sent back", combatOnly: true },
   { n: "Plane Gate", lvl: 3, s: "protection", kind: "gate", niche: "answer", txt: "answer · d6 Demons or Walking Dead · vanquished to The Planes", combatOnly: true },
   { n: "Sense Presence", lvl: 2, s: "protection", kind: "senses", niche: "sight", txt: "sight · you · fight in the dark at full skill and nothing gets the jump on you, till your next fight ends", combatOnly: false },
-  { n: "Phantom Host", lvl: 3, s: "illusion", kind: "summon", niche: "summon", txt: "summon · one ally · a host that isn't there, d4+2 rounds", combatOnly: false },
   { n: "Lightning", lvl: 4, s: "offense", kind: "thrown", dmg: { n: 1, sides: 10, bonus: 6 }, aoe: "all", niche: "multi", txt: "multi-target · every foe · hits each on 5–8 (d8) before bonuses, for d10+6 + your level² damage apiece", combatOnly: true },
   { n: "Regeneration", lvl: 4, s: "healing", kind: "regen", niche: "healing", txt: "healing · you · d8 hp a round, this fight", combatOnly: false },
   { n: "Mangle", lvl: 5, s: "offense", kind: "thrown", dmg: { n: 2, sides: 20, bonus: 15 }, niche: "burst", txt: "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 + your level² damage", combatOnly: true },
   { n: "Death", lvl: 5, s: "offense", kind: "death", niche: "burst", txt: "burst · one foe · dies outright; costs you 25 hp", combatOnly: true },
-  { n: "Lesser Summon", lvl: 1, s: "special", kind: "summon", lesser: true, roll: "derived", niche: "summon", txt: "summon · one small ally · a level under yours, d4 rounds, never backfires", combatOnly: false },
 ];

@@ -2904,15 +2904,14 @@ export function isAttackSpell(sp) {
  * 2026-09-18): the day-one guarantee narrows from "any ATTACK_SPELL_KINDS
  * member" (Phase 23) to "a spell that actually deals damage" — the user's
  * own ruling (40-CONTEXT.md Area 3) singled out that a small summon counts
- * as a damage SOURCE, not a damage KIND, so it is carried by dealsDamage's
- * separate `sp.lesser` check below, not folded into this set.
+ * as a damage SOURCE, not a damage KIND. (Phase 90 plan 06, SPELL-12: Lesser
+ * Summon, the one spell that was carried as a damage source, is removed; a
+ * summon never counts as damage now, and the Summoner's day-one damage
+ * guarantee is met by the top-up like every other sub-class's.)
  *
  * Deliberate exclusions, matching the research finding this plan closes:
- *   - Summon / Phantom Host (`kind: "summon"`) do NOT count on their own —
- *     ROADMAP SC-3 says Summoner/Illusionist "additionally qualify" via
- *     their own overrides/grants, not that every summon spell is a damage
- *     spell; a Summoner's Lesser Summon is a GRANT (engine/character.js#
- *     rollGrimoire), not a kind-based inclusion here.
+ *   - Summon (`kind: "summon"`) does NOT count — a summon is a damage
+ *     source, never a damage spell on its own.
  *   - Doze / Stun / Weaken (`status`/`stun`/`weaken`) do NOT count — they
  *     disable, they never move a foe's wp.
  * Phase 90 plan 05 (SPELL-12): "blast" (Ice, d10 + level² to every foe) joins
@@ -2927,12 +2926,10 @@ export const DAMAGE_SPELL_KINDS = new Set(["thrown", "blast", "acid", "volley", 
 
 /**
  * dealsDamage(sp) — does casting this spell deal damage to a foe? True for
- * any DAMAGE_SPELL_KINDS member, OR any spell flagged `lesser: true`
- * (Lesser Summon — the Summoner's small, safe, guaranteed day-one damage
- * source per the user's ruling). Pure read, no rng, no mutation.
+ * any DAMAGE_SPELL_KINDS member. Pure read, no rng, no mutation.
  */
 export function dealsDamage(sp) {
-  return DAMAGE_SPELL_KINDS.has(sp.kind) || sp.lesser === true;
+  return DAMAGE_SPELL_KINDS.has(sp.kind);
 }
 
 /**
@@ -2951,12 +2948,25 @@ export function castableAttackSpells(state) {
   return SPELLS.filter((sp) => isAttackSpell(sp) && canCast(state, sp));
 }
 
+/**
+ * canCast(state, sp) — the ONE castability verdict (the combat menu, the
+ * Grimoire view model and engine/magic.js#castSpell all read it): the spell is
+ * in the book, the sub-class can ever learn its school, the hero is at the
+ * spell's effective level and the school's gate is open.
+ *
+ * Phase 90 plan 06 (SPELL-10, user 2026-09-30: "sub-classes or races that
+ * cannot cast [a school] are properly excluded"): a book is gated when it is
+ * dealt (engine/character.js#grantableAt), and canCast RE-CHECKS the school
+ * (`schoolAllowed`), so an old or tampered book never casts or lists a spell
+ * of a school its sub-class can never learn.
+ */
 export function canCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
+  if (!schoolAllowed(c.sub, sp.s)) return false;
   // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-03/IDENT-04): routed
   // through spellLevelFor so the per-sub override table can lower a spell's
-  // effective level (Summoner/Summon, Illusionist/Phantom Host); byte-
+  // effective level (Phase 90 plan 06: the Summoner's Summon); byte-
   // identical to the old `sp.lvl > c.level` check for every other pair.
   if (spellLevelFor(c.sub, sp) > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);

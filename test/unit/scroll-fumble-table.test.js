@@ -51,12 +51,10 @@ const EXPECTED = {
   "Turn Walking Dead": { side: "harmful", effect: "none" },
   "Plane Gate": { side: "harmful", effect: "none" },
   "Sense Presence": { side: "helpful", effect: "senses" },
-  "Phantom Host": { side: "helpful", effect: "summon" },
   "Lightning": { side: "area", effect: "damage" },
   "Regeneration": { side: "helpful", effect: "regen" },
   "Mangle": { side: "harmful", effect: "damage" },
   "Death": { side: "harmful", effect: "heavy", how: "death" },
-  "Lesser Summon": { side: "helpful", effect: "summon" },
 };
 
 // Kinds whose castSpell branch benefits the CASTER (content/spells.js's own
@@ -87,9 +85,9 @@ function coverageHolds(spellNames, table) {
   return true;
 }
 
-test("SCROLL_FUMBLE: exact-name coverage of all 33 SPELLS rows", () => {
-  assert.equal(SPELLS.length, 33);
-  assert.equal(Object.keys(SCROLL_FUMBLE).length, 33);
+test("SCROLL_FUMBLE: exact-name coverage of all 31 SPELLS rows", () => {
+  assert.equal(SPELLS.length, 31);
+  assert.equal(Object.keys(SCROLL_FUMBLE).length, 31);
   assert.ok(coverageHolds(SPELLS.map((sp) => sp.n), SCROLL_FUMBLE));
 });
 
@@ -108,7 +106,7 @@ test("SCROLL_FUMBLE: deep-equals the plan's table, row by row", () => {
   for (const [name, expected] of Object.entries(EXPECTED)) {
     assert.deepEqual(SCROLL_FUMBLE[name], expected, `row mismatch for "${name}"`);
   }
-  // No extra rows beyond the plan's 33.
+  // No extra rows beyond the 31 (Phase 90 plan 06 removed Lesser Summon and Phantom Host).
   assert.deepEqual(new Set(Object.keys(SCROLL_FUMBLE)), new Set(Object.keys(EXPECTED)));
 });
 

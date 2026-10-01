@@ -2,11 +2,15 @@
 //
 // Phase 40 (SPELL-04), Plan 01, Task 2 — the day-one damage guarantee:
 // every Magic User sub-class holds a castable, damage-dealing spell on day
-// one (proven over every sub x 200 seeds), the Summoner is deterministically
-// granted Lesser Summon (and still gets Summon), the retired
-// SPELL_LEVEL_OVERRIDES.Summoner row, and the ZERO-DRAW guarantee: the
-// Phase-40 derived-row insertion consumes no additional main-rng draws, so
-// test/unit/chargen-rng-pin.test.js's pinned draw counts are untouched.
+// one (proven over every sub x 200 seeds), and the ZERO-DRAW guarantee: the
+// derived-row path consumes no additional main-rng draws.
+//
+// Phase 90 plan 06 (SPELL-12, user 2026-09-30): Lesser Summon (the Phase 40
+// stand-in that carried the Summoner's day-one damage) is REMOVED. The
+// Summoner is deterministically granted Summon, castable at level 1 through
+// the named exception SPELL_LEVEL_OVERRIDES.Summoner.Summon; a summon never
+// counts as damage, so the Summoner's day-one damage spell comes from the
+// same top-up every other sub-class's does.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,9 +20,9 @@ import { rollGrimoire } from "../../engine/character.js";
 import { newRun } from "../../engine/engine.js";
 import { SPELLS, CLASSES, SPELL_LEVEL_OVERRIDES } from "../../content/index.js";
 import { canCast, dealsDamage, DAMAGE_SPELL_KINDS } from "../../engine/derived.js";
+import { maxCharges } from "../../engine/movement.js";
 
 const MU_SUBS = CLASSES["Magic User"].subs;
-const SPECIAL_SUBS = ["Wizard", "Sorcerer", "Illusionist", "Summoner", "Apprentice"];
 const SEED_COUNT = 200;
 const SEEDS = Array.from({ length: SEED_COUNT }, (_, i) => i * 7919 + 1);
 const byName = (n) => SPELLS.find((sp) => sp.n === n);
@@ -62,23 +66,24 @@ function countingRng(inner) {
 // RULES-03 (Phase 75, user 2026-09-25): Summoner re-measured live, 31 -> 36
 // — see test/unit/chargen-rng-pin.test.js's own comment on this constant
 // for the full cause (the offense gate's removal widens the day-one `spare`
-// pool).
+// pool). Phase 90 plan 06 (SPELL-12): Wizard 39 -> 36, Illusionist 34 -> 33,
+// Apprentice 38 -> 37, measured live (Phantom Host removed; the Wizard lost
+// the Illusion school) — same declaration as that file's.
 const ROLL_GRIMOIRE_DRAW_COUNTS = {
-  Wizard: 39, Warlock: 33, Sorcerer: 35, Summoner: 36,
-  Cleric: 34, Illusionist: 34, "Court Mage": 34, Apprentice: 38,
+  Wizard: 36, Warlock: 33, Sorcerer: 35, Summoner: 36,
+  Cleric: 34, Illusionist: 33, "Court Mage": 34, Apprentice: 37,
 };
 
 // --- table shape ----------------------------------------------------------
 
-test("SPELL_LEVEL_OVERRIDES: exactly the Illusionist row — the Summoner row is retired", () => {
-  assert.deepStrictEqual(SPELL_LEVEL_OVERRIDES, { Illusionist: { "Phantom Host": 1 } });
+test("SPELL_LEVEL_OVERRIDES: exactly the Summoner's Summon (Phase 90 plan 06, SPELL-12) — the Illusionist's Phantom Host row went with the spell", () => {
+  assert.deepStrictEqual(SPELL_LEVEL_OVERRIDES, { Summoner: { Summon: 1 } });
 });
 
-test("spellLevelFor: Summon is level 2 for the Summoner again; Lesser Summon prints its own level 1", async () => {
+test("spellLevelFor: Summon is level 1 for the Summoner (the named exception) and level 2 for everyone else", async () => {
   const { spellLevelFor } = await import("../../engine/derived.js");
-  assert.equal(spellLevelFor("Summoner", byName("Summon")), 2);
-  assert.equal(spellLevelFor("Illusionist", byName("Phantom Host")), 1);
-  assert.equal(spellLevelFor("Summoner", byName("Lesser Summon")), 1);
+  assert.equal(spellLevelFor("Summoner", byName("Summon")), 1);
+  for (const sub of MU_SUBS) if (sub !== "Summoner") assert.equal(spellLevelFor(sub, byName("Summon")), 2, sub);
 });
 
 // --- DAMAGE_SPELL_KINDS / dealsDamage --------------------------------------
@@ -87,9 +92,9 @@ test("DAMAGE_SPELL_KINDS is exactly {thrown, blast, acid, volley, quake, death} 
   assert.deepStrictEqual([...DAMAGE_SPELL_KINDS].sort(), ["acid", "blast", "death", "quake", "thrown", "volley"]);
 });
 
-test("dealsDamage: true for the real damage kinds and Lesser Summon, false for disables/utility/other summons", () => {
-  const trueNames = ["Freeze", "Ice", "Acid", "Fireball", "Fireballs", "Earthquake", "Lightning", "Mangle", "Death", "Lesser Summon"];
-  const falseNames = ["Doze", "Stun", "Weaken", "Summon", "Phantom Host", "Heal", "Shield", "Map the Floor"];
+test("dealsDamage: true for the real damage kinds, false for disables, utility and a summon (a summon is never damage)", () => {
+  const trueNames = ["Freeze", "Ice", "Acid", "Fireball", "Fireballs", "Earthquake", "Lightning", "Mangle", "Death"];
+  const falseNames = ["Doze", "Stun", "Weaken", "Summon", "Heal", "Shield", "Map the Floor"];
   for (const n of trueNames) assert.equal(dealsDamage(byName(n)), true, `${n} must deal damage`);
   for (const n of falseNames) assert.equal(dealsDamage(byName(n)), false, `${n} must not deal damage`);
 });
@@ -137,24 +142,23 @@ test("every Magic User sub holds a castable, damage-dealing spell on day one, ov
   }
 });
 
-test("the Summoner always holds Lesser Summon (deterministic grant) and still holds Summon", () => {
+test("the Summoner always holds Summon (deterministic grant), castable at level 1 with a charge, plus a castable damage spell from the top-up (a summon never counts as damage)", () => {
+  const summon = byName("Summon");
+  assert.equal(dealsDamage(summon), false);
   for (const seed of SEEDS) {
     const state = newRun(seed, [], { force: { sub: "Summoner" } });
-    assert.ok(state.c.grimoire.includes("Lesser Summon"), `seed ${seed}: missing Lesser Summon`);
     assert.ok(state.c.grimoire.includes("Summon"), `seed ${seed}: missing Summon`);
+    assert.equal(state.c.level, 1);
+    assert.equal(canCast(state, summon), true, `seed ${seed}: Summon must be castable at level 1`);
+    assert.ok(maxCharges(state.c) - state.c.spellsUsed > 0, `seed ${seed}: no charge to cast it with`);
+    assert.ok(state.c.grimoire.some((n) => n !== "Summon" && dealsDamage(byName(n)) && canCast(state, byName(n))), `seed ${seed}: the damage top-up found no castable damage spell`);
   }
 });
 
-test("the 5 special-school subs: Lesser Summon's derived insertion genuinely varies (present in >=1 non-Summoner grimoire, absent from >=1)", () => {
-  for (const sub of SPECIAL_SUBS) {
-    if (sub === "Summoner") continue; // deterministic grant, not a variance case
-    let has = 0, miss = 0;
-    for (const seed of SEEDS) {
-      const state = newRun(seed, [], { force: { sub } });
-      if (state.c.grimoire.includes("Lesser Summon")) has++; else miss++;
-    }
-    assert.ok(has >= 1, `${sub}: Lesser Summon never appears over ${SEED_COUNT} seeds`);
-    assert.ok(miss >= 1, `${sub}: Lesser Summon appears in EVERY grimoire over ${SEED_COUNT} seeds (should vary)`);
+test("no SPELLS row is flagged roll: derived or lesser at this plan (Lesser Summon was the one); the derived splice path stays for the appended rows", () => {
+  for (const sp of SPELLS) {
+    assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
+    assert.equal(sp.lesser, undefined, `${sp.n} must not carry lesser`);
   }
 });
 
@@ -170,14 +174,17 @@ test("no duplicate names in any rolled grimoire, across all 8 Magic User subs x 
 
 // --- the Summoner's offense gate is retired (RULES-03) ---------------------
 
-test("RULES-03 (Phase 75): schoolGate('Summoner', 'offense') is 1 and a level-1 Summoner holding Freeze passes canCast; Summon (spell level 2) still needs level 2 — a spell-LEVEL lock, not a school gate", async () => {
+test("RULES-03 (Phase 75) + SPELL-12 (Phase 90 plan 06): schoolGate('Summoner', 'offense') is 1; a level-1 Summoner holding Freeze and Summon casts both; a level-1 Wizard holding Summon is refused (the exception is the Summoner's alone)", async () => {
   const { schoolGate } = await import("../../engine/derived.js");
   assert.equal(schoolGate("Summoner", "offense"), 1, "the offense gate is removed from content/mu-chart.js");
   const state = newRun(1, [], { force: { sub: "Summoner" } });
   state.c.grimoire = ["Freeze", "Summon"];
   assert.equal(canCast(state, byName("Freeze")), true, "a level-1 Summoner can now cast offense");
   const summon = byName("Summon");
-  assert.equal(canCast(state, summon), false, "Summon needs level 2 again (spellLevelFor, unrelated to the retired gate)");
-  state.c.level = 2;
-  assert.equal(canCast(state, summon), true);
+  assert.equal(canCast(state, summon), true, "Summon is castable from level 1 for the Summoner (the named exception)");
+  const wizard = newRun(1, [], { force: { sub: "Wizard" } });
+  wizard.c.grimoire = ["Summon"];
+  assert.equal(canCast(wizard, summon), false, "Summon needs level 2 for every other sub-class");
+  wizard.c.level = 2;
+  assert.equal(canCast(wizard, summon), true);
 });

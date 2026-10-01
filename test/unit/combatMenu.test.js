@@ -287,28 +287,32 @@ test("CMBUI-08: a Wizard's rows read LVL 1 A to Z, then LVL 2, then LVL 4; each 
   }
 });
 
-test("CMBUI-08 (user, 2026-09-25): a Summoner's Lesser Summon lists among the level-1 spells in name order, before level-2 Summon", () => {
-  const c = { cls: "Magic User", sub: "Summoner", level: 2, grimoire: ["Summon", "Weaken", "Lesser Summon", "Doze", "Acid"], spellsUsed: 0 };
+// Phase 90 plan 06 (SPELL-12): the Summoner's Summon is the named exception (effective
+// level 1, printed 2), so it reads LVL 1 and sorts among the level-1 spells in name order.
+test("CMBUI-08 (user, 2026-09-25) + SPELL-12: a Summoner's Summon (effective level 1, printed 2) reads LVL 1 and lists among the level-1 spells in name order", () => {
+  const summon = SPELLS.find((sp) => sp.n === "Summon");
+  assert.equal(summon.lvl, 2, "Summon's printed level is 2");
+  assert.equal(spellLevelFor("Summoner", summon), 1, "the Summoner's effective level is 1");
+  const c = { cls: "Magic User", sub: "Summoner", level: 2, grimoire: ["Summon", "Weaken", "Doze", "Acid"], spellsUsed: 0 };
   const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
   const rows = vm.submenus.spells.rows;
-  assert.deepEqual(rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 DOZE", "LVL 1 LESSER SUMMON", "LVL 1 WEAKEN", "LVL 2 ACID", "LVL 2 SUMMON"]);
-  const lesser = rows.find((r) => r.label === "LESSER SUMMON");
-  assert.deepEqual(lesser.dispatch, { type: "castSpell", idx: SPELLS.findIndex((sp) => sp.n === "Lesser Summon") });
-  // A level-1 Summoner: Lesser Summon still sits in name order among its peers.
+  assert.deepEqual(rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 DOZE", "LVL 1 SUMMON", "LVL 1 WEAKEN", "LVL 2 ACID"]);
+  const row = rows.find((r) => r.label === "SUMMON");
+  assert.deepEqual(row.dispatch, { type: "castSpell", idx: SPELLS.findIndex((sp) => sp.n === "Summon") });
+  // A level-1 Summoner casts it too.
   const low = combatMenuViewModel(fixedState({ c: { ...c, level: 1 }, combat: fixedCombat([]) }));
-  assert.deepEqual(low.submenus.spells.rows.map((r) => r.label), ["DOZE", "LESSER SUMMON", "WEAKEN"]);
+  assert.deepEqual(low.submenus.spells.rows.map((r) => r.label), ["DOZE", "SUMMON", "WEAKEN"]);
+  // A Wizard at level 1 does not get it.
+  const wiz = combatMenuViewModel(fixedState({ c: { ...c, sub: "Wizard", level: 1 }, combat: fixedCombat([]) }));
+  assert.deepEqual(wiz.submenus.spells.rows.map((r) => r.label), ["DOZE", "WEAKEN"]);
 });
 
-test("CMBUI-08: an Illusionist's Phantom Host (effective level 1, base 3) reads LVL 1 and sorts with the level-1 spells", () => {
-  const phantom = SPELLS.find((sp) => sp.n === "Phantom Host");
-  assert.equal(phantom.lvl, 3, "Phantom Host's printed level is 3");
-  assert.equal(spellLevelFor("Illusionist", phantom), 1, "the Illusionist's effective level is 1");
-  const c = { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Blind", "Acid", "Phantom Host", "Mirror Self"], spellsUsed: 0 };
+test("CMBUI-08 + SPELL-10: an Illusionist's Mirror Self lists at LVL 1; a Wizard holding the same book never lists it (the Wizard lost the Illusion school)", () => {
+  const c = { cls: "Magic User", sub: "Illusionist", level: 3, grimoire: ["Blind", "Acid", "Mirror Self"], spellsUsed: 0 };
   const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
-  assert.deepEqual(vm.submenus.spells.rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 MIRROR SELF", "LVL 1 PHANTOM HOST", "LVL 2 ACID", "LVL 3 BLIND"]);
-  // A level-1 Illusionist can cast it, and it reads LVL 1.
-  const low = combatMenuViewModel(fixedState({ c: { ...c, level: 1 }, combat: fixedCombat([]) }));
-  assert.deepEqual(low.submenus.spells.rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 MIRROR SELF", "LVL 1 PHANTOM HOST"]);
+  assert.deepEqual(vm.submenus.spells.rows.map((r) => `${r.cost} ${r.label}`), ["LVL 1 MIRROR SELF", "LVL 2 ACID", "LVL 3 BLIND"]);
+  const wiz = combatMenuViewModel(fixedState({ c: { ...c, sub: "Wizard" }, combat: fixedCombat([]) }));
+  assert.deepEqual(wiz.submenus.spells.rows.map((r) => r.label), ["ACID", "BLIND"]);
 });
 
 test("CMBUI-08: out of charges, every row stays listed and disabled in the same sorted order", () => {

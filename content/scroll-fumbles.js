@@ -4,7 +4,7 @@
 // engine/scrollFumble.js#resolveScrollFumble and nothing else — the design
 // lives here, in one reviewable table, rather than scattered across the
 // resolver. Keyed by each spell's exact content/spells.js#SPELLS `n` string
-// (33 rows, no normalisation — a renamed or added spell fails
+// (31 rows as of Phase 90 plan 06, no normalisation — a renamed or added spell fails
 // test/unit/scroll-fumble-table.test.js's coverage check).
 //
 // Row shape: `{ side, effect }` plus, where listed:
@@ -77,10 +77,8 @@ export const SCROLL_FUMBLE = Object.freeze({
   "Turn Walking Dead": Object.freeze({ side: "harmful", effect: "none" }),
   "Plane Gate": Object.freeze({ side: "harmful", effect: "none" }),
   "Sense Presence": Object.freeze({ side: "helpful", effect: "senses" }),
-  "Phantom Host": Object.freeze({ side: "helpful", effect: "summon" }),
   "Lightning": Object.freeze({ side: "area", effect: "damage" }),
   "Regeneration": Object.freeze({ side: "helpful", effect: "regen" }),
   "Mangle": Object.freeze({ side: "harmful", effect: "damage" }),
   "Death": Object.freeze({ side: "harmful", effect: "heavy", how: "death" }),
-  "Lesser Summon": Object.freeze({ side: "helpful", effect: "summon" }),
 });

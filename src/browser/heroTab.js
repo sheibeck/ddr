@@ -21,7 +21,7 @@ import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILI
 // SUB_NOTE for the dossier; ROMAN for the level/Company-panel readouts) —
 // a SEPARATE import line so the line above stays byte-identical.
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
-import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow } from "../../engine/derived.js";
+import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, schoolAllowed, potionMight, weaponRow } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -386,6 +386,10 @@ export function grimoireViewModel(state) {
         disabledReason = "On the combat screen";
       } else if (sp.combatOnly) {
         disabledReason = "Combat only";
+      } else if (!schoolAllowed(c.sub, sp.s)) {
+        // Phase 90 plan 06 (SPELL-10): a school this sub-class can never learn
+        // (only a tampered book holds one; the load drops it) is never castable.
+        disabledReason = "Not your school";
       } else if (spellLevelFor(c.sub, sp) > c.level) {
         // Phase 31 (CMB-02): the engine's own two-way split (magic.js's
         // castSpell) instead of the old collapsed single opaque string —
@@ -404,7 +408,10 @@ export function grimoireViewModel(state) {
       return {
         idx: SPELLS.indexOf(sp),
         name: sp.n,
-        lvl: sp.lvl,
+        // Phase 90 plan 06 (SPELL-12): the EFFECTIVE level for this sub-class,
+        // the one canCast gates on and the combat menu already prints, so the
+        // Summoner's Summon reads L1 (and sorts at 1), never its printed 2.
+        lvl: spellLevelFor(c.sub, sp),
         txt: sp.txt,
         // Phase 40 (SPELL-01): the niche KEY + its display label, beside the
         // existing txt (which already begins with `nicheLabel + " · "`) — so

@@ -36,8 +36,8 @@ const BY_ID = new Map(FOE_ABILITIES.map((a) => [a.id, a]));
 const RESISTIBLE = new Set(["bolt", "drain", "debuff"]);
 // FOE-04/D-12: a room never holds more than 4 live foes. Exported (Phase
 // 75.1, RULES-10) so engine/scrollFumble.js#resolveScrollFumble's helpful
-// branch shares the SAME cap when a fumbled Summon/Phantom Host/Lesser
-// Summon joins the foes as a reinforcement.
+// branch shares the SAME cap when a fumbled Summon
+// joins the foes as a reinforcement.
 export const SUMMON_MAX_LIVE = 4;
 
 /**

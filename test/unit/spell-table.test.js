@@ -1,11 +1,11 @@
 // test/unit/spell-table.test.js
 //
-// Phase 40 (SPELL-01/03/04/05), Plan 01, Task 1 — locks the reshaped 33-row
-// SPELLS table: the 32-entry position/lvl/s/kind quadruple pin (measured
+// Phase 40 (SPELL-01/03/04/05), Plan 01, Task 1 — locks the reshaped
+// SPELLS table (Phase 90 plan 06, SPELL-12: Phantom Host and Lesser Summon were
+// removed, leaving 31 rows): the 32-entry position/lvl/s/kind quadruple pin (measured
 // live from `git show HEAD:content/spells.js` at the commit this plan
 // started from, never hand-derived), the two deliberate exceptions (Map the
-// Floor's rename, Ice's kind), the three data flags (onHit/aoe/lesser+roll),
-// the new Lesser Summon row, and the `niche`/`txt`/NICHE_LABELS contract
+// Floor's rename, Ice's kind), the data flags (onHit/aoe), and the `niche`/`txt`/NICHE_LABELS contract
 // (SPELL-01's "a player can tell two same-level spells solve different
 // problems").
 
@@ -53,23 +53,21 @@ const PRE_PLAN_QUADRUPLES = [
   ["Death", 5, "offense", "death"],
 ];
 
-test("SPELLS: 33 rows, row 32 is the new Lesser Summon", () => {
-  assert.equal(SPELLS.length, 33);
-  const last = SPELLS[32];
-  assert.equal(last.n, "Lesser Summon");
-  assert.equal(last.lvl, 1);
-  assert.equal(last.s, "special");
-  assert.equal(last.kind, "summon");
-  assert.equal(last.lesser, true);
-  assert.equal(last.roll, "derived");
-  assert.equal(last.combatOnly, false);
-  assert.equal(last.niche, "summon");
-  assert.equal("dmg" in last, false, "Lesser Summon has no dmg field");
+// Phase 90 plan 06 (SPELL-12): Phantom Host (once row 27) is removed, so the
+// rows after it sit one earlier; Lesser Summon (once row 32) is removed.
+const PRESENT_QUADRUPLES = PRE_PLAN_QUADRUPLES.filter(([n]) => n !== "Phantom Host");
+
+test("SPELLS: 31 rows, and neither Lesser Summon nor Phantom Host is among them (no row carries lesser or roll)", () => {
+  assert.equal(SPELLS.length, 31);
+  assert.equal(SPELLS.find((sp) => sp.n === "Lesser Summon"), undefined);
+  assert.equal(SPELLS.find((sp) => sp.n === "Phantom Host"), undefined);
+  assert.equal(SPELLS[SPELLS.length - 1].n, "Death");
 });
 
-test("SPELLS rows 0-31: array position, lvl, s, kind are byte-identical to the pre-Phase-40 table, with exactly two deliberate exceptions", () => {
-  for (let i = 0; i < 32; i++) {
-    const [n, lvl, s, kind] = PRE_PLAN_QUADRUPLES[i];
+test("SPELLS: array position, lvl, s, kind are byte-identical to the pre-Phase-40 table (rows 0-26 in place, the rows after Phantom Host one earlier), with exactly two deliberate exceptions", () => {
+  assert.equal(SPELLS.length, PRESENT_QUADRUPLES.length);
+  for (let i = 0; i < PRESENT_QUADRUPLES.length; i++) {
+    const [n, lvl, s, kind] = PRESENT_QUADRUPLES[i];
     const sp = SPELLS[i];
     assert.equal(sp.lvl, lvl, `row ${i} (${n}): lvl must be byte-identical`);
     assert.equal(sp.s, s, `row ${i} (${n}): s (school) must be byte-identical`);
@@ -125,7 +123,6 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
     "Turn Walking Dead": { combatOnly: true },
     "Plane Gate": { combatOnly: true },
     "Sense Presence": { combatOnly: false },
-    "Phantom Host": { combatOnly: false },
     Lightning: { dmg: { n: 1, sides: 10, bonus: 6 }, combatOnly: true },
     Regeneration: { combatOnly: false },
     Mangle: { dmg: { n: 2, sides: 20, bonus: 15 }, combatOnly: true },
@@ -141,7 +138,7 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
 });
 
 // Phase 90 plan 05 (SPELL-12): Ice, the area version of Freeze, carries Freeze's onHit and Lightning's aoe.
-test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) plus row 32's lesser/roll — no other row carries any of them", () => {
+test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) and no row carries lesser or roll (Phase 90 plan 06 removed Lesser Summon, the one row that did)", () => {
   const freeze = SPELLS.find((sp) => sp.n === "Freeze");
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");
   const ice = SPELLS.find((sp) => sp.n === "Ice");
@@ -158,7 +155,6 @@ test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on
     assert.equal(sp.aoe, undefined, `${sp.n} must not carry aoe`);
   }
   for (const sp of SPELLS) {
-    if (sp.n === "Lesser Summon") continue;
     assert.equal(sp.lesser, undefined, `${sp.n} must not carry lesser`);
     assert.equal(sp.roll, undefined, `${sp.n} must not carry roll`);
   }

@@ -341,11 +341,11 @@ export function grantableAt(sub, sp, level) {
  */
 export function rollGrimoire(rng, sub, level = 1) {
   const pool = SPELLS.filter((sp) => canLearn(sub, sp));
-  // Phase 40 (SPELL-04): a row flagged `roll: "derived"` (today, only
-  // Lesser Summon) never enters the main-rng-shuffled `rolled` pools below —
-  // it is spliced in afterward via a derived stream (see `dr` below), so the
-  // main rng draw COUNT/order this function consumes is unchanged from
-  // before this phase.
+  // Phase 40 (SPELL-04): a row flagged `roll: "derived"` (no row carries it at
+  // Phase 90 plan 06; the rows appended after it will) never enters the
+  // main-rng-shuffled `rolled` pools below — it is spliced in afterward via a
+  // derived stream (see `dr` below), so the main rng draw COUNT/order this
+  // function consumes is unchanged by it.
   const rolled = pool.filter((sp) => sp.roll !== "derived");
   const added = pool.filter((sp) => sp.roll === "derived");
   const low = rolled.filter((sp) => sp.lvl <= 2),
@@ -374,16 +374,16 @@ export function rollGrimoire(rng, sub, level = 1) {
   for (const sp of low) { if (book.length >= Math.min(n, 6)) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
   for (const sp of high) { if (book.length >= n) break; if (grantableAt(sub, sp, level)) book.push(sp.n); }
   if (sub === "Cleric") for (const n2 of ["Heal", "Major Heal"]) if (!book.includes(n2)) book.push(n2);
-  if (sub === "Illusionist") for (const n2 of ["Mirror Self", "Phantom Host"]) if (!book.includes(n2)) book.push(n2);
+  // Phase 90 plan 06 (SPELL-12): the Illusionist's must-have is Mirror Self
+  // alone (Phantom Host is gone; 90-09 adds Door Illusion and one random
+  // Illusion spell).
+  if (sub === "Illusionist" && !book.includes("Mirror Self")) book.push("Mirror Self");
+  // The Summoner's must-have Summon: castable from level 1 through the named
+  // exception in content/spell-level-overrides.js (SPELL-12), never a name
+  // check here. Lesser Summon, the Phase 40 level-1 stand-in, is removed. A
+  // summon never counts as day-one damage (engine/derived.js#dealsDamage), so
+  // the damage top-up below finds the Summoner its damage spell like anyone's.
   if (sub === "Summoner" && !book.includes("Summon")) book.push("Summon");
-  // Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, user ruling 2026-09-18):
-  // "Give the summoner a level 1 summon" — a deterministic grant, zero
-  // draws, mirroring the Summon grant directly above. Retires the Phase 23
-  // SPELL_LEVEL_OVERRIDES.Summoner entry (content/spell-level-overrides.js);
-  // Summon itself is spell level 2 for the Summoner again. RULES-03 (Phase
-  // 75): the Summoner's offense gate is retired entirely (content/mu-chart.js)
-  // — this must-have grant's own school (special) was never gated anyway.
-  if (sub === "Summoner" && !book.includes("Lesser Summon")) book.push("Lesser Summon");
   if (sub === "Sorcerer") for (const n2 of ["Freeze", "Fireball"]) if (!book.includes(n2)) book.push(n2);
   // you must be able to actually do something on your first day
   //
@@ -391,7 +391,7 @@ export function rollGrimoire(rng, sub, level = 1) {
   // byte-identical pre-Phase-23 test (`sp.lvl === 1 && schoolGate(sub,
   // sp.s) <= 1`) — it must NEVER be routed through spellLevelFor. The
   // planner measured that letting the override table widen this pool
-  // (e.g. adding Summon/Phantom Host to a Summoner's/Illusionist's `spare`)
+  // (e.g. adding the Summoner's level-1 Summon to its `spare`)
   // lengthens `rng.shuffle(spare)` by one draw and shifts the rng cursor for
   // seeds 8 and 15 — breaking the frozen magic/maze fixtures. `spare`'s
   // LENGTH (BEFORE any Phase-40 derived splice) is load-bearing
@@ -402,15 +402,15 @@ export function rollGrimoire(rng, sub, level = 1) {
   const dayOnePool = (sp) => sp.lvl === 1 && schoolGate(sub, sp.s) <= 1;
   // `usableNow` (the READY-COUNT predicate, used by `ready()` and the
   // damage top-up below) IS routed through spellLevelFor (Phase 23,
-  // IDENT-03: "rollGrimoire's usableNow uses spellLevelFor") — an
-  // Illusionist's Phantom Host counts as day-one-usable; a Summoner's
-  // Lesser Summon (its own printed lvl 1, no override needed) counts too.
+  // IDENT-03: "rollGrimoire's usableNow uses spellLevelFor") — a Summoner's
+  // Summon (the SPELL-12 named exception, effective level 1) counts as
+  // day-one-usable.
   const usableNow = (sp) => spellLevelFor(sub, sp) === 1 && schoolGate(sub, sp.s) <= 1;
   const ready = () => book.filter((n2) => usableNow(SPELLS.find((sp) => sp.n === n2))).length;
   const spare = rolled.filter(dayOnePool);
   rng.shuffle(spare);
   // Phase 40: splice any derived-added row that ALSO satisfies dayOnePool
-  // (today, Lesser Summon for the 5 special-school subs) into `spare` AFTER
+  // (none at Phase 90 plan 06; the appended rows may) into `spare` AFTER
   // the shuffle above completes — `spare`'s shuffle draw count is unchanged
   // by this splice; only its post-shuffle CONTENT/length grows.
   for (const sp of added) {
@@ -423,9 +423,9 @@ export function rollGrimoire(rng, sub, level = 1) {
   // actually DEALS DAMAGE" (engine/derived.js#dealsDamage) — Doze/Stun/
   // Weaken no longer satisfy the day-one guarantee for anyone (research
   // finding: they disable, they never hurt). The day-one guarantee is now
-  // DAMAGE (Freeze at level 1 for most subs, or the Summoner's granted
-  // Lesser Summon — already in `book` by this point, so `damageReady()` is
-  // immediately true and the walk below is a no-op for the Summoner). No
+  // DAMAGE (Freeze at level 1 for most subs). Phase 90 plan 06 (SPELL-12): the
+  // Summoner's Lesser Summon, which used to satisfy this for it, is removed, so
+  // the Summoner is walked like everyone else. No
   // sub-class exemption (the old Summoner-only skip guard is gone — every
   // Magic User sub, including the Summoner, is walked the same way). This
   // walks the SAME already-shuffled `spare` array (post Phase-40 splice) in
