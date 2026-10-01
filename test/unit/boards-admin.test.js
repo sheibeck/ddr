@@ -9,13 +9,14 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import url from "node:url";
 
 import { SEASON } from "../../content/season.js";
 import { FIREBASE_CONFIG } from "../../src/browser/firebaseConfig.js";
-import { FIRESTORE_BASE, IDENTITY_BASE, documentsPath } from "../../src/browser/firestoreRest.js";
+import { FIRESTORE_BASE, IDENTITY_BASE, documentsPath, firestoreUrl } from "../../src/browser/firestoreRest.js";
 import { rollHandle } from "../../src/browser/handles.js";
 import { RUN_CLIENT_FIELDS, RUN_DOC_FIELDS, rankKeys, deepKeyOf, legacyDeepKeyOf, runDocId, createRunCommit } from "../../src/browser/runDoc.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
@@ -916,4 +917,28 @@ test("usage lists names, name-override and name-clear, and says delete-run is th
   assert.match(text, /name-override <uid>/);
   assert.match(text, /name-clear <uid>/);
   assert.match(text, /delete-run[^\n]*hide|hide[^\n]*delete-run/i);
+});
+
+test("createAdminApi: setNameRecord / getDocument / clearNameRecord round-trip over names/{uid}, and a client cannot read it", async () => {
+  const fake = createFakeBoardFetch({ now: () => NOW_MS });
+  const api = createAdminApi({ projectId: FIREBASE_CONFIG.projectId, fetchFn: fake.fetchFn, headers: { Authorization: `Bearer ${FAKE_ADMIN_TOKEN}` } });
+
+  assert.equal(await api.getDocument("names", "probeuid"), null);
+  assert.equal(await api.setNameRecord("probeuid", "Smoke Probe", new Date(NOW_MS).toISOString()), true);
+  assert.deepEqual(fake.names(), [{ uid: "probeuid", name: "Smoke Probe" }]);
+  const doc = await api.getDocument("names", "probeuid");
+  assert.equal(doc.name, "Smoke Probe");
+
+  // the same document is closed to a client
+  const asClient = await fake.fetchFn(firestoreUrl(FIREBASE_CONFIG, "/names/probeuid"), { method: "GET" });
+  assert.equal(asClient.status, 403);
+
+  assert.equal(await api.clearNameRecord("probeuid"), true);
+  assert.deepEqual(fake.names(), []);
+  assert.equal(await api.getDocument("names", "probeuid"), null);
+});
+
+test("the admin API's run delete comment no longer claims the fake owner-gates an admin commit", () => {
+  const src = fs.readFileSync(new URL("../../tools/boards-admin.mjs", import.meta.url), "utf8");
+  assert.equal(/owner-gated even for the admin\s+token/.test(src.replace(/\r\n/g, "\n")), false);
 });

@@ -1114,8 +1114,8 @@ test("transition fake: banned unnamed and named uids are refused on the legacy a
   assert.equal((await postRun(server, u, { handle: GAMER, hash: "00000082" })).res.status, 403);
 });
 
-test("the fake keeps no acceptLegacyDeepKey option and no rolled-handle import", () => {
-  assert.equal(FAKE_SERVER_SRC.includes("acceptLegacyDeepKey"), false, "the old option name is gone, comments included");
+test("the fake keeps no pre-91.2 legacy-deepKey option and no rolled-handle import", () => {
+  assert.equal(FAKE_SERVER_SRC.includes(["accept", "LegacyDeepKey"].join("")), false, "the old option name is gone, comments included");
   assert.equal(FAKE_SERVER_SRC.includes("handles.js"), false, "the rolled-handle module is not imported or named");
   assert.ok(/transition\s*=\s*false/.test(FAKE_SERVER_SRC), "transition defaults to false (the final rules)");
 });
