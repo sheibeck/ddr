@@ -1,16 +1,20 @@
 // test/unit/boards-smoke.test.js
 //
-// Phase 83 Plan 07. Covers tools/boards-smoke.mjs against
-// src/browser/fakeBoardServer.js (83-04) in both client-only and
-// --with-admin modes, all three existsResponse duplicate-create answers, a
-// failure path with complete cleanup, and the CLI's --dry-run / bad-flag
-// paths. No live network call here: the CLI is only ever driven with
-// --dry-run or an unrecognized flag, both of which touch nothing — a bare
-// invocation would use the REAL FIREBASE_CONFIG and must never run in a
-// test (the live run is 83-08's job).
+// Phase 83 Plan 07, rebuilt by Phase 91.2 Plan 04 (BOARD-31, BOARD-33, D-11,
+// D-13) around the names gate. Covers tools/boards-smoke.mjs against
+// src/browser/fakeBoardServer.js: the default probe (final rules: an admin
+// seeds the probe name, every create is bound to it, no client update, names
+// closed), the --transition probe (a transition-mode fake), the --function
+// probe (the boardName refusal path), the failure path with complete cleanup,
+// and the CLI. No live network call here: the CLI is only ever spawned with
+// --dry-run or an unrecognized flag, and main() is driven in-process with an
+// injected fake fetch, config and gcloud stand-in — a bare invocation would use
+// the REAL FIREBASE_CONFIG and a real gcloud login and must never run in a
+// test (the live run is 91.2-10's job).
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import url from "node:url";
@@ -18,14 +22,22 @@ import url from "node:url";
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
 import { buildRunDoc, deepKeyOf, legacyDeepKeyOf } from "../../src/browser/runDoc.js";
-import { rollHandle } from "../../src/browser/handles.js";
+import { BOARD_NAME_FN } from "../../src/browser/firebaseConfig.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import { resolveAdminAuth, createAdminApi } from "../../tools/boards-admin.mjs";
-import { smokeSummaries, runSmoke, transitionSummaries, runTransitionProbe } from "../../tools/boards-smoke.mjs";
+import {
+  smokeSummaries,
+  runSmoke,
+  transitionSummaries,
+  runTransitionProbe,
+  runFunctionProbe,
+  main,
+} from "../../tools/boards-smoke.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const TOOL_PATH = path.join(REPO_ROOT, "tools", "boards-smoke.mjs");
+const TOOL_SRC = fs.readFileSync(TOOL_PATH, "utf8").replace(/\r\n/g, "\n");
 
 const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey: `AIza${"A".repeat(35)}` });
 
@@ -44,32 +56,35 @@ function runTool(args) {
   return spawnSync(process.execPath, [TOOL_PATH, ...args], { cwd: REPO_ROOT, encoding: "utf8" });
 }
 
-function validHandle(seed = 0.15) {
-  return rollHandle(() => seed, null);
-}
-
-const NON_ADMIN_STEP_ORDER = [
-  "signup", "create-a", "resubmit-a", "create-b", "top-ten", "totals", "ranks",
-  "deny-bad-key", "deny-other-id", "deny-no-auth", "deny-non-handle-update", "deny-list-51",
-  "handle-rewrite", "erase", "account-deleted",
-];
-
-const ADMIN_STEP_ORDER = [
-  "signup", "create-a", "resubmit-a", "create-b", "top-ten", "totals", "ranks",
-  "deny-bad-key", "deny-other-id", "deny-no-auth", "deny-non-handle-update", "deny-list-51",
+const SMOKE_STEP_ORDER = [
+  "signup", "deny-unnamed-create", "seed-name", "create-a", "create-b", "resubmit-a",
+  "top-ten", "totals", "ranks",
+  "deny-bad-key", "deny-other-id", "deny-no-auth", "deny-wrong-name", "deny-update",
+  "deny-names-read", "deny-names-write", "deny-list-51",
   "ban", "admin-delete",
-  "handle-rewrite", "erase", "account-deleted",
+  "erase", "account-deleted",
 ];
 
 const TRANSITION_STEP_ORDER = [
-  "signup", "create-new-key", "create-legacy-key", "deny-third-key", "erase", "account-deleted",
+  "signup", "create-legacy", "deny-third-key", "seed-name", "create-named",
+  "deny-legacy-when-named", "erase", "account-deleted",
 ];
+
+const FUNCTION_STEP_ORDER = ["signup", "claim-unlinked", "release", "account-deleted"];
 
 async function makeAdmin(fake) {
   const auth = await resolveAdminAuth({ env: {}, execFn: () => FAKE_ADMIN_TOKEN });
   assert.equal(auth.ok, true);
   const api = createAdminApi({ projectId: VALID_CONFIG.projectId, fetchFn: fake.fetchFn, headers: auth.headers });
   return { api };
+}
+
+function assertBoardLeftAsFound(fake) {
+  assert.deepEqual(fake.docs(), []);
+  assert.deepEqual(fake.banned(), []);
+  assert.deepEqual(fake.users(), []);
+  assert.deepEqual(fake.names(), []);
+  assert.deepEqual(fake.overrides(), []);
 }
 
 /* ---------------- smokeSummaries ---------------- */
@@ -93,7 +108,7 @@ test("smokeSummaries: three frozen RunSummaries, each with a valid hash, each pa
     assert.ok(s.note.length > 0);
     assert.equal(Number.isInteger(s.when), true);
     assert.equal(s.when, 5000000);
-    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: validHandle(), version: s.version });
+    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: "Smoke Probe", version: s.version });
     assert.equal(built.ok, true, JSON.stringify(built.fails));
   }
 
@@ -112,16 +127,17 @@ test("smokeSummaries: object is frozen and re-calling with the same now() gives 
   assert.equal(Object.isFrozen(first), true);
 });
 
-/* ---------------- runSmoke: full client-only pass ---------------- */
+/* ---------------- runSmoke: the names-gate pass ---------------- */
 
-test("runSmoke: a full client-only pass against a fresh fake resolves ok:true in step order, with facts", async () => {
+test("runSmoke: a full pass against a fresh final-rules fake resolves ok:true in step order, with facts, and leaves nothing behind", async () => {
   const clock = clockBox(2000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const admin = await makeAdmin(fake);
   const logLines = [];
-  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: (l) => logLines.push(l) });
+  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: (l) => logLines.push(l), admin });
 
   assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
-  assert.deepEqual(result.steps.map((s) => s.name), NON_ADMIN_STEP_ORDER);
+  assert.deepEqual(result.steps.map((s) => s.name), SMOKE_STEP_ORDER);
   assert.equal(result.steps.every((s) => s.pass), true);
 
   assert.equal(result.facts.duplicateStatus, 400);
@@ -131,69 +147,129 @@ test("runSmoke: a full client-only pass against a fresh fake resolves ok:true in
 
   assert.equal(result.cleanup.erased, true);
   assert.equal(result.cleanup.accountDeleted, true);
-
-  // the board is left exactly as it was found
-  assert.deepEqual(fake.docs(), []);
-  assert.deepEqual(fake.banned(), []);
-  assert.deepEqual(fake.users(), []);
+  assert.equal(result.cleanup.nameRemoved, true);
+  assertBoardLeftAsFound(fake);
 });
 
 test("runSmoke: existsResponse 'denied' records duplicateStatus 403 and still passes every step", async () => {
   const clock = clockBox(2000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, existsResponse: "denied" });
-  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+  const admin = await makeAdmin(fake);
+  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {}, admin });
   assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
   assert.equal(result.facts.duplicateStatus, 403);
+  assertBoardLeftAsFound(fake);
 });
 
 test("runSmoke: existsResponse 'conflict' records duplicateStatus 409 and still passes every step", async () => {
   const clock = clockBox(2000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, existsResponse: "conflict" });
-  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+  const admin = await makeAdmin(fake);
+  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {}, admin });
   assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
   assert.equal(result.facts.duplicateStatus, 409);
 });
 
-/* ---------------- runSmoke: --with-admin ---------------- */
-
-test("runSmoke: with admin, ban/admin-delete run and the board ends empty", async () => {
-  const clock = clockBox(3000000);
+test("runSmoke: every probe run carries the admin-seeded probe name as its handle, never one read from the identity", async () => {
+  const clock = clockBox(2100000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
   const admin = await makeAdmin(fake);
-  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {}, admin });
-
+  const handles = new Set();
+  const spy = async (rawUrl, init) => {
+    if (typeof rawUrl === "string" && rawUrl.includes(":commit") && init && init.body) {
+      for (const w of JSON.parse(init.body).writes || []) {
+        const h = w.update && w.update.fields && w.update.fields.handle;
+        if (h && h.stringValue !== undefined) handles.add(h.stringValue);
+      }
+    }
+    return fake.fetchFn(rawUrl, init);
+  };
+  const result = await runSmoke({ fetchFn: spy, config: VALID_CONFIG, now: clock, log: () => {}, admin });
   assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
-  assert.deepEqual(result.steps.map((s) => s.name), ADMIN_STEP_ORDER);
-
-  assert.deepEqual(fake.docs(), []);
-  assert.deepEqual(fake.banned(), []);
-  assert.deepEqual(fake.users(), []);
+  assert.ok(handles.has("Smoke Probe"), "the seeded probe name is the handle");
+  assert.ok(handles.has("Smoke Impostor"), "deny-wrong-name posts a different handle");
+  for (const h of handles) assert.ok(!h.startsWith("@") || h === "@gravepouch", `unexpected rolled handle ${h}`);
 });
 
-/* ---------------- runSmoke: failure path + cleanup ---------------- */
+test("runSmoke: without an admin it refuses to run, touches no network, and says why", async () => {
+  const clock = clockBox(2200000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.steps, []);
+  assert.equal(result.error, "admin-required");
+  assert.deepEqual(fake.calls(), []);
+});
 
-test("runSmoke: a Firestore 503 after sign-up fails at create-a, names the step, and cleanup still runs", async () => {
+/* ---------------- runSmoke: failure paths + cleanup ---------------- */
+
+test("runSmoke: a Firestore 503 after sign-up fails at deny-unnamed-create, names the step, and cleanup still runs", async () => {
   const clock = clockBox(4000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const admin = await makeAdmin(fake);
   const flaky = async (rawUrl, init) => {
-    if (typeof rawUrl === "string" && rawUrl.startsWith("https://firestore.googleapis.com/")) {
+    if (typeof rawUrl === "string" && rawUrl.startsWith("https://firestore.googleapis.com/") && !(init && JSON.stringify(init.headers || {}).includes(FAKE_ADMIN_TOKEN))) {
       return { ok: false, status: 503, json: async () => ({ error: { code: 503, message: "UNAVAILABLE", status: "UNAVAILABLE" } }) };
     }
     return fake.fetchFn(rawUrl, init);
   };
 
-  const result = await runSmoke({ fetchFn: flaky, config: VALID_CONFIG, now: clock, log: () => {} });
+  const result = await runSmoke({ fetchFn: flaky, config: VALID_CONFIG, now: clock, log: () => {}, admin });
 
   assert.equal(result.ok, false);
-  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "create-a"]);
+  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "deny-unnamed-create"]);
   assert.equal(result.steps[0].pass, true);
   assert.equal(result.steps[1].pass, false);
 
-  // no run was ever created, no ban was ever set, and the anonymous account is gone
-  assert.deepEqual(fake.docs(), []);
-  assert.deepEqual(fake.banned(), []);
-  assert.deepEqual(fake.users(), []);
+  // no run was ever created, no name was seeded, and the anonymous account is gone
+  assertBoardLeftAsFound(fake);
   assert.equal(result.cleanup.accountDeleted, true);
+});
+
+test("runSmoke: a failure after the name was seeded still removes the names document, the runs and the account", async () => {
+  const clock = clockBox(4100000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const admin = await makeAdmin(fake);
+  let userCommits = 0;
+  const flaky = async (rawUrl, init) => {
+    const isUserCommit =
+      typeof rawUrl === "string" && rawUrl.includes(":commit") && !(init && JSON.stringify(init.headers || {}).includes(FAKE_ADMIN_TOKEN));
+    if (isUserCommit) {
+      userCommits += 1;
+      if (userCommits === 2) return { ok: false, status: 503, json: async () => ({ error: { code: 503, message: "UNAVAILABLE", status: "UNAVAILABLE" } }) };
+    }
+    return fake.fetchFn(rawUrl, init);
+  };
+
+  const result = await runSmoke({ fetchFn: flaky, config: VALID_CONFIG, now: clock, log: () => {}, admin });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "deny-unnamed-create", "seed-name", "create-a"]);
+  assert.equal(result.steps[3].pass, false);
+  assertBoardLeftAsFound(fake);
+  assert.equal(result.cleanup.nameRemoved, true);
+  assert.equal(result.cleanup.accountDeleted, true);
+});
+
+test("runSmoke: against a fake that lets an unnamed uid post (transition mode) deny-unnamed-create fails and cleanup removes what landed", async () => {
+  const clock = clockBox(4200000);
+  // a transition fake accepts only a 2.2.0 @handle from an unnamed uid, so the probe's named create is still refused:
+  // make the failure real by seeding the name BEFORE the probe via a stricter-than-final stand-in
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const admin = await makeAdmin(fake);
+  const permissive = async (rawUrl, init) => {
+    const res = await fake.fetchFn(rawUrl, init);
+    // pretend the live rules answered 200 to the unnamed create: the step must then fail
+    if (typeof rawUrl === "string" && rawUrl.includes(":commit") && !(init && JSON.stringify(init.headers || {}).includes(FAKE_ADMIN_TOKEN)) && res.status === 403 && !permissive.done) {
+      permissive.done = true;
+      return { ok: true, status: 200, json: async () => ({ writeResults: [{}], commitTime: new Date(clock()).toISOString() }) };
+    }
+    return res;
+  };
+  const result = await runSmoke({ fetchFn: permissive, config: VALID_CONFIG, now: clock, log: () => {}, admin });
+  assert.equal(result.ok, false);
+  assert.equal(result.steps[result.steps.length - 1].name, "deny-unnamed-create");
+  assertBoardLeftAsFound(fake);
 });
 
 /* ---------------- no tokens or the key ever leak ---------------- */
@@ -201,12 +277,14 @@ test("runSmoke: a Firestore 503 after sign-up fails at create-a, names the step,
 test("runSmoke: no step, log line or fact contains the API key, an id token or a refresh token", async () => {
   const clock = clockBox(6000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const admin = await makeAdmin(fake);
   const logLines = [];
-  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: (l) => logLines.push(l) });
+  const result = await runSmoke({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: (l) => logLines.push(l), admin });
 
   assert.equal(result.ok, true);
   const blob = `${JSON.stringify(result.steps)}\n${JSON.stringify(result.facts)}\n${logLines.join("\n")}`;
   assert.ok(!blob.includes(VALID_CONFIG.apiKey));
+  assert.ok(!blob.includes(FAKE_ADMIN_TOKEN));
   assert.ok(!/Bearer\s+\S+/.test(blob));
   assert.ok(!/\bidtok\d+/.test(blob));
   assert.ok(!/\brtok\d+/.test(blob));
@@ -217,9 +295,7 @@ test("runSmoke: no step, log line or fact contains the API key, an id token or a
 test("CLI --dry-run: exits 0, lists every step, prints the three summaries, never the key", () => {
   const res = runTool(["--dry-run"]);
   assert.equal(res.status, 0, res.stderr);
-  assert.ok(res.stdout.includes("signup"));
-  assert.ok(res.stdout.includes("erase"));
-  assert.ok(res.stdout.includes("ban"));
+  for (const name of SMOKE_STEP_ORDER) assert.ok(res.stdout.includes(name), name);
   assert.ok(res.stdout.includes("Smoke Probe"));
   assert.ok(!res.stdout.includes("AIza"));
 });
@@ -227,6 +303,8 @@ test("CLI --dry-run: exits 0, lists every step, prints the three summaries, neve
 test("CLI --bogus: usage + exit 2, no network", () => {
   const res = runTool(["--bogus"]);
   assert.equal(res.status, 2);
+  assert.ok(res.stdout.includes("--transition"));
+  assert.ok(res.stdout.includes("--function"));
 });
 
 test("CLI too many args: usage + exit 2", () => {
@@ -234,7 +312,115 @@ test("CLI too many args: usage + exit 2", () => {
   assert.equal(res.status, 2);
 });
 
-/* ---------------- Phase 87 (BOARD-28): the transition probe ---------------- */
+test("CLI --with-admin is gone (the admin seed is now always required): usage + exit 2", () => {
+  const res = runTool(["--with-admin"]);
+  assert.equal(res.status, 2);
+});
+
+/* ---------------- main(): admin up front, in-process, injected ---------------- */
+
+function captureOut() {
+  const lines = [];
+  return { lines, out: (l) => lines.push(String(l)) };
+}
+
+test("main(): without admin auth the default probe exits 2 with a message that the names gate needs the admin seed, and never calls the network", async () => {
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG });
+  const cap = captureOut();
+  const code = await main(["node", "boards-smoke.mjs"], {
+    config: VALID_CONFIG,
+    fetchFn: fake.fetchFn,
+    env: {},
+    execFn: () => {
+      throw new Error("no gcloud");
+    },
+    out: cap.out,
+  });
+  assert.equal(code, 2);
+  assert.ok(cap.lines.join("\n").toLowerCase().includes("admin seed"), cap.lines.join("\n"));
+  assert.deepEqual(fake.calls(), []);
+});
+
+test("main(): --transition without admin auth also exits 2 (it seeds a probe name too)", async () => {
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const cap = captureOut();
+  const code = await main(["node", "boards-smoke.mjs", "--transition"], {
+    config: VALID_CONFIG,
+    fetchFn: fake.fetchFn,
+    env: {},
+    execFn: () => {
+      throw new Error("no gcloud");
+    },
+    out: cap.out,
+  });
+  assert.equal(code, 2);
+  assert.deepEqual(fake.calls(), []);
+});
+
+test("main(): the default probe with an admin token exits 0 and prints every step", async () => {
+  const clock = clockBox(11000000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const cap = captureOut();
+  const code = await main(["node", "boards-smoke.mjs"], {
+    config: VALID_CONFIG,
+    fetchFn: fake.fetchFn,
+    now: clock,
+    env: {},
+    execFn: () => FAKE_ADMIN_TOKEN,
+    out: cap.out,
+  });
+  assert.equal(code, 0, cap.lines.join("\n"));
+  for (const name of SMOKE_STEP_ORDER) assert.ok(cap.lines.some((l) => l === `PASS ${name}`), name);
+  assertBoardLeftAsFound(fake);
+});
+
+test("main(): --transition exits 0 against a transition fake and 1 against a final-rules fake", async () => {
+  const clock = clockBox(12000000);
+  const transitionFake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, transition: true });
+  const capA = captureOut();
+  const ok = await main(["node", "boards-smoke.mjs", "--transition"], {
+    config: VALID_CONFIG,
+    fetchFn: transitionFake.fetchFn,
+    now: clock,
+    env: {},
+    execFn: () => FAKE_ADMIN_TOKEN,
+    out: capA.out,
+  });
+  assert.equal(ok, 0, capA.lines.join("\n"));
+  assertBoardLeftAsFound(transitionFake);
+
+  const finalFake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const capB = captureOut();
+  const bad = await main(["node", "boards-smoke.mjs", "--transition"], {
+    config: VALID_CONFIG,
+    fetchFn: finalFake.fetchFn,
+    now: clock,
+    env: {},
+    execFn: () => FAKE_ADMIN_TOKEN,
+    out: capB.out,
+  });
+  assert.equal(bad, 1);
+  assertBoardLeftAsFound(finalFake);
+});
+
+test("main(): --function needs no admin auth and exits 0 against the fake's boardName emulation", async () => {
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clockBox(13000000) });
+  const cap = captureOut();
+  const code = await main(["node", "boards-smoke.mjs", "--function"], {
+    config: VALID_CONFIG,
+    fetchFn: fake.fetchFn,
+    env: {},
+    execFn: () => {
+      throw new Error("no gcloud");
+    },
+    out: cap.out,
+  });
+  assert.equal(code, 0, cap.lines.join("\n"));
+  for (const name of FUNCTION_STEP_ORDER) assert.ok(cap.lines.some((l) => l === `PASS ${name}`), name);
+  assertBoardLeftAsFound(fake);
+});
+
+/* ---------------- Phase 87 + 91.2: the transition probe ---------------- */
 
 test("transitionSummaries: three frozen summaries on floor 4, distinct steps and hashes, all passing buildRunDoc", () => {
   const clock = clockBox(7000000);
@@ -245,7 +431,7 @@ test("transitionSummaries: three frozen summaries on floor 4, distinct steps and
     assert.equal(s.floor, 4);
     assert.equal(s.hash, runHash(s));
     hashes.add(s.hash);
-    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: validHandle(), version: s.version });
+    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: "Smoke Probe", version: s.version });
     assert.equal(built.ok, true, JSON.stringify(built.fails));
   }
   assert.deepEqual([a.steps, b.steps, c.steps], [321, 123, 77]);
@@ -255,14 +441,15 @@ test("transitionSummaries: three frozen summaries on floor 4, distinct steps and
 
 test("runTransitionProbe: against a transition-mode fake every step passes and the board ends empty", async () => {
   const clock = clockBox(8000000);
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, acceptLegacyDeepKey: true });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, transition: true });
+  const admin = await makeAdmin(fake);
   const seen = [];
   const inner = fake.fetchFn;
   const spy = async (rawUrl, init) => {
     if (typeof rawUrl === "string" && rawUrl.includes(":commit") && init && init.body) seen.push(JSON.parse(init.body));
     return inner(rawUrl, init);
   };
-  const result = await runTransitionProbe({ fetchFn: spy, config: VALID_CONFIG, now: clock, log: () => {} });
+  const result = await runTransitionProbe({ fetchFn: spy, config: VALID_CONFIG, now: clock, log: () => {}, admin });
 
   assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
   assert.deepEqual(result.steps.map((s) => s.name), TRANSITION_STEP_ORDER);
@@ -270,38 +457,88 @@ test("runTransitionProbe: against a transition-mode fake every step passes and t
   assert.deepEqual(result.facts.missingIndexes, []);
   assert.equal(result.cleanup.erased, true);
   assert.equal(result.cleanup.accountDeleted, true);
-  assert.deepEqual(fake.docs(), []);
-  assert.deepEqual(fake.users(), []);
+  assert.equal(result.cleanup.nameRemoved, true);
+  assertBoardLeftAsFound(fake);
 
-  // the keys the probe wrote: the 2.3 formula, the exact 2.2.0 formula, and a third value
+  // the keys and handles the probe wrote: the exact 2.2.0 formula, the 2.3 formula, and a third value
   const { a, b, c } = transitionSummaries(clock);
   const keys = seen
     .flatMap((body) => body.writes || [])
     .map((w) => w.update && w.update.fields && w.update.fields.deepKey)
     .filter(Boolean)
     .map((f) => Number(f.integerValue));
-  assert.ok(keys.includes(deepKeyOf(a)));
-  assert.ok(keys.includes(legacyDeepKeyOf(b)));
+  assert.ok(keys.includes(legacyDeepKeyOf(a)));
+  assert.ok(keys.includes(deepKeyOf(b)));
   assert.ok(keys.includes(deepKeyOf(c) + 1));
   assert.notEqual(deepKeyOf(c) + 1, legacyDeepKeyOf(c));
+  const handles = seen
+    .flatMap((body) => body.writes || [])
+    .map((w) => w.update && w.update.fields && w.update.fields.handle)
+    .filter(Boolean)
+    .map((f) => f.stringValue);
+  assert.ok(handles.includes("@mossjaw"), "the unnamed legacy create");
+  assert.ok(handles.includes("Smoke Probe"), "the named create");
 });
 
-test("runTransitionProbe: against the default (final-rules) fake it fails at create-legacy-key and still cleans up", async () => {
+test("runTransitionProbe: against the default (final-rules) fake it fails at create-legacy and still cleans up", async () => {
   const clock = clockBox(9000000);
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
-  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+  const admin = await makeAdmin(fake);
+  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {}, admin });
 
   assert.equal(result.ok, false);
-  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "create-new-key", "create-legacy-key"]);
-  assert.equal(result.steps[2].pass, false);
-  assert.deepEqual(fake.docs(), []);
-  assert.deepEqual(fake.users(), []);
+  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "create-legacy"]);
+  assert.equal(result.steps[1].pass, false);
+  assertBoardLeftAsFound(fake);
   assert.equal(result.cleanup.erased, true);
   assert.equal(result.cleanup.accountDeleted, true);
 });
 
-test("CLI --transition is accepted as a flag (dry path is not reachable without network, so only the usage text is checked)", () => {
-  const res = runTool(["--bogus"]);
-  assert.equal(res.status, 2);
-  assert.ok(res.stdout.includes("--transition"));
+test("runTransitionProbe: without an admin it refuses to run and touches no network", async () => {
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, log: () => {} });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "admin-required");
+  assert.deepEqual(fake.calls(), []);
+});
+
+/* ---------------- 91.2: the function probe ---------------- */
+
+test("runFunctionProbe: against the fake's boardName emulation claim-unlinked is refused NOT_LINKED, release answers ok, the account is cleaned up", async () => {
+  const clock = clockBox(14000000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const result = await runFunctionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {} });
+  assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
+  assert.deepEqual(result.steps.map((s) => s.name), FUNCTION_STEP_ORDER);
+  const claim = result.steps.find((s) => s.name === "claim-unlinked");
+  assert.equal(claim.detail.reason, "refused");
+  assert.equal(claim.detail.code, "NOT_LINKED");
+  assert.equal(result.cleanup.accountDeleted, true);
+  assertBoardLeftAsFound(fake);
+});
+
+test("runFunctionProbe: a function that answers 200 to an anonymous claim fails the probe, and the account is still removed", async () => {
+  const clock = clockBox(15000000);
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
+  const lax = async (rawUrl, init) => {
+    if (rawUrl === BOARD_NAME_FN.url && init && init.method === "POST" && String(init.body).includes('"claim"')) {
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => ({ ok: true, name: "Anyone", overridden: false, stamped: 0, adopted: 0 }), text: async () => "" };
+    }
+    return fake.fetchFn(rawUrl, init);
+  };
+  const result = await runFunctionProbe({ fetchFn: lax, config: VALID_CONFIG, now: clock, log: () => {} });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "claim-unlinked"]);
+  assert.equal(result.cleanup.accountDeleted, true);
+  assert.deepEqual(fake.users(), []);
+});
+
+/* ---------------- the tool's own source ---------------- */
+
+test("the tool names neither the rolled-handle module nor a rolled handle roll, and posts creates itself, not through submitRun", () => {
+  assert.equal(TOOL_SRC.includes("handles.js"), false);
+  assert.equal(TOOL_SRC.includes("rollHandle"), false);
+  assert.equal(TOOL_SRC.includes("submitRun"), false, "from 91.2-05 on submitRun needs a Play Games session the smoke can never have");
+  assert.ok(TOOL_SRC.includes("createRunCommit"));
+  assert.ok(TOOL_SRC.includes("createNameClient"));
 });
