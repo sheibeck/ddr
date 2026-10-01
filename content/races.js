@@ -58,9 +58,10 @@ export const RACES = {
     note: "Heals twice as fast, learns half as quickly, and refuses to take Magic Users on as Joiners.",
   },
   "Fridgian": {
-    // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer.
+    // hide: flat damage soaked from every blow, read by applyFoeDamageToPlayer
+    // and (Phase 91 plan 09, Q7 A) by applyFoeDamageToMember for a Joiner of the race.
     size: "Human", upkeep: 4, noArmor: true, frenzy: true, slow: true, hide: 2,
-    note: "Never wears armour, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
+    note: "Never wears armour, never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at -1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
   },
   "Troll": {
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,

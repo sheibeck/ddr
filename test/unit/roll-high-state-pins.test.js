@@ -270,7 +270,17 @@ const PINNED = {
   // 150/true/2 -> 313/true/3; deep-8 109/true/9 -> 300/false/11. "solo-1", "solo-thief-pilfer", "party-1",
   // "party-fighter-knight" and "deep-14" re-measured byte-identical. Only these three labels were pasted,
   // by hand, from the live pin run (each hashed identically twice); `save` was never run.
-  "solo-1": { actions: 253, dead: true, depth: 3, hash: "47082481220cb07ea9857d986d10ca090337de206997be53411bf393261fa91c" },
+  // "solo-1" re-pinned (Phase 91 plan 09, IDENT-20, 2026-10-01): the Fridgian frenzy is a d6 (a 4-6)
+  // where it was a d8 (the top five faces), at the same draw position. This run's hero is a Fridgian
+  // Court Mage. Traced with a per-bot-step event trace (playRun's onStep) against an extracted tree
+  // of the plan base b33a4f72: the two runs match on every action and every event payload through
+  // bot step 106; the FIRST divergence is step 107, the hero's attack on a China Wolf: the base's
+  // frenzy die rolled a 4 on the d8 (a frenzy, two missed swings), the same stream draw now maps to a
+  // 3 or less on the d6 (no frenzy, one swing), so the stream moves on from there. 253/dead/3 ->
+  // 400/alive/5. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
+  // pins` (each hashed identically twice); `save` was never run. The six other labels re-measured
+  // byte-identical (none has a Fridgian hero or Joiner).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "9d764bd3b45ddf52f79413f0da07ef21e03c4cefaa70e415ccc3a0e09553e0ca" },
   // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
   // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
   // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
@@ -392,7 +402,16 @@ const PINNED = {
   // event differs. The other seven labels except "party-fighter-knight" (below) re-measured
   // byte-identical. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
   // pins` (each hashed identically twice); `save` was never run.
-  "party-1": { actions: 372, dead: true, depth: 3, hash: "f24df6a58db5056ae63950787e4e6ab5d6de23caff4d468b9360b8176f4d6659" },
+  // "party-1" re-pinned (Phase 91 plan 09, IDENT-20, 2026-10-01): the hero is a Fridgian Court Mage
+  // beside a Human Joiner (Aldric Corrin), and the frenzy is now a d6 (a 4-6) where it was a d8, at the
+  // same draw position. Traced the same way against the plan base b33a4f72: the runs match through
+  // bot step 233 on every action and every event payload apart from the frenzy event's own roll and
+  // die (roll 8 of 8 against roll 6 of 6, both a frenzy); the FIRST behavioural divergence is step
+  // 234, the hero's attack on Hair: the base frenzied (two swings), this run's d6 does not (one
+  // swing), and the stream moves on. 372/dead/3 -> 257/dead/2. The other seven labels re-measured
+  // byte-identical. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
+  // pins` (each hashed identically twice); `save` was never run.
+  "party-1": { actions: 257, dead: true, depth: 2, hash: "e8b49922a03f73346e56d4bad2d516ebc10fa8ec96fc35afd3ac6afdd72681d8" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a

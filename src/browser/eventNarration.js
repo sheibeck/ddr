@@ -1542,7 +1542,7 @@ export const EVENT_NARRATION = {
   // capped heal names its roll and says full; a heal at full says so.
   healed: (e) =>
     gainOf(e, e.amount) > 0
-      ? `<span class="hit">+${gainOf(e, e.amount)} hp</span>${e.spell ? ` from ${e.spell}` : ""}${cappedNote(gainOf(e, e.amount), e.amount)}.`
+      ? `<span class="hit">+${gainOf(e, e.amount)} hp</span>${e.spell ? ` from ${e.spell}` : ""}${cappedNote(gainOf(e, e.amount), e.amount)}.${e.doubled ? ` (${e.doubled}: twice the dose, as promised.)` : ""}`
       : `<span class="miss">${e.spell ?? "Healing"}: nothing to restore.</span> You were already at full hp.`,
   // Phase 89 (ITEM-01, ITEM-06): the Poplar Staff heals the whole party. One
   // line names every body healed, hero first then party order, with the hp each

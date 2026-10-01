@@ -7679,3 +7679,65 @@ Cutthroat, Troll, Elven, Dwarven and Wilmsry price and Joiner rows read `fixed e
 Elves, Dwarves, Trolls and Pickpockets (Q5 A, Q8 A, doubled Troll prices), a Pickpocket's gold and items moved
 (Q1 B, IDENT-18) and a Cutthroat with a Joiner now loses it one descent in ten. The user's rule: no bot runs before
 the milestone's final check.
+
+### Phase 91 plan 09: the Fridgian frenzy and the audit's engine rulings (IDENT-20, IDENT-11, IDENT-12)
+
+Measured against the plan base `b33a4f72` (the same scenes run before and after, an extracted tree of the base against this
+one), then declared. Four rulings land together: the Fridgian frenzy is a 4 to 6 on a d6 where it was the top five faces of a d8
+(IDENT-20: `combat.js#playerStrike`, `rollCheck(rng, 6, atLeastFor(3, 6))` at the old d8's draw position, so one draw either way and
+every later draw keeps its place; Q6 A, a first swing that kills still loses the frenzy swing, is the loop's existing rule); a
+Fridgian Joiner's hide soaks 2 of every blow (Q7 A: `applyFoeDamageToMember`); a found Healing potion heals a Wilmsry double
+(Q4 A: `items.js#useItem`, one die either way); and a won parley's experience splits with Joiners like a kill's (the orchestrator's
+amendment: `combat.js#partyXpShares`, arithmetic after the draws, a solo hero unchanged). Q3 B (a Cleric's scroll still casts) and
+Q2 A (no Cleric HP rule) change no engine and are pinned only. `test/parity/prototype-master.js.txt` is untouched.
+
+**Parity: 66 of 66 pass, with ONE declared record updated.** `node --test "test/parity/**/*.test.js"` exits 0. The only parity
+scenarios with a Fridgian hero that strike are `combat#lose` (seed 14, a Fridgian Soldier) and, without a strike, `combat#flee`
+(seed 17), `encounters#trap` (seed 1) and `magic#potion` (seed 1, the stock potion, not a found one); the Wilmsry scenarios
+(`combat#parley` seed 303 and `encounters#chest` seed 2) have no Joiner and drink no found potion, so they are byte-identical.
+
+1. `action-script.combat.json` `lose` `divergence` (action-path, seed 14, a Fridgian Soldier): `after` wp 72 to 73, sp 10 to 6
+   (kills 2, rations 11 and `stateAfter.dead` false unchanged); the `before` (the frozen prototype) is untouched. Measured by
+   replaying the scenario's own action script against the base and the edited engine: attacks 1 and 2 frenzy on both (only the
+   payload reads a d6, rolls 7 to 6 and 6 to 4), attack 3 is where they part: the base's draw maps to a 4 on the d8 and frenzies (two
+   swings, one `struckByFoe`), the same draw is a 3 or less on the d6 (one swing, the foe misses), so the stream shifts and the
+   hero fells the second Shriek at attack 4 for 3 experience (the base: 7) with one more hit point. `phase` gained `+91` and
+   `requirements` gained `IDENT-20`; the rationale gained a Phase 91 plan 09 paragraph.
+
+**State pins: 2 of 8 moved, the other six byte-identical. Save-compat: unchanged.** `node tools/roll-high-baseline.mjs pins` was run
+(each label hashed identically twice); only the moved labels were pasted, by hand, with a dated comment; `save` was never run, and
+`test/unit/roll-high-save-compat.test.js` passes with no `expected` change. Both moved runs have a Fridgian Court Mage hero:
+
+2. `test/unit/roll-high-state-pins.test.js` `solo-1` (seed 101, a Fridgian Court Mage): 253 actions / dead / depth 3 to 400 /
+   alive / depth 5 (hash `4708...1c` to `9d76...ca`). Traced with a per-bot-step event trace against the extracted base: byte-identical
+   through bot step 106; the first divergence is step 107, an attack on a China Wolf: the base frenzied (a 4 on the d8, two swings),
+   the same draw is a 3 or less on the d6 (no frenzy, one swing).
+3. `party-1` (seed 505, a Fridgian Court Mage beside the Human Joiner Aldric Corrin): 372 / dead / depth 3 to 257 / dead / depth 2
+   (hash `f24d...59` to `e8b4...d8`). Identical through step 233 apart from the frenzy event's own roll and die (8 of 8 against 6
+   of 6, both frenzies); the first behavioural divergence is step 234, an attack on Hair: the base frenzied, the d6 does not.
+
+Moved pins and scripted tests, each re-recorded alone (before to after):
+
+4. `test/unit/condition-roll-mods.test.js` `STRIKE_DIGESTS.frenzyDazed` (the one Fridgian strike scenario, eight real-stream seeds):
+   `c0da3841` to `28fc9673`; the other ten digests are byte-identical.
+5. `test/unit/foe-turn-draw-count.test.js` FULL_FIGHTS seed 14 (a Fridgian hero, Beasts): total draws 36 to 33 (attacks 4 and the
+   roster unchanged); the other six rows are byte-identical (seed 17, the other Fridgian, stays 70 / 9). The title's totals read
+   12/33/70/29/20/81/38.
+6. `test/unit/combat.test.js`, `test/unit/identity-race.test.js` and `test/unit/identity-contract.test.js` (Fridgian): the scripted
+   frenzy draw 5 (a roll of 4 on the d8, a frenzy) becomes 1 (a roll of 6 on the d6, a frenzy), so the scripted fights are the
+   same fights; the contract name no longer says "never wastes its second swing".
+7. `test/unit/joiner-armour-soak.test.js` "edge (empty): a Joiner with no armour ...": the Fridgian Joiner's 7-damage blow leaves 25
+   of 30 hit points where it left 23 (the hide soaks 2); the Human cases still leave 23.
+8. `test/unit/identity-footer.test.js`: the d8 frenzy pin becomes the d6 one (`rollCheck(rng, 6, atLeastFor(3, 6))`, the footer
+   line "each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit)").
+
+**Not moved, by design.** Every other scripted test of the Wilmsry potion, the heal events, the kill split, `parleyWon` and the
+solo parley (`parley.test.js`, `parley-rewards.test.js`, `parley-carveout.test.js`) passes unchanged: a solo hero has one share
+and a found Healing potion for any other race is untouched. The determinism suite (32 tests) and the roll-high guard pass
+unchanged. The bot readouts and fit sweeps (Phase 92 runs them once) are not run: the Fridgian's frenzy odds fell from five in eight
+to one in two, which moves every Fridgian run.
+
+**Text and ledger.** `docs/narrative-pass/why/91-09.json` holds three rows (the Fridgian footer, `RACE_NOTE.Fridgian` and
+`RACES.Fridgian.note`), each `after` read from the live corpus; the doubled-potion suffix on the `healed` Oracle and rail lines
+shows only on the new `doubled` payload, so no corpus line changed. `node tools/narrative-review.mjs` regenerated the pages and
+`--check` is in sync.

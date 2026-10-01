@@ -1,0 +1,39 @@
+[
+  {
+    "key": "bank:IDENTITY_FOOTER.race.Fridgian",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Fridgian footer — src/browser/identityFooter.js#RACE_FIELD_LINES.frenzy",
+    "before": "Good: five times in eight, a frenzy adds a second swing that never wastes itself on a corpse; thick hide soaks 2 from every blow. Bad: can never wear armour; never wins initiative.",
+    "after": "Good: each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit); thick hide soaks 2 from every blow. Bad: can never wear armour; never wins initiative.",
+    "reasons": [
+      "accurate",
+      "fact"
+    ],
+    "why": "IDENT-20: the frenzy is a 4 to 6 on a d6 now (the engine rolls rollCheck(rng, 6, atLeastFor(3, 6)) once per strike), and its second swing is one step narrower than your own, which the old line never said. The corpse promise is gone because nothing in the engine keeps it."
+  },
+  {
+    "key": "bank:RACE_NOTE.Fridgian",
+    "surface": "blurbs",
+    "trigger": "the roller's Fridgian blurb — content/flavor.js#RACE_NOTE",
+    "before": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Five times in eight you lose the plot entirely and swing twice at whatever is nearest — and unlike the stories, neither swing is ever wasted on something already dead. The Game Master has notes about you.",
+    "after": "You will not wear armour, though your hide alone soaks two points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (-1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
+    "reasons": [
+      "accurate",
+      "identity",
+      "joke"
+    ],
+    "why": "IDENT-20 and Q6 A: the frenzy odds are a d6 4 to 6 (half the time), the second swing is wilder (-1 to hit), and a first swing that kills its foe costs the second swing. The line that praised the old corpse rule is retired; the new last clause keeps the Fridgian's talent for wasting its own effort."
+  },
+  {
+    "key": "content:RACES.Fridgian.note",
+    "surface": "blurbs",
+    "trigger": "the Fridgian row's own note — content/races.js#RACES.Fridgian.note",
+    "before": "Never wears armour, strikes last, frenzies into a second wild swing that never wastes itself on a corpse; thick hide soaks 2 from every blow.",
+    "after": "Never wears armour, never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at -1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+    "reasons": [
+      "accurate",
+      "fact"
+    ],
+    "why": "IDENT-20 and Q6 A: the row's note states the d6 rule, the narrower second swing, the lost swing on a kill, no armour, the hide and never striking first, with the corpse clause removed."
+  }
+]

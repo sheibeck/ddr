@@ -174,7 +174,8 @@ test("edge (empty): a Joiner with no armour (AR 0, 0 durability, a Fridgian) dra
     const { events } = blow(state, foe, member, 0);
     assert.deepEqual(types(events), ["memberStruck"], JSON.stringify(over));
     assert.equal(events[0].soak, undefined);
-    assert.equal(member.wp, 23);
+    // Phase 91 plan 09 (IDENT-20, Q7 A): the Fridgian Joiner's hide soaks 2 of the 7.
+    assert.equal(member.wp, over.race === "Fridgian" ? 25 : 23, JSON.stringify(over));
   }
 });
 
@@ -410,4 +411,42 @@ test("memberStruck states the failed soak die when one was drawn; a bare payload
   for (const e of [soakPayload({ member: "Brom" }), { type: "armorDestroyed", member: "Brom" }, { type: "damageHalved", member: "Brom" }]) {
     assert.equal(/undefined|NaN/.test(renderEvent(e)), false, e.type);
   }
+});
+
+// ─── Phase 91 plan 09 (IDENT-20, Q7 A): a Fridgian Joiner's hide ─────────────
+//
+// User 2026-09-30 (Q7 A): a Joiner's own race traits that protect its body
+// apply like the hero's. A Fridgian's thick hide soaks 2 from every landed
+// blow, right after Hardiness, floor 1. The Joiner is armourless (a Fridgian
+// wears none), so no soak die is drawn; the main stream is never touched.
+
+const noArmour = (over = {}) => joinerSheet({ ar: 0, armorWP: 0, armorMax: 0, armorMin: 0, armor: "Nothing", ...over });
+
+test("IDENT-20 hide: a foe's 7-damage hit on an unarmoured Fridgian Joiner takes 5 HP; a Human Joiner takes 7", () => {
+  for (const [race, taken] of [["Fridgian", 5], ["Human", 7]]) {
+    const { state, foe, member } = scene({ sheet: noArmour({ race }) });
+    const { events, res } = blow(state, foe, member, 0);
+    assert.deepEqual(types(events), ["memberStruck"], race);
+    assert.equal(member.wp, 30 - taken, race);
+    assert.equal(res.applied, taken, race);
+  }
+});
+
+test("IDENT-20 hide: it stacks with Hardiness (7 -> 4 -> 2) and floors at 1", () => {
+  const hardy = scene({ sheet: noArmour({ race: "Fridgian", skills: { Hardiness: 1 } }) });
+  const a = blow(hardy.state, hardy.foe, hardy.member, 0);
+  assert.equal(a.res.applied, 2, "max(1, max(1, 7-3) - 2) = 2");
+  const small = scene({ sheet: noArmour({ race: "Fridgian" }) });
+  const b = blow(small.state, small.foe, small.member, 0, { dmg: 2 });
+  assert.equal(b.res.applied, 1, "a blow of 2 still costs 1");
+});
+
+test("IDENT-20 hide (edge, empty): a Joiner of a race with no hide soaks nothing extra, and a missing sheet reads as a blank body", () => {
+  for (const race of ["Human", "Elven", "Dwarven", "Wilmsry", "Troll"]) {
+    const { state, foe, member } = scene({ sheet: noArmour({ race }) });
+    assert.equal(blow(state, foe, member, 0).res.applied, 7, race);
+  }
+  const { state, foe, member } = scene({ sheet: noArmour() });
+  state.party = [];
+  assert.equal(blow(state, foe, member, 0).res.applied, 7, "no sheet, no hide");
 });

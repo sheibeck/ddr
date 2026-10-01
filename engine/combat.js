@@ -716,11 +716,19 @@ export function playerStrike(state, rng, events = []) {
   // rng.d(10) draw whenever a Fridgian frenzies with a dead foe present; the
   // sole parity consequence is the declared combat/lose (seed 14) divergence.
   let frenzyFired = false;
-  // Phase 73 (ROLL-05): the frenzy trigger reads roll-high through the ONE
-  // check helper — 5 of the d8's 8 faces still win (atLeastFor(5, 8) = 4),
-  // the same odds as the old `rng.d(8) <= 5`, one draw, same position.
+  // IDENT-20 (Phase 91 plan 09, user 2026-09-30): "each swing, a 4-6 on a d6
+  // gives a second swing". ONE check per strike action, through the ONE
+  // roll-high check helper: the top three faces of a d6 win (atLeastFor(3, 6)
+  // = 4: a 4, 5 or 6 frenzies, a 1, 2 or 3 does not). It is a changed die at
+  // the old d8's draw position, not a new roll (one draw either way, so every
+  // later draw of the strike keeps its place) and needs no derived stream.
+  // The old "never wastes itself on a corpse" promise is gone from the text.
+  // Q6 A (user 2026-09-30): the frenzy swing is the SECOND pass of the attack
+  // loop below, which runs only while `t.alive`, so a first swing that kills
+  // its foe ends the strike: the second swing is lost, it does not carry to
+  // the next live foe. The frenzy never adds a third swing (`max(attacks, 2)`).
   if (R.frenzy) {
-    const frenzyCheck = rollCheck(rng, 8, atLeastFor(5, 8));
+    const frenzyCheck = rollCheck(rng, 6, atLeastFor(3, 6));
     if (frenzyCheck.ok) {
       attacks = Math.max(attacks, 2);
       frenzyFired = true;
@@ -1107,6 +1115,19 @@ export function foeSpoils(state, f, rng, events = [], opts = {}) {
 }
 
 /**
+ * partyXpShares(state) — the number of ways an experience award splits: the hero
+ * plus every Joiner still on its feet in the fight (`combat.allies` with hp
+ * left), at least 1. The ONE rule killFoe's kill split and parley's won-fight
+ * split both read (Phase 91 plan 09, orchestrator amendment, user 2026-10-01:
+ * a won parley's experience is split with Joiners exactly as a kill's is). Pure,
+ * no rng; 1 with no Joiner, so a solo hero's award is untouched.
+ */
+export function partyXpShares(state) {
+  const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
+  return 1 + liveMembers.length;
+}
+
+/**
  * killFoe(state, f, rng, events) — a foe's death: lives (kill-twice), the
  * skill-point formula (d6 x level x mul, with spMul/Barbarian/Apprentice
  * modifiers), coin via gainWilmst, treasure via rollTreasureItem, offered
@@ -1148,8 +1169,7 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
   // (i.e. live members are present). With no members `shares === 1` and
   // `heroShare === gained` exactly, so both `c.sp` and the `foeKilled` event
   // are byte-identical to today.
-  const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
-  const shares = 1 + liveMembers.length;
+  const shares = partyXpShares(state);
   const heroShare = shares > 1 ? Math.round(gained / shares) : gained;
   // Phase 54 (BAND-02, USER RULING D): HERO_SP_SCALE paces every SP grant —
   // identity (1) is a no-op here.
@@ -2180,7 +2200,16 @@ export function parley(state, rng, events = []) {
     // parley pays the FULL sum a kill of every live foe pays (never doubled:
     // a foe already slain paid when it died and is not live here).
     const talked = liveFoes(state);
-    const combatEquivalent = talked.reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0); // roll:amount
+    // Phase 91 plan 09 (orchestrator amendment, user 2026-10-01): the experience is
+    // SPLIT with the Joiners the way a kill's is (killFoe: each foe's award is
+    // divided by the hero plus every live Joiner, rounded per foe, and the hero keeps
+    // its share; a Joiner's share is discarded). A solo hero has one share, so its
+    // pay is the plain sum, byte-identical to before. The draws are unchanged.
+    const shares = partyXpShares(state);
+    const combatEquivalent = talked.reduce((sum, f) => {
+      const gained = killSpFor(c, f, rng.d(6)); // roll:amount
+      return sum + (shares > 1 ? Math.round(gained / shares) : gained);
+    }, 0);
     const sp = heroSpFor(Math.round(combatEquivalent));
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });
@@ -4081,9 +4110,9 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
  * round, the foe's index, the swing and the Joiner's party index, so the
  * main stream never moves (a solo fight draws exactly what it drew before).
  *
- * Hero-only and NOT part of this helper: the Fridgian hide (not armour, not
- * items; Phase 91's to decide for a Joiner). Since Phase 90 plan 10 (Q10 A)
- * Hardiness IS part of it: -3 per landed blow, floor 1, ahead of the Pendant.
+ * Since Phase 91 plan 09 (IDENT-20, Q7 A) the Fridgian hide IS part of it
+ * (-2 per landed blow, floor 1, right after Hardiness). Since Phase 90 plan 10
+ * (Q10 A) Hardiness is part of it: -3 per landed blow, floor 1, ahead of the Pendant.
  * Since Phase 91 plan 07 (IDENT-17) a Joiner's own sung ward is too: an armed
  * Bubble mirror (`member.ward.mirror`) reflects the whole blow first, a Shield
  * pool (`member.ward.pool`) eats what is left after the Pendant and Brace, both
@@ -4121,9 +4150,18 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
   // from every landed blow that reaches this pipeline (a swing or a foe
   // ability's bolt), floor 1, BEFORE its Pendant and Brace, the hero's order
   // (applyFoeDamageToPlayer). A zero-damage blow (the round ceiling spent) stays
-  // zero. The Fridgian hide for a Joiner stays Phase 91's (IDENT-20). Pure, no
-  // draw.
+  // zero. Pure, no draw.
   if (sheet && dmg > 0 && skill(sheet, "Hardiness")) dmg = Math.max(1, dmg - 3);
+  // Phase 91 plan 09 (IDENT-20, Q7 A, user 2026-09-30: a Joiner's own race
+  // traits that protect its body apply like the hero's; Phase 89's hand-off
+  // "a Joiner gets no Hardiness or Fridgian hide soak"): a Fridgian Joiner's
+  // thick hide soaks `RACES.Fridgian.hide` (2) from every landed blow that
+  // reaches this pipeline, floor 1, right after Hardiness and before the
+  // Pendant and Brace, exactly where applyFoeDamageToPlayer reads the hero's.
+  // A race with no `hide` soaks nothing extra. A zero-damage blow (the round
+  // ceiling spent) stays zero. Pure, no draw.
+  const joinerHide = sheet ? (RACES[sheet.race] || {}).hide : 0;
+  if (joinerHide && dmg > 0) dmg = Math.max(1, dmg - joinerHide);
 
   // The Joiner's own armed Pendant of Fortitude: one landed blow, halved.
   if (body.halfNext && dmg > 0) {
