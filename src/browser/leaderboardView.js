@@ -29,10 +29,9 @@
 // (CONTEXT area 2, "No per-option counts on LEADERBOARD").
 //
 // Avatar initials: YOUR DEAD rows (hero names) use the ported mock rule
-// (initialsOf); LEADERBOARD rows (handles) use handleInitials, which splits
-// the handle against content/handles.js's HANDLE_FIRST/HANDLE_SECOND tables
-// (one initial per handle word), falling back to the first two letters when
-// a handle does not split.
+// (initialsOf); LEADERBOARD rows (the poster's Play Games name, or a legacy
+// 2.2.0 @handle) use nameInitials, one generic rule for both (Phase 91.2,
+// D-04, D-10).
 //
 // Phase 87 (BOARD-29): every row also carries `who` (the expanded detail's
 // plain-text "Dwarven · Wizard (Magic User)"), `race` / `sub` (a known
@@ -48,7 +47,6 @@ import { RACES } from "../../content/races.js";
 import { CLASSES } from "../../content/classes.js";
 import { ROMAN } from "../../content/misc-tables.js";
 import { CAUSE_TEXT } from "../../content/epitaphs.js";
-import { HANDLE_FIRST, HANDLE_SECOND } from "../../content/handles.js";
 import { rankKeyOf, BOARD_STATS } from "./runDoc.js";
 
 const C = LEADERBOARD_COPY;
@@ -96,24 +94,31 @@ export function ordinal(n) {
 }
 
 /**
- * handleInitials(handle) — one initial per handle word (CONTEXT area 4):
- * strips a leading "@", then tries every split point against
- * content/handles.js's HANDLE_FIRST/HANDLE_SECOND tables (the first split
- * whose two halves are both known words wins) and returns their first
- * letters upper-cased. A handle that does not split this way falls back to
- * its own first two letters, upper-cased. "" -> "?". Never throws.
+ * nameInitials(name) — the board avatar's initials for any display name (a
+ * Play Games name or a legacy @handle): strip a leading "@", split on spaces,
+ * underscores, dots, hyphens and any other non-letter, non-digit run, on
+ * camelCase humps and on letter/digit boundaries; the first letters of the
+ * first two parts, upper-cased. A single part gives its first two letters.
+ * Nothing usable gives "?". Never throws.
  */
-export function handleInitials(handle) {
-  const s = String(handle ?? "").replace(/^@/, "");
-  if (s.length === 0) return "?";
-  for (let i = 1; i < s.length; i++) {
-    const first = s.slice(0, i);
-    const second = s.slice(i);
-    if (HANDLE_FIRST.includes(first) && HANDLE_SECOND.includes(second)) {
-      return (first[0] + second[0]).toUpperCase();
+export function nameInitials(name) {
+  const s = String(name ?? "").replace(/^@/, "");
+  const parts = [];
+  for (const piece of s.split(/[^\p{L}\p{N}]+/u)) {
+    if (piece === "") continue;
+    const spaced = piece
+      .replace(/(?<=\p{Ll})(?=\p{Lu})/gu, " ")
+      .replace(/(?<=\p{Lu})(?=\p{Lu}\p{Ll})/gu, " ")
+      .replace(/(?<=\p{L})(?=\p{N})/gu, " ")
+      .replace(/(?<=\p{N})(?=\p{L})/gu, " ");
+    for (const part of spaced.split(" ")) {
+      if (part !== "") parts.push(Array.from(part));
     }
   }
-  return (s[0] + (s[1] || "")).toUpperCase();
+  if (parts.length === 0) return "?";
+  const first = parts[0][0];
+  const second = parts.length > 1 ? parts[1][0] : parts[0][1] || "";
+  return (first + second).toUpperCase();
 }
 
 // ─── content-order lists ─────────────────────────────────────────────────────
@@ -397,7 +402,7 @@ function buildBoardRow(doc, index, isPinned, uid, stat, openKey, pinnedRank, tzO
     filterLabel: filterLabelOf(doc),
     stats: statChips(doc),
     dateLine: dateLineOf(doc, tzOffsetMinutes),
-    avatar: { initials: handleInitials(doc.handle), bg: avatarColour(doc.handle), on: you },
+    avatar: { initials: nameInitials(doc.handle), bg: avatarColour(doc.handle), on: you },
   };
 }
 

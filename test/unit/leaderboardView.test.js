@@ -2,7 +2,7 @@
 //
 // Phase 84 (BOARD-18..25, BOARD-27), Plan 05. Covers
 // src/browser/leaderboardView.js: Task 1's shared pieces (ported avatar/
-// initials/ordinal helpers, handleInitials) and the YOUR DEAD view (mine
+// initials/ordinal helpers, nameInitials) and the YOUR DEAD view (mine
 // mode) — ranking, filters, counts, rows, the expanded row's date line,
 // sheets, header box and dock. Task 2 covers LEADERBOARD (board mode) —
 // every board state, board rows, YOU, the pinned best, the standing card,
@@ -18,7 +18,7 @@ import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import {
   leaderboardView,
-  handleInitials,
+  nameInitials,
   initialsOf,
   avatarColour,
   ordinal,
@@ -114,13 +114,22 @@ test("avatarColour is deterministic and non-throwing on non-string keys", () => 
   assert.doesNotThrow(() => avatarColour(42));
 });
 
-test("handleInitials: one initial per handle word, falls back on a non-splitting handle, '' -> '?'", () => {
-  assert.equal(handleInitials("@lanternjaw"), "LJ");
-  assert.equal(handleInitials("@gravepouch"), "GP");
-  assert.equal(handleInitials(""), "?");
-  assert.equal(handleInitials("@zzzzz"), "ZZ"); // no known split -> first two letters
-  assert.doesNotThrow(() => handleInitials(null));
-  assert.doesNotThrow(() => handleInitials(undefined));
+test("nameInitials: one generic rule for Play Games names and legacy @handles", () => {
+  assert.equal(nameInitials("Moss Knuckle"), "MK");
+  assert.equal(nameInitials("mossKnuckle"), "MK");
+  assert.equal(nameInitials("dev_delver"), "DD");
+  assert.equal(nameInitials("grim.reaper-jr"), "GR");
+  assert.equal(nameInitials("Xx99"), "X9"); // letter/digit boundary
+  assert.equal(nameInitials("@mossjaw"), "MO"); // one part: its first two letters
+  assert.equal(nameInitials("@lanternjaw"), "LA"); // a legacy handle follows the same rule
+  assert.equal(nameInitials("ab"), "AB");
+  assert.equal(nameInitials("x"), "X");
+  assert.equal(nameInitials(""), "?");
+  assert.equal(nameInitials("@"), "?");
+  assert.equal(nameInitials("..__"), "?");
+  assert.doesNotThrow(() => nameInitials(null));
+  assert.doesNotThrow(() => nameInitials(undefined));
+  assert.doesNotThrow(() => nameInitials({}));
 });
 
 // ─── Task 1: YOUR DEAD (mine mode) ────────────────────────────────────────
@@ -409,7 +418,7 @@ test("board mode, status unreachable/off: note body with SEE YOUR DEAD, standing
 
 test("board mode, ready with ten rows: server order, keys=doc ids, YOU tag/avatar-on, top", () => {
   const docs = Array.from({ length: 10 }, (_, i) =>
-    boardDoc({ id: `d${i}`, uid: i === 3 ? "me" : `other${i}`, handle: i === 3 ? "@lanternjaw" : `@other${i}gloom`, name: `Hero${i}` })
+    boardDoc({ id: `d${i}`, uid: i === 3 ? "me" : `other${i}`, handle: i === 3 ? "Moss Knuckle" : `@other${i}gloom`, name: `Hero${i}` })
   );
   const board = { status: "ready", rows: docs, total: 10, filteredTotal: 10, you: null, youKnown: true, uid: "me", stale: false, fetchedAt: null };
   const view = leaderboardView({ compete: true, mode: "board", board, stat: "deep" });
@@ -422,8 +431,8 @@ test("board mode, ready with ten rows: server order, keys=doc ids, YOU tag/avata
   assert.equal(meRow.you, true);
   assert.equal(meRow.tag, C.you);
   assert.equal(meRow.avatar.on, true);
-  assert.equal(meRow.headline, "@lanternjaw");
-  assert.equal(meRow.avatar.initials, "LJ");
+  assert.equal(meRow.headline, "Moss Knuckle");
+  assert.equal(meRow.avatar.initials, "MK");
   assert.equal(meRow.line, `HERO3${C.sep}HUMAN KNIGHT${C.sep}I`);
   const otherRow = view.body.rows[0];
   assert.equal(otherRow.you, false);
@@ -668,9 +677,9 @@ test("source pins: no window./document./navigator./localStorage/Date.now/Math.ra
   assert.doesNotMatch(STRIPPED, /playGames|globalBoards|account\.js|boardScores/);
 });
 
-test("source pins: exports leaderboardView and handleInitials; uses rankKeyOf and SEASON_NAMES", () => {
+test("source pins: exports leaderboardView and nameInitials; uses rankKeyOf and SEASON_NAMES", () => {
   assert.match(MODULE_SRC, /export function leaderboardView/);
-  assert.match(MODULE_SRC, /export function handleInitials/);
+  assert.match(MODULE_SRC, /export function nameInitials/);
   assert.match(MODULE_SRC, /rankKeyOf/);
   assert.match(MODULE_SRC, /SEASON_NAMES/);
 });
