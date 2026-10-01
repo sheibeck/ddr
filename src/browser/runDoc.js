@@ -34,6 +34,13 @@
 // explicit `now` is passed in. rankKeyOf(stat, run) is the one shared
 // rank-key function both Leaderboards views (Phase 84) rank by.
 //
+// Phase 91.2 (BOARD-31, D-11, D-13): `handle` is the poster's verified Play
+// Games name (the field keeps its name because shipped 2.2.0 clients decode it
+// for the board headline). The rules bind it to names/{uid}.name; validateRunDoc
+// mirrors that when it is given the verified `name`, and otherwise only checks
+// the size bound. The 2.2.0 rolled-handle regex survives only as the
+// transition artefact LEGACY_HANDLE_PATTERN / isLegacyHandle.
+//
 // Pure, DOM-free: no window, document, navigator, localStorage,
 // sessionStorage or bare global fetch. Never throws.
 
@@ -44,7 +51,7 @@ import { THRESHOLDS } from "../../content/misc-tables.js";
 import { SEASON } from "../../content/season.js";
 import { RANKED_BOARDS } from "../../engine/records.js";
 import { toFirestoreFields, docName } from "./firestoreRest.js";
-import { isValidHandle } from "./handles.js";
+import { BOARD_NAME_MAX_CHARS } from "./boardName.js";
 
 // ---------------------------------------------------------------------------
 // Collections, field lists, bounds
@@ -136,15 +143,32 @@ export function deepKeyOf(run) {
  * legacyDeepKeyOf(run) — the formula the shipped 2.2.0 (vc12) clients still
  * write: floor * 1,000,000 + (999,999 - steps), i.e. fewer steps first.
  * Transition-only: read by test/unit/firestore-transition-rules.test.js,
- * fakeBoardServer.js's acceptLegacyDeepKey mode, tools/boards-admin.mjs
- * rekey-deep and tools/boards-smoke.mjs --transition. The client never writes
- * it; delete it with the transition files at the 2.3 cutover (docs/RELEASING.md,
- * Release 2.3.0).
+ * fakeBoardServer.js's transition mode, tools/boards-admin.mjs rekey-deep and
+ * tools/boards-smoke.mjs --transition. The client never writes it; delete it
+ * with the transition files at the 2.3 cutover (docs/RELEASING.md, Release 2.3.0).
  */
 export function legacyDeepKeyOf(run) {
   const floor = Number(run?.floor);
   const steps = Number(run?.steps);
   return floor * 1000000 + (999999 - steps);
+}
+
+/**
+ * LEGACY_HANDLE_PATTERN — the 2.2.0 (vc12) rolled-handle regex source, verbatim
+ * (an anchored alternation of two word tables). Transition-only, with
+ * isLegacyHandle: firebase/firestore.transition.rules embeds the same literal
+ * and fakeBoardServer.js's transition mode applies it. Delete both with the
+ * transition files and legacyDeepKeyOf at the 2.3 cutover (docs/RELEASING.md,
+ * Release 2.3.0).
+ */
+export const LEGACY_HANDLE_PATTERN =
+  "^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$";
+
+const LEGACY_HANDLE_RE = new RegExp(LEGACY_HANDLE_PATTERN);
+
+/** isLegacyHandle(h) — h is a string shaped like a 2.2.0 rolled @handle. Transition-only (see LEGACY_HANDLE_PATTERN). */
+export function isLegacyHandle(h) {
+  return typeof h === "string" && LEGACY_HANDLE_RE.test(h);
 }
 
 /** daysKeyOf(run) — the Phase 82 DAYS rule: min(day, 10 * floor) * 1000 + floor. */
@@ -201,16 +225,20 @@ export function runDocId(uid, hash) {
 }
 
 /**
- * validateRunDoc(doc, {uid, now}) — the JS mirror of
- * firebase/firestore.rules#isValidBoardRun. Returns [] when the rules would
- * accept a create with this data; otherwise an array of RUN_FAIL_IDS
+ * validateRunDoc(doc, {uid, now, name}) — the JS mirror of
+ * firebase/firestore.rules#isValidBoardRun plus the runs create rule's name
+ * binding. Returns [] when the rules would accept a create with this data;
+ * otherwise an array of RUN_FAIL_IDS
  * entries, one per failing clause (a bad/missing/extra key set short-circuits
- * to exactly ["keys"]). `now`, when a finite number, bounds `when` the same
+ * to exactly ["keys"]). `handle` must be a string of 1..BOARD_NAME_MAX_CHARS
+ * characters and, when `name` is a string (the poster's verified Play Games
+ * name, names/{uid}.name), equal to it exactly; the fail id stays "handle".
+ * `now`, when a finite number, bounds `when` the same
  * way the live rules' request.time does (Phase 84's WHEN_SKEW_MS
  * clock-skew allowance); without `now` the upper bound is not checked
  * client-side (the server/fake clock is the source of truth). Never throws.
  */
-export function validateRunDoc(doc, { uid, now } = {}) {
+export function validateRunDoc(doc, { uid, now, name } = {}) {
   try {
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) return ["keys"];
     const keys = Object.keys(doc);
@@ -227,7 +255,12 @@ export function validateRunDoc(doc, { uid, now } = {}) {
       (uid === undefined || doc.uid === uid);
     if (!uidOk) fails.push("uid");
 
-    if (!isValidHandle(doc.handle)) fails.push("handle");
+    const handleOk =
+      typeof doc.handle === "string" &&
+      doc.handle.length >= 1 &&
+      doc.handle.length <= BOARD_NAME_MAX_CHARS &&
+      (typeof name !== "string" || doc.handle === name);
+    if (!handleOk) fails.push("handle");
 
     if (!(Number.isInteger(doc.season) && doc.season === SEASON)) fails.push("season");
 

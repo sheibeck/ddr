@@ -1,30 +1,45 @@
 rules_version = '2';
 
 // === TRANSITION HEADER BEGIN ===
-// TRANSITION RULES (Phase 87, BOARD-28, CONTEXT 2026-09-29). Deployed via
-// firebase.transition.json INSTEAD OF firebase/firestore.rules until 2.3
-// reaches testers.
+// TRANSITION RULES (Phase 87 BOARD-28 + Phase 91.2 BOARD-33, D-13, CONTEXT
+// 2026-09-29 and 2026-10-01). Deployed via firebase.transition.json INSTEAD OF
+// firebase/firestore.rules from the 91.2-10 deploy until 2.3 reaches testers.
+// One deploy covers both phases: it replaces the still-pending Phase 87
+// transition deploy.
 //
-// Why: the shipped 2.2.0 build (vc12) writes deepKey with the OLD formula,
-// floor * 1,000,000 + (999,999 - steps) (fewer steps first). The FINAL rules
-// (firebase/firestore.rules) re-derive deepKey with the NEW formula,
-// floor * 1,000,000 + steps (report #9: DEPTH ties go to the most steps), and
-// would refuse every run a still-in-the-field 2.2.0 client submits.
+// Why: the shipped 2.2.0 build (vc12) (a) writes deepKey with the OLD formula,
+// floor * 1,000,000 + (999,999 - steps) (fewer steps first), (b) posts runs
+// from an ANONYMOUS account under a rolled @handle, and (c) re-rolls that
+// handle with a handle-only update across all its runs. The FINAL rules
+// (firebase/firestore.rules) re-derive deepKey with the NEW formula, accept a
+// run only when handle == names/{uid}.name (the verified Play Games name,
+// written only by the boardName function), and refuse every client update, so
+// they refuse every one of those 2.2.0 writes (D-13). While the milestone-end
+// Compete-ON device test still runs a vc12 build next to a 2.3 build, this
+// file keeps 2.2.0 posting.
 //
-// What differs: only isValidBoardRun's deepKey clause, which accepts the old
-// OR the new formula computed from the doc's own floor and steps, and nothing
-// else. A client can never pick its own DEPTH rank. Everything else (the
-// other three rank keys, bounds, the list rules, the catch-all) is identical.
+// What it accepts: named 2.3 runs exactly as the final rules do; 2.2.0 runs
+// from a uid with NO names document (isLegacyHandle, the verbatim 2.2.0
+// regex); the 2.2.0 handle-only re-roll update for an owner with NO names
+// document; and either deepKey formula, computed from the doc's own floor and
+// steps (a client can never pick its own DEPTH rank). A uid that has a names
+// document can never use either legacy branch: each carries !isNamed.
 //
-// Proof: test/unit/firestore-transition-rules.test.js shows this file equals
-// firebase/firestore.rules with exactly that one clause swapped (this header
-// excluded), and that the clause accepts the two formulas and refuses every
-// third value.
+// What differs from the final rules, and nothing else: the two-formula deepKey
+// clause, the isLegacyHandle function, one legacy create disjunct, the legacy
+// update rule.
+//
+// Proof: test/unit/firestore-transition-rules.test.js reduces this file by
+// exactly those four things (this header excluded) and compares the result to
+// firebase/firestore.rules byte for byte, and shows a named uid cannot reach a
+// legacy branch.
 //
 // DELETE this file, firebase.transition.json and
-// test/unit/firestore-transition-rules.test.js at the 2.3 cutover: deploy
-// firebase/firestore.rules (the final rules) with the plain command, then
-// remove the three transition files (docs/RELEASING.md, Release 2.3.0).
+// test/unit/firestore-transition-rules.test.js at the 2.3 cutover (Release
+// 2.3.0, when 2.3 reaches testers): deploy firebase/firestore.rules (the final
+// rules) with the plain command, then remove the three transition files and
+// runDoc.js's LEGACY_HANDLE_PATTERN, isLegacyHandle and legacyDeepKeyOf
+// (docs/RELEASING.md, Release 2.3.0).
 // === TRANSITION HEADER END ===
 
 // Phase 79.3 (D-13, BUG-03) + Phase 83 (SRV-01..03, SRV-09). One rules file
@@ -45,13 +60,22 @@ rules_version = '2';
 //     created or updated only as a valid step; the owner may also read it
 //     back (so local storage can be wiped and the count recovered).
 //   - runs/{runId}: create the owner's own leaderboard run, shaped and
-//     bounded exactly like src/browser/runDoc.js builds it (SRV-02); reads
-//     are public and bounded (list limit <= 50); the owner may re-roll their
-//     handle across all their runs, and delete any of their own runs.
-//     Phase 84 (BOARD-20, BOARD-22) adds `note` (the killer's name, bounded
-//     to 120 chars) and `when` (the death time in ms, bounded to no later
-//     than request.time plus a one-day clock-skew allowance).
-// Every other verb, on every path, is denied by the catch-all at the end.
+//     bounded exactly like src/browser/runDoc.js builds it (SRV-02), and only
+//     under the poster's verified Play Games name: names/{uid} must exist and
+//     the run's handle must equal its `name` (Phase 91.2, BOARD-31). Only the
+//     boardName Cloud Function and tools/boards-admin.mjs write names/{uid};
+//     both reach it through IAM, never through a rule. Reads are public and
+//     bounded (list limit <= 50). A client never updates a run (no rename
+//     path, D-11) and may delete any of its own runs (ERASE MY RUNS, any
+//     account). Phase 84 (BOARD-20, BOARD-22) adds `note` (the killer's name,
+//     bounded to 120 chars) and `when` (the death time in ms, bounded to no
+//     later than request.time plus a one-day clock-skew allowance).
+// names/{uid} and nameOverrides/{uid} are closed to every client read and
+// write. Every other verb, on every path, is denied by the catch-all at the end.
+//
+// A shipped 2.2.0 client (anonymous uid, @handle runs, handle re-roll updates)
+// is refused by these rules, silently (D-13): an anonymous uid has no names
+// document. firebase/firestore.transition.rules covers the deploy window.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -142,17 +166,37 @@ service cloud.firestore {
       allow list, delete: if false;
     }
 
+    // Phase 91.2 (BOARD-31). names/{uid} is the trust anchor: the verified Play
+    // Games name of an account, written only by the boardName function and
+    // tools/boards-admin.mjs through IAM. isNamed must be asked before
+    // verifiedName: get() on a missing document is an error, which denies.
+    function namePath(uid) {
+      return /databases/$(database)/documents/names/$(uid);
+    }
+
+    function isNamed(uid) {
+      return exists(namePath(uid));
+    }
+
+    function verifiedName(uid) {
+      return get(namePath(uid)).data.name;
+    }
+
     // Phase 83 (SRV-02, SRV-03) + Phase 84 (BOARD-20, BOARD-22: note is the
     // killer's name on board rows, when is the death time feeding the
-    // expanded row's date line). Mirrors src/browser/runDoc.js#RUN_DOC_FIELDS,
-    // every bound constant, and the four rank-key formulas — kept equal by
-    // test/unit/firestore-rules.test.js. season is pinned to content/season.js's
-    // SEASON; bumping it needs a rules deploy (docs/LEADERBOARDS.md).
+    // expanded row's date line) + Phase 91.2 (BOARD-31: handle is the poster's
+    // verified Play Games name, kept as the field name `handle` because shipped
+    // 2.2.0 clients decode it for the board headline; its value is bound to
+    // names/{uid} in the runs create rule, so here only its size is bounded).
+    // Mirrors src/browser/runDoc.js#RUN_DOC_FIELDS, every bound constant, and
+    // the four rank-key formulas — kept equal by test/unit/firestore-rules.test.js.
+    // season is pinned to content/season.js's SEASON; bumping it needs a rules
+    // deploy (docs/LEADERBOARDS.md).
     function isValidBoardRun(d) {
       return d.keys().hasOnly(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'note', 'epitaph', 'when', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
         && d.keys().hasAll(['uid', 'handle', 'season', 'name', 'race', 'sub', 'cls', 'level', 'floor', 'day', 'steps', 'kills', 'gold', 'sp', 'cause', 'note', 'epitaph', 'when', 'hash', 'version', 'seed', 'acts', 'deepKey', 'daysKey', 'killsKey', 'goldKey', 'createdAt'])
         && d.uid is string && d.uid.size() >= 1 && d.uid.size() <= 128
-        && d.handle is string && d.handle.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$')
+        && d.handle is string && d.handle.size() >= 1 && d.handle.size() <= 64
         && d.season is int && d.season == 1
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
         && d.race is string && d.race in ['Human', 'Elven', 'Dwarven', 'Wilmsry', 'Fridgian', 'Troll']
@@ -199,6 +243,11 @@ service cloud.firestore {
       return d.gold;
     }
 
+    // Transition only (D-13): the exact 2.2.0 rolled-handle shape. Deleted with this file at the 2.3 cutover.
+    function isLegacyHandle(h) {
+      return h is string && h.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$');
+    }
+
     // Mirrors content/classes.js#CLASSES[cls].subs.
     function isSubOfClass(cls, sub) {
       return (cls == 'Magic User' && sub in ['Wizard', 'Warlock', 'Sorcerer', 'Summoner', 'Cleric', 'Illusionist', 'Court Mage', 'Apprentice'])
@@ -220,18 +269,39 @@ service cloud.firestore {
                     && request.resource.data.uid == request.auth.uid
                     && runId == request.auth.uid + '_' + request.resource.data.hash
                     && isValidBoardRun(request.resource.data)
-                    && !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
+                    && isNamed(request.auth.uid)
+                    && request.resource.data.handle == verifiedName(request.auth.uid)
+                    && !exists(/databases/$(database)/documents/banned/$(request.auth.uid))
+                    || (request.auth != null
+                      && request.resource.data.uid == request.auth.uid
+                      && runId == request.auth.uid + '_' + request.resource.data.hash
+                      && isValidBoardRun(request.resource.data)
+                      && isLegacyHandle(request.resource.data.handle)
+                      && !isNamed(request.auth.uid)
+                      && !exists(/databases/$(database)/documents/banned/$(request.auth.uid)));
+      // D-11: no client ever updates a run (no rename path).
       allow update: if request.auth != null
+                    && !isNamed(request.auth.uid)
                     && resource.data.uid == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['handle'])
-                    && request.resource.data.handle is string
-                    && request.resource.data.handle.matches('^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$');
+                    && isLegacyHandle(request.resource.data.handle);
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     match /banned/{uid} {
       // the admin (IAM service account, tools/boards-admin.mjs) is the only
       // writer of this collection; no rule below grants a client access.
+      allow read, write: if false;
+    }
+
+    match /names/{uid} {
+      // Phase 91.2 (BOARD-31): the trust anchor. The boardName function and
+      // tools/boards-admin.mjs (IAM) are the only readers and writers.
+      allow read, write: if false;
+    }
+
+    match /nameOverrides/{uid} {
+      // Phase 91.2 (D-08): moderator-set replacement names, IAM only.
       allow read, write: if false;
     }
 
