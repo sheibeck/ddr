@@ -107,7 +107,7 @@
   <section>
     html="<h3>Race</h3><p class=\"who\">Wilmsry</p><p>You heal twice as fast and learn half as quickly, so you will survive a great deal and understand almost none of it. Magic Users despise you on sight — not one of them will so much as travel with you — which most Wilmsry take as proof they are doing something right.</p>"
     <p class="doss-rules">
-      text="Good: can talk to anything but Magical foes and the Walking Dead; store prices 30% off; rest, potions and your own healing spells heal twice as much."
+      text="Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; store prices 30% off; rest, potions and your own healing spells heal twice as much."
     <p class="doss-rules">
       text="Bad: Magic User Joiners refuse to travel with you; half the experience from every kill."
   <section>
