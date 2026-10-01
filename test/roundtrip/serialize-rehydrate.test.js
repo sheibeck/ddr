@@ -19,7 +19,7 @@
 // 01-09 extends it further with the magic action-script fixture (test/
 // parity/fixtures/action-script.magic.json), proving the round-trip stays
 // lossless through a ward/spell sub-state (a Shield/Bubble's pool/rounds on
-// `state.c.ward`, `state.c.mirror`, `state.c.might`/`strengthBoost`, a live
+// `state.c.ward`, `state.c.mirror`, `state.c.timers["spell:Strength"]` (Phase 90), a live
 // `state.combat` mid-cast) — every field castSpell/drinkPotion/readScroll
 // can set is plain JSON, same as every other rule domain.
 //
@@ -53,6 +53,8 @@ import { stripVolatileFields } from "../parity/harness/diffState.js";
 import { openStore } from "../../engine/economy.js";
 import { springTrap, openChest, encounterDot } from "../../engine/encounters.js";
 import { SPELLS } from "../../content/index.js";
+import { startEffect } from "../../engine/effects.js";
+import { serializeRun, validateSave } from "../../engine/saveState.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const FIXTURE = JSON.parse(
@@ -321,6 +323,23 @@ test("Phase 75 (RULES-12): a state carrying a pendingTile record round-trips los
 
   const again = JSON.parse(JSON.stringify(stripVolatileFields(JSON.parse(JSON.stringify(stripped)))));
   assert.deepStrictEqual(again, stripped, "double round-trip is idempotent");
+});
+
+// Phase 90 (SPELL-09): the Strength spell is a plain spell:Strength timer
+// record on c.timers, so a live one round-trips losslessly and survives a
+// real save and load with its squares left intact.
+test("Phase 90 (SPELL-09): a live spell:Strength record round-trips losslessly and survives a save and load", () => {
+  const state = newRun(1);
+  startEffect(state.c, "spell:Strength", { squares: 100 });
+  state.c.timers["spell:Strength"].left = 61;
+
+  const stripped = stripVolatileFields(state);
+  const rehydrated = JSON.parse(JSON.stringify(stripped));
+  assert.deepStrictEqual(rehydrated, stripped, "the record must round-trip losslessly");
+
+  const loaded = validateSave(JSON.stringify(serializeRun(state)));
+  assert.equal(loaded.ok, true);
+  assert.deepStrictEqual(loaded.value.c.timers["spell:Strength"], { cadence: "squares", left: 61, phase: "effect" });
 });
 
 // "win fixture round-trip" test DELIBERATELY RETIRED in 03-02 (endless

@@ -787,6 +787,41 @@ function migrateSpellNames(c) {
   return c;
 }
 
+/**
+ * retireStrengthBoost(sheet) — Phase 90 (SPELL-09) tolerant load: the old
+ * Strength spell doubled maximum hit points and recorded the amount it added
+ * in a `strengthBoost` field (on the hero, and on a foe a fumbled scroll
+ * strengthened). That field is retired. A positive number is subtracted from
+ * `maxWP` (never below 1), `wp` is clamped into [1, maxWP] when it was above
+ * the new maximum, and the field is deleted; any other value (zero, a string,
+ * a tampered object) is simply deleted. A sheet without it is returned
+ * byte-identical (a genuine no-op). Silent: no rng, no event. Mutates and
+ * returns the passed `sheet`; never throws on a non-object.
+ */
+function retireStrengthBoost(sheet) {
+  if (!sheet || typeof sheet !== "object" || Array.isArray(sheet) || !("strengthBoost" in sheet)) return sheet;
+  const gain = sheet.strengthBoost;
+  delete sheet.strengthBoost;
+  if (typeof gain === "number" && Number.isFinite(gain) && gain > 0 && typeof sheet.maxWP === "number" && Number.isFinite(sheet.maxWP)) {
+    sheet.maxWP = Math.max(1, sheet.maxWP - gain);
+    if (typeof sheet.wp === "number" && sheet.wp > sheet.maxWP) sheet.wp = Math.max(1, sheet.maxWP);
+  }
+  return sheet;
+}
+
+/**
+ * retireStrengthBoostInFight(combat) — Phase 90 (SPELL-09): the same
+ * tolerant-load step for every foe of a resumed fight (a fumbled Strength
+ * scroll could double a foe's hit points). A null or foe-less fight is
+ * returned untouched. Mutates and returns `combat`.
+ */
+function retireStrengthBoostInFight(combat) {
+  if (combat && typeof combat === "object" && Array.isArray(combat.foes)) {
+    for (const f of combat.foes) retireStrengthBoost(f);
+  }
+  return combat;
+}
+
 // Phase 39 (GEAR-02): the retired scattered counters -> the ONE c.timers
 // representation. `fallback` is the ACTIVATION_OF key used when NO carried
 // item's own activation matches the counter's `kind` (a plain potion dose
@@ -1022,14 +1057,16 @@ export function validateSave(raw, options = {}) {
   // rebuild, keyed joiner:<name>:0 (see ensurePartyAbilities's JSDoc).
   const party = ensurePartyAbilities(sanitizeParty(obj.party));
   const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
-  const combat = sanitizeCombat(obj.combat, party, partyIntact);
+  // Phase 90 (SPELL-09): the retired Strength doubling is unwound on the hero
+  // and on every foe of a resumed fight.
+  const combat = retireStrengthBoostInFight(sanitizeCombat(obj.combat, party, partyIntact));
   const fightSurvives = !!combat;
 
   const migratedC = sanitizeStaff(
     sanitizeWard(
       foldLegacyCounters(
         ensureCharacterAbilities(
-          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives))),
+          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(retireStrengthBoost(migrateSpellNames(obj.c))), fightSurvives)), fightSurvives))),
           seed,
         ),
         steps,
@@ -1183,13 +1220,14 @@ export function rehydrate(obj) {
   // first, so the `c` chain knows whether a fight survives.
   const party = ensurePartyAbilities(sanitizeParty(obj.party));
   const partyIntact = !Array.isArray(obj.party) || party.length === obj.party.length;
-  const combat = sanitizeCombat(obj.combat, party, partyIntact);
+  // Phase 90 (SPELL-09): mirrors validateSave's retired-Strength unwinding.
+  const combat = retireStrengthBoostInFight(sanitizeCombat(obj.combat, party, partyIntact));
   const fightSurvives = !!combat;
   const migratedC = sanitizeStaff(
     sanitizeWard(
       foldLegacyCounters(
         ensureCharacterAbilities(
-          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(migrateSpellNames(obj.c)), fightSurvives)), fightSurvives))),
+          sanitizeWorn(clampRevealWindow(clearStaleTimers(sanitizePhobiaFields(clearFoeEffect(migrateCarry(retireStrengthBoost(migrateSpellNames(obj.c))), fightSurvives)), fightSurvives))),
           obj.seed,
         ),
         obj.steps ?? 0,

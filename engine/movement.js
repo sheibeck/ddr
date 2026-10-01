@@ -876,12 +876,11 @@ export function nightlyEats(state) {
 export function newDay(state, camped, rng, events = [], now = Date.now) {
   const c = state.c;
   state.day++;
+  // Phase 90 (SPELL-09): c.might is only the phobia rage's flat +d10 now
+  // (engine/encounters.js insanityRage), and a new day ends it. The Strength
+  // spell is a 100-square `spell:Strength` timer record: making camp and a new
+  // day neither end nor shorten it, and nothing here touches max hit points.
   c.might = 0;
-  if (c.strengthBoost) {
-    c.maxWP -= c.strengthBoost;
-    c.wp = Math.min(c.wp, c.maxWP);
-    c.strengthBoost = 0;
-  }
   const R = RACES[c.race];
   let cost = upkeep(c);
   const eats = nightlyEats(state);

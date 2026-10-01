@@ -525,19 +525,22 @@ test("helpful mirror: Mirror Self sets mirror to its own d6 (the table's rounds 
   assert.equal(foe.mirror, 4);
 });
 
-test("helpful might: Strength sets might to its d10 and doubles maxWP/wp once; a second fumble refreshes might but does not double again", () => {
+test("helpful might: Strength sets might to its d10 and never touches hit points; a second fumble re-rolls might (Phase 90, SPELL-09)", () => {
   const state = fixedState();
   const foe = fixedFoe({ wp: 20, maxWP: 20 });
   state.combat = fixedCombat([foe]);
-  resolveScrollFumble(state, spellRow("Strength"), fakeRng([7]), fakeRng([]));
+  const events = resolveScrollFumble(state, spellRow("Strength"), fakeRng([7]), fakeRng([]));
   assert.equal(foe.might, 7);
-  assert.equal(foe.maxWP, 40);
-  assert.equal(foe.wp, 40);
-  assert.equal(foe.strengthBoost, 20);
+  assert.equal(foe.maxWP, 20, "no doubling: the spell grants no hit points");
+  assert.equal(foe.wp, 20);
+  assert.equal("strengthBoost" in foe, false);
+  const e = events.find((x) => x.type === "fumbleOnFoe");
+  assert.equal(e.might, 7);
+  assert.equal("gained" in e, false, "no hit-point gain is reported");
 
   resolveScrollFumble(state, spellRow("Strength"), fakeRng([3]), fakeRng([]));
-  assert.equal(foe.might, 3, "refreshed");
-  assert.equal(foe.maxWP, 40, "never doubled again");
+  assert.equal(foe.might, 3, "re-rolled");
+  assert.equal(foe.maxWP, 20);
 });
 
 test("helpful summon: Summon/Phantom Host/Lesser Summon queue one Demons reinforcement at the right tier", () => {

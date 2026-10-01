@@ -71,7 +71,7 @@ function fixedHero(overrides = {}) {
     potions: 3, rations: 6, gold: 500, scrolls: 0,
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
-    strengthBoost: 0, regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
     darkFor: 0, halfNext: false,
     ...overrides,
   };

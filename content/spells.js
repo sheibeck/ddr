@@ -64,6 +64,16 @@
 //     pre-Phase-40 table; only `n` (row 5), `kind` (row 13), `txt` (every
 //     row), and the new `niche`/flags fields changed. Row 32 is appended,
 //     never inserted.
+//
+// Phase 90 (SPELL-09): an `act` record on a SPELLS row makes it a
+// SPELL-SOURCED TIMED EFFECT: casting it starts one `spell:<n>` c.timers
+// record of `act.effect` squares (engine/combat.js#startSpellEffect), and
+// engine/derived.js#liveItemEffects reads the live record back through
+// SPELL_ACT_OF exactly like an item effect (act.kind, act.eff and the rest of
+// the item-activation vocabulary), so eff / itemEffectActive / conditionsOf
+// need no spell-specific code. Strength is the first such row: its `act.dice`
+// is the extra die every damage roll adds while the record is live (the die
+// the row's retired `dmg` used to carry).
 
 export const NICHE_LABELS = Object.freeze({
   burst: "burst",
@@ -82,7 +92,7 @@ export const NICHE_LABELS = Object.freeze({
 export const SPELLS = [
   { n: "Heal", lvl: 1, s: "healing", kind: "heal", dmg: { n: 1, sides: 10, bonus: 0 }, niche: "healing", txt: "healing · you · d10 hp", combatOnly: false },
   { n: "Shield", lvl: 1, s: "protection", kind: "ward", pool: 50, rounds: 5, niche: "defensive", txt: "defensive · you · soaks 50 hp for 5 rounds", combatOnly: false },
-  { n: "Strength", lvl: 1, s: "offense", kind: "might", dmg: { n: 1, sides: 10, bonus: 0 }, niche: "buff", txt: "buff · you · +d10 damage till tomorrow", combatOnly: false },
+  { n: "Strength", lvl: 1, s: "offense", kind: "might", act: { kind: "strength", effect: 100, dice: { n: 1, sides: 10, bonus: 0 } }, niche: "buff", txt: "buff · you · for 100 squares, every damage roll you make (each blow, each spell hit) adds an extra d10; casting it again starts the 100 over; no extra HP, sadly", combatOnly: false },
   { n: "Doze", lvl: 1, s: "offense", kind: "status", niche: "control", txt: "control · one foe · asleep d4 rounds", combatOnly: true },
   { n: "Freeze", lvl: 1, s: "offense", kind: "thrown", dmg: { n: 1, sides: 6, bonus: 0 }, onHit: "freeze", niche: "burst", txt: "burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry", combatOnly: true },
   // Phase 40 (SPELL-05, Plan 04): `squares` is the reveal window the engine

@@ -2265,6 +2265,25 @@ export function pickMemberItem(state, idx) {
 }
 
 /**
+ * startSpellEffect(sheet, sp, events, opts) — Phase 90 (SPELL-09): THE one
+ * starter of a spell-sourced timed effect (a SPELLS row carrying an `act`
+ * record, content/spells.js). Starts one `spell:<sp.n>` squares record of
+ * `opts.squares ?? sp.act.effect` on `sheet` (the hero's sheet now; a Joiner's
+ * own sheet and the SPELL-10 slate next; 90-07's school bonus stretch passes
+ * `opts.squares`) through effects.js#startEffect, which OVERWRITES a live
+ * record: a recast restarts the window and never stacks a second one. Returns
+ * the record, or null when the row has no usable `act.effect` (a positive
+ * integer) or the sheet cannot hold timers. It pushes nothing: the caller
+ * narrates its own cast event, and expiry is told by items.js#
+ * narrateTimerTransitions (spellEffectFaded). Pure bookkeeping, zero rng.
+ */
+export function startSpellEffect(sheet, sp, events, opts = {}) {
+  if (!sp || !sp.act || !Number.isInteger(sp.act.effect) || sp.act.effect <= 0) return null;
+  const squares = Number.isInteger(opts.squares) && opts.squares > 0 ? opts.squares : sp.act.effect;
+  return startEffect(sheet, "spell:" + sp.n, { squares });
+}
+
+/**
  * memberView(sheet, ally) — Phase 38 (ABIL-05): today's `view` literal
  * (DFB-05, Phase 25.1) factored out unchanged — a READ view of a party
  * member's persistent sheet, the combat level winning (`ally.lvl`), every

@@ -226,14 +226,17 @@ test("castSpell: Bubble raises an armed mirror, not a soak pool", () => {
   assert.equal(raised.popPool, 25);
 });
 
-test("castSpell: Strength grants +damage and doubles Win Potential once", () => {
+// Phase 90 (SPELL-09, report #8): Strength is a 100-square timer record that
+// adds a d10 to damage rolls and grants NO hit points. The cast draws nothing.
+// test/unit/strength-spell.test.js carries the full set of pins.
+test("castSpell: Strength starts a 100-square record and grants no hit points", () => {
   const state = fixedState({ c: { grimoire: ["Strength"], maxWP: 31, wp: 20 } });
-  const events = castSpell(state, SPELL_IDX.Strength, fakeRng([10]), []); // d10=10
-  assert.equal(state.c.might, 10);
-  assert.equal(state.c.strengthBoost, 31);
-  assert.equal(state.c.maxWP, 62, "maxWP doubled");
-  assert.equal(state.c.wp, 51, "current wp boosted by the same amount");
-  assert.ok(events.some((e) => e.type === "strengthCast"));
+  const events = castSpell(state, SPELL_IDX.Strength, fakeRng([]), []);
+  assert.deepStrictEqual(state.c.timers["spell:Strength"], { cadence: "squares", left: 100, phase: "effect" });
+  assert.equal(state.c.maxWP, 31, "maxWP untouched");
+  assert.equal(state.c.wp, 20, "current wp untouched");
+  assert.equal(state.c.might, 0, "the cast no longer sets c.might");
+  assert.deepStrictEqual(events.filter((e) => e.type === "strengthCast"), [{ type: "strengthCast", squares: 100, restarted: false }]);
 });
 
 test("castSpell: Earthquake damages every foe AND the caster when unwarded", () => {

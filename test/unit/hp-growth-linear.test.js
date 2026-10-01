@@ -2,7 +2,7 @@
 //
 // Phase 75, Plan 02 — RULES-01 ("verify, then pin"): the Table-4 ±HP dots
 // (and every other +HP source this domain touches: the faerie's base-HP
-// rows, a level-up gain, Strength's temporary boost) grow the hero's maxWP
+// rows, a level-up gain; Strength no longer grants any since Phase 90) grow the hero's maxWP
 // LINEARLY — a flat, canon amount scaled once by HERO_HP_SCALE — never a
 // fraction of the hero's OWN current maxWP fed back into itself (which is
 // what compounded before Phase 54, USER RULING G: see engine/difficulty.js's
@@ -70,7 +70,7 @@ function fixedFighter(overrides = {}) {
     potions: 1, rations: 6, gold: 50, scrolls: 0,
     haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null,
     items: [], grimoire: [], spellsUsed: 0, kills: 0, might: 0, ward: null,
-    strengthBoost: 0, regen: false, mirror: 0, foresight: false, name: "Test Delver",
+    regen: false, mirror: 0, foresight: false, name: "Test Delver",
     ...overrides,
   };
 }
@@ -98,14 +98,15 @@ function fixedState(overrides = {}) {
   };
 }
 
-/** castStrength(state, dieValue) — a scroll-shaped cast (bypasses the
+/** castStrength(state) — a scroll-shaped cast (bypasses the
  * grimoire/school gate exactly like readScroll does, per engine/magic.js's
  * own `c.scrollCast` comment) so a plain Fighter fixture can exercise the
  * `sp.kind === "might"` branch directly — the SAME branch a real Magic
- * User's Strength cast runs. */
-function castStrength(state, dieValue, events = []) {
+ * User's Strength cast runs. Phase 90 (SPELL-09): the cast starts a timer
+ * record and draws nothing. */
+function castStrength(state, events = []) {
   state.c.scrollCast = true;
-  castSpell(state, STRENGTH_IDX, fakeRng([dieValue]), events);
+  castSpell(state, STRENGTH_IDX, fakeRng([]), events);
   state.c.scrollCast = false;
   return events;
 }
@@ -272,32 +273,34 @@ test("RULES-01 level-up: a level-up's HP gain is the same flat rolled amount reg
   assert.equal(addNoPulls, addTwoPulls, "the level-up gain never reads the hero's own current maxWP");
 });
 
-// --- Strength's temporary boost does not compound, and survives newDay ----
+// --- Phase 90 (SPELL-09): Strength grants no hit points at all ------------
+// The old spell doubled maxWP and newDay unwound it (RULES-01); since report
+// #8 it is a 100-square timer record that never touches maxWP or wp.
 
-test("RULES-01 Strength: casting Strength twice while boosted leaves maxWP unchanged by the second cast", () => {
-  const state = fixedState({ c: { maxWP: 100, wp: 100, strengthBoost: 0 } });
+test("RULES-01 / SPELL-09 Strength: casting Strength (twice) leaves maxWP and wp exactly as they were", () => {
+  const state = fixedState({ c: { maxWP: 100, wp: 100 } });
 
-  castStrength(state, 5);
-  assert.equal(state.c.maxWP, 200, "the first cast doubles maxWP via c.strengthBoost = c.maxWP");
-  assert.equal(state.c.strengthBoost, 100);
+  castStrength(state);
+  assert.equal(state.c.maxWP, 100, "the cast raises no maximum");
+  assert.equal(state.c.wp, 100, "the cast raises no current hit points");
+  assert.equal("strengthBoost" in state.c, false, "the retired doubling field is never written");
 
-  castStrength(state, 9);
-  assert.equal(state.c.maxWP, 200, "the second cast, still boosted, does not double it again");
-  assert.equal(state.c.strengthBoost, 100, "strengthBoost is unchanged by the guarded re-cast");
+  castStrength(state);
+  assert.equal(state.c.maxWP, 100, "a recast changes nothing either");
 });
 
-test("RULES-01 Strength: a '+25 HP' pull made during the boost survives newDay's reset as exactly one flat step", () => {
+test("RULES-01 / SPELL-09 Strength: a '+25 HP' pull made while Strength is live is exactly one flat step, and a new day leaves maxWP alone", () => {
   // Unfed (rations 0 < eats) so newDay takes the cheapest path: no resting
   // rolls, no affliction/armor-patch rolls — the only draws left are the
   // eight wandering-monster d20s. All eight are scripted high (20) so no
   // hour wakes the party and startCombat never fires.
-  const state = fixedState({ c: { maxWP: 100, wp: 100, strengthBoost: 0, rations: 0 }, day: 1 });
+  const state = fixedState({ c: { maxWP: 100, wp: 100, rations: 0 }, day: 1 });
 
-  castStrength(state, 5); // maxWP 100 -> 200, wp -> 200, strengthBoost = 100
-  tableFour(state, "+25 HP", fakeRng([]), []); // maxWP 200 -> 225, wp -> 225
+  castStrength(state); // a 100-square record; maxWP stays 100
+  tableFour(state, "+25 HP", fakeRng([]), []); // maxWP 100 -> 125, wp -> 125
 
   newDay(state, false, fakeRng(Array(8).fill(20)), []);
 
-  assert.equal(state.c.strengthBoost, 0, "newDay unwinds the boost");
-  assert.equal(state.c.maxWP, 100 + 25, "the pull survives as exactly one flat step above the original maxWP");
+  assert.equal(state.c.maxWP, 100 + 25, "the pull is exactly one flat step, with nothing to unwind");
+  assert.equal(state.c.timers["spell:Strength"].left, 100, "and the day did not touch the record");
 });
