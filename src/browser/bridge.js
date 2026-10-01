@@ -257,10 +257,11 @@ export const BRIDGE = Object.freeze({
   __mzMapView: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze([
-      "mazeworld.html (classic: draw — the render-window radius/visibility predicate, and the heard ripple from heardSquares)",
+      "mazeworld.html (classic: draw — the render-window radius/visibility predicate, the heard ripple from heardSquares, and the teleport pick's glowing squares from teleportTargets)",
       "mazeworld.html (classic: inspectAt — whether a held square is heard)",
+      "mazeworld.html (classic: tapStep — whether a tapped square is one the open teleport pick lists)",
     ]),
-    purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window (a missing bridge falls back to showing everything), plus Acute Hearing's pure heardSquares read (Phase 78, HUD-07; a missing bridge draws no ripple).",
+    purpose: "Bridges the pure render-window read so draw() only paints the currently-visible window (a missing bridge falls back to showing everything), plus Acute Hearing's pure heardSquares read (Phase 78, HUD-07; a missing bridge draws no ripple) and the engine's teleportTargets (Phase 91, IDENT-14: the explored floor squares an Illusionist's open teleport pick can land on; draw() lights them and tapStep accepts a tap on one; a missing bridge lights and accepts nothing).",
   }),
   __mzMemberConditionsOf: Object.freeze({
     owner: "mazeworld.html (module)",
@@ -337,9 +338,10 @@ export const BRIDGE = Object.freeze({
       "mazeworld.html (classic: renderRail / isOpen — card/push/clear/lineCard/announcement/copy)",
       "mazeworld.html (classic: renderRail's auto-clear timer — holdForCard; the guarded #mw-rail body-tap dismiss handler — dismissKind)",
       "mazeworld.html (classic: renderRail's combat-legal hidden/data-over/hold decisions — isCombatCard, Phase 71 D-16)",
-      "mazeworld.html (classic: renderRail's first branch — hazardCard, the pre-roll wall/crevice decision card, Phase 78 CLIMB-01/02)",
+      "mazeworld.html (classic: renderRail's first branch — teleportCard, the Illusionist's teleport decision card, Phase 91 IDENT-14)",
+      "mazeworld.html (classic: renderRail's next branch — hazardCard, the pre-roll wall/crevice decision card, Phase 78 CLIMB-01/02)",
     ]),
-    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen. Phase 78 (CLIMB-01/02): hazardCard is src/browser/hazardCard.js#hazardCardViewModel, the wall/crevice card built from S.pendingHazard (CLIMB IT or LEAP IT with the engine's own odds, USE LADDER or USE ROPE while carried, TURN BACK).",
+    purpose: "Bridges rail.js's pure view-model functions so the classic rail renderer never imports the module a second time. Phase 71 (D-16): isCombatCard names the card kinds (the long-press foe card and the status-chit card) that show over the combat screen. Phase 78 (CLIMB-01/02): hazardCard is src/browser/hazardCard.js#hazardCardViewModel, the wall/crevice card built from S.pendingHazard (CLIMB IT or LEAP IT with the engine's own odds, USE LADDER or USE ROPE while carried, TURN BACK). Phase 91 (IDENT-14): teleportCard is src/browser/teleportCard.js#teleportCardViewModel, the Illusionist's teleport pick card built from S.pendingTeleport (how many squares glow, the reach, LET IT CHOOSE).",
   }),
   __mzRations: Object.freeze({
     owner: "mazeworld.html (module)",

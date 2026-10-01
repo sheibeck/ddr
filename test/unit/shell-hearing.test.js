@@ -232,7 +232,8 @@ test("HUD-07 renderMarksLegend(): the HEARD row draws the CSS ripple swatch, eve
 
 test("HUD-07 source: heardSquares is imported on its own line, bridged on window.__mzMapView, and read by draw() and inspectAt()", () => {
   assert.equal((CODE.match(/import \{ heardSquares \} from "\.\/engine\/derived\.js";/g) || []).length, 1);
-  assert.match(CODE, /window\.__mzMapView = \{ mapViewRadius, inViewWindow, heardSquares \};/);
+  // Phase 91 (IDENT-14) re-pin: teleportTargets joined the bridge (the teleport pick's glow and tap).
+  assert.match(CODE, /window\.__mzMapView = \{ mapViewRadius, inViewWindow, heardSquares, teleportTargets \};/);
   const draw = CODE.slice(CODE.indexOf("function draw() {"), CODE.indexOf("positionCanvas();\n}", CODE.indexOf("function draw() {")));
   assert.match(draw, /view\.heardSquares\(S\)/);
   assert.match(draw, /ctx\.strokeStyle = P\.heard;/);

@@ -23,7 +23,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { ROMAN, TOOLS } from "../../../content/index.js";
-import { nightlyEats } from "../../../engine/movement.js";
+// Phase 91 (IDENT-14): teleportTargets rides window.__mzMapView, as the module script wires it.
+import { nightlyEats, teleportTargets } from "../../../engine/movement.js";
 import { PARTY_CAP, newRun, addPartyMember } from "../../../engine/state.js";
 import { openStore } from "../../../engine/economy.js";
 import {
@@ -99,6 +100,8 @@ import {
 // Phase 78 (CLIMB-01/02): the wall/crevice decision card, wired into the
 // real __mzRailVM below exactly as the module script does.
 import { hazardCardViewModel } from "../../../src/browser/hazardCard.js";
+// Phase 91 (IDENT-14): the Illusionist's teleport decision card, wired the same way.
+import { teleportCardViewModel } from "../../../src/browser/teleportCard.js";
 // Phase 58 (MOTION-03), Plan 06 — the fight-log/combat-panel/combat-menu
 // view-models (the module script's own __mzFightLogVM/__mzCombatVM bridge
 // shapes) and the pure+timed combat-beat core, wired below so
@@ -195,7 +198,7 @@ function wireBridges(context, { dressing = null } = {}) {
   w.__mzMemberConditionsOf = memberConditionsOf;
   w.__mzHeroChips = Object.freeze({ lotChips, chipText, chipSheetFacts });
   w.__mzEther = { itemEffectActive, inStone };
-  w.__mzMapView = { mapViewRadius, inViewWindow, heardSquares };
+  w.__mzMapView = { mapViewRadius, inViewWindow, heardSquares, teleportTargets };
   w.__mzInputGuards = { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled };
   w.__mzArmorDisplay = { armorDisplay, bagArmorText };
   w.__mzBagUsage = bagUsage;
@@ -529,6 +532,8 @@ export function loadShellSandbox({ doc, reducedMotion = true, clock = null, stub
       isCombatCard,
       // Phase 78 (CLIMB-01/02): the wall/crevice decision card's view model.
       hazardCard: hazardCardViewModel,
+      // Phase 91 (IDENT-14): the Illusionist's teleport pick card's view model.
+      teleportCard: teleportCardViewModel,
     };
     context.window.__mzRail = emptyRail();
   }
