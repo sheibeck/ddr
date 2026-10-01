@@ -170,7 +170,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   if (C && sp.kind === "door") {
     const why = fleeRefusal(state);
     if (why) {
-      events.push({ type: "castRefused", spell: sp.n, reason: why });
+      // Phase 91 plan 05 (IDENT-16): a Master of Arms' door refusal reads
+      // "masterOfArmsStays" so it never borrows the Chameleon Tongue's
+      // "masterOfArms" line (a Master of Arms cannot parley: a different rule).
+      events.push({ type: "castRefused", spell: sp.n, reason: why === "masterOfArms" ? "masterOfArmsStays" : why });
       return events;
     }
   }

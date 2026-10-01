@@ -34,7 +34,7 @@ test("every LINE_FOR builder survives a bare {type} call with a valid shape", ()
 // ─── Refusal fallbacks (probe FEED-02 empty) ────────────────────────────────
 
 const REFUSAL_TYPES = [
-  "strikeRefused", "fleeRefused", "parleyRefused", "withdrawalDenied", "vanishDenied",
+  "strikeRefused", "fleeRefused", "parleyRefused", "vanishDenied",
   "itemRejected", "equipRejected", "useRefused", "scrollRefused", "noChargesLeft",
   "spellNotKnown", "spellAboveLevel", "spellSchoolLocked", "campFailed", "joinerRefused",
   "buyFailed", "backstabDenied", "bagFull", "rationsFull", "nothingToThrowAt", "nothingToTurn",

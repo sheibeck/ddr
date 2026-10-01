@@ -116,11 +116,13 @@ test("probe FEED-02 adjacency: strikeRefused names the spell and produces no str
   assert.ok(!out.some((t) => /^You (hit|miss)/.test(t.text)));
 });
 
-test("probe FEED-02 adjacency: withdrawalDenied + fleeRolled + fleeFailed order block line before the outcome", () => {
+// Phase 91 plan 05 (IDENT-16): withdrawalDenied is retired with its event; the same adjacency
+// (a block line before the roll and its outcome) is pinned with the Cloaker's vanishDenied.
+test("probe FEED-02 adjacency: vanishDenied + fleeRolled + fleeFailed order block line before the outcome", () => {
   // Phase 42 (FLEE-01): need is now 14 (was 11). Phase 73 (ROLL-05): the
   // payload carries `atLeast`/`dieN`/`mods`, not the old `total`/`need`.
   const events = [
-    { type: "withdrawalDenied", reason: "masterOfArms" },
+    { type: "vanishDenied", reason: "seen" },
     { type: "fleeRolled", roll: 3, atLeast: 14, dieN: 20, mods: [] },
     { type: "fleeFailed" },
   ];

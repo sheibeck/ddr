@@ -226,7 +226,7 @@ test("SOURCE: dispatchWithNarration routes on exactly one if (wasCombat || inCom
 // ─── 6. BEHAVIOUR partition: every event -> exactly one of narrative/dull ─
 
 const REFUSAL_TYPES = [
-  "strikeRefused", "fleeRefused", "parleyRefused", "withdrawalDenied", "vanishDenied",
+  "strikeRefused", "fleeRefused", "parleyRefused", "vanishDenied",
   "itemRejected", "equipRejected", "useRefused", "scrollRefused", "noChargesLeft",
   "spellNotKnown", "spellAboveLevel", "spellSchoolLocked", "campFailed", "joinerRefused",
   "buyFailed", "backstabDenied", "bagFull", "nothingToThrowAt", "nothingToTurn",

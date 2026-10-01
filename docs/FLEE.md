@@ -87,13 +87,16 @@ flat, silent 25-point gap the player never sees explained).
 
 ## What did not change
 
-- **Samurai** never runs — refused before any roll, byte-identical.
+- **Samurai** never runs — refused before any roll, byte-identical. Phase 91 plan 05 (IDENT-16): a
+  **Master of Arms** is refused the same way (`fleeRefused { reason: "masterOfArms" }`), in every round, through the one
+  `derived.js#neverFlees` predicate.
 - **Cloaker** free vanish while unseen (`!C.opened2`) — zero draws, no
   `fleeRolled`; once seen, `vanishDenied` narrates and falls through to the
   ordinary roll (which now uses the new formula, same as any other Thief).
 - **Tracked round-1 withdrawal** — a clean, roll-free exit for any Fighter
-  except a Master of Arms, who is denied (`withdrawalDenied`) and falls
-  through to the ordinary roll.
+  that may flee. (Phase 91 plan 05: the Master of Arms branch and the
+  `withdrawalDenied` event are gone; a Master of Arms is refused by
+  `fleeRefusal` before it gets here.)
 - **Smoke** (ABIL-01) — an active flee bypass: no roll, no pursuit strike,
   unconditional escape while the effect is active.
 - **The failed-flee path** — `fleeFailed` still hands every live foe its

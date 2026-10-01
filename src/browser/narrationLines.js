@@ -319,7 +319,6 @@ export const FEATURE_EVENTS = [
   "strikeRefused",
   "fleeRefused",
   "parleyRefused",
-  "withdrawalDenied",
   "vanishDenied",
   "itemRejected",
   "equipRejected",
@@ -1081,7 +1080,7 @@ function fleeChain(events, consumed, eventOrder = false) {
 
 /**
  * parleyChain(events, consumed, eventOrder = false) — `parleyRolled` + (`goldGained` why
- * "parley" | `parleyFailed` | `beastsSoothed`) fold into ONE line: the
+ * "parley" | `parleyFailed` | `beastsSoothed` | `parleyWon`, Phase 91 plan 05) fold into ONE line: the
  * outcome's own text plus `(${roll} vs ${range})` (Phase 73, ROLL-05: via
  * rollVsText, roll-high).
  */
@@ -1093,7 +1092,7 @@ function parleyChain(events, consumed, eventOrder = false) {
       if (consumed.has(j)) continue;
       const oe = events[j];
       const isOutcome =
-        (oe.type === "goldGained" && oe.why === "parley") || oe.type === "parleyFailed" || oe.type === "beastsSoothed";
+        (oe.type === "goldGained" && oe.why === "parley") || oe.type === "parleyFailed" || oe.type === "beastsSoothed" || oe.type === "parleyWon";
       if (isOutcome) {
         consumed.add(i);
         consumed.add(j);
@@ -1697,8 +1696,13 @@ export const LINE_FOR = {
   }),
   // Phase 31 (CMB-01): notFought — Fight! not yet pressed — added alongside
   // the existing samurai reason.
-  fleeRefused: (e) => (e?.reason === "notFought" ? block("Running comes after Fight!, not instead of it.") : block("A Samurai does not run.")),
-  withdrawalDenied: () => block("Slipping away untouched would mean not attacking."),
+  // Phase 91 plan 05 (IDENT-16): a Master of Arms never leaves a fight either.
+  fleeRefused: (e) =>
+    e?.reason === "notFought"
+      ? block("Running comes after Fight!, not instead of it.")
+      : e?.reason === "masterOfArms"
+        ? block("A Master of Arms does not stop halfway.")
+        : block("A Samurai does not run."),
   vanishDenied: () => block("They have already seen your face."),
   fled: (e) => {
     // Phase 90 plan 09 (SPELL-10): door is Door Illusion's escape.
@@ -1738,10 +1742,20 @@ export const LINE_FOR = {
   parleyInsulted: () => ({ text: "You have made it personal.", tone: "hurt", priority: PRIORITY.them }),
   parleyExhausted: () => block("You already said your piece."),
   goldGained: (e) => {
-    const suffix = e?.why === "pickpocket" ? " (Pickpocket)" : e?.why === "parley" ? " (parley)" : "";
+    const suffix = e?.why === "pickpocket" ? " (Pickpocket)" : e?.why === "parley" ? " (parley)" : e?.why === "parley spoils" ? " (parley spoils)" : "";
     return { text: `+${e?.amount ?? 0} wilmst${suffix}`, tone: "hit", priority: PRIORITY.feature };
   },
   parleyFailed: () => ({ text: "They are not buying it.", tone: "miss", priority: PRIORITY.you }),
+  // Phase 91 plan 05 (PARLEY-01): a won parley's one pay line. Null-safe for the voice scan's sparse events.
+  parleyWon: (e) => {
+    const n = Number.isFinite(e?.count) ? e.count : 0;
+    const items = Number.isFinite(e?.items) ? e.items : 0;
+    const gold = Number.isFinite(e?.gold) ? e.gold : 0;
+    const parts = [`+${Number.isFinite(e?.sp) ? e.sp : 0} XP`];
+    if (gold > 0) parts.push(`+${gold} wilmst`);
+    if (items > 0) parts.push(`${items} ${items === 1 ? "item" : "items"} for you`);
+    return { text: `Talked down ${n === 1 ? "1 foe" : `${n} foes`}: ${parts.join(", ")}.`, tone: "hit", priority: PRIORITY.you };
+  },
   sang: (e) => ({ text: `You sing ${e?.song ?? "a tune"}.`, tone: "magic", priority: PRIORITY.feature }),
   // VOX-05 (Phase 79, plan 79-04): the song lines name who the song reached;
   // Lullaby and Thunder roll how many foes they can reach ("up to").
@@ -2167,6 +2181,8 @@ export const LINE_FOR = {
       noTarget: "Nothing left to aim at.",
       // Phase 90 plan 09 (SPELL-10): the rail twins of the Door Illusion / Chameleon Tongue refusals.
       samurai: "A Samurai does not run, not even through a door that is not there. Nothing spent.",
+      // Phase 91 plan 05 (IDENT-16): the Master of Arms' door refusal ("masterOfArms" below is the Tongue's).
+      masterOfArmsStays: "A Master of Arms finishes what it starts, doors that are not there included. Nothing spent.",
       parleySpent: "You already said your piece. Nothing spent.",
       ninja: "A Ninja does not speak, in any tongue. Nothing spent.",
       masterOfArms: "A Master of Arms has one answer, and it is not a sentence. Nothing spent.",

@@ -122,7 +122,6 @@ const NAMED_LEGIBILITY_EVENTS = [
   "strikeRefused",
   "fleeRefused",
   "parleyRefused",
-  "withdrawalDenied",
   "vanishDenied",
   "itemRejected",
   "equipRejected",

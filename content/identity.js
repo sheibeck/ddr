@@ -74,7 +74,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Court Mage": side(
       [
         trait("court-mage-boredom", "one foe in six dies of boredom before the fight starts", CONTRACT, "boredom kills 1-in-6 (d12 <= 2); always parleys Humans"),
-        trait("court-mage-humans", "can always talk to Humans", CONTRACT, "boredom kills 1-in-6 (d12 <= 2); always parleys Humans"),
+        trait("court-mage-humans", "can always parley with Humans", CONTRACT, "boredom kills 1-in-6 (d12 <= 2); always parleys Humans"),
       ],
       [trait("court-mage-first", "foes act first in round one", CONTRACT, "you talk first — foes act first in round one only")],
     ),
@@ -96,7 +96,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       ],
     ),
     "Woodsman": side(
-      [trait("woodsman-talk", "can always talk to Beasts and Lair Beasts", CONTRACT, "the professional forester — parleys Beasts and Lair Beasts, refused for Humans")],
+      [trait("woodsman-talk", "can always parley with Beasts and Lair Beasts; +3 on every parley roll", CONTRACT, "the professional forester — parleys Beasts and Lair Beasts, refused for Humans")],
       [trait("woodsman-armor", "no armour heavier than Studded", CONTRACT, "no mail, no plate — refused anything heavier than Studded")],
     ),
     "Soldier": side(
@@ -119,8 +119,9 @@ export const IDENTITY_TRAITS = Object.freeze({
         trait("moa-patch", "patches your own damaged armour every night in camp", "test/unit/movement.test.js", "newDay: a Master of Arms fighter (no Sewing) patches d6+3 armour"),
       ],
       [
-        trait("moa-parley", "can never talk a fight down", CONTRACT, "cannot parley, ever; no clean round-1 tracked withdrawal"),
-        trait("moa-withdraw", "no clean withdrawal in round one", CONTRACT, "cannot parley, ever; no clean round-1 tracked withdrawal"),
+        trait("moa-parley", "can never talk a fight down", CONTRACT, "cannot parley, ever; never leaves a fight"),
+        // Phase 91 plan 05 (IDENT-16): replaces moa-withdraw (the round-1 withdrawal denial cost nothing: nothing sets C.tracked).
+        trait("moa-never-leaves", "never leaves a fight once it starts: no running, no withdrawal, no escape", "test/unit/moa-never-leaves.test.js", "(1) flee: a Master of Arms is refused in a tracked round 1"),
       ],
     ),
     "Samurai": side(
@@ -129,7 +130,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Bard": side(
       [
-        trait("bard-humans", "can always talk to Humans", CONTRACT, "courtly enough to talk to anyone — parleys Humans at fluency 0"),
+        trait("bard-humans", "can always parley with Humans", CONTRACT, "courtly enough to talk to anyone — parleys Humans at fluency 0"),
         trait("bard-song", "a song every 100 squares", "test/unit/combat.test.js", "songReady: only a Bard, and only every 100 squares"),
       ],
       [
@@ -168,7 +169,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Con Artist": side(
       [
-        trait("con-artist-talk", "can talk to anything but Magical foes and the Walking Dead", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
+        trait("con-artist-talk", "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
         trait("con-artist-leave", "a level 1 foe leaves before the fight two times in three", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
       ],
       [trait("con-artist-opener", "your opening blow deals no damage", CONTRACT, "the opening blow is a warning, not an injury")],
@@ -192,7 +193,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Elven": side(
       [
         trait("elven-prices", "store prices halved", "test/unit/economy.test.js", "priceFor: triples for a Troll, halves (rounded) for Elven/Dwarven, unchanged otherwise"),
-        trait("elven-humans", "can always talk to Humans, with a bonus", "test/unit/rollDirection-checks.test.js", "[parley:elven-humans]"),
+        trait("elven-humans", "can always parley with Humans, +3 on that parley roll", "test/unit/rollDirection-checks.test.js", "[parley:elven-humans]"),
       ],
       [],
     ),
@@ -202,7 +203,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     ),
     "Wilmsry": side(
       [
-        trait("wilmsry-talk", "can talk to anything but Magical foes and the Walking Dead", CONTRACT, "camp heals twice as fast; parleys Beasts at fluency 0"),
+        trait("wilmsry-talk", "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll", CONTRACT, "camp heals twice as fast; parleys Beasts at fluency 0"),
         trait("wilmsry-haggle", "store prices 30% off", "test/unit/tools.test.js", "openStore: a Wilmsry's haggle (x0.7) applies to the tool lines like every other line"),
       ],
       [trait("wilmsry-joiners", "Magic User Joiners refuse to travel with you", CONTRACT, "half skill points; Magic User Joiners refuse to travel with you")],

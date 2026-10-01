@@ -38,7 +38,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 const REFUSAL_TYPES = [
-  "strikeRefused", "fleeRefused", "parleyRefused", "withdrawalDenied", "vanishDenied",
+  "strikeRefused", "fleeRefused", "parleyRefused", "vanishDenied",
   "itemRejected", "equipRejected", "useRefused", "scrollRefused", "noChargesLeft",
   "spellNotKnown", "spellAboveLevel", "spellSchoolLocked", "campFailed", "joinerRefused",
   "buyFailed", "backstabDenied", "bagFull", "nothingToThrowAt", "nothingToTurn",

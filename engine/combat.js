@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1055,6 +1055,51 @@ export function playerStrike(state, rng, events = []) {
 }
 
 /**
+ * foeSpoils(state, f, rng, events, opts) — Phase 91 plan 05 (PARLEY-01): the
+ * spoils a foe pays, extracted from killFoe with no change of statement or
+ * draw order so a kill is byte-identical: the coin purse (`rng.d(10)`, scaled
+ * by level and the purse of its type, `gainWilmst` with `opts.why`, default
+ * "off the body"), then the item-drop check (`rollCheck` on a d20 against
+ * `2 + lvl` faces), `rollTreasureItem`, the bag-upgrade check when a tier is
+ * open, and `offerLoot` into the pending pile. killFoe calls it with the main
+ * rng; a won parley calls it for every live foe with a derived stream
+ * (`derivedRng(cursor, the parleySpoils key, acts)`), so the parley never moves the
+ * main cursor for the spoils. The Cooking ration a slain beast gives stays in
+ * killFoe (a parleyed beast walks away alive). Returns `{ gold, items }`: the
+ * wilmst credited to the hero (a Pickpocket's extra take included) and the
+ * number of items offered (0 or 1).
+ *
+ * DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
+ * rollTreasureItem draw are UNCHANGED and still sit first, in the same order
+ * — only the destination changes, from the legacy auto-take to the pending
+ * pile (offerLoot). The bag-swap d20 fires ONLY when bagUpgradeTier(state) is
+ * non-null (depth >= 2 with an upgrade tier available). Phase 73 (ROLL-05):
+ * both gates read roll-high through rollCheck — same draws, same positions,
+ * same short-circuit. offerLoot's optional 4th argument carries the roll-high
+ * triple(s) for the parity invariant/Oracle.
+ */
+export function foeSpoils(state, f, rng, events = [], opts = {}) {
+  const c = state.c;
+  const goldBefore = c.gold;
+  const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
+  // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
+  // identity (1) is a no-op.
+  const coin = lootFor(Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR)); // roll:amount
+  if (coin > 0) gainWilmst(state, coin, opts.why ?? "off the body", rng, events);
+  let items = 0;
+  const lootCheck = rollCheck(rng, 20, atLeastFor(2 + f.lvl, 20));
+  if (lootCheck.ok) {
+    let drop = rollTreasureItem(rng, state.floor.depth, c);
+    const tier = bagUpgradeTier(state);
+    const bagCheck = tier ? rollCheck(rng, 20, atLeastFor(BAG_DROP_FACES, 20)) : null;
+    if (bagCheck && bagCheck.ok) drop = bagItemFor(tier);
+    offerLoot(state, drop, events, { ...rollFields(lootCheck), ...(bagCheck ? { bag: rollFields(bagCheck) } : {}) });
+    items = 1;
+  }
+  return { gold: c.gold - goldBefore, items };
+}
+
+/**
  * killFoe(state, f, rng, events) — a foe's death: lives (kill-twice), the
  * skill-point formula (d6 x level x mul, with spMul/Barbarian/Apprentice
  * modifiers), coin via gainWilmst, treasure via rollTreasureItem, offered
@@ -1112,32 +1157,10 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
     return events;
   }
 
-  // creatures carry things, and the things are worth wilmst
-  const purse = { Humans: 12, Demons: 8, Magical: 8, "Walking Dead": 6, "Lair Beasts": 3, Beasts: 1 }[f.type] || 4;
-  // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
-  // identity (1) is a no-op.
-  const coin = lootFor(Math.round((rng.d(10) * f.lvl * purse) / LOOT_DIVISOR)); // roll:amount
-  if (coin > 0) gainWilmst(state, coin, "off the body", rng, events);
-  // DETERMINISM GATE (Phase 29, LOOT-01/05): the gate d20 and every
-  // rollTreasureItem draw below are UNCHANGED and still sit first, in the
-  // same order — only the destination changes, from the legacy auto-take to
-  // the pending pile (offerLoot). The bag-swap d20 is the ONE new draw this
-  // phase adds: it sits AFTER them and before the cooking check, and fires
-  // ONLY when bagUpgradeTier(state) is non-null (depth >= 2 with an upgrade
-  // tier available) — never true on a depth-1 fixture (RESEARCH "LOOT-05
-  // guard safety"), so every parity fixture draws exactly as before.
-  // Phase 73 (ROLL-05): both gates now read roll-high through rollCheck —
-  // same draws, same positions, same short-circuit (the bag gate only draws
-  // when `tier` is truthy). offerLoot's optional 4th argument carries the
-  // roll-high triple(s) for the parity invariant/Oracle.
-  const lootCheck = rollCheck(rng, 20, atLeastFor(2 + f.lvl, 20));
-  if (lootCheck.ok) {
-    let drop = rollTreasureItem(rng, state.floor.depth, c);
-    const tier = bagUpgradeTier(state);
-    const bagCheck = tier ? rollCheck(rng, 20, atLeastFor(BAG_DROP_FACES, 20)) : null;
-    if (bagCheck && bagCheck.ok) drop = bagItemFor(tier);
-    offerLoot(state, drop, events, { ...rollFields(lootCheck), ...(bagCheck ? { bag: rollFields(bagCheck) } : {}) });
-  }
+  // creatures carry things, and the things are worth wilmst: the coin purse and
+  // the item-drop check (Phase 91 plan 05, PARLEY-01: extracted unchanged into
+  // foeSpoils so a won parley rolls the very same spoils).
+  foeSpoils(state, f, rng, events);
 
   if (f.type === "Beasts" || f.type === "Lair Beasts") {
     if (skill(c, "Cooking")) {
@@ -1746,15 +1769,19 @@ function wardCrit(body, foe, roll, dieN, events, member = null) {
 
 /**
  * fleeRefusal(state) — Phase 90 plan 09 (SPELL-10): THE never-flee predicate.
- * Returns the reason this hero can never leave a fight by running ("samurai": a
- * Samurai never runs) or null. `flee` reads it for its refusal (behaviour
- * unchanged) and Door Illusion reads it so a hero who may not flee may not
- * conjure an exit either (castSpell refuses the cast before the charge is
- * spent). Phase 91's IDENT-16 (Master of Arms) extends THIS function, so the
- * rule is edited in one place. Pure, zero rng.
+ * Returns the reason this hero can never leave a fight ("samurai": a Samurai
+ * never runs; "masterOfArms": a Master of Arms never leaves a fight once it
+ * starts, Phase 91 plan 05, IDENT-16) or null. `flee` reads it for its refusal
+ * (and with it Smoke, the tracked withdrawal and every later exit) and Door
+ * Illusion reads it so a hero who may not flee may not conjure an exit either
+ * (castSpell refuses the cast before the charge is spent; a scroll's free cast
+ * is refused the same way and the scroll stays spent, RULES-10). Which subs
+ * never leave is engine/derived.js#neverFlees, the one predicate the combat
+ * menu and the bot read too. Pure, zero rng.
  */
 export function fleeRefusal(state) {
-  return state.c.sub === "Samurai" ? "samurai" : null;
+  if (!neverFlees(state.c)) return null;
+  return state.c.sub === "Samurai" ? "samurai" : "masterOfArms";
 }
 
 /**
@@ -1835,9 +1862,10 @@ export function behemothRoar(state, sp, rng, events, caster = {}) {
 
 /**
  * flee(state, rng, events) — the escape action. Ports mazeworld.html flee()
- * (lines 2684-2697): Samurai never runs, a Cloaker gets away for free while
- * unseen, a tracked round-1 withdrawal is clean (denied for a Master of
- * Arms), otherwise a raw d20 vs `atLeast = 14 - fleeBreakdown(c).bonus`
+ * (lines 2684-2697): Samurai never runs (nor, since Phase 91 plan 05, IDENT-16,
+ * does a Master of Arms), a Cloaker gets away for free while
+ * unseen, a tracked round-1 withdrawal is clean, otherwise a raw d20 vs
+ * `atLeast = 14 - fleeBreakdown(c).bonus`
  * (Phase 73, ROLL-05: flee was ALREADY roll-high — no mirror, only the
  * bonus folding into the threshold), with every modifier named in
  * fleeRolled (DELIBERATE RULES CHANGE, Phase 42, 2026-09-18,
@@ -1849,10 +1877,11 @@ export function behemothRoar(state, sp, rng, events, caster = {}) {
  * cleared-check after a failed flee's foeTurn, since a fleesBelow caster can
  * now leave the fight mid-turn and would otherwise strand the combat screen.
  *
- * DECISION ORDER (Phase 24, IDENT-05/IDENT-07): Samurai refusal first ->
- * Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
- * tracked round-1 clean withdrawal (denied + narrated for a Master of
- * Arms, who falls through) -> the ordinary d20 roll.
+ * DECISION ORDER (Phase 24, IDENT-05/IDENT-07; Phase 91 plan 05, IDENT-16):
+ * never-flee refusal first (fleeRefusal: the Samurai and the Master of Arms,
+ * zero draws, every round, which also shuts Smoke and the withdrawal for them)
+ * -> Cloaker free vanish while `!C.opened2` (denied + narrated once seen) ->
+ * tracked round-1 clean withdrawal -> Smoke -> the ordinary d20 roll.
  *
  * Phase 29 (LOOT-06, CONTEXT §Pending pile): every success exit (cloaker,
  * tracked, escaped) forfeits a non-empty pending loot pile with ONE
@@ -1866,6 +1895,8 @@ export function flee(state, rng, events = []) {
   // CMB-01 (Phase 31): refuseIfPending is the FIRST check.
   if (refuseIfPending(state, events, "fleeRefused")) return events;
   if (!C) return events;
+  // Phase 91 plan 05 (IDENT-16): `fleeRefused { reason: "samurai" }` or
+  // `fleeRefused { reason: "masterOfArms" }`, in every round, with no draw.
   const refusal = fleeRefusal(state);
   if (refusal) {
     events.push({ type: "fleeRefused", reason: refusal });
@@ -1890,21 +1921,16 @@ export function flee(state, rng, events = []) {
   // re-rolls per round, so "round 1" still means exactly what it always did:
   // before the first full cycle completes.
   if (C.tracked && C.round === 1) {
-    // DELIBERATE RULES CHANGE (Phase 24, 2026-09-14, IDENT-05): "you attack
-    // creatures without question" — a Master of Arms gets no clean
-    // round-1 tracked withdrawal; they narrate the denial and fall through
-    // to the ordinary flee roll below like any other Fighter past round 1.
-    // Every other Fighter's clean exit stays byte-identical (same three
-    // statements, same order).
-    if (c.sub === "Master of Arms") {
-      events.push({ type: "withdrawalDenied", reason: "masterOfArms" });
-    } else {
-      if (pursuitStrike(state, rng, events).died) return events;
-      forfeitLoot(state, "fled", events);
-      events.push({ type: "fled", reason: "tracked" });
-      endCombat(state, events);
-      return events;
-    }
+    // Phase 91 plan 05 (IDENT-16): the Master of Arms branch that used to sit
+    // here (a denied withdrawal that fell through to the roll) is gone — a
+    // Master of Arms never reaches this line, fleeRefusal above refuses it in
+    // every round. Every other Fighter's clean exit is byte-identical (same
+    // three statements, same order).
+    if (pursuitStrike(state, rng, events).died) return events;
+    forfeitLoot(state, "fled", events);
+    events.push({ type: "fled", reason: "tracked" });
+    endCombat(state, events);
+    return events;
   }
   // Phase 38 (ABIL-01, Smoke) — "a flee during it just works": no roll, no
   // pursuit strike, unconditional escape while the effect is active. False
@@ -2047,8 +2073,20 @@ export function parleyBlockedReason(state, fluencyOverride) {
 /**
  * parley(state, rng, events) — talk the encounter down. Ports mazeworld.html
  * parley() (lines 2715-2734): a d20 read roll-high (Phase 73, ROLL-05) vs
- * the top `9+bonus` faces, awarding half the skill points (and a
+ * the top `9+bonus` faces, awarding the skill points (and a
  * Humans-only bonus payout) on success, ending combat cleanly.
+ *
+ * DELIBERATE RULES CHANGE (Phase 91 plan 05, 2026-10-01, PARLEY-01; user:
+ * "We should definitely"): a won parley pays what winning the fight would. FULL
+ * experience (the same killSpFor sum a kill of every live foe pays, not half),
+ * and for every live foe the spoils a kill of it would roll (foeSpoils: its
+ * coin purse, its item-drop check, the bag-upgrade check) into the pending
+ * loot pile, with the Humans tip still on top. DRAW LAYOUT: the main rng's
+ * draws are unchanged and in the same order (the d20, the experience d6 per
+ * live foe, then for Humans the tip d6 and its amount d6); the spoils draw
+ * ONLY from `derivedRng(<main cursor>, the parleySpoils key, <state.acts>)`. One new
+ * event, `parleyWon { count, sp, gold, items }`, summarises the pay after the
+ * spoils and before the fight ends. A Chameleon Tongue's parley is this parley.
  *
  * DELIBERATE RULES CHANGE (Phase 20, PARLEY-01/02/03, D-01..D-08): the
  * literal `x 2.5` SP multiplier is retired in favor of a STRUCTURAL half of
@@ -2128,18 +2166,41 @@ export function parley(state, rng, events = []) {
   const check = rollCheck(rng, 20, atLeastFor(faces, 20));
   events.push({ type: "parleyRolled", ...rollFields(check), fluency: flu });
   if (check.ok) {
-    // D-01/D-02: parley's payout is now STRUCTURALLY half of the same
-    // combat-equivalent killFoe pays (killSpFor), not a second formula.
-    const combatEquivalent = liveFoes(state).reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0); // roll:amount
-    const sp = heroSpFor(Math.round(combatEquivalent * 0.5));
+    // D-01/D-02: parley's experience is STRUCTURALLY the same combat-equivalent
+    // killFoe pays (killSpFor), not a second formula. PARLEY-01 (Phase 91 plan
+    // 05, user: "We should definitely"): the Phase 20 half is gone, so a won
+    // parley pays the FULL sum a kill of every live foe pays (never doubled:
+    // a foe already slain paid when it died and is not live here).
+    const talked = liveFoes(state);
+    const combatEquivalent = talked.reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0); // roll:amount
+    const sp = heroSpFor(Math.round(combatEquivalent));
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });
+    let tip = 0;
     if (C.type === "Humans" && rng.d(6) === 6) { // roll:already-high
       // D-03: was >= 4 (50%); the AMOUNT formula stays untouched (economy owns it).
+      // PARLEY-01: the tip stays ON TOP of the spoils below, draws unmoved.
       const wm = rng.d(6) * 100 * state.floor.depth; // roll:amount
       c.gold += wm;
+      tip = wm;
       events.push({ type: "goldGained", amount: wm, why: "parley" });
     }
+    // PARLEY-01: each live foe's normal spoils (its coin purse and its item-drop
+    // check, the bag-upgrade check included) go to the pending loot pile, rolled
+    // from ONE derived stream keyed on the main cursor after every main draw
+    // above, so the parley's main-rng draws are exactly the d20, the experience
+    // d6 per foe and (Humans) the tip's two d6, in that order, as before.
+    const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+    const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+    const spoilsRng = derivedRng(cursor, "parleySpoils", acts);
+    let spoilsGold = 0;
+    let spoilsItems = 0;
+    for (const f of talked) {
+      const got = foeSpoils(state, f, spoilsRng, events, { why: "parley spoils" });
+      spoilsGold += got.gold;
+      spoilsItems += got.items;
+    }
+    events.push({ type: "parleyWon", count: talked.length, sp, gold: spoilsGold + tip, items: spoilsItems });
     checkLevel(state, rng, events);
     endCombat(state, events);
     return events;

@@ -1131,12 +1131,12 @@ test("parley: a Con Artist can always parley, and success ends combat with skill
   state.combat = fixedCombat([foe]);
   // D-07: bonus = 4 (Con Artist) + level(1) - top(1) = 4; need = min(9+4,17)
   // = 13. roll=10 <= 13 -> success. per-foe sp roll d6=3 -> combatEquivalent
-  // = killSpFor(Human, lvl 1, 3) = round(3*1 * 5*1*1*1) = 15 -> sp =
-  // round(15 * 0.5) = 8 (D-01/D-02 — the same 8 the old formula happened to
-  // give). Humans wilmst check d6=2 (not 6, skipped — D-03).
+  // = killSpFor(Human, lvl 1, 3) = round(3*1 * 5*1*1*1) = 15 -> sp = 15.
+  // Phase 91 plan 05 (PARLEY-01): was round(15 * 0.5) = 8; a won parley now pays
+  // the FULL kill experience. Humans wilmst check d6=2 (not 6, skipped — D-03).
   const rng = fakeRng([10, 3, 2]);
   const events = parley(state, rng, []);
-  assert.ok(events.some((e) => e.type === "spGained" && e.reason === "parley" && e.amount === 8));
+  assert.ok(events.some((e) => e.type === "spGained" && e.reason === "parley" && e.amount === 15));
   // Phase 73 (ROLL-05): the old `need` (13) is the same faces count, now
   // read as atLeast = 21 - 13 = 8 on a d20.
   assert.ok(events.some((e) => e.type === "parleyRolled" && e.atLeast === 8 && e.dieN === 20 && e.fluency === 0));

@@ -537,20 +537,22 @@ test("LANG-01 / D-10 (Phase 38): fluency adds +2 at its single reachable tier an
 
 // --- Test 10: payout formula --------------------------------------------
 
-test("PARLEY-01 / D-01 / D-02: payout is round(Σ killSpFor × 0.5) over live foes in foe order; dead foes draw nothing", () => {
+// Phase 91 plan 05 (PARLEY-01): the half is gone — the payout is the FULL round(Σ killSpFor) (was × 0.5:
+// 33 -> 65, 8 -> 15 below). The spoils pay on top (test/unit/parley-rewards.test.js).
+test("PARLEY-01 / D-01 / D-02 (Phase 91 plan 05: full): payout is round(Σ killSpFor) over live foes in foe order; dead foes draw nothing", () => {
   const state = fixedState({ c: { sub: "Con Artist" } });
   const f1 = fixedFoe({ type: "Humans", lvl: 1 });
   const f2 = fixedFoe({ type: "Humans", lvl: 2 });
   state.combat = fixedCombat([f1, f2]);
   const events = parley(state, fakeRng([1, 3, 5, 2]), []);
-  const expected = Math.round((killSpFor(state.c, f1, 3) + killSpFor(state.c, f2, 5)) * 0.5);
-  assert.equal(expected, 33);
+  const expected = Math.round(killSpFor(state.c, f1, 3) + killSpFor(state.c, f2, 5));
+  assert.equal(expected, 65);
   const gained = events.find((e) => e.type === "spGained" && e.reason === "parley");
   assert.ok(gained);
-  assert.equal(gained.amount, 33);
+  assert.equal(gained.amount, 65);
   assert.equal(gained.amount, expected);
-  assert.equal(events.some((e) => e.type === "goldGained"), false, "check roll 2 does not fire the wilmst bonus");
-  assert.equal(state.c.sp, 33);
+  assert.equal(events.some((e) => e.type === "goldGained" && e.why === "parley"), false, "check roll 2 does not fire the wilmst bonus");
+  assert.equal(state.c.sp, 65);
   assert.equal(state.combat, null);
 
   const state2 = fixedState({ c: { sub: "Con Artist" } });
@@ -559,21 +561,23 @@ test("PARLEY-01 / D-01 / D-02: payout is round(Σ killSpFor × 0.5) over live fo
   state2.combat = fixedCombat([alive, dead]);
   const events2 = parley(state2, fakeRng([1, 3, 2]), []); // 3 draws only: the dead foe draws nothing
   const gained2 = events2.find((e) => e.type === "spGained" && e.reason === "parley");
-  assert.equal(gained2.amount, 8);
+  assert.equal(gained2.amount, 15);
   assert.equal(events2.some((e) => e.type === "parleyExhausted"), false, "no exhaustion error from an under-drawn rng");
 });
 
 // --- Test 11: the D-02 property -----------------------------------------
 
-test("PARLEY-01 / D-02 property: the parley share never exceeds the combat-equivalent for any race × sub × foe level × d6, singly or summed over two foes", () => {
+// Phase 91 plan 05 (PARLEY-01): the share is now the FULL combat-equivalent (rounded), so the property
+// is "a parley never pays more than killing the same foes would": equal, never above.
+test("PARLEY-01 / D-02 property (Phase 91 plan 05: full): the parley share never exceeds the combat-equivalent for any race × sub × foe level × d6, singly or summed over two foes", () => {
   for (const race of Object.keys(RACES)) {
     for (const sub of ["Soldier", "Barbarian", "Apprentice", "Con Artist"]) {
       const c = fixedFighter({ race, sub });
       for (let lvl = 1; lvl <= 5; lvl++) {
         for (let roll = 1; roll <= 6; roll++) {
           const eq = killSpFor(c, { lvl }, roll);
-          const share = Math.round(eq * 0.5);
-          assert.ok(share <= eq, `race=${race} sub=${sub} lvl=${lvl} roll=${roll}: share ${share} <= eq ${eq}`);
+          const share = Math.round(eq);
+          assert.ok(Math.abs(share - eq) < 1, `race=${race} sub=${sub} lvl=${lvl} roll=${roll}: share ${share} is eq ${eq} rounded`);
           assert.ok(share >= 0, `race=${race} sub=${sub} lvl=${lvl} roll=${roll}: share ${share} >= 0`);
         }
       }
@@ -583,8 +587,8 @@ test("PARLEY-01 / D-02 property: the parley share never exceeds the combat-equiv
           const rb = ((a * b) % 6) + 1;
           const eqA = killSpFor(c, { lvl: a }, ra);
           const eqB = killSpFor(c, { lvl: b }, rb);
-          const summedShare = Math.round((eqA + eqB) * 0.5);
-          assert.ok(summedShare <= eqA + eqB, `race=${race} sub=${sub} a=${a} b=${b}`);
+          const summedShare = Math.round(eqA + eqB);
+          assert.ok(Math.abs(summedShare - (eqA + eqB)) < 1, `race=${race} sub=${sub} a=${a} b=${b}`);
         }
       }
     }
@@ -598,17 +602,21 @@ test("PARLEY-01 / D-03 / D-04: the Humans wilmst check pays only on a 6 and draw
     const state = fixedState({ c: { sub: "Con Artist", gold: 50 }, floor: { depth: 3 } });
     state.combat = fixedCombat([fixedFoe({ type: "Humans", lvl: 1 })], { type: "Humans" });
     const events = parley(state, fakeRng(seq), []); // a 4th draw would throw "sequence exhausted"
-    assert.equal(events.some((e) => e.type === "goldGained"), false, `seq=${seq}`);
-    assert.equal(state.c.gold, 50, `seq=${seq}`);
+    assert.equal(events.some((e) => e.type === "goldGained" && e.why === "parley"), false, `seq=${seq}`);
+    // Phase 91 plan 05 (PARLEY-01): the spoils (a purse, from a derived stream) pay on top, so
+    // gold is 50 plus exactly the "parley spoils" coin, and nothing else.
+    const spoils = events.filter((e) => e.type === "goldGained" && e.why === "parley spoils").reduce((n, e) => n + e.amount, 0);
+    assert.equal(state.c.gold, 50 + spoils, `seq=${seq}`);
   }
   const state = fixedState({ c: { sub: "Con Artist", gold: 50 }, floor: { depth: 3 } });
   state.combat = fixedCombat([fixedFoe({ type: "Humans", lvl: 1 })], { type: "Humans" });
   const events = parley(state, fakeRng([1, 3, 6, 4]), []);
-  const gold = events.find((e) => e.type === "goldGained");
+  const gold = events.find((e) => e.type === "goldGained" && e.why === "parley");
   assert.ok(gold);
   assert.equal(gold.amount, 1200);
-  assert.equal(gold.why, "parley");
-  assert.equal(state.c.gold, 1250);
+  // PARLEY-01 (Phase 91 plan 05): the tip is ON TOP of the spoils' purse.
+  const spoilsCoin = events.filter((e) => e.type === "goldGained" && e.why === "parley spoils").reduce((n, e) => n + e.amount, 0);
+  assert.equal(state.c.gold, 1250 + spoilsCoin);
 });
 
 // --- Test 13: countingRng draw-shape pins ------------------------------------
@@ -648,7 +656,7 @@ test("D-04 draw shape pinned with countingRng: exhausted 0, never-eligible 0, su
 
 // --- Test 14: D-21 seed-303 pin ----------------------------------------
 
-test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 5 / gold 50 with re-measured Phase 31 dice", () => {
+test("D-21 seed-303 pin: the one parity-exposed parley reads need 17 / sp 10 / gold 60 (Phase 91 plan 05: full experience, spoils; was sp 5 / gold 50)", () => {
   const run = newRun(303);
   const c = run.c;
   assert.equal(c.race, "Wilmsry");
@@ -689,12 +697,19 @@ test("D-21 seed-303 pin: the one parity-exposed parley now reads need 17 / sp 5 
   const rolled = events.find((e) => e.type === "parleyRolled");
   assert.deepStrictEqual(rolled, { type: "parleyRolled", roll: 16, atLeast: 4, dieN: 20, fluency: 0 });
   const gained = events.find((e) => e.type === "spGained");
-  assert.deepStrictEqual(gained, { type: "spGained", amount: 5, reason: "parley" });
+  // Phase 91 plan 05 (PARLEY-01), measured: sp 5 -> 10 (the full kill experience, not
+  // half) and gold 50 -> 60 (the Ned's purse, from the derived "parleySpoils" stream; this
+  // suite's counting rng has no cursor, so the stream is keyed on 0); the item-drop check
+  // fails here, so the pile stays empty. The main-rng dice are unchanged.
+  assert.deepStrictEqual(gained, { type: "spGained", amount: 10, reason: "parley" });
   assert.ok(events.some((e) => e.type === "combatEnded"));
-  assert.equal(events.some((e) => e.type === "goldGained"), false);
+  assert.equal(events.some((e) => e.type === "goldGained" && e.why === "parley"), false, "no Humans tip on a d6 of 5");
+  assert.deepStrictEqual(events.find((e) => e.type === "goldGained"), { type: "goldGained", amount: 10, why: "parley spoils" });
+  assert.deepStrictEqual(events.find((e) => e.type === "parleyWon"), { type: "parleyWon", count: 1, sp: 10, gold: 10, items: 0 });
 
-  assert.equal(next.c.sp, 5);
-  assert.equal(next.c.gold, 50);
+  assert.equal(next.c.sp, 10);
+  assert.equal(next.c.gold, 60);
+  assert.deepStrictEqual(next.pendingLoot ?? [], []);
   assert.equal(next.combat, null);
 
   // BEFORE (pre-Phase-20, measured 2026-09-14) was d20=2 d6=5 d6=5 d6=2 ->

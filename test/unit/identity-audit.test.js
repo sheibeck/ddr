@@ -91,7 +91,9 @@ const PRE_REGISTERED = [
   // Phase 91 plan 03 stated illusionist-book as a trait (IDENT-14 and the Phase 90
   // starting-book ruling): it is a live identityEntries id now, so it left this list
   // and sits in the Illusionist's authored order with the verdict fixed text (91-03).
-  ["sub", "Master of Arms", "moa-never-leaves", /^ruled \(2026-09-30\) -> 91-05/],
+  // Phase 91 plan 05 built moa-never-leaves (IDENT-16): it is a live identityEntries id now, so it left
+  // this list and sits in the Master of Arms' authored order with the verdict fixed engine; fixed text (91-05).
+  // moa-withdraw stays here as the retired record (it is no longer a live id).
   ["sub", "Pickpocket", "pickpocket-item", /^ruled \(2026-09-30\) -> 91-08/],
   ["sub", "Master of Arms", "moa-withdraw", /^(retire|retired) \(91-05\)$/],
   ["race", "Troll", "troll-weapons", /^(retire|retired) \(91-08\)$/],
