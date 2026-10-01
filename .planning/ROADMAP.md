@@ -370,11 +370,11 @@ Plans:
   3. A 2.2.0 client's submission is refused by the live rules; the updated client's queue posts normally.
   4. The store listing, Data safety form text and privacy policy say what the board shows publicly.
 
-**Plans:** 10 plans
+**Plans:** 1/10 plans executed
 
 Plans:
 
-- [ ] 91.2-01-PLAN.md — Bring Play Games sign-in back into the Android shell as a small in-repo plugin (D-02), with the JS seam the identity layer will use, and the
+- [x] 91.2-01-PLAN.md — Bring Play Games sign-in back into the Android shell as a small in-repo plugin (D-02), with the JS seam the identity layer will use, and the
 - [ ] 91.2-02-PLAN.md — Build the trusted name writer (D-01): a zero-dependency Cloud Function that turns a verified Play Games link into a `names/{uid}` record, st
 - [ ] 91.2-03-PLAN.md — Teach the browser dev loop's fake board server everything the new identity needs: Play Games sign-in and linking over `accounts:signInWithId
 - [ ] 91.2-04-PLAN.md — Make the server refuse any run whose name is not the poster's verified Play Games name (BOARD-31), refuse every client rename (D-11), and re
