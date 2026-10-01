@@ -38,11 +38,37 @@
 // Firestore's IAM-level admin access does), which is what tools/
 // boards-admin.mjs's rekey-deep uses.
 //
+// Phase 91.2 (BOARD-31, BOARD-32): the Play Games identity mirror and the
+// admin-only names collections. accounts:signInWithIdp (create, sign in or
+// link with an idToken, single-use fake codes `fake:<pid>:<name>:<n>`),
+// accounts:lookup (providerUserInfo), accounts:update (unlink, top-level
+// displayName only; linkProviderUserInfo is refused), accounts:delete frees
+// the player. names/{uid} and nameOverrides/{uid} answer only the admin token
+// (clients are denied read, write and query); admin :runQuery reads them and
+// runs, and admin :commit applies run updates (with or without an updateMask),
+// deletes and creates with no client rule, all-or-nothing, which is how the
+// boardName function and tools/boards-admin.mjs write. No client create or
+// update rule changed here. Options, each modelling one spike gate offline:
+//   playGamesEnabled   false -> OPERATION_NOT_ALLOWED (G4: provider not enabled)
+//   linkKeepsUid       false -> a link answers a new uid (G3: uid not kept)
+//   refreshProviderName false -> the provider name never refreshes (G2)
+//   nameSource         "games" -> the boardName emulation asks for a Games
+//                      auth code (G1/A4 fallback)
+//
+// The boardName Cloud Function is emulated at BOARD_NAME_FN.url (any path
+// match, no API-key check, CORS headers on every answer). That emulation is a
+// hand-written MIRROR of functions/board-names/core.js and index.js, kept
+// equal by test/unit/board-names-contract.test.js, which runs one scenario
+// table through the real core (pointed at this fake as its Google: Identity
+// Toolkit, Firestore REST, plus the OAuth token and Games players/me stand-ins
+// below) and through this endpoint. Update both together.
+//
 // Pure, DOM-free: never calls a bare global fetch and never reads window,
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
 
-import { RUN_COLLECTION, validateRunDoc, runDocId, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
+import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, legacyDeepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
+import { sanitizeBoardName } from "./boardName.js";
 import { validateReport } from "./bugReport.js";
 import { REPORT_LIMITS_COLLECTION, validateLimitStep, decodeLimitDoc } from "./reportLimits.js";
 import { isValidHandle } from "./handles.js";
@@ -56,19 +82,52 @@ import {
   fromFirestoreFields,
   fromFirestoreValue,
 } from "./firestoreRest.js";
-import { FIREBASE_CONFIG } from "./firebaseConfig.js";
+import { FIREBASE_CONFIG, BOARD_NAME_FN } from "./firebaseConfig.js";
 
 export const FAKE_ADMIN_TOKEN = "fake-admin-token";
 
 const BUG_REPORTS_COLLECTION = "bugReports";
 const BANNED_COLLECTION = "banned";
+const NAMES_COLLECTION = "names";
+const NAME_OVERRIDES_COLLECTION = "nameOverrides";
+const NAME_COLLECTIONS = [NAMES_COLLECTION, NAME_OVERRIDES_COLLECTION];
+const PLAY_GAMES_PROVIDER = "playgames.google.com";
+const ADMIN_COMMIT_MAX_WRITES = 500;
+
+// The Google endpoints the boardName function core calls when NAME_SOURCE is
+// "games" (the G1/A4 fallback): the OAuth token exchange and the Games API.
+const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GAMES_PLAYER_URL = "https://games.googleapis.com/games/v1/players/me";
+
+// The boardName emulation's HTTP surface (functions/board-names/index.js).
+const NAME_FN_MAX_FIELD_CHARS = 8192;
+const NAME_FN_HASH_RE = /^[A-Za-z0-9]{1,64}$/;
+const CORS_ORIGIN = { "Access-Control-Allow-Origin": "*" };
+const CORS_PREFLIGHT = {
+  ...CORS_ORIGIN,
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "3600",
+};
 
 function errorBody(code, status) {
   return { error: { code, message: status, status } };
 }
 
-function jsonResponse(status, body) {
-  return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => JSON.stringify(body) };
+function jsonResponse(status, body, headers) {
+  const lower = {};
+  for (const [k, v] of Object.entries(headers ?? {})) lower[k.toLowerCase()] = v;
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: (k) => lower[String(k).toLowerCase()] ?? null },
+    // An empty body (a 204) rejects in json() like a real Response.
+    json: async () => {
+      if (body === undefined) throw new SyntaxError("Unexpected end of JSON input");
+      return body;
+    },
+    text: async () => (body === undefined ? "" : JSON.stringify(body)),
+  };
 }
 
 function parseUrl(rawUrl) {
@@ -159,6 +218,10 @@ export function createFakeBoardFetch(opts = {}) {
     runs: seedRuns = [],
     tokenTtlMs = 3600000,
     acceptLegacyDeepKey = false,
+    playGamesEnabled = true,
+    linkKeepsUid = true,
+    refreshProviderName = true,
+    nameSource = "provider",
   } = opts;
 
   let online = initialOnline !== false;
@@ -167,7 +230,11 @@ export function createFakeBoardFetch(opts = {}) {
   const reports = new Map(); // id -> report fields (no uid)
   const limits = new Map(); // uid -> { lastMs, dayMs, count }
   const banned = new Set();
-  const users = new Set();
+  const accounts = new Map(); // uid -> { uid, displayName?, providers: [{ providerId, rawId, federatedId, displayName }] }
+  const linkedPlayers = new Map(); // Play Games playerId -> uid
+  const usedCodes = new Set(); // fake Play Games auth codes already exchanged (single-use)
+  const gamesTokens = new Map(); // fake Games API access token -> { playerId, displayName }
+  const nameDocs = { names: new Map(), nameOverrides: new Map() }; // collection -> uid -> { fields (typed), createTimeIso, updateTimeIso }
   const idTokens = new Map(); // idToken -> { uid, issuedAtMs }
   const refreshTokens = new Map(); // refreshToken -> uid
   const calls = [];
@@ -248,15 +315,46 @@ export function createFakeBoardFetch(opts = {}) {
 
   // --- identity: accounts:signUp / accounts:delete, securetoken:token ----
 
-  function handleSignUp() {
-    if (anonymousEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+  function createAccount() {
     const uid = nextUid();
+    accounts.set(uid, { uid, displayName: undefined, providers: [] });
+    return accounts.get(uid);
+  }
+
+  function mintTokens(uid) {
     const idToken = nextToken("idtok");
     const refreshToken = nextToken("rtok");
     idTokens.set(idToken, { uid, issuedAtMs: now() });
     refreshTokens.set(refreshToken, uid);
-    users.add(uid);
+    return { idToken, refreshToken };
+  }
+
+  function handleSignUp() {
+    if (anonymousEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+    const { uid } = createAccount();
+    const { idToken, refreshToken } = mintTokens(uid);
     return { status: 200, body: { idToken, refreshToken, expiresIn: "3600", localId: uid } };
+  }
+
+  // Resolves the idToken in an Identity Toolkit body to a live account:
+  // { ok: true, uid, account } or { ok: false, result } carrying the 400 answer.
+  function resolveIdToken(idToken) {
+    const rec = typeof idToken === "string" ? idTokens.get(idToken) : undefined;
+    if (!rec) return { ok: false, result: { status: 400, body: errorBody(400, "INVALID_ID_TOKEN") } };
+    if (now() > rec.issuedAtMs + tokenTtlMs) return { ok: false, result: { status: 400, body: errorBody(400, "TOKEN_EXPIRED") } };
+    const account = accounts.get(rec.uid);
+    if (!account) return { ok: false, result: { status: 400, body: errorBody(400, "USER_NOT_FOUND") } };
+    return { ok: true, uid: rec.uid, account };
+  }
+
+  function providerInfoOf(account) {
+    return Object.freeze(account.providers.map((p) => Object.freeze({ ...p })));
+  }
+
+  function freePlayersOf(account) {
+    for (const p of account.providers) {
+      if (linkedPlayers.get(p.rawId) === account.uid) linkedPlayers.delete(p.rawId);
+    }
   }
 
   function handleAccountDelete(init) {
@@ -265,10 +363,145 @@ export function createFakeBoardFetch(opts = {}) {
     const rec = typeof idToken === "string" ? idTokens.get(idToken) : undefined;
     if (!rec) return { status: 400, body: errorBody(400, "INVALID_ID_TOKEN") };
     const { uid } = rec;
+    const account = accounts.get(uid);
+    if (account) freePlayersOf(account);
     for (const [tok, r] of [...idTokens]) if (r.uid === uid) idTokens.delete(tok);
     for (const [tok, u] of [...refreshTokens]) if (u === uid) refreshTokens.delete(tok);
-    users.delete(uid);
+    accounts.delete(uid);
     return { status: 200, body: {} };
+  }
+
+  // --- Play Games: accounts:signInWithIdp / lookup / update ------------------
+  //
+  // Fake Play Games auth codes are `fake:<pid>:<name>:<n>` (percent-encoded
+  // parts; src/browser/playIdentity.js#createFakePlayIdentity mints them).
+  // Every code is single-use. `playGamesEnabled` false models spike gate G4
+  // failing (the provider is not enabled on the project); `linkKeepsUid` false
+  // models G3 failing (a link answers a different uid); `refreshProviderName`
+  // false models G2 failing (the provider's name never changes after the first
+  // sign-in).
+
+  const FAKE_CODE_RE = /^fake:([^:]*):([^:]*):(\d+)$/;
+
+  function parseFakeCode(authCode) {
+    const m = typeof authCode === "string" ? FAKE_CODE_RE.exec(authCode) : null;
+    if (!m) return null;
+    try {
+      const playerId = decodeURIComponent(m[1]);
+      if (playerId === "") return null;
+      return { playerId, displayName: decodeURIComponent(m[2]) };
+    } catch {
+      return null;
+    }
+  }
+
+  function linkProvider(account, player) {
+    account.providers.push({
+      providerId: PLAY_GAMES_PROVIDER,
+      rawId: player.playerId,
+      federatedId: player.playerId,
+      displayName: player.displayName,
+    });
+    linkedPlayers.set(player.playerId, account.uid);
+  }
+
+  function signedInBody(account, provider, isNewUser) {
+    const { idToken, refreshToken } = mintTokens(account.uid);
+    return {
+      status: 200,
+      body: {
+        kind: "identitytoolkit#VerifyAssertionResponse",
+        localId: account.uid,
+        idToken,
+        refreshToken,
+        expiresIn: "3600",
+        providerId: PLAY_GAMES_PROVIDER,
+        federatedId: provider.federatedId,
+        displayName: provider.displayName,
+        isNewUser,
+      },
+    };
+  }
+
+  function handleSignInWithIdp(init) {
+    if (playGamesEnabled === false) return { status: 400, body: errorBody(400, "OPERATION_NOT_ALLOWED") };
+    const body = parseJsonBody(init.body) || {};
+    const post = new URLSearchParams(typeof body.postBody === "string" ? body.postBody : "");
+    if (post.get("providerId") !== PLAY_GAMES_PROVIDER) return { status: 400, body: errorBody(400, "INVALID_IDP_RESPONSE") };
+    const authCode = post.get("code");
+    const player = parseFakeCode(authCode);
+    if (!player || usedCodes.has(authCode)) return { status: 400, body: errorBody(400, "INVALID_IDP_RESPONSE") };
+
+    let caller = null;
+    if (body.idToken !== undefined && body.idToken !== null && body.idToken !== "") {
+      const who = resolveIdToken(body.idToken);
+      if (!who.ok) return who.result;
+      caller = who.account;
+    }
+    usedCodes.add(authCode);
+
+    const linkedUid = linkedPlayers.get(player.playerId);
+    const linked = linkedUid !== undefined ? accounts.get(linkedUid) : undefined;
+
+    // The same account (or a plain sign-in): refresh the provider's name, answer its uid.
+    if (linked && (caller === null || caller.uid === linked.uid)) {
+      const provider = linked.providers.find((p) => p.rawId === player.playerId);
+      if (refreshProviderName !== false) provider.displayName = player.displayName;
+      return signedInBody(linked, provider, false);
+    }
+
+    // The player is linked to another uid: the credential cannot be linked here.
+    if (linked) {
+      if (body.returnIdpCredential === true) {
+        return { status: 200, body: { kind: "identitytoolkit#VerifyAssertionResponse", errorMessage: "FEDERATED_USER_ID_ALREADY_LINKED", providerId: PLAY_GAMES_PROVIDER, federatedId: player.playerId } };
+      }
+      return { status: 400, body: errorBody(400, "FEDERATED_USER_ID_ALREADY_LINKED") };
+    }
+
+    // An unlinked player. With a caller that is a link (the uid is kept unless
+    // linkKeepsUid is false); without one, or when the uid is not kept, a new account.
+    if (caller && caller.providers.some((p) => p.providerId === PLAY_GAMES_PROVIDER)) {
+      return { status: 400, body: errorBody(400, "PROVIDER_ALREADY_LINKED") };
+    }
+    if (caller && linkKeepsUid !== false) {
+      linkProvider(caller, player);
+      return signedInBody(caller, caller.providers[caller.providers.length - 1], false);
+    }
+    const fresh = createAccount();
+    linkProvider(fresh, player);
+    return signedInBody(fresh, fresh.providers[0], true);
+  }
+
+  function handleLookup(init) {
+    const body = parseJsonBody(init.body);
+    const who = resolveIdToken(body?.idToken);
+    if (!who.ok) return who.result;
+    const user = { localId: who.uid, providerUserInfo: providerInfoOf(who.account).map((p) => ({ ...p })) };
+    if (who.account.displayName !== undefined) user.displayName = who.account.displayName;
+    return { status: 200, body: { kind: "identitytoolkit#GetAccountInfoResponse", users: [user] } };
+  }
+
+  // A signed-in user may unlink a provider and change the TOP-LEVEL displayName;
+  // they cannot write a provider's entry (linkProviderUserInfo is admin-only),
+  // which is what spike gate A4 relies on.
+  function handleUpdate(init) {
+    const body = parseJsonBody(init.body);
+    const who = resolveIdToken(body?.idToken);
+    if (!who.ok) return who.result;
+    if (body.linkProviderUserInfo !== undefined) return { status: 400, body: errorBody(400, "ADMIN_ONLY_OPERATION") };
+    const account = who.account;
+    if (Array.isArray(body.deleteProvider)) {
+      const gone = account.providers.filter((p) => body.deleteProvider.includes(p.providerId));
+      for (const p of gone) {
+        if (linkedPlayers.get(p.rawId) === account.uid) linkedPlayers.delete(p.rawId);
+      }
+      account.providers = account.providers.filter((p) => !body.deleteProvider.includes(p.providerId));
+    }
+    if (Array.isArray(body.deleteAttribute) && body.deleteAttribute.includes("DISPLAY_NAME")) account.displayName = undefined;
+    if (typeof body.displayName === "string") account.displayName = body.displayName;
+    const out = { kind: "identitytoolkit#SetAccountInfoResponse", localId: account.uid, providerUserInfo: providerInfoOf(account).map((p) => ({ ...p })) };
+    if (account.displayName !== undefined) out.displayName = account.displayName;
+    return { status: 200, body: out };
   }
 
   function handleRefresh(init) {
@@ -298,11 +531,21 @@ export function createFakeBoardFetch(opts = {}) {
     if (!structuredQuery) return denied();
     const { from, where, orderBy = [], limit, startAt } = structuredQuery;
     const collectionId = from?.[0]?.collectionId;
-    if (collectionId !== RUN_COLLECTION) return denied();
+    // names / nameOverrides are closed to clients: only an admin query reads them.
+    const isNameCollection = NAME_COLLECTIONS.includes(collectionId);
+    if (collectionId !== RUN_COLLECTION && !(isNameCollection && authKind === "admin")) return denied();
     if (authKind !== "admin") {
       if (!Number.isInteger(limit) || limit > LIST_LIMIT_MAX) return denied();
     }
-    let records = [...runStore.values()];
+    let records = isNameCollection
+      ? [...nameDocs[collectionId]].map(([uid, rec]) => ({
+          name: docName(config, collectionId, uid),
+          doc: fromFirestoreFields(rec.fields),
+          fieldsTyped: rec.fields,
+          createTimeIso: rec.createTimeIso,
+          updateTimeIso: rec.updateTimeIso,
+        }))
+      : [...runStore.values()];
     if (where) records = records.filter((r) => matchesFilter(r.doc, where));
     records = sortRecords(records, orderBy);
     if (startAt) {
@@ -311,7 +554,7 @@ export function createFakeBoardFetch(opts = {}) {
     }
     if (Number.isInteger(limit)) records = records.slice(0, limit);
     const hits = records.map((r) => ({
-      document: { name: r.name, fields: encodeRunDocFields(r.doc, r.createdAtIso), createTime: r.createTimeIso, updateTime: r.updateTimeIso },
+      document: { name: r.name, fields: r.fieldsTyped ?? encodeRunDocFields(r.doc, r.createdAtIso), createTime: r.createTimeIso, updateTime: r.updateTimeIso },
       readTime: nowIso(),
     }));
     return { status: 200, body: hits.length ? hits : [{ readTime: nowIso() }] };
@@ -348,6 +591,7 @@ export function createFakeBoardFetch(opts = {}) {
       if (hasTransform(write, "createdAt")) return { kind: "runCreate", collection, id, write };
       if (hasTransform(write, "last")) return { kind: "limitWrite", collection, id, write };
       if (write.currentDocument?.exists === false && !(write.updateTransforms?.length > 0)) return { kind: "reportCreate", collection, id, write };
+      return { kind: "unknown", collection, id, write };
     }
     return { kind: "unknown", collection: null, id: null, write };
   }
@@ -451,10 +695,67 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: commitOkBody(2, nowIso()) };
   }
 
+  // Admin :commit over runs (the boardName function and tools/boards-admin.mjs
+  // run as the service account, which bypasses the rules): updates with or
+  // without an updateMask, deletes and creates, applied in order with the
+  // currentDocument.exists preconditions and all-or-nothing, with no client
+  // rule applied. Firestore's 500-writes-per-commit ceiling applies.
+  function adminRunCommit(writes) {
+    if (writes.length > ADMIN_COMMIT_MAX_WRITES) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const staged = new Map(runStore);
+    const timeIso = nowIso();
+    for (const write of writes) {
+      if (write.delete) {
+        staged.delete(splitName(write.delete).id);
+        continue;
+      }
+      const id = splitName(write.update.name).id;
+      const have = staged.get(id);
+      const wantExists = write.currentDocument?.exists;
+      if (wantExists === true && !have) return notFound();
+      if (wantExists === false && have) return existsError();
+      const { createdAt, ...clientFields } = fromFirestoreFields(write.update.fields);
+      const maskPaths = write.updateMask?.fieldPaths;
+      let doc;
+      if (Array.isArray(maskPaths)) {
+        doc = { ...(have ? have.doc : {}) };
+        for (const fp of maskPaths) {
+          if (fp in clientFields) doc[fp] = clientFields[fp];
+          else delete doc[fp];
+        }
+      } else {
+        doc = clientFields;
+      }
+      let createdAtIso = have ? have.createdAtIso : timeIso;
+      if (!Array.isArray(maskPaths) && !hasTransform(write, "createdAt") && typeof createdAt === "string") createdAtIso = createdAt;
+      staged.set(id, {
+        id,
+        doc: Object.freeze(doc),
+        createdAtIso,
+        name: docName(config, RUN_COLLECTION, id),
+        createTimeIso: have ? have.createTimeIso : createdAtIso,
+        updateTimeIso: timeIso,
+      });
+    }
+    runStore.clear();
+    for (const [id, rec] of staged) runStore.set(id, rec);
+    return { status: 200, body: commitOkBody(writes.length, timeIso) };
+  }
+
   function commitDispatch(body, authKind, authUid) {
     const writes = Array.isArray(body?.writes) ? body.writes : [];
     if (writes.length === 0) return denied();
     const classified = writes.map(classifyWrite);
+
+    // A lone admin run create keeps its shape check below; every other
+    // all-runs admin commit skips the client rules.
+    if (
+      authKind === "admin" &&
+      classified.every((c) => c.collection === RUN_COLLECTION) &&
+      !(writes.length === 1 && classified[0].kind === "runCreate")
+    ) {
+      return adminRunCommit(writes);
+    }
 
     if (classified.every((c) => c.kind === "delete" && c.collection === RUN_COLLECTION)) {
       return applyAtomic(classified, (c) => validateRunDeleteWrite(c, authKind, authUid));
@@ -559,6 +860,62 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: {} };
   }
 
+  // --- names / nameOverrides: admin-only (clients cannot read or write) ------
+
+  function nameDocBody(collection, uid, rec) {
+    return { name: docName(config, collection, uid), fields: rec.fields, createTime: rec.createTimeIso, updateTime: rec.updateTimeIso };
+  }
+
+  function putNameDoc(collection, uid, fields) {
+    const have = nameDocs[collection].get(uid);
+    const timeIso = nowIso();
+    nameDocs[collection].set(uid, { fields, createTimeIso: have ? have.createTimeIso : timeIso, updateTimeIso: timeIso });
+  }
+
+  function handleNameDocGet(collection, uid, authKind) {
+    if (authKind !== "admin") return denied();
+    const rec = nameDocs[collection].get(uid);
+    if (!rec) return notFound();
+    return { status: 200, body: nameDocBody(collection, uid, rec) };
+  }
+
+  function handleNameDocList(collection, authKind) {
+    if (authKind !== "admin") return denied();
+    const documents = [...nameDocs[collection]].map(([uid, rec]) => nameDocBody(collection, uid, rec));
+    return { status: 200, body: documents.length ? { documents } : {} };
+  }
+
+  // PATCH replaces the document; with updateMask.fieldPaths it merges only the
+  // masked fields. The stored name must be a string.
+  function handleNameDocPatch(collection, uid, init, query, authKind) {
+    if (authKind !== "admin") return denied();
+    const body = parseJsonBody(init.body);
+    const incoming = body && typeof body.fields === "object" && body.fields !== null ? body.fields : null;
+    if (!incoming) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    const have = nameDocs[collection].get(uid);
+    const wantExists = query.get("currentDocument.exists");
+    if (wantExists === "true" && !have) return notFound();
+    if (wantExists === "false" && have) return existsError();
+    const masks = query.getAll("updateMask.fieldPaths");
+    let fields = incoming;
+    if (masks.length > 0) {
+      fields = { ...(have ? have.fields : {}) };
+      for (const fp of masks) {
+        if (fp in incoming) fields[fp] = incoming[fp];
+        else delete fields[fp];
+      }
+    }
+    if (typeof fields.name?.stringValue !== "string") return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
+    putNameDoc(collection, uid, fields);
+    return { status: 200, body: nameDocBody(collection, uid, nameDocs[collection].get(uid)) };
+  }
+
+  function handleNameDocDelete(collection, uid, authKind) {
+    if (authKind !== "admin") return denied();
+    nameDocs[collection].delete(uid);
+    return { status: 200, body: {} };
+  }
+
   function handleBugReportGet(id, authKind) {
     if (authKind !== "admin") return denied();
     const rec = reports.get(id);
@@ -567,11 +924,189 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: { name: docName(config, BUG_REPORTS_COLLECTION, id), fields: toFirestoreFields(rec), createTime: timeIso, updateTime: timeIso } };
   }
 
+  // --- the Games API stand-ins (OAuth token exchange, players/me) -------------
+
+  // Exchanges a fake Play Games auth code once: the player it names, or null
+  // for a code that is not a fake code or has already been spent.
+  function exchangeFakeCode(authCode) {
+    const player = parseFakeCode(authCode);
+    if (!player || usedCodes.has(authCode)) return null;
+    usedCodes.add(authCode);
+    return player;
+  }
+
+  function handleOauthToken(init) {
+    const form = new URLSearchParams(typeof init.body === "string" ? init.body : "");
+    const player = exchangeFakeCode(form.get("code"));
+    if (!player) return { status: 400, body: { error: "invalid_grant" } };
+    const accessToken = nextToken("gtok");
+    gamesTokens.set(accessToken, player);
+    return { status: 200, body: { access_token: accessToken, expires_in: 3600, token_type: "Bearer" } };
+  }
+
+  function handleGamesPlayer(init) {
+    const header = findAuthHeader(init);
+    const m = typeof header === "string" ? /^Bearer\s+(.+)$/.exec(header) : null;
+    const player = m ? gamesTokens.get(m[1]) : undefined;
+    if (!player) return { status: 401, body: errorBody(401, "UNAUTHENTICATED") };
+    return { status: 200, body: { kind: "games#player", playerId: player.playerId, displayName: player.displayName } };
+  }
+
+  // --- the boardName function, emulated ---------------------------------------
+  //
+  // A hand-written MIRROR of functions/board-names/index.js (the HTTP surface)
+  // and functions/board-names/core.js (the decisions: verify the caller, the
+  // provider, the name source, the override, adopt, write the name only if it
+  // changed, then stamp), run straight against this fake's own stores.
+  // test/unit/board-names-contract.test.js keeps it equal to the real function:
+  // it runs one scenario table through the real core (pointed at this fake as
+  // its Google) and through this endpoint and compares status, body and stored
+  // state. Update both together.
+
+  function nameReply(status, body, headers = CORS_ORIGIN) {
+    return { status, body, headers };
+  }
+
+  function nameFail(status, error) {
+    return nameReply(status, { ok: false, error });
+  }
+
+  // core.lookup: { ok, uid, providers, playGames } or { ok: false, status, error }.
+  function nameLookup(idToken) {
+    if (typeof idToken !== "string" || idToken === "") return { ok: false, status: 401, error: "UNAUTHENTICATED" };
+    const who = resolveIdToken(idToken);
+    if (!who.ok) return { ok: false, status: 401, error: "UNAUTHENTICATED" };
+    const providers = who.account.providers;
+    return { ok: true, uid: who.uid, providers, playGames: providers.find((p) => p.providerId === PLAY_GAMES_PROVIDER) ?? null };
+  }
+
+  function nameClaim({ idToken, adoptIdToken, gamesAuthCode }) {
+    const who = nameLookup(idToken);
+    if (!who.ok) return nameFail(who.status, who.error);
+    if (!who.playGames) return nameFail(403, "NOT_LINKED");
+    const uid = who.uid;
+
+    // Validate the adopt request before anything is written.
+    let adoptUid = null;
+    if (adoptIdToken !== undefined && adoptIdToken !== null && adoptIdToken !== "") {
+      const anon = nameLookup(adoptIdToken);
+      if (!anon.ok) return nameFail(403, "ADOPT_REFUSED");
+      if (anon.uid === uid || anon.providers.length > 0) return nameFail(403, "ADOPT_REFUSED");
+      adoptUid = anon.uid;
+    }
+
+    // The name: an admin override wins, then the configured source.
+    let name = null;
+    let overridden = false;
+    const override = nameDocs.nameOverrides.get(uid);
+    if (override) {
+      name = sanitizeBoardName(override.fields.name?.stringValue);
+      overridden = name !== null;
+    }
+    if (name === null) {
+      let raw;
+      if (nameSource === "games") {
+        if (typeof gamesAuthCode !== "string" || gamesAuthCode === "") return nameFail(409, "NEEDS_GAMES_CODE");
+        const player = exchangeFakeCode(gamesAuthCode);
+        if (!player) return nameFail(409, "NEEDS_GAMES_CODE");
+        if (player.playerId !== (who.playGames.rawId ?? who.playGames.federatedId)) return nameFail(403, "GAMES_MISMATCH");
+        raw = player.displayName;
+      } else {
+        raw = who.playGames.displayName;
+      }
+      name = sanitizeBoardName(raw);
+      if (name === null) return nameFail(422, "NO_NAME");
+    }
+
+    // Write names/{uid} only when it changed.
+    const current = nameDocs.names.get(uid);
+    if (!current || current.fields.name?.stringValue !== name) {
+      putNameDoc(NAMES_COLLECTION, uid, { name: { stringValue: name }, updatedAt: { timestampValue: nowIso() } });
+    }
+
+    // Adopt first, so the stamp pass sees (and skips) the moved runs: every run
+    // of the anonymous uid moves to <uid>_<hash> with uid, handle and deepKey
+    // replaced and everything else (createdAt included) kept.
+    let adopted = 0;
+    if (adoptUid !== null) {
+      const moves = [];
+      for (const rec of [...runStore.values()]) {
+        if (rec.doc.uid !== adoptUid) continue;
+        const hash = rec.doc.hash;
+        if (typeof hash !== "string" || !NAME_FN_HASH_RE.test(hash)) continue;
+        const doc = { ...rec.doc, uid, handle: name };
+        const floor = Number(rec.doc.floor);
+        const steps = Number(rec.doc.steps);
+        if (Number.isFinite(floor) && Number.isFinite(steps)) doc.deepKey = deepKeyOf({ floor, steps });
+        moves.push({ rec, to: runDocId(uid, hash), doc });
+      }
+      for (const m of moves) {
+        runStore.set(m.to, {
+          id: m.to,
+          doc: Object.freeze(m.doc),
+          createdAtIso: m.rec.createdAtIso,
+          name: docName(config, RUN_COLLECTION, m.to),
+          createTimeIso: m.rec.createTimeIso,
+          updateTimeIso: nowIso(),
+        });
+        runStore.delete(m.rec.id);
+      }
+      adopted = moves.length;
+    }
+
+    // Stamp: handle := name on every run of the uid whose handle differs.
+    let stamped = 0;
+    for (const rec of [...runStore.values()]) {
+      if (rec.doc.uid !== uid || rec.doc.handle === name) continue;
+      runStore.set(rec.id, { ...rec, doc: Object.freeze({ ...rec.doc, handle: name }), updateTimeIso: nowIso() });
+      stamped += 1;
+    }
+    return nameReply(200, { ok: true, name, overridden, stamped, adopted });
+  }
+
+  function nameRelease({ idToken }) {
+    const who = nameLookup(idToken);
+    if (!who.ok) return nameFail(who.status, who.error);
+    nameDocs.names.delete(who.uid);
+    return nameReply(200, { ok: true, released: true });
+  }
+
+  function optionalNameString(value) {
+    if (value === undefined || value === null) return { ok: true, value: undefined };
+    if (typeof value === "string" && value.length <= NAME_FN_MAX_FIELD_CHARS) return { ok: true, value };
+    return { ok: false };
+  }
+
+  function handleBoardName(method, init) {
+    if (method === "OPTIONS") return nameReply(204, undefined, CORS_PREFLIGHT);
+    if (method !== "POST") return nameFail(405, "METHOD_NOT_ALLOWED");
+    const header = findAuthHeader(init);
+    const m = typeof header === "string" ? /^Bearer\s+(\S+)\s*$/i.exec(header) : null;
+    const idToken = m && m[1].length <= NAME_FN_MAX_FIELD_CHARS ? m[1] : null;
+    if (idToken === null) return nameFail(401, "UNAUTHENTICATED");
+    const body = parseJsonBody(init.body);
+    if (body === null || typeof body !== "object" || Array.isArray(body)) return nameFail(400, "BAD_REQUEST");
+    if (body.op === "release") return nameRelease({ idToken });
+    if (body.op === "claim") {
+      const adopt = optionalNameString(body.adoptIdToken);
+      const code = optionalNameString(body.gamesAuthCode);
+      if (!adopt.ok || !code.ok) return nameFail(400, "BAD_REQUEST");
+      return nameClaim({ idToken, adoptIdToken: adopt.value, gamesAuthCode: code.value });
+    }
+    return nameFail(400, "BAD_REQUEST");
+  }
+
   // --- routing --------------------------------------------------------------
 
   function route(path, method, init, auth, query) {
+    if (path === BOARD_NAME_FN.url) return handleBoardName(method, init);
+    if (path === OAUTH_TOKEN_URL && method === "POST") return handleOauthToken(init);
+    if (path === GAMES_PLAYER_URL && method === "GET") return handleGamesPlayer(init);
     if (path === `${IDENTITY_BASE}/accounts:signUp` && method === "POST") return handleSignUp();
     if (path === `${IDENTITY_BASE}/accounts:delete` && method === "POST") return handleAccountDelete(init);
+    if (path === `${IDENTITY_BASE}/accounts:signInWithIdp` && method === "POST") return handleSignInWithIdp(init);
+    if (path === `${IDENTITY_BASE}/accounts:lookup` && method === "POST") return handleLookup(init);
+    if (path === `${IDENTITY_BASE}/accounts:update` && method === "POST") return handleUpdate(init);
     if (path === `${SECURETOKEN_BASE}/token` && method === "POST") return handleRefresh(init);
 
     const firestorePrefix = `${FIRESTORE_BASE}/${documentsPath(config)}`;
@@ -598,6 +1133,20 @@ export function createFakeBoardFetch(opts = {}) {
       // list-limits probes can prove the same deny against this fake.
       if (method === "GET" && (suffix === `/${BUG_REPORTS_COLLECTION}` || suffix === `/${REPORT_LIMITS_COLLECTION}`)) {
         return denied();
+      }
+      for (const collection of NAME_COLLECTIONS) {
+        if (suffix === `/${collection}` && method === "GET") return handleNameDocList(collection, auth.kind);
+        if (suffix.startsWith(`/${collection}/`)) {
+          let uid;
+          try {
+            uid = decodeURIComponent(suffix.slice(collection.length + 2));
+          } catch {
+            return notFound();
+          }
+          if (method === "GET") return handleNameDocGet(collection, uid, auth.kind);
+          if (method === "PATCH") return handleNameDocPatch(collection, uid, init, query, auth.kind);
+          if (method === "DELETE") return handleNameDocDelete(collection, uid, auth.kind);
+        }
       }
       if (suffix.startsWith("/runs/")) {
         const id = suffix.slice("/runs/".length);
@@ -638,13 +1187,16 @@ export function createFakeBoardFetch(opts = {}) {
         calls.push(Object.freeze({ method, url: rawUrl, auth: auth.kind === "admin" ? "admin" : auth.kind === "user" ? "user" : "none" }));
 
         const { path, query } = parseUrl(rawUrl);
-        if (auth.kind !== "admin" && query.get("key") !== config.apiKey) {
+        // The function endpoint and the Google OAuth / Games hosts are not
+        // key-checked REST calls (the function checks the caller's own token).
+        const keyless = path === BOARD_NAME_FN.url || path === OAUTH_TOKEN_URL || path === GAMES_PLAYER_URL;
+        if (!keyless && auth.kind !== "admin" && query.get("key") !== config.apiKey) {
           resolve(jsonResponse(400, errorBody(400, "INVALID_ARGUMENT")));
           return;
         }
 
         const result = route(path, method, init, auth, query);
-        resolve(jsonResponse(result.status, result.body));
+        resolve(jsonResponse(result.status, result.body, result.headers));
       } catch (err) {
         resolve(jsonResponse(500, errorBody(500, "INTERNAL")));
       }
@@ -670,7 +1222,22 @@ export function createFakeBoardFetch(opts = {}) {
   }
 
   function usersInspector() {
-    return Object.freeze([...users]);
+    return Object.freeze([...accounts.keys()]);
+  }
+
+  function providersInspector(uid) {
+    const account = accounts.get(uid);
+    return account ? providerInfoOf(account) : Object.freeze([]);
+  }
+
+  function nameDocsInspector(collection) {
+    return Object.freeze(
+      [...nameDocs[collection]].map(([uid, rec]) => Object.freeze({ uid, name: rec.fields.name?.stringValue })),
+    );
+  }
+
+  function setNameDoc(collection, uid, name, stampField) {
+    putNameDoc(collection, uid, { name: { stringValue: name }, [stampField]: { timestampValue: nowIso() } });
   }
 
   function bannedInspector() {
@@ -696,6 +1263,11 @@ export function createFakeBoardFetch(opts = {}) {
     reports: reportsInspector,
     limits: limitsInspector,
     users: usersInspector,
+    providers: providersInspector,
+    names: () => nameDocsInspector(NAMES_COLLECTION),
+    overrides: () => nameDocsInspector(NAME_OVERRIDES_COLLECTION),
+    setName: (uid, name) => setNameDoc(NAMES_COLLECTION, uid, name, "updatedAt"),
+    setOverride: (uid, name) => setNameDoc(NAME_OVERRIDES_COLLECTION, uid, name, "at"),
     banned: bannedInspector,
     setOnline,
     ban,
