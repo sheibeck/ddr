@@ -63,9 +63,22 @@ test("Warlock: Bad names protection until level 4, healing until level 3, and ne
   assert.ok(bad.some((t) => /never learns/.test(t) && /special/.test(t) && /illusion/.test(t)), JSON.stringify(bad));
 });
 
-test("Illusionist: Good names Phantom Host at level 1", () => {
-  const good = identityFooter("sub", "Illusionist").good;
-  assert.ok(good.some((t) => t.startsWith("Phantom Host castable from level 1")), JSON.stringify(good));
+// Phase 90 plan 06 (SPELL-12): the Summoner's Summon from level 1 is a chart override
+// (generated from SPELL_LEVEL_OVERRIDES, so the footer reads the data); Phantom Host and
+// its override are gone; the Wizard's closed Illusion school is a generated never-learns line.
+test("Summoner: Good names Summon castable from level 1 (generated from the override) and the day-one Summon trait", () => {
+  const good = identityFooter("sub", "Summoner").good;
+  assert.ok(good.some((t) => t === "Summon castable from level 1 (level 2 for everyone else)"), JSON.stringify(good));
+  assert.ok(good.some((t) => /Summon/.test(t) && /day one/.test(t)), JSON.stringify(good));
+  assert.ok(![...good, ...identityFooter("sub", "Summoner").bad].some((t) => /Lesser Summon/.test(t)));
+});
+
+test("Illusionist: no line names Phantom Host (removed) or a level-1 override; the Wizard's Bad names never learning illusion", () => {
+  const f = identityFooter("sub", "Illusionist");
+  for (const t of [...f.good, ...f.bad]) assert.ok(!/Phantom Host|castable from level/.test(t), t);
+  const wiz = identityFooter("sub", "Wizard");
+  assert.ok(wiz.bad.some((t) => t.startsWith("never learns") && t.includes("illusion")), JSON.stringify(wiz.bad));
+  assert.ok(!wiz.good.includes("every school of magic from level 1"), "a Wizard no longer reads every school");
 });
 
 // ─── chart-generated lines, re-derived from MU_CHART ────────────────────
@@ -160,9 +173,10 @@ test("encoding: the multi-word keys resolve exactly", () => {
 // ─── adjacency ──────────────────────────────────────────────────────────
 
 test("adjacency: a bonus of 0, a gate of 1 or none, and a race field equal to Human's value produce no line", () => {
-  // Wizard: protection/healing/divination/special/illusion are all 0 and ungated.
+  // Wizard: protection/healing/divination/special are all 0 and ungated, so no line names them.
+  // (Phase 90 plan 06: illusion is closed to the Wizard, which IS named, as never learned.)
   const wizard = identityFooter("sub", "Wizard");
-  for (const school of ["protection", "healing", "divination", "special", "illusion"]) {
+  for (const school of ["protection", "healing", "divination", "special"]) {
     assert.ok(![...wizard.good, ...wizard.bad].some((t) => t.includes(school)), `Wizard ${school} named`);
   }
   // Apprentice: every bonus 0; only the divination gate is named from the chart.

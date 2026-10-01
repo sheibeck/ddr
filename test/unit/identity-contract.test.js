@@ -264,10 +264,13 @@ const CONTRACT = [
     key: "Wizard",
     kind: "sub",
     good: {
-      name: "the most versatile school reader — full offense bonus, learns every spell",
+      // Phase 90 plan 06 (SPELL-12, user 2026-09-30): Illusion is the Illusionist's
+      // (rulebook p.17), so the Wizard learns every school but that one.
+      name: "the most versatile school reader — full offense bonus, learns every school but Illusion",
       run() {
         assert.equal(schoolBonus("Wizard", "offense"), 3);
-        assert.ok(SPELLS.every((sp) => canLearn("Wizard", sp)), "a Wizard can learn every school");
+        assert.ok(SPELLS.filter((sp) => sp.s !== "illusion").every((sp) => canLearn("Wizard", sp)), "a Wizard can learn every school but Illusion");
+        assert.ok(SPELLS.filter((sp) => sp.s === "illusion").every((sp) => !canLearn("Wizard", sp)), "and none of Illusion");
       },
     },
     bad: {
@@ -338,25 +341,25 @@ const CONTRACT = [
     key: "Summoner",
     kind: "sub",
     good: {
-      // Phase 40 (SPELL-04, DELIBERATE RULES CHANGE, user ruling
-      // 2026-09-18): the Phase 23 Summoner/Summon level-1 override is
-      // retired — Summon is spell level 2 again. In its place, a small,
-      // safe summon on day one — Lesser Summon is guaranteed and castable
-      // at level 1.
-      name: "a small, safe summon on day one — Lesser Summon is guaranteed and castable at level 1",
+      // Phase 90 plan 06 (SPELL-12, DELIBERATE RULES CHANGE, user ruling
+      // 2026-09-30): "The Summoner may cast the level-2 Summon from level 1, as
+      // an exception to the school gates." Lesser Summon (Phase 40's stand-in)
+      // is removed; the named exception lives in
+      // content/spell-level-overrides.js and Summon is the Summoner's
+      // guaranteed grant.
+      name: "a full Summon on day one — Summon is guaranteed and castable at level 1",
       run() {
-        const lesserSummon = SPELLS.find((sp) => sp.n === "Lesser Summon");
+        const summon = SPELLS.find((sp) => sp.n === "Summon");
         for (let seed = 1; seed <= 25; seed++) {
           const state = newRun(seed, [], { force: { sub: "Summoner", race: "Human" } });
-          assert.ok(state.c.grimoire.includes("Lesser Summon"), `seed ${seed}: grimoire missing the granted Lesser Summon`);
+          assert.ok(state.c.grimoire.includes("Summon"), `seed ${seed}: grimoire missing the granted Summon`);
         }
         const state = hero("Summoner");
-        state.c.grimoire = ["Lesser Summon"];
-        assert.equal(canCast(state, lesserSummon), true);
-        // The cast still runs the ordinary summon branch this plan (a
-        // Summoner draws the d8 backfire check first) — Plan 02 re-pins this
-        // cast to the lesser-specific numbers once magic.js reads `sp.lesser`.
-        const events = castSpell(state, SPELLS.indexOf(lesserSummon), fakeRng([5, 3, 1]), []);
+        state.c.grimoire = ["Summon"];
+        assert.equal(canCast(state, summon), true);
+        // The cast runs the ordinary summon branch (a Summoner draws the d8
+        // backfire check first, then the d4).
+        const events = castSpell(state, SPELLS.indexOf(summon), fakeRng([5, 3, 1]), []);
         assert.ok(!events.some((e) => e.type === "spellAboveLevel"));
         assert.ok(!events.some((e) => e.type === "spellSchoolLocked"));
         expectEvent(events, "allyPending");
@@ -434,10 +437,18 @@ const CONTRACT = [
     key: "Illusionist",
     kind: "sub",
     good: {
-      name: "a Phantom Host summonable at level one instead of level three",
+      // Phase 90 plan 06 (SPELL-12): Phantom Host is removed. What the Illusionist keeps
+      // is the Illusion school itself (rulebook p.17: the Illusionist's alone, with the
+      // Apprentice) and a Mirror Self in the book from day one.
+      name: "the Illusion school is its own, and a Mirror Self in the book from day one",
       run() {
-        const phantomHost = SPELLS.find((sp) => sp.n === "Phantom Host");
-        assert.equal(spellLevelFor("Illusionist", phantomHost), 1);
+        const mirror = SPELLS.find((sp) => sp.n === "Mirror Self");
+        assert.equal(canLearn("Illusionist", mirror), true);
+        assert.equal(canLearn("Wizard", mirror), false);
+        for (let seed = 1; seed <= 25; seed++) {
+          const state = newRun(seed, [], { force: { sub: "Illusionist", race: "Human" } });
+          assert.ok(state.c.grimoire.includes("Mirror Self"), `seed ${seed}: grimoire missing Mirror Self`);
+        }
       },
     },
     bad: {

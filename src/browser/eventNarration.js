@@ -1141,10 +1141,15 @@ export const EVENT_NARRATION = {
   spellAboveLevel: (e) => `<span class="miss">${e.spell ?? "That"} needs level ${e.need ?? "?"}; you are ${e.have ?? "?"}.</span>`,
   // VOX-05 (Phase 79, plan 79-08): the refusal says why, in the same shape
   // as spellAboveLevel: the level the school opens at, and yours.
+  // Phase 90 plan 06 (SPELL-10): `e.forbidden` is a book holding a spell of a
+  // school this sub-class can never learn (an old or tampered book): no level
+  // opens it, so the line says so instead of naming one.
   spellSchoolLocked: (e) =>
-    Number.isFinite(e.need)
-      ? `<span class="miss">${e.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e.have ?? "?"}.</span>`
-      : `<span class="miss">${e.spell ?? "That"} is not open to you yet.</span>`,
+    e.forbidden
+      ? `<span class="miss">${e.spell ?? "That"} is from a school you will never open. No level fixes that.</span>`
+      : Number.isFinite(e.need)
+        ? `<span class="miss">${e.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e.have ?? "?"}.</span>`
+        : `<span class="miss">${e.spell ?? "That"} is not open to you yet.</span>`,
   // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances — never a
   // `frozen` reason; nothing is ever refused for fear.
   castRefused: (e) => {
@@ -1191,16 +1196,9 @@ export const EVENT_NARRATION = {
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) =>
     `<span class="hurt">Summoning: ${e.spell ?? "The spell"} answered, then turned on you — a ${e.sub ?? "Summoner"}'s doubled creatures come with a grudge.</span> −${e.amount ?? 0} hp.`,
-  // Phase 40 (SPELL-04): `e.lesser` (Lesser Summon) swaps the wording for a
-  // smaller, wittier line — never a new event type.
-  allySummoned: (e) =>
-    e.lesser
-      ? `<span class="hit">${e.name ?? "Something"} answers the call, sort of.</span>`
-      : `<span class="hit">${e.name ?? "Something"} answers the call.</span>`,
-  allyPending: (e) =>
-    e.lesser
-      ? `<span class="beat">${e.name ?? "Something"} is coming, in a small way.</span>`
-      : `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
+  // Phase 90 plan 06 (SPELL-12): the lesser variant went with Lesser Summon.
+  allySummoned: (e) => `<span class="hit">${e.name ?? "Something"} answers the call.</span>`,
+  allyPending: (e) => `<span class="beat">${e.name ?? "Something"} is coming, once there is a fight to join.</span>`,
   // Phase 40 (SPELL-01, Weaken): names the duration when the payload carries
   // one (a member's own weakened line predates the timer and may not).
   // VOX-05 (Phase 79, plan 79-08): who and what, in the grimoire's own

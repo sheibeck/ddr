@@ -1,0 +1,140 @@
+[
+  {
+    "key": "bank:SUB_NOTE.Summoner",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You can call something small up from your very first day. Anything bigger arrives stronger and longer-lived, and one time in eight it arrives on the wrong side. Your own healing spells, meanwhile, heal at half strength. The book declines to say whose fault any of that is.",
+    "after": "You can call a full Summon from your very first day — a level stronger and longer-lived than anyone else's, and one time in eight it arrives on the wrong side. Your own healing spells, meanwhile, heal at half strength. The book declines to say whose fault any of that is.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12 (user 2026-09-30): Lesser Summon, the small day-one summon the old blurb described, is removed; the Summoner casts the full level-2 Summon from level 1 as a named exception. The blurb says the one thing that is now true: a full Summon answers from day one, a level stronger and longer-lived, and still turns on you one time in eight. The healing half and the sign-off joke stay."
+  },
+  {
+    "key": "bank:SUB_NOTE.Illusionist",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier, Subclass section (heroTab.js#renderHeroTab)",
+    "before": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. A Phantom Host from day one, three illusions, and a d20 to strike until level three — let the host do the hitting.",
+    "after": "You choose where the teleport squares put you, which in a dungeon is very close to owning the floor. Mirror Self from day one, three illusions, and a d20 to strike until level three — let the mirror do the hitting.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12 (user 2026-09-30): Phantom Host is removed, so the blurb stops promising it. The day-one illusion is Mirror Self, and the joke follows it (the mirror does the hitting, which is also what Mirror Self is for). Door Illusion and the random Illusion spell land with plan 90-09, which rewrites this clause then."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Summoner.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "Lesser Summon in the book and castable from day one",
+    "after": "a Summon is always in the book from day one",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12: the guaranteed grant is Summon now. The footer's next generated line (Summon castable from level 1, level 2 for everyone else) carries the castable half, so this line states only the grant and the two never repeat each other."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Summoner",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "Good: Lesser Summon in the book and castable from day one; a full Summon arrives a level stronger, and its duration die counts double. Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+    "after": "Good: a Summon is always in the book from day one; a full Summon arrives a level stronger, and its duration die counts double; Summon castable from level 1 (level 2 for everyone else). Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12: the footer is generated from SPELL_LEVEL_OVERRIDES, so the Summoner's exception prints itself (Summon castable from level 1, level 2 for everyone else) beside the authored grant line. The rest is untouched."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Illusionist",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "Good: you choose where every teleport lands; Phantom Host castable from level 1 (level 3 for everyone else). Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+    "after": "Good: you choose where every teleport lands. Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12: Phantom Host and its level-1 override are removed, so the generated override line has nothing to say and goes."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Wizard",
+    "surface": "blurbs",
+    "trigger": "Hero tab dossier Subclass footer and the roller reveal (identityFooter.js#footerLines)",
+    "before": "Good: every school of magic from level 1; your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain.",
+    "after": "Good: your thrown offense spells land on three more faces. Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "SPELL-12 (user 2026-09-30; rulebook p.17): Illusion is the Illusionist's alone, so the Wizard no longer reads every school. The footer is generated from MU_CHART: the every-school line goes and the never-learns line appears. The Wizard's prose blurb is plan 91-02's to rewrite."
+  },
+  {
+    "key": "content:SPELLS.Lesser Summon.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "summon · one small ally · a level under yours, d4 rounds, never backfires",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "SPELL-12 (user 2026-09-30): Lesser Summon is removed. The Summoner casts the level-2 Summon from level 1 instead."
+  },
+  {
+    "key": "content:SPELLS.Phantom Host.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "summon · one ally · a host that isn't there, d4+2 rounds",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "SPELL-12 (user 2026-09-30): Phantom Host is removed."
+  },
+  {
+    "key": "oracle:allySummoned",
+    "surface": "oracle",
+    "trigger": "allySummoned — a summon joins the fight (engine/magic.js#castSpell)",
+    "before": "Viper answers the call, sort of.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The wording for Lesser Summon's smaller ally is gone with the spell; every summon is a full Summon and reads \"answers the call.\""
+  },
+  {
+    "key": "rail:allySummoned",
+    "surface": "rail",
+    "trigger": "allySummoned — a summon joins the fight (engine/magic.js#castSpell)",
+    "before": "Viper answers the call, sort of.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the removed small-ally line."
+  },
+  {
+    "key": "oracle:allyPending",
+    "surface": "oracle",
+    "trigger": "allyPending — a summon waits for the next fight (engine/magic.js#castSpell)",
+    "before": "Viper is coming, in a small way.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The small-ally wording for the removed Lesser Summon; the waiting line is the one it always had for a full Summon."
+  },
+  {
+    "key": "rail:allyPending",
+    "surface": "rail",
+    "trigger": "allyPending — a summon waits for the next fight (engine/magic.js#castSpell)",
+    "before": "Viper is coming, in a small way.",
+    "after": "",
+    "reasons": [
+      "fact"
+    ],
+    "why": "The rail twin of the removed small-ally waiting line."
+  }
+]

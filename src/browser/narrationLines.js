@@ -2094,11 +2094,14 @@ export const LINE_FOR = {
   spellNotKnown: (e) => block(`You do not know ${e?.spell ?? "that"}.`),
   spellAboveLevel: (e) => block(`${e?.spell ?? "That"} needs level ${e?.need ?? "?"}; you are ${e?.have ?? "?"}.`),
   // VOX-05 (Phase 79, plan 79-08): why, like spellAboveLevel.
+  // Phase 90 plan 06 (SPELL-10): `e.forbidden` — a school the sub-class can never learn.
   spellSchoolLocked: (e) =>
     block(
-      Number.isFinite(e?.need)
-        ? `${e?.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e?.have ?? "?"}.`
-        : `${e?.spell ?? "That"} is not open to you yet.`,
+      e?.forbidden
+        ? `${e?.spell ?? "That"} is from a school you will never open.`
+        : Number.isFinite(e?.need)
+          ? `${e?.spell ? `${e.spell}'s school` : "That school"} opens to you at level ${e.need}; you are ${e?.have ?? "?"}.`
+          : `${e?.spell ?? "That"} is not open to you yet.`,
     ),
   // Phase 31 (CMB-01/CMB-02): the NEW spell-refusal circumstances this phase
   // introduces (notFought/combatOnly/exploreOnly/noTarget) — never a `frozen`
@@ -2143,9 +2146,9 @@ export const LINE_FOR = {
   resistFailed: (e) => ({ text: `${e?.target ?? "It"} fails to resist ${e?.by && e.by !== "you" ? `${e.by}'s` : "your"} ${e?.spell ?? "spell"}.`, tone: "hit", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   summonBackfired: (e) => ({ text: `Summoning: ${e?.spell ?? "The spell"} turned on you (−${e?.amount ?? 0} hp).`, tone: "hurt", priority: PRIORITY.you }),
-  // Phase 40 (SPELL-04): `e?.lesser` (Lesser Summon) swaps the short form.
-  allySummoned: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} answers the call, sort of.` : `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
-  allyPending: (e) => ({ text: e?.lesser ? `${e?.name ?? "Something"} is coming, in a small way.` : `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
+  // Phase 90 plan 06 (SPELL-12): the lesser variant went with Lesser Summon.
+  allySummoned: (e) => ({ text: `${e?.name ?? "Something"} answers the call.`, tone: "magic", priority: PRIORITY.you }),
+  allyPending: (e) => ({ text: `${e?.name ?? "Something"} is coming.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 40 (SPELL-01, Weaken): the rounds count, when the payload carries one.
   // VOX-05 (Phase 79, plan 79-08): what Weaken does, and "(3)" now says rounds.
   weakened: (e) => ({
