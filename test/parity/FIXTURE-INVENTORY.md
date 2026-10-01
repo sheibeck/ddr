@@ -7168,3 +7168,55 @@ row.
   condition), `usable-features-audit` (the doc lists all 41 spells), `roll-high-guard` (the one derived
   selection draw), and the new `scroll-pool.test.js`, `escape-talk-rout-spells.test.js` and
   `illusionist-book.test.js`.
+
+### Phase 90 plan 10: Joiner casters, the audit's engine fixes, the bot's new spells (SPELL-10, ABIL-06, SPELL-08)
+
+**The rules (the user's 2026-09-30 rulings and the slate).** A Joiner Magic User casts from its own book by a pure
+policy (`combat.js#pickMemberSpell`: a heal at half hit points, a room control against three or more foes, a
+round-1 buff, a single control on a strong foe, else its best attack spell, else its staff). Death aims at the
+foe you picked (Q7 A). A Joiner's Lightning hits every foe (Q8 A). A Walking Dead the turning failed swings only
+at the caster (Q9 B, `pickFoeTarget` reads `fixated`). A Joiner Fighter uses Stealth, Hardiness and Ambidextrous
+(Q10 A). Dirty Trick's blindness counts down on every visit a live foe takes. The bot plays the new spells (Ice,
+Doze, Stun and the two misdirect spells, Stop Time and Size of the Behemoth, the round-1 buffs, Door Illusion
+as its escape, Chameleon Tongue as its parley; never Stupidity, Fly or Open/Lock) and aims Stun and the misdirect
+spells at the strongest foe through the harness's target write (`playRun` and the baseline harness's
+`dispatchOne`). `test/parity/prototype-master.js.txt` is untouched and `roll-high-baseline.mjs save` was never
+run.
+
+**New fields and draws (declared).** One new serialized field: `opened`, a transient flag on a Joiner's
+`state.combat.allies` entry (like `backstabUsed`), carved out of all three `*Comparable()` functions in
+`stripFoeAbilityState` (a no-op on every fixture: none carries a party). One new roll, DERIVED: a Joiner's heal
+(`derivedRng(cursor, "memberHeal", round, partyIdx, charges)`); the other Joiner casts draw what the hero's draw
+through the shared tails (a Joiner reaches them only through the new policy). No guarded `.d(` or `rollCheck(`
+call site was added, so `roll-high-guard.test.js` DRAW_INVENTORY does not move. The draws are in
+docs/ROLL-LEDGER.md "Phase 90 plan 10".
+
+**The predictor.** The parity fixtures carry no party, no Joiner and no Walking Dead fight, so they should not
+move. A bot-sweep state pin moves where a pinned run's Joiner casts by the policy or uses Hardiness, Stealth or
+Ambidextrous: the two party pins (party-1's Joiner is a Court Mage with Doze in its book; party-fighter-knight's
+Joiner, Hilda Stonecut, a Woodsman, carries Hardiness). Solo runs never take the Joiner branch.
+
+**The live scan (measured at the plan's end, against the base 3d875dd0).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass with no declaration needed: nothing moved.
+- `node tools/roll-high-baseline.mjs pins` (read, `save` never run): **2 of 8 labels moved** (party-1,
+  party-fighter-knight), pasted by hand, each hashed identically twice and traced per bot step with an event-payload
+  digest against an extracted tree of 3d875dd0. solo-1, solo-2, solo-thief-pilfer, solo-magicuser-sorcerer,
+  deep-8 and deep-14 re-measured byte-identical. `roll-high-save-compat.test.js`: unchanged.
+
+**Moved pins (re-recorded alone, old -> new as actions / dead / depth).**
+
+- `roll-high-state-pins.test.js` party-1: 400/false/3 -> 372/true/3. The first divergence is bot step 365:
+  three live foes in round 2, the Joiner (Aldric Corrin, a Court Mage) casts Doze as the room control where the
+  base cast Freeze; step 367 adds its first memberHealed. (The hash moves at step 230 already, through the `opened`
+  flag, before any event differs.)
+- `roll-high-state-pins.test.js` party-fighter-knight: 297/true/3 -> 400/false/3. The first payload divergence is
+  step 102, the foe's swing at the Joiner Hilda Stonecut: memberStruck 3 -> 1 (Hardiness, -3, floor 1); her second
+  wind is later not needed where the base needed it (step 220).
+- Unmoved parity entries: every combat, magic, movement, economy, encounters and chargen scenario.
+
+**Moved tests (not fixtures).** `spell-audit.test.js` (the reopened-call probe doctors Lightning's fixed cell),
+`skill-audit.test.js` (a ruled question may be carried by a Joiner cell naming it once its rows are fixed),
+`control-at-depth-rules.test.js` needed no edit (the Weaken assignment stays in `combat.js#allyCast`),
+`tuning-bot.test.js` (the new spell pins), and the new `joiner-casters.test.js` and
+`spell-skill-audit-fixes.test.js`.

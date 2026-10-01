@@ -380,7 +380,19 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to a2bb10bccfbc83ff5d9d8431b7247c1d382b9d3ff8aa3ddf7c346304d5638faa; actions, dead and depth are unchanged.
-  "party-1": { actions: 400, dead: false, depth: 3, hash: "6f678c4bea7c853a6b1c8c111f1c6b2d8739957156bf9f98b67785a1efe23d70" },
+  // "party-1" re-pinned (Phase 90 plan 10, SPELL-10, 2026-10-01: a Joiner Magic User casts by the new
+  // policy, engine/combat.js#pickMemberSpell). Bisected with a per-step event-payload trace against the
+  // plan base 3d875dd0 (an extracted tree, the same playRun onStep trace): the two runs match on every
+  // action and every event payload through bot step 364; the FIRST divergence is step 365, three live foes,
+  // round 2: the Joiner (Aldric Corrin, a Court Mage with Doze in its book) casts Doze as the room control
+  // (allyCast, resist lines, dozed) where the base cast its best attack spell (Freeze: allyCast,
+  // allySpellHit), and step 367 adds its first memberHealed (a heal at half its hit points). The base
+  // run carries on to 400 alive; this one dies at action 372 (depth 3). 400/alive/3 -> 372/dead/3. The
+  // hash moves at step 230 already (a transient `opened` flag on the Joiner's combat entry), before any
+  // event differs. The other seven labels except "party-fighter-knight" (below) re-measured
+  // byte-identical. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
+  // pins` (each hashed identically twice); `save` was never run.
+  "party-1": { actions: 372, dead: true, depth: 3, hash: "f24df6a58db5056ae63950787e4e6ab5d6de23caff4d468b9360b8176f4d6659" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -468,7 +480,15 @@ const PINNED = {
   // -> 297/dead/3. The other seven labels re-measured byte-identical. Only this
   // label was pasted, by hand, from `node tools/roll-high-baseline.mjs pins`
   // (hashed identically twice); `save` was never run.
-  "party-fighter-knight": { actions: 297, dead: true, depth: 3, hash: "5d0bb1f605b2674b8fe558ce2a1756e9fb94335f2164cef773baaf0c4aeeb22f" },
+  // "party-fighter-knight" re-pinned (Phase 90 plan 10, ABIL-06, Q10 A, 2026-10-01: a Joiner uses Stealth,
+  // Hardiness and Ambidextrous). Bisected the same way against the plan base 3d875dd0: the event streams
+  // match through bot step 101 and the FIRST payload divergence is step 102, the foe's swing at the Joiner
+  // Hilda Stonecut (a Dwarven Fighter/Woodsman with Hardiness): memberStruck 3 -> 1 (Hardiness, -3, floor 1).
+  // Her second wind is later not needed where the base needed it (step 220), so the stream moves on; the
+  // hash moves at step 102 as well through the transient `opened` flag on her combat entry. 297/dead/3 ->
+  // 400/alive/3. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs pins`
+  // (each hashed identically twice); `save` was never run.
+  "party-fighter-knight": { actions: 400, dead: false, depth: 3, hash: "a803f03bd07c6eb7c7aa415e67c63185b591ce83c2dd80ef11549ee7682a324c" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see

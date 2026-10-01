@@ -627,3 +627,15 @@ quick 260928-hrs).
 - **A Joiner's need shift** now skips an untouchable (0-face) foe, like the
   hero's always did; before, a Joiner's Overhead Blow could lift 0 faces to
   1.
+
+## Phase 90 plan 10: Joiners use their combat passives, and Dirty Trick counts every visit (ABIL-06, Q10 A)
+
+User ruling 2026-09-30 (docs/SKILL-AUDIT.md "Rulings", Q10 A): "a Joiner uses a skill the way its text describes". Three Fighter passives were the hero's alone; they now reach a Joiner Fighter's body. All three are pure reads (no draw), pinned by `test/unit/spell-skill-audit-fixes.test.js`.
+
+| Passive | Joiner rule (engine site) | Edges |
+|---|---|---|
+| Stealth | `combat.js#memberStrike`: the Joiner's OWN opening landed blow (a transient `ally.opened` flag on its combat entry, like `backstabUsed`, never synced to the sheet) crits on a roll in its die's top two numbers (`atLeastFor(2, dieN)`), doubling its damage; a `stealthStrike` line carries `member` | never in plate (`armorBulk(view) >= 2`), never in the dark (`darkLimited(state)` unless the leader's Sense Presence is up), never for a Guard or Soldier (their blows never crit); a missed first swing does not open the fight; only the opening landed blow |
+| Hardiness | `combat.js#applyFoeDamageToMember`: −3 on every landed blow that reaches the Joiner (a swing or a foe ability's bolt), floor 1, a blow of 0 stays 0, BEFORE the Pendant and Brace (the hero's order) | the Fridgian hide for a Joiner stays Phase 91's (IDENT-20); the phobia half is the hero's |
+| Ambidextrous | `combat.js#alliesTurn`: a Joiner Fighter swings twice on a plain strike, the same two-swing loop its Speed uses (`skill(view, "Ambidextrous") \|\| itemEffectActive(sheet, "haste")`), so the two never stack | an ability use or a cast stays one action (as Phase 89's Joiner haste read); the second swing is skipped once the first has felled the target |
+
+**Dirty Trick** (docs/SKILL-AUDIT.md, `fix engine`): its two-round blindness (`f.blindFor = 2`) used to count down only on a foe visit that reached its swings, so a blinded foe that lost turns to a sleep, a stun or a hold stayed blind longer than two rounds. `combat.js#tickBlindFor` now runs at the end of every visit a LIVE foe's turn takes (a swing, or a hold, a sleep, a stun, a misdirection, a cast ability, an empty spell kit). A spell-blinded foe has no `blindFor` and stays blind for the fight. `abilities.js#applyDirtyTrick` returns the rounds it put on the foe (2, or 0 for a foe already blind for the fight), and `dirtyTrickLanded.rounds` carries it, so the line never promises "two rounds" it did not add.

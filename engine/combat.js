@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId } from "./derived.js";
+import { skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -72,7 +72,7 @@ import { maxCharges } from "./movement.js";
 import { firstReadyAbility, tickAbilityCooldowns, resolveFoeAbility } from "./foeAbilities.js";
 import { difficultyCurve, foeCountFor, foeCountMinFor, foeWpFor, foeHitFor, foeTierFor, roundDamageCapFor, tierSpreadFor, heroSpFor, lootFor, classKillSpeedFor, parleyNeedModFor, controlCapRounds, spellDamageFor } from "./difficulty.js";
 import { tickRounds, clearRoundTimers, startEffect, startCooldown, isReady } from "./effects.js";
-import { BESTIARY, ENC_TYPES, RACES, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
+import { BESTIARY, ENC_TYPES, RACES, SPELLS, WEAPON_MAX, STRIKE_DICE, BAG_DROP_FACES, ABILITY_BY_ID, ONCE_A_FIGHT, ELITE_TITLES } from "../content/index.js";
 // Phase 38 (ABIL-05): a Joiner's own ability use reuses abilities.js's
 // effect-length mapping (abilityEffectTicks) and foe-flag appliers verbatim — the SAME
 // combat.js <-> foeAbilities.js cycle precedent above applies here
@@ -2582,11 +2582,23 @@ export function alliesTurn(state, rng, events = []) {
     }
 
     if (sheet.cls === "Magic User") {
+      // Phase 90 plan 10 (SPELL-10, 90-CONTEXT "Joiner Magic Users cast the new
+      // spells when useful"): the policy pick comes FIRST (a heal when low, a
+      // room control against three or more foes, a round-1 buff, a single
+      // control on a strong foe: pickMemberSpell, pure), then today's best
+      // attack spell (Ice included), then the staff.
+      const pick = pickMemberSpell(state, sheet, ally, view, C.round, foes);
+      const cur = C.foes[C.target];
+      const aimed = cur && cur.alive ? cur : foes[0];
+      if (pick) {
+        // a self or room pick has no foe of its own: the hero's current target
+        // stands in (Doze reaches it first)
+        allyCast(state, ally, sheet, view, pick.sp, pick.target || aimed, rng, events);
+        continue;
+      }
       const sp = bestAttackSpell({ c: view });
       if (sp && maxCharges(view) - view.spellsUsed > 0) {
-        const cur = C.foes[C.target];
-        const target = cur && cur.alive ? cur : foes[0];
-        allyCast(state, ally, sheet, view, sp, target, rng, events);
+        allyCast(state, ally, sheet, view, sp, aimed, rng, events);
         continue;
       }
       // no castable attack spell or no charge left — fall through to the
@@ -2597,7 +2609,12 @@ export function alliesTurn(state, rng, events = []) {
     // max(attacks, 2)`): the loop keeps the one target and skips the second
     // swing once it has fallen. Casts and abilities above `continue` before
     // here and stay single, as the hero's are.
-    const swings = itemEffectActive(sheet, "haste") ? 2 : 1;
+    // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30: "Joiners use ...
+    // Ambidextrous ... as the text describes"): a Joiner Fighter with
+    // Ambidextrous swings twice on a plain strike, the hero's rule
+    // (playerStrike: `attacks = max(attacks, 2)`), the same two-swing loop as
+    // its Speed (the two do not stack). Abilities and casts stay single.
+    const swings = itemEffectActive(sheet, "haste") || skill(view, "Ambidextrous") ? 2 : 1;
     const target = foes[0];
     for (let s = 0; s < swings && target.alive; s++) {
       memberStrike(state, ally, sheet, view, target, rng, events);
@@ -2741,6 +2758,114 @@ export function pickMemberAbility(sheet, ally, round, target, liveCount) {
 }
 
 /**
+ * MEMBER_ROOM_CONTROL_KINDS / MEMBER_BUFF_ACT_KINDS / MEMBER_SINGLE_CONTROL_KINDS
+ * — Phase 90 plan 10 (SPELL-10): the three spell families a Joiner Magic User
+ * picks on policy (pickMemberSpell below), by SPELLS `kind` (and, for the buffs,
+ * the timed row's `act.kind`). Keyed by engine kinds and act kinds, never by
+ * display name. Frozen; a test pins the lists.
+ */
+export const MEMBER_ROOM_CONTROL_KINDS = Object.freeze(["timestop", "behemoth", "status"]);
+export const MEMBER_BUFF_ACT_KINDS = Object.freeze(["haste", "enchant"]);
+export const MEMBER_SINGLE_CONTROL_KINDS = Object.freeze(["misdirect", "stun"]);
+
+/**
+ * pickMemberSpell(state, sheet, ally, view, round, foes) — Phase 90 plan 10
+ * (SPELL-10, 90-CONTEXT "Joiner Magic Users cast the new spells when useful";
+ * the Magic User twin of pickMemberAbility's round-1 opener and half-hit-point
+ * defensive rules). The spell a Joiner Magic User should cast now, as
+ * `{ sp, target }` (`target` is the foe a single-control pick aims at, else
+ * null), or `null` when the policy has no pick and the caller falls through to
+ * `bestAttackSpell` (Ice included) and then the staff. PURE: no rng, no
+ * mutation, nothing drawn. `view` is memberView(sheet, ally); `foes` the live
+ * foes; `round` the fight's round; `state` is read only for the hero's current
+ * target. Every candidate comes from the Joiner's OWN book through
+ * `canCast({ c: view }, sp)` (so the school gates and levels hold) and needs a
+ * charge left on its OWN sheet (`maxCharges(view) - spellsUsed`).
+ *
+ * The order (the first step with a castable pick wins; inside a step the higher
+ * EFFECTIVE level wins, then SPELLS order):
+ *   1. at or below HALF its hit points (`ally.wp * 2 <= ally.maxWP`): a castable
+ *      healing spell (kind `heal`) on itself;
+ *   2. three or more live foes: the room control among Stop Time (`timestop`),
+ *      Size of the Behemoth (`behemoth`) and Doze (`status`), unless it is
+ *      already in force on every live foe (all held in time, all cowering, all
+ *      asleep);
+ *   3. ROUND 1: a self buff among the `timed` rows whose act kind is `haste`
+ *      (Speed of Sound) or `enchant` (Enchant Character) that is not already live
+ *      on its sheet (a live Speed potion or cloak counts for `haste`);
+ *   4. a live foe at or above the Joiner's level with more than half its hit
+ *      points: a single-foe control among Duplicate Foe and Senseless
+ *      (`misdirect`) and Stun (`stun`) not already on it (held, misdirected or
+ *      stunned); Senseless needs another live foe to turn it on, so it is skipped
+ *      against a lone foe. The hero's current target is looked at first;
+ *   5. else `null`.
+ * NEVER picked, each for its reason (docs/SPELL-AUDIT.md, "Joiner casters"): Door
+ * Illusion (`door`) and Chameleon Tongue (`tongue`) and Summon (`summon`) are the
+ * HERO's decisions (leaving the fight, the fight's one parley, the one summoned
+ * ally); Open/Lock and Fly (`timed` with act `unlock` or `fly`), Map the Floor
+ * (`reveal`), Sense Danger (`foresee`) and Sense Presence (`senses`) are maze and
+ * sight tools whose effect the party's leader reads; Shield and Bubble (`ward`),
+ * Mirror Self (`mirror`) and Regeneration (`regen`) have no member-side read or
+ * countdown in the engine (a Joiner takes blows through applyFoeDamageToMember,
+ * which has no ward, and ticks no mirror or regen); Strength (`might`) adds its d10
+ * to the HERO's damage rolls only. A kind that is none of the four steps above
+ * simply never matches.
+ */
+export function pickMemberSpell(state, sheet, ally, view, round, foes) {
+  if (!view || !ally || !Array.isArray(foes) || foes.length === 0) return null;
+  if (maxCharges(view) - (view.spellsUsed || 0) <= 0) return null;
+  const sub = view.sub;
+  const book = SPELLS.filter((sp) => canCast({ c: view }, sp));
+  if (!book.length) return null;
+  const best = (list) => list.reduce((b, sp) => (!b || spellLevelFor(sub, sp) > spellLevelFor(sub, b) ? sp : b), null);
+
+  // 1. low: heal itself
+  if (ally.wp * 2 <= ally.maxWP) {
+    const heal = best(book.filter((sp) => sp.kind === "heal"));
+    if (heal) return { sp: heal, target: null };
+  }
+
+  // 2. a crowd: the best room control that is not already in force on everyone
+  if (foes.length >= 3) {
+    const room = book.filter((sp) => {
+      if (!MEMBER_ROOM_CONTROL_KINDS.includes(sp.kind)) return false;
+      if (sp.kind === "timestop") return !foes.every((f) => f.held && f.held.kind === "time");
+      if (sp.kind === "behemoth") return !foes.every((f) => f.cowering);
+      return !foes.every((f) => f.asleep > 0); // Doze
+    });
+    const pick = best(room);
+    if (pick) return { sp: pick, target: null };
+  }
+
+  // 3. round 1: a self buff not already live on the sheet
+  if (round === 1) {
+    const buff = best(
+      book.filter((sp) => sp.kind === "timed" && sp.act && MEMBER_BUFF_ACT_KINDS.includes(sp.act.kind) && !itemEffectActive(view, sp.act.kind)),
+    );
+    if (buff) return { sp: buff, target: null };
+  }
+
+  // 4. a strong foe: a single control it is not already under
+  const C = state && state.combat;
+  const aimed = C && Array.isArray(C.foes) && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+  const order = aimed ? [aimed, ...foes.filter((f) => f !== aimed)] : foes;
+  const singles = book.filter((sp) => MEMBER_SINGLE_CONTROL_KINDS.includes(sp.kind));
+  if (singles.length) {
+    for (const f of order) {
+      if (!(f.lvl >= ally.lvl && f.wp * 2 > f.maxWP)) continue;
+      const fit = singles.filter((sp) => {
+        if (sp.kind === "stun") return !f.held && !f.stunned;
+        if (f.misdirect && f.misdirect.left > 0) return false;
+        return sp.at === "self" || foes.some((o) => o !== f); // Senseless needs a friend to hit
+      });
+      const pick = best(fit);
+      if (pick) return { sp: pick, target: f };
+    }
+  }
+  return null;
+}
+
+/**
  * startMemberAbilityTimer(sheet, meta) — the member-sheet analog of
  * abilities.js#useAbility's own startAbilityTimer: the EXACT SAME
  * abilityEffectTicks/ONCE_A_FIGHT mapping, applied to a Joiner's own
@@ -2809,8 +2934,7 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, stunOnHit: true });
       return;
     case "dirtyTrick":
-      applyDirtyTrick(t);
-      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: 2, member: ally.name });
+      events.push({ type: "dirtyTrickLanded", target: t.name, rounds: applyDirtyTrick(t), member: ally.name });
       return;
     case "poisonedEdge":
       applyPoison(t, { left: 3, dmg: { n: 1, sides: 4, bonus: 0 }, by: "poisonedEdge" });
@@ -2963,10 +3087,18 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 72 (ROLL-01 (c)): a landed member strike on its die's best face
   // shatters a shatter-flagged foe (the Skeleton) outright — skip the
   // damage roll.
-  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) return;
+  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) {
+    ally.opened = true;
+    return;
+  }
   let dmg = weaponDamage(view, rng);
   if (mod && mod.bonusDmg) dmg += mod.bonusDmg;
   const noCrit = view.sub === "Guard" || view.sub === "Soldier";
+  // Phase 90 plan 10 (ABIL-06, Q10 A): the Joiner's OWN opening landed blow, the
+  // transient combat entry's `opened` flag (like `backstabUsed`, never synced
+  // to the sheet), read by Stealth below. A flag, no draw.
+  const opening = !ally.opened;
+  ally.opened = true;
   // Phase 73 (ROLL-05): a member's natural-best crit is the die's top face
   // (isBestFace), not a fixed "natural 1" — byte-identical odds, mirrored.
   let crit = isBestFace(roll, dieN) && !noCrit;
@@ -2999,6 +3131,19 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
     critAtLeast = undefined;
     backstab = true;
     ally.backstabUsed = true; // the transient combat entry, not the sheet
+  }
+  // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30): a Joiner's Stealth, the
+  // hero's rule (playerStrike): the Joiner's OPENING landed blow of the fight
+  // crits on a roll in its die's top two numbers, never in plate (armorBulk) and
+  // never in the dark (the party's light is the leader's, darkLimited, unless
+  // the leader's Sense Presence is up), and never for a Guard or Soldier (their
+  // blows never crit). A pure read of the roll already made, zero draws; the
+  // doubling below is the one every crit takes (a natural crit never doubles
+  // twice).
+  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses) && roll >= atLeastFor(2, dieN)) {
+    crit = true;
+    critAtLeast = atLeastFor(2, dieN);
+    events.push({ type: "stealthStrike", member: ally.name });
   }
   if (crit) dmg *= 2;
   if (mod && mod.dmgMul) dmg *= mod.dmgMul;
@@ -3048,11 +3193,123 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * depth-rising resist) and sets the party's `C.weakened`/`C.foeToHitPenalty`.
  * The persistent sheet pays the charge (`sheet.spellsUsed++`), never the
  * transient `view`.
+ *
+ * Phase 90 plan 10 (SPELL-10, Q8 A): a Joiner's `thrown` spell with `aoe: "all"`
+ * (Lightning) reaches EVERY live foe, each on its own resist, its own to-hit
+ * roll and its own damage roll, exactly as the hero's cast (magic.js): the
+ * per-foe order is resist (a derived stream), then the to-hit die, then (on a
+ * hit) the damage dice. And the policy kinds pickMemberSpell can choose resolve
+ * through the hero's own shared tails, the Joiner's name (`by`/`member`) on
+ * every event and the charge paid from its own sheet: `heal` (the spell's dice
+ * from a DERIVED stream, the Cleric's +3, a heal2x race's doubling, then the
+ * caster's healMul, clamped to the Joiner's own maximum: `memberHealed`),
+ * `timed` (a `spell:<name>` record on the Joiner's own sheet, stretched by its
+ * own school bonus: `spellEffectStarted` with `member`), `timestop` (stopTime),
+ * `misdirect` (misdirectFoe, the Joiner's own resist inside) and `behemoth`
+ * (behemothRoar, the Joiner's level). A self or room spell has no foe `t`.
  */
 function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
+  // Self and room spells: no single foe is the target, so no `allyCast` line
+  // (the sibling event below names the Joiner and the spell).
+  if (sp.kind === "heal") {
+    const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+    const healRng = derivedRng(cursor, "memberHeal", state.combat ? state.combat.round : 0, ally.partyIdx, sheet.spellsUsed);
+    let amt = rollDice(healRng, sp.dmg) + (view.sub === "Cleric" ? 3 : 0);
+    if (RACES[view.race] && RACES[view.race].heal2x) amt *= 2;
+    const healed = applyCasterHealMul(view.sub, amt);
+    const before = ally.wp;
+    ally.wp = Math.min(ally.maxWP, ally.wp + healed);
+    events.push({ type: "memberHealed", name: ally.name, spell: sp.n, amount: healed, ...(healed !== amt ? { halved: true } : {}), gained: ally.wp - before });
+    return;
+  }
+  if (sp.kind === "timed") {
+    const prior = sheet.timers && sheet.timers["spell:" + sp.n];
+    const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
+    const rec = startSpellEffect(sheet, sp, events, { squares: spellEffectSquares(view.sub, sp) });
+    events.push({ type: "spellEffectStarted", spell: sp.n, kind: sp.act.kind, squares: rec ? rec.left : 0, restarted, member: ally.name });
+    return;
+  }
+  const casterTail = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
+  if (sp.kind === "timestop") {
+    stopTime(state, sp, rng, events, casterTail);
+    return;
+  }
+  if (sp.kind === "behemoth") {
+    behemothRoar(state, sp, rng, events, casterTail);
+    return;
+  }
   const base = { name: ally.name, spell: sp.n, target: t.name };
+  if (sp.kind === "misdirect") {
+    // Senseless and Duplicate Foe: the target's one resist is rolled inside
+    // misdirectFoe for a Joiner (`by`), then the duration dice.
+    events.push({ type: "allyCast", ...base });
+    misdirectFoe(state, t, sp, rng, events, casterTail);
+    return;
+  }
+  if (sp.kind === "thrown" && sp.aoe === "all") {
+    // Q8 A: every live foe, in C.foes order, each its own resist, to-hit and damage.
+    for (const f of liveFoes(state)) allyThrow(state, ally, view, sp, f, rng, events);
+    return;
+  }
   if (sp.kind === "thrown") {
+    allyThrow(state, ally, view, sp, t, rng, events);
+    return;
+  }
+  // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
+  events.push({ type: "allyCast", ...base });
+  // Phase 90 plan 05 (SPELL-11, SPELL-12): the Joiner's Ice, Doze and Stun are
+  // the hero's rules through the same shared tails (iceStorm, dozeFoes,
+  // stunFoe), the Joiner's name on every line. Ice has no up-front resist (each
+  // survivor rolls it after its damage, inside the tail); Doze rolls one per
+  // reached foe inside its tail; Stun rolls the target's one resist here.
+  const caster = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
+  if (sp.kind === "blast") {
+    iceStorm(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "status") {
+    dozeFoes(state, sp, rng, events, caster);
+    return;
+  }
+  if (sp.kind === "stun") {
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
+    stunFoe(state, t, sp, rng, events, caster);
+    return;
+  }
+  // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
+  // plan 04 the one depth-rising resist, with no second control resist after
+  // it) comes first, per targeted foe. A Weaken's d4+1 is drawn before its
+  // room resists.
+  if (sp.kind === "weaken") {
+    // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
+    // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
+    // (party-wide duration lives in one place) — its own d4+1 draw.
+    const rounds = rng.d(4) + 1; // roll:amount
+    // Quick 260927-rsx: every live foe rolls its own resist; since Phase 89
+    // plan 08 that is the one depth-rising resist and the old extra room
+    // roll past floor 12 is gone — see roomWeakenResists.
+    if (!roomWeakenResists(state, sp.n, rng, events, ally.name)) return;
+    const C = state.combat;
+    if (C) {
+      C.weakened = true;
+      C.foeToHitPenalty = 3;
+      startEffect(state.c, "spell:weaken", { rounds });
+    }
+    events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
+  }
+}
+
+/**
+ * allyThrow(state, ally, view, sp, t, rng, events) — a Joiner's `thrown` spell
+ * at ONE foe `t` (Freeze, Fireball, Mangle, and each foe of Lightning): the
+ * foe's resist, the to-hit die, then (on a hit) the damage dice, in the hero's
+ * order. Split out of allyCast (Phase 90 plan 10) so the area spell can call it
+ * per foe; byte-identical draws and events for a one-foe throw.
+ */
+function allyThrow(state, ally, view, sp, t, rng, events) {
+  const base = { name: ally.name, spell: sp.n, target: t.name };
+  {
     // Phase 40 (SPELL-01): the THIRD name-keyed Freeze check (a member cast)
     // — repointed to the data flag alongside magic.js's own two sites
     // (research Pitfall 2).
@@ -3111,48 +3368,6 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
       events.push({ type: "allySpellMissed", ...base, resisted: false });
     }
     return;
-  }
-  // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
-  events.push({ type: "allyCast", ...base });
-  // Phase 90 plan 05 (SPELL-11, SPELL-12): the Joiner's Ice, Doze and Stun are
-  // the hero's rules through the same shared tails (iceStorm, dozeFoes,
-  // stunFoe), the Joiner's name on every line. Ice has no up-front resist (each
-  // survivor rolls it after its damage, inside the tail); Doze rolls one per
-  // reached foe inside its tail; Stun rolls the target's one resist here.
-  const caster = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
-  if (sp.kind === "blast") {
-    iceStorm(state, sp, rng, events, caster);
-    return;
-  }
-  if (sp.kind === "status") {
-    dozeFoes(state, sp, rng, events, caster);
-    return;
-  }
-  if (sp.kind === "stun") {
-    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
-    stunFoe(state, t, sp, rng, events, caster);
-    return;
-  }
-  // Quick 260927-rsx: the foe's resist (a derived stream, and since Phase 90
-  // plan 04 the one depth-rising resist, with no second control resist after
-  // it) comes first, per targeted foe. A Weaken's d4+1 is drawn before its
-  // room resists.
-  if (sp.kind === "weaken") {
-    // Phase 40 (SPELL-01): a member's own Weaken cast starts the SAME
-    // `spell:weaken` rounds-cadence record, on the HERO's own `state.c`
-    // (party-wide duration lives in one place) — its own d4+1 draw.
-    const rounds = rng.d(4) + 1; // roll:amount
-    // Quick 260927-rsx: every live foe rolls its own resist; since Phase 89
-    // plan 08 that is the one depth-rising resist and the old extra room
-    // roll past floor 12 is gone — see roomWeakenResists.
-    if (!roomWeakenResists(state, sp.n, rng, events, ally.name)) return;
-    const C = state.combat;
-    if (C) {
-      C.weakened = true;
-      C.foeToHitPenalty = 3;
-      startEffect(state.c, "spell:weaken", { rounds });
-    }
-    events.push({ type: "allySpellHit", ...base, effect: "weakened", rounds });
   }
 }
 
@@ -3234,8 +3449,17 @@ export function pickFoeTarget(state, rng, foe = null) {
     const s = state.party?.[m.partyIdx];
     return s && abilityEffectActive(s, "taunt");
   });
-  if (taunter) return taunter;
+  // Phase 90 plan 10 (SPELL-08, Q9 B, user 2026-09-30, canon against the
+  // recommended default; rulebook p.30 Turn Walking Dead): a Walking Dead the
+  // spell failed to turn is FIXATED (`foe.fixated`) and swings only at the
+  // caster, the hero, for the rest of the fight: a Joiner is never picked while
+  // one lives, not even by its own Taunt. The draws are exactly as before (no
+  // draw under a Taunt, the pick die otherwise), so the party-mode rng stream
+  // does not move; only the result is overridden, as the Bard clause below does.
+  const fixated = !!(foe && foe.fixated);
+  if (taunter) return fixated ? null : taunter;
   const pick = rng.d(liveMembers.length + 1); // roll:selection
+  if (fixated) return null;
   if (foe && foe.intel <= 3 && state.c?.sub === "Bard") return null;
   return pick > 1 ? liveMembers[pick - 2] : null;
 }
@@ -3551,10 +3775,11 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
  * round, the foe's index, the swing and the Joiner's party index, so the
  * main stream never moves (a solo fight draws exactly what it drew before).
  *
- * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward,
- * Hardiness and the Fridgian hide (not armour, not items; Phase 91's to
- * decide for a Joiner). A missing sheet reads as a blank body (no Pendant,
- * no armour).
+ * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward
+ * and the Fridgian hide (not armour, not items; Phase 91's to decide for a
+ * Joiner). Since Phase 90 plan 10 (Q10 A) Hardiness IS part of it: -3 per
+ * landed blow, floor 1, ahead of the Pendant. A missing sheet reads as a blank
+ * body (no Pendant, no armour).
  *
  * Events carry the Joiner's name in `member` (additive), so the Oracle and
  * rail lines can name it. An unsoaked blow pushes `memberStruck` (or
@@ -3568,6 +3793,15 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
   const C = state.combat;
   const sheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
   const body = sheet || {};
+
+  // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30: "Joiners use ...
+  // Hardiness ... as the text describes"): a Joiner with Hardiness takes 3 less
+  // from every landed blow that reaches this pipeline (a swing or a foe
+  // ability's bolt), floor 1, BEFORE its Pendant and Brace, the hero's order
+  // (applyFoeDamageToPlayer). A zero-damage blow (the round ceiling spent) stays
+  // zero. The Fridgian hide for a Joiner stays Phase 91's (IDENT-20). Pure, no
+  // draw.
+  if (sheet && dmg > 0 && skill(sheet, "Hardiness")) dmg = Math.max(1, dmg - 3);
 
   // The Joiner's own armed Pendant of Fortitude: one landed blow, halved.
   if (body.halfNext && dmg > 0) {
@@ -3744,6 +3978,28 @@ export function loseTurn(state, rng, events = []) {
 }
 
 /**
+ * tickBlindFor(f, events) — Phase 90 plan 10 (ABIL-06, docs/SKILL-AUDIT.md Dirty
+ * Trick row, "fix engine"): the Dirty Trick's two-round blindness (`f.blindFor`,
+ * set by abilities.js#applyDirtyTrick) counts down once per foe VISIT, at the
+ * end of every visit a LIVE foe's turn takes, whatever the foe did with it:
+ * swung, or lost it to a hold, a sleep, a stun, a misdirection, a cast ability
+ * or an empty spell kit. (Before this, only a visit that reached its swings
+ * counted, so a blinded foe that lost turns stayed blind longer than the two
+ * rounds the text promises.) At 0 the foe sees again (`foeSightReturned`). A
+ * spell-blinded foe has no `blindFor` and stays blind for the fight; a dead foe
+ * counts nothing. Pure bookkeeping, zero rng.
+ */
+function tickBlindFor(f, events) {
+  if (!f.alive || !f.blindFor) return;
+  f.blindFor--;
+  if (f.blindFor <= 0) {
+    delete f.blindFor;
+    f.blind = false;
+    events.push({ type: "foeSightReturned", name: f.name });
+  }
+}
+
+/**
  * foeTurn(state, rng, events) — every live foe's attack. Step order (Phase
  * 19 additions marked *NEW*, Phase 38 additions marked *ABIL*, Phase 40
  * additions marked *SPELL*): *NEW* a queued summon joins C.foes -> regen tick
@@ -3902,6 +4158,7 @@ export function foeTurn(state, rng, events = []) {
         events.push({ type: "foeHoldBroken", name: f.name, kind: f.held.kind });
         delete f.held;
       }
+      tickBlindFor(f, events);
       continue;
     }
     // RULES-10 (Phase 75.1, foe Regeneration): a live foe carrying `regen`
@@ -3924,6 +4181,7 @@ export function foeTurn(state, rng, events = []) {
       // Phase 90 plan 05: the dozing mark goes with the sleep when it runs out.
       if (f.asleep <= 0) delete f.dozing;
       events.push({ type: "foeSlept", name: f.name });
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 90 plan 04 (SPELL-12, user 2026-09-30): Stupidity no longer
@@ -3937,6 +4195,7 @@ export function foeTurn(state, rng, events = []) {
     if (f.stunned) {
       f.stunned = false;
       events.push({ type: "foeStunned", name: f.name });
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 90 plan 08 (SPELL-10, Senseless and Duplicate Foe): a misdirected
@@ -3946,6 +4205,7 @@ export function foeTurn(state, rng, events = []) {
     // takes counts against `misdirect.left`.
     if (f.misdirect && f.misdirect.left > 0) {
       resolveMisdirectedTurn(state, f, rng, events, curve);
+      tickBlindFor(f, events);
       continue;
     }
     // Phase 19 (CANON-02/D-03): a caster that has dropped below its own
@@ -3981,10 +4241,12 @@ export function foeTurn(state, rng, events = []) {
       const gate = ready && !neverMelee ? rollCheck(rng, 6, atLeastFor(4, 6)) : null;
       if (ready && (neverMelee || gate.ok)) {
         if (resolveFoeAbility(state, f, ready, rng, events, gate).died) return events;
+        tickBlindFor(f, events);
         continue;
       }
       if (neverMelee) {
         events.push({ type: "foeOutOfSpells", name: f.name });
+        tickBlindFor(f, events);
         continue;
       }
     }
@@ -4192,17 +4454,12 @@ export function foeTurn(state, rng, events = []) {
       if (hit.died) return events;
     }
     // Phase 38 (ABIL-01, Dirty Trick) — the blindFor countdown, at the END
-    // of this foe's own visit (after its swings, whether it swung or was
-    // asleep/stunned/dot-killed above): a spell-blinded foe (no blindFor)
-    // stays blind indefinitely, exactly as before. Absent on every fixture.
-    if (f.blindFor) {
-      f.blindFor--;
-      if (f.blindFor <= 0) {
-        delete f.blindFor;
-        f.blind = false;
-        events.push({ type: "foeSightReturned", name: f.name });
-      }
-    }
+    // of this foe's own visit (after its swings): a spell-blinded foe (no
+    // blindFor) stays blind indefinitely, exactly as before. Absent on every
+    // fixture. Phase 90 plan 10: every other way a live foe's visit can end
+    // (held, asleep, stunned, misdirected, a cast ability, out of spells)
+    // counts it down too, through the same helper (tickBlindFor).
+    tickBlindFor(f, events);
   }
   // RULES-14 (Phase 75): an ARMED mirror carries `rounds: null` and never
   // ticks here — it stays armed until a blow lands (see the mirror branch in

@@ -205,6 +205,11 @@ function dispatchOne(state, action) {
     state.combat.target = action.target;
     toDispatch = { type: "useAbility", key: action.key };
   }
+  // Phase 90 plan 10: a spell aimed at the strongest foe carries the same target write.
+  if (action.type === "castSpell" && Number.isInteger(action.target) && state.combat) {
+    state.combat.target = action.target;
+    toDispatch = { type: "castSpell", idx: action.idx };
+  }
   return applyAction(state, toDispatch);
 }
 

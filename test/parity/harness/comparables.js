@@ -668,6 +668,15 @@ export function stripFoeAbilityState(combat) {
     const { abilities, cd, uses, ward, rebound, mirror, might, strengthBoost, regen, senses, elite, held, resisted, dozing, ...rest } = f;
     return rest;
   });
+  // Phase 90 plan 10 (ABIL-06, Q10 A): `opened` is a brand-new per-Joiner field on a
+  // `combat.allies` entry (a Joiner Fighter's Stealth reads it: its own opening
+  // landed blow), engine-only like `backstabUsed`, with NO prototype-side
+  // equivalent and absent on every fixture (no parity fixture carries a party).
+  // A structural tripwire, carved out here, which all three *Comparable()
+  // functions share. A no-op (the same object shape) when `allies` is absent.
+  if (Array.isArray(combatRest.allies)) {
+    return { ...combatRest, foes, allies: combatRest.allies.map(({ opened, ...a }) => a) };
+  }
   return { ...combatRest, foes };
 }
 

@@ -1634,7 +1634,7 @@ export const LINE_FOR = {
       : { text: `You miss ${e?.target ?? "it"}${MISS_SPENT_VIA.has(e?.via) ? ` with ${ABILITY_BY_ID[e.via].name}, spent anyway` : ""}${e?.quip ? ` — ${e.quip}` : ""}`, tone: "miss", priority: PRIORITY.you },
   deathTouch: (e) => ({ text: `One touch — ${e?.target ?? "it"} drops.`, tone: "hit", priority: PRIORITY.feature }),
   backstabDenied: () => block("Heavy armour gave you away: no sneak attack."),
-  stealthStrike: () => ({ text: "Unseen strike — critical.", tone: "hit", priority: PRIORITY.feature }),
+  stealthStrike: (e) => ({ text: e?.member ? `${e.member}: unseen strike, critical.` : "Unseen strike — critical.", tone: "hit", priority: PRIORITY.feature }),
   backstab: () => ({ text: "Backstab — critical.", tone: "hit", priority: PRIORITY.feature }),
   conArtistOpener: () => ({ text: "Con Artist opener: all flourish, no damage.", tone: "miss", priority: PRIORITY.feature }),
   ninjaFirstStrike: () => ({ text: "One perfect opening strike.", tone: "hit", priority: PRIORITY.feature }),
@@ -2069,7 +2069,11 @@ export const LINE_FOR = {
     priority: PRIORITY.feature,
   }),
   lastStandCalled: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}Under a quarter. ${e?.attacks ?? 3} attacks this round.`, tone: "beat", priority: PRIORITY.feature }),
-  dirtyTrickLanded: (e) => ({ text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`, tone: "hit", priority: PRIORITY.them }),
+  dirtyTrickLanded: (e) => ({
+    text: e?.rounds === 0 ? `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} was already blind for the fight.` : `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} is blinded for ${e?.rounds ?? 2} rounds.`,
+    tone: "hit",
+    priority: PRIORITY.them,
+  }),
   foeSightReturned: (e) => ({ text: `${e?.name ?? "It"} blinks the sand out.`, tone: "dodge", priority: PRIORITY.them }),
   // ROLL-04 (79-04): a foe's strike die scales, so Smoke speaks in faces.
   smokeThrown: (e) => ({
@@ -2264,6 +2268,12 @@ export const LINE_FOR = {
   // row names the spell and the window; a bare payload never prints "undefined".
   spellEffectStarted: (e) => {
     const sq = railSquares(e?.squares);
+    // Phase 90 plan 10: a Joiner's own cast (`member`) names the Joiner, not "you".
+    // Only the two kinds a Joiner can cast read as its own; any other kind keeps the hero's line.
+    const mine = e?.member ? { enchant: "foes −2 to hit them, no crits on them", haste: "two blows a swing" }[e?.kind] : null;
+    if (mine) {
+      return { text: `${e.member}: ${e?.spell ?? "a spell"} ${e?.restarted ? "starts over" : "takes hold"}, ${sq} (${mine}).`, tone: "magic", priority: PRIORITY.you };
+    }
     const text = {
       unlock: e?.restarted ? `Open/Lock starts over: ${sq} to find a chest, no lock roll.` : `Open/Lock: your next chest within ${sq} opens with no lock roll.`,
       fly: e?.restarted ? `Fly starts over: ${sq} of flight, not double.` : `Fly: ${sq} of flight. Walls and crevices are scenery; water costs one.`,
@@ -2340,6 +2350,15 @@ export const LINE_FOR = {
         : `${e?.spell ?? "Healing"}: you were already at full hp.`,
     tone: "hit",
     priority: PRIORITY.you,
+  }),
+  // Phase 90 plan 10 (SPELL-10): the rail twin of the Oracle's memberHealed, a Joiner healing itself.
+  memberHealed: (e) => ({
+    text:
+      railGain(e, e?.amount) > 0
+        ? `${e?.name ?? "Your companion"} patches itself up: +${railGain(e, e?.amount)} hp${e?.spell ? ` (${e.spell})` : ""}${railFull(railGain(e, e?.amount), e?.amount)}.`
+        : `${e?.name ?? "Your companion"} casts a heal, already at full hp.`,
+    tone: "hit",
+    priority: PRIORITY.them,
   }),
   // Phase 89 (ITEM-01, ITEM-06): the rail twin of the Oracle's partyHealed, one
   // short line naming every body healed. A minor event, never a decision card

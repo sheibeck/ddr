@@ -28,7 +28,7 @@
 
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
-import { canParley, songReady, liveFoes } from "../../engine/combat.js";
+import { canParley, songReady, liveFoes, fleeRefusal, parleyBlockedReason } from "../../engine/combat.js";
 import { canCast, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
 import { maxCharges, nightlyEats } from "../../engine/movement.js";
 import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
@@ -401,6 +401,50 @@ function lowestCastableUtilitySpellIdx(state) {
 }
 
 /**
+ * ROOM_CONTROL_MIN_FOES — Phase 90 plan 10: Stop Time and Size of the Behemoth are
+ * room controls; the bot casts them against THREE or more live foes (the room is
+ * what they are for, and a fight holds at most three).
+ */
+const ROOM_CONTROL_MIN_FOES = 3;
+
+/**
+ * escapeSpellIdx(state, ctx) — Phase 90 plan 10 (SPELL-10): the index of a castable
+ * Door Illusion (`kind: "door"`) the bot should cast IN PLACE OF a flee roll, or
+ * null: a Magic User with a charge left, a door castable (the book, level and
+ * school gates through canCast), no never-flee refusal (the engine's own
+ * `fleeRefusal`, the one predicate castSpell reads), and the cleverest foe not
+ * already seen through it this encounter. A sure escape beats the roll. Pure.
+ */
+function escapeSpellIdx(state, ctx) {
+  const c = state.c;
+  if (!state.combat || c.cls !== "Magic User" || ctx.doorBlocked) return null;
+  if (maxCharges(c) - c.spellsUsed <= 0 || fleeRefusal(state)) return null;
+  const i = SPELLS.findIndex((sp) => sp.kind === "door" && canCast(state, sp));
+  return i === -1 ? null : i;
+}
+
+/**
+ * tongueSpellIdx(state, ctx) — Phase 90 plan 10 (SPELL-10): the index of a castable
+ * Chameleon Tongue (`kind: "tongue"`) the bot should cast IN PLACE OF an ordinary
+ * parley, or when the foes are Magical (an ordinary parley is closed to them at
+ * fluency 0, the Tongue's fluency 2 opens it) and a parley is still open, or null.
+ * The CALLER decides whether the bot wants to talk at all (decideAction (a): it
+ * would parley, or the room is Magical; (c): the talk-first parley); this reads
+ * only whether the cast is possible.
+ * It reads the engine's own `parleyBlockedReason` at the spell's fluency (the one
+ * predicate castSpell and the combat menu read), so the bot never picks a cast
+ * the engine would refuse (the parley spent, a Walking Dead, a Ninja, a Master of
+ * Arms) and never loops on one. Needs a charge. Pure.
+ */
+function tongueSpellIdx(state, ctx) {
+  const c = state.c;
+  if (!state.combat || c.cls !== "Magic User" || ctx.parleyBlocked) return null;
+  if (maxCharges(c) - c.spellsUsed <= 0) return null;
+  const i = SPELLS.findIndex((sp) => sp.kind === "tongue" && canCast(state, sp) && !parleyBlockedReason(state, sp.fluency));
+  return i === -1 ? null : i;
+}
+
+/**
  * chooseSpell(state, ctx) — HARN-02: the ONE scoring table replacing
  * findCastableAttackSpell's thrown-only rule. Evaluates every castable spell
  * and returns the highest-scoring pick as `{ idx, tier, score }`, or `null`
@@ -472,16 +516,38 @@ function lowestCastableUtilitySpellIdx(state) {
  *               usual `300 + expected` — a likely one-shot kill outranks
  *               every other DAMAGE-tier pick (but never a KILL-tier spell,
  *               scored 400+).
- *   DISABLE (200+ offensive / 420-450 defensive, only when
- *           liveFoes(state).length >= 2, except Stun and Freeze): `kind==="stun"`
- *           230/450 (Phase 90 plan 05: Stun holds ONE foe, so like Freeze's
- *           hold it is allowed against a single foe; skipped while the target
- *           is already held), `kind==="weaken"` 220/440 (skipped when
- *           `C.weakened`), `kind==="shrink"` 215/435, `kind==="status"`
- *           (Doze, a multi-foe sleep that reaches d4 of them) 210/430 plus 0-4 for
- *           the live foes beyond the first two (its value grows with the room;
- *           skipped when every live foe already sleeps), `kind==="stupid"`
- *           205/425.
+ *   DISABLE (200+ offensive / 420-455 defensive, only when
+ *           liveFoes(state).length >= 2, except Stun, Freeze and Duplicate Foe):
+ *           `kind==="stun"` 230/450 (Phase 90 plan 05: Stun holds ONE foe, so
+ *           like Freeze's hold it is allowed against a single foe; Phase 90 plan
+ *           10: it is aimed at the STRONGEST live foe (hardestFoeIndex) and
+ *           skipped while that foe is already held), `kind==="weaken"` 220/440
+ *           (skipped when `C.weakened`), `kind==="shrink"` 215/435,
+ *           `kind==="status"` (Doze, a multi-foe sleep that reaches d4 of them)
+ *           210/430 plus 0-4 for the live foes beyond the first two (its value
+ *           grows with the room; skipped when every live foe already sleeps).
+ *           Phase 90 plan 10 (SPELL-10): `kind==="misdirect"` aims at the
+ *           STRONGEST live foe too and is skipped while that foe is already
+ *           misdirected: Duplicate Foe (`at: "self"`, allowed against one foe)
+ *           240/455, Senseless (`at: "friends"`, needs another live foe to hit)
+ *           225/445; `kind==="timestop"` (Stop Time) 250/456 and
+ *           `kind==="behemoth"` (Size of the Behemoth) 245/454, each only against
+ *           THREE or more live foes and skipped when it is already in force on
+ *           every one (all held in time, all cowering). `kind==="stupid"` is
+ *           never cast: Stupidity no longer disables (intelligence 1, the foe
+ *           keeps swinging; Phase 90 plan 04).
+ *   BUFF    (445, Phase 90 plan 10): `kind==="timed"` with act kind `haste` (Speed
+ *           of Sound) or `enchant` (Enchant Character), in round 1 of a `hardFight`
+ *           (the potion buff rule's own trigger) when that kind is not already
+ *           live on the hero. Fly (`fly`) and Open/Lock (`unlock`) are maze tools
+ *           the bot has no planner for: never cast.
+ *   ESCAPE / ANSWER (Phase 90 plan 10): not scored here but chosen where the
+ *           bot's own rules decide: Door Illusion in place of the flee roll
+ *           (decideAction branch (a), escapeSpellIdx) and Chameleon Tongue in
+ *           place of an ordinary parley (branches (a) and (c), tongueSpellIdx).
+ *           A cast returns its foe's index as `target` only when the strongest
+ *           foe is not already the hero's current target (the harness aims the
+ *           cast the way it aims an ability).
  *   HEAL    (100 defensive: 460 + expected heal, only when `c.wp / c.maxWP <
  *           ctx.opts.potionThreshold` — potions are drunk earlier in
  *           decideAction, so this fires once potions run out): `kind==="heal"`
@@ -562,6 +628,7 @@ export function chooseSpell(state, ctx) {
     if (!canCast(state, sp)) continue;
     let score;
     let tier;
+    let aim; // Phase 90 plan 10: the strongest foe's index when the cast must be aimed
     // ROTATION (opt-in, Phase 75.3): see chooseSpell's own JSDoc above — by
     // data flag/kind, never by spell name, and never gated on nFoes.
     // Phase 90 plan 05: Ice carries Freeze's onHit flag but is the area damage
@@ -623,7 +690,32 @@ export function chooseSpell(state, ctx) {
         score = 300 + expected;
       }
       tier = "damage";
-    } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status" || sp.kind === "stupid") {
+    } else if (sp.kind === "timed" && sp.act && (sp.act.kind === "haste" || sp.act.kind === "enchant")) {
+      // Phase 90 plan 10: Speed of Sound and Enchant Character are round-1 buffs in
+      // a hard fight (the potion buff rule's trigger), when not already live.
+      if (!C || C.round !== 1 || !hardFight(state) || itemEffectActive(c, sp.act.kind)) continue;
+      score = 445;
+      tier = "buff";
+    } else if (sp.kind === "misdirect") {
+      // Phase 90 plan 10: Duplicate Foe and Senseless against the STRONGEST foe.
+      if (!C) continue;
+      const sIdx = hardestFoeIndex(state);
+      const strongest = sIdx === null ? null : C.foes[sIdx];
+      if (!strongest || (strongest.misdirect && strongest.misdirect.left > 0)) continue;
+      if (sp.at !== "self" && nFoes < 2) continue; // Senseless needs another foe to hit
+      score = sp.at === "self" ? (mode === "defensive" ? 455 : 240) : mode === "defensive" ? 445 : 225;
+      tier = "disable";
+      aim = sIdx !== C.target ? sIdx : undefined;
+    } else if (sp.kind === "timestop" || sp.kind === "behemoth") {
+      // Phase 90 plan 10: the room controls, against three or more live foes, unless
+      // already in force on every one.
+      if (!C || nFoes < ROOM_CONTROL_MIN_FOES) continue;
+      const live = liveFoes(state);
+      if (sp.kind === "timestop" && live.every((f) => f.held && f.held.kind === "time")) continue;
+      if (sp.kind === "behemoth" && live.every((f) => f.cowering)) continue;
+      score = sp.kind === "timestop" ? (mode === "defensive" ? 456 : 250) : mode === "defensive" ? 454 : 245;
+      tier = "disable";
+    } else if (sp.kind === "stun" || sp.kind === "weaken" || sp.kind === "shrink" || sp.kind === "status") {
       // Phase 90 plan 05 (SPELL-11): Stun holds ONE foe (the target), so it is a
       // single-target hold like Freeze's and is allowed against a lone foe; it
       // is skipped while the target is already held (a hold never shortens).
@@ -632,7 +724,12 @@ export function chooseSpell(state, ctx) {
       // when every live foe already sleeps.
       if (!C) continue;
       if (sp.kind === "stun") {
-        if (target && target.held) continue;
+        // Phase 90 plan 10: Stun is aimed at the STRONGEST live foe and skipped
+        // while that foe is already held (or stunned by a Pommel Strike).
+        const sIdx = hardestFoeIndex(state);
+        const strongest = sIdx === null ? null : C.foes[sIdx];
+        if (strongest && (strongest.held || strongest.stunned)) continue;
+        aim = sIdx !== null && sIdx !== C.target ? sIdx : undefined;
       } else if (nFoes < 2) {
         continue;
       }
@@ -641,8 +738,8 @@ export function chooseSpell(state, ctx) {
       // USER RULING D: defensive mode re-ranks DISABLE above DAMAGE.
       const dozeGrowth = sp.kind === "status" ? Math.min(4, nFoes - 2) : 0;
       score = (mode === "defensive"
-        ? { stun: 450, weaken: 440, shrink: 435, status: 430, stupid: 425 }[sp.kind]
-        : { stun: 230, weaken: 220, shrink: 215, status: 210, stupid: 205 }[sp.kind]) + dozeGrowth;
+        ? { stun: 450, weaken: 440, shrink: 435, status: 430 }[sp.kind]
+        : { stun: 230, weaken: 220, shrink: 215, status: 210 }[sp.kind]) + dozeGrowth;
       tier = "disable";
     } else if (sp.kind === "heal") {
       if (!(c.maxWP > 0 && c.wp / c.maxWP < ctx.opts.potionThreshold)) continue;
@@ -664,7 +761,7 @@ export function chooseSpell(state, ctx) {
       continue; // never auto-cast (see JSDoc list above)
     }
     if (best === null || score > best.score || (score === best.score && sp.lvl > SPELLS[best.idx].lvl)) {
-      best = { idx: i, tier, score };
+      best = { idx: i, tier, score, ...(aim !== undefined ? { target: aim } : {}) };
     }
   }
   return best;
@@ -714,6 +811,10 @@ export function makeBotContext(opts = {}) {
     abilityBlocked: new Set(),
     itemBlocked: new Set(),
     mappedDepth: null,
+    // Phase 90 plan 10: the cleverest foe saw through a Door Illusion this
+    // encounter (`doorIllusionSeen`): the bot flees by the roll instead of
+    // spending more charges on the same door. Cleared on `encounterStarted`.
+    doorBlocked: false,
   };
 }
 
@@ -1207,6 +1308,13 @@ export function decideAction(state, policyRng, ctx) {
 
     // (a)
     if (ratio < fleeAt) {
+      // Phase 90 plan 10 (SPELL-10): where the bot would parley, a castable
+      // Chameleon Tongue is the better parley (+4, Magical foes will hear it); a
+      // Magical room (an ordinary parley closed) with the parley still open takes
+      // it too. The engine's own parleyBlockedReason guards every cast.
+      const wantsTalk = canParley(state) || C.type === "Magical";
+      const tongueIdx = wantsTalk ? tongueSpellIdx(state, ctx) : null;
+      if (tongueIdx !== null) return { type: "castSpell", idx: tongueIdx };
       if (!ctx.parleyBlocked && canParley(state)) return { type: "parley" };
       // 260918-w4n: wants to parley but can't (fluency 0) and a ready worn
       // tongue-kind item (Helm of Knowledge) is available in either jewelry
@@ -1218,7 +1326,14 @@ export function decideAction(state, policyRng, ctx) {
       if (tongueBeforeFlee) {
         return { type: "useItem", slot: tongueBeforeFlee.slot };
       }
-      if (!(c.sub === "Samurai" || ctx.fleeBlocked)) return { type: "flee" };
+      if (!(c.sub === "Samurai" || ctx.fleeBlocked)) {
+        // Phase 90 plan 10 (SPELL-10): where the flee rule would flee, a castable
+        // Door Illusion is the escape instead (a sure escape beats the roll; the
+        // cleverest foe's one resist may see through it, then the bot flees).
+        const doorIdx = escapeSpellIdx(state, ctx);
+        if (doorIdx !== null) return { type: "castSpell", idx: doorIdx };
+        return { type: "flee" };
+      }
       // Samurai never runs (canon); a flee refused this encounter is not
       // retried (Rule-1 fix) — fall through to the rest of the chain below.
     }
@@ -1232,7 +1347,10 @@ export function decideAction(state, policyRng, ctx) {
 
     // (c) HARN-02 talk-first
     if (C.round === 1 && isTalkFirst(state) && !ctx.parleyBlocked) {
-      if (canParley(state)) return { type: "parley" };
+      if (canParley(state)) {
+        const tongueIdx = tongueSpellIdx(state, ctx); // Phase 90 plan 10: the better parley
+        return tongueIdx !== null ? { type: "castSpell", idx: tongueIdx } : { type: "parley" };
+      }
       // 260918-w4n: same tongue-item assist as branch (a) above.
       // 260918-wy1: readyWornOfKind is family-agnostic.
       if (!itemEffectActive(c, "tongue")) {
@@ -1270,7 +1388,7 @@ export function decideAction(state, policyRng, ctx) {
 
     // (h) HARN-02 scoring table
     const pick = chooseSpell(state, ctx);
-    if (pick) return { type: "castSpell", idx: pick.idx };
+    if (pick) return pick.target === undefined ? { type: "castSpell", idx: pick.idx } : { type: "castSpell", idx: pick.idx, target: pick.target };
 
     // (h2) Phase 42 (BAL-01 second half): a ready ability by the Joiner
     // policy, checked after the spell table and before the plain attack
@@ -1552,6 +1670,7 @@ export function observe(ctx, events, stateAfter = null) {
     else if (e.type === "lootTaken" || e.type === "lootLeft") ctx.findFull = false; // Phase 42
     else if (e.type === "parleyRefused") ctx.parleyBlocked = true;
     else if (e.type === "fleeRefused") ctx.fleeBlocked = true;
+    else if (e.type === "doorIllusionSeen") ctx.doorBlocked = true; // Phase 90 plan 10
     else if (e.type === "strikeRefused") ctx.strikeBlocked = true;
     else if (e.type === "abilityRefused") ctx.abilityBlocked.add(e.key);
     else if (e.type === "useRefused") ctx.itemBlocked.add(itemLabel(e.item)); // Phase 42
@@ -1560,6 +1679,7 @@ export function observe(ctx, events, stateAfter = null) {
     } else if (e.type === "encounterStarted") {
       ctx.parleyBlocked = false;
       ctx.fleeBlocked = false;
+      ctx.doorBlocked = false;
       ctx.strikeBlocked = false;
       ctx.abilityBlocked.clear();
       ctx.itemBlocked.clear();
@@ -1816,6 +1936,12 @@ export function playRun(seed, opts, onStep) {
     if (action.type === "useAbility" && Number.isInteger(action.target) && state.combat) {
       state.combat.target = action.target;
       dispatched = { type: "useAbility", key: action.key };
+    }
+    // Phase 90 plan 10: a spell aimed at the strongest foe (Stun, Duplicate Foe,
+    // Senseless) is the same presentation-layer target write, then the bare cast.
+    if (action.type === "castSpell" && Number.isInteger(action.target) && state.combat) {
+      state.combat.target = action.target;
+      dispatched = { type: "castSpell", idx: action.idx };
     }
     let events;
     ({ state, events } = applyAction(state, dispatched));

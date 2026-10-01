@@ -184,7 +184,10 @@ function checkDoc(text) {
   }
   for (const q of doc.questions) {
     if (ruled.has(q)) {
-      if (!ruledQ.has(q)) add(`Q${q} is ruled but no row reads ruled (Q${q}, 2026-09-30)`);
+      // A ruled question is carried by a `ruled (Qn, 2026-09-30)` verdict, or (Phase 90 plan 10: Q10 once its three rows are built and read
+      // `fixed engine (90-10)`) named in a row's Joiner cell, the spell audit's allowance for a rule that spans rows.
+      const named = doc.rows.some((r) => r.length === 10 && new RegExp(`\\bQ${q}\\b`).test(r[6]));
+      if (!ruledQ.has(q) && !named) add(`Q${q} is ruled but no row reads ruled (Q${q}, 2026-09-30) or names Q${q} in its Joiner cell`);
     } else if (!openQ.has(q)) {
       add(`Q${q} is asked but no row reads balance call (Q${q})`);
     }

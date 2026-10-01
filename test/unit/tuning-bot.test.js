@@ -1077,3 +1077,146 @@ test("chooseSpell: Stun is a single-target hold (allowed vs a lone foe, 230 offe
   });
   assert.equal(chooseSpell(asleep, ctx), null, "nothing left to put to sleep");
 });
+
+// ─── Phase 90 plan 10 (SPELL-10): the bot plays the new and reworked spells (pinned, never run) ───────────────────
+
+/** foesOf(specs) — a fight whose foes carry lvl, wp, maxWP and any flags. */
+function foesOf(specs, round = 1, extra = {}) {
+  return {
+    type: "Humans",
+    foes: specs.map((s, i) => ({ name: `f${i}`, alive: true, lvl: 1, wp: 20, maxWP: 20, ...s })),
+    round,
+    target: 0,
+    ...extra,
+  };
+}
+const illusionist = (over = {}) => mu({ sub: "Illusionist", level: 5, wp: 40, maxWP: 40, ...over });
+
+test("bot (90-10): Ice scores as area damage by the live foes and Doze by the room; neither is a plain single-target pick", () => {
+  const ctx = makeBotContext();
+  const base = { sub: "Wizard", level: 3 };
+  const two = chooseSpell(mkState({ combat: foesOf([{}, {}]), c: mu({ ...base, grimoire: ["Ice"] }) }), ctx);
+  const three = chooseSpell(mkState({ combat: foesOf([{}, {}, {}]), c: mu({ ...base, grimoire: ["Ice"] }) }), ctx);
+  assert.deepStrictEqual({ tier: two.tier, idx: two.idx }, { tier: "damage", idx: idx("Ice") });
+  assert.equal(two.score, 300 + (5.5 + 9) * 2);
+  assert.equal(three.score, 300 + (5.5 + 9) * 3, "the area damage grows with each foe it reaches");
+  const doze = mu({ ...base, grimoire: ["Doze"] });
+  const dozeTwo = chooseSpell(mkState({ combat: foesOf([{}, {}]), c: doze }), ctx);
+  const dozeFour = chooseSpell(mkState({ combat: foesOf([{}, {}, {}, {}]), c: doze }), ctx);
+  assert.ok(dozeFour.score > dozeTwo.score, "Doze is valued by the live foes");
+});
+
+test("bot (90-10): Stun, Senseless and Duplicate Foe are aimed at the STRONGEST foe (the cast carries its index when it is not already the target) and skipped when it is already held or misdirected", () => {
+  const ctx = makeBotContext();
+  const crowd = (flags = {}) => foesOf([{ lvl: 1 }, { lvl: 4, ...flags }, { lvl: 2 }]);
+  const stun = chooseSpell(mkState({ combat: crowd(), c: illusionist({ grimoire: ["Stun"] }) }), ctx);
+  assert.deepStrictEqual({ idx: stun.idx, tier: stun.tier, target: stun.target }, { idx: idx("Stun"), tier: "disable", target: 1 });
+  assert.equal(chooseSpell(mkState({ combat: crowd({ held: { kind: "stunned", left: 2 } }), c: illusionist({ grimoire: ["Stun"] }) }), ctx), null, "the strongest foe is held already");
+  // when the strongest foe is already the current target no `target` rides on the pick (an unaimed cast)
+  const same = chooseSpell(mkState({ combat: foesOf([{ lvl: 4 }, { lvl: 1 }]), c: illusionist({ grimoire: ["Stun"] }) }), ctx);
+  assert.equal("target" in same, false);
+
+  const dup = chooseSpell(mkState({ combat: crowd(), c: illusionist({ grimoire: ["Duplicate Foe"] }) }), ctx);
+  assert.deepStrictEqual({ idx: dup.idx, tier: dup.tier, target: dup.target, score: dup.score }, { idx: idx("Duplicate Foe"), tier: "disable", target: 1, score: 455 });
+  assert.equal(chooseSpell(mkState({ combat: crowd({ misdirect: { at: "self", left: 3 } }), c: illusionist({ grimoire: ["Duplicate Foe"] }) }), ctx), null);
+  const alone = chooseSpell(mkState({ combat: foesOf([{ lvl: 5 }]), c: illusionist({ grimoire: ["Duplicate Foe"] }) }), ctx);
+  assert.equal(alone.idx, idx("Duplicate Foe"), "Duplicate Foe works against a lone foe");
+  assert.equal(alone.score, 240, "offensive band against one foe");
+
+  const sense = illusionist({ grimoire: ["Senseless"] });
+  assert.equal(chooseSpell(mkState({ combat: foesOf([{ lvl: 5 }]), c: sense }), ctx), null, "Senseless needs another foe to hit");
+  const pair = chooseSpell(mkState({ combat: foesOf([{ lvl: 1 }, { lvl: 5 }]), c: sense }), ctx);
+  assert.deepStrictEqual({ idx: pair.idx, target: pair.target, score: pair.score }, { idx: idx("Senseless"), target: 1, score: 445 });
+  // decideAction dispatches the aimed cast with its target; the harness writes it (playRun) and sends the bare cast
+  const aimed = decideAction(mkState({ combat: crowd(), c: illusionist({ grimoire: ["Stun"] }) }), fixedPolicyRng, ctx);
+  assert.deepStrictEqual(aimed, { type: "castSpell", idx: idx("Stun"), target: 1 });
+});
+
+test("bot (90-10): Stop Time and Size of the Behemoth need THREE or more live foes and are skipped once in force on every one", () => {
+  const ctx = makeBotContext();
+  const book = illusionist({ grimoire: ["Stop Time"] });
+  assert.equal(chooseSpell(mkState({ combat: foesOf([{}, {}]), c: book }), ctx), null, "two foes are not a crowd");
+  const three = chooseSpell(mkState({ combat: foesOf([{}, {}, {}]), c: book }), ctx);
+  assert.deepStrictEqual({ idx: three.idx, tier: three.tier }, { idx: idx("Stop Time"), tier: "disable" });
+  const stopped = foesOf([{ held: { kind: "time", left: 2 } }, { held: { kind: "time", left: 2 } }, { held: { kind: "time", left: 2 } }]);
+  assert.equal(chooseSpell(mkState({ combat: stopped, c: book }), ctx), null);
+  const behemoth = illusionist({ grimoire: ["Size of the Behemoth"] });
+  assert.equal(chooseSpell(mkState({ combat: foesOf([{}, {}]), c: behemoth }), ctx), null);
+  assert.equal(chooseSpell(mkState({ combat: foesOf([{}, {}, {}]), c: behemoth }), ctx).idx, idx("Size of the Behemoth"));
+  assert.equal(chooseSpell(mkState({ combat: foesOf([{ cowering: true }, { cowering: true }, { cowering: true }]), c: behemoth }), ctx), null);
+  // both castable against a crowd: Stop Time's band is the higher
+  const both = chooseSpell(mkState({ combat: foesOf([{}, {}, {}]), c: illusionist({ grimoire: ["Stop Time", "Size of the Behemoth"] }) }), ctx);
+  assert.equal(both.idx, idx("Stop Time"));
+});
+
+test("bot (90-10): Enchant Character and Speed of Sound are round-1 buffs in a HARD fight, when not already live; never in round 2 or an easy fight", () => {
+  const ctx = makeBotContext();
+  const hard = (round = 1) => foesOf([{ lvl: BOT_TACTICS.hardFoeLvl }], round);
+  const easy = foesOf([{ lvl: 1 }]);
+  const wiz = mu({ sub: "Wizard", level: 5, grimoire: ["Enchant Character"] });
+  const pick = chooseSpell(mkState({ combat: hard(), c: wiz }), ctx);
+  assert.deepStrictEqual({ idx: pick.idx, tier: pick.tier, score: pick.score }, { idx: idx("Enchant Character"), tier: "buff", score: 445 });
+  assert.equal(chooseSpell(mkState({ combat: hard(2), c: wiz }), ctx), null, "round 2");
+  assert.equal(chooseSpell(mkState({ combat: easy, c: wiz }), ctx), null, "an easy fight");
+  const live = { ...wiz, timers: { "spell:Enchant Character": { cadence: "squares", phase: "effect", left: 20 } } };
+  assert.equal(chooseSpell(mkState({ combat: hard(), c: live }), ctx), null, "already live");
+  const speed = mu({ sub: "Sorcerer", level: 5, grimoire: ["Speed of Sound"] });
+  assert.equal(chooseSpell(mkState({ combat: hard(), c: speed }), ctx).idx, idx("Speed of Sound"));
+});
+
+test("bot (90-10): Stupidity, Fly and Open/Lock are never chosen, at any round, foe count or health (pinned)", () => {
+  const ctx = makeBotContext();
+  const book = ["Stupidity", "Fly", "Open/Lock"];
+  for (const round of [1, 2, 5]) {
+    for (const n of [1, 2, 3]) {
+      for (const wp of [40, 10]) {
+        const state = mkState({ combat: foesOf(Array.from({ length: n }, () => ({ lvl: 5 })), round), c: illusionist({ sub: "Illusionist", level: 5, wp, grimoire: [...book] }) });
+        assert.equal(chooseSpell(state, ctx), null, `round ${round}, ${n} foes, wp ${wp}`);
+      }
+    }
+  }
+  const wiz = mu({ sub: "Wizard", level: 5, wp: 40, grimoire: ["Fly", "Open/Lock", "Stupidity"] });
+  assert.deepStrictEqual(decideAction(mkState({ combat: foesOf([{}, {}]), c: wiz }), fixedPolicyRng, ctx), { type: "attack" });
+});
+
+test("bot (90-10): where its flee rule would flee, a castable Door Illusion is the escape; the cleverest foe seeing through it blocks the door for that encounter and the bot flees", () => {
+  const ctx = makeBotContext();
+  // Walking Dead: no parley, so the flee rule is the next step
+  const fleeing = mkState({ combat: foesOf([{}, {}], 1, { type: "Walking Dead" }), c: illusionist({ level: 3, wp: 8, maxWP: 40, grimoire: ["Door Illusion"] }) });
+  assert.deepStrictEqual(decideAction(fleeing, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Door Illusion") });
+  // no charge: the ordinary flee
+  const dry = mkState({ combat: foesOf([{}, {}], 1, { type: "Walking Dead" }), c: illusionist({ level: 3, wp: 8, maxWP: 40, grimoire: ["Door Illusion"], spellsUsed: 99 }) });
+  assert.deepStrictEqual(decideAction(dry, fixedPolicyRng, ctx), { type: "flee" });
+  // seen through: blocked for the encounter, then flee; a new encounter re-arms it
+  observe(ctx, [{ type: "doorIllusionSeen", foe: "f0" }]);
+  assert.equal(ctx.doorBlocked, true);
+  assert.deepStrictEqual(decideAction(fleeing, fixedPolicyRng, ctx), { type: "flee" });
+  observe(ctx, [{ type: "encounterStarted" }]);
+  assert.equal(ctx.doorBlocked, false);
+  assert.deepStrictEqual(decideAction(fleeing, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Door Illusion") });
+  // not hurt enough to flee: no door
+  const fine = mkState({ combat: foesOf([{}, {}], 1, { type: "Walking Dead" }), c: illusionist({ level: 3, wp: 40, maxWP: 40, grimoire: ["Door Illusion"] }) });
+  assert.notEqual(decideAction(fine, fixedPolicyRng, ctx)?.idx, idx("Door Illusion"));
+});
+
+test("bot (90-10): where it would parley, a castable Chameleon Tongue is the better parley; a Magical room with the parley still open takes it too; the Walking Dead and a spent parley never do (the engine's own predicate guards the cast)", () => {
+  const ctx = makeBotContext();
+  const caster = (over = {}) => illusionist({ level: 3, wp: 8, maxWP: 40, grimoire: ["Chameleon Tongue"], ...over });
+  // an Elven hero parleys Humans (the bot would parley), so it casts the Tongue instead
+  const humans = mkState({ combat: foesOf([{}, {}], 1, { type: "Humans" }), c: caster({ race: "Elven" }) });
+  assert.deepStrictEqual(decideAction(humans, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Chameleon Tongue") });
+  // no charge: the ordinary parley
+  const dry = mkState({ combat: foesOf([{}, {}], 1, { type: "Humans" }), c: caster({ race: "Elven", spellsUsed: 99 }) });
+  assert.deepStrictEqual(decideAction(dry, fixedPolicyRng, ctx), { type: "parley" });
+  // a plain Human hero could not parley Humans anyway: the bot's rule flees, it does not go looking for a parley
+  const plain = mkState({ combat: foesOf([{}, {}], 1, { type: "Humans" }), c: caster() });
+  assert.deepStrictEqual(decideAction(plain, fixedPolicyRng, ctx), { type: "flee" });
+  // Magical foes: an ordinary parley is closed at fluency 0, the Tongue opens it
+  const magical = mkState({ combat: foesOf([{}, {}], 1, { type: "Magical" }), c: caster() });
+  assert.deepStrictEqual(decideAction(magical, fixedPolicyRng, ctx), { type: "castSpell", idx: idx("Chameleon Tongue") });
+  // the Walking Dead never talk, and a spent parley is spent: the flee rule
+  const dead = mkState({ combat: foesOf([{}, {}], 1, { type: "Walking Dead" }), c: caster() });
+  assert.deepStrictEqual(decideAction(dead, fixedPolicyRng, ctx), { type: "flee" });
+  const spent = mkState({ combat: foesOf([{}, {}], 1, { type: "Humans", parleyTried: true }), c: caster() });
+  assert.deepStrictEqual(decideAction(spent, fixedPolicyRng, ctx), { type: "flee" });
+});
