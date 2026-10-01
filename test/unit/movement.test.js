@@ -22,6 +22,7 @@ import {
   newDay,
   makeCamp,
   teleport,
+  resolveTeleportPick,
   bestTeleportDir,
   descend,
   maxCharges,
@@ -1273,15 +1274,22 @@ test("campFailed Oracle sentence and line render the numbers and the member clau
 
 // --- teleport -----------------------------------------------------------
 
-test("teleport: an Illusionist chooses their best direction and travels a fixed 12 (no rng draws)", () => {
+// Phase 91 (IDENT-14): the Illusionist's teleport is a PICK now (see
+// test/unit/teleport-pick.test.js); this keeps the old scenario's landing as
+// what LET IT CHOOSE gives, with zero draws throughout.
+test("teleport: an Illusionist's teleport waits for a pick (no rng draws), and LET IT CHOOSE travels the best direction a fixed 12", () => {
   const state = fixedState({ c: { sub: "Illusionist" } });
   for (let x = 5; x <= 17; x++) open(state.floor.g, x, 5); // a long clear run east
   assert.equal(bestTeleportDir(state), "E", "the longest clear run from the start is east");
   const rng = fakeRng([]); // must consume ZERO draws: no dice, no shuffle
   const events = teleport(state, rng, []);
+  assert.ok(events.some((e) => e.type === "teleportPickOffered"), "the teleport opens the pick");
+  assert.equal(state.floor.px, 5, "nothing moves until the player picks");
+  assert.deepEqual(state.pendingTeleport, { x: 5, y: 5, depth: 1 });
+  const landed = resolveTeleportPick(state, { auto: true }, rng, []);
   assert.equal(state.floor.px, 17, "travelled the fixed 12 squares east");
   assert.equal(state.floor.py, 5);
-  assert.ok(events.some((e) => e.type === "teleported" && e.dist === 12 && e.used === "E"));
+  assert.ok(landed.some((e) => e.type === "teleported" && e.dist === 12 && e.used === "E" && e.auto === true));
 });
 
 test("teleport: a non-Illusionist rolls 2d8 for direction and d20 for distance", () => {

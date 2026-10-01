@@ -32,6 +32,7 @@ import {
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { DIRV } from "./movement.js";
+import { GW, GH } from "./maze.js";
 import { STORE_EFFECTS } from "./economy.js";
 import { endSourceEffects } from "./items.js";
 import { ACTIVATION_OF, SLOT_OF, SPELLS, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
@@ -412,6 +413,24 @@ function sanitizePendingTile(raw, floor) {
 }
 
 /**
+ * sanitizePendingTeleport(raw, floor) — Phase 91 (IDENT-14): an Illusionist's
+ * open teleport pick `{ x, y, depth }` with integer fields inside the map,
+ * `depth` equal to the loaded floor's depth and `(x, y)` equal to the hero's
+ * position on it, or null. Only `{ x, y, depth }` is kept (the target list is
+ * always recomputed from the floor). A malformed or stale record loads as no
+ * pick, never a throw.
+ */
+function sanitizePendingTeleport(raw, floor) {
+  if (!isPlainObject(raw)) return null;
+  if (!Number.isInteger(raw.x) || !Number.isInteger(raw.y) || !Number.isInteger(raw.depth)) return null;
+  if (!floor || !Array.isArray(floor.g) || raw.depth !== floor.depth) return null;
+  if (raw.x !== floor.px || raw.y !== floor.py) return null;
+  if (raw.x < 1 || raw.y < 1 || raw.x > GW - 2 || raw.y > GH - 2) return null;
+  const row = floor.g[raw.y];
+  return Array.isArray(row) && isPlainObject(row[raw.x]) ? { x: raw.x, y: raw.y, depth: raw.depth } : null;
+}
+
+/**
  * sanitizePendingJoiner(raw) — a Joiner offer with the minimal character
  * shape the party load already demands (isValidCharacter) and a string
  * `name`, carried wholesale (never re-rolled), or null. Phase 90 plan 06: its
@@ -440,6 +459,10 @@ function resumedSubState(obj, combat, floor) {
     pendingTile: sanitizePendingTile(obj.pendingTile, floor),
   };
   if ("pendingJoiner" in obj) sub.pendingJoiner = sanitizePendingJoiner(obj.pendingJoiner);
+  // Phase 91 (IDENT-14): the key exists ONLY while a teleport pick is open (a
+  // fresh run never carries it, so no fixture or hash gains a field).
+  const pendingTeleport = sanitizePendingTeleport(obj.pendingTeleport, floor);
+  if (pendingTeleport) sub.pendingTeleport = pendingTeleport;
   return sub;
 }
 
@@ -1196,6 +1219,9 @@ export function validateSave(raw, options = {}) {
   // SAV-06 (Phase 76, user ruling 2026-09-25): the Joiner offer — only when
   // the save carries the key, so a fresh run never gains it.
   if ("pendingJoiner" in resumed) value.pendingJoiner = resumed.pendingJoiner;
+  // Phase 91 (IDENT-14): an open teleport pick resumes untouched (no resolve,
+  // no re-roll); the key is absent unless a valid pick was saved.
+  if (resumed.pendingTeleport) value.pendingTeleport = resumed.pendingTeleport;
   // MD-01: pass deathAt/lastWords through the validated value too, so a
   // terminal (dead) run's real save/load path — validateSave then
   // rehydrate() — doesn't lose them even though rehydrate() alone now
@@ -1358,6 +1384,8 @@ export function rehydrate(obj) {
   // SAV-06 (Phase 76, user ruling 2026-09-25): the Joiner offer — only when
   // the save carries the key (never injected into a fresh run).
   if ("pendingJoiner" in resumed) state.pendingJoiner = resumed.pendingJoiner;
+  // Phase 91 (IDENT-14): mirrors validateSave — an open teleport pick resumes.
+  if (resumed.pendingTeleport) state.pendingTeleport = resumed.pendingTeleport;
   // Phase 45 (HEDGE-02): unconditional, mirroring validateSave's own call
   // above — a no-op (reconcileWorn returns null and touches nothing) when
   // state.c already carries an own `worn` key, so a save validateSave

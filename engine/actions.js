@@ -79,6 +79,11 @@ export const ACTION_TYPES = new Set([
   // LEAP IT, `cross: true`) or TURN BACK (`cross: false`, free). Carries a
   // strict boolean `cross`, mirroring resolveJoiner's `accept`.
   "resolveHazard",
+  // Phase 91 (IDENT-14, report #3): an Illusionist's answer to the pending
+  // teleport (`state.pendingTeleport`): `{ x, y }` a square to land on, or
+  // `{ auto: true }` (LET IT CHOOSE). The engine itself refuses a
+  // non-integer or unlisted square with a named event.
+  "teleportPick",
   // RULES-10 (Phase 75.1): the ONE action a hero who cannot act (C.heroOut)
   // may take. No payload, like "fight" — no validate case needed.
   "loseTurn",
@@ -259,6 +264,14 @@ export function validateAction(action) {
       // decide whether dice are rolled.
       if (typeof action.cross !== "boolean") {
         return { ok: false, reason: "resolveHazard.cross must be a boolean" };
+      }
+      break;
+    case "teleportPick":
+      // Phase 91 (IDENT-14): LET IT CHOOSE (`auto: true`), or both coordinates
+      // finite numbers. A non-integer still reaches the engine's own named
+      // refusal (teleportPickRefused), so it is a legal wire shape here.
+      if (action.auto !== true && !(Number.isFinite(action.x) && Number.isFinite(action.y))) {
+        return { ok: false, reason: "teleportPick needs auto: true or finite x and y" };
       }
       break;
     default:

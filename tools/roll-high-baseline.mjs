@@ -38,6 +38,8 @@ function isQuiet(state) {
     !state.pendingJoiner &&
     !state.pendingFind &&
     !state.pendingHazard &&
+    // Phase 91 (IDENT-14): an open Illusionist teleport pick is a decision too.
+    !state.pendingTeleport &&
     // RULES-12 (Phase 75, Plan 12): pendingTile is a ninth transient
     // decision field, mirroring pendingHazard just above — never snapshot
     // mid-resolution.

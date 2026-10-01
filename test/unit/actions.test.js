@@ -74,6 +74,32 @@ test("CLIMB-01: validateAction rejects a missing, string or numeric resolveHazar
   }
 });
 
+// --- Phase 91 (IDENT-14): teleportPick { x, y } | { auto: true } -------------
+
+test("IDENT-14: ACTION_TYPES includes teleportPick", () => {
+  assert.ok(ACTION_TYPES.has("teleportPick"));
+});
+
+test("IDENT-14: validateAction accepts a pick on finite coordinates (the engine refuses non-integers by name) or LET IT CHOOSE", () => {
+  assert.equal(validateAction({ type: "teleportPick", x: 8, y: 10 }).ok, true);
+  assert.equal(validateAction({ type: "teleportPick", x: 8.5, y: 10 }).ok, true);
+  assert.equal(validateAction({ type: "teleportPick", auto: true }).ok, true);
+});
+
+test("IDENT-14: validateAction rejects a bare pick, string or NaN coordinates, and a non-true auto", () => {
+  for (const bad of [
+    { type: "teleportPick" },
+    { type: "teleportPick", x: "8", y: 10 },
+    { type: "teleportPick", x: 8 },
+    { type: "teleportPick", x: NaN, y: 10 },
+    { type: "teleportPick", x: Infinity, y: 10 },
+    { type: "teleportPick", auto: 1 },
+    { type: "teleportPick", auto: false },
+  ]) {
+    assert.equal(validateAction(bad).ok, false, JSON.stringify(bad));
+  }
+});
+
 // --- RULES-10 (Phase 75.1): loseTurn (no payload) ---------------------------
 
 test("ACTION_TYPES includes loseTurn", () => {
