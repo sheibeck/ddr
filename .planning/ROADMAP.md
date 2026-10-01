@@ -187,7 +187,7 @@ Plans:
   3. Drinking an Enlarge potion is worth it: its damage bonus outweighs the easier-to-hit cost, in line with a Troll's size damage, and its text states both sides (report #6).
   4. The Crystal Staff and any other party-wide item effect reach the whole party as the text promises, and every other system the audit found missing is built or re-ruled and listed in the table.
 
-**Plans:** 7/10 plans executed
+**Plans:** 8/10 plans executed
 
 Plans:
 **Wave 1**
@@ -217,7 +217,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 89-08-PLAN.md — the audit's remaining engine fixes and engine rulings (Q1, Q4, Q5+), one pin per row
+- [x] 89-08-PLAN.md — the audit's remaining engine fixes and engine rulings (Q1, Q4, Q5+), one pin per row
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -364,10 +364,12 @@ Plans:
 **Requirements**: BOARD-31, BOARD-32, BOARD-33
 **Depends on:** Phase 85's board stack (identity, boardWrites, runQueue, the ☰ account rows). Independent of the engine audits (shell + backend only). Research recommended (flagged): Play Games Services v2 sign-in in the Capacitor shell and a server-verifiable Play Games identity for Firestore without the Firebase SDK (Phase 83 uses plain REST). Live rules deploy just in time, with the release build (standing rule). `/gsd-discuss-phase` required: migration of 2.2.0 handle runs, Compete-OFF/decline behaviour, name changes, Data safety wording.
 **Success Criteria** (what must be TRUE):
+
   1. A player with Compete ON is signed in with Play Games and every run they post shows their Play Games name on the board; the server refuses a run whose name is not the poster's own Play Games identity.
   2. No re-roll exists anywhere; a player's earlier 2.2.0 runs appear under their Play Games name after they sign in on the update.
   3. A 2.2.0 client's submission is refused by the live rules; the updated client's queue posts normally.
   4. The store listing, Data safety form text and privacy policy say what the board shows publicly.
+
 **Plans:** 0 plans
 
 Plans:
@@ -411,7 +413,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 87. Player-Report Fixes: Joiner HP, Store Rations & DEPTH Ties | 10/10 | Complete    | 2026-09-30 |
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
-| 89. Item Audit & Fixes | 7/10 | In Progress|  |
+| 89. Item Audit & Fixes | 8/10 | In Progress|  |
 | 90. Spell & Skill Audit | 0/TBD | Not started | - |
 | 91. Race & Sub-class Audit | 0/TBD | Not started | - |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
