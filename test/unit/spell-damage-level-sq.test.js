@@ -7,8 +7,10 @@
 // spell adds level² to EACH foe it damages ("each foe gets it"): once per
 // foe per cast (Lightning's own throw at each foe, Earthquake's one roll on
 // every foe, the first Fireballs bolt to strike each foe), and a damage-
-// over-time spell (Acid, Ice) adds it to its first tick. The p.26 multiplier
-// stays for what is not damage (Stun's reach). Heals, the Earthquake
+// over-time spell (Acid) adds it to its first tick. Phase 90 plan 05: Ice is no
+// longer a damage-over-time spell (it is the area freeze: each foe takes its own
+// d10 + level²), and Stun no longer has a reach to scale (it holds one foe).
+// Heals, the Earthquake
 // backlash and an Apprentice's backfire never add it. No new rng draw.
 //
 // Every case walks the dice's lowest and highest faces at caster levels 1,
@@ -177,13 +179,13 @@ test("Fireballs: each bolt deals its dice, and each foe struck takes level² onc
 
 // --- damage over time: level² on the first tick only ---------------------------
 
-for (const [n, tickType, rec] of [["Acid", "acidTick", "acid"], ["Ice", "dotTick", "dot"]]) {
+for (const [n, tickType, rec] of [["Acid", "acidTick", "acid"]]) {
   test(`${n}: the first tick deals its dice + level², the later ticks their dice alone (levels 1, 3, 5)`, () => {
     const sp = row(n);
     for (const level of LEVELS) {
       for (const [face, want] of [[1, lo(sp.dmg)], [sp.dmg.sides, hi(sp.dmg)]]) {
         const s = fight(caster(n, level), [foe("F1")], noResist(n));
-        // The cast's first draw (Acid's rounds d6, Ice's d4+1) reads 4: long
+        // The cast's first draw (Acid's rounds d6) reads 4: long
         // enough for two ticks; every later damage die shows `face`.
         let drawn = 0;
         const rng = rngBy((sides) => (drawn++ === 0 ? 4 : sides === sp.dmg.sides ? face : 4));
@@ -199,6 +201,25 @@ for (const [n, tickType, rec] of [["Acid", "acidTick", "acid"], ["Ice", "dotTick
     }
   });
 }
+
+// --- Ice: the area freeze, each foe its own dice + level² -------------------------
+
+test("Ice (Phase 90 plan 05): every foe takes its own d10 + level² at levels 1, 3, 5 (lowest and highest faces); the d4 freeze follows each survivor", () => {
+  const sp = row("Ice");
+  for (const level of LEVELS) {
+    for (const [face, want] of [[1, lo(sp.dmg)], [sp.dmg.sides, hi(sp.dmg)]]) {
+      const s = fight(caster("Ice", level), [foe("F1"), foe("F2")], noResist("Ice", 2));
+      const events = castSpell(s, idx("Ice"), rngBy((sides) => (sides === sp.dmg.sides ? face : 1)), []);
+      const hits = events.filter((e) => e.type === "spellHit");
+      assert.equal(hits.length, 2, `L${level}`);
+      for (const h of hits) {
+        assert.equal(h.dmg, want + level * level, `L${level} face ${face} ${h.target}`);
+        assert.equal(h.levelSq, level * level);
+      }
+      assert.deepEqual(s.combat.foes.map((f) => f.wp), [999 - want - level * level, 999 - want - level * level]);
+    }
+  }
+});
 
 // --- a Joiner's cast: the Joiner's own level ------------------------------------
 
@@ -228,14 +249,31 @@ for (const [n, levels] of [["Freeze", LEVELS], ["Fireball", [3, 5]], ["Mangle", 
   });
 }
 
+for (const level of [3, 5]) {
+  test(`a Joiner's Ice deals its d10 + the JOINER's level² to every foe (level ${level})`, () => {
+    const sp = row("Ice");
+    for (const [face, want] of [[1, lo(sp.dmg)], [sp.dmg.sides, hi(sp.dmg)]]) {
+      const s = joinerFight(level, ["Ice"], actsWhere("Ice", [[0, false]], { caster: "Ada" }));
+      const events = alliesTurn(s, rngBy((sides) => (sides === sp.dmg.sides ? face : 1)), []);
+      const hit = events.find((e) => e.type === "allySpellHit" && e.effect === "damage");
+      assert.ok(hit, `Ice L${level}: a hit, got ${events.map((e) => e.type)}`);
+      assert.equal(hit.dmg, want + level * level, `Ice L${level} face ${face}`);
+    }
+  });
+}
+
 // --- what the ruling leaves alone ----------------------------------------------
 
-test("Stun: the p.26 multiplier still sets its reach: d6 × max(1, level − 1) foes (levels 1, 3, 5)", () => {
-  for (const [level, want] of [[1, 1], [3, 2], [5, 4]]) {
+// Phase 90 plan 05 (SPELL-11): Stun no longer has a reach to scale. Before: d6 × max(1, level − 1)
+// foes asleep (1, 2, 4 at levels 1, 3, 5, with every die on 1 and 2). After: it holds the ONE foe you
+// picked at every level (the p.26 multiplier is gone from it).
+test("Stun: holds exactly one foe at levels 1, 3, 5: the p.26 reach multiplier is gone", () => {
+  for (const level of [1, 3, 5]) {
     const foes = [1, 2, 3, 4, 5, 6].map((i) => foe(`F${i}`, { asleep: 0 }));
     const s = fight(caster("Stun", level), foes, noResist("Stun", 6));
     const events = castSpell(s, idx("Stun"), rngBy((sides) => (sides === 6 ? 1 : 2)), []);
-    assert.equal(events.find((e) => e.type === "stunned").count, want, `L${level}`);
+    assert.equal(events.filter((e) => e.type === "controlHeld").length, 1, `L${level}`);
+    assert.equal(s.combat.foes.filter((f) => f.held).length, 1, `L${level}`);
   }
 });
 
@@ -303,13 +341,14 @@ test("the Oracle and rail hit lines name the level² from level 2 up; a level-1 
   assert.equal(EVENT_NARRATION.spellHit({ ...hit, mult: 3, levelSq: undefined }).includes("×"), false, "the retired ×mult is never printed");
 });
 
-test("Ice's landing line names the first tick's level² from level 2 up, from a real cast", () => {
-  for (const [level, clause, rail] of [[1, "", ""], [3, " (the first +9, for your level)", " (the first +9)"]]) {
+test("Ice's hit line names the level² it added from level 2 up, from a real cast (the roll and the d10 +level² the text promises)", () => {
+  for (const [level, clause, rail] of [[1, "", ""], [3, " (the roll +9, for your level)", ", the roll +9 for your level"]]) {
     const s = fight(caster("Ice", level), [foe("F1")], noResist("Ice"));
     const events = castSpell(s, idx("Ice"), rngBy(() => 2), []);
-    const applied = events.find((e) => e.type === "iceApplied");
-    assert.equal(applied.levelSq, level * level);
-    assert.equal(EVENT_NARRATION.iceApplied(applied), `<span class="hit">Ice climbs F1: d6 a round for 3 rounds${clause}, then it stops moving.</span>`);
-    assert.equal(LINE_FOR.iceApplied(applied).text, `Ice climbs F1: d6 a round${rail}, 3 rounds.`);
+    const hit = events.find((e) => e.type === "spellHit");
+    assert.equal(hit.levelSq, level * level);
+    assert.equal(hit.spell, "Ice", "no spellThrown precedes an Ice hit, so the hit names its own spell");
+    assert.equal(EVENT_NARRATION.spellHit(hit), `<span class="hit">Hit.</span> F1 takes <span class="roll">${2 + level * level}</span> hp${clause}.`);
+    assert.equal(LINE_FOR.spellHit(hit).text, `Ice hits F1 (${2 + level * level}${rail})`);
   }
 });

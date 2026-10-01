@@ -22,7 +22,7 @@
 import { eff, canCast, canLearn, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
-import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect } from "./combat.js";
+import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm } from "./combat.js";
 import { maxCharges } from "./movement.js";
 import { GW, GH } from "./maze.js";
 import { SPELLS, RACES, ENC_TYPES } from "../content/index.js";
@@ -64,16 +64,19 @@ import { spellDamageFor } from "./difficulty.js";
 // canon's own spellResisted shape). Each names the foe its own branch
 // resolves: `target` is the hero's live target (C.target, normalized),
 // `first` the first live foe. A single-target thrown spell (no `aoe`) is
-// "target". Every other foe-targeted kind (stun, weaken, shrink, quake,
-// vapor, volley, turn, gate, and a thrown `aoe: "all"`) resists per foe
-// inside its own branch.
+// "target". Every other foe-targeted kind (status, weaken, shrink, quake,
+// vapor, volley, turn, gate, blast, and a thrown `aoe: "all"`) resists per
+// foe inside its own branch or its shared tail (Doze's per reached foe, Ice's
+// per surviving foe after its damage).
+// Phase 90 plan 05: Doze (status) left this table (it reaches d4 foes and rolls
+// a resist for each, combat.js#dozeFoes), Stun joined it as "target" (it holds
+// the picked foe only), and "dot" left it (Ice is the area "blast" now).
 const SINGLE_TARGET_KINDS = Object.freeze({
   stupid: "target", // Phase 90 plan 04 (Q7 A): the picked foe; a dead pick falls to the first live foe
-  status: "first",
+  stun: "target",
   death: "first",
   blind: "target",
   acid: "target",
-  dot: "target",
   petrify: "target",
   insane: "target",
   thrown: "target",
@@ -97,7 +100,7 @@ const LESSER_ALLY_NAMES = [
  * grimoire/school gating (skipped for a scroll-cast spell), the Apprentice's
  * one-in-eight backfire, the intelligent-target resistance roll, and every
  * spell kind's effect (heal/ward/might/status/thrown/reveal/mirror/stun/
- * weaken/acid/dot/quake/vapor/volley/petrify/insane/summon/turn/gate/senses/
+ * weaken/acid/blast/quake/vapor/volley/petrify/insane/summon/turn/gate/senses/
  * foresee/regen/death/stupid/blind/shrink). A bad `idx` (T-01-09a: no
  * validated range check upstream) is a safe no-op.
  *
@@ -247,26 +250,18 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       }
     }
   } else if (sp.kind === "stun") {
-    // Phase 54 (BAND-02, USER RULING D): spellDamageFor scales an MU's
-    // offensive spell POWER — here, how many foes the stun affects.
-    // Identity 1 (spellPowerFor) is a structural no-op.
-    // Quick 260928-sq2: the p.26 multiplier keeps scaling Stun's REACH (not
-    // damage), so this count is untouched by the level² damage ruling.
-    const n = spellDamageFor(rng.d(6) * Math.max(1, c.level - sp.lvl), c); // roll:amount
-    const affected = liveFoes(state).slice(0, n);
-    // Quick 260927-rsx: each affected foe first rolls its own resist (a
-    // derived stream; since Phase 90 plan 04 the one depth-rising resist, with
-    // no second control resist after it); a foe that resists sleeps not at all
-    // and draws no d4. The foe count (the d6 above) is the cast's own and is
-    // drawn first; `count` is the number that actually slept.
-    let slept = 0;
-    affected.forEach((f) => {
-      if (foeResistsSpell(state, f, sp.n, rng, events)) return;
-      const rolled = rng.d(4); // roll:amount
-      f.asleep = Math.max(f.asleep, rolled);
-      slept++;
-    });
-    events.push({ type: "stunned", count: slept });
+    // DELIBERATE RULES CHANGE (Phase 90 plan 05, SPELL-11, user 2026-09-30:
+    // "Stun holds one foe for d4 rounds and a hit does not end it"): Stun and
+    // Doze swapped. Stun is a single-target hold of the foe you picked (a dead
+    // pick falls to the first live foe, like Stupidity): its one depth-rising
+    // resist was rolled up front (SINGLE_TARGET_KINDS), and a landed Stun is
+    // combat.js#stunFoe — a d4 on the main rng, then a "stunned" hold (the foe
+    // skips that many turns; a hit does not end it; a longer hold stands). The
+    // old d6 × max(1, level − 1) foes asleep d4 each, the spellDamageFor power
+    // scaling of its reach and the `stunned { count }` line are gone.
+    const aimedFoe = C && C.foes[C.target] && C.foes[C.target].alive ? C.foes[C.target] : null;
+    const t = C && (aimedFoe || liveFoes(state)[0]);
+    if (t) stunFoe(state, t, sp, rng, events);
   } else if (sp.kind === "weaken") {
     // Phase 40 (SPELL-01, Weaken): a scope x duration axis, stated in the
     // grimoire's own txt ("every foe, d4+1 rounds") — today undefined in
@@ -359,24 +354,16 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       t.acid = { rounds: rng.d(6), dmg: sp.dmg, levelSq: spellLevelSq(c) }; // roll:amount
       events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
     }
-  } else if (sp.kind === "dot") {
-    // Phase 40 (SPELL-01, Ice): the real per-round damage-over-time the
-    // spell's txt has always promised — the exact `f.dot = { left, dmg, by }`
-    // shape Poisoned Edge (Phase 38) and combat.js#foeTurn's existing tick
-    // already read; this module never freezes anything itself — foeTurn's
-    // own payoff does that when the last tick leaves the foe standing. One
-    // draw (the duration); no to-hit roll, like Acid; resistible (a
-    // SINGLE_TARGET_KINDS entry, so the target rolls its intel resist
-    // above); recasting on a foe already carrying an ice dot REFRESHES
-    // `left` (overwrite), never stacks. T-40-03: guarded on `sp.dmg` — a
-    // tampered/unknown dot row missing it never writes a broken record.
-    const t = C && C.foes[C.target];
-    if (t && t.alive && sp.dmg) {
-      // Quick 260928-sq2: the caster's level² rides the record to its first
-      // tick (as Acid's does); Poisoned Edge's dot never carries one.
-      t.dot = { left: rng.d(4) + 1, dmg: sp.dmg, by: "ice", levelSq: spellLevelSq(c) }; // roll:amount
-      events.push({ type: "iceApplied", target: t.name, rounds: t.dot.left, levelSq: t.dot.levelSq });
-    }
+  } else if (sp.kind === "blast") {
+    // DELIBERATE RULES CHANGE (Phase 90 plan 05, SPELL-12 and Q5 A, user
+    // 2026-09-30: "Ice is an area d10 to every foe with a chance to freeze each
+    // target 1d4 rounds", "the area version of the level-1 Freeze"): the old
+    // damage-over-time Ice (the `dot` kind, its f.dot record and foeTurn's
+    // frozen-solid payoff) is gone. No to-hit roll and no up-front resist:
+    // combat.js#iceStorm gives every live foe, in C.foes order, d10 + the
+    // caster's level² (Strength's d10 under Q1 A), then freezes each survivor
+    // for a d4 unless its one depth-rising resist stops the freeze.
+    iceStorm(state, sp, rng, events);
   } else if (sp.kind === "quake") {
     // DELIBERATE RULES CHANGE (quick 260928-sq2, user ruling 2026-09-28):
     // every foe takes the ONE roll + the caster's level² ("each foe gets
@@ -646,14 +633,12 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
       killFoe(state, t, rng, events);
     }
   } else if (sp.kind === "status") {
-    const t = C && liveFoes(state)[0];
-    if (t) {
-      // The d4 (Phase 90 plan 04: the one resist was rolled up front, and
-      // there is no second control resist past floor 12 any more; 90-05
-      // reworks Doze itself).
-      t.asleep = rng.d(4); // roll:amount
-      events.push({ type: "dozed", target: t.name, rounds: t.asleep });
-    }
+    // DELIBERATE RULES CHANGE (Phase 90 plan 05, SPELL-11, Q3 A and Q4 A, user
+    // 2026-09-30: "Doze sleeps d4 foes for d4 rounds and a hit wakes a dozing
+    // foe"): the first-live-foe single sleep is gone. combat.js#dozeFoes draws
+    // the d4 reach, then each reached foe (the picked foe first) rolls its own
+    // resist and its own d4, and is marked `dozing` so a hit wakes it.
+    if (C) dozeFoes(state, sp, rng, events);
   } else {
     // thrown: d8, 4 winning faces, plus the offensive bonus from the
     // subclass chart. Phase 73 (ROLL-05): the school and throw bonuses fold

@@ -218,9 +218,9 @@ test("drinkPotion: a Summoner's potion restores its full, unhalved amount", () =
 
 test("allyCast never casts a heal kind — ATTACK_SPELL_KINDS excludes 'heal'", () => {
   assert.equal(ATTACK_SPELL_KINDS.has("heal"), false);
-  // Every kind allyCast is documented to handle (thrown/status/stun/weaken)
-  // is present, and 'heal' is not one of them.
-  assert.deepEqual([...ATTACK_SPELL_KINDS].sort(), ["status", "stun", "thrown", "weaken"]);
+  // Every kind allyCast is documented to handle (thrown/status/stun/weaken, and
+  // Phase 90 plan 05's blast, Ice) is present, and 'heal' is not one of them.
+  assert.deepEqual([...ATTACK_SPELL_KINDS].sort(), ["blast", "status", "stun", "thrown", "weaken"]);
 });
 
 // --- zero-added-draw guarantee ----------------------------------------------

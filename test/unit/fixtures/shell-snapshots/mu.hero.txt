@@ -71,7 +71,7 @@
   html=""
   <li class="grim-locked">
     <div class="grim-info">
-      html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · one foe · asleep d4 rounds</i>"
+      html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour</i>"
     <span class="grim-hint">
       text="Combat only"
   <li>

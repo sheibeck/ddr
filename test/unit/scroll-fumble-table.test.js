@@ -6,7 +6,7 @@
 // module under test), the closed FUMBLE_SIDES/FUMBLE_EFFECTS lists, kind
 // consistency (helpful side <-> helpful-shaped spell kind; area side <->
 // quake/volley/aoe-all spell), the shape of every `rounds`/`kind`/`how`/
-// `then`/`once` extra, and the "no fumble kills outright" / "turn-loss capped
+// `once` extra (`then` retired in Phase 90 plan 05), and the "no fumble kills outright" / "turn-loss capped
 // at d4" severity rulings (2026-09-25).
 
 import test from "node:test";
@@ -36,7 +36,8 @@ const EXPECTED = {
   "Stupidity": { side: "harmful", effect: "out", kind: "stupefied", rounds: D4 },
   "Blind": { side: "harmful", effect: "blind" },
   "Shrink": { side: "harmful", effect: "shrink" },
-  "Ice": { side: "harmful", effect: "dot", rounds: D4_PLUS_1, then: "heavy" },
+  // Phase 90 plan 05 (SPELL-12): was { harmful, dot, rounds d4+1, then heavy }; Ice is the area freeze now.
+  "Ice": { side: "area", effect: "damage" },
   "Earthquake": { side: "area", effect: "damage", once: true },
   "Noxious Vapor": { side: "harmful", effect: "vapor", rounds: D4 },
   "Fireballs": { side: "area", effect: "volley" },
@@ -228,9 +229,9 @@ test("SCROLL_FUMBLE: how/kind/then/once extras appear only where the plan places
   );
   assert.deepEqual(kindNames, new Set(["Doze", "Stun", "Stupidity", "Insane"]));
 
+  // Phase 90 plan 05 (SPELL-12): Ice's `then: "heavy"` hand-off is gone with its burn, so no row carries `then`.
   const thenNames = Object.entries(SCROLL_FUMBLE).filter(([, row]) => "then" in row).map(([name]) => name);
-  assert.deepEqual(thenNames, ["Ice"]);
-  assert.equal(SCROLL_FUMBLE["Ice"].then, "heavy");
+  assert.deepEqual(thenNames, []);
 
   const onceNames = Object.entries(SCROLL_FUMBLE).filter(([, row]) => "once" in row).map(([name]) => name);
   assert.deepEqual(onceNames, ["Earthquake"]);

@@ -83,8 +83,8 @@ test("spellLevelFor: Summon is level 2 for the Summoner again; Lesser Summon pri
 
 // --- DAMAGE_SPELL_KINDS / dealsDamage --------------------------------------
 
-test("DAMAGE_SPELL_KINDS is exactly {thrown, dot, acid, volley, quake, death}", () => {
-  assert.deepStrictEqual([...DAMAGE_SPELL_KINDS].sort(), ["acid", "death", "dot", "quake", "thrown", "volley"]);
+test("DAMAGE_SPELL_KINDS is exactly {thrown, blast, acid, volley, quake, death} (Phase 90 plan 05: Ice's kind blast replaced dot)", () => {
+  assert.deepStrictEqual([...DAMAGE_SPELL_KINDS].sort(), ["acid", "blast", "death", "quake", "thrown", "volley"]);
 });
 
 test("dealsDamage: true for the real damage kinds and Lesser Summon, false for disables/utility/other summons", () => {

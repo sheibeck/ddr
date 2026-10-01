@@ -308,14 +308,17 @@ test("a Joiner's Freeze that hits a target that resists: the damage lands, spell
   assert.equal(s.party[0].spellsUsed, 1);
 });
 
+// Phase 90 plan 05 (SPELL-11): a Joiner's Doze is the shared dozeFoes tail: the d4 reach (1) first, then
+// the resist, then the sleeper's own d4 (3) and a `dozed` line with `by` (before: one d4 and an
+// allySpellHit { effect: "asleep" }). The cursor for the resist is the fake rng's own (no getState: 0).
 test("a Joiner's Doze that the target fails to resist: resistFailed by the Joiner, then the foe sleeps", () => {
   const acts = findActs("Doze", [[0, false]], {}, "Ada");
   const s = fightState({ acts, foes: [foe("F1")], party: [muMember({ grimoire: ["Doze"] })] });
   s.combat.allies = [{ partyIdx: 0, name: "Ada", lvl: 1, sub: "Wizard", wp: 20, maxWP: 20 }];
-  const events = alliesTurn(s, fakeRng([3, ...PAD(20)]), []);
+  const events = alliesTurn(s, fakeRng([1, 3, ...PAD(20)]), []);
   const rf = events.find((e) => e.type === "resistFailed");
   assert.equal(rf.by, "Ada");
-  assert.ok(events.some((e) => e.type === "allySpellHit" && e.effect === "asleep"));
+  assert.ok(events.some((e) => e.type === "dozed" && e.by === "Ada"));
   assert.ok(s.combat.foes[0].asleep > 0);
 });
 

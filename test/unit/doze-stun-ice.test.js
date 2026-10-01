@@ -27,6 +27,8 @@ import { resolveScrollFumble } from "../../engine/scrollFumble.js";
 import { foeRisingResistCheck, isAttackSpell, DAMAGE_SPELL_KINDS, ATTACK_SPELL_KINDS } from "../../engine/derived.js";
 import { SPELLS, SCROLL_FUMBLE } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
+import { newRun } from "../../engine/engine.js";
+import { movementComparable, combatComparable, economyComparable } from "../parity/harness/comparables.js";
 
 const IDX = Object.fromEntries(SPELLS.map((sp, i) => [sp.n, i]));
 const SP = Object.fromEntries(SPELLS.map((sp) => [sp.n, sp]));
@@ -288,8 +290,11 @@ test("a damage-over-time tick and an area spell wake a dozing foe too (any damag
   assert.ok(events.some((e) => e.type === "foeWoke" && e.target === "F1"));
   assert.equal(b.asleep, 4, "the untouched sleeper keeps sleeping (one visit spent)");
   assert.equal(b.dozing, true);
+  s.acts = failActs("Lightning", 2);
   const lightning = castSpell(s, IDX.Lightning, fakeRng(ONES(120)), []);
-  assert.ok(lightning.some((e) => e.type === "foeWoke" && e.target === "F2") || b.asleep === 0 || b.alive === false);
+  assert.ok(lightning.some((e) => e.type === "foeWoke" && e.target === "F2"), "Lightning's damage wakes the other sleeper");
+  assert.equal(b.asleep, 0);
+  assert.equal("dozing" in b, false);
 });
 
 // ---------------------------------------------------------------------------
@@ -328,7 +333,9 @@ test("Stun: the held foe skips its turns, a landed blow on it does not end the h
   const first = castSpell(s, IDX.Stun, fakeRng([4, ...ONES(80)]), []);
   let skips = first.filter((e) => e.type === "foeStillHeld" || e.type === "foeHoldBroken").length;
   assert.equal(f.held.left, 3);
-  // a hero blow in between: lands (held foes are hit on at least 5 winning faces) and does not touch the hold
+  // a hero blow in between (a Wizard with an attack spell refuses melee, so the caster swaps to a Fighter's club):
+  // it lands (held foes are hit on at least 5 winning faces) and does not touch the hold
+  Object.assign(s.c, { cls: "Fighter", sub: "Soldier", weapon: "Club", armor: "Nothing", grimoire: [] });
   const blow = playerStrike(s, fakeRng([1, 3, ...ONES(80)]), []);
   assert.ok(blow.some((e) => e.type === "struck"));
   assert.equal(blow.some((e) => e.type === "foeHoldBroken"), false);
@@ -567,6 +574,19 @@ test("a fumbled Ice scroll hits the reader and the reader's side through resolve
   assert.ok(hits.some((e) => e.who === "reader"));
   assert.ok(s.c.wp < before);
   assert.equal("selfDot" in s.combat, false);
+});
+
+test("the new per-foe `dozing` field is carved out of ALL THREE parity *Comparable() functions (and only that field)", () => {
+  const vampireFoe = { name: "Vampire", type: "Walking Dead", lvl: 5, size: "H", intel: 12, wp: 71, maxWP: 71, alive: true, asleep: 3, sp: { atk: 2 }, lives: 1 };
+  const base = newRun(4);
+  const clean = structuredClone(base);
+  clean.combat = { foes: [{ ...vampireFoe }], type: "Walking Dead", round: 1, target: 0, spellOpen: false, tracked: false };
+  const dirty = structuredClone(base);
+  dirty.combat = { foes: [{ ...vampireFoe, dozing: true }], type: "Walking Dead", round: 1, target: 0, spellOpen: false, tracked: false };
+  for (const cmp of [movementComparable, combatComparable, economyComparable]) {
+    assert.deepStrictEqual(cmp(dirty), cmp(clean), `${cmp.name} must strip foe.dozing down to parity`);
+    assert.equal(cmp(dirty).combat.foes[0].asleep, 3, `${cmp.name} still compares the sleep itself`);
+  }
 });
 
 const stripComments = (src) => src.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");

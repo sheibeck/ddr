@@ -116,9 +116,11 @@ const EXEMPT = {
   // (foeResistsSpell = foeResistsEffect), with no resistControl, no hold and no
   // cap. Only the Bard's sing keeps resistControl, until Phase 91 (IDENT-17).
   "combat.js": {
-    holdFoe: "the hold itself: a Freeze's rolled hold (freezeFoe resists first)",
-    allyCast: "X10: a Joiner's Doze, Stun and Weaken roll the one depth-rising resist (foeResistsSpell); no knee, no hold",
-    foeTurn: "X10: Ice's last tick freezes solid at every depth; no knee, no hold",
+    holdFoe: "the hold itself: a Freeze's or Ice's rolled freeze (freezeFoe resists first) and Stun's rolled hold (stunFoe, after the target's one resist)",
+    allyCast: "X10: a Joiner's Weaken rolls the one depth-rising resist (roomWeakenResists); no knee, no hold (its Doze, Stun and Ice go through dozeFoes, stunFoe and iceStorm)",
+    // Phase 90 plan 05 (SPELL-11): Doze's shared tail. Each reached foe rolls the one depth-rising resist
+    // (foeResistsSpell) before it sleeps; foeTurn's Ice payoff (the other X10 site here) is gone with Ice's burn.
+    dozeFoes: "X10: Doze's sleep, after the one depth-rising resist per reached foe (foeResistsSpell); no knee, no hold",
   },
   "magic.js": {
     castSpell: "X10: every spell the hero or a scroll casts rolls the one depth-rising resist (foeResistsSpell); no knee, no hold, no cap",
@@ -202,7 +204,7 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
   const seen = new Set(hits.map((h) => `${h.file}#${h.fn}`));
   // One entry per audited function that assigns a control today: castSpell
   // (C1, C5, C7, C8, C10, C11, C14, C17-C19), useItem (C4, C6, C12, C16),
-  // allyCast (C2, C9, C15), sing (C13), foeTurn (C3), holdFoe, and the
+  // allyCast (C2, C9, C15), sing (C13), dozeFoes (C7, C9; Phase 90 plan 05), holdFoe, and the
   // exemptions (X5). X8 left the list in Plan 76-06 (user ruling
   // 2026-09-26): a fumbled Weaken now weakens the READER (c.foeEffect), so
   // scrollFumble.js assigns no foe control at all and needs no exemption.
@@ -211,7 +213,7 @@ test("RULES-18 guard: the scan is not vacuous — every hit resolves to a named 
     "items.js#useItem",
     "combat.js#allyCast",
     "combat.js#sing",
-    "combat.js#foeTurn",
+    "combat.js#dozeFoes",
     "combat.js#holdFoe",
     "abilities.js#applyPommel",
     "abilities.js#applyDirtyTrick",

@@ -51,6 +51,13 @@
 //   - Row 5 renamed Detect Magic -> Map the Floor (SPELL-05); row 13 (Ice)
 //     `kind` changed "thrown" -> "dot" (its `dmg` literal is unchanged — Plan
 //     02 wires the actual per-round tick + the promised freeze-on-expiry).
+//     Phase 90 plan 05 (SPELL-12, user 2026-09-30, Q5 A): Ice is no longer a
+//     damage-over-time spell. Its `kind` is "blast" (no spell row has kind
+//     "dot" any more): `aoe: "all"` and `onHit: "freeze"` are the data flags
+//     Lightning and Freeze already carry, dmg is a d10, and
+//     engine/combat.js#iceStorm reads them. Doze and Stun were swapped the same
+//     phase (SPELL-11): Doze sleeps d4 foes and a hit wakes a sleeper, Stun
+//     holds one foe for d4 rounds and a hit does not end it.
 //   - Row 32 (Lesser Summon, NEW): the Summoner's user-ruled (2026-09-18)
 //     level-1 safe summon — "give the summoner a level 1 summon... keep
 //     level 1 spells without the bad gate" (40-CONTEXT.md Area 3). Learnable
@@ -93,7 +100,7 @@ export const SPELLS = [
   { n: "Heal", lvl: 1, s: "healing", kind: "heal", dmg: { n: 1, sides: 10, bonus: 0 }, niche: "healing", txt: "healing · you · d10 hp", combatOnly: false },
   { n: "Shield", lvl: 1, s: "protection", kind: "ward", pool: 50, rounds: 5, niche: "defensive", txt: "defensive · you · soaks 50 hp for 5 rounds", combatOnly: false },
   { n: "Strength", lvl: 1, s: "offense", kind: "might", act: { kind: "strength", effect: 100, dice: { n: 1, sides: 10, bonus: 0 } }, niche: "buff", txt: "buff · you · for 100 squares, every damage roll you make (each blow, each spell hit) adds an extra d10; casting it again starts the 100 over; no extra HP, sadly", combatOnly: false },
-  { n: "Doze", lvl: 1, s: "offense", kind: "status", niche: "control", txt: "control · one foe · asleep d4 rounds", combatOnly: true },
+  { n: "Doze", lvl: 1, s: "offense", kind: "status", niche: "control", txt: "control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour", combatOnly: true },
   { n: "Freeze", lvl: 1, s: "offense", kind: "thrown", dmg: { n: 1, sides: 6, bonus: 0 }, onHit: "freeze", niche: "burst", txt: "burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry", combatOnly: true },
   // Phase 40 (SPELL-05, Plan 04): `squares` is the reveal window the engine
   // reads (engine/magic.js's reveal branch -> a c.timers["spell:reveal"]
@@ -104,13 +111,13 @@ export const SPELLS = [
   // applies.
   { n: "Map the Floor", lvl: 1, s: "divination", kind: "reveal", squares: 1, niche: "sight", txt: "sight · the whole floor · shown until you take a step, then your focus breaks", combatOnly: false },
   { n: "Mirror Self", lvl: 1, s: "illusion", kind: "mirror", niche: "defensive", txt: "defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds", combatOnly: false },
-  { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · up to d6 foes · asleep d4 rounds", combatOnly: true },
+  { n: "Stun", lvl: 1, s: "offense", kind: "stun", niche: "control", txt: "control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned", combatOnly: true },
   { n: "Weaken", lvl: 1, s: "offense", kind: "weaken", niche: "control", txt: "control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds", combatOnly: true },
   { n: "Acid", lvl: 2, s: "offense", kind: "acid", dmg: { n: 2, sides: 6, bonus: 2 }, niche: "dot", txt: "damage over time · one foe · 2d6+2 a round, d6 rounds; the first round adds your level² damage", combatOnly: true },
   { n: "Stupidity", lvl: 2, s: "offense", kind: "stupid", niche: "control", txt: "control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging", combatOnly: true },
   { n: "Blind", lvl: 3, s: "offense", kind: "blind", niche: "control", txt: "control · one foe · blind for the fight: it hits only on its die's top face and never lands a critical", combatOnly: true },
   { n: "Shrink", lvl: 3, s: "offense", kind: "shrink", niche: "control", txt: "control · up to d6 foes · half hp and half damage, the fight", combatOnly: true },
-  { n: "Ice", lvl: 3, s: "offense", kind: "dot", dmg: { n: 1, sides: 6, bonus: 0 }, niche: "dot", txt: "damage over time · one foe · d6 a round for d4+1 rounds, the first adding your level² damage, then frozen solid", combatOnly: true },
+  { n: "Ice", lvl: 3, s: "offense", kind: "blast", dmg: { n: 1, sides: 10, bonus: 0 }, aoe: "all", onHit: "freeze", niche: "multi", txt: "multi-target · every foe · d10 + your level² damage to each, no roll to hit; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry", combatOnly: true },
   { n: "Earthquake", lvl: 4, s: "offense", kind: "quake", dmg: { n: 3, sides: 10, bonus: 8 }, niche: "multi", txt: "multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides", combatOnly: true },
   { n: "Noxious Vapor", lvl: 4, s: "offense", kind: "vapor", niche: "chaos", txt: "chaos · every foe · a d6 of very bad outcomes", combatOnly: true },
   { n: "Fireballs", lvl: 4, s: "offense", kind: "volley", dmg: { n: 1, sides: 10, bonus: 2 }, niche: "multi", txt: "multi-target · d8 bolts · d10+2 damage each, spread across the foes, + your level² damage once to each foe struck", combatOnly: true },

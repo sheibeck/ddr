@@ -170,18 +170,18 @@ test("castableAttackSpells: ignores charges — Wizard L1 with Freeze and spells
 
 // --- 5. ATTACK_SPELL_KINDS / isAttackSpell --------------------------------
 
-test("ATTACK_SPELL_KINDS is exactly {status, thrown, stun, weaken}", () => {
-  assert.deepStrictEqual([...ATTACK_SPELL_KINDS].sort(), ["status", "stun", "thrown", "weaken"]);
+// Phase 90 plan 05 (SPELL-12): Ice's kind is "blast" (the area freeze) and joins the set.
+test("ATTACK_SPELL_KINDS is exactly {status, thrown, stun, weaken, blast}", () => {
+  assert.deepStrictEqual([...ATTACK_SPELL_KINDS].sort(), ["blast", "status", "stun", "thrown", "weaken"]);
 });
 
 // Phase 40 (SPELL-01): Ice's kind changed offense/thrown -> offense/dot (a
-// real per-round DOT, Plan 02) — `dot` was never in ATTACK_SPELL_KINDS
-// (Acid, the table's other dot-kind spell, was never an attack kind either),
-// so Ice moves from the true-list to the false-list here. This is a content
-// reshape, not an ATTACK_SPELL_KINDS definition change.
-test("isAttackSpell: true for Doze/Freeze/Stun/Weaken/Fireball/Lightning/Mangle, false for the rest (Ice is dot-kind, not an attack kind)", () => {
-  const trueNames = ["Doze", "Freeze", "Stun", "Weaken", "Fireball", "Lightning", "Mangle"];
-  const falseNames = ["Heal", "Shield", "Summon", "Phantom Host", "Acid", "Ice", "Fireballs", "Earthquake", "Death"];
+// real per-round DOT, Plan 02), so it moved from the true-list to the
+// false-list here. Phase 90 plan 05 (SPELL-12): Ice is the area freeze now,
+// kind "blast", which joins ATTACK_SPELL_KINDS, so it moves back to the true-list.
+test("isAttackSpell: true for Doze/Freeze/Stun/Weaken/Ice/Fireball/Lightning/Mangle, false for the rest (Ice is the blast kind, an attack kind again)", () => {
+  const trueNames = ["Doze", "Freeze", "Stun", "Weaken", "Ice", "Fireball", "Lightning", "Mangle"];
+  const falseNames = ["Heal", "Shield", "Summon", "Phantom Host", "Acid", "Fireballs", "Earthquake", "Death"];
   for (const n of trueNames) {
     const sp = SPELLS.find((s) => s.n === n);
     assert.ok(sp, `${n} must exist in SPELLS`);

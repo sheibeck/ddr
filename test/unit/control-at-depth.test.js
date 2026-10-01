@@ -353,7 +353,8 @@ test("holdFoe: sets foe.held { kind, left } and pushes controlHeld", () => {
   const foe = fixedFoe();
   const state = fixedState({ floor: { depth: 20 } });
   const events = [];
-  holdFoe(state, foe, "frozen", "Freeze", events);
+  // Phase 90 plan 05: opts.rounds is required (the controlHoldRoundsFor depth default is gone; before: no opts, 3 at floor 20).
+  holdFoe(state, foe, "frozen", "Freeze", events, { rounds: 3 });
   assert.deepEqual(foe.held, { kind: "frozen", left: 3 });
   const ev = events.find((e) => e.type === "controlHeld");
   assert.deepEqual(ev, { type: "controlHeld", target: "Target", kind: "frozen", rounds: 3, source: "Freeze" });
@@ -364,7 +365,7 @@ test("held skip: foeTurn skips a held foe for exactly 3 visits (foeStillHeld 2, 
   const state = fixedState({ floor: { depth: 20 } });
   state.combat = fixedCombat([foe]);
   const events = [];
-  holdFoe(state, foe, "frozen", "Freeze", events);
+  holdFoe(state, foe, "frozen", "Freeze", events, { rounds: 3 });
   assert.deepEqual(foe.held, { kind: "frozen", left: 3 });
 
   const e1 = foeTurn(state, fakeRng(PAD(5)), []);
@@ -478,10 +479,12 @@ test("Joiner Freeze (C2): floor 12, a standing hit is frozen for its d4 and surv
 test("Joiner Doze (C9): floor 20, one depth-rising resist; a resisted Doze draws no d4 and marks nothing; a landed sleep lasts its rolled d4 (not capped)", () => {
   const foeR = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateR = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  stateR.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 0, true);
+  stateR.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 1, true);
   stateR.combat = fixedCombat([foeR], { allies: [fixedAlly()] });
-  const rngR = trackingRng([3]);
-  const eventsR = alliesTurn(stateR, rngR, []); // d4 raw draw -> 3 (never taken)
+  // Phase 90 plan 05: a Joiner's Doze is dozeFoes: the d4 REACH is drawn first (1 here), then the foe's resist
+  // (a derived stream); a resisted foe draws no sleeping d4 (the 3 is never taken).
+  const rngR = trackingRng([1, 3]);
+  const eventsR = alliesTurn(stateR, rngR, []);
   assert.equal(foeR.asleep, 0);
   assert.equal("resisted" in foeR, false, "no Unmoved mark: there is no separate control resist");
   const line = eventsR.find((e) => e.type === "spellResisted");
@@ -489,19 +492,20 @@ test("Joiner Doze (C9): floor 20, one depth-rising resist; a resisted Doze draws
   assert.equal(line.by, "Ada");
   assert.equal(line.depthFaces, 8);
   assert.equal(eventsR.some((e) => e.type === "controlResisted"), false);
-  assert.equal(rngR.getState(), 0, "the one resist ended the cast: no d4 was drawn");
+  assert.equal(rngR.getState(), 1, "only the reach was drawn: the resisted foe took no sleeping d4");
 
   const foeL = fixedFoe({ type: "Humans", wp: 30, maxWP: 30, intel: 1 });
   const stateL = fixedState({ party: [muMember({ grimoire: ["Doze"] })], floor: { depth: 20 } });
-  stateL.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 0, false);
+  stateL.acts = forceRisingResist("Doze", "Ada", 0, 20, 1, 1, false);
   stateL.combat = fixedCombat([foeL], { allies: [fixedAlly()] });
-  const rngL = trackingRng([3]);
+  const rngL = trackingRng([1, 3]);
   const eventsL = alliesTurn(stateL, rngL, []);
   assert.equal(foeL.asleep, 3, "the d4's own rolled duration, never capped");
   assert.equal("resisted" in foeL, false);
-  const hit = eventsL.find((e) => e.type === "allySpellHit");
+  const hit = eventsL.find((e) => e.type === "dozed");
   assert.equal(hit.rounds, 3);
-  assert.equal(rngL.getState(), 1, "a landed Doze takes exactly its d4");
+  assert.equal(hit.by, "Ada");
+  assert.equal(rngL.getState(), 2, "a landed Doze takes its reach d4 and its own sleeping d4");
 });
 
 // Phase 89 plan 08 (ITEM-01, Q1): re-pinned. The Joiner's Weaken has no extra
@@ -540,17 +544,20 @@ test("Joiner Weaken (C15): floor 20, the d4+1 is always drawn; every foe resisti
 // depth, as it did at or below floor 12 (the one resist it rolled was the cast's
 // own). Plan 90-05 replaces Ice with its area form. Before: floor 20 resisted ->
 // the foe took its turn, marked Unmoved; floor 20 landed -> a 3-round hold.
-test("Ice's last tick (C3): floor 20 freezes solid and dies exactly as at floor 12 — no control resist, no hold, no Unmoved mark", () => {
+// Phase 90 plan 05 (SPELL-12, Q5 A): re-pinned again. Ice is the area freeze
+// (combat.js#iceStorm), so foeTurn has NO Ice payoff at any depth. Before: Ice's
+// last damage-over-time tick froze a survivor solid and killed it (frozenSolid,
+// killFoe). After: a stray `by: "ice"` dot record (an old save's foe) is a plain
+// tick that just ends, like Poisoned Edge's, and never freezes.
+test("Ice's old last tick (C3, retired): a leftover ice dot just ticks and ends at every depth; nothing freezes solid", () => {
   for (const depth of [12, 13, 20]) {
     const foe = fixedFoe({ wp: 30, maxWP: 30, dot: { left: 1, dmg: { n: 1, sides: 6, bonus: 0 }, by: "ice" } });
     const state = fixedState({ floor: { depth } });
     state.combat = fixedCombat([foe]);
     const events = foeTurn(state, fakeRng([3, ...PAD(5)]), []);
-    assert.equal(foe.alive, false, `depth ${depth}`);
-    assert.ok(events.some((e) => e.type === "frozenSolid"), `depth ${depth}`);
-    assert.equal("held" in foe, false);
-    assert.equal("resisted" in foe, false);
-    assert.equal(events.some((e) => e.type === "controlResisted" || e.type === "controlHeld"), false, `depth ${depth}`);
+    assert.equal(foe.alive, true, `depth ${depth}`);
+    assert.equal("dot" in foe, false, `depth ${depth}`);
+    assert.equal(events.some((e) => e.type === "frozenSolid" || e.type === "controlHeld" || e.type === "controlResisted"), false, `depth ${depth}`);
   }
 });
 

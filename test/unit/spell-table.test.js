@@ -78,9 +78,10 @@ test("SPELLS rows 0-31: array position, lvl, s, kind are byte-identical to the p
       assert.equal(sp.n, "Map the Floor");
       assert.equal(sp.kind, kind);
     } else if (i === 13) {
-      // Ice (SPELL-01 DOT fix) — kind changes, name unchanged.
+      // Ice (SPELL-01 DOT fix) — kind changes, name unchanged. Phase 90 plan 05
+      // (SPELL-12, Q5 A): the DOT is gone; Ice is the area freeze, kind "blast".
       assert.equal(sp.n, n);
-      assert.equal(sp.kind, "dot");
+      assert.equal(sp.kind, "blast");
     } else {
       assert.equal(sp.n, n, `row ${i}: n must be byte-identical`);
       assert.equal(sp.kind, kind, `row ${i} (${n}): kind must be byte-identical`);
@@ -106,7 +107,8 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
     Stupidity: { combatOnly: true },
     Blind: { combatOnly: true },
     Shrink: { combatOnly: true },
-    Ice: { dmg: { n: 1, sides: 6, bonus: 0 }, combatOnly: true },
+    // Phase 90 plan 05 (SPELL-12, Q5 A): Ice's damage die is a d10 (was a d6 per tick).
+    Ice: { dmg: { n: 1, sides: 10, bonus: 0 }, combatOnly: true },
     Earthquake: { dmg: { n: 3, sides: 10, bonus: 8 }, combatOnly: true },
     "Noxious Vapor": { combatOnly: true },
     Fireballs: { dmg: { n: 1, sides: 10, bonus: 2 }, combatOnly: true },
@@ -138,17 +140,21 @@ test("SPELLS: pre-Phase-40 dmg/pool/rounds/reflect/combatOnly fields deep-equal 
   }
 });
 
-test("SPELLS: exactly the three deliberate data flags (onHit on Freeze, aoe on Lightning) plus row 32's lesser/roll — no other row carries any of them", () => {
+// Phase 90 plan 05 (SPELL-12): Ice, the area version of Freeze, carries Freeze's onHit and Lightning's aoe.
+test("SPELLS: exactly the deliberate data flags (onHit on Freeze and Ice, aoe on Lightning and Ice) plus row 32's lesser/roll — no other row carries any of them", () => {
   const freeze = SPELLS.find((sp) => sp.n === "Freeze");
   const lightning = SPELLS.find((sp) => sp.n === "Lightning");
+  const ice = SPELLS.find((sp) => sp.n === "Ice");
   assert.equal(freeze.onHit, "freeze");
   assert.equal(lightning.aoe, "all");
+  assert.equal(ice.onHit, "freeze");
+  assert.equal(ice.aoe, "all");
   for (const sp of SPELLS) {
-    if (sp.n === "Freeze") continue;
+    if (sp.n === "Freeze" || sp.n === "Ice") continue;
     assert.equal(sp.onHit, undefined, `${sp.n} must not carry onHit`);
   }
   for (const sp of SPELLS) {
-    if (sp.n === "Lightning") continue;
+    if (sp.n === "Lightning" || sp.n === "Ice") continue;
     assert.equal(sp.aoe, undefined, `${sp.n} must not carry aoe`);
   }
   for (const sp of SPELLS) {
