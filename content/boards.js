@@ -149,6 +149,10 @@ export const LEADERBOARD_COPY = Object.freeze({
     mineAll: "You haven’t lost a hero yet. Give it time.",
     clear: "CLEAR FILTERS",
   }),
+  // Phase 91.2 (D-08): shown in place of a Play Games name that hits the
+  // safety list, on board rows and in the standing line (it is read as "…’s
+  // best", so it is a noun phrase).
+  maskedName: "Someone Unprintable",
   divider: "NOT IN THE TOP TEN · YOUR BEST",
   you: "YOU",
   standing: Object.freeze({

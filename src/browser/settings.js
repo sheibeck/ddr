@@ -7,7 +7,7 @@
 // Dressing On/Off row; Phase 67 added `compete` plus two fields Phase 85
 // later retired; Phase 71 D-03 added the three volume levels; Phase 78
 // HUD-08 added `movement` and `padSide`, the opt-in arrow pad; Phase 85
-// RETIRE-03 added `boardWelcomed`) plus the pure text-scaling (UX-08) and
+// RETIRE-03 added the first welcome flag; Phase 91.2 BOARD-31 replaced it with `nameWelcomed`) plus the pure text-scaling (UX-08) and
 // confirm-before-quit-gate helpers. All persistence goes through
 // src/browser/storage.js's shared async abstraction (which itself installs
 // `window.mzStorage` for the classic non-module script) — never any raw
@@ -27,10 +27,15 @@
 //     install; OFF means every board network call (the client, both
 //     identities and boardSync) is gated shut (Phase 85 ACCT-06).
 //
-// Phase 85 (RETIRE-03) field:
-//   - `boardWelcomed`: the one-time welcome card has been shown, raised when
-//     your first run reaches our board (replaces the Phase 67 field that
-//     named the retired third-party provider this build no longer uses).
+// Phase 91.2 (BOARD-31, D-10) field:
+//   - `nameWelcomed`: the one-time welcome card has been shown. It tells the
+//     player that the board shows their Play Games name publicly, and it is
+//     raised the first time the board answers with that name. It takes the
+//     slot of the Phase 85 welcome flag (the one raised when a rolled handle
+//     first reached the board), which this build no longer reads: every
+//     player on 2.3, 2.2 players included, sees the disclosure once, because
+//     the same tolerant merge below drops the old key from a stored blob and
+//     a blob without the new one reads false.
 //
 // Phase 71 (POLISH-05, D-03) fields: `volMaster`, `volMusic`, `volEffects`
 // — the MASTER / MUSIC / EFFECTS volume sliders under the Sound row, each an
@@ -69,7 +74,7 @@
 // read — a stored blob that still carries either one loses it the next time
 // writeSetting() persists (readSettings only merges recognized keys,
 // writeSetting only ever writes the merged object back); `compete` keeps its
-// Phase 67 meaning untouched, and a blob without `boardWelcomed` reads its
+// Phase 67 meaning untouched, and a blob without `nameWelcomed` reads its
 // default false, no migration.
 
 import { getItem, setItem } from "./storage.js";
@@ -78,7 +83,7 @@ import { getItem, setItem } from "./storage.js";
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
- * The five UX-07 fields plus `compete` and `boardWelcomed`, and their
+ * The five UX-07 fields plus `compete` and `nameWelcomed`, and their
  * defaults (04-UI-SPEC.md / 04-CONTEXT.md; 67-CONTEXT.md D-01; Phase 85
  * RETIRE-03).
  * Phase 59 (DRESS-05): `dressing` (Set Dressing On/Off, default true) is the
@@ -88,11 +93,11 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * src/browser/dressing.js#createDressingArt's lazy-load controller, so
  * turning it Off both draws nothing AND never loads the 54 dressing images.
  * Phase 67 (D-01): `compete` (default true) is appended after `dressing`.
- * Phase 85 (RETIRE-03): `boardWelcomed` (default false, the welcome card
- * shown once when your first run reaches the board) is appended right after
- * `compete`, in the slot the two retired Phase 67 fields used to occupy.
+ * Phase 91.2 (BOARD-31): `nameWelcomed` (default false, the welcome card
+ * shown once to every player, naming their public Play Games name) sits right
+ * after `compete`, in the slot the Phase 85 welcome flag held before it.
  * Phase 71 (D-03): `volMaster`, `volMusic` and `volEffects` (integers 0-100,
- * default 100) are appended after `boardWelcomed`, in that order.
+ * default 100) are appended after `nameWelcomed`, in that order.
  * Phase 78 (HUD-08): `movement` (default "arrows" since 2026-09-28; existing
  * installs keep "tap" through readSettings) and `padSide`
  * (default "right", the arrow pad's bottom corner, read only in arrow mode)
@@ -105,7 +110,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   confirmBeforeQuit: true,
   dressing: true,
   compete: true,
-  boardWelcomed: false,
+  nameWelcomed: false,
   volMaster: 100,
   volMusic: 100,
   volEffects: 100,
@@ -129,7 +134,7 @@ const ALLOWED_VALUES = {
   confirmBeforeQuit: [true, false],
   dressing: [true, false],
   compete: [true, false],
-  boardWelcomed: [true, false],
+  nameWelcomed: [true, false],
   volMaster: isVolumeLevel,
   volMusic: isVolumeLevel,
   volEffects: isVolumeLevel,

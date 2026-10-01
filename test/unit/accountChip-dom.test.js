@@ -7,7 +7,7 @@
 // comment-stripped source-pin approach (stripJs from tools/ident-sweep.mjs).
 // Replaces every test of the retired sign-on flow (the SIGN IN/STOP
 // COMPETING action row, its own accessible labels and its D-04/D-11 rail
-// cards) with the reroll/erase row pair for our own board.
+// cards) with the SIGN IN WITH PLAY GAMES / erase row pair for our own board.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -35,12 +35,14 @@ const MODULE_PATH = path.join(REPO_ROOT, "src", "browser", "accountChip.js");
 const MODULE_SRC = fs.readFileSync(MODULE_PATH, "utf8").replace(/\r\n/g, "\n");
 const STRIPPED = stripJs(MODULE_SRC);
 
-const HANDLE = "@lanternjaw";
+const NAME = "Moss Knuckle";
 const STATES = Object.freeze({
-  pending: { compete: true, handle: null },
-  onIdle: { compete: true, handle: HANDLE, erase: "idle" },
-  onArmed: { compete: true, handle: HANDLE, erase: "armed" },
-  off: { compete: false, handle: HANDLE },
+  pending: { compete: true, name: null },
+  onIdle: { compete: true, name: NAME, signin: "in", erase: "idle" },
+  onArmed: { compete: true, name: NAME, signin: "in", erase: "armed" },
+  off: { compete: false, name: NAME },
+  signedOut: { compete: true, name: null, signin: "out" },
+  signingIn: { compete: true, name: null, signin: "busy" },
 });
 
 function spy() {
@@ -160,7 +162,7 @@ test("chip: a null button is a no-op", () => {
 
 // ─── the sheet ───────────────────────────────────────────────────────────
 
-test("sheet, no handle yet: identity, the Compete row, the on-help line, reroll and erase both disabled, then Settings, in order", () => {
+test("sheet, no name yet: identity, the Compete row, the on-help line, a hidden SIGN IN row and a disabled erase, then Settings, in order", () => {
   const { rows, title } = freshSheet();
   const view = accountSheetView(STATES.pending);
   renderAccountSheet({ rows, title }, view, {});
@@ -168,7 +170,7 @@ test("sheet, no handle yet: identity, the Compete row, the on-help line, reroll 
 
   const kids = rows.children;
   assert.deepEqual(kids.map((c) => c.className.split(/\s+/)[0]), ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action", "mw-acct-settings"]);
-  const [id, row, help, reroll, erase, settings] = kids;
+  const [id, row, help, signin, erase, settings] = kids;
 
   assert.ok(hasClass(id, "mw-acct-id"));
   assert.equal(id.children[0].dataset.state, "pending");
@@ -179,11 +181,12 @@ test("sheet, no handle yet: identity, the Compete row, the on-help line, reroll 
   assert.ok(hasClass(row, "mw-acct-row"));
   assert.equal(help.textContent, view.help);
 
-  assert.equal(reroll.tagName, "button");
-  assert.equal(reroll.type, "button");
-  assert.equal(reroll.dataset.action, "reroll");
-  assert.equal(reroll.textContent, ACCOUNT_COPY.sheet.reroll);
-  assert.equal(reroll.disabled, true);
+  assert.equal(signin.tagName, "button");
+  assert.equal(signin.type, "button");
+  assert.equal(signin.dataset.action, "signin");
+  assert.equal(signin.textContent, ACCOUNT_COPY.sheet.signin);
+  assert.equal(signin.hidden, true, "no SIGN IN row while the sign-in state is unknown");
+  assert.equal(signin.style.display, "none");
 
   assert.equal(erase.dataset.action, "erase");
   assert.equal(erase.dataset.armed, "0");
@@ -196,13 +199,13 @@ test("sheet, no handle yet: identity, the Compete row, the on-help line, reroll 
   assert.equal(settings.textContent, view.settings.label);
 });
 
-test("sheet, a handle with Compete ON, erase idle: the avatar identity, reroll and erase both enabled, armed=0", () => {
+test("sheet, a name with Compete ON, signed in, erase idle: the avatar identity, SIGN IN hidden, erase enabled, armed=0", () => {
   const { rows, title } = freshSheet();
   const view = accountSheetView(STATES.onIdle);
   renderAccountSheet({ rows, title }, view, {});
-  const reroll = byAction(rows, "reroll");
+  const signin = byAction(rows, "signin");
   const erase = byAction(rows, "erase");
-  assert.equal(reroll.disabled, false);
+  assert.equal(signin.hidden, true);
   assert.equal(erase.disabled, false);
   assert.equal(erase.dataset.armed, "0");
   assert.equal(erase.textContent, ACCOUNT_COPY.sheet.erase);
@@ -211,8 +214,31 @@ test("sheet, a handle with Compete ON, erase idle: the avatar identity, reroll a
   assert.equal(face.dataset.state, "avatar");
   assert.equal(face.style.background, view.identity.bg);
   assert.equal(face.querySelector(".mw-acct-initials").textContent, view.identity.initials);
-  assert.equal(id.querySelector(".mw-acct-name").textContent, HANDLE);
+  assert.equal(id.querySelector(".mw-acct-name").textContent, NAME);
   assert.equal(id.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.on);
+});
+
+test("sheet, Compete ON and signed out: NOT SIGNED IN, the SIGN IN WITH PLAY GAMES row visible and enabled", () => {
+  const { rows, title } = freshSheet();
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedOut), {});
+  const signin = byAction(rows, "signin");
+  assert.equal(signin.textContent, "SIGN IN WITH PLAY GAMES");
+  assert.ok(!signin.hidden);
+  assert.equal(signin.style.display, undefined, "a visible row carries no inline display");
+  assert.equal(signin.disabled, false);
+  assert.equal(rows.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.signedOut);
+});
+
+test("sheet, signing in: the SIGN IN row reads SIGNING IN… and is disabled, so a tap calls nothing", () => {
+  const h = { onSignIn: spy() };
+  const { rows, title } = freshSheet();
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.signingIn), h);
+  const signin = byAction(rows, "signin");
+  assert.equal(signin.textContent, ACCOUNT_COPY.sheet.signingIn);
+  assert.ok(!signin.hidden);
+  assert.equal(signin.disabled, true);
+  signin.onclick({ tag: "x" });
+  assert.equal(h.onSignIn.calls.length, 0);
 });
 
 test("sheet, erase armed: the erase button reads TAP AGAIN TO ERASE with armed=1, still enabled", () => {
@@ -224,29 +250,30 @@ test("sheet, erase armed: the erase button reads TAP AGAIN TO ERASE with armed=1
   assert.equal(erase.disabled, false);
 });
 
-test("sheet, Compete OFF: the handle's avatar still shows, erase disabled, the off-help line, OFF active", () => {
+test("sheet, Compete OFF: the name's avatar still shows, erase disabled, SIGN IN hidden, the off-help line, OFF active", () => {
   const { rows, title } = freshSheet();
   renderAccountSheet({ rows, title }, accountSheetView(STATES.off), {});
   const id = rows.querySelector(".mw-acct-id");
   assert.equal(id.querySelector(".mw-acct-face").dataset.state, "avatar");
-  assert.equal(id.querySelector(".mw-acct-name").textContent, HANDLE);
+  assert.equal(id.querySelector(".mw-acct-name").textContent, NAME);
   assert.equal(id.querySelector(".mw-acct-status").textContent, ACCOUNT_COPY.sheet.status.off);
   const opts = rows.querySelectorAll(".mw-acct-opt");
   assert.ok(!hasClass(opts[0], "active"));
   assert.ok(hasClass(opts[1], "active"));
   assert.equal(opts[1].getAttribute("aria-pressed"), "true");
   assert.equal(byAction(rows, "erase").disabled, true);
-  assert.equal(byAction(rows, "reroll").disabled, false, "re-roll stays available with Compete off");
+  assert.equal(byAction(rows, "signin").hidden, true, "no SIGN IN row with Compete off");
   assert.equal(rows.querySelector(".mw-acct-help").textContent, ACCOUNT_COPY.sheet.offHelp);
 });
 
 test("sheet handlers: the click event is handed to each handler as the trailing argument", () => {
-  const h = { onCompete: spy(), onReroll: spy(), onErase: spy(), onSettings: spy() };
+  const h = { onCompete: spy(), onSignIn: spy(), onErase: spy(), onSettings: spy() };
   const { rows, title } = freshSheet();
-  renderAccountSheet({ rows, title }, accountSheetView(STATES.onIdle), h);
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.signedOut), h);
+  byAction(rows, "signin").onclick({ tag: "signin-evt" });
+  assert.deepEqual(h.onSignIn.calls, [[{ tag: "signin-evt" }]]);
 
-  byAction(rows, "reroll").onclick({ tag: "reroll-evt" });
-  assert.deepEqual(h.onReroll.calls, [[{ tag: "reroll-evt" }]]);
+  renderAccountSheet({ rows, title }, accountSheetView(STATES.onIdle), h);
 
   byAction(rows, "erase").onclick({ tag: "erase-evt" });
   assert.deepEqual(h.onErase.calls, [[{ tag: "erase-evt" }]]);
@@ -260,13 +287,13 @@ test("sheet handlers: the click event is handed to each handler as the trailing 
   assert.deepEqual(h.onSettings.calls, [[{ tag: "settings-evt" }]]);
 });
 
-test("sheet handlers: a disabled reroll/erase button calls nothing; missing handlers never throw", () => {
-  const h = { onReroll: spy(), onErase: spy() };
+test("sheet handlers: a hidden or disabled SIGN IN and a disabled erase call nothing; missing handlers never throw", () => {
+  const h = { onSignIn: spy(), onErase: spy() };
   const { rows, title } = freshSheet();
   renderAccountSheet({ rows, title }, accountSheetView(STATES.pending), h);
-  byAction(rows, "reroll").onclick();
+  byAction(rows, "signin").onclick();
   byAction(rows, "erase").onclick();
-  assert.equal(h.onReroll.calls.length, 0);
+  assert.equal(h.onSignIn.calls.length, 0, "a hidden row never signs in");
   assert.equal(h.onErase.calls.length, 0);
 
   for (const status of Object.keys(STATES)) {
@@ -369,8 +396,10 @@ function freshHost() {
 
 const firstClass = (c) => (c.className || "").split(/\s+/)[0];
 
-test("account menu: each status draws identity, Compete, the help line, then reroll and erase — no title, no Settings", () => {
+test("account menu: each status draws identity, Compete, the help line, then the SIGN IN and erase rows — no title, no Settings", () => {
   const expected = {
+    signedOut: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
+    signingIn: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
     pending: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
     onIdle: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
     onArmed: ["mw-acct-id", "mw-acct-row", "mw-acct-help", "mw-acct-action", "mw-acct-action"],
@@ -388,13 +417,15 @@ test("account menu: each status draws identity, Compete, the help line, then rer
   }
 });
 
-test("account menu: onCompete/onReroll/onErase receive the event; missing handlers never throw", () => {
-  const h = { onCompete: spy(), onReroll: spy(), onErase: spy() };
+test("account menu: onCompete/onSignIn/onErase receive the event; missing handlers never throw", () => {
+  const h = { onCompete: spy(), onSignIn: spy(), onErase: spy() };
+  const { host: signedOutHost } = freshHost();
+  renderAccountMenu(signedOutHost, accountSheetView(STATES.signedOut), h);
+  byAction(signedOutHost, "signin").onclick({ tag: "s" });
+  assert.deepEqual(h.onSignIn.calls, [[{ tag: "s" }]]);
   const { host } = freshHost();
   renderAccountMenu(host, accountSheetView(STATES.onIdle), h);
-  byAction(host, "reroll").onclick({ tag: "r" });
   byAction(host, "erase").onclick({ tag: "e" });
-  assert.deepEqual(h.onReroll.calls, [[{ tag: "r" }]]);
   assert.deepEqual(h.onErase.calls, [[{ tag: "e" }]]);
   const opts = host.querySelectorAll(".mw-acct-opt");
   opts[0].onclick({ tag: "c" });
@@ -411,13 +442,13 @@ test("account menu: onCompete/onReroll/onErase receive the event; missing handle
   }
 });
 
-test("account menu: a disabled reroll/erase calls nothing", () => {
-  const h = { onReroll: spy(), onErase: spy() };
+test("account menu: a hidden SIGN IN and a disabled erase call nothing", () => {
+  const h = { onSignIn: spy(), onErase: spy() };
   const { host } = freshHost();
   renderAccountMenu(host, accountSheetView(STATES.pending), h);
-  byAction(host, "reroll").onclick();
+  byAction(host, "signin").onclick();
   byAction(host, "erase").onclick();
-  assert.equal(h.onReroll.calls.length, 0);
+  assert.equal(h.onSignIn.calls.length, 0);
   assert.equal(h.onErase.calls.length, 0);
 });
 
@@ -491,11 +522,10 @@ test("source pins: no document./window./globalThis., no HTML-string assignment, 
   for (const ident of ["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "sendBeacon"]) {
     assert.doesNotMatch(STRIPPED, new RegExp(`\\b${ident}\\b`), `unexpected network identifier: ${ident}`);
   }
-  assert.doesNotMatch(MODULE_SRC, /play[ _-]?games/i);
   assert.doesNotMatch(MODULE_SRC, /provider/i);
-  assert.doesNotMatch(MODULE_SRC, /\bsignIn\b/);
   assert.doesNotMatch(MODULE_SRC, /\bstopCompeting\b/);
   assert.doesNotMatch(MODULE_SRC, /capacitor-play-games/);
+  assert.doesNotMatch(MODULE_SRC, /re-?roll|handles\.js|isValidHandle/i);
 });
 
 test("source pins: the renderer exports, ERASE_ARM_MS and the controller export are present exactly once", () => {
