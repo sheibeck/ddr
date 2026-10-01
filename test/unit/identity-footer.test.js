@@ -121,10 +121,13 @@ test("chart (deliberate): the engine reads schoolBonus only in the thrown-spell 
     const n = (src.match(/schoolBonus\(/g) || []).length;
     if (n) readers[f] = n;
   }
-  // derived.js defines it; magic.js (the hero's thrown branch) and combat.js
-  // (a member's thrown cast) are the only readers. A new reader means the
-  // footer's BONUS_SCHOOLS rule has to be revisited.
-  assert.deepEqual(readers, { "combat.js": 1, "derived.js": 1, "magic.js": 1 });
+  // derived.js defines it (and, since Phase 90 plan 07, reads it twice more in
+  // spellEffectSquares / spellEffectRounds: the school bonus stretches the new
+  // timed Special spells, Q6 A); magic.js (the hero's thrown branch) and
+  // combat.js (a member's thrown cast) are the only other readers. A new
+  // reader means the footer's BONUS_SCHOOLS rule has to be revisited (91-02
+  // owns whether a footer line states the Special stretch).
+  assert.deepEqual(readers, { "combat.js": 1, "derived.js": 3, "magic.js": 1 });
   assert.deepEqual([...THROWN_SCHOOLS], ["offense"]);
   // Summoner divination +4 changes no roll, so it is not claimed.
   assert.ok(!identityFooter("sub", "Summoner").good.some((t) => /divination/.test(t)));

@@ -76,6 +76,7 @@
 // level-2 Summon from level 1 through the named exception in
 // content/spell-level-overrides.js; the Wizard lost the Illusion school
 // (content/mu-chart.js). The 31 rows left are the old 33 less those two.
+// Phase 90 plan 07 (SPELL-10) APPENDS the four Special rows after Death (35 rows).
 //
 // Phase 90 (SPELL-09): an `act` record on a SPELLS row makes it a
 // SPELL-SOURCED TIMED EFFECT: casting it starts one `spell:<n>` c.timers
@@ -99,6 +100,9 @@ export const NICHE_LABELS = Object.freeze({
   answer: "answer",
   sight: "sight",
   summon: "summon",
+  // Phase 90 plan 07 (SPELL-10, orchestrator default 2026-09-30): the maze-tool
+  // niche of Open/Lock and Fly.
+  utility: "utility",
 });
 
 export const SPELLS = [
@@ -145,4 +149,16 @@ export const SPELLS = [
   { n: "Regeneration", lvl: 4, s: "healing", kind: "regen", niche: "healing", txt: "healing · you · d8 hp a round, this fight", combatOnly: false },
   { n: "Mangle", lvl: 5, s: "offense", kind: "thrown", dmg: { n: 2, sides: 20, bonus: 15 }, niche: "burst", txt: "burst · one foe · hits on 5–8 (d8) before bonuses, for 2d20+15 + your level² damage", combatOnly: true },
   { n: "Death", lvl: 5, s: "offense", kind: "death", niche: "burst", txt: "burst · one foe · dies outright; costs you 25 hp", combatOnly: true },
+  // Phase 90 plan 07 (SPELL-10, user 2026-09-30: the slate in
+  // 90-SPELL-SLATE-DRAFT.md accepted as drafted; Q6 A): the four Special spells
+  // that buff and travel. Each is a spell-sourced timed effect (an `act` record,
+  // engine/combat.js#startSpellEffect), `roll: "derived"` (it joins the day-one
+  // pools through a derived stream and never lengthens a main-rng shuffle) and
+  // `stretch: "squares"`: each point of the caster's Special school bonus adds
+  // SCHOOL_STRETCH_SQUARES (10) squares to its window
+  // (engine/derived.js#spellEffectSquares). `kind: "timed"` is a self kind, never resisted.
+  { n: "Open/Lock", lvl: 1, s: "special", kind: "timed", act: { kind: "unlock", effect: 100 }, stretch: "squares", roll: "derived", niche: "utility", txt: "utility · your next chest · springs open with no lock roll if you reach one within 100 squares, +10 squares per school bonus point; lockpicks everywhere feel threatened", combatOnly: false },
+  { n: "Fly", lvl: 2, s: "special", kind: "timed", act: { kind: "fly", effect: 30 }, stretch: "squares", roll: "derived", niche: "utility", txt: "utility · you · flight for 30 squares, +10 squares per school bonus point: walls to climb and crevices to leap are just scenery, and water costs one square; useless in a fight, where everything can reach you anyway", combatOnly: false },
+  { n: "Enchant Character", lvl: 4, s: "special", kind: "timed", act: { kind: "enchant", effect: 50, eff: { toHit: 2, foeToHit: -2, critWard: 1 } }, stretch: "squares", roll: "derived", niche: "buff", txt: "buff · you · for 50 squares, +10 squares per school bonus point: +2 to hit, foes −2 to hit you, and no critical lands on you; the enchantment is on you, not on your personality", combatOnly: false },
+  { n: "Speed of Sound", lvl: 5, s: "special", kind: "timed", act: { kind: "haste", effect: 50, eff: { first: 1 } }, stretch: "squares", roll: "derived", niche: "buff", txt: "buff · you · for 50 squares, +10 squares per school bonus point: two blows every time you swing, and you act first in every fight; you arrive before the noise you make", combatOnly: false },
 ];

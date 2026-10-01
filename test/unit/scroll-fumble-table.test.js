@@ -55,6 +55,11 @@ const EXPECTED = {
   "Regeneration": { side: "helpful", effect: "regen" },
   "Mangle": { side: "harmful", effect: "damage" },
   "Death": { side: "harmful", effect: "heavy", how: "death" },
+  // Phase 90 plan 07 (SPELL-10): the four Special spells.
+  "Open/Lock": { side: "helpful", effect: "wasted" },
+  "Fly": { side: "helpful", effect: "wasted" },
+  "Enchant Character": { side: "helpful", effect: "wasted" },
+  "Speed of Sound": { side: "helpful", effect: "frenzy" },
 };
 
 // Kinds whose castSpell branch benefits the CASTER (content/spells.js's own
@@ -62,7 +67,7 @@ const EXPECTED = {
 // summon's no-combat pendingAlly branch) -> the spell's fumble side must be
 // "helpful". Every other kind must NOT be helpful.
 const HELPFUL_KINDS = new Set([
-  "heal", "ward", "might", "mirror", "senses", "reveal", "foresee", "regen", "summon",
+  "heal", "ward", "might", "mirror", "senses", "reveal", "foresee", "regen", "summon", "timed",
 ]);
 
 /**
@@ -85,9 +90,9 @@ function coverageHolds(spellNames, table) {
   return true;
 }
 
-test("SCROLL_FUMBLE: exact-name coverage of all 31 SPELLS rows", () => {
-  assert.equal(SPELLS.length, 31);
-  assert.equal(Object.keys(SCROLL_FUMBLE).length, 31);
+test("SCROLL_FUMBLE: exact-name coverage of all 35 SPELLS rows", () => {
+  assert.equal(SPELLS.length, 35);
+  assert.equal(Object.keys(SCROLL_FUMBLE).length, 35);
   assert.ok(coverageHolds(SPELLS.map((sp) => sp.n), SCROLL_FUMBLE));
 });
 
@@ -106,7 +111,7 @@ test("SCROLL_FUMBLE: deep-equals the plan's table, row by row", () => {
   for (const [name, expected] of Object.entries(EXPECTED)) {
     assert.deepEqual(SCROLL_FUMBLE[name], expected, `row mismatch for "${name}"`);
   }
-  // No extra rows beyond the 31 (Phase 90 plan 06 removed Lesser Summon and Phantom Host).
+  // No extra rows beyond the 35 (Phase 90 plan 06 removed Lesser Summon and Phantom Host; plan 07 added four).
   assert.deepEqual(new Set(Object.keys(SCROLL_FUMBLE)), new Set(Object.keys(EXPECTED)));
 });
 
@@ -120,7 +125,7 @@ test("FUMBLE_EFFECTS: closed effect lists per side, no killing effect anywhere",
   ]);
   assert.deepEqual([...FUMBLE_EFFECTS.area], ["damage", "volley"]);
   assert.deepEqual([...FUMBLE_EFFECTS.helpful], [
-    "heal", "regen", "ward", "might", "mirror", "senses", "summon", "wasted",
+    "heal", "regen", "ward", "might", "mirror", "senses", "summon", "frenzy", "wasted",
   ]);
 });
 

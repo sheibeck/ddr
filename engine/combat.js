@@ -221,6 +221,14 @@ export function eliteName(name, rank) {
  * would-be-forced-foe roll to "you" — the same condition the existing
  * `senses: true` event spread already checks), else `undefined` (the dice
  * decided, and Plan 03's narration bare-words it).
+ *
+ * DELIBERATE RULES CHANGE (Phase 90 plan 07, SPELL-10, user 2026-09-30: Speed
+ * of Sound "you act first in every fight it covers"): a live spell-sourced
+ * effect carrying a `first` payload (`eff(c, "first") > 0`) joins foresight
+ * and senses in the unconditional "you go first" branch AND waives every
+ * forced foe-first rule. `why` reads "speed" when it is what decided (foresight
+ * and Acute Hearing name themselves first). Still a branch change only: the two
+ * d20s are drawn either way, so no draw count moves.
  */
 export function resolveInitiative(state, rng) {
   const C = state.combat;
@@ -235,10 +243,14 @@ export function resolveInitiative(state, rng) {
   const courtMage = c.sub === "Court Mage" && C.round === 1;
   const foreseen = c.foresight;
   const acuteHearing = skill(c, "Acute Hearing");
-  const forcedFoe = (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses;
+  // Phase 90 plan 07 (SPELL-10): a live Speed of Sound (a `first` payload on a
+  // spell-sourced timed effect, read through eff) joins foresight and senses in
+  // beating every forced foe-first rule: you arrive before the noise you make.
+  const speedy = eff(c, "first") > 0;
+  const forcedFoe = (samurai || slow || knightBig || courtMage) && !foreseen && !c.senses && !speedy;
   c.foresight = false;
   // RULES-05 (Phase 75): c.senses joins the unconditional "you" branch.
-  C.first = forcedFoe ? "foe" : foreseen || acuteHearing || c.senses ? "you" : mine >= theirs ? "you" : "foe";
+  C.first = forcedFoe ? "foe" : foreseen || acuteHearing || c.senses || speedy ? "you" : mine >= theirs ? "you" : "foe";
   let why;
   if (forcedFoe) {
     why = samurai ? "samurai" : slow ? "slow" : knightBig ? "knight" : "courtMage";
@@ -248,6 +260,8 @@ export function resolveInitiative(state, rng) {
     why = "acuteHearing";
   } else if (c.senses && C.first === "you") {
     why = "senses";
+  } else if (speedy) {
+    why = "speed";
   }
   return { first: C.first, mine, theirs, why };
 }

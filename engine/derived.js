@@ -2507,7 +2507,7 @@ export function intelBonus(c) {
  * rolls `resistRoll` (through `foeSpellResistCheck`); these kinds are never
  * resisted.
  */
-export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses"]));
+export const SPELL_SELF_KINDS = Object.freeze(new Set(["summon", "ward", "might", "regen", "heal", "reveal", "foresee", "mirror", "senses", "timed"]));
 
 /**
  * spellTargetsFoe(sp) — true when SPELLS row `sp` is cast on an enemy (its
@@ -2840,6 +2840,41 @@ export function schoolGate(sub, school) {
 export function schoolBonus(sub, school) {
   const c = MU_CHART[sub];
   return c && typeof c[school] === "number" ? c[school] : 0;
+}
+
+/**
+ * SCHOOL_STRETCH_SQUARES — Phase 90 plan 07 (SPELL-10; 90-CONTEXT.md "School
+ * bonus stretches the new spells", Q6 A in docs/SPELL-AUDIT.md Rulings, user
+ * 2026-09-30): the squares each point of the caster's school bonus adds to a
+ * square-timed new spell's window. (Under Q6 B it would be 1.) Each such
+ * spell's text states it ("+10 squares per school bonus point").
+ */
+export const SCHOOL_STRETCH_SQUARES = 10;
+
+/**
+ * spellEffectSquares(sub, sp) — Phase 90 plan 07 (SPELL-10, Q6 A): the squares
+ * a cast of the timed spell `sp` lasts for a caster of sub-class `sub`: its
+ * base `act.effect` plus, for a `stretch: "squares"` row, the chart's school
+ * bonus for the spell's school times SCHOOL_STRETCH_SQUARES. A Wizard or
+ * Apprentice (+0) gets the base, a Sorcerer or Summoner (+1) one step more, an
+ * Illusionist (+4) four steps more; a non-Magic-User (a scroll's free cast, no
+ * chart row) gets the base, since schoolBonus reads 0 for it. Pure, no rng.
+ */
+export function spellEffectSquares(sub, sp) {
+  const base = sp && sp.act && Number.isInteger(sp.act.effect) ? sp.act.effect : 0;
+  return base + (sp && sp.stretch === "squares" ? schoolBonus(sub, sp.s) * SCHOOL_STRETCH_SQUARES : 0);
+}
+
+/**
+ * spellEffectRounds(sub, sp, base) — Phase 90 plan 07 (SPELL-10, Q6 A): the
+ * rounds a round-timed new spell lasts: `base` (the spell's own drawn or fixed
+ * rounds) plus, for a `stretch: "rounds"` row, +1 round per school bonus point
+ * of the spell's school. A squares-stretched row (and any other) returns
+ * `base` unchanged. Used by 90-08's round-timed Illusion and Special spells.
+ * Pure, no rng.
+ */
+export function spellEffectRounds(sub, sp, base) {
+  return base + (sp && sp.stretch === "rounds" ? schoolBonus(sub, sp.s) : 0);
 }
 
 export function canLearn(sub, sp) {

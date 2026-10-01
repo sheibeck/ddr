@@ -580,8 +580,8 @@ test("helpful summon: a pending summon or four live foes means it wanders off in
   assert.equal(fullState.combat.pendingFoes, undefined);
 });
 
-test("helpful wasted: Map the Floor and Sense Danger change no state and say the scroll was wasted", () => {
-  for (const name of ["Map the Floor", "Sense Danger"]) {
+test("helpful wasted: Map the Floor, Sense Danger and (Phase 90 plan 07) Open/Lock, Fly and Enchant Character change no state and say the scroll was wasted", () => {
+  for (const name of ["Map the Floor", "Sense Danger", "Open/Lock", "Fly", "Enchant Character"]) {
     const state = fixedState();
     const foe = fixedFoe();
     state.combat = fixedCombat([foe]);
@@ -590,6 +590,18 @@ test("helpful wasted: Map the Floor and Sense Danger change no state and say the
     assert.equal(JSON.stringify(foe), before);
     assert.deepEqual(events.find((e) => e.type === "fumbleOnFoe"), { type: "fumbleOnFoe", spell: name, target: "Target", effect: "wasted" });
   }
+});
+
+test("helpful frenzy: a fumbled Speed of Sound makes the target foe swing twice a turn (f.frenzied), touches nothing else and draws nothing (Phase 90 plan 07)", () => {
+  const state = fixedState();
+  const foe = fixedFoe();
+  const other = fixedFoe({ name: "Other" });
+  state.combat = fixedCombat([foe, other]);
+  const events = resolveScrollFumble(state, spellRow("Speed of Sound"), fakeRng([]), fakeRng([]));
+  assert.equal(foe.frenzied, true);
+  assert.equal(other.frenzied, undefined, "only the target foe");
+  assert.deepEqual(events.find((e) => e.type === "fumbleOnFoe"), { type: "fumbleOnFoe", spell: "Speed of Sound", target: "Target", effect: "frenzy" });
+  assert.equal(state.c.timers, undefined, "the reader gets no effect of their own");
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -702,6 +714,7 @@ test("voice: fumbleOnFoe names the target foe, on both the Oracle and the rail",
     { effect: "summon", spell: "Summon", target: "Orc", joined: true, reinforcement: "Gremlin" },
     { effect: "summon", spell: "Summon", target: "Orc", joined: false },
     { effect: "wasted", spell: "Map the Floor", target: "Orc" },
+    { effect: "frenzy", spell: "Speed of Sound", target: "Orc" },
   ];
   for (const s of samples) {
     const ev = { type: "fumbleOnFoe", ...s };

@@ -121,6 +121,7 @@ export function openChest(state, rng, events = []) {
   const c = state.c;
   const tier = skillTier(c, "Locks") + (hasPicks(c) ? 1 : 0);
   let opened = false;
+  let openedByLockSpell = false;
   // DELIBERATE RULES CHANGE (04.1-04, 2026-09-09, RULE-01): Intelligence had
   // no mechanical read anywhere in the engine (04.1-RESEARCH.md's clearest
   // cosmetic-orphan finding). intelBonus(c) (derived.js) now raises the lock
@@ -133,6 +134,17 @@ export function openChest(state, rng, events = []) {
   if (c.sub === "Pilfer") {
     opened = true;
     events.push({ type: "chestOpened", reason: "pilfer" });
+  } else if (itemEffectActive(c, "unlock")) {
+    // Phase 90 plan 07 (SPELL-10, wiring E): a live Open/Lock window (a
+    // `spell:Open/Lock` squares record, derived.js#liveItemEffects) opens this
+    // chest with NO lock roll, for any class, lockpicks or none. The spell is
+    // spent on it. A Pilfer's free open (the branch above) never spends it.
+    // Nothing is drawn here, so the chest's gold, scroll and treasure draws
+    // follow at the cursor a lockless open leaves.
+    opened = true;
+    openedByLockSpell = true;
+    delete c.timers["spell:Open/Lock"];
+    events.push({ type: "chestOpened", reason: "openLock" });
   } else if (tier) {
     const faces = [0, 5, 7, 8][Math.min(tier, 3)] + intelBonus(c);
     const check = rollCheck(rng, 10, atLeastFor(faces, 10));
@@ -148,7 +160,7 @@ export function openChest(state, rng, events = []) {
     events.push({ type: "chestLocked" });
     return events;
   }
-  if (!(c.sub === "Pilfer")) events.push({ type: "chestOpened" });
+  if (!(c.sub === "Pilfer") && !openedByLockSpell) events.push({ type: "chestOpened" });
   // Phase 54 (BAND-02, USER RULING D): LOOT_SCALE, applied POST-DRAW —
   // identity (1) is a no-op.
   gainWilmst(state, lootFor(Math.round(((rng.d(10) + 6) * 100 * state.floor.depth) / LOOT_DIVISOR)), "chest", rng, events); // roll:amount

@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
+import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm } from "./combat.js";
@@ -552,6 +552,21 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
     const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
     const rec = startSpellEffect(c, sp, events);
     events.push({ type: "strengthCast", squares: rec ? rec.left : 0, restarted });
+  } else if (sp.kind === "timed") {
+    // Phase 90 plan 07 (SPELL-10, user 2026-09-30, the slate accepted as
+    // drafted; Q6 A): a spell-sourced timed effect (Open/Lock, Fly, Enchant
+    // Character, Speed of Sound). One `spell:<name>` squares record of the
+    // caster's STRETCHED window (derived.js#spellEffectSquares: the base plus
+    // the school bonus times the ruled step), started through the one starter
+    // (combat.js#startSpellEffect), which overwrites a live record: a recast
+    // restarts the window and never stacks. Never resisted (a self kind), no
+    // combatOnly refusal (usable anywhere), zero draws. The effect itself is
+    // read back through derived.js#liveItemEffects, so this branch holds no
+    // spell-specific rule.
+    const prior = c.timers && c.timers["spell:" + sp.n];
+    const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
+    const rec = startSpellEffect(c, sp, events, { squares: spellEffectSquares(c.sub, sp) });
+    events.push({ type: "spellEffectStarted", spell: sp.n, kind: sp.act.kind, squares: rec ? rec.left : 0, restarted });
   } else if (sp.kind === "regen") {
     c.regen = true;
     events.push({ type: "regenerationCast" });
