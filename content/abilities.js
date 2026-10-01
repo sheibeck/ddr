@@ -42,7 +42,7 @@
 // can plausibly kill a same-depth foe at full HP — Kata, Death Touch, Overhead
 // Blow (borderline, flagged to the user), Silent Step and Feint, beside Last
 // Stand (already once a fight) — are `cd: "fight"`, and their text says so.
-// Pommel Strike (a stun) keeps its cooldown.
+// Pommel Strike keeps its cooldown (Phase 90, ABIL-07: it is now a real strike that also stuns on a hit, still cd 4).
 //
 // Quick 260928-nrf (user rulings 2026-09-28, after the 260928-abl audit):
 // Kata and Feint roll to hit with three more winning faces instead of never
@@ -54,7 +54,7 @@ export const ABILITIES = [
   { id: "kata", name: "Kata", cls: "Fighter", source: "table", skillKey: "Kata", cd: "fight", target: "foe", tag: "damage", txt: "one perfect form: your die has three more faces that land this strike, and it adds your level in damage; once per fight" },
   { id: "deathTouch", name: "Death Touch", cls: "Fighter", source: "table", skillKey: "Death Touch", cd: "fight", target: "foe", tag: "damage", txt: "call it: your next landed blow doubles, and finishes anything under 15 hp; once per fight" },
   { id: "sidestep", name: "Sidestep", cls: "Fighter", source: "table", skillKey: "Sidestep", cd: 4, target: "self", tag: "defensive", txt: "two rounds of not being where the blade is: every foe has two fewer faces that hit you" },
-  { id: "pommelStrike", name: "Pommel Strike", cls: "Fighter", source: "table", skillKey: "Pommel Strike", cd: 4, target: "foe", tag: "opener", txt: "the blunt end, to the temple: the target loses its next turn" },
+  { id: "pommelStrike", name: "Pommel Strike", cls: "Fighter", source: "table", skillKey: "Pommel Strike", cd: 4, target: "foe", tag: "opener", txt: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn" },
   { id: "battleRoar", name: "Battle Roar", cls: "Fighter", source: "table", skillKey: "Battle Roar", cd: 5, target: "self", tag: "opener", txt: "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side" },
   { id: "secondWind", name: "Second Wind", cls: "Fighter", source: "table", skillKey: "Second Wind", cd: "fight", target: "self", tag: "defensive", txt: "remember why you came: heal d8 + level" },
   { id: "sweep", name: "Sweep", cls: "Fighter", source: "table", skillKey: "Sweep", cd: 4, target: "foes", tag: "damage", txt: "one wide arc: every living foe takes half damage; needs two or more foes" },

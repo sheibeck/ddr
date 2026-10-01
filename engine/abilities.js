@@ -18,8 +18,9 @@
 //
 // Round economy (CONTEXT "Action economy: using an ability is the round's
 // action"): a success resolves in the SAME dispatch and ends the round
-// exactly once. The six strike-modifying abilities (kata/feint/deathTouch/
-// silentStep/overheadBlow/lastStand) delegate ENTIRELY to
+// exactly once. The seven strike-modifying abilities (kata/feint/deathTouch/
+// silentStep/overheadBlow/lastStand, and since Phase 90 pommelStrike)
+// delegate ENTIRELY to
 // combat.js#playerStrike — which already tail-calls afterPlayerAction — so
 // this module must NEVER also call afterPlayerAction on that branch (a
 // double call would double-run the foe's turn, RESEARCH's own named
@@ -164,7 +165,10 @@ export function abilityRoundsLeft(c, key) {
 }
 
 /** applyPommel(t) — Pommel Strike: the target loses its next turn (foeTurn's
- * f.asleep skip-turn pattern, Task 2). Shared with Plan 04's Joiner policy. */
+ * f.asleep skip-turn pattern, Task 2). Since Phase 90 (ABIL-07) it is applied
+ * by combat.js#playerStrike (the hero) and #memberStrike (a Joiner Fighter)
+ * after a landed blow of a `stunOnHit` strike that leaves the target
+ * standing, never by this module directly. */
 export function applyPommel(t) {
   t.stunned = true;
 }
@@ -283,12 +287,15 @@ export function useAbility(state, key, rng, events = []) {
       C.abilityStrike = { key, attacks: 3 };
       playerStrike(state, rng, events);
       return events;
-    case "pommelStrike": {
-      const t = C.foes[C.target];
-      applyPommel(t);
-      events.push({ type: "pommelStruck", target: t.name });
-      break;
-    }
+    // Phase 90 (ABIL-07, report #4, user ruling 2026-09-30): Pommel Strike is
+    // a real strike that also stuns. The hero swings as normal (the plain
+    // strike's roll, weapon damage, crits and every extra attack) and
+    // playerStrike's `stunOnHit` applies applyPommel after a landed blow that
+    // leaves the target standing. No draw of its own: the stun is a flag.
+    case "pommelStrike":
+      C.abilityStrike = { key, stunOnHit: true };
+      playerStrike(state, rng, events);
+      return events;
     case "dirtyTrick": {
       const t = C.foes[C.target];
       applyDirtyTrick(t);

@@ -353,9 +353,11 @@ test("lastStand: stops early once the foe dies", () => {
 // 4. Foe-flag kinds — shared appliers + member-tagged events
 // ---------------------------------------------------------------------------
 
-test("pommelStrike/dirtyTrick/poisonedEdge/hamstring/mark: set the shared foe flags and narrate with `member`", () => {
+// Phase 90 (ABIL-07): pommelStrike left this zero-draw list (before: it set the
+// stun with no swing); it strikes now, covered by the next test and
+// test/unit/pommel-strike.test.js.
+test("dirtyTrick/poisonedEdge/hamstring/mark: set the shared foe flags and narrate with `member`", () => {
   const cases = [
-    { id: "pommelStrike", cls: "Fighter", type: "pommelStruck", check: (f) => f.stunned === true },
     { id: "dirtyTrick", cls: "Thief", type: "dirtyTrickLanded", check: (f) => f.blind === true && f.blindFor === 2 },
     { id: "poisonedEdge", cls: "Thief", type: "poisonedEdgeApplied", check: (f) => f.dot && f.dot.left === 3 },
     { id: "hamstring", cls: "Thief", type: "hamstrung", check: (f) => f.hamstrung === true },
@@ -375,6 +377,18 @@ test("pommelStrike/dirtyTrick/poisonedEdge/hamstring/mark: set the shared foe fl
     assert.equal(ev.member, "Ada", `${id}'s event should carry member`);
     assert.ok(check(foe), `${id} did not set its foe flag`);
   }
+});
+
+test("pommelStrike: a Joiner's round-1 opener strikes (two draws), then stuns and narrates with `member`", () => {
+  const foe = fixedFoe({ wp: 30, maxWP: 30 });
+  const sheet = classedMember({ abilities: ["pommelStrike"] });
+  const state = fixedState({ party: [sheet] });
+  state.combat = fixedCombat([foe], { allies: [fixedAlly()], round: 1 });
+  const events = alliesTurn(state, fakeRng([3, 4]), []); // lands (need 5), then d6 = 4
+  const ev = events.find((e) => e.type === "pommelStruck");
+  assert.ok(ev && ev.member === "Ada");
+  assert.equal(foe.stunned, true);
+  assert.equal(foe.wp, 30 - 7);
 });
 
 test("cutpurse: rng.d(10) * level gold, paid to the HERO via gainWilmst", () => {

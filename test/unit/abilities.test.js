@@ -227,11 +227,13 @@ function countFoeActionEvents(events) {
   return events.filter((e) => e.type === "foeMissed" || e.type === "struckByFoe" || e.type === "foeStunned" || e.type === "memberStruck").length;
 }
 
-test("round economy: a non-strike ability (pommelStrike) advances the round by exactly 1 and both foes act exactly once", () => {
+// Phase 90 (ABIL-07): Pommel Strike became a strike, so this non-strike rung
+// is pinned on Brace (before: pommelStrike).
+test("round economy: a non-strike ability (brace) advances the round by exactly 1 and both foes act exactly once", () => {
   const foes = [fixedFoe({ name: "A", wp: 999, maxWP: 999 }), fixedFoe({ name: "B", wp: 999, maxWP: 999 })];
-  const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], wp: 999, maxWP: 999 }) });
+  const state = fixedState({ c: fixedFighter({ abilities: ["brace"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat(foes, { round: 1, target: 0 });
-  const events = useAbility(state, "pommelStrike", fakeRng([...FILL]), []);
+  const events = useAbility(state, "brace", fakeRng([...FILL]), []);
   assert.equal(state.combat.round, 2, "afterPlayerAction's single round++ ran exactly once");
   assert.equal(countFoeActionEvents(events), 2, "both foes acted exactly once — never a double foeTurn");
 });
@@ -388,11 +390,15 @@ test("lastStand: three strike attempts in one dispatch", () => {
   assert.ok(events.some((e) => e.type === "lastStandCalled" && e.attacks === 3));
 });
 
-test("pommelStrike: pushes pommelStruck (foeTurn's own consumption of t.stunned is proven in the Task 2 section below)", () => {
+// Phase 90 (ABIL-07): before, any dispatch pushed pommelStruck (a stun with no
+// swing, the bare FILL). Now it is a real strike: the stun follows a LANDED
+// blow (raw 3 lands the Soldier's need-5 strike, raw 4 the damage die); full
+// coverage in test/unit/pommel-strike.test.js.
+test("pommelStrike: a landed blow pushes pommelStruck (foeTurn's own consumption of t.stunned is proven in the Task 2 section below)", () => {
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
-  const events = useAbility(state, "pommelStrike", fakeRng([...FILL]), []);
+  const events = useAbility(state, "pommelStrike", fakeRng([3, 4, ...FILL]), []);
   assert.ok(events.some((e) => e.type === "pommelStruck" && e.target === "Rat"));
 });
 
@@ -609,7 +615,9 @@ test("Task 2: pommelStrike's f.stunned makes the target skip THIS SAME round's f
   const foe = fixedFoe({ name: "Rat", wp: 999, maxWP: 999 });
   const state = fixedState({ c: fixedFighter({ abilities: ["pommelStrike"], wp: 999, maxWP: 999 }) });
   state.combat = fixedCombat([foe]);
-  const events = useAbility(state, "pommelStrike", fakeRng([...FILL]), []);
+  // Phase 90 (ABIL-07): the blow must land (raw 3 + damage die 4) to stun;
+  // before, the bare FILL stunned with no swing.
+  const events = useAbility(state, "pommelStrike", fakeRng([3, 4, ...FILL]), []);
   assert.ok(events.some((e) => e.type === "foeStunned" && e.name === "Rat"));
   assert.equal(events.some((e) => e.type === "foeMissed" || e.type === "struckByFoe"), false, "the stunned foe never reaches its swing");
   assert.equal(foe.stunned, false, "consumed — a single stun, not a duration");

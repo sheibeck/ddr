@@ -35,7 +35,7 @@ export const FIGHTER_SKILLS = {
   // reworded txt (comparables.js#REWORDED_TXT_ITEMS). Re-pinned in
   // test/unit/abilities-catalog.test.js.
   "Cooking": { cost: 3, txt: "eat any beast for a quarter of its hp" },
-  "Pommel Strike": { cost: 1, active: "pommelStrike", txt: "the blunt end, to the temple: the target loses its next turn" },
+  "Pommel Strike": { cost: 1, active: "pommelStrike", txt: "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn" },
   // RULES-10 (Phase 75.1, plan 75.1-07): rewritten — anyone may now attempt
   // any scroll (canRead is gone), so Runes/Signs is no longer the gate; it
   // is the guarantee. Cosmetic content change only; the engine never reads

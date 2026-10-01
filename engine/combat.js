@@ -647,7 +647,10 @@ export function refuseIfPending(state, events, type, extra = {}) {
  * Phase 38 (ABIL-02, strike_descriptor_spec): Death Touch and Silent Step are
  * now descriptor-driven, not standing passives — `useAbility` (Plan 03) sets
  * a transient `state.combat.abilityStrike` descriptor (`{ key, autoHit?,
- * forceCrit?, finishUnder?, bonusDmg?, dmgMul?, needShift?, attacks? }`)
+ * forceCrit?, finishUnder?, bonusDmg?, dmgMul?, needShift?, attacks?,
+ * stunOnHit? }`; Phase 90's `stunOnHit` is Pommel Strike's: after the
+ * attack loop, if any blow landed and the target still stands, applyPommel
+ * and one `pommelStruck`)
  * immediately before calling this function, and this function clears it
  * again after its own attack loop — every read below is additive and
  * zero-draw (it only reinterprets the roll this function already makes).
@@ -723,6 +726,10 @@ export function playerStrike(state, rng, events = []) {
   // changes. The frenzy second swing (toHit − 1) reads the same entries.
   const conditionMods = toHitBreakdown(state).mods;
 
+  // Phase 90 (ABIL-07): set when a blow of THIS strike hit the target and
+  // reached the damage seam (a soaked hit still counts as a hit); read once
+  // after the loop for the descriptor's `stunOnHit`.
+  let blowLanded = false;
   for (let a = 0; a < attacks && t.alive; a++) {
     const dieN = strikeDie(c);
     // Phase 73 (ROLL-05): the need chain is pure arithmetic (zero rng) and
@@ -997,6 +1004,7 @@ export function playerStrike(state, rng, events = []) {
     // Fighter's melee vs Trachea (D-11/D-20 — hero-only); `crit` lets a
     // critical bypass the armor soak (D-07). On a soak the seam's own
     // `foeArmorSoaked` is the only narration for this blow — no `struck`.
+    blowLanded = true;
     const landed = damageFoe(state, t, dmg, { kind: "melee", casterClass: c.cls, casterSub: c.sub, crit }, rng, events);
     if (!landed.soaked)
       events.push({
@@ -1014,6 +1022,15 @@ export function playerStrike(state, rng, events = []) {
         ...(AS ? { via: AS.key } : {}),
       });
     if (t.wp <= 0) killFoe(state, t, rng, events);
+  }
+  // Phase 90 (ABIL-07, report #4): Pommel Strike's stun. A landed blow that
+  // leaves the target standing costs it its next turn, once however many
+  // blows landed (a double strike stuns once); a killing blow stuns nobody.
+  // After the strike's own hit events, so the Oracle reads blow, then stun.
+  // A flag, no draw.
+  if (AS && AS.stunOnHit && blowLanded && t.alive) {
+    applyPommel(t);
+    events.push({ type: "pommelStruck", target: t.name });
   }
   // Phase 38 (ABIL-02, strike_descriptor_spec item 8): the descriptor is
   // transient — never present on state.combat once this function returns,
@@ -2383,8 +2400,10 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
       return;
     }
     case "pommelStrike":
-      applyPommel(t);
-      events.push({ type: "pommelStruck", target: t.name, member: ally.name });
+      // Phase 90 (ABIL-07): a real strike that also stuns, the hero's rule;
+      // memberStrike applies the stun after a landed blow that leaves the
+      // target standing.
+      memberStrike(state, ally, sheet, view, t, rng, events, { key: meta.id, stunOnHit: true });
       return;
     case "dirtyTrick":
       applyDirtyTrick(t);
@@ -2481,7 +2500,9 @@ function resolveMemberAbility(state, ally, sheet, view, meta, t, rng, events) {
  * entirely; `bonusDmg` is added right after `weaponDamage`; `finishUnder`
  * mirrors playerStrike's own gate exactly (ignores `noCrit`; the
  * `weaponDamage` roll just taken is discarded, not skipped — same draw
- * order as an ordinary strike); `forceCrit` sets `crit` subject to the
+ * order as an ordinary strike); Phase 90's `stunOnHit` (Pommel Strike) stuns
+ * the target after a landed blow that leaves it standing (applyPommel and a
+ * `pommelStruck` carrying `member`, no draw); `forceCrit` sets `crit` subject to the
  * member's own Guard/Soldier `noCrit` rule, with Silent Step specifically
  * denied by the heavy-armor list (mirrors `AS.forceCrit`'s `deniedByHeavy`);
  * `dmgMul` applies after the crit doubling; `allyMissed`/`allyStruck` gain
@@ -2596,6 +2617,13 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
       ...(hit.soak ? { soak: hit.soak } : {}),
     });
   if (t.wp <= 0) killFoe(state, t, rng, events);
+  // Phase 90 (ABIL-07): Pommel Strike's stun, the hero's rule (playerStrike):
+  // a landed blow that leaves the target standing costs it its next turn. A
+  // flag, no draw; one blow per call, so one stun per use.
+  if (mod && mod.stunOnHit && t.alive) {
+    applyPommel(t);
+    events.push({ type: "pommelStruck", target: t.name, member: ally.name });
+  }
 }
 
 /**
