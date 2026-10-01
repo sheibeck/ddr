@@ -131,7 +131,16 @@ export const DRAW_INVENTORY = {
   // draws, -3). The song is now two selection draws on its DERIVED stream `songRng`
   // (which spell from songPool, which title from SONG_TITLES), never the main rng
   // (+2); the spell it echoes draws through castSpell's own existing tagged lines.
-  "engine/combat.js": { rollCheck: 24, amount: 20, selection: 5, "mishap-on-1": 0, "already-high": 5, primitive: 0 },
+  // Phase 91 plan 07 (IDENT-17): amount 20 -> 27, selection 5 -> 7, mishap-on-1 0 -> 1.
+  // The Joiner cast path (allyCast) now resolves the song-pool kinds it had no branch for,
+  // the hero's rules in the hero's draw order, so each of the hero's tagged lines has a
+  // Joiner twin: Acid's d6, Shrink's d6, Noxious Vapor's table d6 (selection), its kill d10
+  // (mishap-on-1) and its sleep d6, Fireballs' bolt count d8, Plane Gate's reach d6 and
+  // Insane's table d6 (selection), its neighbour-blow d6 and its nap d4 (amount +7,
+  // selection +2, mishap +1). All of them run on the Joiner song's DERIVED stream
+  // (derivedRng(cursor, "memberSong", ...)); none is the main rng. pickSong replaces the
+  // two selection draws sing() made (they moved, not added). rollDice-based damage adds none.
+  "engine/combat.js": { rollCheck: 24, amount: 27, selection: 7, "mishap-on-1": 1, "already-high": 5, primitive: 0 },
   // RULES-18 (Phase 75.3, Plan 04): controlResistRoll adds one more rollCheck
   // call (its own d20, roll-high, gated on faces > 0).
   // Quick 260927-rsx (user ruling 2026-09-27): foeSpellResistRoll adds one

@@ -695,8 +695,14 @@ export function stripFoeAbilityState(combat) {
   // equivalent and absent on every fixture (no parity fixture carries a party).
   // A structural tripwire, carved out here, which all three *Comparable()
   // functions share. A no-op (the same object shape) when `allies` is absent.
+  // Phase 91 plan 07 (IDENT-17): a Joiner Bard's song adds three more brand-new per-Joiner
+  // fields on the same entry, each engine-only with NO prototype-side equivalent and
+  // absent on every fixture (no parity fixture carries a party): `sang` (its once-per-fight
+  // flag, engine/combat.js#alliesTurn), `ward` (a sung Shield or Bubble, read by
+  // applyFoeDamageToMember and ticked in foeTurn's tail) and `senses` (a sung Sense
+  // Presence, read by memberStrike's Stealth test). The same structural tripwire.
   if (Array.isArray(combatRest.allies)) {
-    return { ...combatRest, foes, allies: combatRest.allies.map(({ opened, ...a }) => a) };
+    return { ...combatRest, foes, allies: combatRest.allies.map(({ opened, sang, ward, senses, ...a }) => a) };
   }
   return { ...combatRest, foes };
 }

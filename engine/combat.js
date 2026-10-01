@@ -2273,12 +2273,26 @@ export function sing(state, rng, events = [], now = Date.now) {
   const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
   const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
   const songRng = derivedRng(cursor, "song", acts);
-  const pool = songPool(c.level);
-  const sp = pool[songRng.d(pool.length) - 1]; // roll:selection
-  const raw = SONG_TITLES[songRng.d(SONG_TITLES.length) - 1]; // roll:selection
-  events.push({ type: "sang", title: raw.replace("{spell}", sp.n), spell: sp.n, level: sp.lvl });
+  const { sp, title } = pickSong(c.level, songRng);
+  events.push({ type: "sang", title, spell: sp.n, level: sp.lvl });
   castSpell(state, SPELLS.indexOf(sp), songRng, events, now, { free: true, afterRng: rng });
   return events;
+}
+
+/**
+ * pickSong(level, stream) — Phase 91 (IDENT-17, plan 91-07): THE one song pick,
+ * shared by the hero's sing() and a Joiner Bard's turn (alliesTurn): one spell
+ * uniformly from songPool(level), then one sung title uniformly from
+ * SONG_TITLES (a `{spell}` slot filled with the spell's name), both drawn from
+ * `stream` (a derived stream, never the main rng) in that order. Returns `{ sp,
+ * title }`. The draw order is the order sing() always had, so the hero's song is
+ * byte-identical to before this helper existed.
+ */
+export function pickSong(level, stream) {
+  const pool = songPool(level);
+  const sp = pool[stream.d(pool.length) - 1]; // roll:selection
+  const raw = SONG_TITLES[stream.d(SONG_TITLES.length) - 1]; // roll:selection
+  return { sp, title: raw.replace("{spell}", sp.n) };
 }
 
 /**
@@ -2604,6 +2618,27 @@ export function alliesTurn(state, rng, events = []) {
     }
     if ((sheet.potions || 0) > 0 && ally.wp * 3 <= ally.maxWP) {
       memberDrinkPotion(state, ally.partyIdx, rng, events);
+      continue;
+    }
+
+    // Phase 91 (IDENT-17, plan 91-07; CONTEXT "Joiner Bards sing once per fight,
+    // automatically on their turn"): a Joiner Bard's FIRST turn of the fight is
+    // its song (a saving potion above comes first), before any ability, cast or
+    // strike: `ally.sang` (the fight's own ally entry, so it never leaks into the
+    // next fight) marks it sung. The pick (pickSong over songPool at the JOINER's
+    // level), the title and every roll of the spell come from ONE derived stream,
+    // derivedRng(<main cursor>, "memberSong", <party index>, <acts>); the main rng
+    // draws nothing for the song. The spell resolves through the Joiner cast path
+    // (allyCast) in its free mode: no charge on any sheet, "you" the Joiner.
+    if (sheet.sub === "Bard" && !ally.sang) {
+      ally.sang = true;
+      const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
+      const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
+      const songRng = derivedRng(cursor, "memberSong", ally.partyIdx, acts);
+      const { sp, title } = pickSong(ally.lvl, songRng);
+      events.push({ type: "sang", title, spell: sp.n, level: sp.lvl, member: ally.name });
+      const cur = C.foes[C.target];
+      allyCast(state, ally, sheet, view, sp, cur && cur.alive ? cur : foes[0], songRng, events, { free: true });
       continue;
     }
 
@@ -3183,7 +3218,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // blows never crit). A pure read of the roll already made, zero draws; the
   // doubling below is the one every crit takes (a natural crit never doubles
   // twice).
-  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses) && roll >= atLeastFor(2, dieN)) {
+  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses && !ally.senses) && roll >= atLeastFor(2, dieN)) {
     crit = true;
     critAtLeast = atLeastFor(2, dieN);
     events.push({ type: "stealthStrike", member: ally.name });
@@ -3250,9 +3285,24 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
  * own school bonus: `spellEffectStarted` with `member`), `timestop` (stopTime),
  * `misdirect` (misdirectFoe, the Joiner's own resist inside) and `behemoth`
  * (behemothRoar, the Joiner's level). A self or room spell has no foe `t`.
+ *
+ * Phase 91 plan 07 (IDENT-17, the Joiner half of the Bard's song): `opts.free`
+ * is a charge-free cast (a Joiner Bard's song: no charge from any sheet, the
+ * hero's castSpell free mode's twin), and the cast now resolves EVERY kind the
+ * song pool holds, so a sung spell is one Joiner cast path, not a second
+ * resolver: a ward (Shield, Bubble) is `ally.ward` (the Joiner's own combat
+ * entry, read by applyFoeDamageToMember where the hero's ward is read, ticked
+ * and faded in foeTurn's tail), Strength a `spell:Strength` record on the
+ * Joiner's own sheet (memberView and strengthRoll pick it up), Sense Presence
+ * `ally.senses`, Earthquake's backlash and Death's fee come out of `ally.wp`
+ * (Earthquake can down the Joiner through downMember; Death refuses at 26 hp or
+ * less, as the hero's does, so its fee never downs it), and the foe-side kinds
+ * (Acid, Stupidity, Blind, Shrink, Noxious Vapor, Fireballs, Petrify, Insane,
+ * Turn Walking Dead, Plane Gate) are the hero's rules at the Joiner's level.
+ * "You" in a spell's text is the Joiner; nothing here writes the hero's sheet.
  */
-function allyCast(state, ally, sheet, view, sp, t, rng, events) {
-  sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
+function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
+  if (!opts.free) sheet.spellsUsed = (sheet.spellsUsed || 0) + 1;
   // Self and room spells: no single foe is the target, so no `allyCast` line
   // (the sibling event below names the Joiner and the spell).
   if (sp.kind === "heal") {
@@ -3271,6 +3321,39 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
     const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
     const rec = startSpellEffect(sheet, sp, events, { squares: spellEffectSquares(view.sub, sp) });
     events.push({ type: "spellEffectStarted", spell: sp.n, kind: sp.act.kind, squares: rec ? rec.left : 0, restarted, member: ally.name });
+    return;
+  }
+  // Phase 91 plan 07 (IDENT-17): the self kinds of the song pool. "You" is the
+  // Joiner: the ward is its own combat entry's, Strength its own sheet's record,
+  // Sense Presence its own flag (the hero's `c.ward`, `c.timers` and `c.senses`
+  // are never written here).
+  if (sp.kind === "ward") {
+    // Shield's soak pool and rounds, or Bubble's armed mirror (pool 0, never ticks
+    // until it pops), exactly the hero's records (magic.js's ward branch).
+    ally.ward = sp.mirror
+      ? { name: sp.n, mirror: true, pool: 0, popPool: sp.popPool, rounds: null }
+      : { pool: sp.pool, rounds: sp.rounds, name: sp.n };
+    events.push(
+      sp.mirror
+        ? { type: "wardRaised", spell: sp.n, pool: 0, mirror: true, popPool: sp.popPool, member: ally.name }
+        : { type: "wardRaised", spell: sp.n, pool: sp.pool, member: ally.name },
+    );
+    return;
+  }
+  if (sp.kind === "might") {
+    // Strength: one `spell:Strength` squares record (100 squares), a recast restarts it.
+    const prior = sheet.timers && sheet.timers["spell:" + sp.n];
+    const restarted = !!(prior && prior.phase === "effect" && prior.left > 0);
+    const rec = startSpellEffect(sheet, sp, events);
+    events.push({ type: "strengthCast", squares: rec ? rec.left : 0, restarted, member: ally.name });
+    return;
+  }
+  if (sp.kind === "senses") {
+    // The Joiner has no darkness read of its own beyond its Stealth crit, and a sung
+    // song comes on its first turn, after any ambush is over: the flag is read by
+    // memberStrike's Stealth test (the dark costs the Joiner nothing).
+    ally.senses = true;
+    events.push({ type: "sensesGained", member: ally.name });
     return;
   }
   const casterTail = { by: ally.name, sheet: view, level: view.level, sub: view.sub };
@@ -3297,6 +3380,171 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events) {
   }
   if (sp.kind === "thrown") {
     allyThrow(state, ally, view, sp, t, rng, events);
+    return;
+  }
+  // Phase 91 plan 07 (IDENT-17): the foe-side kinds of the song pool, the hero's
+  // rules (magic.js, the same draws in the same order) at the Joiner's level, the
+  // Joiner's name on the cast line and every resist, with no Afraid and no
+  // spellDamageFor on the damage (a Joiner is neither; iceStorm's Joiner reading).
+  // One-foe kinds roll the target's one depth-rising resist up front; room kinds
+  // roll it per foe inside.
+  const levelSq = spellLevelSq(view);
+  const bySource = { kind: "spell", school: sp.kind, casterSub: view.sub, by: ally.name };
+  if (["acid", "stupid", "blind", "petrify", "insane", "death"].includes(sp.kind)) {
+    events.push({ type: "allyCast", ...base });
+    if (foeResistsSpell(state, t, sp.n, rng, events, ally.name)) return;
+    if (sp.kind === "acid") {
+      // the dissolve ticks in foeTurn; level² rides the first tick only, once per cast
+      t.acid = { rounds: rng.d(6), dmg: sp.dmg, levelSq }; // roll:amount
+      events.push({ type: "acidApplied", target: t.name, rounds: t.acid.rounds });
+    } else if (sp.kind === "stupid") {
+      const was = Number.isFinite(t.intel) ? t.intel : 0;
+      t.intel = 1;
+      t.stupid = true;
+      events.push({ type: "stupefied", target: t.name, intel: 1, was });
+    } else if (sp.kind === "blind") {
+      t.blind = true;
+      delete t.blindFor;
+      events.push({ type: "blinded", target: t.name });
+    } else if (sp.kind === "petrify") {
+      events.push({ type: "petrified", target: t.name });
+      t.lives = 1;
+      t.frozen = true;
+      killFoe(state, t, rng, events, { spoils: false });
+    } else if (sp.kind === "insane") {
+      const r = rng.d(6); // roll:selection
+      events.push({ type: "insaneRolled", target: t.name, roll: r });
+      if (r === 1) {
+        t.wp = 0;
+        killFoe(state, t, rng, events);
+      } else if (r === 2) {
+        const o = liveFoes(state).find((f) => f !== t);
+        if (o) {
+          const d = t.lvl * t.lvl + rng.d(6); // roll:amount
+          const hit = damageFoe(state, o, d, { kind: "foe", crit: false }, rng, events);
+          if (!hit.soaked) events.push({ type: "insaneStruckAlly", target: o.name, dmg: hit.applied });
+          if (o.wp <= 0) killFoe(state, o, rng, events);
+        }
+      } else if (r === 3 || r === 6) {
+        t.alive = false;
+        t.wp = 0;
+        t.fled = true;
+        events.push({ type: "insaneFled", target: t.name });
+      } else if (r === 4) {
+        t.asleep = rng.d(4); // roll:amount
+      } else if (r === 5) {
+        t.frenzied = true;
+      }
+    } else {
+      // death: the fee is the Joiner's own hit points. Like the hero's, it refuses at
+      // the fee plus one or less (the spell will not be what downs its caster), so the
+      // fee can never down the Joiner; in a paid (non-free) cast the charge is refunded.
+      const DEATH_SPELL_FEE = 25;
+      if (ally.wp <= DEATH_SPELL_FEE + 1) {
+        events.push({ type: "deathSpellTooWeak", fee: DEATH_SPELL_FEE, member: ally.name });
+        if (!opts.free) sheet.spellsUsed--;
+        return;
+      }
+      ally.wp -= DEATH_SPELL_FEE;
+      events.push({ type: "deathCast", cost: DEATH_SPELL_FEE, member: ally.name });
+      t.wp = 0;
+      killFoe(state, t, rng, events);
+    }
+    return;
+  }
+  if (["shrink", "quake", "vapor", "volley", "turn", "gate"].includes(sp.kind)) {
+    events.push({ type: "allyCast", ...base });
+    if (sp.kind === "shrink") {
+      const n = rng.d(6); // roll:amount
+      let halved = 0;
+      liveFoes(state)
+        .slice(0, n)
+        .forEach((f) => {
+          if (foeResistsSpell(state, f, sp.n, rng, events, ally.name)) return;
+          f.wp = Math.ceil(f.wp / 2);
+          f.maxWP = Math.ceil(f.maxWP / 2);
+          f.shrunk = true;
+          halved++;
+        });
+      events.push({ type: "shrunk", count: halved });
+    } else if (sp.kind === "quake") {
+      // every foe takes the one roll + a live Strength's d10 + level²; the backlash is
+      // half the dice alone, and none to a warded Joiner (the hero's rule: c.ward).
+      const rolled = rollDice(rng, sp.dmg);
+      const d = rolled + strengthRoll(view, rng) + levelSq;
+      const quakeHit = liveFoes(state).filter((f) => !foeResistsSpell(state, f, sp.n, rng, events, ally.name));
+      quakeHit.forEach((f) => {
+        damageFoe(state, f, d, bySource, rng, events);
+        if (f.wp <= 0) killFoe(state, f, rng, events);
+      });
+      events.push({ type: "earthquake", amount: d });
+      if (!ally.ward) {
+        const self = Math.ceil(rolled / 2);
+        ally.wp -= self;
+        events.push({ type: "earthquakeSelfDamage", amount: self, spell: sp.n, member: ally.name });
+        if (ally.wp <= 0) downMember(state, ally, events);
+      }
+    } else if (sp.kind === "vapor") {
+      const r = view.level >= 5 ? 4 : rng.d(6); // roll:selection
+      events.push({ type: "vaporRolled", roll: r });
+      liveFoes(state).forEach((f) => {
+        if (foeResistsSpell(state, f, sp.n, rng, events, ally.name)) return;
+        if (r === 4 && rng.d(10) !== 1) { // roll:mishap-on-1
+          f.wp = 0;
+          killFoe(state, f, rng, events);
+        } else {
+          const rolled = rng.d(6) + 2; // roll:amount
+          f.asleep = Math.max(f.asleep, rolled);
+        }
+      });
+    } else if (sp.kind === "volley") {
+      const n = rng.d(8); // roll:amount
+      const foes = liveFoes(state);
+      const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, sp.n, rng, events, ally.name)));
+      const struck = new Set();
+      let tot = 0;
+      for (let k = 0; k < n && foes.length; k++) {
+        const f = foes[k % foes.length];
+        if (!f.alive || shrugged.has(f)) continue;
+        const first = !struck.has(f);
+        struck.add(f);
+        const d = rollDice(rng, sp.dmg) + strengthRoll(view, rng) + (first ? levelSq : 0);
+        const hit = damageFoe(state, f, d, bySource, rng, events);
+        tot += hit.applied;
+        if (f.wp <= 0) killFoe(state, f, rng, events);
+      }
+      events.push({ type: "volley", rolls: n, totalDamage: tot });
+    } else if (sp.kind === "turn") {
+      // Walking Dead of the Joiner's level or lower, each on its own resist. The hero's
+      // fixation (survivors swing only at the caster) is a hero-only targeting rule in
+      // pickFoeTarget, so a Joiner's song never sets it: it never aims the dead at the hero.
+      if (state.combat && state.combat.type === "Walking Dead") {
+        const turned = liveFoes(state)
+          .filter((f) => f.lvl <= view.level)
+          .filter((f) => !foeResistsSpell(state, f, sp.n, rng, events, ally.name));
+        turned.forEach((f) => {
+          f.alive = false;
+          f.turned = true;
+          f.wp = 0;
+        });
+        events.push({ type: "walkingDeadTurned", count: turned.length });
+      } else {
+        events.push({ type: "nothingToTurn" });
+      }
+    } else if (state.combat && (state.combat.type === "Walking Dead" || state.combat.type === "Demons")) {
+      // gate: d6 foes, each on its own resist
+      const gone = liveFoes(state)
+        .slice(0, rng.d(6)) // roll:amount
+        .filter((f) => !foeResistsSpell(state, f, sp.n, rng, events, ally.name));
+      gone.forEach((f) => {
+        f.alive = false;
+        f.turned = true;
+        f.wp = 0;
+      });
+      events.push({ type: "planeGated", count: gone.length });
+    } else {
+      events.push({ type: "gateRefused" });
+    }
     return;
   }
   // blast / status / stun / weaken — the only other ATTACK_SPELL_KINDS.
@@ -3387,7 +3635,10 @@ function allyThrow(state, ally, view, sp, t, rng, events) {
       // Quick 260928-sq2 (user ruling 2026-09-28): the dice + the JOINER's
       // own level² (view.level is ally.lvl), replacing × max(1, level −
       // spell level) — the hero's rule. No new draw.
-      const dmg = rollDice(rng, sp.dmg) + spellLevelSq(view) + eff(view, "spellDmg");
+      // Phase 91 (IDENT-17, plan 91-07): a live Strength on the Joiner's own sheet
+      // (a sung Strength) adds its d10 to this roll, as the hero's thrown spell
+      // does; 0, and no draw, for any Joiner without one.
+      const dmg = rollDice(rng, sp.dmg) + strengthRoll(view, rng) + spellLevelSq(view) + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
       if (freeze) {
         // User rulings 2026-09-28: "freeze should never kill outright. It
@@ -3818,10 +4069,13 @@ export function applyFoeDamageToPlayer(state, foe, rng, events, { dmg, roll, atL
  * round, the foe's index, the swing and the Joiner's party index, so the
  * main stream never moves (a solo fight draws exactly what it drew before).
  *
- * Hero-only and NOT part of this helper: the Bubble mirror, the Shield ward
- * and the Fridgian hide (not armour, not items; Phase 91's to decide for a
- * Joiner). Since Phase 90 plan 10 (Q10 A) Hardiness IS part of it: -3 per
- * landed blow, floor 1, ahead of the Pendant. A missing sheet reads as a blank
+ * Hero-only and NOT part of this helper: the Fridgian hide (not armour, not
+ * items; Phase 91's to decide for a Joiner). Since Phase 90 plan 10 (Q10 A)
+ * Hardiness IS part of it: -3 per landed blow, floor 1, ahead of the Pendant.
+ * Since Phase 91 plan 07 (IDENT-17) a Joiner's own sung ward is too: an armed
+ * Bubble mirror (`member.ward.mirror`) reflects the whole blow first, a Shield
+ * pool (`member.ward.pool`) eats what is left after the Pendant and Brace, both
+ * with the Joiner's name in `member` on their events. A missing sheet reads as a blank
  * body (no Pendant, no armour).
  *
  * Events carry the Joiner's name in `member` (additive), so the Oracle and
@@ -3836,6 +4090,19 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
   const C = state.combat;
   const sheet = Array.isArray(state.party) ? state.party[member.partyIdx] : null;
   const body = sheet || {};
+
+  // Phase 91 plan 07 (IDENT-17): a Joiner Bard's sung Bubble (`member.ward.mirror`) sits
+  // ahead of EVERYTHING else in this pipeline, as the hero's does (RULES-14): the whole
+  // blow goes back at the attacker, the Joiner takes none of it, no single-charge buffer
+  // is spent, and the ward pops into a plain film for the rest of THIS round (rounds: 1,
+  // faded by foeTurn's tail). A reflect that kills the attacker runs killFoe.
+  if (member.ward && member.ward.mirror && dmg > 0) {
+    const bounce = damageFoe(state, foe, dmg, { kind: "reflect", crit: false }, rng, events);
+    if (!bounce.soaked) events.push({ type: "wardReflected", target: foe.name, amount: bounce.applied, mirror: true, member: member.name });
+    member.ward = { name: member.ward.name, pool: member.ward.popPool, rounds: 1 };
+    if (foe.wp <= 0) killFoe(state, foe, rng, events);
+    return { downed: false, soaked: true, applied: 0 };
+  }
 
   // Phase 90 plan 10 (ABIL-06, Q10 A, user 2026-09-30: "Joiners use ...
   // Hardiness ... as the text describes"): a Joiner with Hardiness takes 3 less
@@ -3859,6 +4126,21 @@ export function applyFoeDamageToMember(state, foe, member, rng, events, { dmg, r
     dmg = Math.ceil(dmg / 2);
     member.braced = false;
     events.push({ type: "braceHeld", name: foe.name, member: member.name, soaked: before - dmg });
+  }
+
+  // Phase 91 plan 07 (IDENT-17): a Joiner's own Shield (a Bard's sung ward) eats the blow
+  // after the Pendant and Brace and before its armour, where the hero's ward sits
+  // (applyFoeDamageToPlayer): absorb, then shatter when the pool is spent.
+  if (member.ward && member.ward.pool > 0 && dmg > 0) {
+    const warded = Math.min(member.ward.pool, dmg);
+    member.ward.pool -= warded;
+    dmg -= warded;
+    events.push({ type: "wardAbsorbed", amount: warded, remaining: member.ward.pool, member: member.name });
+    if (member.ward.pool <= 0) {
+      events.push({ type: "wardShattered", member: member.name });
+      member.ward = null;
+    }
+    if (dmg <= 0) return { downed: false, soaked: true, applied: 0 };
   }
 
   const ignores = ignoresArmor ?? !!(foe.sp && foe.sp.noArmor);
@@ -4515,6 +4797,17 @@ export function foeTurn(state, rng, events = []) {
     c.ward = null;
   }
   if (c.mirror > 0 && --c.mirror <= 0) events.push({ type: "mirrorFaded" });
+  // Phase 91 plan 07 (IDENT-17): a Joiner's own sung ward counts down in the same
+  // tail, in roster order, with its own name on the fade. An armed Bubble
+  // (`rounds: null`) never ticks; a Shield and a popped film (numeric `rounds`) do.
+  if (C.allies) {
+    for (const a of C.allies) {
+      if (a.ward && typeof a.ward.rounds === "number" && --a.ward.rounds <= 0) {
+        events.push({ type: "wardFaded", member: a.name });
+        a.ward = null;
+      }
+    }
+  }
   // RULES-10 (Phase 75.1, foe-side ward tick): each LIVE foe's OWN ward
   // ticks down beside the hero's, in the very same tail. An armed Bubble
   // mirror (`foe.ward.mirror`) is never ticked here — it stays armed until

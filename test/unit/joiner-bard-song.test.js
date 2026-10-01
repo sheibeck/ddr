@@ -18,10 +18,11 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 
 import { alliesTurn, applyFoeDamageToMember, foeTurn, sing, songPool, afterPlayerAction } from "../../engine/combat.js";
 import { derivedRng, makeRng } from "../../engine/rng.js";
-import { strengthRoll, liveItemEffects } from "../../engine/derived.js";
+import { strengthRoll } from "../../engine/derived.js";
 import { startSpellEffect } from "../../engine/combat.js";
 import { GW, GH } from "../../engine/maze.js";
 import { SPELLS, SONG_TITLES } from "../../content/index.js";
@@ -195,11 +196,11 @@ test("IDENT-17 Joiner: the main rng draws nothing for the song (the whole song r
 
 // --- every kind -----------------------------------------------------------------
 
-/** What a Joiner's sung spell legitimately changes on the hero's `c` (fight-shared: kills pay the hero, Weaken is party-wide). */
-const HERO_SHARED = new Set(["kills", "xp", "gold", "timers", "senses"]);
-const heroView = (c) => {
+/** What a Joiner's sung spell legitimately changes on the hero's `c`: kills pay the hero (kills, xp, sp, gold), and Weaken is party-wide (the hero's `spell:weaken` timer). */
+const HERO_SHARED = new Set(["kills", "xp", "sp", "gold"]);
+const heroView = (c, shared = HERO_SHARED) => {
   const o = {};
-  for (const k of Object.keys(c).sort()) if (!HERO_SHARED.has(k)) o[k] = c[k];
+  for (const k of Object.keys(c).sort()) if (!shared.has(k)) o[k] = c[k];
   return JSON.parse(JSON.stringify(o));
 };
 
@@ -208,14 +209,15 @@ for (const sp of songPool(5)) {
     const walking = sp.kind === "turn" || sp.kind === "gate";
     const foes = [foe("Ned", { lvl: 1 }), foe("Bob", { lvl: 1 }), foe("Cy", { lvl: 1 })];
     const state = singing(sp.n, { foes, type: walking ? "Walking Dead" : "Humans" });
-    const before = heroView(state.c);
+    const shared = sp.kind === "weaken" ? new Set([...HERO_SHARED, "timers"]) : HERO_SHARED;
+    const before = heroView(state.c, shared);
     const spellsUsedBefore = state.c.spellsUsed;
     const { events } = turn(state);
     const sang = sangOf(events);
     assert.equal(sang.length, 1);
     assert.equal(sang[0].spell, sp.n);
     assert.equal(sang[0].member, "Lyra");
-    assert.deepEqual(heroView(state.c), before, `${sp.n}: the hero's sheet is untouched`);
+    assert.deepEqual(heroView(state.c, shared), before, `${sp.n}: the hero's sheet is untouched`);
     assert.equal(state.c.spellsUsed, spellsUsedBefore, "no hero charge spent");
     assert.equal(state.party[0].spellsUsed, 0, "no Joiner charge spent");
     // the song turn is the Joiner's whole action: nothing but the song's own events follow it
@@ -456,6 +458,31 @@ test("IDENT-17 Joiner (non-Bards): a Joiner Fighter's and a Joiner Magic User's 
     assert.equal(sangOf(events).length, 0, `${sub}: no song`);
     assert.equal(state.combat.allies[0].sang, undefined, `${sub}: no flag`);
     assert.ok(events.length > 0, `${sub}: it acted`);
+  }
+});
+
+test("IDENT-17 Joiner (non-Bards): a Joiner Soldier's and Wizard's two seeded turns are byte-identical to the base (events and main rng state), measured on baab91a2 before this plan", () => {
+  // (sub, seed) -> [event count, main rng state, sha1 of the events JSON, first 12 hex], from the base tree.
+  const BASE = {
+    "Soldier:11": [2, -1263671329, "3010177150c7"],
+    "Soldier:12": [2, -1263671328, "62c86a68f79c"],
+    "Soldier:13": [2, -1263671327, "dec0ae6ef238"],
+    "Wizard:11": [6, -1895506999, "c988ff19068c"],
+    "Wizard:12": [6, -1263671328, "0b82ec578375"],
+    "Wizard:13": [7, -1895506997, "b7fdb88f0739"],
+  };
+  for (const [sub, cls] of [["Soldier", "Fighter"], ["Wizard", "Magic User"]]) {
+    for (const seed of [11, 12, 13]) {
+      const sheet = bardSheet({ sub, cls, grimoire: sub === "Wizard" ? ["Freeze"] : [] });
+      const state = fightWith([sheet], [foe("Ned"), foe("Bob")], { acts: 5 });
+      const rng = makeRng(seed);
+      const events = [];
+      alliesTurn(state, rng, events);
+      state.combat.round = 2;
+      alliesTurn(state, rng, events);
+      const sha = crypto.createHash("sha1").update(JSON.stringify(events)).digest("hex").slice(0, 12);
+      assert.deepEqual([events.length, rng.getState(), sha], BASE[`${sub}:${seed}`], `${sub} seed ${seed}`);
+    }
   }
 });
 
