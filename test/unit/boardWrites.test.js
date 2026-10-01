@@ -131,7 +131,7 @@ function hexHash(n) {
 
 function makeSetup({ competeOn = true, fakeOpts = {}, identityOpts = {} } = {}) {
   const clock = clockBox(0);
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, ...fakeOpts });
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: clock, ...fakeOpts });
   const storage = makeStorage();
   let competing = competeOn;
   const identity = createIdentity({

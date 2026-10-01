@@ -33,7 +33,7 @@ import {
 } from "../../src/browser/bugReport.js";
 import { BUG_REPORT_CONFIG } from "../../src/browser/bugReportConfig.js";
 import { FIREBASE_CONFIG } from "../../src/browser/firebaseConfig.js";
-import { handlePatternSource } from "../../src/browser/handles.js";
+import { BOARD_NAME_MAX_CHARS } from "../../src/browser/boardName.js";
 import {
   RUN_DOC_FIELDS,
   UID_MAX_CHARS,
@@ -241,13 +241,60 @@ test("reportLimits: owner get/update are not if false; create is a fresh step; l
   assert.match(block, /allow list, delete:\s*if false;/);
 });
 
-test("runs: get is public, list is bounded, update/delete are owner-gated; none of these four is if false", () => {
+test("runs: get is public, list is bounded, create is name-gated, update is refused (D-11), delete is owner-gated", () => {
   const block = blockBody(RULES, /match\s+\/runs\/\{runId\}\s*\{/);
   assert.match(block, /allow get:\s*if true;/);
   assert.match(block, /allow list:\s*if request\.query\.limit == null \|\| request\.query\.limit <= 50;/);
-  assert.match(block, /allow update:\s*if[\s\S]*affectedKeys\(\)\.hasOnly\(\['handle'\]\)/);
+  assert.match(block, /allow update:\s*if false;/);
+  assert.equal((block.match(/allow update:/g) || []).length, 1, "exactly one update rule");
+  assert.doesNotMatch(block, /affectedKeys/, "no client update path survives (D-11)");
   assert.match(block, /allow delete:\s*if request\.auth != null && resource\.data\.uid == request\.auth\.uid;/);
-  assert.doesNotMatch(block, /allow (get|list|update|delete):\s*if false;/);
+  assert.doesNotMatch(block, /allow (get|list|delete):\s*if false;/);
+});
+
+// --- Phase 91.2 (BOARD-31, D-11, D-13): the names gate -----------------------
+
+test("the names helpers read names/{uid} and nothing else", () => {
+  const collapse = (s) => s.replace(/\s+/g, " ").trim();
+  assert.equal(collapse(functionBody(RULES, "namePath")), "return /databases/$(database)/documents/names/$(uid);");
+  assert.equal(collapse(functionBody(RULES, "isNamed")), "return exists(namePath(uid));");
+  assert.equal(collapse(functionBody(RULES, "verifiedName")), "return get(namePath(uid)).data.name;");
+});
+
+test("runs create needs the poster's names/{uid} to exist (isNamed first) and handle == verifiedName(auth uid), and keeps the banned check", () => {
+  const block = blockBody(RULES, /match\s+\/runs\/\{runId\}\s*\{/);
+  const create = /allow create:([\s\S]*?);/.exec(block);
+  assert.ok(create, "runs create must exist");
+  const expr = create[1].replace(/\s+/g, " ").trim();
+  assert.match(expr, /isNamed\(request\.auth\.uid\)/);
+  assert.match(expr, /request\.resource\.data\.handle == verifiedName\(request\.auth\.uid\)/);
+  assert.ok(expr.indexOf("isNamed(request.auth.uid)") < expr.indexOf("verifiedName(request.auth.uid)"), "isNamed must come before verifiedName");
+  assert.match(expr, /!exists\(\/databases\/\$\(database\)\/documents\/banned\/\$\(request\.auth\.uid\)\)/);
+  assert.match(expr, /isValidBoardRun\(request\.resource\.data\)/);
+  assert.match(expr, /request\.resource\.data\.uid == request\.auth\.uid/);
+  assert.doesNotMatch(expr, /\|\|/, "the final rules have no alternative create branch");
+});
+
+test("names and nameOverrides are closed to every client read and write", () => {
+  for (const coll of ["names", "nameOverrides"]) {
+    const block = blockBody(RULES, new RegExp(`match\\s+\\/${coll}\\/\\{uid\\}\\s*\\{`));
+    assert.match(block, /allow read, write:\s*if false;/, coll);
+    assert.equal((block.match(/allow /g) || []).length, 1, `${coll} has exactly one allow statement`);
+  }
+});
+
+test("names and nameOverrides sit before the catch-all", () => {
+  const catchAllIdx = RULES.indexOf("match /{document=**}");
+  assert.ok(RULES.indexOf("match /names/{uid}") !== -1 && RULES.indexOf("match /names/{uid}") < catchAllIdx);
+  assert.ok(RULES.indexOf("match /nameOverrides/{uid}") !== -1 && RULES.indexOf("match /nameOverrides/{uid}") < catchAllIdx);
+});
+
+test("the handle clause is a string of 1..BOARD_NAME_MAX_CHARS characters and no @handle regex survives anywhere", () => {
+  assert.match(isValidBoardRunBody, new RegExp(`d\\.handle is string && d\\.handle\\.size\\(\\) >= 1 && d\\.handle\\.size\\(\\) <= ${BOARD_NAME_MAX_CHARS}\\b`));
+  assert.equal(BOARD_NAME_MAX_CHARS, 64);
+  assert.doesNotMatch(RULES, /\^@\(/, "no rolled-handle alternation regex in the final rules");
+  assert.doesNotMatch(RULES, /handle\.matches/, "the handle is never regex-matched in the final rules");
+  assert.doesNotMatch(RULES, /lantern|mossjaw|knuckle/, "no rolled-handle word list in the final rules");
 });
 
 test("banned: read and write are if false", () => {
@@ -336,16 +383,6 @@ test("isSubOfClass has one clause per class whose list equals CLASSES[cls].subs"
 test("the hash regex equals HASH_PATTERN", () => {
   const literals = matchesLiterals(isValidBoardRunBody);
   assert.ok(literals.includes(HASH_PATTERN), `HASH_PATTERN ${HASH_PATTERN} must appear in isValidBoardRun`);
-});
-
-test("the handle regex (in isValidBoardRun and the runs update rule) equals handlePatternSource()", () => {
-  const pattern = handlePatternSource();
-  const boardRunLiterals = matchesLiterals(isValidBoardRunBody);
-  assert.ok(boardRunLiterals.includes(pattern), "isValidBoardRun's handle regex must equal handlePatternSource()");
-
-  const runsBlock = blockBody(RULES, /match\s+\/runs\/\{runId\}\s*\{/);
-  const runsLiterals = matchesLiterals(runsBlock);
-  assert.ok(runsLiterals.includes(pattern), "the runs update rule's handle regex must equal handlePatternSource()");
 });
 
 test("deepKeyOf/daysKeyOf/killsKeyOf/goldKeyOf rules functions match runDoc.js's key functions on a grid", () => {

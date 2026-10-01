@@ -316,13 +316,12 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return listAll({ where: fieldEq("uid", uid) });
   }
 
-  // Deletes go through the single-document admin DELETE endpoint, not a
-  // :commit batch: firebase/firestore.rules' (and its fakeBoardServer.js
-  // mirror's) commit-based delete Write is owner-gated even for the admin
-  // token — only the single-document GET/DELETE endpoints extend the
-  // IAM-level admin bypass. Deleted in waves of at most 100 concurrent
-  // requests, preserving the "at most 100 at a time" shape without a
-  // Write the admin commit path would refuse.
+  // Deletes go through the single-document admin DELETE endpoint, one request
+  // per run, in waves of at most 100 concurrent requests. (An admin :commit
+  // over runs is accepted too: the service account bypasses the rules and
+  // fakeBoardServer.js applies it with no client rule, as the boardName
+  // function's stamp commits rely on; this tool simply keeps the
+  // single-document shape.)
   async function deleteRunsOf(uid) {
     const rows = await runsOf(uid);
     const ids = rows.map((r) => r.id);
@@ -386,6 +385,13 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     return ok;
   }
 
+  // Removes names/{uid} (tools/boards-smoke.mjs seeds a probe name and removes
+  // it again; the boardName function's own release does this for a real player).
+  async function clearNameRecord(uid) {
+    const { ok } = await request(`/${NAMES_COLLECTION}/${uid}`, { method: "DELETE" });
+    return ok;
+  }
+
   return Object.freeze({
     query,
     listAll,
@@ -400,6 +406,7 @@ export function createAdminApi({ projectId, fetchFn, headers }) {
     setNameRecord,
     setNameOverride,
     clearNameOverride,
+    clearNameRecord,
   });
 }
 
