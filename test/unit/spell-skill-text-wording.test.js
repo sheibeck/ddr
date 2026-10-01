@@ -391,7 +391,8 @@ test("Blind and Dirty Trick state the blind foe's best roll as one d20 number: a
   }
 });
 
-test("Stealth states the strike die's top two numbers and their range on a d20, measured from a real opening blow", () => {
+// Phase 91.1 plan 02 (V12 B, 2026-10-01): the top THREE numbers now (was two).
+test("Stealth states the strike die's top three numbers and their range on a d20, measured from a real opening blow", () => {
   const hero = { sub: "Woodsman", skills: { Stealth: 1 } };
   const dieN = strikeDie(fixedFighter(hero));
   let n = 0;
@@ -402,10 +403,10 @@ test("Stealth states the strike die's top two numbers and their range on a d20, 
     if (events.some((e) => e.type === "stealthStrike")) n++;
     else break;
   }
-  assert.equal(n, 2, "the Stealth crit fires on exactly the top two numbers");
-  const stated = `crits on the top two numbers of your die (${d20Range(n)} on a d20)`;
+  assert.equal(n, 3, "the Stealth crit fires on exactly the top three numbers");
+  const stated = `crits on the top three numbers of your die (${d20Range(n)} on a d20)`;
   assert.ok(rowText("FIGHTER_SKILLS.Stealth").includes(stated), rowText("FIGHTER_SKILLS.Stealth"));
-  assert.equal(d20Range(n), `19${EN_DASH}20`);
+  assert.equal(d20Range(n), `18${EN_DASH}20`);
 });
 
 // --- area effects, resists, parley --------------------------------------------
@@ -547,7 +548,7 @@ test("Q10: Stealth, Hardiness and Ambidextrous say a Joiner uses them too, with 
 test("the other audit text fixes: Cooking, Locks, Sewing, Silent Step, Noxious Vapor and Insane say what the engine does", () => {
   assert.match(rowText("FIGHTER_SKILLS.Cooking"), /heal a quarter of its max hp \(at least 1\) and pocket a ration/);
   assert.match(rowText("THIEF_SKILLS.Locks"), /with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest/);
-  assert.match(rowText("THIEF_SKILLS.Sewing"), /once on each fed day's rest, patch hurt armour: d6 hp back, 4 times in all/);
+  assert.match(rowText("THIEF_SKILLS.Sewing"), /once on each fed day's rest, patch hurt armour: d6 hp back, 6 times in all/);
   assert.match(rowText("THIEF_SKILLS.Sewing.txt2"), /d6\+3 hp back, 6 times in all/);
   assert.match(rowText("ABILITIES.silentStep"), /never misses and doubles its damage, any round; once per fight; heavy armour, the dark \(without a light\), a Guard or a Soldier keep the hit and lose the doubling/);
   assert.match(rowText("SPELLS.Noxious Vapor"), /on a 4 each foe dies unless its own d10 shows a 1; any other number puts it to sleep for d6\+2 rounds; from level 5 it is always the 4/);
@@ -561,7 +562,7 @@ test("the other audit text fixes: Cooking, Locks, Sewing, Silent Step, Noxious V
 test("EMPTY: a row with no roll wording is left as it is, and every reworded line renders a bare payload with no 'undefined' or 'NaN'", () => {
   assert.equal(rowText("SPELLS.Heal"), "healing · you · d10 hp");
   assert.equal(rowText("SPELLS.Shield"), "defensive · you · soaks 50 hp for 5 rounds");
-  assert.equal(rowText("ABILITIES.brace"), "halve the next blow that lands on you");
+  assert.equal(rowText("ABILITIES.brace"), "halve the next two blows that land on you");
   assert.equal(rowText("ABILITIES.sweep"), "one wide arc: every living foe takes half damage; needs two or more foes");
   for (const id of ["SPELLS.Heal", "SPELLS.Shield", "ABILITIES.brace", "ABILITIES.riposte", "ABILITIES.taunt"]) assert.doesNotMatch(rowText(id), /to hit| on a d20/, id);
   for (const ev of EVENTS) {

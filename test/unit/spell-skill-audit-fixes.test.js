@@ -291,7 +291,7 @@ function swingOnce(sheetOver, { raws = [2, 2, ...TWOS(20)], round = 1, foeOver =
   return { s, events, sheet, target };
 }
 
-test("Stealth: a Joiner Fighter's OPENING landed blow crits on a roll in its die's top two numbers (the second-best face here), doubling its damage, with a stealthStrike line naming it (Q10 A)", () => {
+test("Stealth: a Joiner Fighter's OPENING landed blow crits on a roll in its die's top three numbers (the second-best face here), doubling its damage, with a stealthStrike line naming it (Q10 A)", () => {
   const withSkill = swingOnce({ skills: { Stealth: 1 } });
   const plain = swingOnce({ skills: {} });
   const sd = strikeDie({ ...withSkill.sheet, level: 1, skills: { Stealth: 1 } });

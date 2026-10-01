@@ -527,7 +527,7 @@ test("abilityPoolCard: the FIRST pool-source id in c.abilities builds the exact 
   const card = abilityPoolCard({ cls: "Fighter", abilities: ["kata", "brace"] });
   assert.deepStrictEqual(card, {
     title: "UP YOUR SLEEVE",
-    line: "New trick: Brace — halve the next blow that lands on you",
+    line: "New trick: Brace — halve the next two blows that land on you",
     tone: "good",
     hold: RAIL_HOLD.level,
     icon: "★",

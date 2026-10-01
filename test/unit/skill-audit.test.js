@@ -340,7 +340,8 @@ test("the close: no row reads fix engine, fix text or balance call, and the tabl
 });
 
 test("the close: a row turned back into fix engine, fix text or balance call fails", () => {
-  for (const [name, from, to] of [["Stealth", "| fixed engine (90-10) |", "| fix engine (90-10) |"], ["Silent Step", "| fixed text (90-11) |", "| fix text (90-11) |"], ["Brace", "| match |", "| balance call (Q10) |"]]) {
+  // Phase 91.1 plan 02 (part B): Stealth and Brace carry a "; value change (91.1-02)" verdict now, so the doctored rows are Hardiness and Riposte, whose verdicts are unchanged.
+  for (const [name, from, to] of [["Hardiness", "| fixed engine (90-10) |", "| fix engine (90-10) |"], ["Silent Step", "| fixed text (90-11) |", "| fix text (90-11) |"], ["Riposte", "| match |", "| balance call (Q10) |"]]) {
     const reopened = doctor((c, at) => (c[at(name)] = c[at(name)].replace(from, to)));
     assert.ok(checkDoc(reopened).some((p) => new RegExp(`row "${name}" is still open`).test(p)), name);
   }
@@ -431,9 +432,10 @@ test("pre-owned rows name the plan that builds them, and Kind · Class agrees wi
 });
 
 test("the checker fails a missing row, a duplicate row, a merged row, an empty cell and an unknown verdict", () => {
-  const i = (lines) => lines.findIndex((l) => l.startsWith("| Brace |"));
-  assert.ok(checkDoc(doctor((c) => c.splice(i(c), 1))).some((p) => /missing a row for "Brace"/.test(p)));
-  assert.ok(checkDoc(doctor((c) => c.splice(i(c), 0, c[i(c)]))).some((p) => /duplicate row "Brace"/.test(p)));
+  // Phase 91.1 plan 02 (part B): the doctored row is Riposte (verdict "match", unchanged); Brace reads "match; value change (91.1-02)" now.
+  const i = (lines) => lines.findIndex((l) => l.startsWith("| Riposte |"));
+  assert.ok(checkDoc(doctor((c) => c.splice(i(c), 1))).some((p) => /missing a row for "Riposte"/.test(p)));
+  assert.ok(checkDoc(doctor((c) => c.splice(i(c), 0, c[i(c)]))).some((p) => /duplicate row "Riposte"/.test(p)));
   // merged: Feint folded into Kata
   assert.ok(checkDoc(doctor((c, at) => c.splice(at("Feint"), 1))).some((p) => /missing a row for "Feint"/.test(p)));
   const empty = doctor((c) => {
@@ -445,7 +447,7 @@ test("the checker fails a missing row, a duplicate row, a merged row, an empty c
   assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| sort of |")))).some((p) => /unknown verdict "sort of"/.test(p)));
   assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| fixed text (90-13) |")))).some((p) => /90-13/.test(p)));
   // a wrong Kind · Class
-  assert.ok(checkDoc(doctor((c, at) => (c[at("Brace")] = c[at("Brace")].replace("| pool active · Fighter |", "| passive · Fighter |")))).some((p) => /Kind · Class/.test(p)));
+  assert.ok(checkDoc(doctor((c, at) => (c[at("Riposte")] = c[at("Riposte")].replace("| pool active · Fighter |", "| passive · Fighter |")))).some((p) => /Kind · Class/.test(p)));
 });
 
 test("Phase 91.1: a verdict may end with value change (91.1-0N), and an owner outside 91.1-02 to 91.1-05 fails", () => {
@@ -477,8 +479,8 @@ test("the checker fails a balance call whose question already has a ruling, and 
 
 test("the checker fails a match row that admits a gap and a Rule cell with an ASCII-hyphen range", () => {
   const gap = doctor((c, at) => {
-    const i = at("Brace");
-    c[i] = c[i].replace("the next landed blow halved; no roll", "the next landed blow halved (the duration is not stated); no roll");
+    const i = at("Riposte");
+    c[i] = c[i].replace("each miss on you costs the foe your weapon damage", "each miss on you costs the foe your weapon damage (the duration is not stated)");
   });
   assert.ok(checkDoc(gap).some((p) => /admits a gap/.test(p)));
   const hyphen = doctor((c, at) => {

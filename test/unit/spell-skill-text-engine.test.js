@@ -53,7 +53,7 @@ import {
   upkeep,
   strikeDie,
 } from "../../engine/derived.js";
-import { castSpell } from "../../engine/magic.js";
+import { castSpell, readScroll } from "../../engine/magic.js";
 import {
   foeTurn,
   playerStrike,
@@ -726,6 +726,45 @@ function braceHalf() {
   const lost = 999 - r.state.c.wp;
   return halfOf(lost, plainBlowLoss({ lvl: 3 }));
 }
+/** braceBlows() — Phase 91.1 plan 02 (V8): how many landed blows one Brace halves, counted off real blows (every swing misses while it is used). */
+function braceBlows() {
+  const state = fightState({ abilities: ["brace"] });
+  useAbility(state, "brace", rngBy(() => 20), []);
+  let held = 0;
+  for (let i = 0; i < 6; i++) {
+    const events = [];
+    applyFoeDamageToPlayer(state, state.combat.foes[0], rngBy(), events, { dmg: 10, roll: 10, atLeast: 8, dieN: 20, mods: [] });
+    held += evs(events, "braceHeld").length;
+  }
+  return held;
+}
+/** cutpurseDie() — Phase 91.1 plan 02 (V11): the die the gold is rolled on, measured over the derived stream's own draws (a level 3 thief, amount / level). */
+function cutpurseDie() {
+  let lo = Infinity;
+  let hi = 0;
+  for (let acts = 0; acts < 400; acts++) {
+    const state = fightState({ role: "Thief", abilities: ["cutpurse"], c: { gold: 0 } });
+    state.acts = acts;
+    const e = ev(useAbility(state, "cutpurse", rngBy((s, i) => (i === 0 ? 1 : 2)), []), "cutpursed");
+    lo = Math.min(lo, e.amount / 3);
+    hi = Math.max(hi, e.amount / 3);
+  }
+  return die(hi - lo + 1, lo - 1);
+}
+/** runesKeep() — Phase 91.1 plan 02 (V14): "N read in M": how many scrolls of M a Runes/Signs reader keeps, counted off real reads. */
+function runesKeep() {
+  const N = 6000;
+  let kept = 0;
+  for (let acts = 0; acts < N; acts++) {
+    const state = fixedState({ cls: "Fighter", sub: "Soldier", skills: { "Runes/Signs": 1 }, scrolls: 1, intel: 14, wp: 10, maxWP: 40 });
+    state.acts = acts;
+    const rng = rngBy(() => 10);
+    rng.pick = (arr) => arr.find((sp) => sp.n === "Heal");
+    readScroll(state, rng, []);
+    if (state.c.scrolls === 1) kept++;
+  }
+  return [1, Math.round(N / kept)];
+}
 function hamstringHalf() {
   const r = use("hamstring", {}, () => 1);
   return halfOf(blowLoss(r.state), plainBlowLoss({ lvl: 3 }));
@@ -746,7 +785,8 @@ function markPlus() {
 function poisonNumbers() {
   const r = use("poisonedEdge", { foeOver: { wp: 999 } }, () => 2);
   const f = r.state.combat.foes[0];
-  const dmg = dice(f.dot.dmg);
+  // Phase 91.1 plan 02 (V9): the record's die is d4 plus the user's level; the text says "d4 + your level", so the die is the d4 and the level is read separately.
+  const dmg = dice({ ...f.dot.dmg, bonus: f.dot.dmg.bonus - r.state.c.level });
   let ticks = evs(r.events, "dotTick").length;
   for (let i = 0; i < 6; i++) {
     const e = [];
@@ -895,9 +935,9 @@ export const SKILL_TEXT_FACTS = {
     const s = sweepNumbers();
     return [s.rolls, s.half, s.minFoes];
   } }],
-  Brace: [{ says: /^(#) the next blow that lands on you$/, value: () => braceHalf() }],
+  Brace: [{ says: /^(#) the next (#) blows that land on you$/, value: () => [braceHalf(), braceBlows()] }],
   Riposte: [{ says: /^for (#) round every foe that misses you eats your weapon damage$/, value: () => liveRounds("riposte") }],
-  Taunt: [{ says: /your armour soaks (#)$/, value: () => soakFaces(true) / soakFaces(false) }],
+  Taunt: [{ says: /your armour soaks (#) both times$/, value: () => soakFaces(true) / soakFaces(false) }],
   "Overhead Blow": [{ says: /^everything into (#) swing: (#) damage, but (#) to hit; ready again (#) rounds after you use it$/, value: () => {
     const oh = use("overheadBlow", { foeOver: { wp: 999 } }, () => 2);
     return [blows(oh.events), ratioOf(strikeDmg(oh.events), strikeDmg(plain().events)), shiftOf("overheadBlow"), readyAfter("overheadBlow")];
@@ -917,16 +957,17 @@ export const SKILL_TEXT_FACTS = {
     const f = foeFaces(r.state, r.state.combat.foes[0]);
     return [liveRounds("smoke"), d20(f.plain), spanOf(f.insulted), readyAfter("smoke")];
   } }],
-  Cutpurse: [{ says: /^lift (#) × level gold off the target mid-fight; it has other problems; (#) per fight$/, value: () => [
-    extremes((fn) => ev(use("cutpurse", {}, fn).events, "cutpursed").amount / 3),
+  Cutpurse: [{ says: /^a normal strike that also lifts (#) × level gold off the target when it lands; it has other problems; (#) per fight$/, value: () => [
+    cutpurseDie(),
     usesPerFight("cutpurse"),
   ] }],
-  "Poisoned Edge": [{ says: /weeps: (#) a round to the target for (#) rounds$/, value: () => {
+  "Poisoned Edge": [{ says: /weeps: (#) \+ your level a round to the target for (#) rounds$/, value: () => {
     const p = poisonNumbers();
     return [p.dmg, p.ticks];
   } }],
   Hamstring: [{ says: /blows do (#) damage for the rest of the fight; ready again (#) rounds after you use it, on a foe that is not already hamstrung$/, value: () => [hamstringHalf(), readyAfter("hamstring")] }],
-  Mark: [{ says: /adds (#) damage for the rest of the fight; ready again (#) rounds after you use it, on a foe that is not already marked$/, value: () => [markPlus(), readyAfter("mark")] }],
+  // Phase 91.1 plan 02 (V10): Mark adds "your level", no number in the text: the level itself is pinned in value-abilities.test.js (V10), and markPlus() must still equal the hero's level here.
+  Mark: [{ says: /adds your level in damage for the rest of the fight; ready again (#) rounds after you use it, on a foe that is not already marked$/, value: () => [markPlus() === 3 ? readyAfter("mark") : NaN] }],
   Stealth: [{ says: /crits on the top (#) numbers of your die \((#)\)/, value: () => [stealthNumbers(), d20(stealthNumbers())] }],
   Hardiness: [{ says: /^(#) to every blow, bolt and trap that hurts you \(never below (#)\), and a Joiner with it takes (#) less from each blow; phobias (#)$/, value: () => {
     const h = hardinessNumbers();
@@ -940,7 +981,7 @@ export const SKILL_TEXT_FACTS = {
     const k = cookingNumbers();
     return [k.quarter, k.atLeast];
   } }],
-  "Runes/Signs": [],
+  "Runes/Signs": [{ says: /^reads any scroll without fail, and (#) read in (#) does not use the scroll up;/, value: () => runesKeep() }],
   Locks: [{ says: /^(#) on (#) to open a lock, (#) with lockpicks; intelligence (#) and (#) each add (#) more number;/, value: () => {
     const intel = lockIntel();
     return [lockSpan().span, lockSpan().die, lockSpan({ picks: true }).span, intel.first, intel.second, intel.step];

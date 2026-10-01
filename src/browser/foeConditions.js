@@ -108,8 +108,8 @@ export const FOE_CONDITION_DESC = Object.freeze({
   blind: `It hits only on its best roll (${facesRangeText(1, 20)} on a d20) and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.`,
   // applyHamstring; foeTurn halves its blows (hero and party alike).
   hamstrung: "Its blows do half damage for the rest of the fight. It is limping about it.",
-  // applyMark; playerStrike and the party's strikes add 2 damage on a marked target.
-  marked: "Every blow that lands on it does 2 more damage for the rest of the fight. It has been studied, and it shows.",
+  // applyMark; playerStrike and the party's strikes add the marker's level (abilities.js#markBonus) on a marked target; Phase 91.1 plan 02 (V10), was 2.
+  marked: "Every blow that lands on it does extra damage for the rest of the fight: the level of whoever studied it. It has been studied, and it shows.",
   // foeTurn skips and counts it down; playerStrike's need rises to 5 against a sleeping foe.
   // Phase 90 plan 05: the plain sleep (Noxious Vapor, Insane, a staff's gas, a song) is not woken by a hit.
   asleep: "Asleep. It skips its turns until the count runs out, and it is easier to hit while it naps. A hit does not wake it.",
