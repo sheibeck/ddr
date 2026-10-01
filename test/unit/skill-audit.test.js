@@ -80,6 +80,9 @@ const VERDICT_TOKENS = [
   /^Phase 92$/,
 ];
 
+/** VALUE_CHANGE — the optional trailing part Phase 91.1 build plans (91.1-02 to 91.1-05) add to any verdict. */
+const VALUE_CHANGE = /; value change \(91\.1-0[2-5]\)$/;
+
 /** OPEN_VERDICT — the open states a closed table may not contain. */
 const OPEN_VERDICT = /^(fix engine|fix text|balance call)\b/;
 
@@ -218,7 +221,12 @@ function checkDoc(text) {
     // The final Text: the Text cell carries the live txt (and txt2), so a text change re-opens the row.
     if (expected) for (const t of expected.texts) if (!textCell.includes(t)) add(`row "${name}" Text cell is not the live text "${t}"`);
     if (OPEN_VERDICT.test(verdict)) add(`row "${name}" is still open ("${verdict}"): a closed table has no fix engine, fix text or balance call`);
-    else if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict))) add(`row "${name}" has an unknown verdict "${verdict}"`);
+    else if (verdict && !VERDICT_TOKENS.some((re) => re.test(verdict.replace(VALUE_CHANGE, "")))) add(`row "${name}" has an unknown verdict "${verdict}"`);
+    // Phase 91.1 (plan 91.1-01): the value-review plans 91.1-02 to 91.1-05 may add a trailing "; value change (91.1-0N)"
+    for (const m of verdict.matchAll(/\b91\.1-(\d\d)\b/g)) {
+      const n = Number(m[1]);
+      if (n < 2 || n > 5) add(`row "${name}" names owner 91.1-${m[1]}, not a Phase 91.1 build plan (91.1-02 to 91.1-05)`);
+    }
     for (const m of verdict.matchAll(/\b90-(\d\d)\b/g)) {
       const n = Number(m[1]);
       if (n < 1 || n > 12) add(`row "${name}" names owner 90-${m[1]}, not a Phase 90 plan`);
@@ -438,6 +446,15 @@ test("the checker fails a missing row, a duplicate row, a merged row, an empty c
   assert.ok(checkDoc(doctor((c) => (c[i(c)] = c[i(c)].replace("| match |", "| fixed text (90-13) |")))).some((p) => /90-13/.test(p)));
   // a wrong Kind · Class
   assert.ok(checkDoc(doctor((c, at) => (c[at("Brace")] = c[at("Brace")].replace("| pool active · Fighter |", "| passive · Fighter |")))).some((p) => /Kind · Class/.test(p)));
+});
+
+test("Phase 91.1: a verdict may end with value change (91.1-0N), and an owner outside 91.1-02 to 91.1-05 fails", () => {
+  const ok = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| fixed text (90-11) |", "| fixed text (90-11); value change (91.1-02) |")));
+  assert.deepEqual(checkDoc(ok), []);
+  for (const bad of ["91.1-06", "91.1-01"]) {
+    const doc = doctor((c, at) => (c[at("Kata")] = c[at("Kata")].replace("| fixed text (90-11) |", `| fixed text (90-11); value change (${bad}) |`)));
+    assert.ok(checkDoc(doc).some((p) => /not a Phase 91\.1 build plan/.test(p)), bad);
+  }
 });
 
 test("the checker fails a doctored swap of two rows", () => {

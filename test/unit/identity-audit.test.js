@@ -93,6 +93,8 @@ const VERDICT_TOKENS = [
   new RegExp(`^ruled \\(\\d{4}-\\d{2}-\\d{2}\\) -> ${OWNERS}(?: - .+)?$`),
   new RegExp(`^ruled \\(Q\\d+, \\d{4}-\\d{2}-\\d{2}\\) -> ${OWNERS}(?: - .+)?$`),
   /^(?:retire|retired) \(91-\d\d\)$/,
+  // Phase 91.1 (plan 91.1-01): a closed row may also name the value-review plan (91.1-02 to 91.1-05) that changed it
+  /^value change \(91\.1-0[2-5]\)$/,
 ];
 
 /** The rows a Phase 91 plan adds or removes, pre-registered by this audit. */
@@ -254,6 +256,10 @@ function checkDoc(text) {
       for (const m of verdict.matchAll(/\b91-(\d\d)\b/g)) {
         const n = Number(m[1]);
         if (n < 1 || n > 10) add(`${where}: row "${trait}" names owner 91-${m[1]}, not a Phase 91 plan`);
+      }
+      for (const m of verdict.matchAll(/\b91\.1-(\d\d)\b/g)) {
+        const n = Number(m[1]);
+        if (n < 2 || n > 5) add(`${where}: row "${trait}" names owner 91.1-${m[1]}, not a Phase 91.1 build plan (91.1-02 to 91.1-05)`);
       }
       if (parts.includes("match") && parts.length > 1) add(`${where}: row "${trait}" mixes match with another verdict`);
       if (verdict === "match" && cells.some((c) => GAP_WORDS.test(c))) add(`${where}: row "${trait}" reads match but a cell admits a gap`);
@@ -461,6 +467,27 @@ test("IDENT-12: the checker fails an owner that is not a plan of this phase", ()
     lines[i] = lines[i].replace("fixed text (91-10)", "fixed text (91-11)");
   });
   assert.ok(checkDoc(bad).some((p) => /names owner 91-11, not a Phase 91 plan/.test(p)));
+});
+
+test("IDENT-12 (91.1): a closed row may carry value change (91.1-0N), and an owner outside 91.1-02 to 91.1-05 fails", () => {
+  const withPart = mutate(readDoc(), (lines) => {
+    const i = rowIndex(lines, "guard-hard");
+    assert.ok(i >= 0);
+    lines[i] = lines[i].replace("fixed text (91-10)", "fixed text (91-10); value change (91.1-03)");
+  });
+  assert.deepEqual(checkDoc(withPart), []);
+  for (const bad of ["91.1-06", "91.1-01"]) {
+    const doc = mutate(readDoc(), (lines) => {
+      const i = rowIndex(lines, "guard-hard");
+      lines[i] = lines[i].replace("fixed text (91-10)", `fixed text (91-10); value change (${bad})`);
+    });
+    assert.ok(checkDoc(doc).some((p) => /not a Phase 91\.1 build plan/.test(p)), bad);
+  }
+  const old = mutate(readDoc(), (lines) => {
+    const i = rowIndex(lines, "guard-hard");
+    lines[i] = lines[i].replace("fixed text (91-10)", "fixed text (91-11)");
+  });
+  assert.ok(checkDoc(old).some((p) => /names owner 91-11, not a Phase 91 plan/.test(p)), "91-11 still fails");
 });
 
 test("IDENT-12: the checker fails a row that reads match but admits a gap", () => {
