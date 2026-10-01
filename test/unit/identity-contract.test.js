@@ -1292,6 +1292,18 @@ const CONTRACT = [
         const parleyState = hero("Soldier", "Wilmsry");
         withCombat(parleyState, [fixedFoe({ type: "Beasts" })], { type: "Beasts" });
         assert.equal(canParley(parleyState), true);
+
+        // Phase 91 plan 09 (Q4 A): a found Healing potion heals double too, not only the stock one
+        // (test/unit/identity-rulings.test.js: race-heal2x).
+        const drink = (race) => {
+          const s = hero("Soldier", race);
+          s.c.maxWP = 200;
+          s.c.wp = 1;
+          s.c.items = [{ kind: "potion", n: "Healing potion", eff2: "heal", uses: 1 }];
+          useItem(s, 0, fakeRng([5]), []);
+          return s.c.wp - 1;
+        };
+        assert.equal(drink("Wilmsry"), drink("Human") * 2);
       },
     },
     bad: {
@@ -1315,7 +1327,9 @@ const CONTRACT = [
     key: "Fridgian",
     kind: "race",
     good: {
-      name: "frenzy never wastes its second swing; thick hide soaks 2 from every blow",
+      // Phase 91 plan 09 (IDENT-20): the old "never wastes its second swing" promise is retired
+      // with the corpse rule; the frenzy is a 4-6 on a d6 (test/unit/fridgian-frenzy.test.js).
+      name: "a 4-6 on a d6 frenzies into a second swing; thick hide soaks 2 from every blow",
       run() {
         const state = hero("Soldier", "Fridgian");
         withCombat(

@@ -1115,6 +1115,19 @@ export function foeSpoils(state, f, rng, events = [], opts = {}) {
 }
 
 /**
+ * partyXpShares(state) — the number of ways an experience award splits: the hero
+ * plus every Joiner still on its feet in the fight (`combat.allies` with hp
+ * left), at least 1. The ONE rule killFoe's kill split and parley's won-fight
+ * split both read (Phase 91 plan 09, orchestrator amendment, user 2026-10-01:
+ * a won parley's experience is split with Joiners exactly as a kill's is). Pure,
+ * no rng; 1 with no Joiner, so a solo hero's award is untouched.
+ */
+export function partyXpShares(state) {
+  const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
+  return 1 + liveMembers.length;
+}
+
+/**
  * killFoe(state, f, rng, events) — a foe's death: lives (kill-twice), the
  * skill-point formula (d6 x level x mul, with spMul/Barbarian/Apprentice
  * modifiers), coin via gainWilmst, treasure via rollTreasureItem, offered
@@ -1156,8 +1169,7 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
   // (i.e. live members are present). With no members `shares === 1` and
   // `heroShare === gained` exactly, so both `c.sp` and the `foeKilled` event
   // are byte-identical to today.
-  const liveMembers = state.combat && state.combat.allies ? state.combat.allies.filter((a) => a.wp > 0) : [];
-  const shares = 1 + liveMembers.length;
+  const shares = partyXpShares(state);
   const heroShare = shares > 1 ? Math.round(gained / shares) : gained;
   // Phase 54 (BAND-02, USER RULING D): HERO_SP_SCALE paces every SP grant —
   // identity (1) is a no-op here.
@@ -2188,7 +2200,16 @@ export function parley(state, rng, events = []) {
     // parley pays the FULL sum a kill of every live foe pays (never doubled:
     // a foe already slain paid when it died and is not live here).
     const talked = liveFoes(state);
-    const combatEquivalent = talked.reduce((sum, f) => sum + killSpFor(c, f, rng.d(6)), 0); // roll:amount
+    // Phase 91 plan 09 (orchestrator amendment, user 2026-10-01): the experience is
+    // SPLIT with the Joiners the way a kill's is (killFoe: each foe's award is
+    // divided by the hero plus every live Joiner, rounded per foe, and the hero keeps
+    // its share; a Joiner's share is discarded). A solo hero has one share, so its
+    // pay is the plain sum, byte-identical to before. The draws are unchanged.
+    const shares = partyXpShares(state);
+    const combatEquivalent = talked.reduce((sum, f) => {
+      const gained = killSpFor(c, f, rng.d(6)); // roll:amount
+      return sum + (shares > 1 ? Math.round(gained / shares) : gained);
+    }, 0);
     const sp = heroSpFor(Math.round(combatEquivalent));
     c.sp += sp;
     events.push({ type: "spGained", amount: sp, reason: "parley" });

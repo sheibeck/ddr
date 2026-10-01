@@ -2067,12 +2067,20 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
 
   switch (kind) {
     case "heal": {
-      const a = rng.d(10) + 2; // roll:amount
+      let a = rng.d(10) + 2; // roll:amount
+      // Phase 91 plan 09 (IDENT-20 audit row race-heal2x, Q4 A, user 2026-09-30:
+      // "every healing potion the Wilmsry drinks heals double"): a found Healing
+      // potion doubles for a heal-twice race exactly as the stock potion does
+      // (magic.js#drinkPotion), after the die and before the clamp to max. Same
+      // draw, no new roll. Xtra Healing ("full") already restores to the maximum,
+      // which a double could not pass, so it needs no line here.
+      const doubled = RACES[c.race]?.heal2x ? c.race : null;
+      if (doubled) a *= 2;
       const before = c.wp;
       c.wp = Math.min(c.maxWP, c.wp + a);
       // VOX-05 (Phase 79, plan 79-02, todo 2026-09-25): `gained` is the HP
       // actually added after the clamp to max (additive, zero draws).
-      events.push({ type: "healed", amount: a, gained: c.wp - before });
+      events.push({ type: "healed", amount: a, gained: c.wp - before, ...(doubled ? { doubled } : {}) });
       break;
     }
     case "partyHeal": {

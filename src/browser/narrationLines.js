@@ -2400,7 +2400,7 @@ export const LINE_FOR = {
   healed: (e) => ({
     text:
       railGain(e, e?.amount) > 0
-        ? `+${railGain(e, e?.amount)} hp${e?.spell ? ` (${e.spell})` : ""}${railFull(railGain(e, e?.amount), e?.amount)}.`
+        ? `+${railGain(e, e?.amount)} hp${e?.spell ? ` (${e.spell})` : ""}${railFull(railGain(e, e?.amount), e?.amount)}${e?.doubled ? ` · ${e.doubled}` : ""}.`
         : `${e?.spell ?? "Healing"}: you were already at full hp.`,
     tone: "hit",
     priority: PRIORITY.you,
