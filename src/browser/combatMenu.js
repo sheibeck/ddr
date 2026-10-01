@@ -251,13 +251,13 @@ function combatMenuViewModelUnlocked(state) {
     // still lists every spell the book holds, locked or not.
     //
     // Phase 77 (CMBUI-08, user device report 2026-09-21: "spells are in level
-    // order, then alphabetical"; the 2026-09-25 Lesser Summon report): the
+    // order, then alphabetical"; the 2026-09-25 report about the Summoner's then-level-1 summon): the
     // visible rows sort by the spell's EFFECTIVE level for this sub-class
     // (spellLevelFor(c.sub, sp), the same level canCast gates on) ascending,
     // then by the upper-cased name compared by code unit (names are ASCII and
     // unique in SPELLS), then by SPELLS index as a final safety tie-break.
     // The LVL label reads that same effective level, so the list never reads
-    // out of order (the Illusionist's Phantom Host: base 3, effective 1).
+    // out of order (the Summoner's Summon since Phase 90 plan 06: base 2, effective 1).
     // Sorting reorders rows only: each row's id and dispatch idx stay its own
     // SPELLS index, so a tap casts the spell the row names, and the RULES-04
     // hidden rows stay hidden.

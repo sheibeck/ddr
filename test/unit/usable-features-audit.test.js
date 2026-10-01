@@ -99,11 +99,14 @@ const CASES = [];
 
 // §2 Spells — outside combat: combatOnly -> castRefused combatOnly; else its
 // own unconditional success event.
+// Phase 90 plan 06 (SPELL-10, SPELL-12): the Wizard lost the Illusion school and canCast
+// re-checks the school, so an Illusion spell is cast by an Illusionist (the sub-class that owns it).
+const casterSub = (sp) => (sp.s === "illusion" ? "Illusionist" : "Wizard");
 for (const sp of SPELLS) {
   CASES.push({
     name: `spell outside combat: ${sp.n}`,
     run: () => {
-      const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", grimoire: [sp.n] } });
+      const state = fixedState({ c: { cls: "Magic User", sub: casterSub(sp), grimoire: [sp.n] } });
       const events = sp.combatOnly ? castSpell(state, SPELL_IDX[sp.n], fakeRng([]), [], NOW) : castSpell(state, SPELL_IDX[sp.n], makeRng(SPELL_IDX[sp.n] + 1), [], NOW);
       return { events, state };
     },
@@ -118,7 +121,7 @@ for (const sp of SPELLS) {
     run: () => {
       const foeType = sp.kind === "turn" || sp.kind === "gate" ? "Walking Dead" : "Humans";
       const foe = fixedFoe({ type: foeType, wp: 200, maxWP: 200 });
-      const state = fixedState({ c: { cls: "Magic User", sub: "Wizard", grimoire: [sp.n] } });
+      const state = fixedState({ c: { cls: "Magic User", sub: casterSub(sp), grimoire: [sp.n] } });
       state.combat = fixedCombat([foe]);
       const events = castSpell(state, SPELL_IDX[sp.n], makeRng(100 + SPELL_IDX[sp.n]), [], NOW);
       return { events, state };

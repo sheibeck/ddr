@@ -2819,6 +2819,19 @@ export function schoolAllowed(sub, school) {
   return !!c && c[school] !== null && c[school] !== undefined;
 }
 
+/**
+ * schoolClosed(sub, school) — Phase 90 plan 06 (SPELL-10): true when `sub` is a
+ * Magic User sub-class (it has an MU_CHART row) whose chart can NEVER learn
+ * `school`. A sub-class with no chart row is not a Magic User and holds no
+ * book, so nothing is "closed" to it (the old behaviour, unchanged: the
+ * fixtures that hand a Fighter a book keep working). The one reader behind
+ * canCast's school check, castSpell's refusal, the Grimoire row and the
+ * tolerant save load.
+ */
+export function schoolClosed(sub, school) {
+  return !!MU_CHART[sub] && !schoolAllowed(sub, school);
+}
+
 export function schoolGate(sub, school) {
   const c = MU_CHART[sub];
   return (c && c.gate && c.gate[school]) || 1;
@@ -2951,7 +2964,8 @@ export function castableAttackSpells(state) {
 /**
  * canCast(state, sp) — the ONE castability verdict (the combat menu, the
  * Grimoire view model and engine/magic.js#castSpell all read it): the spell is
- * in the book, the sub-class can ever learn its school, the hero is at the
+ * in the book, the sub-class can ever learn its school (a Magic User sub-class
+ * whose chart closes it never casts it, see schoolClosed), the hero is at the
  * spell's effective level and the school's gate is open.
  *
  * Phase 90 plan 06 (SPELL-10, user 2026-09-30: "sub-classes or races that
@@ -2963,7 +2977,7 @@ export function castableAttackSpells(state) {
 export function canCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
-  if (!schoolAllowed(c.sub, sp.s)) return false;
+  if (schoolClosed(c.sub, sp.s)) return false;
   // DELIBERATE RULES CHANGE (Phase 23, 2026-09-14, IDENT-03/IDENT-04): routed
   // through spellLevelFor so the per-sub override table can lower a spell's
   // effective level (Phase 90 plan 06: the Summoner's Summon); byte-

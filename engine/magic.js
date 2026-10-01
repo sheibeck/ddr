@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, schoolAllowed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
+import { eff, canCast, canLearn, schoolClosed, schoolBonus, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm } from "./combat.js";
@@ -117,7 +117,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now) {
   if (!c.scrollCast && !canCast(state, sp)) {
     if (!c.grimoire || !c.grimoire.includes(sp.n)) {
       events.push({ type: "spellNotKnown", spell: sp.n });
-    } else if (!schoolAllowed(c.sub, sp.s)) {
+    } else if (schoolClosed(c.sub, sp.s)) {
       // Phase 90 plan 06 (SPELL-10): the book holds a spell whose school this
       // sub-class can NEVER learn (an old or tampered book — a dealt book is
       // gated at grant time). No level opens it, so the refusal names no level:

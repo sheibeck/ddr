@@ -28,13 +28,13 @@ import {
   effectSourceOf,
   sourceSlotItem,
   SOURCE_SLOTS,
-  schoolAllowed,
+  schoolClosed,
 } from "./derived.js";
 import { ensureAbilities } from "./character.js";
 import { DIRV } from "./movement.js";
 import { STORE_EFFECTS } from "./economy.js";
 import { endSourceEffects } from "./items.js";
-import { ACTIVATION_OF, SLOT_OF, SPELLS, MU_CHART, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
+import { ACTIVATION_OF, SLOT_OF, SPELLS, STAFF_NAMES, BESTIARY, TOOLS } from "../content/index.js";
 
 /**
  * serializeRun(state) — the full, JSON-serializable GameState, stamped with
@@ -789,14 +789,13 @@ const RETIRED_SPELL_NAMES = Object.freeze({ "Detect Magic": "Map the Floor", "Le
  */
 function migrateSpellNames(c) {
   if (!c || typeof c !== "object" || Array.isArray(c) || !Array.isArray(c.grimoire)) return c;
-  const charted = Object.prototype.hasOwnProperty.call(MU_CHART, c.sub);
   const resolve = (n) => (Object.prototype.hasOwnProperty.call(RETIRED_SPELL_NAMES, n) ? RETIRED_SPELL_NAMES[n] : n);
   const keep = (n) => {
     if (typeof n !== "string") return null;
     const name = resolve(n);
     const row = name === null ? undefined : SPELLS.find((sp) => sp.n === name);
     if (!row) return null;
-    if (charted && !schoolAllowed(c.sub, row.s)) return null;
+    if (schoolClosed(c.sub, row.s)) return null;
     return name;
   };
   // A book that needs no change is left completely untouched (not reassigned).

@@ -24,6 +24,7 @@ import {
   ATTACK_SPELL_KINDS,
   schoolGate,
   schoolAllowed,
+  schoolClosed,
 } from "../../engine/derived.js";
 
 /** Minimal state fixture — canCast/castableAttackSpells read only
@@ -83,7 +84,7 @@ test("spellLevelFor: the one override cell returns 1, every other cell (includin
 function oldCanCast(state, sp) {
   const c = state.c;
   if (!c.grimoire || !c.grimoire.includes(sp.n)) return false;
-  if (!schoolAllowed(c.sub, sp.s)) return false;
+  if (schoolClosed(c.sub, sp.s)) return false;
   if (sp.lvl > c.level) return false;
   return c.level >= schoolGate(c.sub, sp.s);
 }

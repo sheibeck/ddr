@@ -21,7 +21,9 @@ import { RACES, WEAPONS, FIGHTER_SKILLS, THIEF_SKILLS, THRESHOLDS, SPELLS, ABILI
 // SUB_NOTE for the dossier; ROMAN for the level/Company-panel readouts) —
 // a SEPARATE import line so the line above stays byte-identical.
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, ROMAN } from "../../content/index.js";
-import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, schoolAllowed, potionMight, weaponRow } from "../../engine/derived.js";
+import { strikeDie, upkeep, skill, eff, intelBonus, spellLevelFor, schoolGate, potionMight, weaponRow } from "../../engine/derived.js";
+// Phase 90 plan 06 (SPELL-10): its own line, so the pinned line above (test/unit/shell-worn-slots.test.js) is untouched.
+import { schoolClosed } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
 import { abilityRoundsLeft } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
@@ -386,7 +388,7 @@ export function grimoireViewModel(state) {
         disabledReason = "On the combat screen";
       } else if (sp.combatOnly) {
         disabledReason = "Combat only";
-      } else if (!schoolAllowed(c.sub, sp.s)) {
+      } else if (schoolClosed(c.sub, sp.s)) {
         // Phase 90 plan 06 (SPELL-10): a school this sub-class can never learn
         // (only a tampered book holds one; the load drops it) is never castable.
         disabledReason = "Not your school";
