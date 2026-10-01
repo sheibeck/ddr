@@ -656,7 +656,9 @@ test("FOE_CONDITION_DESC: every sentence is non-empty, one line, clear of BANNED
 
 test("FOE_CONDITION_DESC: never states a hidden rule number (only the +2, the 3 and the Stupidity spell's own intelligence 1, which the ability and spell text already show)", () => {
   for (const [key, value] of Object.entries(FOE_CONDITION_DESC)) {
-    const numbers = value.match(/\d+/g) || [];
+    // Phase 90 plan 11 (TEXT-01): a hard cap's d20 range ("(18–20 on a d20; 17–20 if you insulted them)") is stated on purpose, computed
+    // from the engine's faces in test/unit/spell-skill-text-wording.test.js; every other number must still be one the player can see.
+    const numbers = value.replace(/\([^)]*on a d20[^)]*\)/g, "").match(/\d+/g) || [];
     for (const n of numbers) assert.ok(["1", "2", "3"].includes(n), `${key} states ${n}, which the player cannot see`);
   }
 });
@@ -742,7 +744,7 @@ test("Cowering: engine/combat.js#behemothRoar's `cowering` flag reads one chip w
   assert.equal(chips[0].tone, "good");
   assert.equal(chips[0].rounds, null);
   assert.equal(chips[0].desc, FOE_CONDITION_DESC.cowering);
-  assert.match(FOE_CONDITION_DESC.cowering, /top three numbers/);
+  assert.match(FOE_CONDITION_DESC.cowering, /a high roll \(18–20 on a d20; 17–20 if you insulted them\)/);
   assert.match(FOE_CONDITION_DESC.cowering, /half damage/);
   assert.match(FOE_CONDITION_DESC.cowering, /rest of the fight/);
   assert.deepEqual(texts(fixedFoe({ alive: false, cowering: true })), [], "a dead foe shows nothing");
@@ -787,6 +789,7 @@ test("an entry without a description fails: the chip builder reads the desc tabl
 // foe's swing say so roll-high, matching engine/derived.js#foeSwingChain (a
 // blind foe swings on one face; Weaken caps every swing at three faces).
 test("VOX-05 (79-07): blind and weakened descriptions state their to-hit effect roll-high, before the flavour", () => {
-  assert.match(FOE_CONDITION_DESC.blind, /^It hits only on its die's top face/);
-  assert.match(FOE_CONDITION_DESC.weakened, /^Every one of them hits on no more than its die's top three faces, and does half damage/);
+  // Phase 90 plan 11 (TEXT-01): the same effects as a range on a d20, never faces.
+  assert.match(FOE_CONDITION_DESC.blind, /^It hits only on its best roll \(20 on a d20\) and never lands a critical/);
+  assert.match(FOE_CONDITION_DESC.weakened, /^Every one of them hits only on a high roll \(18–20 on a d20; 17–20 if you insulted them\), and does half damage/);
 });

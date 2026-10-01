@@ -369,7 +369,7 @@ test("texts: the Petrify, Blind and Stupidity rows state the new rules and carry
   assert.match(by("Petrify"), /stone/);
   assert.match(by("Petrify"), /dies/);
   assert.match(by("Petrify"), /none of the spoils/);
-  assert.match(by("Blind"), /top face/);
+  assert.match(by("Blind"), /its best roll \(20 on a d20\)/);
   assert.match(by("Blind"), /never lands a critical/);
   assert.match(by("Blind"), /for the fight/);
   assert.match(by("Stupidity"), /intelligence drops to 1/);
@@ -383,7 +383,7 @@ test("chips and card: a stupid foe's chip says intelligence 1 and still swinging
   assert.match(stupid.desc, /intelligence is down to 1/);
   assert.match(stupid.desc, /still swinging/);
   assert.doesNotMatch(stupid.desc, /does nothing|easier to hit/);
-  assert.match(FOE_CONDITION_DESC.blind, /top face and never lands a critical/);
+  assert.match(FOE_CONDITION_DESC.blind, /best roll \(20 on a d20\) and never lands a critical/);
   const held = foeConditionChips(foe("F1", { held: { kind: "frozen", left: 2 } }), spellState(1, "Freeze", 1, []))[0];
   assert.equal(held.text, "Frozen · 2");
 });
@@ -394,8 +394,8 @@ test("narration: stupefied (was and the 1), blinded (no rounds, no critical) and
   assert.match(strip(EVENT_NARRATION.stupefied(st)), /intelligence 12 down to 1/);
   assert.match(LINE_FOR.stupefied(st).text, /intelligence 12 down to 1/);
   const bl = { target: "Viper" };
-  assert.match(strip(EVENT_NARRATION.blinded(bl)), /rest of the fight.*top face.*never lands a critical/);
-  assert.match(LINE_FOR.blinded(bl).text, /for the fight.*top face.*never crits/);
+  assert.match(strip(EVENT_NARRATION.blinded(bl)), /rest of the fight.*best roll \(20 on a d20\).*never lands a critical/);
+  assert.match(LINE_FOR.blinded(bl).text, /for the fight.*best roll \(20 on a d20\).*never crits/);
   assert.doesNotMatch(strip(EVENT_NARRATION.blinded(bl)), /round/);
   assert.match(strip(EVENT_NARRATION.petrified(bl)), /stone.*no spoils/);
   assert.match(LINE_FOR.petrified(bl).text, /stone and dies.*No spoils/);

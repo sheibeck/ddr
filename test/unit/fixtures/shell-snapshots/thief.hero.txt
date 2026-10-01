@@ -69,7 +69,7 @@
     <small>
       text="special skill · active"
     <i>
-      text="sand, thumb, elbow: the target is blinded for two rounds"
+      text="sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical"
     <span>
       text="cd 4 rounds"
   <li>
@@ -78,7 +78,7 @@
     <small>
       text="special skill · active"
     <i>
-      text="gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works"
+      text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight"
     <span>
       text="once per fight"
   <li>

@@ -43,6 +43,11 @@
 // no engine imports, no mutation of the foe or the state. Reading
 // `state.c.timers` is plain data.
 
+// Phase 90 plan 11 (TEXT-01): a chip that caps a foe's swing names the cap's range on a d20 (a blind foe's best roll, the
+// insult never widening it since derived.js#foeSwingChain applies it last; a Weakened or cowering foe's cap of three winning
+// faces, four once insulted), written through the one range formatter, the same words the Oracle, the rail and the spell rows use.
+import { facesRangeText } from "./rollRange.js";
+
 /** FOE_CONDITION_COPY — every label this module emits (voice-scanned by
  * test/unit/foe-conditions.test.js, walked by test/unit/hp-not-wp.test.js). */
 export const FOE_CONDITION_COPY = Object.freeze({
@@ -100,7 +105,7 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // face (its die's top face); the Blind spell sets no count, so that
   // blindness lasts the fight. Phase 90 plan 04 (SPELL-12): the cap is the
   // last term of the swing and a blind foe never lands a critical.
-  blind: "It hits only on its die's top face and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+  blind: `It hits only on its best roll (${facesRangeText(1, 20)} on a d20) and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.`,
   // applyHamstring; foeTurn halves its blows (hero and party alike).
   hamstrung: "Its blows do half damage for the rest of the fight. It is limping about it.",
   // applyMark; playerStrike and the party's strikes add 2 damage on a marked target.
@@ -122,15 +127,16 @@ export const FOE_CONDITION_DESC = Object.freeze({
   stupid: "Its intelligence is down to 1 for the rest of the fight, so it shrugs off almost nothing you cast on it. It is still swinging, which is the worrying part.",
   // magic.js halves its hit points on the cast; foeTurn halves its blows.
   shrunk: "Cut down to size: half the hit points and half the damage it had, for the rest of the fight.",
-  // Turn Walking Dead: the dead it could not send back are fixated; nothing in the engine reads it.
-  fixated: "It shrugged off the turning and has fixed its attention on you. It fights exactly as before.",
+  // Turn Walking Dead (Phase 90 plan 10, Q9 B, canon): the dead it could not send back are fixated, and
+  // combat.js#pickFoeTarget reads it: every swing goes at the caster, never at a Joiner, for the rest of the fight.
+  fixated: "It shrugged off the turning and has fixed its attention on you. For the rest of the fight it swings only at you, never at your Joiner.",
   // The Insane spell's madness roll; foeTurn doubles its swings.
   frenzied: "The madness went the wrong way. It swings twice as often for the rest of the fight.",
   // C.weakened: foeTurn and the pursuit roll halve every foe's damage until it fades.
   // VOX-05/ROLL-04 (79-07): the same cast sets C.foeToHitPenalty = 3, which
   // derived.js#foeSwingChain reads as a cap of three winning faces; the old
   // line left that half of the spell out.
-  weakened: "Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well.",
+  weakened: `Every one of them hits only on a high roll (${facesRangeText(3, 20)} on a d20; ${facesRangeText(4, 20)} if you insulted them), and does half damage, while it lasts. They are not taking it well.`,
   // RULES-18 (Phase 75.3, Plan 04): holdFoe (engine/combat.js) — a Freeze's or
   // Ice's rolled freeze, and since Phase 90 plan 05 Stun's rolled hold; the
   // foe's own turn skips run down alongside the chip's count. Nothing a blow
@@ -146,7 +152,7 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // Phase 90 plan 09 (SPELL-10): engine/combat.js#behemothRoar sets `cowering`; derived.js#foeSwingChain
   // caps its swings at the top three numbers of its die (6–8 on a d8, 18–20 on a d20) and #foeWeakened
   // halves its damage, for the rest of the fight. A Weaken running out never lifts it.
-  cowering: "It cowers before something the size of a barn: for the rest of the fight it hits only on its die's top three numbers, for half damage, and nothing wears that off.",
+  cowering: `It cowers before something the size of a barn: for the rest of the fight it hits only on a high roll (${facesRangeText(3, 20)} on a d20; ${facesRangeText(4, 20)} if you insulted them), for half damage, and nothing wears that off.`,
   // resistControl (engine/combat.js) — a control shaken off outright (today
   // only a Bard's song); %s is filled in by descFor with the effect's own word.
   unmoved: "It shook off %s. Deeper foes do so more often.",

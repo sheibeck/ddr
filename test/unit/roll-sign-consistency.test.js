@@ -38,7 +38,7 @@ import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { lootCompare } from "../../src/browser/viewModels.js";
 import { conditionEffectText } from "../../src/browser/conditionEffects.js";
-import { rangeText } from "../../src/browser/rollRange.js";
+import { rangeText, facesRangeText } from "../../src/browser/rollRange.js";
 // RULES-10 (Phase 75.1, plan 75.1-07): the scroll-reading odds this plan
 // puts on both SCROLLS rows — same rollOdds.js/rollRange.js one-formatter
 // discipline this whole guard file exists to enforce.
@@ -552,12 +552,15 @@ test("one formatter: no src/browser/*.js file except rollRange.js defines a loca
 //
 // Phase 79 rewrote the authored text for Smoke, Mirror Self, Weaken and the
 // Anklet of Invisibility roll-high: a foe's strike die scales with its
-// level, so the text speaks in faces ("only their die's top face", "two
-// fewer faces"). These scenarios put the SAME state on every surface and
-// require the faces the text states to equal the faces the foe card's odds
-// line measures (engine/derived.js through src/browser/rollOdds.js), and
-// the faces a chip's measured clause moves — so a rule change that the text
-// misses fails here, on the surface the player compares it with.
+// level, so the text could only speak in faces. Phase 89 (items) and Phase 90
+// plan 11 (spells and skills, TEXT-01, user 2026-09-30) replaced that with a
+// signed to-hit ("foes −2 to hit you") and a hard cap's range on a d20
+// ("20 on a d20; 19–20 if you insulted them"). These scenarios put the SAME
+// state on every surface and require the range the text states to equal the
+// d20 range of the winning faces the foe card's odds line measures
+// (engine/derived.js through src/browser/rollOdds.js), and the number a
+// chip's measured clause moves — so a rule change that the text misses
+// fails here, on the surface the player compares it with.
 
 const FACE_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
 const faceWord = (w) => (w ? FACE_WORDS.indexOf(w) : 1);
@@ -566,6 +569,23 @@ const faceWord = (w) => (w ? FACE_WORDS.indexOf(w) : 1);
 function statedTopFaces(text) {
   return [...stripTags(text).matchAll(/\btop(?: (one|two|three|four|five|six)\b)?(?: faces?\b)?/g)].map((m) => faceWord(m[1]));
 }
+
+/**
+ * statedD20Ranges(text) — Phase 90 plan 11 (TEXT-01): the ranges on a d20 a text states, the plain case first and the
+ * insulted case after it: "(20 on a d20; 19–20 if you insulted them)" reads ["20", "19–20"]; a text with no insult case reads one.
+ */
+function statedD20Ranges(text) {
+  const t = stripTags(text);
+  const out = [];
+  const plain = t.match(/(\d+(?:–\d+)?) on a d20/);
+  if (plain) out.push(plain[1]);
+  const insulted = t.match(/; (\d+(?:–\d+)?) if (?:you )?insulted/);
+  if (insulted) out.push(insulted[1]);
+  return out;
+}
+
+/** d20Range(faces) — the d20 range of a count of winning faces, through the one formatter. */
+const d20Range = (faces) => facesRangeText(faces, 20);
 
 /** statedFewerFaces(text) — the N of "N fewer faces" / "one face fewer", or null. */
 function statedFewerFaces(text) {
@@ -609,7 +629,7 @@ const itemTimer = (name) => ({ [`item:${name}`]: { cadence: "squares", left: 10,
 const CONDITION_EXPLAIN_UNSEEN = fs.readFileSync(path.join(REPO_ROOT, "mazeworld.html"), "utf8").match(/^\s*unseen: "((?:[^"\\]|\\.)*)",/m)[1];
 const contentRow = (table, n) => table.find((r) => r.n === n);
 
-test("Smoke: the ability and skill text, the Oracle and rail lines state the foe card's measured faces, plain and insulted, and the chip moves the same count", () => {
+test("Smoke: the ability and skill text, the Oracle and rail lines state the d20 range of the foe card's measured faces, plain and insulted, and the chip moves the same count", () => {
   const smokeC = { cls: "Thief", sub: "Burglar", abilities: ["smoke"], timers: timersFor("smoke") };
   const plainFaces = cardOdds(fullHeroState(plainFoe())).faces;
   const plain = cardOdds(fullHeroState(plainFoe(), { c: smokeC }));
@@ -627,32 +647,35 @@ test("Smoke: the ability and skill text, the Oracle and rail lines state the foe
     ["Oracle smokeThrown", EVENT_NARRATION.smokeThrown(ev)],
     ["rail smokeThrown", LINE_FOR.smokeThrown(ev, {}).text],
   ]) {
-    assert.deepEqual(statedTopFaces(text), [plain.faces, insulted.faces], `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+    assert.deepEqual(statedD20Ranges(text), [d20Range(plain.faces), d20Range(insulted.faces)], `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+    assert.doesNotMatch(stripTags(text), /\bfaces?\b/, `${label}: no talk of faces`);
   }
   assert.equal(plain.range, rangeText(plain.dieN + 1 - plain.faces, plain.dieN));
   assert.equal(chipDelta(fullHeroState(plainFoe(), { c: smokeC }), "ability"), plainFaces - plain.faces, "the Smoke chip moves the same faces");
 });
 
-test("Mirror Self: the spell text, the Oracle and rail lines state the foe card's measured faces, and the chip moves the same count", () => {
+test("Mirror Self: the spell text, the Oracle and rail lines state the d20 range of the foe card's measured faces, and the chip moves the same count", () => {
   const plainFaces = cardOdds(fullHeroState(plainFoe())).faces;
   const plain = cardOdds(fullHeroState(plainFoe(), { c: { mirror: 3 } }));
   const insulted = cardOdds(fullHeroState(plainFoe(), { c: { mirror: 3 }, combat: { parleyInsulted: true } }));
   assert.ok(plain.mods.includes("Mirror Self +"), `the card names Mirror Self: "${plain.line}"`);
   const ev = { type: "mirrorSelf", rounds: 3 };
   for (const [label, text, want] of [
-    ["SPELLS.Mirror Self.txt", contentRow(CONTENT.SPELLS, "Mirror Self").txt, [plain.faces, insulted.faces]],
-    ["Oracle mirrorSelf", EVENT_NARRATION.mirrorSelf(ev), [plain.faces, insulted.faces]],
-    // The rail's short line states the plain count only.
-    ["rail mirrorSelf", LINE_FOR.mirrorSelf(ev, {}).text, [plain.faces]],
+    ["SPELLS.Mirror Self.txt", contentRow(CONTENT.SPELLS, "Mirror Self").txt, [d20Range(plain.faces), d20Range(insulted.faces)]],
+    ["Oracle mirrorSelf", EVENT_NARRATION.mirrorSelf(ev), [d20Range(plain.faces), d20Range(insulted.faces)]],
+    // Phase 90 plan 11: the rail's short line states both cases now, in its short form ("if insulted").
+    ["rail mirrorSelf", LINE_FOR.mirrorSelf(ev, {}).text, [d20Range(plain.faces), d20Range(insulted.faces)]],
   ]) {
-    assert.deepEqual(statedTopFaces(text), want, `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+    assert.deepEqual(statedD20Ranges(text), want, `${label}: "${stripTags(text).trim()}" vs the card's ${plain.range} / ${insulted.range}`);
+    assert.doesNotMatch(stripTags(text), /\bfaces?\b/, `${label}: no talk of faces`);
   }
   assert.equal(chipDelta(fullHeroState(plainFoe(), { c: { mirror: 3 } }), "mirror"), plainFaces - plain.faces, "the Mirror Self chip moves the same faces");
 });
 
-test("Weaken: the spell text, the Oracle and rail lines and the foe chip sentence state the cap the foe card measures, and the card's Weakened line agrees", () => {
+test("Weaken: the spell text, the Oracle and rail lines and the foe chip sentence state the d20 range of the cap the foe card measures, and the card's Weakened line agrees", () => {
   const weakened = { foeToHitPenalty: 3, weakened: true };
   const odds = cardOdds(fullHeroState(plainFoe(), { combat: weakened }));
+  const oddsInsulted = cardOdds(fullHeroState(plainFoe(), { combat: { ...weakened, parleyInsulted: true } }));
   assert.ok(odds.mods.includes("Weaken +"), `the card names Weaken: "${odds.line}"`);
   // The cap binds whatever the hero's own defences: a Guard's foe already
   // below the cap keeps its lower count.
@@ -663,7 +686,8 @@ test("Weaken: the spell text, the Oracle and rail lines and the foe chip sentenc
     ["rail weakened", LINE_FOR.weakened(ev, {}).text],
     ["FOE_CONDITION_DESC.weakened", FOE_CONDITION_DESC.weakened],
   ]) {
-    assert.deepEqual(statedTopFaces(text), [odds.faces], `${label}: "${stripTags(text).trim()}" vs the card's ${odds.range}`);
+    assert.deepEqual(statedD20Ranges(text), [d20Range(odds.faces), d20Range(oddsInsulted.faces)], `${label}: "${stripTags(text).trim()}" vs the card's ${odds.range} / ${oddsInsulted.range}`);
+    assert.doesNotMatch(stripTags(text), /\bfaces?\b/, `${label}: no talk of faces`);
   }
   const cardLine = foeDetailsCard(0, fullHeroState(plainFoe(), { combat: weakened })).lines.map((l) => l.text).find((t) => t.startsWith("Weakened"));
   assert.ok(cardLine && cardLine.includes(`it hits you only on ${odds.range} (d${odds.dieN})`), `the foe card's Weakened line measures ${odds.range}: "${cardLine}"`);

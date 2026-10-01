@@ -17,6 +17,9 @@ import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatM
 import { characterSheetViewModel, grimoireViewModel } from "../../src/browser/heroTab.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { canCast, spellLevelFor } from "../../engine/derived.js";
+// Phase 90 plan 11 (TEXT-01): a spell cast on a foe says plainly that it may be resisted (a separate import line, the pinned one above stays as it was).
+import { spellTargetsFoe } from "../../engine/derived.js";
+import { GRIMOIRE_COPY } from "../../src/browser/heroTab.js";
 import { canParley } from "../../engine/combat.js";
 // RULES-10 (Phase 75.1, plan 75.1-07): the ITEMS SCROLL row's own desc now
 // appends scrollReadOdds(state) — asserted against the real function output
@@ -190,7 +193,8 @@ test("Magic User (Wizard): SPELLS sub-line, submenu title, rows by level then na
     assert.equal(row.id, `spell-${idx}`);
     assert.equal(row.label, sp.n.toUpperCase());
     assert.equal(row.cost, `LVL ${spellLevelFor(c.sub, sp)}`);
-    assert.equal(row.desc, sp.txt || "");
+    // Phase 90 plan 11 (TEXT-01): a foe-targeted spell's row carries the one resist sentence after its text; a self spell's does not.
+    assert.equal(row.desc, `${sp.txt || ""}${spellTargetsFoe(sp) ? ` · ${GRIMOIRE_COPY.resistNote}` : ""}`);
     assert.deepEqual(row.dispatch, { type: "castSpell", idx });
     assert.equal(row.enabled, true, `${sp.n}: castable with charges left must be enabled`);
     // Phase 40 (SPELL-01): every spell row carries the same niche/nicheLabel

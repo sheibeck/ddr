@@ -139,7 +139,8 @@ test("rows: the last three SPELLS rows are Door Illusion, Chameleon Tongue, Size
   assert.match(door.txt, /cleverest foe/);
   assert.match(tongue.txt, /\+4/);
   assert.match(tongue.txt, /Magical/);
-  assert.match(behemoth.txt, /6–8 on a d8, 18–20 on a d20/);
+  // Phase 90 plan 11 (TEXT-01): the cower names its range on a d20 (plain, then insulted); the numbers are pinned to the engine in spell-skill-text-wording.test.js.
+  assert.match(behemoth.txt, /hitting only on a high roll \(18–20 on a d20; 17–20 if you insulted them\) for half damage/);
   // the slate's ten: one Special and one Illusion at every level 1 to 5
   const slate = ["Open/Lock", "Door Illusion", "Fly", "Senseless", "Stop Time", "Chameleon Tongue", "Enchant Character", "Size of the Behemoth", "Speed of Sound", "Duplicate Foe"];
   for (let lvl = 1; lvl <= 5; lvl++) {
@@ -577,7 +578,7 @@ test("narration: Chameleon Tongue says it is the fight's one parley at +4, the r
 test("narration: the Behemoth's lines name each foe, then the counts; a count of zero says nobody was impressed; a Joiner's cast names the Joiner", () => {
   assert.match(EVENT_NARRATION.foeRouted({ name: "Orc" }), /Orc remembers an appointment elsewhere\..*no experience and no spoils/);
   assert.equal(LINE_FOR.foeRouted({ name: "Orc" }).text, "Orc flees, spoils and all.");
-  assert.match(EVENT_NARRATION.foeCowers({ name: "Orc" }), /Orc cowers\..*top three numbers, for half damage/);
+  assert.match(EVENT_NARRATION.foeCowers({ name: "Orc" }), /Orc cowers\..*a high roll \(18–20 on a d20; 17–20 if you insulted them\), for half damage/);
   assert.equal(LINE_FOR.foeCowers({ name: "Orc" }).text, "Orc cowers for the fight.");
   assert.match(EVENT_NARRATION.behemothCast({ routed: 1, cowering: 2 }), /the size of a barn: 1 foe flees, 2 cower\./);
   assert.match(EVENT_NARRATION.behemothCast({ routed: 2, cowering: 1 }), /2 foes flee, 1 cowers\./);

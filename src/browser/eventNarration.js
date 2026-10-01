@@ -99,6 +99,13 @@ const endedItem = (e) => (typeof e?.item === "string" && e.item ? e.item : typeo
 const ITEM_INVIS_RANGE = `${facesRangeText(1, 20)} on a d20; ${facesRangeText(2, 20)} if you insulted them`;
 // The Anklet of Invisibility's shift, signed from the player's side (content eff foeToHit -2).
 const ITEM_UNSEEN_SHIFT = signedText(-2);
+// Phase 90 plan 11 (TEXT-01, spells and skills): the same words for Mirror Self, Smoke and a blind foe (the plain cap, and the
+// insulted case after it in parentheses), a Weaken or Behemoth cower (a cap of three winning faces, four insulted), and the
+// shifts Sidestep and Battle Roar put on every foe (derived.js#foeToHitVs: 2), signed from the player's side.
+const SPELL_BEST_RANGE = ITEM_INVIS_RANGE;
+const BLIND_RANGE = `${facesRangeText(1, 20)} on a d20`;
+const WEAKEN_RANGE = `${facesRangeText(3, 20)} on a d20; ${facesRangeText(4, 20)} if you insulted them`;
+const FOE_SHIFT = signedText(-2);
 const ENDED_CLAUSE = Object.freeze({
   fly: () => "the flying stops, right where things stand. No falling, no fuss",
   ether: () => "solid again, and the walls are walls once more",
@@ -1033,7 +1040,7 @@ export const EVENT_NARRATION = {
         : `wards ${t} instead: it soaks your next ${e.pool ?? 0} hp of damage`,
       // Phase 90 (SPELL-09): no hit points any more, to anyone; a flat d10 on each of its blows for the fight.
       might: `strengthens ${t} instead: <span class="roll">+${e.might ?? 0}</span> damage on each of its blows, for the whole fight`,
-      mirror: `gives ${t} a mirror image instead: for ${plural(e.rounds ?? 0, "round")} you hit it only on your die's top face`,
+      mirror: `gives ${t} a mirror image instead: for ${plural(e.rounds ?? 0, "round")} you hit it only on the top number of your die`,
       senses: `sharpens ${possessive(e.target, "its")} senses instead, to no effect you can see`,
       // Phase 90 plan 07 (SPELL-10): a fumbled Speed of Sound quickens the foe (engine/scrollFumble.js's frenzy case).
       frenzy: `quickens ${t} instead: it swings twice a turn for the whole fight`,
@@ -1138,9 +1145,9 @@ export const EVENT_NARRATION = {
     // follow-through: the pommel on the way past, the target seeing stars.
     `<span class="hit">${e.member ? `${e.member}: ` : ""}The pommel follows through to ${possessive(e.target, "its")} temple. ${e.target ?? "It"} sees stars and loses its next turn.</span>`,
   foeStunned: (e) => `${e.name ?? "It"} spends its turn remembering where it is.`,
-  battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds every foe has two fewer faces to hit anyone on your side. Loud enough.</span>`,
+  battleRoarRaised: (e) => `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds foes are ${FOE_SHIFT} to hit anyone on your side. Loud enough.</span>`,
   sidestepped: (e) =>
-    `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds every foe has two fewer faces to hit ${e.member ? "them" : "you"}. Not where the blade is.</span>`,
+    `<span class="hit">${e.member ? `${e.member}: ` : ""}For two rounds foes are ${FOE_SHIFT} to hit ${e.member ? "them" : "you"}. Not where the blade is.</span>`,
   secondWindHealed: (e) =>
     gainOf(e, e.amount) > 0
       ? `<span class="hit">You remember why you came. +${gainOf(e, e.amount)} hp${cappedNote(gainOf(e, e.amount), e.rolled)}.</span>`
@@ -1173,8 +1180,8 @@ export const EVENT_NARRATION = {
   // the hero's own Smoke lets a flee just work (engine/combat.js#flee).
   smokeThrown: (e) =>
     e.member
-      ? `<span class="hit">${e.member}: For two rounds a foe finds them only on its die's top face (the top two if you insulted them). Gone, as far as anyone can tell.</span>`
-      : `<span class="hit">For two rounds a foe finds you only on its die's top face (the top two if you insulted them), and a run just works. Gone, as far as anyone can tell.</span>`,
+      ? `<span class="hit">${e.member}: For two rounds foes hit them only on their best roll (${SPELL_BEST_RANGE}). Gone, as far as anyone can tell.</span>`
+      : `<span class="hit">For two rounds foes hit you only on their best roll (${SPELL_BEST_RANGE}), and a run just works. Gone, as far as anyone can tell.</span>`,
   // A Joiner's cutpurse lifts the coin into the hero's purse (gainWilmst).
   cutpursed: (e) =>
     e.member
@@ -1282,7 +1289,7 @@ export const EVENT_NARRATION = {
   // Quick 260927-rsx: `spared` counts the foes that resisted the cast; the
   // line names them instead of claiming every foe.
   weakened: (e) =>
-    `<span class="hit">${e.spared ? `Every foe but the ${e.spared === 1 ? "one" : e.spared} that resisted is weakened` : "Every foe is weakened"}${e.rounds ? ` for ${plural(e.rounds, "round")}` : ""}: no more than its die's top three faces hit, and it does half damage.</span> They hit softer now.`,
+    `<span class="hit">${e.spared ? `Every foe but the ${e.spared === 1 ? "one" : e.spared} that resisted is weakened` : "Every foe is weakened"}${e.rounds ? ` for ${plural(e.rounds, "round")}` : ""}: foes hit only on a high roll (${WEAKEN_RANGE}) and do half damage.</span> They hit softer now.`,
   // Phase 40 (SPELL-01) — combat.js#foeTurn's tail narrates this on the
   // `spell:weaken` timer's own effect->null transition.
   weakenFaded: () => `<span class="hit">Their arms remember how to swing.</span>`,
@@ -1297,7 +1304,7 @@ export const EVENT_NARRATION = {
   // (engine/derived.js#foeSwingChain: its die's top face only). Phase 90 plan
   // 04 (SPELL-12): for the fight at every depth, and never a critical.
   blinded: (e) =>
-    `<span class="hit">${e.target ?? "It"} cannot see a thing for the rest of the fight: it hits only on its die's top face and never lands a critical.</span>`,
+    `<span class="hit">${e.target ?? "It"} cannot see a thing for the rest of the fight: it hits only on its best roll (${BLIND_RANGE}) and never lands a critical.</span>`,
   // VOX-05 (Phase 79, plan 79-08): who and what: half hp, half damage.
   shrunk: (e) =>
     (e.count ?? 0) > 0
@@ -1349,7 +1356,7 @@ export const EVENT_NARRATION = {
   // VOX-05 (Phase 79, plan 79-08): what the image does, in the grimoire's
   // roll-high terms, and "1 round", never "1 rounds".
   mirrorSelf: (e) =>
-    `<span class="hit">A mirror image holds for ${plural(e.rounds ?? 0, "round")}: foes hit you only on their die's top face (the top two if you insulted them).</span>`,
+    `<span class="hit">A mirror image holds for ${plural(e.rounds ?? 0, "round")}: foes hit you only on their best roll (${SPELL_BEST_RANGE}).</span>`,
   // RULES-14 (Phase 75): a mirror spell (Bubble) reads its own line —
   // nothing to soak yet, just a promise to bounce the next blow — while
   // every other ward (Shield) keeps its plain "N points" text (no more
@@ -1444,7 +1451,7 @@ export const EVENT_NARRATION = {
   tongueCast: () => `<span class="hit">Your tongue changes shape. So does your accent.</span> They lean in: it is the fight's one parley, at +4.`,
   // Size of the Behemoth: each foe's own line, then the count.
   foeRouted: (e) => `<span class="hit">${e.name ?? "One of them"} remembers an appointment elsewhere.</span> It leaves, and your side gets no experience and no spoils out of it.`,
-  foeCowers: (e) => `<span class="hit">${e.name ?? "One of them"} cowers.</span> For the rest of the fight it hits only on its die's top three numbers, for half damage.`,
+  foeCowers: (e) => `<span class="hit">${e.name ?? "One of them"} cowers.</span> For the rest of the fight it hits only on a high roll (${WEAKEN_RANGE}), for half damage.`,
   behemothCast: (e) => {
     const routed = e.routed ?? 0;
     const cowering = e.cowering ?? 0;

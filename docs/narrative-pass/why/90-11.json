@@ -1,0 +1,744 @@
+[
+  {
+    "key": "bank:FOE_CONDITION_DESC.blind",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "It hits only on its die's top face and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+    "after": "It hits only on its best roll (20 on a d20) and never lands a critical, until it can see again: the count on the chip, or the whole fight if there is none. It is swinging at where you were a moment ago.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A blind foe hits only on its best roll, 20 on a d20, and never lands a critical; derived.js#foeSwingChain applies the blind cap last, so an insult never widens it and only the plain case is stated."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.cowering",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "It cowers before something the size of a barn: for the rest of the fight it hits only on its die's top three numbers, for half damage, and nothing wears that off.",
+    "after": "It cowers before something the size of a barn: for the rest of the fight it hits only on a high roll (18–20 on a d20; 17–20 if you insulted them), for half damage, and nothing wears that off.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A cowering foe is capped the way a Weakened one is (three winning faces, four insulted), so the d8 example went and the d20 range reads \"a high roll (18–20 on a d20; 17–20 if you insulted them)\", with half damage."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.fixated",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "It shrugged off the turning and has fixed its attention on you. It fights exactly as before.",
+    "after": "It shrugged off the turning and has fixed its attention on you. For the rest of the fight it swings only at you, never at your Joiner.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SPELL-AUDIT.md Q9 B (user, 2026-09-30, canon): every Walking Dead the spell could not turn swings only at the caster for the rest of the fight, never at a Joiner (90-10 built it). The chip said \"It fights exactly as before\", which was no longer true; the chip and the spell text now say who it swings at."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.weakened",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's line on the long-press foe card",
+    "before": "Every one of them hits on no more than its die's top three faces, and does half damage, while it lasts. They are not taking it well.",
+    "after": "Every one of them hits only on a high roll (18–20 on a d20; 17–20 if you insulted them), and does half damage, while it lasts. They are not taking it well.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The foe chip names the same cap as the spell: a high roll, 18–20 on a d20, 17–20 if you insulted them."
+  },
+  {
+    "key": "bank:GRIMOIRE_COPY.resistNote",
+    "surface": "panels",
+    "trigger": "the Hero tab's Grimoire rows and the combat menu's spell rows (the resist sentence)",
+    "before": "",
+    "after": "a foe may resist this on its intelligence, and the deeper the floor, the likelier it does",
+    "reasons": [
+      "fact"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30: \"the spell texts state the resist plainly\"): every spell a foe can resist now says so on its Grimoire row and its combat menu row, once, in one sentence, including that deeper floors resist more (engine/derived.js#risingResistFaces). One copy constant instead of thirty hand edits."
+  },
+  {
+    "key": "bank:MARKS_LEGEND.4.desc",
+    "surface": "map",
+    "trigger": "the MARKS legend sheet's LOCKED BOX row, and the hold-inspect card on a seen box square",
+    "before": "With lockpicks or the Locks skill, 6–10 on a d10 opens it (more faces with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+    "after": "With lockpicks or the Locks skill, 6–10 on a d10 opens it (a wider range with practice or wits); bare hands need 13–20 on a d20. Fail and it stays shut for good.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The Locks skill's range widens with practice, wits and lockpicks (one more number each), not with \"faces\"; the legend says \"a wider range\" and keeps the d10 and d20 ranges it already states."
+  },
+  {
+    "key": "content:ABILITIES.battleRoar.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
+    "after": "loud enough to matter: for two rounds foes −2 to hit anyone on your side",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Battle Roar takes two winning faces off every foe's swing at anyone on your side (foeToHitVs, the hero's or a Joiner's roar), \"foes −2 to hit anyone on your side\"."
+  },
+  {
+    "key": "content:ABILITIES.cutpurse.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "lift d10 × level gold off the target mid-fight; it has other problems",
+    "after": "lift d10 × level gold off the target mid-fight; it has other problems; once per fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md Findings: the once-per-fight rule was on the menu and Hero-tab state but not in the text, while Kata, Death Touch, Silent Step, Feint, Overhead Blow and Last Stand said it; the line now says it, so every once-per-fight ability reads the same way."
+  },
+  {
+    "key": "content:ABILITIES.deathTouch.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "call it: your next landed blow doubles, and finishes anything under 15 hp",
+    "after": "call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md Q11 A (user, 2026-09-30): Death Touch is one swing, and if it misses the use is spent and nothing waits for a later blow. The text said \"your next landed blow\", which promised a wait that never happens; it now reads \"one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight\". The engine is unchanged. This row also carries the once-per-fight edit (260927-opf), because it sorts before the quick-task ledger."
+  },
+  {
+    "key": "content:ABILITIES.dirtyTrick.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "sand, thumb, elbow: the target is blinded for two rounds",
+    "after": "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical",
+    "reasons": [
+      "fact"
+    ],
+    "why": "ABIL-06 / TEXT-01: Dirty Trick sets the same blind flag the Blind spell does, so the text now says what blind means (it hits only on its best roll, 20 on a d20, and never lands a critical) instead of stopping at \"blinded for two rounds\"."
+  },
+  {
+    "key": "content:ABILITIES.feint.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "look left, stab right: this strike cannot miss and adds your level in damage",
+    "after": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Kata and Feint roll to hit with three more winning faces (engine/abilities.js#KATA_FEINT_NEED_SHIFT), so the text says \"+3 to hit on this strike\": the same number in plain words, on the table skill and the catalog ability alike. This row sorts before the quick-task ledgers, so it also carries their two earlier edits: Kata and Feint stopped promising a sure hit (260928-nrf) and said \"once per fight\" (260927-opf)."
+  },
+  {
+    "key": "content:ABILITIES.hamstring.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "cut the tendon: the target's blows do half damage for the rest of the fight",
+    "after": "cut the tendon: the target's blows do half damage for the rest of the fight; once per fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md Findings: the once-per-fight rule was on the menu and Hero-tab state but not in the text, while Kata, Death Touch, Silent Step, Feint, Overhead Blow and Last Stand said it; the line now says it, so every once-per-fight ability reads the same way."
+  },
+  {
+    "key": "content:ABILITIES.kata.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "one perfect form: this strike cannot miss and adds your level in damage",
+    "after": "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Kata and Feint roll to hit with three more winning faces (engine/abilities.js#KATA_FEINT_NEED_SHIFT), so the text says \"+3 to hit on this strike\": the same number in plain words, on the table skill and the catalog ability alike. This row sorts before the quick-task ledgers, so it also carries their two earlier edits: Kata and Feint stopped promising a sure hit (260928-nrf) and said \"once per fight\" (260927-opf)."
+  },
+  {
+    "key": "content:ABILITIES.mark.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "study it: every strike on the target adds +2 damage for the rest of the fight",
+    "after": "study it: every strike on the target adds +2 damage for the rest of the fight; once per fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md Findings: Mark is once per fight, which its menu row said and its text did not; the text now says it."
+  },
+  {
+    "key": "content:ABILITIES.overheadBlow.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "everything into one swing: double damage, but your die has two fewer faces that land it",
+    "after": "everything into one swing: double damage, but −2 to hit; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Overhead Blow's swing loses two winning faces (the strike's own \"overhead\" mod, −2), so the text says \"−2 to hit\"; the once-per-fight rule (260927-opf) is kept. This row also carries that earlier edit, because it sorts before the quick-task ledger."
+  },
+  {
+    "key": "content:ABILITIES.secondWind.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "remember why you came: heal d8 + level",
+    "after": "remember why you came: heal d8 + level; once per fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md Findings: the once-per-fight rule was on the menu and Hero-tab state but not in the text, while Kata, Death Touch, Silent Step, Feint, Overhead Blow and Last Stand said it; the line now says it, so every once-per-fight ability reads the same way."
+  },
+  {
+    "key": "content:ABILITIES.sidestep.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
+    "after": "two rounds of not being where the blade is: foes −2 to hit you",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Sidestep takes two winning faces off every foe's swing at you (engine/derived.js#foeToHitVs), which the player reads as \"foes −2 to hit you\". The table skill and the catalog ability keep one text."
+  },
+  {
+    "key": "content:ABILITIES.silentStep.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "nobody heard that: your next attack is an automatic critical, any round",
+    "after": "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Silent Step, fix text): the swing never misses and its critical is a doubling, with the exceptions the engine applies (heavy armour, the dark without a light, a Guard or a Soldier keep the hit and lose the doubling). This row also carries the once-per-fight edit (260927-opf), because it sorts before the quick-task ledger."
+  },
+  {
+    "key": "content:ABILITIES.smoke.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
+    "after": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Smoke caps every foe at its best roll for two rounds, the same cap as Mirror Self (20 on a d20; 19–20 if you insulted them). The skill also says what its menu row already said, \"once per fight\" (docs/SKILL-AUDIT.md: the once-per-fight rule belongs in the text)."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Ambidextrous.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "a second weapon at the end of every round",
+    "after": "two swings every time you strike, each rolling to hit and for damage, and a Joiner with it swings twice on a plain strike; it does not stack with Speed",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Ambidextrous, fix text) and Q10 A: the engine swings twice back to back in the same action, not \"a second weapon at the end of every round\"; a Joiner with it swings twice on a plain strike since 90-10, and it never stacks with Speed."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Battle Roar.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "loud enough to matter: for two rounds every foe has two fewer faces that hit anyone on your side",
+    "after": "loud enough to matter: for two rounds foes −2 to hit anyone on your side",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Battle Roar takes two winning faces off every foe's swing at anyone on your side (foeToHitVs, the hero's or a Joiner's roar), \"foes −2 to hit anyone on your side\"."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Cooking.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "eat any beast for a quarter of its hp",
+    "after": "every beast you kill feeds you: you heal a quarter of its max hp (at least 1) and pocket a ration",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Cooking, fix text): the engine heals a quarter of the foe's max hp (at least 1) and also gives a ration on every beast kill; the text said only \"eat any beast for a quarter of its hp\"."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Death Touch.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "call it: your next landed blow doubles, and finishes anything under 15 hp",
+    "after": "call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md Q11 A (user, 2026-09-30): Death Touch is one swing, and if it misses the use is spent and nothing waits for a later blow. The text said \"your next landed blow\", which promised a wait that never happens; it now reads \"one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight\". The engine is unchanged. This row also carries the once-per-fight edit (260927-opf), because it sorts before the quick-task ledger."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Hardiness.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "−3 to all damage taken; phobias halved",
+    "after": "−3 to every blow, bolt and trap that hurts you (never below 1), and a Joiner with it takes 3 less from each blow; phobias halved",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Hardiness, fix text) and Q10 A: \"all damage\" was wider than the engine, which takes 3 off every landed blow, foe bolt and trap (never below 1) and halves phobias; a Joiner with it takes 3 less from each blow since 90-10."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Kata.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "one perfect form: this strike cannot miss and adds your level in damage",
+    "after": "one perfect form: +3 to hit on this strike, and it adds your level in damage; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Kata and Feint roll to hit with three more winning faces (engine/abilities.js#KATA_FEINT_NEED_SHIFT), so the text says \"+3 to hit on this strike\": the same number in plain words, on the table skill and the catalog ability alike. This row sorts before the quick-task ledgers, so it also carries their two earlier edits: Kata and Feint stopped promising a sure hit (260928-nrf) and said \"once per fight\" (260927-opf)."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Second Wind.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "remember why you came: heal d8 + level",
+    "after": "remember why you came: heal d8 + level; once per fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md Findings: the once-per-fight rule was on the menu and Hero-tab state but not in the text, while Kata, Death Touch, Silent Step, Feint, Overhead Blow and Last Stand said it; the line now says it, so every once-per-fight ability reads the same way."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Sidestep.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "two rounds of not being where the blade is: every foe has two fewer faces that hit you",
+    "after": "two rounds of not being where the blade is: foes −2 to hit you",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Sidestep takes two winning faces off every foe's swing at you (engine/derived.js#foeToHitVs), which the player reads as \"foes −2 to hit you\". The table skill and the catalog ability keep one text."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Stealth.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "critical on your die's top two faces when you open a fight; never in plate",
+    "after": "your first landed blow of a fight crits on the top two numbers of your die (19–20 on a d20), and so does a Joiner's own if it has Stealth; never in plate",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Stealth crits on the top two numbers of the hero's strike die (19–20 on a d20 as the example, the die scales with level), and since Q10 A (90-10) a Joiner's own opening blow does too; the text says both."
+  },
+  {
+    "key": "content:SPELLS.Blind.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · blind for the fight: it hits only on its die's top face and never lands a critical",
+    "after": "control · one foe · blind for the fight: it hits only on its best roll (20 on a d20) and never lands a critical",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A blind foe hits only on its best roll, 20 on a d20, and never lands a critical; derived.js#foeSwingChain applies the blind cap last, so an insult never widens it and only the plain case is stated."
+  },
+  {
+    "key": "content:SPELLS.Chameleon Tongue.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "answer · this fight · you speak their tongue like a local and talk at once: a parley at +4 that even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley",
+    "after": "answer · this fight · you speak their tongue like a local and talk at once: a parley (talking your way out of the fight instead of swinging) at +4 to the roll, which even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): parley wording says what a parley is. Chameleon Tongue makes the fight's one parley, a try at talking your way out of the fight instead of swinging, at +4 to the roll; the Helm of Knowledge uses the same definition."
+  },
+  {
+    "key": "content:SPELLS.Death.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "burst · one foe · dies outright; costs you 25 hp",
+    "after": "burst · the foe you picked · dies outright; costs you 25 hp",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SPELL-AUDIT.md Q7 A (user, 2026-09-30): Death kills the foe you picked (90-10), so the text says \"the foe you picked\" instead of \"one foe\"."
+  },
+  {
+    "key": "content:SPELLS.Insane.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "chaos · one foe · rolls on the madness table",
+    "after": "chaos · one foe · a d6 decides it: 1 it dies, 2 it hits the next foe, 3 or 6 it flees, 4 it sleeps d4 rounds, 5 it swings twice for the fight",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SPELL-AUDIT.md (Insane, fix text): the madness table was never shown; the text now lists the six outcomes the engine rolls (1 dies, 2 hits the next foe, 3 or 6 flees, 4 sleeps d4 rounds, 5 swings twice for the fight)."
+  },
+  {
+    "key": "content:SPELLS.Mirror Self.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "defensive · you · foes hit you only on their die's top face (the top two faces if you insulted them), d6 rounds",
+    "after": "defensive · you · foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), d6 rounds",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Mirror Self caps every foe at its best roll: 20 on a d20, 19–20 if you insulted them (engine/derived.js#foeToHitVs sets the foe's one winning face, foeSwingChain adds the insult). The words and numbers are the ones the invisibility items already use."
+  },
+  {
+    "key": "content:SPELLS.Noxious Vapor.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "chaos · every foe · a d6 of very bad outcomes",
+    "after": "chaos · every foe · a d6 decides it: on a 4 each foe dies unless its own d10 shows a 1; any other number puts it to sleep for d6+2 rounds; from level 5 it is always the 4",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SPELL-AUDIT.md (Noxious Vapor, fix text): the text said \"a d6 of very bad outcomes\" and never showed them; engine/magic.js's vapor branch kills on a 4 unless the foe's own d10 shows a 1, puts every other outcome to sleep for d6+2 rounds, and from level 5 always rolls the 4. The text now says so."
+  },
+  {
+    "key": "content:SPELLS.Size of the Behemoth.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on their die's top three numbers (6–8 on a d8, 18–20 on a d20) for half damage",
+    "after": "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on a high roll (18–20 on a d20; 17–20 if you insulted them) for half damage",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A cowering foe is capped the way a Weakened one is (three winning faces, four insulted), so the d8 example went and the d20 range reads \"a high roll (18–20 on a d20; 17–20 if you insulted them)\", with half damage."
+  },
+  {
+    "key": "content:SPELLS.Stupidity.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · one foe · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging",
+    "after": "control · the foe you picked · its intelligence drops to 1 for the fight, so it resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SPELL-AUDIT.md Q7 A (user, 2026-09-30): Stupidity hits the foe you picked (90-04), so the text says \"the foe you picked\" instead of \"one foe\"."
+  },
+  {
+    "key": "content:SPELLS.Turn Walking Dead.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "answer · every Walking Dead of your level or lower · sent back",
+    "after": "answer · every Walking Dead of your level or lower · sent back; any left standing swing only at you for the rest of the fight, never at your Joiner",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SPELL-AUDIT.md Q9 B (user, 2026-09-30, canon): every Walking Dead the spell could not turn swings only at the caster for the rest of the fight, never at a Joiner (90-10 built it). The chip said \"It fights exactly as before\", which was no longer true; the chip and the spell text now say who it swings at."
+  },
+  {
+    "key": "content:SPELLS.Weaken.txt",
+    "surface": "spells",
+    "trigger": "a spell's Grimoire and scroll text",
+    "before": "control · every foe · no more than their die's top three faces hit, and they do half, d4+1 rounds",
+    "after": "control · every foe · foes hit only on a high roll (18–20 on a d20; 17–20 if you insulted them) and do half damage, d4+1 rounds",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Weaken caps every foe that fails to resist at three winning faces, four once insulted (foeToHitPenalty 3, foeSwingChain adds the insult): \"a high roll (18–20 on a d20; 17–20 if you insulted them)\", and half damage."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Dirty Trick.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "sand, thumb, elbow: the target is blinded for two rounds",
+    "after": "sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical",
+    "reasons": [
+      "fact"
+    ],
+    "why": "ABIL-06 / TEXT-01: Dirty Trick sets the same blind flag the Blind spell does, so the text now says what blind means (it hits only on its best roll, 20 on a d20, and never lands a critical) instead of stopping at \"blinded for two rounds\"."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Feint.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "look left, stab right: this strike cannot miss and adds your level in damage",
+    "after": "look left, stab right: +3 to hit on this strike, and it adds your level in damage; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Kata and Feint roll to hit with three more winning faces (engine/abilities.js#KATA_FEINT_NEED_SHIFT), so the text says \"+3 to hit on this strike\": the same number in plain words, on the table skill and the catalog ability alike. This row sorts before the quick-task ledgers, so it also carries their two earlier edits: Kata and Feint stopped promising a sure hit (260928-nrf) and said \"once per fight\" (260927-opf)."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Locks.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "6–10 on d10 to open a lock",
+    "after": "6–10 on d10 to open a lock, 4–10 with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Locks, fix text): the d10 range per tier is unchanged, and the text now states what encounters.js#openChest also does: lockpicks add a tier (4–10, 3–10), intelligence 15 and 20 each add one more number, and a failed roll loses the chest."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Locks.txt2",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "4–10 on d10 to open a lock",
+    "after": "4–10 on d10 to open a lock, 3–10 with lockpicks; intelligence 15 and 20 each add one more number; a failed roll loses the chest",
+    "reasons": [
+      "fact",
+      "number"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Locks, fix text): the d10 range per tier is unchanged, and the text now states what encounters.js#openChest also does: lockpicks add a tier (4–10, 3–10), intelligence 15 and 20 each add one more number, and a failed roll loses the chest."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Sewing.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "patch any armour, d6 back, 4 times",
+    "after": "once on each fed day's rest, patch hurt armour: d6 hp back, 4 times in all",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Sewing, fix text): the patching happens once on each fed day's rest (movement.js#newDay), which the text now says, in hp."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Sewing.txt2",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "patch any armour, d6+3 back, 6 times",
+    "after": "once on each fed day's rest, patch hurt armour: d6+3 hp back, 6 times in all",
+    "reasons": [
+      "fact"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Sewing, fix text): the patching happens once on each fed day's rest (movement.js#newDay), which the text now says, in hp."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Silent Step.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "nobody heard that: your next attack is an automatic critical, any round",
+    "after": "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "docs/SKILL-AUDIT.md (Silent Step, fix text): the swing never misses and its critical is a doubling, with the exceptions the engine applies (heavy armour, the dark without a light, a Guard or a Soldier keep the hit and lose the doubling). This row also carries the once-per-fight edit (260927-opf), because it sorts before the quick-task ledger."
+  },
+  {
+    "key": "content:THIEF_SKILLS.Smoke.txt",
+    "surface": "spells",
+    "trigger": "a Thief skill's text",
+    "before": "gone: for two rounds foes find you only on their die's top face (the top two faces if you insulted them), and a flee during it just works",
+    "after": "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. Smoke caps every foe at its best roll for two rounds, the same cap as Mirror Self (20 on a d20; 19–20 if you insulted them). The skill also says what its menu row already said, \"once per fight\" (docs/SKILL-AUDIT.md: the once-per-fight rule belongs in the text)."
+  },
+  {
+    "key": "oracle:battleRoarRaised",
+    "surface": "oracle",
+    "trigger": "battleRoarRaised — the hero or a Joiner uses Battle Roar",
+    "before": "For two rounds every foe has two fewer faces to hit anyone on your side. Loud enough.",
+    "after": "For two rounds foes are −2 to hit anyone on your side. Loud enough.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The Oracle line says what Battle Roar did in the same words as the skill: foes −2 to hit anyone on your side, for two rounds."
+  },
+  {
+    "key": "oracle:blinded",
+    "surface": "oracle",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper cannot see a thing for the rest of the fight: it hits only on its die's top face and never lands a critical.",
+    "after": "Viper cannot see a thing for the rest of the fight: it hits only on its best roll (20 on a d20) and never lands a critical.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A blind foe hits only on its best roll, 20 on a d20, and never lands a critical; derived.js#foeSwingChain applies the blind cap last, so an insult never widens it and only the plain case is stated."
+  },
+  {
+    "key": "oracle:foeCowers",
+    "surface": "oracle",
+    "trigger": "foeCowers — engine/combat.js#behemothRoar",
+    "before": "Viper cowers. For the rest of the fight it hits only on its die's top three numbers, for half damage.",
+    "after": "Viper cowers. For the rest of the fight it hits only on a high roll (18–20 on a d20; 17–20 if you insulted them), for half damage.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A cowering foe is capped the way a Weakened one is (three winning faces, four insulted), so the d8 example went and the d20 range reads \"a high roll (18–20 on a d20; 17–20 if you insulted them)\", with half damage."
+  },
+  {
+    "key": "oracle:fumbleOnFoe",
+    "surface": "oracle",
+    "trigger": "fumbleOnFoe — a fumbled Strength scroll lands on the foe instead (the might effect)",
+    "before": "",
+    "after": "Heal gives Viper a mirror image instead: for 3 rounds you hit it only on the top number of your die.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A fumbled Mirror Self lets you hit the foe only on the top number of your own die. The hero's strike die scales from d20 to d6 with level, so the line says \"the top number of your die\" instead of \"top face\" and gives no d20 range."
+  },
+  {
+    "key": "oracle:mirrorSelf",
+    "surface": "oracle",
+    "trigger": "mirrorSelf — the hero casts Mirror Self",
+    "before": "A mirror image holds for 1 round: foes hit you only on their die's top face (the top two if you insulted them).",
+    "after": "A mirror image holds for 1 round: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them).",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the spell, with the insulted case after the plain one; the rail line now states both cases too."
+  },
+  {
+    "key": "oracle:sidestepped",
+    "surface": "oracle",
+    "trigger": "sidestepped — the hero or a Joiner uses Sidestep",
+    "before": "For two rounds every foe has two fewer faces to hit you. Not where the blade is.",
+    "after": "For two rounds foes are −2 to hit you. Not where the blade is.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The Oracle line says what Sidestep did in the same words as the skill: foes −2 to hit you (or them, for a Joiner), for two rounds."
+  },
+  {
+    "key": "oracle:smokeThrown",
+    "surface": "oracle",
+    "trigger": "smokeThrown — the hero or a Joiner uses Smoke",
+    "before": "For two rounds a foe finds you only on its die's top face (the top two if you insulted them), and a run just works. Gone, as far as anyone can tell.",
+    "after": "For two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a run just works. Gone, as far as anyone can tell.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the skill: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a run just works."
+  },
+  {
+    "key": "oracle:weakened",
+    "surface": "oracle",
+    "trigger": "weakened — the hero's Weaken lands on every foe",
+    "before": "Every foe is weakened for 1 round: no more than its die's top three faces hit, and it does half damage. They hit softer now.",
+    "after": "Every foe is weakened for 1 round: foes hit only on a high roll (18–20 on a d20; 17–20 if you insulted them) and do half damage. They hit softer now.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the spell and the chip: a high roll, 18–20 on a d20, 17–20 if you insulted them."
+  },
+  {
+    "key": "rail:battleRoarRaised",
+    "surface": "rail",
+    "trigger": "battleRoarRaised — the hero or a Joiner uses Battle Roar",
+    "before": "Foes have two fewer faces to hit your side, for two rounds.",
+    "after": "Foes −2 to hit your side, for two rounds.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The rail line says what Battle Roar did in the same words as the skill: foes −2 to hit anyone on your side, for two rounds."
+  },
+  {
+    "key": "rail:blinded",
+    "surface": "rail",
+    "trigger": "blinded — the hero's Blind lands on a foe",
+    "before": "Viper is blind for the fight: it hits only on its top face and never crits.",
+    "after": "Viper is blind for the fight: it hits only on its best roll (20 on a d20) and never crits.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A blind foe hits only on its best roll, 20 on a d20, and never lands a critical; derived.js#foeSwingChain applies the blind cap last, so an insult never widens it and only the plain case is stated."
+  },
+  {
+    "key": "rail:fumbleOnFoe",
+    "surface": "rail",
+    "trigger": "fumbleOnFoe — a fumbled Strength scroll lands on the foe instead (the might effect)",
+    "before": "",
+    "after": "Heal mirrors Viper, 3 rounds: you hit it only on the top number of your die.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. A fumbled Mirror Self lets you hit the foe only on the top number of your own die. The hero's strike die scales from d20 to d6 with level, so the line says \"the top number of your die\" instead of \"top face\" and gives no d20 range."
+  },
+  {
+    "key": "rail:mirrorSelf",
+    "surface": "rail",
+    "trigger": "mirrorSelf — the hero casts Mirror Self",
+    "before": "A mirror image holds, 0 rounds: foes hit you only on their top face.",
+    "after": "A mirror image holds, 0 rounds: foes hit you only on their best roll (20 on a d20; 19–20 if insulted).",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the spell, with the insulted case after the plain one; the rail line now states both cases too."
+  },
+  {
+    "key": "rail:sidestepped",
+    "surface": "rail",
+    "trigger": "sidestepped — the hero or a Joiner uses Sidestep",
+    "before": "Foes have two fewer faces to hit you, for two rounds.",
+    "after": "Foes −2 to hit you, for two rounds.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The rail line says what Sidestep did in the same words as the skill: foes −2 to hit you (or them, for a Joiner), for two rounds."
+  },
+  {
+    "key": "rail:smokeThrown",
+    "surface": "rail",
+    "trigger": "smokeThrown — the hero or a Joiner uses Smoke",
+    "before": "Gone. Foes find you only on their die's top face (top two if insulted) for two rounds, and a run just works.",
+    "after": "Gone. Foes hit you only on their best roll (20 on a d20; 19–20 if insulted) for two rounds, and a run just works.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the skill: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a run just works."
+  },
+  {
+    "key": "rail:weakened",
+    "surface": "rail",
+    "trigger": "weakened — the hero's Weaken lands on every foe",
+    "before": "Every foe weakened, 3 rounds: top three faces to hit, half damage.",
+    "after": "Every foe weakened, 3 rounds: foes hit only on a high roll (18–20 on a d20; 17–20 if insulted), half damage.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The line names the same cap as the spell and the chip: a high roll, 18–20 on a d20, 17–20 if you insulted them."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero chip's tap card: the retired Bolstered chip (the doubled hit points)",
+    "before": "They swing at a reflection: only a foe's very best roll finds the real you, for a few rounds. Try not to look smug.",
+    "after": "They swing at a reflection: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), for a few rounds. Try not to look smug.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. The Mirror Self chip names the cap as the spell does: foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them)."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero chip's tap card: the retired Bolstered chip (the doubled hit points)",
+    "before": "Only your die's top face lands.",
+    "after": "Only the top number of your die lands.",
+    "reasons": [
+      "fact",
+      "natural"
+    ],
+    "why": "TEXT-01 (user, 2026-09-30): \"faces\" wording becomes \"+/− to hit\" and a hard cap names its d20 range. While the hero is blind only the top number of the strike die lands; the die scales with level, so the chip says \"the top number of your die\" instead of \"top face\"."
+  }
+]
