@@ -298,7 +298,7 @@ Plans:
   2. A new Wizard's Grimoire always shows at least one direct-damage level-1 spell it can cast on day one, drawn from the full level-1 pool rather than only the spells it rolled, and this holds across a wide seed sweep.
   3. An Illusionist who steps on a teleport chooses where it lands, as the sub-class text promises (report #3).
 
-**Plans:** 2/10 plans executed
+**Plans:** 3/10 plans executed
 
 Plans:
 **Wave 1**
@@ -308,7 +308,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 91-03-PLAN.md — IDENT-14 engine: the Illusionist's pending teleport pick (up to 12 squares in 8 directions, LET IT CHOOSE, no roll until it commits, the input hold, save and load), narration, the bot answers it, the Illusionist's book stated
+- [x] 91-03-PLAN.md — IDENT-14 engine: the Illusionist's pending teleport pick (up to 12 squares in 8 directions, LET IT CHOOSE, no roll until it commits, the input hold, save and load), narration, the bot answers it, the Illusionist's book stated
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -424,7 +424,7 @@ Plans:
 | 88. Item Systems: Effect Sources, Heal-Over-Time & the Crit-Proof Cloak | 4/4 | Complete    | 2026-09-30 |
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
-| 91. Race & Sub-class Audit | 2/10 | In Progress|  |
+| 91. Race & Sub-class Audit | 3/10 | In Progress|  |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 0/TBD | Not started | - |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
