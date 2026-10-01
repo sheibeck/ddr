@@ -304,10 +304,10 @@ trigger.
 | Doze | one foe | d4 rounds | `t.asleep = d4` — a timed nap (`foeTurn`'s existing `f.asleep` skip) |
 | Stun | up to d6 foes | d4 rounds | same `asleep` mechanism, multiple targets |
 | Weaken | every foe | **d4+1 rounds** (new, was undefined) | `C.weakened`/`C.foeToHitPenalty` + a `spell:weaken` rounds-cadence timer |
-| Stupidity | one foe | **the rest of the fight** (new — was a d10 nap) | `t.stupid` — `foeTurn`'s own per-round skip, no counter, no expiry |
-| Blind | one foe | the fight | `t.blind = true` — unchanged |
+| Stupidity | one foe | **the rest of the fight** (new — was a d10 nap) | `t.stupid` — `foeTurn`'s own per-round skip, no counter, no expiry. **Superseded by Phase 90 plan 04:** `t.intel = 1` for the fight, the foe keeps acting (see "Phase 90: one resist, no floor-12 extras" below) |
+| Blind | one foe | the fight | `t.blind = true` — unchanged. **Phase 90 plan 04:** also never crits, and the top-face cap is the last term of a foe swing |
 | Shrink | up to d6 foes | the fight | `f.shrunk` — halves wp (Plan 01) AND now, for real, halves the foe's own melee damage |
-| Petrify | one foe | removal (five days, no spoils) | unchanged |
+| Petrify | one foe | removal (five days, no spoils) | unchanged. **Superseded by Phase 90 plan 04:** the foe dies through `killFoe` with spoils off (experience paid, Q2 A) |
 
 **Weaken's timer lifecycle.** `castSpell`'s weaken branch draws `rng.d(4) +
 1` and calls `engine/effects.js#startEffect(c, "spell:weaken", { rounds
@@ -1104,6 +1104,8 @@ kept as history of the Phase 40 design, not current behavior.
 
 ## Phase 75.3 (RULES-18): control at depth
 
+**Superseded for every SPELL by Phase 90 plan 04** (user 2026-09-30: "rising resists ... should apply to ALL spells ... remove the floor-12 special effects only"): no spell rolls the control resist or keeps a hold, a cap or a three-round timer any more; every spell rolls the one depth-rising resist. Read the "Phase 90: one resist, no floor-12 extras" section at the end of this file for the current rule. Only the Bard's songs still use the machinery below (Phase 91, IDENT-17); the item half was superseded by Phase 89 plan 08. What follows is kept as history.
+
 User ruling 2026-09-25 (75.3-CONTEXT): from past floor 12, foes increasingly
 shrug off control, and the "forever" controls stop being forever. The dial
 is `CONTROL_AT_DEPTH` in `engine/difficulty.js`
@@ -1358,3 +1360,23 @@ with no hit points**, and casting it again restarts the 100.
   member? }` when such a record runs out; the Oracle and rail name the spell and say what stops per
   kind (Strength: the extra d10 goes), and a kind with no clause just wears off.
 - Pins: `test/unit/strength-spell.test.js` and `test/unit/spell-effect-records.test.js`.
+
+## Phase 90: one resist, no floor-12 extras; Petrify, Blind, Stupidity (SPELL-12, plan 90-04)
+
+The control axis above (a past-floor-12 control resist, a three-round hold or cap on a landed
+control) is gone for every spell. User 2026-09-30, at the Phase 89 checkpoint: "rising resists on
+higher floors should apply to ALL spells and spell-like effects (staves included) ... remove the
+floor-12 special effects only." Every spell a foe can resist rolls ONE resist, rising with depth
+(`derived.js#risingResistFaces`, rolled by `combat.js#foeResistsSpell` = `foeResistsEffect`):
+the foe's half-intelligence faces up to floor 12, more each floor after it (intelligence 10:
+16–20 up to floor 12, 15–20 at floor 13, 10–20 at floor 20). A landed spell is its floor-1 effect
+at every depth. The combat menu's resist hint and the foe card show the same range.
+
+- **Petrify** (level 5): turns one foe to stone and it dies, both lives of a kill-twice foe; the
+  foe may still resist; you get the foe's experience (Q2 A) and no coin, treasure or cooking.
+- **Stupidity** (level 2): the foe you picked (Q7 A) drops to intelligence 1 for the fight, so it
+  resists on a 20 on a d20 (more as you go deeper); it keeps acting and is no easier to hit.
+- **Blind** (level 3): the foe hits only on its die's top face and never lands a critical, for the
+  fight at every depth. A flagged assumption for the user: the cap is applied after an insult, so
+  an insulted party still faces only the top face.
+- **Ice** keeps its dot and its freeze-solid payoff at every depth until 90-05 reworks it.

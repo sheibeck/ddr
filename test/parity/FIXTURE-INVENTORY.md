@@ -6679,3 +6679,68 @@ fear", no longer "from a spell"). The Strength cases in `spell-mechanics`, `magi
 `scroll-fumble-resolve`, `hp-growth-linear`, `honest-gains`, `conditions`, `hero-conditions`,
 `foe-conditions`, `foeDetails`, `gear-panels` and `gear-view-models` were re-pinned the same
 way (see the 90-03 SUMMARY).
+
+### Phase 90 plan 04: one depth-rising resist for every spell; Petrify, Blind and Stupidity (SPELL-12)
+
+**The rule (the user's 2026-09-30 rulings).** At the Phase 89 checkpoint: "rising resists on
+higher floors should apply to ALL spells and spell-like effects (staves included). That shouldn't
+be limited to just these items anyway. remove the floor-12 special effects only." Every spell a foe
+can resist (the hero's, a scroll's free cast, a Joiner's) rolls ONE resist, the shared
+depth-rising one (`derived.js#risingResistFaces`, rolled by `combat.js#foeResistsEffect`, which
+`foeResistsSpell` now IS); there is no second RULES-18 control resist, no three-round hold and no
+cap on a landed spell. The SPELL-12 reworks: Petrify turns a foe to stone and it dies (both
+lives, experience paid, no coin or treasure: Q2 A), Stupidity drops the picked foe's intelligence
+to 1 for the fight (Q7 A; it keeps acting and is no easier to hit), Blind is blindness for the
+fight at every depth, hits only on the die's top face, never crits, and is the LAST term of a foe
+swing (an insulted party still faces one face).
+
+**The predictor.** The resist rise is 0 at or below floor 12, and the resist already came before a
+foe's own draws there, so a run is touched only if it (a) casts a resistible spell on floor 13 or
+deeper, (b) casts Petrify, Blind or Stupidity (the foe now acts, never crits, or the kill pays no
+loot), (c) lets a foe's Ice dot run out past floor 12, or (d) has a blind foe that would have
+crit or been insulted. Parity fixtures sit on floors 1 to 3 and cast only Freeze, Heal and a
+Fireball (`action-script.magic.json`), so zero parity drift was predicted. The fair bot's pinned
+runs end on floors 3 to 5 and cast Stun, Weaken, Shrink, Doze and (rarely) Stupidity, so a pin
+could only move if a pinned run cast Stupidity.
+
+**The live scan (measured at the plan's end, against the base 60ef187d).**
+
+- `node --test "test/parity/**/*.test.js"`: 66 tests, 66 pass. **Zero parity drift.**
+  `test/parity/prototype-master.js.txt` is untouched.
+- `roll-high-state-pins.test.js`: **0 of 8 labels moved.** None was re-recorded;
+  `roll-high-baseline.mjs save` was not run. `roll-high-save-compat.test.js` and
+  `roll-high-guard.test.js` (`DRAW_INVENTORY`): unchanged. The skipped draws of a Petrify kill
+  (the coin d10, the treasure d20, the bag d20, the cooking d6) are an early return inside
+  `killFoe`, so every tagged draw keeps its tag and its count; no draw was added or removed.
+- `test/unit/fixtures/hazard-commit/golden.json`, `days-farm.test.js` and every other seed pin:
+  unchanged.
+- The one fixture file that moved is a TEXT fixture: `test/unit/fixtures/shell-snapshots/mu.hero.txt`,
+  the Grimoire row for Stupidity (hand-pasted, one line; every other snapshot byte-identical):
+  before "control · one foe · does nothing at all for the rest of the fight; past floor 12, only
+  for three rounds", after "control · one foe · its intelligence drops to 1 for the fight, so it
+  resists almost nothing (a 20 on a d20, a little more as you go deeper), and it keeps swinging".
+
+**Moved entries: none re-recorded** (no parity record, no bot state pin, no golden moved).
+
+**Main-rng draws that moved, all on floor 13 and deeper or in a spell the bot does not pin.** The
+one resist comes BEFORE each foe's own draws; the old past-floor-12 control resist came after
+them, so a control-resisted foe still consumed its draw. At floor 20 a resisted Doze, Stun,
+Shrink or Noxious Vapor foe, and a resisted Insane cast, now draw nothing for the effect (before:
+the d4 / d6). A Joiner's resisted Doze likewise. A landed Petrify takes `killFoe`'s experience d6
+and skips the coin, treasure, bag and cooking draws; a stupid foe's `foeTurn` now takes its
+to-hit and damage draws (before: none).
+
+**Non-fixture assertions the rule moved (updated to the new rule, each before -> after).**
+`test/unit/control-spells-depth.test.js` (the RULES-18 spell pins: Doze C7, Stun C8, Stupidity
+C17, Blind C18, Shrink C19, Petrify C5, Vapor/Insane C10/C11, the main-draw parity row, the held
+dial and the texts row; every floor-12 digest row unchanged except Stupidity, Blind and Petrify,
+re-declared), `test/unit/control-at-depth.test.js` (a Joiner's Doze C9, Ice's last tick C3, the
+held-chip kinds), `test/unit/control-at-depth-rules.test.js` (X10 exemptions),
+`test/unit/foe-conditions.test.js` (the Stone label and desc, the Held chip kinds, the new
+intelligence-1 sentence), `test/unit/foeDetails.test.js` and `test/unit/rollOdds.test.js` /
+`odds-helpers.test.js` / `rollDirection.test.js` (a stupid foe is not floored; the blind cap is
+last, so an insult leaves one face), `test/unit/spell-mechanics.test.js` and
+`test/unit/hero-out.test.js` (a stupid foe acts; foeStupefied is gone),
+`test/unit/item-audit-fixes.test.js` (the spell gate is the rising gate) and
+`test/unit/shell-tab-snapshots.test.js` (the Stupidity text above). New pins:
+`test/unit/spell-depth-resist.test.js` and `test/unit/petrify-blind-stupidity.test.js`.
