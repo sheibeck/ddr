@@ -2013,7 +2013,8 @@ export const LINE_FOR = {
   // the engine applied, like their Oracle lines; a Joiner's own Sidestep,
   // Smoke, Riposte and Brace cover the Joiner ("them"), not the hero.
   pommelStruck: (e) => ({
-    text: `${e?.member ? `${e.member}: ` : ""}The pommel finds ${railPossessive(e?.target, "its")} temple: it loses its next turn.`,
+    // Phase 90 (ABIL-07): the follow-through of a landed blow, short.
+    text: `${e?.member ? `${e.member}: ` : ""}${e?.target ?? "It"} sees stars and loses its next turn.`,
     tone: "hit",
     priority: PRIORITY.them,
   }),

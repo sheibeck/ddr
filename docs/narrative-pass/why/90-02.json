@@ -1,0 +1,38 @@
+[
+  {
+    "key": "oracle:pommelStruck",
+    "surface": "oracle",
+    "trigger": "pommelStruck — engine/combat.js#playerStrike and #memberStrike (a landed Pommel Strike blow that leaves the target standing)",
+    "before": "The pommel finds Viper's temple. Viper loses its next turn, and will need a moment.",
+    "after": "The pommel follows through to Viper's temple. Viper sees stars and loses its next turn.",
+    "reasons": ["fact"],
+    "why": "Player report #4 (\"A pommel strike seems kind of pointless ... It's a wash.\") and the 2026-09-30 ruling: Pommel Strike is a real strike that also stuns. The stun now follows a landed blow, whose own hit line already said the damage, so this line reads as the follow-through (the pommel on the way past, the target seeing stars) and then states the lost turn. A Joiner's name still leads the line."
+  },
+  {
+    "key": "rail:pommelStruck",
+    "surface": "rail",
+    "trigger": "pommelStruck — engine/combat.js#playerStrike and #memberStrike",
+    "before": "The pommel finds Viper's temple: it loses its next turn.",
+    "after": "Viper sees stars and loses its next turn.",
+    "reasons": ["fact"],
+    "why": "The rail twin of the Oracle line: the stun follows the blow the rail already reported, so it says only what the blow cost the target (a lost turn), short."
+  },
+  {
+    "key": "content:ABILITIES.pommelStrike.txt",
+    "surface": "spells",
+    "trigger": "an ability's one-line effect (Hero tab, combat menu)",
+    "before": "the blunt end, to the temple: the target loses its next turn",
+    "after": "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn",
+    "reasons": ["fact", "accurate"],
+    "why": "Player report #4 and the 2026-09-30 ruling (ABIL-07): Pommel Strike no longer spends the action on the stun alone. It is a normal strike (the same to-hit roll and weapon damage) and a hit also costs the target its next turn; a miss stuns nothing. The text says both."
+  },
+  {
+    "key": "content:FIGHTER_SKILLS.Pommel Strike.txt",
+    "surface": "spells",
+    "trigger": "a Fighter skill's text",
+    "before": "the blunt end, to the temple: the target loses its next turn",
+    "after": "the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn",
+    "reasons": ["fact", "accurate"],
+    "why": "The Pommel Strike skill carries the ability's text verbatim (test/unit/abilities-catalog.test.js pins the two equal); a normal strike that also stuns on a hit, per the ruling."
+  }
+]
