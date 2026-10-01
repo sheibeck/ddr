@@ -1115,6 +1115,82 @@ step PASS, cleanup ok), then optionally a read-only
 this PENDING note with the date, the probe table and the census counts when it
 runs.
 
+### Play Games names (Phase 91.2, 2026-10-01): pending
+
+**Status: PENDING. Deferred by the user (2026-10-01, resume signal "defer" at
+both 91.2-10 checkpoints: the console batch and the live go). Nothing ran
+live.** No firebase deploy, no gcloud call, no admin-API write, no provider
+enable, no function deploy, no `boards-smoke` run, no console step, no push in
+any repo, and no web client ID commit (`PLAY_GAMES_CONFIG.webClientId` is still
+unset, because the client ID does not exist yet). The live project still runs
+the 2.2.0 final rules; the Play Games provider is not enabled; the `boardName`
+function is not deployed.
+
+**Reason:** live backend changes go out just in time with the release build
+(standing ruling), not during the autonomous run. The offline gate passed first
+(2026-10-01): the ten gate suites (firestore rules, transition rules, indexes,
+board-names core/http/contract, nameClient, boards-smoke, firebaseAuth,
+boardSync; 284 tests) pass, the 2.2.0 (vc12) handle regex in `git show
+v2.2.0:firebase/firestore.rules` equals `LEGACY_HANDLE_PATTERN` and is embedded
+in `firebase/firestore.transition.rules`, the old `deepKey` formula is still in
+`git show v2.2.0:src/browser/runDoc.js` and equals `legacyDeepKeyOf`, so a vc12
+run is accepted by the transition rules and refused only by the final rules.
+`firebase` 15.29.0 and `gcloud` 579.0.0 are installed.
+
+**This covers Phase 87 too.** The single transition deploy below also deploys
+what the Phase 87 PENDING record above describes; when it runs, record it here
+and replace both PENDING notes with a pointer to the dated record.
+
+**Trigger:** all of it must run at `docs/RELEASING.md` "Release 2.3.0" step 1,
+before any 2.3 build (including the Compete-ON debug APK for the Pixel 7 device
+test) submits with Compete ON. A 2.3 build cannot post under today's live rules.
+
+**What the user does (the console batch, `docs/PLAY-GAMES-SETUP.md` path A):**
+1. Confirm the Play Games Services configuration `517177834262` still exists
+   (say whether it is published). Do NOT remove it.
+2. OAuth consent screen in Cloud project `delve-die-repeat`: Audience External,
+   In production.
+3. Create an OAuth client of type Web application and add it to the Play Games
+   configuration as a Game server credential.
+4. Check the Android credentials: the Play App Signing key SHA-1 and the debug
+   keystore SHA-1.
+5. Add testers (your account, the closed-testing track) while the configuration
+   has unpublished changes.
+6. Firebase project `delve-die-repeat-6ba5f`: attach a billing account (Blaze)
+   and set a budget alert.
+7. Hand Claude the web client ID, and save the client secret in a text file
+   OUTSIDE the repo and give Claude its path. The secret is never pasted into a
+   commit or a doc.
+
+**What Claude runs on the user's go (in this order):**
+1. Write the client ID into `PLAY_GAMES_CONFIG.webClientId`
+   (`src/browser/firebaseConfig.js`), run `node --test test/unit/playIdentity.test.js`,
+   commit.
+2. Enable the Play Games provider (admin API, secret read from the user's file,
+   print only `enabled` and `clientId`), then GET to confirm `enabled: true`.
+3. `node tools/board-names/deploy.mjs --setup --yes`, then
+   `node tools/board-names/deploy.mjs --yes`; the printed URL must equal
+   `BOARD_NAME_FN.url`.
+4. The ONE transition deploy (never the plain `firebase deploy`):
+   ```
+   firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
+   ```
+   then `gcloud firestore indexes composite list --project=delve-die-repeat-6ba5f --database="(default)"`
+   until every index is READY.
+5. `node tools/boards-smoke.mjs --transition` and
+   `node tools/boards-smoke.mjs --function` (exit 0, every step PASS, cleanup ok).
+6. Record the dated result here (who ran what, provider state with the client ID
+   only, function URL, index states, both probe tables with cleanup).
+
+**Not part of this step:** the final rules (which refuse 2.2.0) wait for Release
+2.3.0 step 3, with the user's confirmation. They were not deployed.
+
+**Also unpushed (user's choice):** the darktier-studio commit `0f39ee3` (the
+privacy, delete-data, terms and game pages saying the board shows the Google Play
+Games name, `C:/projects/darktier-studio` branch `main`) is committed but not
+pushed and not deployed. Push it and run `npm run deploy` at Release 2.3.0 step
+2.7 (`docs/RELEASING.md`).
+
 ## 15. Troubleshooting
 
 - **`OPERATION_NOT_ALLOWED` on `accounts:signUp`** — the anonymous provider
