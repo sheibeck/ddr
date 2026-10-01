@@ -11,7 +11,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { castSpell, readScroll } from "../../engine/magic.js";
+import { castSpell, readScroll, scrollKeepRng, RUNES_KEEP_DIE, RUNES_KEEP_FACES } from "../../engine/magic.js";
+import { rollCheck, atLeastFor } from "../../engine/dice.js";
 import { sing } from "../../engine/combat.js";
 import { SPELLS } from "../../content/index.js";
 import { GW, GH } from "../../engine/maze.js";
@@ -179,6 +180,9 @@ test("readScroll: a scroll that unrolls a combatOnly spell outside combat is con
   const state = fixedState({
     c: { cls: "Fighter", sub: "Soldier", skills: { "Runes/Signs": 1 }, scrolls: 1, grimoire: [], spellsUsed: 1 },
   });
+  // Phase 91.1 plan 02 (V14): one Runes/Signs read in six keeps the scroll (the derived scrollKeep stream); this read is a
+  // spent one, found by searching state.acts, so "still consumed" below is the plain 5-in-6 case.
+  state.acts = [...Array(200).keys()].find((acts) => !rollCheck(scrollKeepRng({ acts }, {}), RUNES_KEEP_DIE, atLeastFor(RUNES_KEEP_FACES, RUNES_KEEP_DIE)).ok);
   const doze = SPELLS.find((sp) => sp.n === "Doze");
   const events = readScroll(state, fakeRng([], { pick: (arr) => arr.find((sp) => sp.n === "Doze") ?? arr[0] }), []);
   assert.ok(events.some((e) => e.type === "scrollRead" && e.spell === "Doze"));

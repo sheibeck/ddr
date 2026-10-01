@@ -7843,7 +7843,7 @@ Moved scripted tests and pins (each re-based, before to after, with a dated comm
    Sewing), `abilities.test.js` (the poison record, Mark's flag, the Cutpurse strike, Brace's count, Taunt's two rounds, the poison tick),
    `ability-strike.test.js` (the marked foe is a level 2 Mark: +2), `ability-duration-rounds.test.js` (Taunt reads 1 after the use and covers two foe
    turns), `party-abilities.test.js` (a Joiner's flags, Cutpurse as a strike, Brace's count), `authored-ranges.test.js` (Mark is no longer a signed +2:
-   a level 4 Mark adds 4), `scroll-read.test.js` (the Runes read is a spent one: a state.acts where the keep does not fire), `rail.test.js` (the Brace
+   a level 4 Mark adds 4), `scroll-read.test.js` and `cast-refusals.test.js` (the Runes read is a spent one: a state.acts where the keep does not fire), `conditions.test.js` (Brace's `C.braced` is the count 2, not a flag), `rail.test.js` (the Brace
    learned line) and `skill-audit.test.js` (the doctored rows are Hardiness and Riposte, whose verdicts are unchanged).
 6. `test/unit/spell-skill-text-engine.test.js`: Brace's two blows (`braceBlows`), Taunt's "both times", Cutpurse's gold die (`cutpurseDie`, over the
    derived stream), Poisoned Edge's "d4 + your level", Mark's wait (the level itself is pinned in `value-abilities.test.js`) and Runes/Signs'
