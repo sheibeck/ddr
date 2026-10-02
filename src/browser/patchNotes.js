@@ -15,6 +15,8 @@
 // (the addendum's Copy note) — only PATCH_NOTES_COPY below is a voice-corpus
 // bank (tools/lib/voice-corpus.mjs#BANK_REGISTRY).
 
+import { bestsHoldsRuns } from "./settings.js";
+
 /** NOTES_SEEN_KEY — the durable-storage key for the last version the player
  * has seen the notes sheet for (D-21). */
 export const NOTES_SEEN_KEY = "ddr.notes.seen.v1";
@@ -22,7 +24,17 @@ export const NOTES_SEEN_KEY = "ddr.notes.seen.v1";
 /** NOTES_PRIOR_DATA_KEYS — durable-storage keys that prove an existing
  * install: a save, graveyard, bests or settings record. Any one holding a
  * non-empty string means this device ran a build before the notes existed
- * (D-21's upgrade refinement). */
+ * (D-21's upgrade refinement).
+ *
+ * Phase 92.2: a key counts only when it holds something a PLAYER made, the
+ * rule settings.js#EXISTING_INSTALL_KEYS follows (92.1). The first boot of a
+ * fresh install writes an EMPTY ddr.bests.v1 (the adapter's loadBests backfill)
+ * before this reads, so that key counts only when it carries a run (or is
+ * unreadable: old data we cannot vouch for). The settings blob is written on a
+ * first boot only for an install that already held player data (readSettings
+ * writes it only then; a fresh install writes none until the player changes a
+ * setting), so it counts as it stands. The save and the graveyard are written
+ * only by play. */
 export const NOTES_PRIOR_DATA_KEYS = Object.freeze([
   "ddr.delve.v1",
   "ddr.graveyard.v1",
@@ -251,6 +263,9 @@ export function renderPatchNotes(host, blocks) {
 // once-per-update auto-show decision and its durable-storage reader/writer.
 // ---------------------------------------------------------------------------
 
+/** The one prior-data key the first boot itself writes (empty), before the notes decision reads. */
+const BOOT_WRITTEN_KEY = "ddr.bests.v1";
+
 const VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 /**
@@ -277,7 +292,8 @@ export function notesLaunchDecision(input) {
 /**
  * readNotesLaunch(storage, bundledVersion) — reads NOTES_SEEN_KEY and every
  * NOTES_PRIOR_DATA_KEYS key from the injected async `{ getItem }` storage
- * (any non-empty string counts as prior data), then returns
+ * (any non-empty string counts as prior data, but an empty bests record, which
+ * a fresh first boot writes, does not: Phase 92.2), then returns
  * notesLaunchDecision's verdict. A missing storage, or one whose getItem
  * throws or rejects, gives "none" and this function never rejects.
  */
@@ -288,7 +304,9 @@ export async function readNotesLaunch(storage, bundledVersion) {
     let hadPriorData = false;
     for (const key of NOTES_PRIOR_DATA_KEYS) {
       const value = await storage.getItem(key);
-      if (typeof value === "string" && value.length > 0) hadPriorData = true;
+      if (typeof value !== "string" || value.length === 0) continue;
+      if (key === BOOT_WRITTEN_KEY && !bestsHoldsRuns(value)) continue;
+      hadPriorData = true;
     }
     return notesLaunchDecision({
       bundledVersion,

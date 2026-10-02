@@ -268,6 +268,14 @@ test("notesLaunchDecision: never throws on a hostile argument", () => {
 
 // ─── readNotesLaunch / markNotesSeen ────────────────────────────────────────
 
+// Phase 92.2: what a player's bests record looks like once they have played: a run held and ranked.
+const PLAYED_BESTS = JSON.stringify({
+  v: 1,
+  runs: { ["a".repeat(64)]: { hash: "a".repeat(64) } },
+  boards: { deep: ["a".repeat(64)], days: [], kills: [], purse: [] },
+  last: null,
+});
+
 function fakeStorage(values) {
   return {
     calls: [],
@@ -280,7 +288,8 @@ function fakeStorage(values) {
 }
 
 test("readNotesLaunch: reads NOTES_SEEN_KEY and every NOTES_PRIOR_DATA_KEYS key; a non-empty prior key means show", async () => {
-  const storage = fakeStorage({ [NOTES_SEEN_KEY]: null, "ddr.bests.v1": "{}" });
+  // Phase 92.2: the bests record must hold a run (an empty one is what a fresh first boot writes, and proves nothing).
+  const storage = fakeStorage({ [NOTES_SEEN_KEY]: null, "ddr.bests.v1": PLAYED_BESTS });
   const decision = await readNotesLaunch(storage, "2.1.0");
   assert.equal(decision, "show");
   assert.ok(storage.calls.includes(NOTES_SEEN_KEY));
@@ -351,4 +360,82 @@ test("purity: no window/document/localStorage/sessionStorage/navigator identifie
     assert.doesNotMatch(code, banned, `patchNotes.js must not use ${banned}`);
   }
   assert.match(code, /host\.ownerDocument/);
+});
+
+// ─── Phase 92.2 (user 2026-10-02): a fresh install sees no "what's new" ──────
+//
+// The first boot of a fresh install writes an EMPTY ddr.bests.v1 (the adapter's
+// loadBests backfill) before readNotesLaunch reads, so a non-empty string under
+// that key used to make a fresh install look like an upgrade and pop the patch
+// notes on its very first title. The same rule settings.js applies since 92.1:
+// ddr.bests.v1 counts only when it carries a run (or is unreadable).
+
+import { emptyBests } from "../../engine/records.js";
+import { getItem as realGetItem, setItem as realSetItem, flush as flushStorage } from "../../src/browser/storage.js";
+import { readSettings, SETTINGS_STORAGE_KEY } from "../../src/browser/settings.js";
+import { boot as bootAdapter, waitForPending as adapterWaitForPending } from "../../src/browser/engineAdapter.js";
+
+async function withFakeLocalStorage(fn) {
+  const store = new Map();
+  const previous = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+  };
+  try {
+    return await fn(store);
+  } finally {
+    if (previous === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previous;
+  }
+}
+
+const realStorage = { getItem: realGetItem, setItem: realSetItem };
+
+test("92.2-01: the exact empty bests record a first boot writes does not make an install 'existing': mark, no sheet", async () => {
+  assert.equal(await readNotesLaunch(fakeStorage({ "ddr.bests.v1": JSON.stringify(emptyBests()) }), "2.3.0"), "mark");
+  assert.equal(await readNotesLaunch(fakeStorage({ "ddr.bests.v1": "{}" }), "2.3.0"), "mark");
+});
+
+test("92.2-01: a REAL first boot (adapter boot, then the settings read) leaves a fresh install marked, never shown", async () => {
+  await withFakeLocalStorage(async (store) => {
+    await bootAdapter(12345);
+    await adapterWaitForPending();
+    await flushStorage();
+    // The premise of the bug: boot itself wrote ddr.bests.v1 before anything read the notes decision.
+    assert.equal(typeof store.get("ddr.bests.v1"), "string", "the first boot writes ddr.bests.v1");
+    await readSettings(); // the app reads settings first (mazeworld.html), as it does on every boot
+    await flushStorage();
+    assert.equal(store.has(SETTINGS_STORAGE_KEY), false, "a fresh install's first boot writes no settings blob, so that key cannot make it look existing");
+    assert.equal(await readNotesLaunch(realStorage, "2.3.0"), "mark");
+  });
+});
+
+test("92.2-01: an upgrade that holds anything a player made still sees the notes (no seen version yet)", async () => {
+  const upgrades = {
+    "a bests record with runs": { "ddr.bests.v1": PLAYED_BESTS },
+    "a bests record with only a ranked board": { "ddr.bests.v1": JSON.stringify({ v: 1, runs: {}, boards: { deep: ["h"], days: [], kills: [], purse: [] }, last: null }) },
+    "an unreadable bests record": { "ddr.bests.v1": "{not json" },
+    "an empty bests record plus a graveyard": { "ddr.bests.v1": JSON.stringify(emptyBests()), "ddr.graveyard.v1": "[{\"x\":1}]" },
+    "an empty bests record plus a save": { "ddr.bests.v1": JSON.stringify(emptyBests()), "ddr.delve.v1": "{\"x\":1}" },
+    "a stored settings blob": { "ddr.bests.v1": JSON.stringify(emptyBests()), "ddr.settings.v1": JSON.stringify({ movement: "arrows" }) },
+    "a save alone": { "ddr.delve.v1": "{\"x\":1}" },
+  };
+  for (const [label, keys] of Object.entries(upgrades)) {
+    assert.equal(await readNotesLaunch(fakeStorage(keys), "2.3.0"), "show", label);
+  }
+});
+
+test("92.2-01: a 2.2.0 install upgrading to 2.3.0 (a seen version on disk) still sees the notes, whatever its bests hold", async () => {
+  for (const bests of [JSON.stringify(emptyBests()), PLAYED_BESTS]) {
+    const storage = fakeStorage({ [NOTES_SEEN_KEY]: "2.2.0", "ddr.bests.v1": bests });
+    assert.equal(await readNotesLaunch(storage, "2.3.0"), "show");
+  }
+  assert.equal(await readNotesLaunch(fakeStorage({ [NOTES_SEEN_KEY]: "2.3.0", "ddr.bests.v1": PLAYED_BESTS }), "2.3.0"), "none");
+});
+
+test("92.2-01: patchNotes.js and settings.js read ddr.bests.v1 by the one shared rule (bestsHoldsRuns)", () => {
+  assert.match(MODULE_SRC, /import \{ bestsHoldsRuns \} from "\.\/settings\.js";/);
+  assert.match(MODULE_SRC, /BOOT_WRITTEN_KEY && !bestsHoldsRuns\(value\)/);
 });

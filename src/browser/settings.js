@@ -162,8 +162,9 @@ export const EXISTING_INSTALL_KEYS = Object.freeze(["ddr.delve.v1", "ddr.graveya
 /** The one key the first boot itself writes (empty) before readSettings. */
 const BOOT_WRITTEN_KEY = "ddr.bests.v1";
 
-/** bestsHoldsRuns(raw) — false only for a readable record with no runs at all (what a first boot writes); an unreadable one is old data, so true. */
-function bestsHoldsRuns(raw) {
+/** bestsHoldsRuns(raw) — false only for a readable record with no runs at all (what a first boot writes); an unreadable one is old data, so true.
+ * Phase 92.2: exported so patchNotes.js counts ddr.bests.v1 by the same rule. */
+export function bestsHoldsRuns(raw) {
   try {
     const rec = JSON.parse(raw);
     if (rec === null || typeof rec !== "object" || Array.isArray(rec)) return true;
