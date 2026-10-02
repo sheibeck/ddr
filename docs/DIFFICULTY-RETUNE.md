@@ -7816,6 +7816,342 @@ Verdicts: `plays it` (the bot path exists and was read), `fixed here (92-01)` (t
 
 Bot findings (none needs an engine change): a Thief's round-1 `opener` slot is shared by Dirty Trick, Silent Step, Hamstring and Mark and `chooseAbility` takes the first ready one in kit order, so a Silent Step is only played in round 1 when it comes first; the Joiner camp stall (see the first row) is the only stall shape the probes found and it is gone.
 
+### Phase 92 — what this measures
+
+The milestone's balance-moving changes, measured together on one tree. The standing rule ran no bot mid-milestone, so **no per-phase split is claimed**: every number below is the sum of all of these, on top of the Phase 79.2 lock.
+
+- **Phase 87:** STORE-04, a visible d10 ration supply in every store; the Joiner HP and armour soak (a Joiner's hp shows every hit it takes).
+- **Phase 88:** item effects that end when the item comes off; heal over time (the Cloak of Regeneration); the Cloak of Strength blocks foe crits (the crit-proof cloak).
+- **Phase 89:** the item audit: the Enlarge potion worth drinking; Joiners using items; the Poplar Staff's party heal.
+- **Phase 90:** the spell reworks and new spells (Door Illusion, Chameleon Tongue, Stun, Duplicate Foe, Senseless, Speed of Sound, Enchant Character and the rest); the rising resist; Pommel Strike as a real strike; Strength fixed.
+- **Phase 91:** the Wizard's day-one damage spell; the Cleric's offense ban and day-one Heal (melee-and-heal); the Illusionist's teleport pick and Door Illusion in every book; the Master of Arms; the Bard's songs; the parley pay and XP split; the Pickpocket's extra item; the Cutthroat, Troll, Wilmsry and Fridgian rulings (the Fridgian frenzy now a 4-6 on a d6 on each strike action); Q8 race and Pickpocket prices.
+- **Phase 91.1:** the value changes: Kata, Feint, Overhead Blow and Last Stand ready again after 4 rounds, Second Wind after 5, Hamstring and Mark after 3, Death Touch, Silent Step and Cutpurse once a fight; Cutpurse lifts gold; the Bard's second song.
+- **Phase 92:** the 92-01 bot fixes (the Joiner camp gate on the party's `nightlyEats`, the Cloak of Regeneration read as a heal over time, a Joiner's item use no longer counted as the hero's, Cutpurse played) and the 92-03 economy lock (`DIALS.SELL_FRACTION`: a store pays 0.5 of base value on floors 1 to 4, easing to 0.125 from floor 7; the fair bot never sells, so it does not move this readout).
+
+The hero's and a Joiner's armour repair lines and the store price rulings (Q8 race and Pickpocket prices, the Troll double) also landed in the milestone; the fair bot never buys repairs and never sells, so they do not move this readout.
+
+Baselines (on disk): `tools/readouts/79.1-final-1000.txt` and `79.1-final-classes.json`, the 79.1 FINAL at commit `12aea234`, whose floors 4 and 5 were already MISS and which the user accepted.
+
+### Phase 92 — parameters and refs
+
+- **Measured commit:** `10fec3c3` (`feat(92-04): the TUNE-10 watch-list block in tune-difficulty (report only)`). The runs measure a committed tree; `git diff --stat 10fec3c3 -- engine content tools/lib/tuning-bot.mjs src mazeworld.html` printed nothing after the last run finished, so no engine, content or bot-policy byte changed under them.
+- **R1, natural:** `node tools/tune-difficulty.mjs --seeds=1000 > tools/readouts/92-final-1000.txt` (738 s; seeds `i*7919+1`).
+- **R2, classes:** `node tools/tune-classes.mjs --seeds 10 --workers 3 --out tools/readouts/92-final-classes.json > tools/readouts/92-final-classes.txt` (360 s; 143 cells x 10 seeds, 1,430 runs).
+- **R3, tail (measured, never fitted):** `node tools/fit-difficulty.mjs --objective=tail --fresh=gate --dials='{}' --workers=4 --log=tools/readouts/92-final-tail.jsonl --transcript=tools/readouts/92-final-tail.txt` (356 s; slices at 200 seeds, rotation and troll20 at 40; the fresh 1,000-seed slice ran because every slice target passed).
+- **R4, Joiners:** `node tools/tune-difficulty.mjs --seeds=200 --party > tools/readouts/92-final-party-200.txt` (185 s; one Joiner forced at run start).
+- **The bot line (R1):** `Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=1000  startDepth=1`
+- **Baselines:** the 79.1 FINAL readouts at commit `12aea234` (`tools/readouts/79.1-final-1000.txt`, `79.1-final-classes.json`); the Phase 79.2 targets (`TARGET_SURVIVAL`, `P50_DEATH_BAND = [3, 4]`, `FILTER_SHAPE`) and the 79.2 tail lock column.
+- **New instrument:** `tools/lib/watch-readout.mjs`, the report-only `Watch list (Phase 92 — TUNE-10)` block that `tune-difficulty` now prints after the class identity block and before `Outcome:` (and returns as `watch` in `--json`). It counts events the engine already emits; it adds no bot behavior and moves no number the fit reads. The 79.1 FINAL predates it, so the watch items have no 79.1 column.
+- **Every number below** comes from a scratch script reading these files (kept in the scratchpad), never by eye.
+
+### Phase 92 FINAL — 1,000 seeds — commit 10fec3c3
+
+The readout's death-depth, reach, per-floor survival, class identity, watch list and Outcome lines, verbatim (the death-cause list, the parley and action tables, the caster-rate table, the Pace table and the Four-band top-causes lines are in `tools/readouts/92-final-1000.txt`).
+
+```
+Death-depth distribution:
+  min=1  p50=5  p90=8  max=17
+
+Reach table (% of runs reaching floor N):
+  >=5: 55.4%  >=10: 3.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+  mean death depth=4.97  floors gained p50=4 mean=3.97  encounters survived mean=9.82
+  reach: >=5 55.4%  >=8 14.0%  >=9 7.5%  >=10 3.8%  >=13 0.5%  >=16 0.1%  >=20 0.0%
+  band share of deaths: Filter 1-4 44.6% | Wall 5-8 47.9% | Breakaway 9-15 7.4% | Endgame 16-20 0.1% | beyond 20 0.0%
+
+Per-floor survival (Phase 79.2 target, user ruling 2026-09-27 — floor L is USER RULING C's floor 2L; p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=1000  deaths=13 (combat 9 / dot 4 / starvation-exhaustion 0 / other 0)  p_L=98.7%  S_L=98.7%  target p_L=95.1%  target S_L=95.1%  dS=+3.6  PASS
+  L=2  reached=987  deaths=152 (combat 145 / dot 4 / starvation-exhaustion 3 / other 0)  p_L=84.6%  S_L=83.5%  target p_L=83.8%  target S_L=79.7%  dS=+3.8  PASS
+  L=3  reached=835  deaths=136 (combat 118 / dot 12 / starvation-exhaustion 6 / other 0)  p_L=83.7%  S_L=69.9%  target p_L=73.3%  target S_L=58.4%  dS=+11.5  MISS
+  L=4  reached=698  deaths=142 (combat 98 / dot 24 / starvation-exhaustion 19 / other 1)  p_L=79.7%  S_L=55.7%  target p_L=66.3%  target S_L=38.7%  dS=+17.0  MISS
+  L=5  reached=555  deaths=178 (combat 122 / dot 26 / starvation-exhaustion 30 / other 0)  p_L=67.9%  S_L=37.8%  target p_L=62.8%  target S_L=24.3%  dS=+13.5  MISS
+  L=6  reached=377  deaths=136 (combat 99 / dot 18 / starvation-exhaustion 19 / other 0)  p_L=63.9%  S_L=24.2%  target p_L=62.1%  target S_L=15.1%  dS=+9.1  MISS
+  L=7  reached=240  deaths=98 (combat 74 / dot 14 / starvation-exhaustion 10 / other 0)  p_L=59.2%  S_L=14.3%  target p_L=62.9%  target S_L=9.5%  dS=+4.8  PASS
+  L=8  reached=141  deaths=64 (combat 48 / dot 8 / starvation-exhaustion 8 / other 0)  p_L=54.6%  S_L=7.8%  target p_L=65.3%  target S_L=6.2%  dS=+1.6  PASS
+  L=9  reached=77  deaths=37 (combat 29 / dot 4 / starvation-exhaustion 4 / other 0)  p_L=51.9%  S_L=4.1%  target p_L=67.7%  target S_L=4.2%  dS=-0.1  PASS
+  L=10  reached=39  deaths=24 (combat 16 / dot 6 / starvation-exhaustion 2 / other 0)  p_L=38.5%  S_L=1.6%  target p_L=71.4%  target S_L=3.0%  dS=-1.4  PASS
+  L=11  reached=14  deaths=6 (combat 2 / dot 1 / starvation-exhaustion 3 / other 0)  p_L=57.1%  S_L=0.9%  target p_L=73.3%  target S_L=2.2%  dS=-1.3  PASS
+  L=12  reached=8  deaths=3 (combat 2 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=62.5%  S_L=0.6%  target p_L=77.3%  target S_L=1.7%  dS=-1.1  PASS
+  L=13  reached=5  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=80.0%  S_L=0.4%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=14  reached=4  deaths=2 (combat 1 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=50.0%  S_L=0.2%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=15  reached=2  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=50.0%  S_L=0.1%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=16  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=0.1%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=17  reached=1  deaths=1 (combat 0 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=0.0%  S_L=0.0%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 3 (dS +11.5), 4 (dS +17.0), 5 (dS +13.5), 6 (dS +9.1)
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=316  p50=5  reach5=56.0%  reach10=2.8%  reach20=0.0%  dmgTaken/fight=17.16  rounds/fight=5.92  foeMiss=66.3%  casts(def/off)=0/0  potions/run=1.07  backstabs/run=0.00  flees/run=2.31
+  Thief  n=362  p50=6  reach5=71.8%  reach10=7.5%  reach20=0.0%  dmgTaken/fight=11.32  rounds/fight=4.13  foeMiss=69.1%  casts(def/off)=0/0  potions/run=2.03  backstabs/run=6.41  flees/run=3.44
+  Magic User  n=322  p50=4  reach5=36.1%  reach10=0.6%  reach20=0.0%  dmgTaken/fight=15.34  rounds/fight=6.07  foeMiss=68.3%  casts(def/off)=2075/3199  potions/run=3.37  backstabs/run=0.00  flees/run=1.69
+
+Watch list (Phase 92 — TUNE-10, report only; a report, never a gate or a fit objective):
+  Pools (p50 = interpolated median death depth over completed runs):
+    ALL                  n=1000  stuck=6  p50=5  starved=105 (10.6% of deaths)  flees/run=2.52  doorSeen/run=0.01  doorEscape/run=0.06  heals/fight=0.03  attacks/fight=2.80
+    class Fighter        n=316  stuck=0  p50=5  starved=23 (7.3% of deaths)  flees/run=2.31  doorSeen/run=0  doorEscape/run=0  heals/fight=0  attacks/fight=3.10
+    class Thief          n=362  stuck=0  p50=6  starved=59 (16.3% of deaths)  flees/run=3.44  doorSeen/run=0  doorEscape/run=0  heals/fight=0  attacks/fight=2.25
+    class Magic User     n=322  stuck=6  p50=4  starved=23 (7.3% of deaths)  flees/run=1.69  doorSeen/run=0.02  doorEscape/run=0.19  heals/fight=0.11  attacks/fight=3.40
+    MU Illusionist       n=38  stuck=1  p50=4  starved=5 (13.5% of deaths)  flees/run=2.53  doorSeen/run=0.16  doorEscape/run=1.32  heals/fight=0  attacks/fight=3.64
+    MU Cleric            n=44  stuck=0  p50=4  starved=1 (2.3% of deaths)  flees/run=1.59  doorSeen/run=0  doorEscape/run=0  heals/fight=0.53  attacks/fight=9.11
+    MU Wizard            n=41  stuck=1  p50=4  starved=1 (2.5% of deaths)  flees/run=1.88  doorSeen/run=0  doorEscape/run=0  heals/fight=0.08  attacks/fight=2.65
+    MU Summoner          n=38  stuck=0  p50=3  starved=1 (2.6% of deaths)  flees/run=1.08  doorSeen/run=0  doorEscape/run=0  heals/fight=0.04  attacks/fight=2.27
+    MU other             n=161  stuck=4  p50=4  starved=15 (9.6% of deaths)  flees/run=1.62  doorSeen/run=0.01  doorEscape/run=0.06  heals/fight=0.05  attacks/fight=2.24
+    race Dwarven         n=120  stuck=0  p50=5  starved=10 (8.3% of deaths)  flees/run=2.31  doorSeen/run=0  doorEscape/run=0.01  heals/fight=0.02  attacks/fight=2.47
+    race Elven           n=137  stuck=0  p50=4  starved=16 (11.7% of deaths)  flees/run=1.92  doorSeen/run=0  doorEscape/run=0.04  heals/fight=0.02  attacks/fight=2.10
+    race Fridgian        n=123  stuck=0  p50=6  starved=13 (10.6% of deaths)  flees/run=2.99  doorSeen/run=0  doorEscape/run=0.07  heals/fight=0.04  attacks/fight=3.31
+    race Human           n=332  stuck=2  p50=5  starved=22 (6.7% of deaths)  flees/run=2.98  doorSeen/run=0.02  doorEscape/run=0.06  heals/fight=0.03  attacks/fight=3.23
+    race Troll           n=137  stuck=1  p50=5  starved=26 (19.1% of deaths)  flees/run=2.26  doorSeen/run=0.02  doorEscape/run=0.12  heals/fight=0.02  attacks/fight=2.45
+    race Wilmsry         n=151  stuck=3  p50=6  starved=18 (12.2% of deaths)  flees/run=2.10  doorSeen/run=0  doorEscape/run=0.05  heals/fight=0.02  attacks/fight=2.51
+  Starvation: 105 of 994 deaths (10.6%); campFailed/run=0  rations bought/run=0.38
+  Starvation by floor (deaths on the floor; 13 = 13 and deeper):
+    floor  1  deaths=13  starved=0  share=0.0%
+    floor  2  deaths=152  starved=3  share=2.0%
+    floor  3  deaths=136  starved=6  share=4.4%
+    floor  4  deaths=142  starved=19  share=13.4%
+    floor  5  deaths=178  starved=30  share=16.9%
+    floor  6  deaths=136  starved=19  share=14.0%
+    floor  7  deaths=98  starved=10  share=10.2%
+    floor  8  deaths=64  starved=8  share=12.5%
+    floor  9  deaths=37  starved=4  share=10.8%
+    floor 10  deaths=24  starved=2  share=8.3%
+    floor 11  deaths=6  starved=3  share=50.0%
+    floor 12  deaths=3  starved=0  share=0.0%
+    floor 13  deaths=5  starved=1  share=20.0%
+  Fridgian frenzy: runs=123  fights=1541  frenzies=3296  per fight=2.14  strikes=6490  per strike=0.51  (ruled: 0.50 on each strike action)
+  Abilities (uses, fights with a use, fights with a second use; 91.1 = a 91.1 cooldown ability):
+    battleRoar           runs=52  uses=365  fights=365  second=0  second/fight=0
+    brace                runs=64  uses=275  fights=146  second=60  second/fight=0.41
+    cutpurse             runs=118  uses=662  fights=662  second=0  second/fight=0
+    deathTouch           runs=59  uses=395  fights=395  second=0  second/fight=0
+    dirtyTrick           runs=139  uses=1090  fights=1090  second=0  second/fight=0
+    feint          91.1  runs=91  uses=1004  fights=719  second=180  second/fight=0.25
+    hamstring      91.1  runs=34  uses=257  fights=257  second=0  second/fight=0
+    kata           91.1  runs=62  uses=767  fights=458  second=155  second/fight=0.34
+    lastStand      91.1  runs=17  uses=27  fights=21  second=5  second/fight=0.24
+    mark           91.1  runs=42  uses=281  fights=281  second=0  second/fight=0
+    overheadBlow   91.1  runs=94  uses=907  fights=479  second=181  second/fight=0.38
+    poisonedEdge         runs=134  uses=1000  fights=879  second=115  second/fight=0.13
+    pommelStrike         runs=181  uses=2867  fights=1470  second=673  second/fight=0.46
+    riposte              runs=55  uses=166  fights=153  second=12  second/fight=0.08
+    secondWind     91.1  runs=69  uses=262  fights=172  second=45  second/fight=0.26
+    sidestep             runs=31  uses=100  fights=92  second=8  second/fight=0.09
+    silentStep           runs=102  uses=1018  fights=1018  second=0  second/fight=0
+    smoke                runs=98  uses=245  fights=222  second=18  second/fight=0.08
+    sweep                runs=85  uses=271  fights=232  second=29  second/fight=0.13
+    taunt                runs=57  uses=169  fights=138  second=18  second/fight=0.13
+  Joiners: runs=264  fights=2070  casts=848  casts/fight=0.41  downs=114  parley successes with a Joiner=195 of 1158  p50 with a Joiner=6
+  Stuck runs: 6 of 1000
+
+Outcome: 994 dead, 6 stuck (hit maxActions=20000; excluded from depth stats)
+```
+
+### Phase 92 — the average run and the floors 1–12 rows
+
+**Headline (TUNE-10): the fair-bot p50 death depth is 5, against the ruled band [3, 4]: outside the band by 1 floor (too easy).** The 79.1 FINAL read 4. Mean death depth 4.97 (79.1: 4.49); p90 8 (79.1: 7). 994 dead, 6 stuck (79.1: 938 dead, 62 stuck). Deaths through floor 4 are 443 of 994 (44.6%); the median flips to floor 4 when that reaches 50%, which is 54 more early deaths in 994.
+
+- **The Filter shape (FILTER_SHAPE):** ok (largest single-floor drop 14.1 points on floor 2; floors 1-4 rise 19); 79.1: ok (16.8 on floor 2; rise 21.5).
+- **Verdict line (the tool's own):** `floors outside the pass band: 3 (dS +11.5), 4 (dS +17.0), 5 (dS +13.5), 6 (dS +9.1)`. The 79.1 FINAL's: `floors outside the pass band: 4 (dS +11.1), 5 (dS +8.4)`.
+- Tolerance is the Phase 79.2 one: ±8 points on floors 1-10, ±3 on floors 11-12.
+
+| L | Target S_L | 79.1 FINAL S_L | 92 FINAL S_L | dS (92) | verdict (92) | verdict (79.1) |
+|---|---|---|---|---|---|---|
+| 1 | 95.1 | 98.2 | 98.7 | +3.6 | PASS | PASS |
+| 2 | 79.7 | 79.9 | 83.5 | +3.8 | PASS | PASS |
+| 3 | 58.4 | 65.0 | 69.9 | +11.5 | MISS | PASS |
+| 4 | 38.7 | 49.8 | 55.7 | +17.0 | MISS | MISS |
+| 5 | 24.3 | 32.7 | 37.8 | +13.5 | MISS | MISS |
+| 6 | 15.1 | 19.3 | 24.2 | +9.1 | MISS | PASS |
+| 7 | 9.5 | 11.7 | 14.3 | +4.8 | PASS | PASS |
+| 8 | 6.2 | 5.5 | 7.8 | +1.6 | PASS | PASS |
+| 9 | 4.2 | 2.4 | 4.1 | -0.1 | PASS | PASS |
+| 10 | 3.0 | 1.1 | 1.6 | -1.4 | PASS | PASS |
+| 11 | 2.2 | 0.9 | 0.9 | -1.3 | PASS | PASS |
+| 12 | 1.7 | 0.4 | 0.6 | -1.1 | PASS | PASS |
+
+Floors 13-20, measured with no target and no verdict (the tail is read through the tail targets below):
+
+| L | reached (92) | deaths (92) | S_L (92) | reached (79.1) | S_L (79.1) |
+|---|---|---|---|---|---|
+| 13 | 5 | 1 | 0.4 | 3 | 0.1 |
+| 14 | 4 | 2 | 0.2 | 1 | 0.1 |
+| 15 | 2 | 1 | 0.1 | 1 | 0.1 |
+| 16 | 1 | 0 | 0.1 | 1 | 0.1 |
+| 17 | 1 | 1 | 0.0 | 1 | 0.0 |
+
+Every floor from 2 to 6 sits 2 to 5 points higher in per-floor survival than the 79.1 FINAL (p_L 84.6 vs 81.4, 83.7 vs 81.3, 79.7 vs 76.7, 67.9 vs 65.7, 63.9 vs 59.1): the whole early curve moved up together, which is what a uniform rise in hero power looks like, not one floor getting easy. Floors 7 to 12 are inside tolerance as before.
+
+### Phase 92 — starvation after the d10 rations
+
+Starvation deaths are the cause `starved in the dark` alone (`STARVATION_CAUSES`), split from the per-floor survival block's deaths. 79.1 FINAL beside Phase 92 FINAL, both from the readout files:
+
+| L | deaths (79.1) | starved (79.1) | share (79.1) | deaths (92) | starved (92) | share (92) |
+|---|---|---|---|---|---|---|
+| 1 | 18 | 1 | 5.6% | 13 | 0 | 0.0% |
+| 2 | 183 | 5 | 2.7% | 152 | 3 | 2.0% |
+| 3 | 149 | 11 | 7.4% | 136 | 6 | 4.4% |
+| 4 | 149 | 20 | 13.4% | 142 | 19 | 13.4% |
+| 5 | 164 | 18 | 11.0% | 178 | 30 | 16.9% |
+| 6 | 122 | 9 | 7.4% | 136 | 19 | 14.0% |
+| 7 | 65 | 5 | 7.7% | 98 | 10 | 10.2% |
+| 8 | 50 | 11 | 22.0% | 64 | 8 | 12.5% |
+| 9 | 21 | 4 | 19.0% | 37 | 4 | 10.8% |
+| 10 | 9 | 0 | 0.0% | 24 | 2 | 8.3% |
+| 11 | 2 | 1 | 50.0% | 6 | 3 | 50.0% |
+| 12 | 3 | 0 | 0.0% | 3 | 0 | 0.0% |
+| 13 | 2 | 1 | 50.0% | 1 | 0 | 0.0% |
+| all (floors 13+ counted where reached) | 938 | 86 | 9.2% | 994 | 105 | 10.6% |
+
+- **Share of all deaths:** 10.6% now, 9.2% at the 79.1 FINAL: **+1.4 points, a ratio of 1.15** (the drift test: up more than 3 points or doubled). Per 1,000 runs, 105 starved against 86, but the 79.1 FINAL also carried 62 stuck runs that never died against 6 now, so the two runs do not count the same population.
+- **The class matrix** (`tools/readouts/92-final-classes.json`, pooled over 1,430 runs): `starved in the dark` 145 of 1424 deaths (10.2%), against 128 of 1358 (9.4%) at 79.1. It is still the second cause in the pool, as it was.
+- **campFailed per run: 0** (the 92-01 camp gate: no Joiner camp loop). **Rations bought per run: 0.38** (R4, a Joiner from the start: 0.69). The 79.1 FINAL predates the counter, so neither has a 79.1 column.
+- **Who starves:** by pool (natural run) Fighter 7.3%, Thief 16.3%, Magic User 7.3%; by race Dwarven 8.3%, Elven 11.7%, Fridgian 10.6%, Human 6.7%, Troll 19.1%, Wilmsry 12.2%. The Troll and the Thief carry it, as in the 79.1 FINAL (class matrix: Troll `starved in the dark` 53 of 240 runs against 52).
+
+**Reading.** The d10 store ration supply and the bot's three-night buy target did not move starvation: it is 10.6% of deaths against 9.2%, inside the 3-point test and nowhere near doubling, and the places it bites (floors 4 to 8, the Troll, the Thief) are the same as before. The bot buys few rations per run (0.38), so the d10 supply is a small lever for it. Starvation is not a drift item here; it is recorded as unchanged.
+
+### Phase 92 — classes, races and the watch list
+
+**Class pools (the natural run, class identity block)** against the 79.1 FINAL. The class constraint (`classConstraints`): |class p50 − pooled p50| ≤ 2 and |reach5 − pooled reach5| ≤ 20 points, pooled = the median of the three pools; the Magic User is exempt (user ruling 2026-09-28).
+
+| Pool | n (92) | p50 (79.1 → 92) | reach5 (79.1 → 92) | reach10 (92) | dmgTaken/fight (92) | rounds/fight (92) |
+|---|---|---|---|---|---|---|
+| Fighter | 316 | 5 → 5 | 52.2 → 56.0 | 2.8 | 17.16 | 5.92 |
+| Thief | 362 | 5 → 6 | 59.5 → 71.8 | 7.5 | 11.32 | 4.13 |
+| Magic User | 322 | 3 → 4 | 27.6 → 36.1 | 0.6 | 15.34 | 6.07 |
+
+- Pooled p50 5, pooled reach5 56 (79.1: 5, 52.2). Constraint: **ok**; exempt breaches: none. Fighter and Thief are within 2 floors of the pooled p50 (Fighter 5, Thief 6).
+- Fighter absorbs more damage per fight than the Thief (17.16 vs 11.32) and the Thief's fights are shorter (4.13 vs 5.92 rounds): the identity rules hold.
+
+**The class matrix (1,430 runs, 10 seeds per cell)**: by class, p50 / mean / reach5 / stuck, 79.1 → 92:
+
+| Class | p50 | mean | reach5 | stuck (92) |
+|---|---|---|---|---|
+| Thief | 5 → 6 | 5.02 → 5.61 | 59.5 → 67.7 | 0 |
+| Fighter | 4 → 5 | 4.63 → 4.76 | 47.7 → 51.1 | 0 |
+| Magic User | 3 → 4 | 3.53 → 3.84 | 25.1 → 31.4 | 6 |
+| pooled | 4 → 5 | 4.38 → 4.74 | 43.9 → 50.1 | 6 |
+
+By race, 79.1 → 92:
+
+| Race | p50 | mean | reach5 | Δmean − Δpooled mean |
+|---|---|---|---|---|
+| Wilmsry | 5 → 6 | 5.38 → 5.61 | 66.2 → 67.2 | -0.1 |
+| Fridgian | 4 → 5 | 4.49 → 5.11 | 48.4 → 63.8 | +0.3 |
+| Troll | 4 → 5 | 4.53 → 4.84 | 48.1 → 51.3 | -0.1 |
+| Dwarven | 4 → 4 | 4.27 → 4.79 | 40.5 → 49.8 | +0.2 |
+| Human | 4 → 4 | 4.11 → 4.52 | 35.2 → 44.8 | +0.0 |
+| Elven | 3 → 3 | 3.47 → 3.59 | 24.2 → 24.7 | -0.2 |
+
+Highest race above the pooled mean: Wilmsry at +0.87 (the drift test: more than a floor above).
+
+**Magic User sub-classes and the Master of Arms (class matrix, 60 runs per cell-group, 79.1 → 92):**
+
+| Sub-class | p50 | mean |
+|---|---|---|
+| Illusionist | 3 → 3 | 3.2 → 3.57 |
+| Cleric | 3 → 3 | 3.55 → 3.76 |
+| Wizard | 3 → 4 | 3.45 → 4.27 |
+| Summoner | 3 → 4 | 2.88 → 3.88 |
+| Sorcerer | 4 → 3 | 4.05 → 3.77 |
+| Warlock | 3 → 4 | 3.74 → 3.86 |
+| Court Mage | 4 → 4 | 4.26 → 4.05 |
+| Apprentice | 3 → 3 | 3.1 → 3.58 |
+| Master of Arms | 4 → 3 | 4.7 → 3.9 |
+| Knight | 4 → 4 | 4.49 → 4.5 |
+
+**The watch list (the natural run's `Watch list` block, 1,000 seeds; pools are by class, Magic User sub-class and race; interpolated medians):**
+
+- **Illusionist and Door Illusion.** Natural run: Illusionist n=38, p50 4 against the Magic User pool 4 and the pooled run 5. Door Illusion lands: 1.32 escapes per run through the door against 0.16 see-throughs per run (about 89.2% of casts end the fight), flees 2.53 per run against the Magic User pool's 1.69. Class matrix: Illusionist p50 3, mean 3.57, the lowest sub-class, at the Magic User pool's low end (pool p50 4). **The free escape does not make the Illusionist outlive the other Magic Users.** It is not above the pool, so it is not a drift item; it is also not a strong class on this bot.
+- **Cleric (melee and heal).** n=44, p50 4 (class matrix 3, mean 3.76, 79.1 3.55). It swings 9.11 times a fight (the Magic User pool 3.40) and casts 0.53 heals per fight: it fights in melee and heals, as ruled. Its depth is at the Magic User pool's, not above it.
+- **Wizard and Summoner.** Natural p50 4 and 3; the Wizard swings 2.65 a fight (day-one damage spell, refuses to swing while a damage spell is castable).
+- **Fridgian frenzy.** `runs=123  fights=1541  frenzies=3296  per fight=2.14  strikes=6490  per strike=0.51  (ruled: 0.50 on each strike action)`. The measured rate per strike action is 0.51, the ruled 0.50 (a 4, 5 or 6 on a d6). Race depth: natural p50 6 against 5 pooled; class matrix mean 5.11 against 4.74 pooled (79.1: 4.49 against 4.38).
+- **The 91.1 cooldown abilities** (second use = a fight where the ability was used twice or more; natural run):
+
+| Ability | 91.1 | runs | uses | fights with a use | fights with a second use | second per fight |
+|---|---|---|---|---|---|---|
+| battleRoar |  | 52 | 365 | 365 | 0 | 0 |
+| brace |  | 64 | 275 | 146 | 60 | 0.41 |
+| cutpurse |  | 118 | 662 | 662 | 0 | 0 |
+| deathTouch |  | 59 | 395 | 395 | 0 | 0 |
+| dirtyTrick |  | 139 | 1090 | 1090 | 0 | 0 |
+| feint | yes | 91 | 1004 | 719 | 180 | 0.25 |
+| hamstring | yes | 34 | 257 | 257 | 0 | 0 |
+| kata | yes | 62 | 767 | 458 | 155 | 0.34 |
+| lastStand | yes | 17 | 27 | 21 | 5 | 0.24 |
+| mark | yes | 42 | 281 | 281 | 0 | 0 |
+| overheadBlow | yes | 94 | 907 | 479 | 181 | 0.38 |
+| poisonedEdge |  | 134 | 1000 | 879 | 115 | 0.13 |
+| pommelStrike |  | 181 | 2867 | 1470 | 673 | 0.46 |
+| riposte |  | 55 | 166 | 153 | 12 | 0.08 |
+| secondWind | yes | 69 | 262 | 172 | 45 | 0.26 |
+| sidestep |  | 31 | 100 | 92 | 8 | 0.09 |
+| silentStep |  | 102 | 1018 | 1018 | 0 | 0 |
+| smoke |  | 98 | 245 | 222 | 18 | 0.08 |
+| sweep |  | 85 | 271 | 232 | 29 | 0.13 |
+| taunt |  | 57 | 169 | 138 | 18 | 0.13 |
+
+  Every 91.1 cooldown ability comes back inside a fight: Kata 0.34, Feint 0.25, Overhead Blow 0.38, Last Stand 0.24 and Second Wind 0.26 second uses per fight, in line with the older cooldown abilities (Pommel Strike 0.46, Brace 0.41). Hamstring and Mark show **0** second uses in 257 and 281 fights: by the 91.1 rule they land only on a foe that lacks the effect, and the effect lasts the fight, so a second use needs a second foe; the bot aims them at the hardest foe and skips them when every foe has the effect. That is the rule working, not a bot loop. Death Touch, Silent Step, Cutpurse (once a fight) show 0, as ruled.
+- **Joiners (natural run).** `runs=264  fights=2070  casts=848  casts/fight=0.41  downs=114  parley successes with a Joiner=195 of 1158  p50 with a Joiner=6`. A Joiner is in the party for 264 of 1,000 natural runs. Parley: 1158 successes of 1880 attempts (61.6%, 79.1: 62.1%); SP from parley 8063 of 209467 (3.8%, 79.1: 2.3%): the parley share of experience rose by 1.5 points, which the 91 parley pay and XP split would be expected to do (not isolated, and no ruled target for it). With a Joiner present: 195 of 1158 parley successes.
+- **Joiners (R4, a Joiner forced at run start, 200 seeds).** p50 5 (the natural run's 5), mean 5.27; `runs=194  fights=1722  casts=601  casts/fight=0.35  downs=114  parley successes with a Joiner=133 of 194  p50 with a Joiner=5`; stuck 2 of 200; starvation 24 of 198 deaths (12.1%); campFailed/run=0  rations bought/run=0.69; per-floor survival with a Joiner from the start: floor 1 S_L 99.0 (dS +3.9), floor 2 S_L 90.5 (dS +10.8), floor 3 S_L 78.5 (dS +20.1), floor 4 S_L 66.0 (dS +27.3), floor 5 S_L 47.9 (dS +23.6), floor 6 S_L 22.4 (dS +7.3). A Joiner makes floors 2 to 5 clearly easier than the natural run, but the median stays at 5: the run is carried past floor 4 and then dies on floor 6 (50 deaths).
+- **The Master of Arms** (a Fighter sub-class that never flees, canon, 91-05): class matrix p50 3, mean 3.9 (79.1: 4, 4.7), the lowest Fighter sub-class and the largest fall of any sub-class (−0.8; the next are Sorcerer −0.28 and Court Mage −0.21) while the pooled mean rose. It is canon (it never flees) and below, not above, the pool: noted, not a drift item.
+
+### Phase 92 — the tail (measured, not fitted)
+
+The deep-start tail slices on the finished rules (`--dials='{}'`: the shipped dials), against the user's ruled `TAIL_TARGETS` and beside the Phase 79.2 lock column (`fit/tail-confirm-c3n1.jsonl`, read from the Phase 79.2 table above). Slices at 200 seeds, the rotation slices and troll20 at 40, the fresh slice at 1,000. Nothing here is fitted: a missed ruled target would be a drift item, not something to tune.
+
+| Ruled target | Target | 79.2 lock | 92 FINAL | Verdict |
+|---|---|---|---|---|
+| fresh reach-20 (% of 1,000) | <= 1% | 0% | 0% | PASS |
+| fresh reach-21 (% of 1,000) | < 0.5% | 0% | 0% | PASS |
+| fresh count reaching 30 | <= 1 | 0 | 0 | PASS |
+| deep12 reach20 | <= 5% | 0.5% | 0% | PASS |
+| deep20 p50 floors gained | <= 2 | 0 | 0 | PASS |
+| deep20 reach30 | <= 1% | 0% | 0% | PASS |
+| deep30 p50 floors gained | <= 0 | 0 | 0 | PASS |
+| deep30 p90 floors gained | <= 1 | 1 | 1 | PASS |
+| rot20 p50 gained vs deep20 p50 | rot <= fair | 0 vs 0 | 0 vs 0 | PASS |
+| rot30 p90 gained vs deep30 p90 | rot <= fair | 1 vs 1 | 1 vs 1 | PASS |
+| guard: fresh p50 death depth (report only) | in [3,4] | 5 | 5 | outside (guard, reported) |
+
+Tail row: score 0, verdict PASS, misses none, constraints.ok true, freshMeasured true. Report-only slices: deep40 p50 / p90 floors gained 0 / 0; rot40 0 / 0; troll20 0 / 1 (reach21 22.5%); deep12 p90 gained 2. Fresh slice: 1000 runs, 6 stuck.
+
+**Every ruled tail target passes.** deep30 p90 (1), like the 79.2 lock, sits at its bound. The tail did not move with the early curve: the extra hero power that lifted floors 2 to 6 does not carry a run past floor 20.
+
+### Phase 92 — drift
+
+One item per test the plan set (the 79.1 FINAL as the user accepted it, with floors 4 and 5 already MISS, is the accepted state). **Drift found: D1 and D2** (one cause: the early curve is about a floor easier than the ruled band). D3 to D7 are clean.
+
+- **D1. The median death depth is above the ruled band (game drift, size +1 floor).** p50 5 against [3,4] (79.1 FINAL: 4; the Phase 79.2 lock shipped 5). Deaths through floor 4: 443 of 994 (44.6%); 54 more would flip the median to floor 4. Mean 4.97 (+0.48). Likely cause (not separable: this is one pass over every change together): the milestone added hero power on the early floors (Joiner hp and armour soak, heal over time, the 91.1 cooldown abilities that come back, the Cleric's melee-and-heal, Door Illusion as a free escape, Pommel Strike as a real strike), and the stuck population shrank from 62 to 6, so more runs count as deaths. For scale: the Phase 79.2 lock itself read 5; the 79.1 FINAL read 4 after the quick fixes cos/hrs/nrf that landed after it, so 5 is the lock's own level. (ruling pending; recommended A)
+- **D2. Floors 3 to 6 are outside the Phase 79.2 tolerance, and the two accepted MISS rows grew (game drift).** dS: floor 3 +11.5 (79.1 +6.6, PASS then, MISS now), floor 4 +17.0 (79.1 +11.1), floor 5 +13.5 (79.1 +8.4), floor 6 +9.1 (79.1 +4.2, PASS then, MISS now), against a tolerance of 8. Floors 1-2 and 7-12 are inside. The whole curve from floor 2 to 6 sits 2 to 5 points higher in per-floor survival than the 79.1 FINAL; the Filter shape is ok. Same cause as D1 and the same structural note as the 79.2 Flag 2 (the ruled `soloOnlyOnOneFrom = 5` puts a step at floor 5). (ruling pending; recommended A)
+- **D3. Starvation share: no drift.** 10.6% of deaths against 9.2% (+1.4 points, ratio 1.15); the test is up more than 3 points or doubled. Recorded as unchanged.
+- **D4. Fighter and Thief against the pooled median: no drift.** Fighter p50 5, Thief 6 against a pooled 5 (limit 2); reach5 within 20 points (constraint ok).
+- **D5. Watch items: no item is out of line by the test.** Illusionist p50 4 against the Magic User pool 4 (not two floors above; the class matrix has it the lowest sub-class); no race more than a floor above the pooled mean (highest Wilmsry +0.87); the Fridgian frenzy 0.51 per strike against the ruled 0.50; every 91.1 cooldown ability fires in line with its siblings (Hamstring and Mark's 0 second uses are the rule). Noted, not drift: the Cleric swings 9.11 times a fight (melee-and-heal, as ruled); the Master of Arms (never flees) is the lowest Fighter sub-class (mean 3.9).
+- **D6. Tail targets: no drift.** Every ruled tail target passes (tail score 0).
+- **D7. Stuck runs: no drift.** 6 of 1,000 (0.6%) against 5%; the 79.1 FINAL had 62. R2: 6 of 1,430; R4: 2 of 200.
+
+**Options for D1 and D2** (one decision; the retune, if any, is 92-05's):
+
+- **(A) Accept and record. Recommended.** Nothing changes. The game is where the Phase 79.2 lock left it (p50 5, the user's "lock the best result as-is"), the early curve is smooth (the Filter shape is ok), the tail still passes every ruled target, and the one measurement says the fair bot plays worse than a human, so floor 5 for the bot is about floor 7 to 9 for a human by the same rule of thumb the ruling used (an extrapolation, not a measurement). A retune now moves fixtures the milestone has just locked and the Phase 79.2 flag still holds: floors 4 and 5 will not close with a global dial because of the step at floor 5.
+- **(B) Dial refit by the checkpointed protocol.** Objective: the Phase 79.2 floors 1-12 curve and the [3, 4] band, with the class constraint (Magic User exempt); coordinates `tools/lib/fit-score.mjs` `SEARCH_PLAN` (`FOE_HP_SCALE.base`, `ENCOUNTER_DOTS.base`, `HAZARD_SCALE.base`, `FOE_HIT_SCALE.base`, `FOE_LEVEL.base`, `HERO_HP_SCALE`, `HERO_SP_SCALE`, `FOE_HIT_SCALE.perDepth`, `FOE_LEVEL.perDepth`), blocks of 10 at 200 seeds, the best confirmed at 1,000, floors 13-20 measured never fitted. It needs about 3 points less survival on each of floors 2 to 4 (54 more deaths in 994). It moves fixtures (the 79.2 lock re-declared 38 parity records) and the 79.2 fit already could not close floors 4 and 5.
+- **(C) A named rule change.** The still-open 79.2 question: `FOE_COUNT_DEPTH.soloOnlyOnOneFrom` 5 to 4, which hardens floors 4 and 5 directly without a global dial; or a tweak to a watch item the user names. An engine change, so the user's call; it moves fixtures too.
+- **(D) A bot-only fix.** Not recommended: D1 and D2 are a game measurement, not a bot artifact (the bot's stuck rate fell to 0.6%).
+
+### Phase 92 — reading and flags for the user
+
+**In plain words.** The one fair-bot pass on the finished rules says the game got a floor easier than the ruled band: the fair bot's median death is floor 5, against floor 3 to 4 (it read 4 at the 79.1 FINAL). By the rule of thumb behind the ruling (bot 3-4 is about human 5-7), a skilled human should expect to end around floor 7 to 9 (an extrapolation, not a measurement). Floors 2 to 6 are each 2 to 5 points easier to survive than at the 79.1 FINAL; floors 7 to 12 are inside their tolerance, the deep floors are where they were, and every ruled tail target (floor 20 should be the unicorn run) still passes. Starvation did not change: 10.6% of deaths against 9.2%. The watch list is clean: the Illusionist's Door Illusion lands about nine casts in ten and still leaves the Illusionist at the bottom of the Magic Users, the Cleric melees and heals as ruled, the Fridgian frenzy fires at the ruled one in two, the 91.1 abilities come back inside fights, and a Joiner makes floors 2 to 5 easier without moving the median.
+
+**Flags for the user:**
+
+- **Flag 1 (D1, D2): the median and floors 3 to 6.** Option A to D above; A is recommended. It is a floor, not a collapse.
+- **Flag 2: stuck runs fell from 62 to 6.** The 79.1 FINAL excluded 62 stuck runs from its depth stats; this run has 6. Part of the median's move may be that change in the population (the 92-01 bot fixes and the v2.3 rules both touch it), which the one pass cannot separate from the rule changes.
+- **Flag 3: the Illusionist** is not a strong class on this bot even with a free escape, and the Master of Arms (never flees, canon) is the lowest Fighter sub-class. Neither is above its pool.
+- **Flag 4: the economy accepts stand** (floors 8 to 12 overshoot, 92-03); not re-measured by this pass because the fair bot never sells.
+
+### Phase 92 — ruling
+
+Pending: the 92-04 checkpoint was not put to the user in this run. The orchestrator ruled that the pass records the drift and completes the plan without stopping (2026-10-01); the user's ruling on D1 and D2 is still to be taken. Until it is, the recommended default stands, and 92-05 reads this section: if the user rules otherwise, this section is replaced with the date and the user's words before 92-05 builds anything.
+
+D1: pending (recommended: accept and record, option A) — 92-05 builds nothing for it; the ledger keeps this record and the note that the median reads 5, the Phase 79.2 lock's own level, with the human rule of thumb (an extrapolation, not a measurement).
+D2: pending (recommended: accept and record, option A) — the same: floors 3 to 6 are recorded as MISS beside the accepted floors 4 and 5 of the 79.1 FINAL; no dial moves. If the user rules B, expect a 79.2-04-sized fixture re-declaration (the fit moves hero-side and foe dials together).
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
