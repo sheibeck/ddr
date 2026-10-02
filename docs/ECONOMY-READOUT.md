@@ -15,7 +15,7 @@ The numbers come from 1,000 auto-played runs (seeds `i*7919+1`, the shipped dial
 
 **Total stock price** = every line on the shelf when the store opens, each at the price this hero pays (race, Pickpocket and the Wilmsry haggle are already in the line's price), with the Rations line counted as its price times the stock left (a d10).
 
-**The bot's shopping:** it buys a better weapon, then better armour, keeping 50 wilmst back, and tops rations up to three nights of the party's upkeep. It never buys repairs and never sells. Because a human does sell, every row also shows the gold held plus the sale value of the bag (half the base value of each carried item, `sellPriceFor`).
+**The bot's shopping:** it buys a better weapon, then better armour, keeping 50 wilmst back, and tops rations up to three nights of the party's upkeep. It never buys repairs and never sells. Because a human does sell, every row also shows the gold held plus the sale value of the bag (in the before-readout, half the base value of each carried item, `sellPriceFor`; after 92-03 the floor's `DIALS.SELL_FRACTION`: 0.5 on floors 1-4 falling to 0.125 from floor 7).
 
 **Caveats that travel with every number:** (1) the bag's sale value is what a human could raise by selling; a sale is capped by the bag's wilmst carry cap, but a human can sell, buy, and sell again, so it is a fair picture of what the hero could spend over a visit. (2) The deeper rows are survivors of a bot whose median death is about floor 4, so n is stated on every row and the rows past floor 8 are thin. (3) The store-visit sample is small at depth 7 (24 visits); the arrival sample (240) is the one to lean on. (4) A tuning proxy, not a gate and not a substitute for a human playtest.
 

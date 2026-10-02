@@ -889,9 +889,11 @@ tiers (`content/tools.js#TOOLS`).
 One bag slot each (`slotItems` counts a tool like any other gear/treasure
 item — `bagCap` applies); never stacks — a second copy is refused
 (`itemRejected {reason:"haveOne"}`), mirroring the Lockpicks `kind:"picks"`
-precedent (`engine/items.js#hasPicks`). Sell price is half the buy cost
+precedent (`engine/items.js#hasPicks`). Sell price on floors 1-4 is half the buy cost
 (`sellPriceFor`/`baseValueFor`, same `SELL_SPREAD` every other item uses,
-rounded): Rope sells for 30, Ladder for 75, Torch for 13.
+rounded): Rope sells for 30, Ladder for 75, Torch for 13. (Since 92-03 the
+fraction is a depth-shaped dial, `DIALS.SELL_FRACTION`: 0.5 on floors 1-4,
+0.375 on 5, 0.25 on 6, 0.125 from floor 7.)
 
 ### The decision-point design (CONTEXT Area 1)
 
