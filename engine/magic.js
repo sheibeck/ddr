@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, spellClosed, schoolBonus, healBonusFor, wardBonusFor, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, strengthRoll, spellEffectSquares } from "./derived.js";
+import { eff, canCast, canLearn, spellClosed, schoolBonus, healBonusFor, wardBonusFor, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, spellStrengthParts, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe, fleeRefusal, parleyBlockedReason, parley, doorIllusionEscape, behemothRoar } from "./combat.js";
@@ -404,8 +404,11 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
     // no-op) sits between the roll and afraidDamage.
     // Phase 90 (SPELL-09, Q1 A): a live Strength adds its d10 to this one roll
     // (every foe takes it); the caster's own backlash stays the dice alone.
+    // Phase 92.2 plan 01 (user 2026-10-02): the Strength potion's flat bonus joins
+    // the spell's d10 here (spellStrengthParts).
     const rolled = rollDice(rng, sp.dmg);
-    const d = afraidDamage(state, spellDamageFor(rolled + strengthRoll(c, rng) + spellLevelSq(c), c));
+    const sParts = spellStrengthParts(c, rng);
+    const d = afraidDamage(state, spellDamageFor(rolled + sParts.total + spellLevelSq(c), c));
     const backlash = afraidDamage(state, spellDamageFor(rolled, c));
     // Quick 260927-rsx: every live foe rolls its intel resist up front (in
     // C.foes order, before any damage lands); a foe that resists takes none.
@@ -473,7 +476,9 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
       // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
       // Phase 90 (SPELL-09, Q1 A): each bolt is its own damage roll, so a live
       // Strength adds its own d10 to every bolt.
-      const d = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + strengthRoll(c, rng) + (first ? levelSq : 0), c));
+      const dice = rollDice(rng, sp.dmg);
+      const bolt = spellStrengthParts(c, rng);
+      const d = afraidDamage(state, spellDamageFor(dice + bolt.total + (first ? levelSq : 0), c));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
       const hit = damageFoe(state, t, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
@@ -801,7 +806,10 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
         // Phase 54 (BAND-02, USER RULING D): spellDamageFor (identity 1).
         // Phase 90 (SPELL-09, Q1 A): a live Strength adds its d10 to this damage
         // roll (each foe a Lightning throw reaches rolls its own).
-        const dmg = afraidDamage(state, spellDamageFor(rollDice(rng, sp.dmg) + strengthRoll(c, rng) + levelSq + eff(c, "spellDmg"), c));
+        // Phase 92.2 plan 01: the Strength potion's flat bonus rides with the spell's d10.
+        const dice = rollDice(rng, sp.dmg);
+        const sParts = spellStrengthParts(c, rng);
+        const dmg = afraidDamage(state, spellDamageFor(dice + sParts.total + levelSq + eff(c, "spellDmg"), c));
         // Spell damage (D-06): bypasses foe armor entirely; eligible for the
         // CANON-04 multiplier table. `levelSq` in the event is the level
         // term above (the narration says "the roll +N, for your level");

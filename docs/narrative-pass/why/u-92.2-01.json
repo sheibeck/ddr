@@ -1,0 +1,29 @@
+[
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero condition chip's explanation: mazeworld.html#CONDITION_EXPLAIN (the Strong chip, potion or phobia rage)",
+    "before": "Extra damage on every blow, from a potion or a rage you did not ask for. Hit things.",
+    "after": "Extra damage on every blow, from a potion or a rage you did not ask for. A Strength potion adds it to your spells too. Hit things.",
+    "reasons": ["fact", "accurate"],
+    "why": "Phase 92.2 plan 01 (user ruling 2026-10-02, the Strength potion also boosts spells): the +8 now rides on every damage-spell roll as well as every blow, so the chip says so. The rage's extra damage is still blows only; the sentence names the potion."
+  },
+  {
+    "key": "oracle:itemEffectStarted",
+    "surface": "oracle",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "+3 damage for 3 squares. Hit things.",
+    "after": "the companion +3 damage to blows and spells for 3 squares. Hit things.",
+    "reasons": ["fact", "accurate"],
+    "why": "Phase 92.2 plan 01 (user ruling 2026-10-02, the Strength potion also boosts spells): the start line of a Strength potion names both reaches, blows and spells. The synthetic corpus event is a Joiner's, so the corpus prints the third-person form; the hero's line reads '+8 damage to blows and spells for 25 squares. Hit things.'"
+  },
+  {
+    "key": "rail:itemEffectStarted",
+    "surface": "rail",
+    "trigger": "itemEffectStarted — a worn or drunk item's timed effect starts",
+    "before": "+3 damage for 3 squares.",
+    "after": "the companion +3 damage to blows and spells for 3 squares.",
+    "reasons": ["fact", "accurate"],
+    "why": "The rail twin of the Strength potion's start line (Phase 92.2 plan 01, user ruling 2026-10-02): the same two reaches in the rail's short form. The synthetic corpus event is a Joiner's, so the corpus prints the third-person form."
+  }
+]

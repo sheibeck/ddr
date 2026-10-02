@@ -8085,3 +8085,23 @@ and no engine event is added (the two new rail cards are account-shell copy in `
 
 New probes (the manifest provider removal, the gated initialize before `super.onCreate`, the shared idempotent init, `test/unit/account-signin-row.test.js`, the real-first-boot and
 2.2.0-upgrade cases in `test/unit/settings.test.js`, the interactive-init cases in `test/unit/firebaseAuth.test.js`) are additions, not moves. Nothing else moved.
+
+
+### Phase 92.2 plan 01: the Strength potion also boosts spells, Strength in the damage lines, privacy wording, patch notes on a fresh install
+
+**The predictor.** Ruling 1 is an engine rule change (a balance change the user ruled, unmeasured, recorded in docs/DIFFICULTY-RETUNE.md): while `item:Strength` is live its +8 joins the
+Strength spell's d10 at every hero damage-spell roll (`derived.js#spellStrengthParts`), per roll and per target hit, not on a damage-over-time tick. A parity or determinism fixture moves
+only if a seeded run drinks a Strength potion and then casts a damage spell with it live; none does. `test/parity/prototype-master.js.txt` is unedited, `roll-high-baseline.mjs save`
+was not run, and `node tools/narrative-review.mjs --check` passes.
+
+**Moved.** Regenerated alone, measured twice with `tools/roll-high-baseline.mjs pins`:
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/roll-high-state-pins.test.js` label `solo-2` (239 actions, dead, depth 2 unchanged) | hash `a89a5ab0...` | hash `7e3d093e...` (pasted by label) | the run ends holding the Strength potion's item object, whose `txt` now reads "+8 damage to blows and spells, 25 squares"; with only that text put back, the label hashes to `a89a5ab0...`, so no roll of the run moved. The other seven labels are unchanged |
+| `test/unit/item-text-engine.test.js` Strength row fact | the text said `^(#) damage, (#) squares$` | it says `^(#) damage to blows and spells, (#) squares$` | the potion's `txt` names spells now (the spell half is pinned in `test/unit/strength-potion-spells.test.js`) |
+| `test/unit/fixtures/shell-snapshots/thief-store.store.txt` and `mu-store.store.txt` (regenerated alone with `MZ_SNAPSHOT_UPDATE=1`; the other snapshots are byte-identical) | the Strength potion's store row read `+8 damage, 25 squares` | it reads `+8 damage to blows and spells, 25 squares` | the potion's `txt` names spells now; one line each, nothing else in the rendered DOM moved |
+| `test/unit/item-audit.test.js` verdict vocabulary and the Closed pin count | accepted `fixed engine/text (89-NN)` only; 117 distinct pins | also accepts `fixed (92.2-NN)`; 119 distinct pins | the Strength row of docs/ITEM-AUDIT.md reads `fixed (92.2-01)` and names two new pins |
+
+New probes (`test/unit/strength-potion-spells.test.js`: Freeze, Fireball, Lightning, Fireballs, Earthquake and Ice with only the potion live deal the no-potion damage + 8 on the same seed, melee
+stays +8, the helper reads only the sheet's own records) are additions, not moves. Nothing else moved.

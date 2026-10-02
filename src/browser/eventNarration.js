@@ -2067,7 +2067,7 @@ export const EVENT_NARRATION = {
         haste: `double attacks for ${sq}.`,
         invis: `unseen for ${sq}: foes hit them only on their best roll (${ITEM_INVIS_RANGE}). They swing at where ${m} was.`,
         acute: `strikes on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.`,
-        might: `+${e.might ?? "?"} damage for ${sq}. Hit things.`,
+        might: `+${e.might ?? "?"} damage to blows and spells for ${sq}. Hit things.`,
         power: `+1 damage for ${sq}. The ring approves.`,
         giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit them. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
         enlarge: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit. Nobody said it was free.` : `is one size larger for ${sq}.`,
@@ -2088,7 +2088,7 @@ export const EVENT_NARRATION = {
       // states the count and, in voice, that ending inside stone is fatal.
       ether: `<span class="hit">${sq} of walking through stone. Be in a corridor when it ends — the stone will not make room.</span>`,
       acute: `<span class="hit">You strike on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.</span>`,
-      might: `<span class="hit">+${e.might ?? "?"} damage for ${sq}. Hit things.</span>`,
+      might: `<span class="hit">+${e.might ?? "?"} damage to blows and spells for ${sq}. Hit things.</span>`,
       fly: `<span class="hit">Twenty squares of not touching the floor.</span>`,
       // Phase 39 (GEAR-05): the torch's lit effect.
       lit: `<span class="hit">Forty squares of carrying a light.</span>`,

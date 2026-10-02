@@ -28,7 +28,7 @@ export const POTIONS = [
   { n: "Xtra Healing", col: "Blue", uses: { n: 1, sides: 2, bonus: 0 }, price: 500, eff: "full", txt: "heal to maximum" },
   {
     n: "Strength", col: "Red", uses: { n: 1, sides: 4, bonus: 0 }, price: 100, eff: "strength",
-    txt: "+8 damage, 25 squares",
+    txt: "+8 damage to blows and spells, 25 squares",
     act: { kind: "might", effect: 25, might: 8 },
   },
   { n: "Cure Disease", col: "Aqua", uses: { n: 1, sides: 6, bonus: 0 }, price: 100, eff: "disease", txt: "cures disease" },

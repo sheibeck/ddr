@@ -788,7 +788,9 @@ export const ITEM_TEXT_FACTS = {
     },
   ],
   "Xtra Healing": [],
-  Strength: [{ says: /^(#) damage, (#) squares$/d, value: () => [dmgDelta("Strength"), E("Strength")] }],
+  // Phase 92.2 plan 01 (user 2026-10-02): the +8 is on blows AND spells; the spell half is pinned by
+  // test/unit/strength-potion-spells.test.js (spellStrengthBonus reads the same potionMight this blow delta reads).
+  Strength: [{ says: /^(#) damage to blows and spells, (#) squares$/d, value: () => [dmgDelta("Strength"), E("Strength")] }],
   "Cure Disease": [],
   Enlarge: [
     {

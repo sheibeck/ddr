@@ -8171,6 +8171,15 @@ D2: accepted and recorded (user, 2026-10-01). Floors 3 to 6 read MISS against th
   - the Master of Arms (never flees, canon) is the lowest Fighter sub-class and the Illusionist is weak even with a free escape; neither is above its pool;
   - the floors 8 to 12 economy overshoot (above), and the fair bot never sells or buys repairs, so the economy is judged on gold plus the bag's sale value.
 
+### Post-pass rule change (92.2, 2026-10-02): the Strength potion also boosts spells
+
+TUNE-10 is closed and this change was not part of any measured pass. It is a rule the user ruled after the milestone-close device pass ("Strength potion description says bonus damage applies to melee and spells. I cast Freeze and did 5"), recorded here as a post-pass rule change, UNMEASURED: no bot rerun was made.
+
+- **Before.** The potion's +8 (`derived.js#potionMight`) was read only by `weaponDamageTerms`, so it boosted blows and nothing else. The Strength spell's d10 (`strengthRoll`) already rode on every hero damage-spell roll.
+- **After.** While `item:Strength` is live, the +8 is also added to every hero damage-spell roll, at the same sites and with the same per-roll rule as the spell's d10 (`derived.js#spellStrengthParts`): each damage-spell roll, per target hit, for the thrown spells (Freeze and the rest), Lightning, Ice, Earthquake (its one roll, the caster's backlash stays the dice alone) and Fireballs (each bolt), and the same sites on a Joiner's own sheet (only when the potion's record is on that sheet). Damage-over-time ticks get none. Melee stays +8.
+- **Effect on a cast.** A Freeze with the potion live does the no-potion damage + 8 on the same seed (level 1 and 3, seeds 1 to 8, pinned by `test/unit/strength-potion-spells.test.js`). The potion costs 100 gold and lasts 25 squares, so the change is a spell caster's gain of 8 per roll for 25 squares, more for a cast that makes several rolls (Fireballs: 8 per bolt).
+- **What was measured.** Only the roll-high state pins (one label, "solo-2", moved, and only because its final state holds the potion's reworded item text), parity and determinism (unchanged). No difficulty table, band or constant moved. A later bot pass, if one is ever run, will see this rule in its base.
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases

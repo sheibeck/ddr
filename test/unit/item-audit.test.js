@@ -140,6 +140,8 @@ const VERDICT_TOKENS = [
   /^ruled \(\d{4}-\d{2}-\d{2}\)$/,
   /^ruled \(Q\d+, 2026-09-30\) -> 89-\d\d( .+)?$/,
   /^(fix|fixed) (engine|text) \(89-\d\d(, 89-\d\d)*\)$/,
+  // Phase 92.2 plan 01 (user 2026-10-02): a row a later phase fixed, e.g. the Strength potion also boosting spells.
+  /^fixed \(92\.2-\d\d\)$/,
   /^balance call \(Q\d+\)$/,
 ];
 
@@ -314,7 +316,7 @@ function checkDoc(text) {
       if (verdict === "match" && cells.some((c) => GAP_WORDS.test(c))) add(`${family}: row "${item}" reads match but a cell admits a gap`);
       if (OPEN_VERDICT.test(verdict)) add(`${family}: row "${item}" is still open ("${verdict}"): a closed table has no fix engine, fix text or balance call`);
       if (pinned) {
-        const settled = /^(fixed (engine|text)|ruled)\b/.test(verdict);
+        const settled = /^(fixed (engine|text)|fixed \(92\.2-\d\d\)|ruled)/.test(verdict);
         for (const p of pinProblems(`${family}: row "${item}"`, pinned, { needTitle: settled, allowDash: !settled })) add(p);
       }
       allVerdictRows.push([family, item, verdict]);

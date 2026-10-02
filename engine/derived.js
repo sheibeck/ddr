@@ -846,6 +846,29 @@ export function strengthRoll(sheet, rng) {
 }
 
 /**
+ * spellStrengthParts(sheet, rng) — Phase 92.2 plan 01 (user ruling 2026-10-02:
+ * "the Strength potion also boosts spells"): the ONE strength term every hero
+ * (and Joiner) damage-spell roll adds, so the Strength spell's d10 and the
+ * Strength potion's flat bonus can never drift apart. Returns
+ * `{ strength, might, total }`: `strength` is the spell's d10 (strengthRoll,
+ * a derived stream, 0 without a live Strength spell), `might` is the potion's
+ * flat bonus (potionMight, 0 without a live Strength potion; the potion is the
+ * drinker's, so a Joiner reads it from its own sheet only), `total` their sum.
+ * The d10 is rolled ONCE here, and the caller reports that same value. The
+ * main rng is never advanced. A damage-over-time tick never calls it.
+ */
+export function spellStrengthParts(sheet, rng) {
+  const strength = strengthRoll(sheet, rng);
+  const might = potionMight(sheet);
+  return { strength, might, total: strength + might };
+}
+
+/** spellStrengthBonus(sheet, rng) — the `total` of spellStrengthParts, for a site that reports nothing. */
+export function spellStrengthBonus(sheet, rng) {
+  return spellStrengthParts(sheet, rng).total;
+}
+
+/**
  * strengthDiceOf(sheet) — Phase 90 (SPELL-09), module-private: the live
  * Strength record's die (`{ n, sides, bonus }`), or null. The one read
  * strengthRoll and weaponDamageRange share.

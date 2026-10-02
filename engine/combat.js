@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, strengthRoll, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, spellStrengthParts, spellStrengthBonus, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -1688,7 +1688,10 @@ export function iceStorm(state, sp, rng, events, caster = {}) {
   events.push({ type: "iceCast", spell: sp.n, foes: targets.length, ...(by ? { by } : {}) });
   for (const f of targets) {
     if (!f.alive) continue;
-    const raw = rollDice(rng, sp.dmg) + strengthRoll(sheet, rng) + levelSq + eff(sheet, "spellDmg");
+    // Phase 92.2 plan 01 (user 2026-10-02): the Strength potion's flat bonus rides with the spell's d10.
+    const dice = rollDice(rng, sp.dmg);
+    const sParts = spellStrengthParts(sheet, rng);
+    const raw = dice + sParts.total + levelSq + eff(sheet, "spellDmg");
     const dmg = by ? raw : afraidDamage(state, spellDamageFor(raw, sheet));
     const hit = damageFoe(state, f, dmg, { kind: "spell", school: sp.kind, casterSub: sub, ...(by ? { by } : {}) }, rng, events);
     if (by) events.push({ type: "allySpellHit", name: by, spell: sp.n, target: f.name, effect: "damage", dmg: hit.applied });
@@ -3603,7 +3606,8 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
       // every foe takes the one roll + a live Strength's d10 + level²; the backlash is
       // half the dice alone, and none to a warded Joiner (the hero's rule: c.ward).
       const rolled = rollDice(rng, sp.dmg);
-      const d = rolled + strengthRoll(view, rng) + levelSq;
+      const sParts = spellStrengthParts(view, rng); // Phase 92.2 plan 01: the Joiner's own potion + spell
+      const d = rolled + sParts.total + levelSq;
       const quakeHit = liveFoes(state).filter((f) => !foeResistsSpell(state, f, sp.n, rng, events, ally.name));
       quakeHit.forEach((f) => {
         damageFoe(state, f, d, bySource, rng, events);
@@ -3640,7 +3644,9 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
         if (!f.alive || shrugged.has(f)) continue;
         const first = !struck.has(f);
         struck.add(f);
-        const d = rollDice(rng, sp.dmg) + strengthRoll(view, rng) + (first ? levelSq : 0);
+        const dice = rollDice(rng, sp.dmg);
+        const bolt = spellStrengthParts(view, rng);
+        const d = dice + bolt.total + (first ? levelSq : 0);
         const hit = damageFoe(state, f, d, bySource, rng, events);
         tot += hit.applied;
         if (f.wp <= 0) killFoe(state, f, rng, events);
@@ -3770,7 +3776,10 @@ function allyThrow(state, ally, view, sp, t, rng, events) {
       // Phase 91 (IDENT-17, plan 91-07): a live Strength on the Joiner's own sheet
       // (a sung Strength) adds its d10 to this roll, as the hero's thrown spell
       // does; 0, and no draw, for any Joiner without one.
-      const dmg = rollDice(rng, sp.dmg) + strengthRoll(view, rng) + spellLevelSq(view) + eff(view, "spellDmg");
+      // Phase 92.2 plan 01 (user 2026-10-02): the Joiner's own Strength potion (a record on
+      // its sheet) rides with the spell's d10, as the hero's does.
+      const dice = rollDice(rng, sp.dmg);
+      const dmg = dice + spellStrengthBonus(view, rng) + spellLevelSq(view) + eff(view, "spellDmg");
       const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: view.sub }, rng, events);
       if (freeze) {
         // User rulings 2026-09-28: "freeze should never kill outright. It

@@ -14,7 +14,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Healing potion<i>+d10+2 hp</i></span>\n        <span class=\"g-c\">105 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Strength potion<i>+8 damage, 25 squares</i></span>\n        <span class=\"g-c\">70 wm</span>"
+    html="<span class=\"g-n\">Strength potion<i>+8 damage to blows and spells, 25 squares</i></span>\n        <span class=\"g-c\">70 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Enlarge potion<i>one size larger for fifty squares: +11 damage, and foes +1 to hit you</i></span>\n        <span class=\"g-c\">105 wm</span>"
   <button class="goods" disabled onclick>

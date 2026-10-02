@@ -2820,7 +2820,7 @@ export const LINE_FOR = {
         haste: `double attacks for ${sq}.`,
         invis: `unseen for ${sq}: foes hit them only on their best roll (${RAIL_INVIS_RANGE}).`,
         acute: `strikes on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
-        might: `+${e?.might ?? "?"} damage for ${sq}.`,
+        might: `+${e?.might ?? "?"} damage to blows and spells for ${sq}.`,
         power: `+1 damage for ${sq}.`,
         giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
         enlarge: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
@@ -2842,7 +2842,7 @@ export const LINE_FOR = {
       // the same warning eventNarration.js's Oracle line carries.
       ether: `${sq} of walking through stone. Be in a corridor when it ends — the stone will not make room.`,
       acute: `You strike on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
-      might: `+${e?.might ?? "?"} damage for ${sq}.`,
+      might: `+${e?.might ?? "?"} damage to blows and spells for ${sq}.`,
       fly: `Twenty squares of not touching the floor.`,
       lit: `Forty squares of carrying a light.`,
       // 260918-w4n (use-activated-only): the 7 newly use-activated kinds.

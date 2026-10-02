@@ -16,7 +16,7 @@
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Xtra Healing potion<i>heal to maximum</i></span>\n        <span class=\"g-c\">500 wm</span>"
   <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Strength potion<i>+8 damage, 25 squares</i></span>\n        <span class=\"g-c\">100 wm</span>"
+    html="<span class=\"g-n\">Strength potion<i>+8 damage to blows and spells, 25 squares</i></span>\n        <span class=\"g-c\">100 wm</span>"
   <button class="goods" disabled onclick>
     html="<span class=\"g-n\">Speed potion<i>double attacks, 50 squares</i></span>\n        <span class=\"g-c\">500 wm</span>"
   <button class="goods" disabled onclick>

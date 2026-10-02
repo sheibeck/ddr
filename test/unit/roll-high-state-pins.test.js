@@ -295,7 +295,12 @@ const PINNED = {
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
   // to 0f319aa8bc87aac8b3ba71b22a21f96108f8a7d12d52ff36539382422ada9c3f; actions, dead and depth are unchanged.
-  "solo-2": { actions: 239, dead: true, depth: 2, hash: "a89a5ab088f5571855f9a864dabe2dde34d72c31908d0822924d96c7a41b6f04" },
+  // "solo-2" re-pinned (Phase 92.2 plan 01, user ruling 2026-10-02, the Strength potion also boosts spells): the hash
+  // moved (239 actions, dead, depth 2 unchanged; a89a5ab0... -> 7e3d093e...) because the run ends holding the Strength
+  // potion's item object, whose `txt` now reads "+8 damage to blows and spells, 25 squares". Measured twice with
+  // tools/roll-high-baseline.mjs pins; with only that one text line put back, the label hashes to the old a89a5ab0..., so no
+  // roll or branch of this run moved for the rule change itself. The other seven labels are unchanged. Pasted by label; `save` never run.
+  "solo-2": { actions: 239, dead: true, depth: 2, hash: "7e3d093e8fafb92fbf3713b6f9026fecd47eebca2fed60b17429968e500a8b93" },
   // "solo-thief-pilfer" re-recorded (Phase 89 plan 03, ITEM-01, 2026-09-30): this
   // run's bag ends holding a Poplar Staff (a Pilfer can never wield it), and the
   // item object rides the hashed state. Its row changed: use "heal" -> "partyHeal"
