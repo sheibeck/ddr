@@ -7933,6 +7933,9 @@ Moved scripted tests and pins (each re-based with a dated comment naming the que
 5. V25: `test/unit/identity-footer.test.js` (the engine-source pin reads `CON_ARTIST_LEAVE_FACES` and `CON_ARTIST_LEAVE_MAX_LVL` instead of the typed `atLeastFor(4, 6)` and `f.lvl <= 1`;
    the Con Artist blurb pin states the level-two foe).
 6. V27: `test/unit/combat.test.js` ("flee: the pursuit fires on the tracked-round-1 exit ... but not on the unseen Cloaker's free vanish": the Cloaker's exit is `fled`,
-   `combatEnded` with no `foePursued`, was `foePursued`, `struckByFoe`, `fled`, `combatEnded`).
+   `combatEnded` with no `foePursued`, was `foePursued`, `struckByFoe`, `fled`, `combatEnded`). Five more tests used the unseen Cloaker's vanish only as a zero-draw route into
+   `pursuitStrike` and now reach it through the tracked round-1 withdrawal (the same draws, the same expected numbers): `bubble-mirror.test.js`, `cloak-crit-ward.test.js`,
+   `foe-crit-curve.test.js`, `foe-fumble-mechanics.test.js`, `spell-mechanics.test.js`. `foe-conditions.test.js` and `hero-conditions.test.js` list `sangAt` as a reasoned
+   NOT_A_CONDITION beside `sang` (their coverage guards scan every flag the engine assigns).
 7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the Cloaker row's verdict is `built (91.1-03)`; the checkpoint copy's Sing text quotes the live
    `COMBAT_MENU_COPY.singDesc`.
