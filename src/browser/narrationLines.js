@@ -2189,7 +2189,9 @@ export const LINE_FOR = {
     const map = {
       notFought: "Fight! first.",
       // Phase 91 (IDENT-17): once per fight (the old "voice needs N more squares" cooldown is gone).
-      sungThisFight: "One song a fight. The audience has had enough.",
+      // Phase 91.1 plan 03 part B (V7 B): the second song comes 5 rounds after the first, never a third.
+      sungThisFight: "Two songs a fight. The audience has had enough.",
+      songResting: `Your voice needs a breather: ${Number.isFinite(e?.rounds) ? e.rounds : "a few"} more round${e?.rounds === 1 ? "" : "s"}.`,
       wrongClass: "Only a Bard sings here.",
       // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
       notOut: "There is no turn to lose.",

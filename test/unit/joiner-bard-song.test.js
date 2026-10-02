@@ -434,7 +434,7 @@ test("IDENT-17 Joiner (side by side): a hero Bard and a Joiner Bard each sing on
   // the hero cannot sing again; the Joiner does not either
   const again = [];
   sing(state, rng, again);
-  assert.deepEqual(again.map((e) => [e.type, e.reason]), [["actionRefused", "sungThisFight"]]);
+  assert.deepEqual(again.map((e) => [e.type, e.reason]), [["actionRefused", "songResting"]]); // V7 B (91.1-03): the second song waits 5 rounds
   state.combat.round = 2;
   const next = [];
   afterPlayerAction(state, rng, next);

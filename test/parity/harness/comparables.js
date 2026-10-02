@@ -665,10 +665,16 @@ export function stripFoeDamageClosures(combat) {
  * with the fight) with NO prototype-side equivalent (the prototype's song is a
  * squares timestamp on the character, `songAt`, stripped in
  * stripRetiredCounterFields). Engine-only, carved out here, which all three
- * *Comparable() functions share. */
+ * *Comparable() functions share.
+ *
+ * Phase 91.1 plan 03 part B (V7 B, 2026-10-01): `sangAt` is a brand-new combat-level field (and, on a
+ * `combat.allies` entry, a per-Joiner one): the round the FIRST song was sung in, `null` once the
+ * second is sung (engine/combat.js#sing, #alliesTurn; a Bard may sing again 5 rounds after the first).
+ * Engine-only, no prototype equivalent, absent on every fixture (no parity fixture has a Bard singing);
+ * carved out beside `sang`, which all three *Comparable() functions share. */
 export function stripFoeAbilityState(combat) {
   if (!combat || !Array.isArray(combat.foes)) return combat;
-  const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, sang, ...combatRest } = combat;
+  const { pendingFoes, selfDot, heroOut, heroBlind, heroShrunk, sang, sangAt, ...combatRest } = combat;
   const foes = combatRest.foes.map((f) => {
     // RULES-17 (Phase 75.3): `elite` is a brand-new per-foe field (a foe's
     // elite rank, present only above rank 0) with NO prototype-side
@@ -702,7 +708,7 @@ export function stripFoeAbilityState(combat) {
   // applyFoeDamageToMember and ticked in foeTurn's tail) and `senses` (a sung Sense
   // Presence, read by memberStrike's Stealth test). The same structural tripwire.
   if (Array.isArray(combatRest.allies)) {
-    return { ...combatRest, foes, allies: combatRest.allies.map(({ opened, sang, ward, senses, ...a }) => a) };
+    return { ...combatRest, foes, allies: combatRest.allies.map(({ opened, sang, sangAt, ward, senses, ...a }) => a) };
   }
   return { ...combatRest, foes };
 }

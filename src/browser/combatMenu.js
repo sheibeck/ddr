@@ -18,7 +18,7 @@ import { itemRowState } from "./gearTab.js";
 import { canCast, neverFlees, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
-import { canParley, parleyBlockedReason, fleeRefusal, songReady } from "../../engine/combat.js";
+import { canParley, parleyBlockedReason, fleeRefusal, songReady, SONG_GAP_ROUNDS } from "../../engine/combat.js";
 import { abilityRoundsLeft, abilityUnavailableReason, abilityTargetShortfall } from "../../engine/abilities.js";
 import { isReady } from "../../engine/effects.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
@@ -99,7 +99,11 @@ export const COMBAT_MENU_COPY = Object.freeze({
   // song is one random offense or defense spell of your level or lower, at full
   // strength, no charges spent (engine/combat.js#sing). No squares countdown.
   singSung: "SUNG THIS FIGHT",
-  singDesc: "Once per fight: sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell.",
+  // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a second song comes SONG_GAP_ROUNDS rounds after the
+  // first, never a third; the number is the engine's own (combat.js#SONG_GAP_ROUNDS), never typed.
+  // `singAgain` is the row's state between the two songs ({n} rounds to go).
+  singAgain: "AGAIN IN {n}",
+  singDesc: `Sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell. A long fight gets a second song ${SONG_GAP_ROUNDS} rounds after the first, and never a third.`,
   flee: "FLEE",
   withdraw: "WITHDRAW",
   withdrawCost: "CLEAN",
@@ -261,6 +265,9 @@ function combatMenuViewModelUnlocked(state) {
   // Phase 91 (IDENT-17): once per fight, read from the engine's own songReady.
   const singReady = isBard && songReady(state);
   const singSung = isBard && !!(state.combat && state.combat.sang);
+  // V7 B: between the first song and the second (sangAt is the first song's round) the row counts the
+  // rounds left; after the second (sangAt null) or a bare `sang` it reads SUNG THIS FIGHT as before.
+  const singWait = singSung && Number.isFinite(state.combat.sangAt) ? Math.max(1, state.combat.sangAt + SONG_GAP_ROUNDS - state.combat.round) : 0;
   const heroName = String(c.name || "YOU").toUpperCase();
 
   const submenus = {};
@@ -350,7 +357,7 @@ function combatMenuViewModelUnlocked(state) {
       key: "abilities",
       num: 2,
       label: COMBAT_MENU_COPY.abilities,
-      sub: singSung ? "SING · SUNG" : "SING · READY",
+      sub: singSung && !singReady ? "SING · SUNG" : "SING · READY",
       enabled: true,
       accent: false,
       opens: "abilities",
@@ -361,7 +368,7 @@ function combatMenuViewModelUnlocked(state) {
         {
           id: "sing",
           label: COMBAT_MENU_COPY.sing,
-          cost: singSung ? COMBAT_MENU_COPY.singSung : COMBAT_MENU_COPY.singReady,
+          cost: !singSung || singReady ? COMBAT_MENU_COPY.singReady : singWait ? COMBAT_MENU_COPY.singAgain.replace("{n}", String(singWait)) : COMBAT_MENU_COPY.singSung,
           desc: COMBAT_MENU_COPY.singDesc,
           enabled: singReady,
           dispatch: { type: "sing" },

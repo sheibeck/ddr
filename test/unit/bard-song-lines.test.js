@@ -40,8 +40,10 @@ test("IDENT-17 sang: an old song name is sung as is, with the spell it landed as
 
 test("IDENT-17 refusal: sungThisFight reads on both surfaces", () => {
   const e = { type: "actionRefused", action: "sing", reason: "sungThisFight" };
-  assert.equal(oracle(e), "One song a fight. The audience has had enough.");
-  assert.equal(rail(e), "One song a fight. The audience has had enough.");
+  // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a Bard may sing a second song 5 rounds after the first, so the
+  // refusal after the second song reads "Two songs a fight" (the one before it is songResting, pinned in value-identity.test.js).
+  assert.equal(oracle(e), "Two songs a fight. The audience has had enough.");
+  assert.equal(rail(e), "Two songs a fight. The audience has had enough.");
 });
 
 test("IDENT-17 refusal: the squares cooldown line is gone, the other sing reasons stay", () => {

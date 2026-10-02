@@ -1312,7 +1312,10 @@ export const EVENT_NARRATION = {
     const map = {
       notFought: `<span class="miss">Fight! first.</span>`,
       // Phase 91 (IDENT-17): once per fight (the old "voice needs N more squares" cooldown is gone).
-      sungThisFight: `<span class="miss">One song a fight. The audience has had enough.</span>`,
+      // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a second song comes 5 rounds after the first (the
+      // engine's own gap, e.rounds left on songResting), and never a third.
+      sungThisFight: `<span class="miss">Two songs a fight. The audience has had enough.</span>`,
+      songResting: `<span class="miss">Your voice needs a breather: ${Number.isFinite(e.rounds) ? e.rounds : "a few"} more round${e.rounds === 1 ? "" : "s"} before the next song.</span>`,
       wrongClass: `<span class="miss">Only a Bard sings here.</span>`,
       // RULES-10 (Phase 75.1): loseTurn with no C.heroOut to spend.
       notOut: `<span class="miss">There is no turn to lose.</span>`,

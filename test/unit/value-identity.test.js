@@ -14,7 +14,10 @@
 //   V20 B: a Cleric may learn Strength (one named exception in the gate data); every other offense spell
 //          stays closed to it.
 //
-// Part B of plan 91.1-03 (V7, V25, V27) is a separate execution; nothing here pins it.
+// Part B of plan 91.1-03 (appended below, one section per question):
+//   V7 B:  the Bard may sing a second song 5 rounds after the first (hero and Joiner alike), never a third.
+//   V25 B: Con Artist: a level 1 foe still leaves 2 times in 3, a level 2 foe leaves 1 time in 3.
+//   V27 B: the Cloaker's free vanish also escapes a pursuing Spectre's parting blow.
 //
 // Local fixtures follow summoner-heal.test.js and control-slate-spells.test.js (the repo's per-file fixture
 // convention, never imported cross-file).
@@ -23,7 +26,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { castSpell, readScroll } from "../../engine/magic.js";
-import { applyFoeDamageToPlayer, applyFoeDamageToMember, alliesTurn, misdirectFoe } from "../../engine/combat.js";
+import {
+  applyFoeDamageToPlayer, applyFoeDamageToMember, alliesTurn, misdirectFoe,
+  sing, songReady, songDue, SONG_GAP_ROUNDS, SONGS_PER_FIGHT, startCombat, endCombat, flee, CON_ARTIST_LEAVE_FACES, CON_ARTIST_LEAVE_MAX_LVL,
+} from "../../engine/combat.js";
+import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
+import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { rollGrimoire, grantableAt } from "../../engine/character.js";
 import { makeRng, derivedRng } from "../../engine/rng.js";
 import { rollDice } from "../../engine/dice.js";
@@ -35,7 +44,7 @@ import { GW, GH } from "../../engine/maze.js";
 import { SPELLS, RACES, MU_CHART, MU_SPELL_EXCEPTIONS, STRIKE_DICE } from "../../content/index.js";
 import { identityFooter } from "../../src/browser/identityFooter.js";
 import { setIdentityDials } from "./harness/identityDials.js";
-import { heroState, foeFrom } from "./harness/rollOdds.js";
+import { heroState, foeFrom, inCombat } from "./harness/rollOdds.js";
 
 setIdentityDials();
 
@@ -435,4 +444,363 @@ test("edge (adjacency, V18 V19 V20): the three chart rows touch only their own c
   assert.deepEqual(MU_CHART.Warlock.gate, { protection: 4, healing: 3 });
   assert.deepEqual(MU_CHART.Cleric.gate, { divination: 3 });
   assert.equal(MU_CHART.Summoner.healMul, 0.5);
+});
+
+// ═══ Part B (plan 91.1-03 part B): V7, V25, V27 ════════════════════════════
+
+// ─── V7 Sing ───────────────────────────────────────────────────────────────
+
+/** A level-3 Bard hero in a live fight against one huge sleeper (its turn draws nothing from the main rng). */
+function bardHero(round = 1) {
+  const state = heroState({ cls: "Fighter", sub: "Bard", race: "Human", level: 3 });
+  state.c.wp = state.c.maxWP = 400;
+  inCombat(state, [{ ...foeFrom("Humans", 1, "Ned", { wp: 5000 }), asleep: 99 }], { round });
+  return state;
+}
+
+/** A rng that throws on any draw: proves a song and a refusal draw nothing from the main stream. */
+const noDraws = () => fakeRng([], 4242);
+
+const refusals = (events) => events.filter((e) => e.type === "actionRefused").map((e) => [e.reason, e.rounds]);
+const songs = (events) => events.filter((e) => e.type === "sang");
+
+test("V7 Sing sing-once: a Bard sings a second song 5 rounds after the first (round 1 to round 6), and never a third", () => {
+  assert.equal(SONG_GAP_ROUNDS, 5);
+  assert.equal(SONGS_PER_FIGHT, 2);
+  const state = bardHero(1);
+  assert.equal(songReady(state), true, "round 1: the first song");
+  assert.equal(songs(sing(state, noDraws(), [])).length, 1);
+  assert.equal(state.combat.sang, true);
+  assert.equal(state.combat.sangAt, 1, "the round of the first song");
+
+  // the boundary: rounds 2 to 5 are still resting, round 6 is the first round the second song is due
+  for (const round of [2, 3, 4, 5]) {
+    state.combat.round = round;
+    assert.equal(songReady(state), false, `round ${round}: resting`);
+  }
+  state.combat.round = 6;
+  assert.equal(songReady(state), true, "round 6: five rounds after the first");
+  const second = sing(state, noDraws(), []);
+  assert.equal(songs(second).length, 1, "the second song is sung");
+  assert.equal(state.combat.sangAt, null, "the second song closes the fight's songs");
+
+  // never a third, however long the fight runs
+  for (const round of [7, 11, 12, 40, 400]) {
+    state.combat.round = round;
+    assert.equal(songReady(state), false, `round ${round}: no third song`);
+    assert.deepEqual(refusals(sing(state, noDraws(), [])), [["sungThisFight", undefined]], `round ${round}`);
+  }
+});
+
+test("V7 Sing sing-once: a song inside the 5 rounds is refused songResting with the rounds left and zero draws; the refusal spends nothing", () => {
+  const state = bardHero(1);
+  sing(state, noDraws(), []);
+  state.combat.round = 2;
+  assert.deepEqual(refusals(sing(state, noDraws(), [])), [["songResting", 4]], "sung in round 1, round 2: four rounds to go");
+  state.combat.round = 5;
+  assert.deepEqual(refusals(sing(state, noDraws(), [])), [["songResting", 1]]);
+  assert.equal(state.combat.sangAt, 1, "a refusal changes nothing");
+  state.combat.round = 6;
+  assert.equal(songs(sing(state, noDraws(), [])).length, 1);
+});
+
+test("V7 Sing sing-once: songDue is the one test (no song yet is due; the first song's round plus 5 opens the second; null or a bare flag closes it)", () => {
+  assert.equal(songDue(undefined, undefined, 1), true);
+  assert.equal(songDue(true, 3, 7), false);
+  assert.equal(songDue(true, 3, 8), true);
+  assert.equal(songDue(true, 3, 9), true);
+  assert.equal(songDue(true, null, 99), false, "after the second song");
+  assert.equal(songDue(true, undefined, 99), false, "a bare flag (an older save, a fixture) never reopens");
+});
+
+test("V7 Sing sing-once: the second song's pick comes from the derived stream and the main rng draws nothing for either song (a throwing rng survives both)", () => {
+  const state = bardHero(1);
+  const rng = noDraws();
+  sing(state, rng, []);
+  state.combat.round = 6;
+  state.acts = 7;
+  const events = sing(state, rng, []);
+  assert.equal(rng.count(), 0, "no main-rng draw for either song");
+  const stream = derivedRng(4242, "song", 7);
+  const pool = SPELLS.filter((sp) => ["offense", "protection"].includes(sp.s) && sp.lvl <= 3);
+  assert.equal(songs(events)[0].spell, pool[stream.d(pool.length) - 1].n, "the pick reproduces from derivedRng(cursor, \"song\", acts)");
+});
+
+test("V7 Sing sing-once: only the exact Bard sings; a Soldier, a near-miss 'bard' and a Bard in a pending fight are refused as before", () => {
+  const soldierHero = heroState({ cls: "Fighter", sub: "Soldier", race: "Human", level: 3 });
+  inCombat(soldierHero, [{ ...foeFrom("Humans", 1, "Ned", { wp: 5000 }), asleep: 99 }], { round: 9 });
+  assert.deepEqual(refusals(sing(soldierHero, noDraws(), [])), [["wrongClass", undefined]]);
+  assert.equal(songReady(soldierHero), false);
+  const near = bardHero(9);
+  near.c.sub = "bard";
+  assert.equal(songReady(near), false);
+  assert.deepEqual(refusals(sing(near, noDraws(), [])), [["wrongClass", undefined]]);
+  const pending = bardHero(9);
+  pending.combat.pending = true;
+  assert.equal(songReady(pending), false);
+});
+
+test("V7 Sing sing-once: the combat menu row counts the rounds then reads READY, SUNG THIS FIGHT after the second song, and the next fight starts with no song sung", () => {
+  const state = bardHero(1);
+  sing(state, noDraws(), []);
+  const resting = combatMenuViewModel(state).submenus.abilities.rows[0];
+  assert.equal(resting.cost, COMBAT_MENU_COPY.singAgain.replace("{n}", String(state.combat.sangAt + SONG_GAP_ROUNDS - state.combat.round)));
+  assert.equal(resting.enabled, false);
+  state.combat.round = 6;
+  const due = combatMenuViewModel(state);
+  assert.equal(due.submenus.abilities.rows[0].cost, COMBAT_MENU_COPY.singReady);
+  assert.equal(due.submenus.abilities.rows[0].enabled, true);
+  assert.equal(due.actions[1].sub, "SING · READY");
+  sing(state, noDraws(), []);
+  const done = combatMenuViewModel(state).submenus.abilities.rows[0];
+  assert.equal(done.cost, COMBAT_MENU_COPY.singSung, "after the second song: SUNG THIS FIGHT");
+  assert.equal(done.enabled, false);
+  endCombat(state, []);
+  inCombat(state, [{ ...foeFrom("Humans", 1, "Ned", { wp: 5000 }), asleep: 99 }]);
+  assert.equal(state.combat.sang, undefined);
+  assert.equal(state.combat.sangAt, undefined);
+  assert.equal(songReady(state), true);
+});
+
+/** The Joiner fixture (joiner-bard-song.test.js keeps its own copy of the same shapes). */
+function joinerFight(round) {
+  const sheet = { name: "Lyra", level: 3, sub: "Bard", cls: "Fighter", race: "Human", wp: 400, maxWP: 400, status: "ok", weapon: "Club", prof: 0, magicWpn: 0, might: 0, items: [], skills: {}, armor: "Nothing", grimoire: [], spellsUsed: 0, potions: 0, worn: {} };
+  const state = heroState({ cls: "Fighter", sub: "Soldier", race: "Human", level: 3 });
+  state.party = [sheet];
+  inCombat(state, [{ ...foeFrom("Humans", 1, "Ned", { wp: 5000 }), asleep: 99 }], {
+    round, allies: [{ partyIdx: 0, name: sheet.name, lvl: sheet.level, sub: sheet.sub, wp: sheet.wp, maxWP: sheet.maxWP }],
+  });
+  return state;
+}
+
+test("V7 Sing sing-once: a Joiner Bard sings its second song on its own first turn from round 6 (5 rounds after its first), and never a third", () => {
+  const state = joinerFight(1);
+  const rng = makeRng(7);
+  const sung = (round) => { state.combat.round = round; state.acts += 1; const ev = []; alliesTurn(state, rng, ev); return songs(ev).length; };
+  assert.equal(sung(1), 1, "round 1: the first song");
+  assert.equal(state.combat.allies[0].sangAt, 1);
+  for (const round of [2, 3, 4, 5]) assert.equal(sung(round), 0, `round ${round}: resting`);
+  assert.equal(sung(6), 1, "round 6: the second song");
+  assert.equal(state.combat.allies[0].sangAt, null);
+  for (const round of [7, 11, 12, 30]) assert.equal(sung(round), 0, `round ${round}: no third song`);
+  assert.equal(state.combat.sang, undefined, "the hero's own flag is never marked by a Joiner's song");
+  assert.equal(state.combat.sangAt, undefined);
+});
+
+test("V7 Sing sing-once: a hero Bard and a Joiner Bard keep separate clocks (the hero's second song is due at round 6, the Joiner's, sung at round 3, at round 8)", () => {
+  const state = joinerFight(6);
+  state.c.sub = "Bard";
+  state.c.wp = state.c.maxWP = 400;
+  state.combat.sang = true; // the hero sang in round 1
+  state.combat.sangAt = 1;
+  const joiner = state.combat.allies[0];
+  joiner.sang = true; // the Joiner sang in round 3
+  joiner.sangAt = 3;
+  const rng = makeRng(9);
+  const ev = [];
+  sing(state, rng, ev);
+  assert.deepEqual(songs(ev).map((e) => e.member), [undefined], "round 6: the hero's second song, the Joiner still resting");
+  assert.equal(state.combat.sangAt, null, "the hero's clock closed");
+  assert.equal(joiner.sangAt, 3, "the Joiner's clock is untouched by the hero's song");
+  state.combat.round = 8;
+  const j = [];
+  alliesTurn(state, rng, j);
+  assert.deepEqual(songs(j).map((e) => e.member), ["Lyra"], "round 8: the Joiner's second song");
+  assert.equal(joiner.sangAt, null);
+  assert.equal(state.combat.sangAt, null, "the Joiner's song never reopens the hero's clock");
+});
+
+// ─── V25 Con Artist ────────────────────────────────────────────────────────
+
+/** A rng whose draws come from a real stream but whose cursor is fixed, so a derived stream is reproducible; counts main draws. */
+function spyRng(seed, cursor = 4242) {
+  const r = makeRng(seed);
+  let n = 0;
+  return {
+    d: (s) => { n++; return r.d(s); },
+    pick: (a) => { n++; return r.pick(a); },
+    next: () => { n++; return r.next(); },
+    shuffle: (a) => { n++; return r.shuffle(a); },
+    getState: () => cursor,
+    count: () => n,
+  };
+}
+
+/** Starts a fight for `sub` (a clone of one base state, so the floor and the foes match) and returns its events and main-draw count. */
+function startFor(base, sub, seed, depth) {
+  const state = structuredClone(base);
+  state.c.sub = sub;
+  state.floor.depth = depth;
+  state.acts = seed; // varies the derived stream (derivedRng(cursor, purpose, acts, ...)) from case to case
+  const rng = spyRng(seed);
+  const events = startCombat(state, false, "Beasts", rng, []);
+  return { state, events, draws: rng.count() };
+}
+
+/** Seeds and depths whose encounter is exactly one foe of level `lvl`. */
+function singleFoeCases(lvl, want = 6) {
+  const base = heroState({ cls: "Thief", sub: "Con Artist", race: "Human" });
+  const found = [];
+  for (let depth = 1; depth <= 12 && found.length < want; depth++) {
+    for (let seed = 1; seed <= 300 && found.length < want; seed++) {
+      const { events } = startFor(base, "Soldier", seed, depth);
+      const enc = events.find((e) => e.type === "encounterStarted");
+      if (enc.foes.length === 1 && enc.foes[0].lvl === lvl) found.push({ base, seed, depth });
+    }
+  }
+  assert.ok(found.length >= Math.min(want, 3), `found ${found.length} single level ${lvl} foe encounters`);
+  return found;
+}
+
+test("V25 Con Artist con-artist-leave: the leave table is level 1 four faces of six (2 times in 3) and level 2 two faces of six (1 time in 3), and nothing above", () => {
+  assert.deepEqual({ ...CON_ARTIST_LEAVE_FACES }, { 1: 4, 2: 2 });
+  assert.equal(CON_ARTIST_LEAVE_MAX_LVL, 2);
+  assert.equal(CON_ARTIST_LEAVE_FACES[1] / 6, 2 / 3);
+  assert.equal(CON_ARTIST_LEAVE_FACES[2] / 6, 1 / 3);
+  assert.equal(CON_ARTIST_LEAVE_FACES[3], undefined);
+});
+
+test("V25 Con Artist con-artist-leave: a level 1 foe still draws one d6 on the main rng and leaves on a rolled 3 or more (4 faces of 6), unchanged", () => {
+  let left = 0;
+  let stayed = 0;
+  for (const { base, seed, depth } of singleFoeCases(1, 40)) {
+    const con = startFor(base, "Con Artist", seed, depth);
+    const plain = startFor(base, "Soldier", seed, depth);
+    assert.equal(con.draws - plain.draws, 1, "exactly one main-rng d6, as before");
+    const fled = con.events.find((e) => e.type === "foeFled" && e.reason === "conArtist");
+    if (fled) {
+      left++;
+      assert.equal(fled.atLeast, 3);
+      assert.equal(fled.dieN, 6);
+      assert.ok(fled.roll >= 3);
+    } else stayed++;
+    assert.equal(!!fled, !!con.events.find((e) => e.type === "encounterCleared"), "a lone foe that leaves clears the encounter");
+  }
+  assert.ok(left > 0 && stayed > 0, `both outcomes occur (left ${left}, stayed ${stayed})`);
+});
+
+test("V25 Con Artist con-artist-leave: a level 2 foe leaves one time in three from derivedRng(cursor, 'conArtistLeave', acts, foe index); the main rng draws nothing for it", () => {
+  let left = 0;
+  let stayed = 0;
+  for (const { base, seed, depth } of singleFoeCases(2, 60)) {
+    const con = startFor(base, "Con Artist", seed, depth);
+    const plain = startFor(base, "Soldier", seed, depth);
+    assert.equal(con.draws, plain.draws, "no main-rng draw for a level 2 foe: no existing draw moves");
+    const r = derivedRng(4242, "conArtistLeave", seed, 0).d(6);
+    const wantLeave = 7 - r >= 5; // the two top numbers of the d6
+    const fled = con.events.find((e) => e.type === "foeFled" && e.reason === "conArtist");
+    assert.equal(!!fled, wantLeave, `seed ${seed} depth ${depth}`);
+    if (fled) {
+      left++;
+      assert.equal(fled.atLeast, 5);
+      assert.equal(fled.dieN, 6);
+      assert.equal(fled.roll, 7 - r);
+    } else stayed++;
+  }
+  assert.ok(left > 0 && stayed > left, `about one in three leaves (left ${left}, stayed ${stayed})`);
+});
+
+test("V25 Con Artist con-artist-leave: a level 3 foe never leaves and draws nothing; a near-miss sub ('Con artist') and a Joiner Con Artist change nothing", () => {
+  for (const { base, seed, depth } of singleFoeCases(3, 8)) {
+    const con = startFor(base, "Con Artist", seed, depth);
+    const plain = startFor(base, "Soldier", seed, depth);
+    assert.equal(con.draws, plain.draws, "no draw for a level 3 foe");
+    assert.equal(con.events.some((e) => e.type === "foeFled"), false);
+  }
+  for (const { base, seed, depth } of singleFoeCases(1, 8)) {
+    const near = startFor(base, "Con artist", seed, depth);
+    const plain = startFor(base, "Soldier", seed, depth);
+    assert.equal(near.draws, plain.draws);
+    assert.equal(near.events.some((e) => e.type === "foeFled"), false);
+    // a Joiner Con Artist: the hero is a Soldier, the party member never rolls a leave
+    const joiner = structuredClone(base);
+    joiner.c.sub = "Soldier";
+    joiner.floor.depth = depth;
+    joiner.party = [{ name: "Slick", level: 1, sub: "Con Artist", cls: "Thief", race: "Human", wp: 30, maxWP: 30, status: "ok", items: [], skills: {}, potions: 0, worn: {} }];
+    const rng = spyRng(seed);
+    const ev = startCombat(joiner, false, "Beasts", rng, []);
+    assert.equal(rng.count(), plain.draws, "a Joiner Con Artist draws nothing extra");
+    assert.equal(ev.some((e) => e.type === "foeFled"), false);
+  }
+});
+
+// ─── V27 Cloaker ───────────────────────────────────────────────────────────
+
+const spectre = () => foeFrom("Demons", 4, "Spectre");
+
+function cloakerFight(opts = {}) {
+  const state = heroState({ cls: "Thief", sub: "Cloaker", race: "Human", level: 3 });
+  state.c.sub = opts.sub ?? "Cloaker"; // a near-miss name is set after chargen (chargen refuses an invalid sub-class)
+  state.c.wp = state.c.maxWP = 300;
+  inCombat(state, [spectre()], { round: opts.round ?? 2, tracked: !!opts.tracked, ...(opts.opened2 ? { opened2: true } : {}) });
+  return state;
+}
+
+/** A real rng whose first draw is the top face (flee's d20 is already roll-high: raw 20 is a natural 20): the flee always escapes. */
+function escapingRng(seed = 11) {
+  const rng = makeRng(seed);
+  const draw = rng.d.bind(rng);
+  let first = true;
+  rng.d = (s) => { if (first) { first = false; return s; } return draw(s); };
+  return rng;
+}
+
+test("V27 Cloaker cloaker-vanish: the unseen Cloaker's free vanish escapes a pursuing Spectre with no parting blow, no foePursued and no draw", () => {
+  assert.equal(spectre().sp.pursues, true);
+  const state = cloakerFight();
+  const hp = state.c.wp;
+  const events = flee(state, noDraws(), []);
+  assert.deepEqual(events.map((e) => e.type), ["fled", "combatEnded"]);
+  assert.equal(events[0].reason, "cloaker");
+  assert.equal(state.c.wp, hp, "no parting blow landed");
+  assert.equal(state.combat, null);
+});
+
+test("V27 Cloaker cloaker-vanish: a Cloaker who has struck (opened2) is seen, the vanish is denied and the ordinary escape still eats the Spectre's parting blow", () => {
+  const state = cloakerFight({ opened2: true });
+  const events = flee(state, escapingRng(), []);
+  const types = events.map((e) => e.type);
+  assert.ok(types.includes("vanishDenied"));
+  assert.ok(types.includes("fleeRolled"));
+  assert.ok(types.includes("foePursued"), "the seen Cloaker still takes the parting blow");
+  assert.ok(types.indexOf("foePursued") < types.indexOf("fled"));
+});
+
+test("V27 Cloaker cloaker-vanish: every other hero still takes the Spectre's parting blow on a tracked withdrawal and on an ordinary escape; a near-miss sub ('Cloaker ') gets no free vanish", () => {
+  const tracked = cloakerFight({ sub: "Cat Burglar", tracked: true, round: 1 });
+  const tev = flee(tracked, makeRng(5), []);
+  assert.ok(tev.some((e) => e.type === "foePursued"), "tracked withdrawal");
+  assert.equal(tev.find((e) => e.type === "fled").reason, "tracked");
+
+  const near = cloakerFight({ sub: "Cloaker " });
+  const nev = flee(near, escapingRng(), []);
+  assert.ok(nev.some((e) => e.type === "fleeRolled"), "no free vanish for a near-miss name");
+  assert.ok(nev.some((e) => e.type === "foePursued"));
+});
+
+test("V27 Cloaker cloaker-vanish: against a foe that does not pursue the vanish is the same free escape as before", () => {
+  const state = heroState({ cls: "Thief", sub: "Cloaker", race: "Human", level: 3 });
+  inCombat(state, [foeFrom("Humans", 1, "Ned", { wp: 40 })], { round: 2 });
+  const events = flee(state, noDraws(), []);
+  assert.deepEqual(events.map((e) => e.type), ["fled", "combatEnded"]);
+});
+
+// ─── edges shared by the part B rows ───────────────────────────────────────
+
+test("edge (adjacency, V7 V25 V27): each part B rule touches only its own sub-class (a Cloaker's or a Bard's start draws no leave, a Bard fleeing a Spectre still takes the blow)", () => {
+  const base = heroState({ cls: "Thief", sub: "Con Artist", race: "Human" });
+  for (const { seed, depth } of singleFoeCases(1, 4)) {
+    assert.equal(startFor(base, "Cloaker", seed, depth).draws, startFor(base, "Soldier", seed, depth).draws);
+    assert.equal(startFor(base, "Bard", seed, depth).draws, startFor(base, "Soldier", seed, depth).draws);
+  }
+  const bard = bardHero(1);
+  inCombat(bard, [spectre()], { round: 2 });
+  assert.ok(flee(bard, escapingRng(), []).some((e) => e.type === "foePursued"), "a Bard fleeing a Spectre still takes the blow");
+});
+
+test("edge (empty, V7 V25 V27): no fight means nothing to sing at and nothing to vanish from; neither throws or draws", () => {
+  const state = heroState({ cls: "Fighter", sub: "Bard", race: "Human", level: 3 });
+  assert.equal(songReady(state), false, "no fight");
+  assert.deepEqual(sing(state, noDraws(), []), []);
+  assert.deepEqual(flee(state, noDraws(), []), []);
 });

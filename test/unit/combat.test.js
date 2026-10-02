@@ -1738,12 +1738,15 @@ test("flee: a live pursues foe strikes once on the roll-based escape — foePurs
   assert.deepEqual(events2.map((e) => e.type), ["fleeRolled", "foePursued", "foeMissed", "fled", "combatEnded"]);
 });
 
-test("flee: the pursuit also fires on the Cloaker and tracked-round-1 exits (D-19), and never without a pursues foe", () => {
+test("flee: the pursuit fires on the tracked-round-1 exit (D-19) but not on the unseen Cloaker's free vanish (V27), and never without a pursues foe", () => {
   const state = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
   const foe = fixedFoe({ sp: { pursues: true, noArmor: true } });
   state.combat = fixedCombat([foe]);
-  const events = flee(state, fakeRng([3, 4]), []);
-  assert.deepEqual(events.map((e) => e.type), ["foePursued", "struckByFoe", "fled", "combatEnded"]);
+  // Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish also escapes a
+  // pursuing Spectre's parting blow: no foePursued, no strike, no draw (it was foePursued,
+  // struckByFoe, fled, combatEnded). The tracked exit below and a Cloaker who has struck still take it.
+  const events = flee(state, fakeRng([]), []);
+  assert.deepEqual(events.map((e) => e.type), ["fled", "combatEnded"]);
 
   const state2 = fixedState();
   const foe2 = fixedFoe({ sp: { pursues: true, noArmor: true } });

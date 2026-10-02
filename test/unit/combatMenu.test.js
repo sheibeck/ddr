@@ -885,7 +885,9 @@ test("VOX-05 (79-07): potion, flee, parley and sing descriptions state the engin
   assert.match(COMBAT_MENU_COPY.parleyDesc, /\+1 to hit you and yours until it ends/);
   assert.doesNotMatch(COMBAT_MENU_COPY.parleyDesc, /permanent/);
   // Phase 91 (IDENT-17): once per fight, a random offense or defense spell of your level or lower, full strength, no charges.
-  assert.match(COMBAT_MENU_COPY.singDesc, /^Once per fight: /);
+  // Phase 91.1 plan 03 part B (V7 B): a second song 5 rounds after the first (was "Once per fight: ").
+  assert.match(COMBAT_MENU_COPY.singDesc, /^Sing a random offense or defense spell/);
+  assert.match(COMBAT_MENU_COPY.singDesc, /second song 5 rounds after the first, and never a third/);
   assert.match(COMBAT_MENU_COPY.singDesc, /random offense or defense spell of your level or lower/);
   assert.match(COMBAT_MENU_COPY.singDesc, /full strength/);
   assert.match(COMBAT_MENU_COPY.singDesc, /no charges spent/);

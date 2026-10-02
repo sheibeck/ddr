@@ -96,6 +96,32 @@ import { abilityEffectTicks, abilityShortfall, abilityTargetShortfall, KATA_FEIN
 export const STEALTH_CRIT_FACES = 3;
 import { checkDeathPhobia } from "./phobias.js";
 
+/**
+ * CON_ARTIST_LEAVE_FACES — Phase 91.1 plan 03 part B (user ruling V25 B, 2026-10-01): the faces of a
+ * d6 (out of six) on which a foe of that level leaves a Con Artist before the fight: a level 1 foe
+ * four faces (two times in three, unchanged), a level 2 foe two faces (one time in three, new, so the
+ * rule reaches floors 2 to 5). A foe level not listed here never leaves. Data read by startCombat; the
+ * footer, the blurb and the pins read it too, so the text never types the number.
+ * CON_ARTIST_LEAVE_MAX_LVL is the highest foe level the table covers.
+ */
+export const CON_ARTIST_LEAVE_FACES = Object.freeze({ 1: 4, 2: 2 });
+export const CON_ARTIST_LEAVE_MAX_LVL = 2;
+
+/**
+ * SONG_GAP_ROUNDS and SONGS_PER_FIGHT — Phase 91.1 plan 03 part B (user ruling V7 B, 2026-10-01): a
+ * Bard (hero or Joiner) may sing a second song 5 rounds after the first: a long fight gets two songs,
+ * never a third. `songDue(sang, sangAt, round)` is the one test: no song yet is always due; after the
+ * first song one is due when the fight's round has reached the first song's round plus the gap; after
+ * the second (`sangAt` null) none is.
+ */
+export const SONG_GAP_ROUNDS = 5;
+export const SONGS_PER_FIGHT = 2;
+export function songDue(sang, sangAt, round) {
+  if (!sang) return true;
+  if (!Number.isFinite(sangAt)) return false;
+  return Number.isFinite(round) && round >= sangAt + SONG_GAP_ROUNDS;
+}
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 const TALKATIVE = ["Humans", "Demons", "Lair Beasts", "Beasts"];
@@ -463,11 +489,17 @@ export function startCombat(state, wandering, forced, rng, events = []) {
       f.alive = false;
       f.fled = true;
       events.push({ type: "foeFled", name: f.name, reason: "knight" });
-    } else if (c.sub === "Con Artist" && f.lvl <= 1) {
+    } else if (c.sub === "Con Artist" && f.lvl <= CON_ARTIST_LEAVE_MAX_LVL) {
       // Phase 73 (ROLL-05): the die is drawn under the exact same
       // short-circuited condition as before (Con Artist, foe lvl <= 1); only
       // the winning face moved from the bottom 4 faces to the top 4.
-      const conArtistCheck = rollCheck(rng, 6, atLeastFor(4, 6));
+      // Phase 91.1 plan 03 part B (V25 B, 2026-10-01): a level 2 foe now leaves one time in three
+      // (2 faces of the d6), so the rule reaches floors 2 to 5. The level 1 draw stays on the MAIN
+      // rng, byte-identical to before; the level 2 draw is a NEW roll and comes from the derived
+      // stream derivedRng(<main cursor>, "conArtistLeave", <acts>, <foe index>), so no existing
+      // draw moves for any run (a level 2 foe used to draw nothing here).
+      const leaveRng = f.lvl <= 1 ? rng : derivedRng(typeof rng.getState === "function" ? rng.getState() : 0, "conArtistLeave", Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0, foes.indexOf(f));
+      const conArtistCheck = rollCheck(leaveRng, 6, atLeastFor(CON_ARTIST_LEAVE_FACES[f.lvl] ?? 0, 6));
       if (conArtistCheck.ok) {
         f.alive = false;
         f.fled = true;
@@ -1730,7 +1762,7 @@ export function foeLevelBase(f) {
  * foeToHitPenalty overrides, sp.dmg-or-d6 damage, C.weakened halving, crit
  * doubling) — but with no `pickFoeTarget` (the hero is the one leaving, so a
  * party member can never be the pursuit's target). Module-private: `flee`
- * calls this on all three success exits, before pushing `fled`.
+ * calls this on the tracked-withdrawal and ordinary-escape exits (91.1 V27: not the unseen Cloaker's free vanish), before pushing `fled`.
  *
  * DETERMINISM GATE: `!pursuer` returns `{ died: false }` immediately, 0
  * draws — no fixture-exposed foe carries `sp.pursues`.
@@ -1920,7 +1952,7 @@ export function behemothRoar(state, sp, rng, events, caster = {}) {
  * FLEE-01/FLEE-02, docs/FLEE.md — was "d20 (+5 Thief) vs 11"); failure is
  * unchanged: it triggers a foeTurn and advances the round. Phase 19
  * (CANON-02/D-19): a live pursuing foe gets one
- * melee strike on every success exit, BEFORE the `fled` event; a lethal
+ * melee strike on every success exit but the unseen Cloaker's free vanish (V27), BEFORE the `fled` event; a lethal
  * strike returns without `endCombat`. Phase 19 (CANON-02/D-03) also adds a
  * cleared-check after a failed flee's foeTurn, since a fleesBelow caster can
  * now leave the fight mid-turn and would otherwise strand the combat screen.
@@ -1957,7 +1989,10 @@ export function flee(state, rng, events = []) {
   // denial and falls through to the ordinary flee roll below instead of
   // returning here. Zero new draws; `opened2` already exists.
   if (c.sub === "Cloaker" && !C.opened2) {
-    if (pursuitStrike(state, rng, events).died) return events;
+    // Phase 91.1 plan 03 part B (V27 B, user 2026-10-01: "Cloaker ability should work on
+    // specter, too"): the vanish is FREE against a pursuing Spectre as well: no parting
+    // blow, no `foePursued`, no draw. A Cloaker who has struck (the denial below) and every
+    // other exit still takes pursuitStrike.
     forfeitLoot(state, "fled", events);
     events.push({ type: "fled", reason: "cloaker" });
     endCombat(state, events);
@@ -2294,7 +2329,11 @@ export function songPool(level) {
  * songReady(), lines 2743-2745), a declared canon divergence.
  */
 export function songReady(state) {
-  return state.c.sub === "Bard" && !!state.combat && !state.combat.pending && !state.combat.sang;
+  // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a second song is due SONG_GAP_ROUNDS (5) rounds after
+  // the first (songDue), never a third: `combat.sang` is true once a song has been sung, `combat.sangAt`
+  // the round of the FIRST song, and null once the second is sung.
+  const C = state.combat;
+  return state.c.sub === "Bard" && !!C && !C.pending && songDue(C.sang, C.sangAt, C.round);
 }
 
 /**
@@ -2326,10 +2365,18 @@ export function sing(state, rng, events = [], now = Date.now) {
     events.push({ type: "actionRefused", action: "sing", reason: "wrongClass" });
     return events;
   }
-  if (C.sang) {
-    events.push({ type: "actionRefused", action: "sing", reason: "sungThisFight" });
+  if (!songDue(C.sang, C.sangAt, C.round)) {
+    // V7 B: after the second song (sangAt null) it is "sungThisFight"; between the two (fewer than
+    // SONG_GAP_ROUNDS rounds since the first) it is "songResting", with how many rounds are left.
+    if (C.sang && Number.isFinite(C.sangAt)) {
+      events.push({ type: "actionRefused", action: "sing", reason: "songResting", rounds: C.sangAt + SONG_GAP_ROUNDS - C.round });
+    } else {
+      events.push({ type: "actionRefused", action: "sing", reason: "sungThisFight" });
+    }
     return events;
   }
+  // The first song records the round it was sung in; the second closes the fight's songs.
+  C.sangAt = C.sang ? null : C.round;
   C.sang = true;
   const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
   const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;
@@ -2691,7 +2738,9 @@ export function alliesTurn(state, rng, events = []) {
     // derivedRng(<main cursor>, memberSong, <party index>, <acts>); the main rng
     // draws nothing for the song. The spell resolves through the Joiner cast path
     // (allyCast) in its free mode: no charge on any sheet, "you" the Joiner.
-    if (sheet.sub === "Bard" && !ally.sang) {
+    if (sheet.sub === "Bard" && songDue(ally.sang, ally.sangAt, C.round)) {
+      // V7 B (2026-10-01): the same two-song rule as the hero's: the second song comes 5 rounds after the first.
+      ally.sangAt = ally.sang ? null : C.round;
       ally.sang = true;
       const cursor = typeof rng.getState === "function" ? rng.getState() : 0;
       const acts = Number.isInteger(state.acts) && state.acts >= 0 ? state.acts : 0;

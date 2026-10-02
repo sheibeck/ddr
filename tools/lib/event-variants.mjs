@@ -228,6 +228,9 @@ const PHASE_79_TOGGLES = [
   // its id: Hamstring refused on a foe that already carries it (the target comes from the
   // event), so the voice guards read the new `alreadyOn` refusal.
   { only: ["abilityRefused"], reason: "alreadyOn", name: "Hamstring", target: "Goblin" },
+  // Phase 91.1 plan 03 part B (user ruling V7 B, 2026-10-01), appended so every earlier toggle keeps
+  // its id: the Bard's second song is refused while it is still resting (rounds left from the event).
+  { only: ["actionRefused"], reason: "songResting", rounds: 3 },
 ];
 
 /**

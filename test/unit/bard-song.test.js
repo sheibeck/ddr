@@ -147,7 +147,9 @@ test("IDENT-17 once per fight: a second SING in the same fight is refused sungTh
   assert.equal(state.combat.sang, true);
   const before = rng.count();
   const second = sing(state, rng, []);
-  assert.deepEqual(second, [{ type: "actionRefused", action: "sing", reason: "sungThisFight" }]);
+  // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a second song is due 5 rounds after the first, so a
+  // second SING straight away is refused "songResting" (rounds left carried), still with zero draws.
+  assert.deepEqual(second, [{ type: "actionRefused", action: "sing", reason: "songResting", rounds: state.combat.sangAt + 5 - state.combat.round }]);
   assert.equal(rng.count(), before, "the refusal draws nothing");
 
   const pending = bardFight(3, [awake()], { pending: true });
@@ -169,7 +171,7 @@ test("IDENT-17 once per fight: through applyAction a second sing is refused, and
   assert.ok(one.events.some((e) => e.type === "sang"));
   assert.equal(one.state.combat.sang, true);
   const two = applyAction(one.state, { type: "sing" });
-  assert.ok(two.events.some((e) => e.type === "actionRefused" && e.action === "sing" && e.reason === "sungThisFight"));
+  assert.ok(two.events.some((e) => e.type === "actionRefused" && e.action === "sing" && e.reason === "songResting"), "V7 B: the second song is not due yet");
   assert.equal(two.events.some((e) => e.type === "sang"), false);
   const next = structuredClone(two.state);
   endCombat(next, []);
@@ -409,7 +411,7 @@ test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then S
   assert.equal(readyRow.enabled, true);
   assert.equal(ready.actions[1].sub, "SING · READY");
   assert.equal(readyRow.desc, COMBAT_MENU_COPY.singDesc);
-  assert.match(readyRow.desc, /Once per fight/);
+  assert.match(readyRow.desc, /second song 5 rounds after the first/); // V7 B (91.1-03): was "Once per fight"
   assert.match(readyRow.desc, /random offense or defense spell of your level or lower/);
   assert.match(readyRow.desc, /full strength/);
   assert.match(readyRow.desc, /no charges spent/);
@@ -418,7 +420,8 @@ test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then S
   assert.equal(state.combat.sang, true);
   const sung = combatMenuViewModel(state);
   const sungRow = sung.submenus.abilities.rows[0];
-  assert.equal(sungRow.cost, "SUNG THIS FIGHT");
+  // V7 B (91.1-03): between the two songs the row counts the rounds left; "SUNG THIS FIGHT" is after the second (or a bare sang flag).
+  assert.equal(sungRow.cost, `AGAIN IN ${state.combat.sangAt + 5 - state.combat.round}`);
   assert.equal(sungRow.enabled, false);
   assert.equal(sung.actions[1].sub, "SING · SUNG");
 });
