@@ -6,15 +6,15 @@ current_phase: 999.1
 current_phase_name: PROMOTED → Phases 56 / 58 / 59
 status: planning
 stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). ALL v2.3 PHASES COMPLETE (88, 89, 90, 91, 91.1, 91.2, 92); Phase 92 close full suite 10,086/10,084/0/2. User rulings in 92-CONTEXT: sell fraction 0.5 on floors 1-4 falling to 0.125 from floor 7 (depth-7 42%); floors 8-12 overshoot accepted; TUNE-10 drift (p50 5 vs [3,4]) accepted and recorded. NEXT: milestone lifecycle (audit -> debug APK (now allowed: the last wave is done) -> install on the Pixel 7 (adb connect 10.0.0.175:<port from the Wireless debugging screen>) -> one batched Pixel 7 checklist from every phase's VERIFICATION human_verification -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: the user's console batch + Claude's deploys; agree patch notes first; vc13; site push at 2.7; final rules at step 3). Dispatch conventions: the session runs from the home folder, so executors run on master in C:/projects/mazeworld, one at a time."
-last_updated: "2026-10-02T13:59:20.254Z"
+last_updated: "2026-10-02T15:01:46.905Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 92.3 complete, transitioned to Phase 999.1
+last_activity_desc: Phase 92.4 complete, transitioned to Phase 999.1
 progress:
-  total_phases: 11
+  total_phases: 12
   completed_phases: 8
   total_plans: 66
   completed_plans: 66
-  percent: 73
+  percent: 67
 ---
 
 # Project State
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-02 — Phase 92.3 complete, transitioned to Phase 999.1
+Last activity: 2026-10-02 — Phase 92.4 complete, transitioned to Phase 999.1
 
 Progress: [████████░░] 76% (2/7 phases)
 
