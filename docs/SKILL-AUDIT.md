@@ -82,6 +82,7 @@ Every finding the Phase 90 plans left for a later phase, closed here as a hand-o
   - A Joiner's Stealth dark ban applies to the Stealth crit only (the Joiner's other crits ignore the dark, unchanged).
   - A Joiner uses an opener only in round 1 (`pickMemberAbility`), so a Joiner that owns two openers (Pommel Strike and Battle Roar, say) uses only the first and never reuses it after its cooldown; this is the ruled shape for Pommel Strike (90-CONTEXT: "already their round-1 opener").
 - **Phase 92 (bot pass):** `tools/lib/tuning-bot.mjs#chooseAbility` has not measured Pommel Strike as a real strike (90-02) or a Joiner's new passives (Q10 A: Stealth, Hardiness, Ambidextrous); the Joiner policy and the new Joiner casters move the party-fight pins; no bot run was made in Phase 90.
+  Closed by Phase 92 (92-01, 92-04): `chooseAbility` plays Pommel Strike as a real strike beside Cutpurse, and a Joiner's passives and casters are engine-run (92-01); the pass measured the 91.1 cooldown abilities (second use per fight: Kata 0.34, Feint 0.25, Overhead Blow 0.38, Last Stand 0.24, Second Wind 0.26) and Joiners in 264 of 1,000 natural runs (R4, a Joiner from the start: p50 5, floors 2 to 5 clearly easier).
 
 ## Balance calls
 

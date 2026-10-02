@@ -279,3 +279,18 @@ test("(13) every early-floor constant appears in the change table", () => {
     assert.ok(changeTable.includes(name), `Change table is missing early-floor constant ${name}`);
   }
 });
+
+// --- Phase 92 plan 05 (2026-10-01): the close ---
+
+test("(92-05) the Phase 92 ruling is no longer pending and the final reading is the last section before the v1.2 H2", () => {
+  const plain = stripFences(doc);
+  const headings = [...plain.matchAll(/^### Phase 92 .+$/gm)].map((m) => m[0]);
+  assert.equal(headings.filter((h) => h === "### Phase 92 — final reading").length, 1, "one final reading");
+  assert.equal(headings[headings.length - 1], "### Phase 92 — final reading", "the final reading is the last Phase 92 section");
+  const ruling = subsection(plain, /^### Phase 92 — ruling/);
+  assert.ok(!/^Pending/m.test(ruling) && !/D[12]: pending/.test(ruling), "the ruling is no longer pending");
+  assert.match(ruling, /2026-10-01/);
+  assert.match(ruling, /ACCEPT AND RECORD/);
+  const last = h2s(plain).pop();
+  assert.match(last, /^## v1\.2 retune \(Phase 27\)/, "the v1.2 retune H2 stays last");
+});

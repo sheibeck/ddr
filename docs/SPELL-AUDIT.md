@@ -227,6 +227,7 @@ Every finding the Phase 90 plans left for a later phase, closed here as a hand-o
   - The fair-bot Joiner camp stall: the bot can stall at depth with a living Joiner, because its camp gate reads only the hero's appetite while `makeCamp` refuses on the party's `nightlyEats`, so it loops `campFailed` (the Phase 89 finding, STATE.md).
   - The bot has no rule for Door Illusion (when a fight turns bad) or for the new buffs (cast before an encounter), so it ignores them; watch Magic User death depth with Door Illusion in every Illusionist's starting book (a free escape); Stop Time's Illusionist length (6 rounds) is a bot-measured number too.
   - The scroll pool is 41 spells from depth 4; Strength's reach (Q1) and the rising resist move spell damage and control; no bot run was made in Phase 90.
+  - Closed by Phase 92 (92-01, 92-04): the camp stall is fixed (the gate reads `nightlyEats`); the bot plays Door Illusion, the buffs and the room controls (docs/DIFFICULTY-RETUNE.md "Phase 92 — the bot plays the v2.3 rules (92-01)"); the one pass measured Door Illusion ending the fight about 89% of casts and the Illusionist at p50 4 (Magic User pool 4, class matrix 3, the lowest sub-class), and no spell number was flagged.
 
 ## Balance calls
 

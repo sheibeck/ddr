@@ -85,7 +85,7 @@ test("econ ledger: a Ruling section exists", () => {
 
 test("econ ledger: once the Status reads 'target confirmed', the Ruling carries the fixed block", () => {
   const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
-  if (!/^(target confirmed|retuned|no retune)/.test(status)) return; // still open: the placeholder is enough
+  if (!/^(target confirmed|retuned|no retune|closed)/.test(status)) return; // still open: the placeholder is enough
   const ruling = section(H2_ORDER[6]);
   for (const label of ["Target", "Shape", "Lever", "First candidate", "Stop rule"]) {
     assert.ok(ruling.split("\n").some((l) => l.startsWith(`**${label}:** `) && l.length > label.length + 6), `Ruling lacks **${label}:**`);
@@ -97,7 +97,7 @@ test("econ ledger: once the Status reads 'target confirmed', the Ruling carries 
 
 test("econ ledger (92-03): the After section exists once the Status reads 'retuned'", () => {
   const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
-  assert.match(status, /^retuned \d{4}-\d{2}-\d{2}/, "92-03 retuned the economy: the Status says so with its date");
+  assert.match(status, /^(retuned|closed) \d{4}-\d{2}-\d{2}/, "92-03 retuned the economy (and 92-05 closed it): the Status says so with its date");
   assert.ok(section(H2_ORDER[7]).trim().length > 0);
 });
 
@@ -132,4 +132,25 @@ test("econ ledger (92-03): the verdict line is PASS only when the stored depth-7
     assert.ok(a.shareWithSalesP50 <= b.shareWithSalesP50 + 1e-9, `floor ${i + 1}: with-bag share must not rise`);
   }
   assert.ok(text.split("\n").some((l) => l.startsWith("**ECON-12 verdict:** PASS")), "no **ECON-12 verdict:** PASS line");
+});
+
+// --- Phase 92 plan 05 (2026-10-01): the close ---
+
+test("econ ledger (92-05): a closed doc says closed with its date and names the commit its last readout measured", () => {
+  const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
+  assert.match(status, /^closed \d{4}-\d{2}-\d{2}$/, "92-05 closed the economy readout");
+  const after = JSON.parse(read(AFTER_PATH));
+  const closed = doc.split("\n").filter((l) => l.startsWith("**Closed "));
+  assert.equal(closed.length, 1, "exactly one **Closed <date>:** line");
+  assert.ok(closed[0].includes(status.replace(/^closed /, "")), "the Closed line carries the close date");
+  assert.ok(closed[0].includes(after.meta.commit), `the Closed line does not name the last readout's commit ${after.meta.commit}`);
+  assert.ok(doc.trimEnd().split("\n").pop().startsWith("**Closed "), "the Closed line is the doc's last line");
+});
+
+test("econ ledger (92-05): the accepted floors 8 to 12 overshoot is recorded with the user's date", () => {
+  const line = doc.split("\n").find((l) => l.startsWith("**Accepted overshoot (user, 2026-10-01):**"));
+  assert.ok(line, "no **Accepted overshoot (user, 2026-10-01):** line");
+  assert.match(line, /floors 8 and 9/);
+  assert.match(line, /floors 10 to 12/);
+  assert.match(line, /device playthrough/);
 });

@@ -1,7 +1,7 @@
 # Store economy readout (Phase 92, ECON-11 / ECON-12)
 
 **Date:** 2026-10-01
-**Status:** retuned 2026-10-01
+**Status:** closed 2026-10-01
 **Measured:** commit 3995a6e3, node tools/tune-economy.mjs --seeds=1000 --workers=4 (the fair bot of 92-01, shipped dials)
 
 ## What this measures
@@ -439,3 +439,7 @@ Two things for 92-03 to check and report, not to hide:
 **What else moved:** nothing in a fixture. The parity suite, the economy and store tests, the shell store snapshots and the roll-high state pins are untouched, because the sale at floors 1 to 4 and at no-depth callers pays what it paid, and every test and snapshot that sells does so on floor 1; the new fraction is pinned by `test/unit/econ-retune.test.js`. No player-facing text states a sell rate (the Sell button shows the price the floor pays), so none changed. See `test/parity/FIXTURE-INVENTORY.md` "Phase 92 plan 03".
 
 **ECON-12 verdict:** PASS. A typical depth-7 hero, selling what the bag holds, can afford 42.0% of a store (the ruled band is 33% to 50%), not all of it; 9.6% of depth-7 heroes could buy the whole shelf, down from 48.3%.
+
+**Accepted overshoot (user, 2026-10-01):** after 92-03 the with-bag share on floors 8 and 9 is 53% and 54% against 42% at depth 7 (n = 141 and 77; the sell fraction is flat at an eighth from floor 7, and the purse alone climbs to 32% and 34%), and floors 10 to 12 stay above depth 7 on gold alone (46%, 67%, 75% at n = 39, 14, 8; income, not sales). Both are ACCEPTED and recorded together; nothing is built for them. Revisit after a device playthrough (the cheap alternative on record is the 0.10 bracket from 92-03: floors 7 to 9 at 39%, 49%, 49%).
+
+**Closed 2026-10-01:** the economy is not re-run by the TUNE-10 pass (92-04 and 92-05 changed no price, gold source or shopping rule, and the fair bot never sells), so the last readout is the 92-03 proof run, commit 21111a88, and the ECON-12 verdict above (PASS) stands. TUNE-10 is handled in docs/DIFFICULTY-RETUNE.md "Phase 92 — final reading".
