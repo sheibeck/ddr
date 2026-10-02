@@ -1,0 +1,94 @@
+
+tune-economy: 1000 seeded auto-play run(s)
+(TUNING PROXY ONLY -- not a pass/fail gate, not a substitute for human playtest; the bot never sells and never buys repairs)
+
+Wilmst earned per run:
+  min=0  p50=514  p90=2294  max=9000
+
+Peak wilmst held per run:
+  min=50  p50=561  p90=2210  max=8558
+
+Wilmst held at run end:
+  min=1  p50=538  p90=2175  max=8558
+
+Reached depth:
+  min=1  p50=5  p90=8  max=17
+
+Income by source (goldGained.why):
+  chest              625784 (70.3%)
+  parley              98400 (11.1%)
+  tableFour           54480 (6.1%)
+  grimoire            36900 (4.1%)
+  off the body        36708 (4.1%)
+  faerie              25600 (2.9%)
+  parley spoils        9363 (1.1%)
+  cutpurse             2934 (0.3%)
+
+Store affordability by depth (floors 1-12): gold held on opening a store vs the whole shelf
+  floor  visits  gold p50   store p50  share p25/p50/p75      buys-out  +bag p50  +bag buys-out  | arrivals  gold p50  store p50  share p50  buys-out
+  1          85        52       2734  2%/3%/5%                  0.0%        3%           2.4%  |     1000        50       2680         2%      0.0%
+  2          78       136       3745  2%/3%/7%                  0.0%       17%          14.1%  |      987        64       3630         2%      0.0%
+  3          59       221       3945  2%/5%/10%                 0.0%       32%          10.2%  |      835       184       3710         4%      0.0%
+  4          53       391       3414  6%/10%/22%                0.0%       63%          26.4%  |      698       318       3735         8%      0.0%
+  5          39       598       4215  8%/11%/23%                2.6%       60%          28.2%  |      555       515       4239        10%      0.9%
+  6          27       992       4282  11%/14%/41%               3.7%       44%          33.3%  |      377       779       4198        17%      1.6%
+  7          24      1028       3725  14%/24%/40%               0.0%       86%          45.8%  |      240       978       4065        23%      4.6%
+  8           3      2417       3259  37%/60%/93%               0.0%      100%         100.0%  |      141      1347       3925        32%      3.5%
+  9           8      1830       4875  16%/34%/61%              12.5%       98%          37.5%  |       77      1771       4525        34%      6.5%
+  10          2      3200       4053  78%/85%/85%               0.0%      100%         100.0%  |       39      2087       4100        46%     12.8%
+  11          1      1431       4205  34%/34%/34%               0.0%      100%         100.0%  |       14      2349       3845        67%     28.6%
+  12          0       n/a        n/a  n/a/n/a/n/a                n/a       n/a            n/a  |        8      3622       4107        75%     37.5%
+  13+         1      6281       3181  100%/100%/100%          100.0%      100%         100.0%  |       13      5595       3131       100%     69.2%
+
+Gold income by source and depth (mean per run that reached the floor; start = the starting purse):
+  floor   runs        start       chest      parley   tableFour    grimoire off the body      faerie parley spoils    cutpurse   on floor   to floor   spent to
+  1       1000           50          43           3           3           6           6           6           1           0        117        117          0
+  2        987            0          73          11           7           9           8           3           1           0        112        229          4
+  3        835            0         103          19          10           7           7           7           2           0        154        391         12
+  4        698            0         141          32          11           8           7           5           2           1        204        607         29
+  5        555            0         179          32          25           7           8           2           3           1        257        888         53
+  6        377            0         217          49          13           6           9           3           4           1        302       1272         93
+  7        240            0         286          18          14           6          10          19           3           1        357       1618        161
+  8        141            0         227          45          36          14          11           8           4           2        347       2011        262
+  9         77            0         222           0          19           2           8           0           4           2        257       2375        356
+  10        39            0         291           0          21           4           9           0           8           0        332       2919        413
+  11        14            0         453           0           0          11           2           0           1           0        467       3676        509
+  12         8            0         132           0           0          19           2           0          12           0        164       3973        405
+  13+        5            0        1923           0           0          90           1           0          36           0       2050       5683        494
+
+Pooled income by source (all runs):
+  start               50000 (5.3%)
+  chest              625784 (66.6%)
+  parley              98400 (10.5%)
+  tableFour           54480 (5.8%)
+  grimoire            36900 (3.9%)
+  off the body        36708 (3.9%)
+  faerie              25600 (2.7%)
+  parley spoils        9363 (1.0%)
+  cutpurse             2934 (0.3%)
+
+Dials: shipped
+
+Reach table (% of runs reaching floor N):
+  >=5: 55.4%  >=10: 3.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=28  p50=110  p90=141  max=230
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 355/8858 (4.0%)
+  6-10: 106/1704 (6.2%)
+  11-20: 20/53 (37.7%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=1324  foeBolted=503  foeDrained=0  foeDebuffed=290  foeHealed=0  foeSummoned=0
+  heroResisted=343  heroResistFailed=881
+  ability damage: 1676 of 150438 total damage taken (1.1%)
+
+Stuck: 6 of 1000 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=1000  startDepth=1
+
