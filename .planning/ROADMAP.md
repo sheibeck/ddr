@@ -1074,3 +1074,28 @@ Plans:
 Plans:
 
 - [ ] TBD (next release; promote via /gsd-review-backlog or /gsd-new-milestone)
+
+### Phase 999.20: Tell apart an ability on cooldown, one that can't be used, and one not in effect (UI, user 2026-10-02)
+
+**Ask (user, on 2.3.0):** "Differentiate an ability that is on cooldown from one that is not usable and one that is not active. Some sort of color difference."
+
+**Context:**
+- `src/browser/combatMenu.js` renders every unavailable ability or spell row with one disabled style. Examples: a 91.1 cooldown ("ready again N rounds after use"), a once-a-fight ability already spent, a gate such as notWielded or a single-foe-only rule, a spell with no charges.
+- Rows stay tappable; a tap lands the refusal reason in the log (see the comments around lines 8, 53, 165-188, 294).
+- Active or in-effect abilities (Taunt, Brace, Mark, buffs) are shown by chips elsewhere.
+
+**Scope:**
+1. Define three or four visual states, each with its own colour token plus a non-colour cue (an icon or label) for accessibility:
+   - **Ready.**
+   - **Recharging:** on cooldown, with "ready in N" (a round countdown).
+   - **Can't use now:** the gate's reason, e.g. "no foe in reach" or "needs a weapon".
+   - **Spent this fight:** once a fight, already used.
+   
+   Optionally a fifth: **Active**, the effect already running, e.g. Taunt is up.
+2. Engine: expose the reason category and the rounds left on each ability row's `enabled` data, if it isn't already there.
+3. Apply the same states to spells (no charges, school-gated) where it fits.
+4. Light and dark themes, readable for colour-blind players (not hue alone), with shell snapshot and a11y tests.
+
+Plans:
+
+- [ ] TBD (promote via /gsd-review-backlog or /gsd-new-milestone)
