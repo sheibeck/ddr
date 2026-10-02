@@ -1036,3 +1036,23 @@ Plans:
 Plans:
 
 - [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
+
+### Phase 999.18: Updated screenshots for the store listing and the website (user, 2026-10-02)
+
+**Goal:** the Play Store listing and darktierstudios.com show the current game (2.3+): the Play Games names on the board, SIGN IN, the new spells and the current HUD and rail.
+
+**Where they live:**
+- **Play listing:** `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`), described in `store-listing/LISTING.md`.
+- **Website:** `C:/projects/darktier-studio/public/assets/delve-die-repeat/shots/*.webp`, listed in `src/pages/delve-die-repeat/index.astro` (the `ddr-shots` section, each image with alt text), plus `featured.webp`.
+
+**Scope:**
+1. Pick a shot list with the user: title, combat with damage lines, the leaderboard with Play Games names, the Hero tab, a store, spells and the map.
+2. Capture them on the Pixel 7 debug build. Use the dev row (debug builds only) to reach deep floors; hide the dev chip, or use normal runs.
+3. Export them to the Play size rules and to webp for the site. Update the alt text.
+4. Upload them to Play Console (listing) and deploy the site.
+
+**Related:** 999.17 (large-screen support) needs real tablet and landscape shots. If both land in the same release, shoot the tablet sizes after 999.17.
+
+Plans:
+
+- [ ] TBD (promote via /gsd-review-backlog or /gsd-new-milestone)
