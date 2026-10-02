@@ -54,13 +54,15 @@ import path from "node:path";
 import url from "node:url";
 
 import { FIGHTER_SKILLS, THIEF_SKILLS, ABILITIES, ABILITY_BY_ID, ABILITY_POOL } from "../../content/index.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const DOC_PATH = path.join(REPO_ROOT, "docs", "SKILL-AUDIT.md");
 
 /** EXPECTED — every row the table must hold, in order, with the Kind · Class cell the content implies and the live text(s) its Text cell must carry. */
-const SING_TEXT = "Sings the best song your level knows, then a hundred squares before the next. Pick the moment.";
+// Phase 91.1 plan 05 (2026-10-01): the live combat-menu text (two songs a fight, 91.1-03 V7 B); it was the retired once-per-100-squares line.
+const SING_TEXT = COMBAT_MENU_COPY.singDesc;
 const EXPECTED = [
   ...Object.entries(FIGHTER_SKILLS).map(([name, s]) => ({ name, kind: `${s.active ? "table active" : "passive"} · Fighter`, texts: [s.txt, ...(s.txt2 ? [s.txt2] : [])] })),
   ...Object.entries(THIEF_SKILLS).map(([name, s]) => ({ name, kind: `${s.active ? "table active" : "passive"} · Thief`, texts: [s.txt, ...(s.txt2 ? [s.txt2] : [])] })),

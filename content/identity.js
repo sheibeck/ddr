@@ -173,7 +173,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       [trait("cat-burglar-traps", "every trap that catches you deals double damage", CONTRACT, "every trap that catches a Cat Burglar deals double damage")],
     ),
     "Cutthroat": side(
-      [trait("cutthroat-crit", "your first landed blow always crits, even in heavy armour", CONTRACT, "the first landed blow always crits, even in armor a backstab would refuse")],
+      [trait("cutthroat-crit", "your first landed blow always crits, even in heavy armour and even in the dark", CONTRACT, "the first landed blow always crits, even in armor a backstab would refuse")],
       [trait("cutthroat-joiner", "whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner", CONTRACT, "whenever you descend with a Joiner, a d10 of 1 and that Joiner does not reach the next floor")],
     ),
     "Cloaker": side(
@@ -185,7 +185,7 @@ export const IDENTITY_TRAITS = Object.freeze({
         // The opener is a Thief's opening blow, so the backstab doubles it (engine/combat.js#playerStrike; pinned in
         // the Ninja half of test/unit/identity-contract.test.js) unless heavy armour or the dark denies the backstab.
         trait("ninja-opener", "your opening strike always lands for maximum damage, doubled by the backstab unless you are in heavy armour or the dark", CONTRACT, "the opener always lands for max weapon damage; a later roll of 2 crits"),
-        trait("ninja-crit", "after that, you crit on the top two numbers of your strike die (19–20 on a d20)", CONTRACT, "the opener always lands for max weapon damage; a later roll of 2 crits"),
+        trait("ninja-crit", "after that, you crit on the top two numbers of your strike die (19–20 on a d20), even in the dark", CONTRACT, "the opener always lands for max weapon damage; a later roll of 2 crits"),
       ],
       [trait("ninja-silent", "can never talk a fight down", CONTRACT, "you never speak — canParley is false unconditionally")],
     ),
@@ -386,7 +386,7 @@ export const BLURB_ANCHORS = Object.freeze({
       "free-skill": A(R`Dirty Trick`),
     },
     "Cutthroat": {
-      "cutthroat-crit": A(R`double damage on your first landed blow, even in heavy armour`),
+      "cutthroat-crit": A(R`double damage on your first landed blow, even in heavy armour and even in the dark`),
       "cutthroat-joiner": A(R`one descent in ten`),
     },
     "Cloaker": {
@@ -395,7 +395,7 @@ export const BLURB_ANCHORS = Object.freeze({
     },
     "Ninja": {
       "ninja-opener": A(R`(?=.*opening strike lands for maximum damage)(?=.*backstab doubles it)`),
-      "ninja-crit": A(R`top two numbers of your strike die \(19–20 on a d20\)`),
+      "ninja-crit": A(R`top two numbers of your strike die \(19–20 on a d20\), even in the dark`),
       "ninja-silent": A(R`you never speak`),
       "free-skill": A(R`Silent Step`),
     },

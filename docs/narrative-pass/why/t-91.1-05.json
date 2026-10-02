@@ -10,5 +10,77 @@
       "hygiene"
     ],
     "why": "Dead code cleanup (docs/VALUE-LEDGER.md K19, plan 91.1-05): nothing has written the Bard's Inspire to-hit term since the level-2 song was retired in Phase 91 plan 06, so the chip, its label, its tone and this explanation could never show. Removed; no roll moves."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Cutthroat.good.0.text",
+    "surface": "blurbs",
+    "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+    "before": "your first landed blow always crits, even in heavy armour",
+    "after": "your first landed blow always crits, even in heavy armour and even in the dark",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cutthroat's first landed blow keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+    "before": "Good: your first landed blow always crits, even in heavy armour. Bad: whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner.",
+    "after": "Good: your first landed blow always crits, even in heavy armour and even in the dark. Bad: whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cutthroat's first landed blow keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
+  },
+  {
+    "key": "bank:SUB_NOTE.Cutthroat",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Cutthroat blurb: content/flavor.js#SUB_NOTE",
+    "before": "Double damage on your first landed blow, even in heavy armour, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "after": "Double damage on your first landed blow, even in heavy armour and even in the dark, and Joiners will walk beside you all the same — word travels, but so do they. One descent in ten, the one beside you does not reach the next floor, and everyone knows why. Nobody has ever asked you to explain. You have never offered.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cutthroat's first landed blow keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
+  },
+  {
+    "key": "bank:IDENTITY_TRAITS.sub.Ninja.good.1.text",
+    "surface": "blurbs",
+    "trigger": "an authored line in the Ninja footer: content/identity.js#IDENTITY_TRAITS",
+    "before": "after that, you crit on the top two numbers of your strike die (19–20 on a d20)",
+    "after": "after that, you crit on the top two numbers of your strike die (19–20 on a d20), even in the dark",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Ninja's later crit keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
+  },
+  {
+    "key": "bank:IDENTITY_FOOTER.sub.Ninja",
+    "surface": "blurbs",
+    "trigger": "the Hero tab and the roller's Ninja footer: src/browser/identityFooter.js",
+    "before": "Good: your opening strike always lands for maximum damage, doubled by the backstab unless you are in heavy armour or the dark; after that, you crit on the top two numbers of your strike die (19–20 on a d20); starts with the Silent Step skill for free. Bad: can never talk a fight down.",
+    "after": "Good: your opening strike always lands for maximum damage, doubled by the backstab unless you are in heavy armour or the dark; after that, you crit on the top two numbers of your strike die (19–20 on a d20), even in the dark; starts with the Silent Step skill for free. Bad: can never talk a fight down.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Ninja's later crit keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
+  },
+  {
+    "key": "bank:SUB_NOTE.Ninja",
+    "surface": "blurbs",
+    "trigger": "the roller's and Hero tab's Ninja blurb: content/flavor.js#SUB_NOTE",
+    "before": "You never speak — literally; no parley, no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage (the Thief's backstab doubles it, unless you are in heavy armour or the dark), and after that you crit on the top two numbers of your strike die (19–20 on a d20). You start knowing Silent Step for free. The silence isn't a vow, it's a tactic.",
+    "after": "You never speak — literally; no parley, no fluency, no encounter, ever talks you out of a fight. Your opening strike lands for maximum damage (the Thief's backstab doubles it, unless you are in heavy armour or the dark), and after that you crit on the top two numbers of your strike die (19–20 on a d20), even in the dark. You start knowing Silent Step for free. The silence isn't a vow, it's a tactic.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "V26 A (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Ninja's later crit keeps ignoring the dark no-crit ban (the shadow classes keep their edge), so the text now says so: \"even in the dark\". Words only; the engine is unchanged and test/unit/value-text.test.js proves the dark crit."
   }
 ]

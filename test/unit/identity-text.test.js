@@ -274,7 +274,8 @@ test("TEXT-01: a line that states a cap or a crit range names that range on a d2
 
 test("TEXT-01: the ruled wordings hold (Ninja, Acrobat, Elven, Troll)", () => {
   const text = (kind, key, id) => identityEntries(kind, key).find((x) => x.id === id).text;
-  assert.equal(text("sub", "Ninja", "ninja-crit"), `after that, you crit on the top two numbers of your strike die (${critRange()} on a d20)`);
+  // Phase 91.1 plan 05 (V26 A, 2026-10-01): the later crit ignores the dark, and the line now says ", even in the dark" (pinned in value-text.test.js).
+  assert.equal(text("sub", "Ninja", "ninja-crit"), `after that, you crit on the top two numbers of your strike die (${critRange()} on a d20), even in the dark`);
   assert.match(SUB_NOTE.Ninja, /top two numbers of your strike die/);
   assert.match(SUB_NOTE.Ninja, new RegExp(`${critRange()} on a d20`));
   assert.equal(text("sub", "Acrobat", "acrobat-dodge"), `foes hit you only on a high roll (${range(foeToHitVs(hero("Acrobat")))} on a d20)`);
