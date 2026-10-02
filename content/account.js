@@ -51,7 +51,7 @@ export const ACCOUNT_COPY = Object.freeze({
     on: "ON",
     off: "OFF",
     onHelp: "Every death from here goes on the board under your Play Games name, for anyone to find. Turn it off any time, right here.",
-    offHelp: "Nothing leaves this phone, and Compete off means no Play Games sign-in. Compete must be on to reach the board, and so to erase anything already sitting there.",
+    offHelp: "Nothing leaves this phone, and Compete off means no Play Games sign-in. Turning it off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board. Compete must be on to reach the board, and so to erase anything already sitting there.",
     signin: "SIGN IN WITH PLAY GAMES",
     signingIn: "SIGNING IN…",
     erase: "ERASE MY RUNS",

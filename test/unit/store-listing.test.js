@@ -108,7 +108,10 @@ test("the Play Games SDK's own collection is declared from Google's data-collect
   assert.ok(ds.includes("developer.android.com/games/pgs/data-collection"), "the page relied on is cited");
   assert.match(ds, /fetched 2026-10-01/);
   assert.ok(ds.includes("Gamer Identity (Gamertag, avatar)"));
-  assert.ok(ds.includes("Compete off: the SDK never starts"), "optional because the SDK starts only with Compete on");
+  assert.ok(ds.includes("Compete off: the SDK never starts the next time you open the game"), "optional because the SDK starts only with Compete on");
+  // Phase 92.2 plan 01 (user 2026-10-02): turning Compete off mid-session takes full effect on the next open, said on both SDK rows.
+  const clause = "Turning Compete off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board";
+  assert.equal(ds.split(clause).length - 1, 2, "both Play Games SDK rows carry the mid-session clause");
 });
 
 test("Deletion covers the board name and the Play Games link, and points at Play Games settings", () => {

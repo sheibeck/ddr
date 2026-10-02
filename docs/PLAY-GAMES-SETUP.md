@@ -22,7 +22,9 @@ the order of the steps is what matters. Every live change is your go first (D-14
 ## 1. What Play Games is used for now
 
 - With Compete on, the game starts the Play Games SDK and signs the player in. With Compete
-  off, the SDK never starts and no sign-in is asked for.
+  off, the SDK never starts and no sign-in is asked for. Turning Compete off mid-session takes
+  full effect the next time the game is opened: Play Games stays signed in until the app closes,
+  and nothing reaches the board.
 - The player's **Google Play Games name** (the gamer name they chose in Google Play Games) is
   the name the board shows. A Cloud Function (`boardName`, `functions/board-names/`) reads it
   from Google's own sign-in record and writes the trusted `names/{uid}` record.

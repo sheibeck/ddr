@@ -177,6 +177,14 @@ test("offHelp says nothing leaves the phone, Compete off means no Play Games sig
   assert.match(help, /erase/i);
 });
 
+// Phase 92.2 plan 01 (user 2026-10-02): turning Compete off mid-session takes full effect on the next open.
+test("offHelp says Compete off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board", () => {
+  const help = ACCOUNT_COPY.sheet.offHelp;
+  assert.match(help, /full effect the next time you open the game/i);
+  assert.match(help, /Play Games stays signed in until the app closes/i);
+  assert.match(help, /nothing reaches the board/i);
+});
+
 test("No line says WP as a word", () => {
   for (const [p, v] of collectLeaves(ACCOUNT_COPY)) assert.doesNotMatch(v, WP_WORD, p);
 });
