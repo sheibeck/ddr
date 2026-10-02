@@ -150,7 +150,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       [
         trait("bard-humans", "can always parley with Humans", CONTRACT, "courtly enough to talk to anyone — parleys Humans at fluency 0"),
         // Phase 91 plan 06 (IDENT-17, user 2026-09-30): replaces "a song every 100 squares".
-        trait("bard-song", "sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent", "test/unit/bard-song.test.js", "IDENT-17 once per fight: songReady is true only for a Bard in a live joined fight that has not sung"),
+        trait("bard-song", "sings a random offense or defense spell up to your level, at full strength, no charges spent, and a second song 5 rounds after the first", "test/unit/value-identity.test.js", "V7 Sing sing-once: a Bard sings a second song 5 rounds after the first (round 1 to round 6), and never a third"),
       ],
       [
         trait("bard-camp", "camp wakes wandering monsters twice as often", CONTRACT, "camp wakes wandering monsters twice as often; dumb foes come for the Bard"),
@@ -177,7 +177,7 @@ export const IDENTITY_TRAITS = Object.freeze({
       [trait("cutthroat-joiner", "whenever you descend with a Joiner, roll a d10: a 1 kills that Joiner", CONTRACT, "whenever you descend with a Joiner, a d10 of 1 and that Joiner does not reach the next floor")],
     ),
     "Cloaker": side(
-      [trait("cloaker-vanish", "vanishes from any fight for free until you land a blow", CONTRACT, "a free vanish while nobody has seen your face")],
+      [trait("cloaker-vanish", "vanishes from any fight for free until you land a blow, even from a pursuing Spectre", CONTRACT, "a free vanish while nobody has seen your face")],
       [trait("cloaker-seen", "once you've struck, you flee on the ordinary roll like everyone else", CONTRACT, "once seen, the vanish is denied — a distinct scenario from the good's")],
     ),
     "Ninja": side(
@@ -192,7 +192,7 @@ export const IDENTITY_TRAITS = Object.freeze({
     "Con Artist": side(
       [
         trait("con-artist-talk", "can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
-        trait("con-artist-leave", "a level 1 foe leaves before the fight two times in three", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
+        trait("con-artist-leave", "a level 1 foe leaves before the fight two times in three, and a level 2 foe one time in three", CONTRACT, "can talk anyone down except Magical/Walking Dead, and a weak foe leaves before the fight starts"),
       ],
       [trait("con-artist-opener", "your opening blow deals no damage", CONTRACT, "the opening blow is a warning, not an injury")],
     ),
@@ -366,7 +366,7 @@ export const BLURB_ANCHORS = Object.freeze({
     },
     "Bard": {
       "bard-humans": A(R`can always parley with Humans`),
-      "bard-song": A(R`once a fight you sing a random offense or defense spell up to your level`),
+      "bard-song": A(R`you sing a random offense or defense spell up to your level.*a second song 5 rounds after the first`),
       "bard-camp": A(R`come looking twice as often`),
       "bard-target": A(R`intelligence is no higher than 3 comes for you first`),
     },
@@ -390,7 +390,7 @@ export const BLURB_ANCHORS = Object.freeze({
       "cutthroat-joiner": A(R`one descent in ten`),
     },
     "Cloaker": {
-      "cloaker-vanish": A(R`vanish for free, right up until you land your first blow`),
+      "cloaker-vanish": A(R`vanish for free, right up until you land your first blow.*pursuing Spectre`),
       "cloaker-seen": A(R`after that you flee like everyone else`),
     },
     "Ninja": {
@@ -401,7 +401,7 @@ export const BLURB_ANCHORS = Object.freeze({
     },
     "Con Artist": {
       "con-artist-talk": A(R`can always parley.*\+4 on every parley roll`),
-      "con-artist-leave": A(R`any level-one foe declines to fight you two times in three`),
+      "con-artist-leave": A(R`any level-one foe declines to fight you two times in three, and any level-two foe one time in three`),
       "con-artist-opener": A(R`does no damage at all`),
     },
     "Acrobat": {

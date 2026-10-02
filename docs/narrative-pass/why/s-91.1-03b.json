@@ -1,0 +1,190 @@
+[
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Bard.good.1.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent",
+  "after": "sings a random offense or defense spell up to your level, at full strength, no charges spent, and a second song 5 rounds after the first",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V7 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): a Bard may sing a second song 5 rounds after the first (hero and Joiner alike, never a third), so the trait no longer says once per fight. The number is pinned to engine/combat.js#SONG_GAP_ROUNDS by test/unit/value-identity.test.js."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Bard",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: can always parley with Humans; sings once per fight: a random offense or defense spell up to your level, at full strength, no charges spent. Bad: camp wakes wandering monsters twice as often; foes with intelligence no higher than 3 always attack you when a Joiner is in the fight.",
+  "after": "Good: can always parley with Humans; sings a random offense or defense spell up to your level, at full strength, no charges spent, and a second song 5 rounds after the first.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V7: the Bard's footer carries the second song, 5 rounds after the first."
+ },
+ {
+  "key": "bank:SUB_NOTE.Bard",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "Once a fight you sing a random offense or defense spell up to your level, at full strength, no charges spent: you pick the moment and the song picks the spell. And you can always parley with Humans, which is talking a fight down: every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
+  "after": "You sing a random offense or defense spell up to your level, at full strength, no charges spent, and a long fight gets a second song 5 rounds after the first: you pick the moment and the song picks the spell. And you can always parley with Humans, which is talking a fight down: every Human in here will at least hear you out before swinging. Camp for the night and creatures too stupid to know better come looking twice as often, and when a Joiner is along, every foe whose intelligence is no higher than 3 comes for you first, always — which, down here, is most of them.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V7: the blurb said \"once a fight\"; a long fight now gets a second song 5 rounds after the first, and the other clauses (the random offense or defense spell, full strength, no charges, the Human parley, camp, the dim-witted foes) are kept."
+ },
+ {
+  "key": "bank:COMBAT_MENU_COPY.singDesc",
+  "surface": "combat-screen",
+  "trigger": "the combat action grid and its submenus",
+  "before": "Once per fight: sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell.",
+  "after": "Sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell. A long fight gets a second song 5 rounds after the first, and never a third.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V7: the SING row's description states the second song (its number read from SONG_GAP_ROUNDS) and that there is never a third."
+ },
+ {
+  "key": "bank:COMBAT_MENU_COPY.singAgain",
+  "surface": "combat-screen",
+  "trigger": "the combat action grid and its submenus",
+  "before": "",
+  "after": "AGAIN IN {n}",
+  "reasons": [
+   "fact",
+   "accurate"
+  ],
+  "why": "V7: the new state of the SING row between the two songs counts the rounds left ({n} is filled from the engine's own clock)."
+ },
+ {
+  "key": "oracle:actionRefused",
+  "surface": "refusals",
+  "trigger": "actionRefused — engine/combat.js#sing; engine/combat.js#loseTurn; engine/magic.js#drinkPotion",
+  "before": "One song a fight. The audience has had enough.",
+  "after": "Two songs a fight. The audience has had enough.",
+  "reasons": [
+   "fact",
+   "joke"
+  ],
+  "why": "V7: after the second song the refusal says two songs a fight (it said one)."
+ },
+ {
+  "key": "oracle:actionRefused",
+  "surface": "refusals",
+  "trigger": "actionRefused — engine/combat.js#sing; engine/combat.js#loseTurn; engine/magic.js#drinkPotion",
+  "before": "",
+  "after": "Your voice needs a breather: 3 more rounds before the next song.",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V7: a song asked for inside the 5 rounds after the first is refused with the rounds left (refusal reason songResting, no draw)."
+ },
+ {
+  "key": "rail:actionRefused",
+  "surface": "refusals",
+  "trigger": "actionRefused — engine/combat.js#sing; engine/combat.js#loseTurn; engine/magic.js#drinkPotion",
+  "before": "One song a fight. The audience has had enough.",
+  "after": "Two songs a fight. The audience has had enough.",
+  "reasons": [
+   "fact",
+   "joke"
+  ],
+  "why": "V7: the rail twin: two songs a fight after the second song."
+ },
+ {
+  "key": "rail:actionRefused",
+  "surface": "refusals",
+  "trigger": "actionRefused — engine/combat.js#sing; engine/combat.js#loseTurn; engine/magic.js#drinkPotion",
+  "before": "",
+  "after": "Your voice needs a breather: 3 more rounds.",
+  "reasons": [
+   "fact",
+   "natural"
+  ],
+  "why": "V7: the rail twin of the resting refusal, short."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Con Artist.good.1.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "a level 1 foe leaves before the fight two times in three",
+  "after": "a level 1 foe leaves before the fight two times in three, and a level 2 foe one time in three",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V25 (user ruling, 2026-10-01): a level 1 foe still leaves two times in three and a level 2 foe now leaves one time in three (covers floors 2 to 5). The faces are engine/combat.js#CON_ARTIST_LEAVE_FACES."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Con Artist",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; a level 1 foe leaves before the fight two times in three. Bad: your opening blow deals no damage.",
+  "after": "Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; a level 1 foe leaves before the fight two times in three, and a level 2 foe one time in three.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V25: the footer carries the level 2 foe's one time in three."
+ },
+ {
+  "key": "bank:SUB_NOTE.Con Artist",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "You talk first: you can always parley, which is talking a fight down, with anything but Magical foes and the Walking Dead, at +4 on every parley roll, and any level-one foe declines to fight you two times in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+  "after": "You talk first: you can always parley, which is talking a fight down, with anything but Magical foes and the Walking Dead, at +4 on every parley roll, and any level-one foe declines to fight you two times in three, and any level-two foe one time in three. Your first landed blow does no damage at all, because part of you is still hoping to sell them something.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "number"
+  ],
+  "why": "V25: the blurb states the level-two foe's one time in three beside the level-one foe's two times in three."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Cloaker.good.0.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "vanishes from any fight for free until you land a blow",
+  "after": "vanishes from any fight for free until you land a blow, even from a pursuing Spectre",
+  "reasons": [
+   "fact",
+   "accurate"
+  ],
+  "why": "V27 (user ruling, 2026-10-01: \"Cloaker ability should work on specter, too\"): the free vanish also escapes a pursuing Spectre's parting blow, so the trait says so."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Cloaker",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: vanishes from any fight for free until you land a blow. Bad: once you've struck, you flee on the ordinary roll like everyone else.",
+  "after": "Good: vanishes from any fight for free until you land a blow, even from a pursuing Spectre.",
+  "reasons": [
+   "fact",
+   "accurate"
+  ],
+  "why": "V27: the footer carries the Spectre clause."
+ },
+ {
+  "key": "bank:SUB_NOTE.Cloaker",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "You can vanish for free, right up until you land your first blow — after that you flee like everyone else, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
+  "after": "You can vanish for free, right up until you land your first blow, and not even a pursuing Spectre gets a parting swing at your back — after that you flee like everyone else, and you earn precisely nothing from the fight you vanish out of. A Cloaker's career is a long list of encounters that never technically happened.",
+  "reasons": [
+   "fact",
+   "accurate",
+   "joke"
+  ],
+  "why": "V27: the blurb says not even a pursuing Spectre gets a parting swing at your back; the seen-Cloaker and no-earnings clauses are kept."
+ }
+]

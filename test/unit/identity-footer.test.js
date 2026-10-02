@@ -21,6 +21,7 @@ import { facesRangeText } from "../../src/browser/rollRange.js";
 import { classNeed, foeToHitVs, weaponDamage, healMulFor } from "../../engine/derived.js";
 import { identityFooter, footerLines, RACE_FIELD_LINES, RACE_COSMETIC_FIELDS, unphrasedRaceFields } from "../../src/browser/identityFooter.js";
 import { checkLevel } from "../../engine/character.js";
+import { CON_ARTIST_LEAVE_FACES } from "../../engine/combat.js";
 import { newRun } from "../../engine/state.js";
 import { openStore } from "../../engine/economy.js";
 import { makeRng } from "../../engine/rng.js";
@@ -442,10 +443,14 @@ test("TEXT-01 pin: the Soldier's and Ninja's two crit numbers and the Con Artist
   assert.match(SUB_NOTE.Soldier, /^Foes crit you on 19–20 on a d20 instead of just 20/);
   assert.match(combat, /c\.sub === "Ninja" && !opening && roll >= atLeastFor\(2, dieN\)/);
   assert.match(SUB_NOTE.Ninja, /you crit on the top two numbers of your strike die \(19–20 on a d20\)/);
-  const i = combat.indexOf('c.sub === "Con Artist" && f.lvl <= 1');
+  // Phase 91.1 plan 03 part B (V25 B, 2026-10-01): the leave check reads the CON_ARTIST_LEAVE_FACES table (a level 1
+  // foe four faces of six: two times in three; a level 2 foe two faces: one time in three), not a typed 4.
+  const i = combat.indexOf('c.sub === "Con Artist" && f.lvl <= CON_ARTIST_LEAVE_MAX_LVL');
   assert.ok(i !== -1);
-  assert.match(combat.slice(i, i + 400), /rollCheck\(rng, 6, atLeastFor\(4, 6\)\)/, "four faces of six: two times in three");
-  assert.match(SUB_NOTE["Con Artist"], /any level-one foe declines to fight you two times in three/);
+  assert.match(combat.slice(i, i + 1400), /rollCheck\(leaveRng, 6, atLeastFor\(CON_ARTIST_LEAVE_FACES\[f\.lvl\] \?\? 0, 6\)\)/, "the table's faces of six");
+  assert.equal(CON_ARTIST_LEAVE_FACES[1], 4, "four faces of six: two times in three");
+  assert.equal(CON_ARTIST_LEAVE_FACES[2], 2, "two faces of six: one time in three");
+  assert.match(SUB_NOTE["Con Artist"], /any level-one foe declines to fight you two times in three, and any level-two foe one time in three/);
 });
 
 test("VOX-04 pin: the Summoner prose states the half-strength healing and the one-in-eight backfire the engine applies", () => {

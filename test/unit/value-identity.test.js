@@ -492,7 +492,7 @@ test("V7 Sing sing-once: a Bard sings a second song 5 rounds after the first (ro
   }
 });
 
-test("V7 Sing sing-once: a song inside the 5 rounds is refused songResting with the rounds left and zero draws; the refusal spends nothing", () => {
+test("V7 Sing sing-once: a song inside the 5 rounds is refused songResting with the rounds left, zero draws and nothing spent", () => {
   const state = bardHero(1);
   sing(state, noDraws(), []);
   state.combat.round = 2;
@@ -504,7 +504,7 @@ test("V7 Sing sing-once: a song inside the 5 rounds is refused songResting with 
   assert.equal(songs(sing(state, noDraws(), [])).length, 1);
 });
 
-test("V7 Sing sing-once: songDue is the one test (no song yet is due; the first song's round plus 5 opens the second; null or a bare flag closes it)", () => {
+test("V7 Sing sing-once: songDue is the one test: no song yet is due, the first song's round plus 5 opens the second, and null or a bare flag closes it", () => {
   assert.equal(songDue(undefined, undefined, 1), true);
   assert.equal(songDue(true, 3, 7), false);
   assert.equal(songDue(true, 3, 8), true);
@@ -679,7 +679,7 @@ test("V25 Con Artist con-artist-leave: a level 1 foe still draws one d6 on the m
   assert.ok(left > 0 && stayed > 0, `both outcomes occur (left ${left}, stayed ${stayed})`);
 });
 
-test("V25 Con Artist con-artist-leave: a level 2 foe leaves one time in three from derivedRng(cursor, 'conArtistLeave', acts, foe index); the main rng draws nothing for it", () => {
+test("V25 Con Artist con-artist-leave: a level 2 foe leaves one time in three from derivedRng(cursor, 'conArtistLeave', acts, foe index), and the main rng draws nothing for it", () => {
   let left = 0;
   let stayed = 0;
   for (const { base, seed, depth } of singleFoeCases(2, 60)) {
@@ -700,7 +700,7 @@ test("V25 Con Artist con-artist-leave: a level 2 foe leaves one time in three fr
   assert.ok(left > 0 && stayed > left, `about one in three leaves (left ${left}, stayed ${stayed})`);
 });
 
-test("V25 Con Artist con-artist-leave: a level 3 foe never leaves and draws nothing; a near-miss sub ('Con artist') and a Joiner Con Artist change nothing", () => {
+test("V25 Con Artist con-artist-leave: a level 3 foe never leaves and draws nothing, and a near-miss sub ('Con artist') and a Joiner Con Artist change nothing", () => {
   for (const { base, seed, depth } of singleFoeCases(3, 8)) {
     const con = startFor(base, "Con Artist", seed, depth);
     const plain = startFor(base, "Soldier", seed, depth);
@@ -766,7 +766,7 @@ test("V27 Cloaker cloaker-vanish: a Cloaker who has struck (opened2) is seen, th
   assert.ok(types.indexOf("foePursued") < types.indexOf("fled"));
 });
 
-test("V27 Cloaker cloaker-vanish: every other hero still takes the Spectre's parting blow on a tracked withdrawal and on an ordinary escape; a near-miss sub ('Cloaker ') gets no free vanish", () => {
+test("V27 Cloaker cloaker-vanish: every other hero still takes the Spectre's parting blow on a tracked withdrawal and on an ordinary escape, and a near-miss sub ('Cloaker ') gets no free vanish", () => {
   const tracked = cloakerFight({ sub: "Cat Burglar", tracked: true, round: 1 });
   const tev = flee(tracked, makeRng(5), []);
   assert.ok(tev.some((e) => e.type === "foePursued"), "tracked withdrawal");
@@ -803,4 +803,25 @@ test("edge (empty, V7 V25 V27): no fight means nothing to sing at and nothing to
   assert.equal(songReady(state), false, "no fight");
   assert.deepEqual(sing(state, noDraws(), []), []);
   assert.deepEqual(flee(state, noDraws(), []), []);
+});
+test("V7 text: the Bard's footer, the SING row and the new refusal say a second song 5 rounds after the first, from the engine's own number", () => {
+  const good = identityFooter("sub", "Bard").good.join(" | ");
+  assert.ok(good.includes(`a second song ${SONG_GAP_ROUNDS} rounds after the first`), good);
+  assert.match(COMBAT_MENU_COPY.singDesc, new RegExp(`second song ${SONG_GAP_ROUNDS} rounds after the first, and never a third`));
+  const resting = { type: "actionRefused", action: "sing", reason: "songResting", rounds: 3 };
+  assert.match(EVENT_NARRATION.actionRefused(resting), /3 more rounds/);
+  assert.match(LINE_FOR.actionRefused(resting).text, /3 more rounds/);
+  assert.match(EVENT_NARRATION.actionRefused({ ...resting, rounds: 1 }), /1 more round before/);
+  assert.match(EVENT_NARRATION.actionRefused({ type: "actionRefused", reason: "sungThisFight" }), /Two songs a fight/);
+});
+
+test("V25 text: the Con Artist's footer states the same table (a level 1 foe two times in three, a level 2 foe one time in three)", () => {
+  const good = identityFooter("sub", "Con Artist").good.join(" | ");
+  assert.ok(good.includes("a level 1 foe leaves before the fight two times in three"), good);
+  assert.ok(good.includes("a level 2 foe one time in three"), good);
+});
+
+test("V27 text: the Cloaker's footer states the vanish is free even against a Spectre", () => {
+  const good = identityFooter("sub", "Cloaker").good.join(" | ");
+  assert.ok(/Spectre/.test(good), good);
 });
