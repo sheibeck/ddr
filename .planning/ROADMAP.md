@@ -1012,3 +1012,27 @@ Plans:
 Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.17: Large-screen support: drop the portrait lock (NEXT RELEASE — user, 2026-10-02)
+
+**Goal:** Delve, Die, Repeat works on tablets, foldables and Chromebooks in any orientation and window size, with no resizability or orientation restriction in the manifest.
+
+**Source:** a Play Console pre-launch/quality notice on the 2.3.0 upload (2026-10-02):
+"Remove resizability and orientation restrictions in your game to support large screen devices … We detected … `<activity android:name="com.darktierstudios.delvedierepeat.MainActivity" android:screenOrientation="PORTRAIT" />`. To improve the user experience of your game, remove these restrictions and check that your game layouts work on various screen sizes and orientations."
+
+**Context:**
+- `android/app/src/main/AndroidManifest.xml` sets `android:screenOrientation="portrait"` on MainActivity. That is the Phase 80 portrait lock, and the app is declared a game (`appCategory`) partly for it.
+- On Android 16+ (targetSdk 36), large screens (smallest width ≥ 600dp) ignore orientation and resizability restrictions for non-game apps. Games are exempt today, but Play now flags them as a quality issue.
+
+**Scope:**
+1. Remove `screenOrientation`, and any `resizeableActivity=false` or max-aspect limits. Decide what the phone experience should be: keep portrait on phones through a runtime choice, or support landscape everywhere.
+2. Responsive layouts for the maze viewport, rail, HUD, tabs and sheets in landscape and at tablet and foldable sizes. Handle multi-window and resizing, safe areas and the system bars (Phase 80 / nativeChrome).
+3. Keep state across configuration changes: rotation must not restart a run (Capacitor activity recreation and `configChanges`).
+4. Test on emulator profiles: a phone in landscape, a 10" tablet, a foldable (unfolded and folded) and a Chromebook-sized window. Update the shell snapshots and the perf baseline.
+5. Update the store listing with tablet and large-screen screenshots, if wanted.
+
+**Decisions this needs before planning:** whether phones stay portrait-only (allowed as a runtime preference) or rotate freely, and the landscape layout design for the play screen.
+
+Plans:
+
+- [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
