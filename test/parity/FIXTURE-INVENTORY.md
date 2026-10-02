@@ -7969,3 +7969,58 @@ Re-based scripted tests and pins (each with a dated comment naming plan 91.1-05;
 6. The Sing row: `test/unit/skill-audit.test.js` (`SING_TEXT` is the live `COMBAT_MENU_COPY.singDesc`); `docs/ABILITIES.md`'s generated skills table regenerated from the audit row.
 7. `test/unit/value-ledger.test.js`: the close rules (a former gap reads accepted or fixed and names its question, a cleaned row is pinned by `value-cleanup.test.js`, K19 and K20 read cleaned) and the
    doctored-closed-ledger tests.
+
+### Phase 92 plan 01: the bot camps on the party's appetite, heals over time with the cloak, plays Cutpurse and tallies a Joiner's items apart (TUNE-10)
+
+Plan 92-01, base `710c3359` (targeted bot gate at the close: 28 files, 531 tests, 531 pass after the one pin below was re-recorded; parity glob 66 / 66;
+the full suite is the orchestrator's at the phase close). Bot-only: `tools/lib/tuning-bot.mjs`, `tools/lib/class-matrix.mjs` and a comment pass on
+`tools/lib/days-farm.mjs`; no engine, content, shell or parity-fixture byte changed (`git diff --stat 710c3359 -- engine content src mazeworld.html test/parity/prototype-master.js.txt
+test/parity/fixtures` prints nothing), so the generated roster block and DRAW_INVENTORY are untouched.
+
+**The rule (four bot changes, CONTEXT ruled sequence step 1; no balance run).**
+
+1. The Joiner camp stall (89-06 finding): `decideAction` camps only when `c.rations >= nightlyEats(state)`, the number `makeCamp` refuses on, where it used to read the
+   hero's own appetite and loop `campFailed` with a Joiner and short rations.
+2. The Cloak of Regeneration is a heal over time (88-04 finding): a ready worn cloak (hero or Joiner) is used out of a fight once the missing hp covers the window's
+   expected heal (`knitWindowHeal`, 3 x d6 = 10.5, read from `act.hot`) or the wearer is below `potionThreshold`; the hero's out-of-fight potion waits while its own knit
+   window is live.
+3. The member tally (89-07 finding): a member-tagged `itemUsed` counts in `usage.memberItems`, never in `usage.items`; `aggregateUsage` rolls it up as a fourth category.
+4. Cutpurse (VALUE-LEDGER finding, 91.1 V11): the never-worse-than-STRIKE fallback in `chooseAbility` plays it in any round, beside Pommel Strike.
+
+**The predictor.** (a) parity fixtures: none plays the bot except `hazard-exposure` and `roll-high-invariant`; (b) the eight bot state pins wherever a pinned run camps
+with a Joiner short of rations, wears a Cloak of Regeneration, holds Cutpurse, or drinks out of a fight with a live knit window; (c) the save-compat replay: it replays
+recorded actions, so no move expected; (d) bot-driven unit tests and seeds (the seeds swapped out for the camp stall, the usage-shape pins); (e) the comparables: no new
+serialized field (`memberItems` lives on the bot's own tallies, never on state).
+
+**The live scan (measured with the change).**
+
+1. `node --test "test/parity/**/*.test.js"`: **66 / 66**; `test/parity/prototype-master.js.txt` untouched.
+2. `node tools/roll-high-baseline.mjs pins` (runs every label twice, fails on non-determinism): **1 of 8 moved**, `deep-14`; the other seven are byte-identical to the pinned
+   table (so none of them camps with a Joiner short of rations, holds a usable cloak window, or reaches a Cutpurse decision that differs). `roll-high-baseline.mjs save`
+   was never run; the one label was pasted by hand with its comment. Traced against a `git archive` of the base with a per-step trace (`playRun`'s `onStep`): steps 0 to 8
+   are identical; at step 9 the Acrobat Thief stands at 75 of 89 (14 missing, ratio 0.84, above `potionThreshold`) and now uses its Cloak of Regeneration (`useItem` cloak)
+   where the base moved E; its ticks heal it on the walk and the run plays out differently, dying two actions later in the same kind of fight (flee failing twice at depth 14).
+3. `node --test test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js test/unit/roll-high-guard.test.js`: 24 / 24 after the re-pin; the
+   save-compat replay passes untouched (`expected.hash` did not move).
+4. The targeted bot gate (`tuning-bot`, `bot-tactics`, `bot-buy-policy`, `bot-joiner-items`, `control-rotation-bot`, `days-farm`, `days-farming-ledger`, `class-matrix`,
+   `class-pass-usage`, `band-readout`, `early-floor-targets`, `ablation-switch`, `bard-song`, `class-trims-nrf`, `ether-wallwalk`, `fight-gate`, `map-until-move`,
+   `moa-never-leaves`, `teleport-pick`, `trap-death-repro`, `value-identity`, `roll-high-state-pins`, `roll-high-save-compat`, `difficulty-retune-ledger`,
+   `bot-balance-close`, `hazard-exposure`, `roll-high-invariant`, `resume-roundtrip`): the first run over the finished bot had exactly one failure, `deep-14`
+   (the usage-shape pins and the seeds were re-based by the edits in the table below before that run).
+5. Seeds re-measured live (never hand-typed) at identity dials against the base and the final bot: water routing seed 4 stalled at depth 5 with 1032 `campFailed` events
+   on the base and dies at action 527 now; Sorcerer seed 1 stalled at depth 6 with 4216 `campFailed` events and dies at action 409 (depth 3); every other restored seed
+   already died on the base.
+
+**Moved.**
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/roll-high-state-pins.test.js` state pin `deep-14` | 46 actions, dead, depth 14, `bbd29b1f...` | 48 actions, dead, depth 14, `e4802ee0...` | the bot uses its Cloak of Regeneration at 75 / 89 hp (missing hp covers the window's 10.5) where the base walked on (item 2 above); pasted by label |
+| `test/unit/tuning-bot.test.js` water-routing seeds | `[3, 5, 6]` (seed 4 swapped out in 89-06, seed 1 at the Phase 91 close, both for the `campFailed` loop) | `[1, 4, 5]` (the pre-stall seeds; 1216, 527 and 673 actions, all die, all wade) | the camp gate reads `nightlyEats`, so the loop is gone at its source |
+| `test/unit/bot-tactics.test.js` Sorcerer force seeds | `[6, 2, 5]` | `[1, 2, 3]` (409, 1202 and 673 actions, all die) | the same: the lowest seeds that die naturally are restored; the Pilfer trio `[5, 3, 4]` stays (its swaps were not camp-related) |
+| `test/unit/bot-tactics.test.js` Troll Knight force seeds | `[5, 2, 1]` | `[1, 2, 4]` (586, 554 and 418 actions, all die) | the same |
+| `test/unit/days-farm.test.js` "camp guard" unit test and the seed 863172 real-run test | the guard fires (`campGuard` 1; 200 on seed 863172) | decideAction no longer picks a camp short of `nightlyEats`; `campGuard` 0 and `campFailed` 0 on seed 863172 (dead at action 915 either way) | the stall is gone at its source; the guard stays as a zero-cost regression counter |
+| `test/unit/bot-tactics.test.js` two usage-shape pins and `test/unit/class-matrix.test.js` the empty `summarizeRows.usage` pin | `{ abilities, spells, items }` | `{ abilities, spells, items, memberItems }` | the member tally is a fourth category (a new `class-matrix` probe pins the roll-up) |
+
+Nothing else moved. New probes (`test/unit/bot-balance-close.test.js`, 13 tests: the camp gate, the cloak trigger and the potion wait, the member tally and Cutpurse) are
+additions, not moves.

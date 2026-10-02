@@ -1127,12 +1127,12 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
     // Phase 92 plan 01 (TUNE-10, 2026-10-01): the camp gate reads nightlyEats, so the campFailed
     // loop that swapped Sorcerer seeds out (Phase 72, 260927-rsx, 90-06, 90-07, 90-08) and Troll
     // Knight seed 4 (91-08) is gone at its source. Re-measured live at identity dials, 5000
-    // actions: Sorcerer seeds 1, 2, 3 die naturally (1392 actions depth 12; 1202 depth 9; 673
-    // depth 5; before the fix seed 1 stalled at depth 6 with 4216 campFailed events), and so do
-    // 4, 5 and 6 (318, 410, 107 actions); Troll Knight seeds 1, 2, 4 die naturally (586, 554 and
-    // 418 actions, 0 campFailed), and so do 3 and 5. The lowest seeds are restored: Sorcerer
-    // [1, 2, 3], Troll Knight [1, 2, 4]. The Pilfer trio's swaps were never camp-related and
-    // stay.
+    // actions, on the plan's final bot (after its cloak and Cutpurse changes too): Sorcerer seeds
+    // 1, 2, 3 die naturally (409 actions depth 3; 1202 depth 9; 673 depth 5; before the fix seed 1
+    // stalled at depth 6 with 4216 campFailed events), and so do 4, 5 and 6 (318, 410, 107
+    // actions); Troll Knight seeds 1, 2, 4 die naturally (586, 554 and 418 actions, 0 campFailed),
+    // and so do 3 and 5. The lowest seeds are restored: Sorcerer [1, 2, 3], Troll Knight [1, 2, 4].
+    // The Pilfer trio's swaps were never camp-related and stay.
     { cls: "Magic User", sub: "Sorcerer", race: "Human", seeds: [1, 2, 3] },
     { cls: "Fighter", sub: "Knight", race: "Troll", seeds: [1, 2, 4] },
   ];

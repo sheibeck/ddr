@@ -627,7 +627,16 @@ const PINNED = {
   // label was re-recorded (pasted by hand; `roll-high-baseline.mjs save` was not
   // run). 35 / dead / 14 unchanged.
   // Phase 91.1 plan 02b (user ruling V11 B, 2026-10-01): "deep-14" re-pinned (35 actions, dead, depth 14, fe2e796a... -> 46 actions, dead, depth 14, bbd29b1f...): the Thief's Cutpurse is a real strike now (the plain strike's roll and damage) that also lifts the gold when it lands (first use at action 21), instead of a turn spent on gold alone, so the Cutpurse at action 21 strikes for 56 and kills the foe where it used to lift 15 gold and leave the foe its swing (measured against the plan base 0a7cd181); the hero lives 11 actions longer and dies on the same floor (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "deep-14": { actions: 46, dead: true, depth: 14, hash: "bbd29b1fbbeb44cf93088a2b2433c0c4e8678ac7de61cd94dc431889a31ee0c0" },
+  // Phase 92 plan 01 (TUNE-10, 2026-10-01): "deep-14" re-pinned (46 actions, dead, depth 14, bbd29b1f... -> 48 actions, dead, depth 14, e4802ee0...):
+  // the bot now uses a ready Cloak of Regeneration as the heal over time it is (88-04): out of a fight
+  // once the missing hp covers the window's expected heal (3 x d6 = 10.5), not only below potionThreshold.
+  // This Acrobat Thief wears one; at action 10 (step index 9) it stands at 75 of 89 (14 missing, ratio 0.84),
+  // where the base walked on, and now uses the cloak there, so its three ticks (a d6 at 10, 20 and 30 squares)
+  // heal it on the walk and the run plays out differently from that step (measured with a per-step trace
+  // against a git archive of the base 710c3359: steps 0 to 8 identical, step 9 useItem cloak vs move E; it
+  // dies in the same kind of fight, flee failing twice at depth 14, two actions later) (measured twice by
+  // tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "deep-14": { actions: 48, dead: true, depth: 14, hash: "e4802ee0a803e314622d7d82e0fbc99e0155ec2e3b7c909029e460135b2cc8fd" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

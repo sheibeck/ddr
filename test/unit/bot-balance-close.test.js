@@ -76,7 +76,7 @@ test("camp gate: a seed that used to loop campFailed ends dead within its budget
   // Measured live at identity dials, maxActions 1500 (never hand-typed): seed 4
   // stalled at depth 5 on the plan base with 1032 campFailed events (a Joiner's
   // appetite the hero-only gate did not count); with the gate on nightlyEats it
-  // dies at action 528, depth 6, with none.
+  // dies at action 527, depth 6, with none.
   let campFailed = 0;
   const r = playRun(4, { ...BOT_DEFAULTS, maxActions: 1500 }, (events) => {
     for (const e of events) if (e.type === "campFailed") campFailed++;
