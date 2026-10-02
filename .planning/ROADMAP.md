@@ -105,7 +105,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - Haptics polish; the unguarded button set from 32-03 (store rows, drop shelf, `a-evt`, `btn-again`, spell menu).
 - Climb dice payload (`roll`/`need` on the four climb events) — carried over from v1.4 as a post-UAT quick task. **Superseded 2026-09-24**: CLIMB-01/02 (v2.1 Phase 78) replaces the retry card with a pre-roll decision card, and ROLL-05 (Phase 73) makes every climb roll high-is-good natively.
 - Shell debt noted in the v1.5 audit but not in v1.6's requirements: the unreachable parley fluency-2 branch (`canParley`'s Magical tier, `wilmsryVsMagical`) and the `railCardFor` tie-break — fold into Phase 44's orphan sweep if they fall out for free, otherwise a quick task.
-- **Backlog 999.14 (our own friends list)** — not planned (user, 2026-09-28: no friends scope, everyone or just yours).
+- **Our own friends list (was backlog 999.14)** — not planned (user, 2026-09-28: no friends scope, everyone or just yours); removed from the backlog 2026-10-02.
 - Replay verification of top runs, Firebase App Check and a season picker — see REQUIREMENTS.md Future Requirements.
 - **Day-one direct-damage guarantee for Magic User subs other than the Wizard** — they keep the Phase 40 best-effort guarantee (user, 2026-09-29); v2.3 IDENT-13 covers the Wizard sub only.
 
@@ -565,31 +565,6 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog or /gsd-new-milestone when ready)
 
-### Phase 999.14: Our own friends list (NOT PLANNED — user, 2026-09-28)
-
-**Goal:** [Captured 2026-09-26, user] "to go along with our own leaderboards, we'll do our own friends list as well. This is better solution than relying on google infrastructure." The FRIENDS scope on the Leaderboards panel reads from a friends list that we host, not from the Play Games friends list and its separate consent prompt. Built together with 999.13, on the same server and identity.
-**Requirements:** TBD
-**Plans:** 0 plans
-
-**Decisions this needs before planning (discuss together with 999.13):**
-
-- **How players find each other** with no Google contacts and no email: a short shareable friend code, a handle search, or both. An Android share-sheet link ("add me in Delve, Die, Repeat") is a cheap extra.
-- **Mutual or follow.** Mutual needs requests, accept, decline and remove. Follow is one-way, with no request to answer.
-- **Blocking and privacy.** Block and remove a friend. With Compete OFF the player can't be found or added, and nothing is sent.
-- **Family-friendly safety.** Handles pass `content/safety-wordlist.js`. There is no free-text messaging: a friends list only, never chat, which keeps the IARC rating and the moderation load low.
-- **Store compliance.** The friend relationships are stored on our server, so they go on the Data Safety form and in the privacy policy alongside 999.13's scores and handle.
-- **Offline.** Friend actions need the network; offline they show a short in-voice note, not an error. Signed-out or Compete-OFF play makes zero network calls, as today.
-
-**What it touches:**
-
-- It replaces the Play Games friends path: `requestFriendsAccess()` and the friends scope in `src/browser/globalBoards.js` (D-05..D-07), plus the `friend` flag on each row. The Phase 81 FRIENDS chip and the YOU/FRIEND tags stay as the UI.
-- It adds a small friends screen, reached from the ☰ account rows ("account-in-hamburger" ruling): your code, add by code, pending requests, and your friends list.
-- Engine untouched; shell and server work only, with zero parity fixtures.
-
-Plans:
-
-- [ ] TBD (promote with 999.13 via /gsd-review-backlog or /gsd-new-milestone)
-
 ### Phase 999.15: Review every skill and every spell (PROMOTED → Phase 90)
 
 > **Promoted 2026-09-29 into milestone v2.3 as SPELL-08/09 and ABIL-06/07, Phase 90 (Spell & Skill Audit).** Player reports #8 (Strength) and #4 (Pommel Strike) ride along as SPELL-09 and ABIL-07. Kept here for its planning context until v2.3 closes — not a runnable backlog item, do not queue it.
@@ -638,7 +613,7 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.17: Large-screen support: drop the portrait lock (NEXT RELEASE — user, 2026-10-02)
+### Phase 999.17: Large-screen support: drop the portrait lock (→ v2.4 — user pick, 2026-10-02)
 
 **Goal:** Delve, Die, Repeat works on tablets, foldables and Chromebooks in any orientation and window size, with no resizability or orientation restriction in the manifest.
 
@@ -662,7 +637,7 @@ Plans:
 
 - [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.18: Updated screenshots for the store listing and the website (user, 2026-10-02)
+### Phase 999.18: Updated screenshots for the store listing and the website (→ v2.4, after 999.17 — user pick, 2026-10-02)
 
 **Goal:** the Play Store listing and darktierstudios.com show the current game (2.3+): the Play Games names on the board, SIGN IN, the new spells and the current HUD and rail.
 
@@ -713,7 +688,7 @@ Plans:
 
 - [ ] TBD (next release; promote via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.20: Tell apart an ability on cooldown, one that can't be used, and one not in effect (UI, user 2026-10-02)
+### Phase 999.20: Tell apart an ability on cooldown, one that can't be used, and one not in effect (UI → v2.4 — user pick, 2026-10-02)
 
 **Ask (user, on 2.3.0):** "Differentiate an ability that is on cooldown from one that is not usable and one that is not active. Some sort of color difference."
 
