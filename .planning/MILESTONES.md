@@ -1,5 +1,33 @@
 # Milestones
 
+## v2.3 Truth in Advertising (Shipped: 2026-10-02; Play 2.3.0 / vc13 submitted to closed testing, tags `v2.3.0` / `v2.3.0-play13`)
+
+**Release (2026-10-02):** transition rules (fix be6716a7) then the final rules live, plain smoke all PASS, rekey 22/22, transition artefacts deleted (cf1c5c75); Data safety and IARC re-read by the user; GitHub Release created; darktierstudios.com patch notes and privacy pages deployed.
+
+**Closeout type:** override_closeout (known verification overrides: the batched Pixel 7 checklist not yet walked; audit `tech_debt` with 5 paperwork-only partials, ECON-11 and VALUE-01..04 — see STATE.md Deferred Items)
+**Phases:** 12 (87–92, incl. the inserted 91.1, 91.2 and 92.1–92.4) · **Plans:** 66
+**Timeline:** 2026-09-29 → 2026-10-02 (4 days, 478 commits since `v2.2`; 674 files changed, +148,960 / −8,116, mostly audit tables, pins and fixtures)
+**Tests:** 10,215 at close (10,205 pass + 2 release-bump version pins fixed in b2911c69, 8 skipped)
+**Delivered:** the text now says what the game does and the game does what the text says. Every item, spell, skill, race and sub-class was audited against its text and canon and fixed, with a guard that fails the build when a stated number drifts from the engine. Ten new spells, Play Games names on the board, stores that can't be bought out at depth 7, and experience that grows with depth.
+
+**Key accomplishments:**
+
+1. **Player-report fixes** — a Joiner's hp shows every hit, stores stock a visible d10 ration supply, DEPTH ties rank by most steps, and leaderboard rows filter by race and sub-class from a long press (Phase 87).
+2. **Item systems, then the item audit** — every worn or wielded effect ends when its item comes off; the Cloak of Regeneration heals over time; Joiners wear, use and drink their own items; one depth-rising resist for every item effect; 117 titled pins close the item audit (Phases 88–89).
+3. **Spell & skill audit** — 43 spell and 31 skill rows audited; Strength and Pommel Strike rebuilt; ten new spells with a school gate; 179 stated numbers each claimed by a real engine fact (Phase 90).
+4. **Race & sub-class audit and value review** — 132 identity rows closed; Wizards always open with a damage spell, Illusionists pick where a teleport lands, Bards SING; 37 value calls ruled by the user and built (cooldowns instead of once-a-fight, bigger bonuses) (Phases 91, 91.1).
+5. **Board identity** — Google Play Games names replace rolled handles, unique and verified on the server; 2.2.0 clients are refused until they update; with Compete off nothing signs in (Phases 91.2, 92.1).
+6. **Economy & balance close** — a depth-shaped sell fraction cuts a depth-7 hero's store share from 98% to 42%; one fair-bot pass, drift accepted by the user; then device-pass fixes: Strength visible on spell damage, helpless foes are hit automatically in melee, true starting hp, +10% experience per floor (Phases 92, 92.2–92.4).
+
+### Known Gaps (carried forward)
+
+| Req / item | Gap | Where it lands |
+|-----|-----|----------------|
+| UAT | Batched Pixel 7 checklist (claude.ai artifact LMpj9qYzChoYfH6GRXCEAF, incl. Part B with Compete ON) not yet walked | The user's Pixel 7 sessions; findings become todos or quick tasks |
+| ECON-11, VALUE-01..04 | SUMMARY frontmatter lacks `requirements-completed`; delivery verified | Accepted as paperwork debt |
+
+**Archived:** `milestones/v2.3-ROADMAP.md`, `milestones/v2.3-REQUIREMENTS.md`, `milestones/v2.3-MILESTONE-AUDIT.md`, `milestones/v2.3-phases/`
+
 ## v2.2 Our Own Leaderboards (Shipped: 2026-09-29; Play 2.2.0 / vc12 uploaded to the testing track, tags `v2.2.0` / `v2.2.0-play12`)
 
 **Release (2026-09-29):** final Firestore rules deployed once 2.2 was live on the track; `--probe-rules` ten PASS closed SRV-09 (35/35); transition rules/config/test deleted; GitHub Release v2.2.0 and the darktier-studio site deployed. Tests after the cutover: 8064 pass / 0 fail / 2 skipped.

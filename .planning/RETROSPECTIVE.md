@@ -329,6 +329,44 @@
 - Sessions: 1 long autonomous run (compacted once).
 - Notable: parallel discuss/plan/execute overlap plus worktrees kept a 34-plan milestone to about two days.
 
+## v2.3 Truth in Advertising (2026-09-29 → 2026-10-02)
+
+**Phases:** 12 (87–92, incl. the inserted 91.1, 91.2 and 92.1–92.4) · **Plans:** 66 · shipped as Play 2.3.0 / vc13
+
+### What Was Built
+- Player-report fixes: a Joiner's live hp, d10 store rations, DEPTH ties to the most steps, race/sub-class filters from a long press.
+- Item systems (effect sources, heal-over-time, the crit-proof cloak), then a closed item audit with 117 pins; Joiners use, wear and are soaked by their own gear.
+- Closed spell and skill audits (74 rows, 179 stated numbers each claimed by an engine fact), Strength and Pommel Strike rebuilt, ten new spells behind school gates, one depth-rising resist.
+- A closed race and sub-class audit (132 rows) plus a 37-ruling value review: abilities on cooldowns, bigger bonuses, Bards that sing, Illusionists who pick their teleport.
+- Play Games names on the board (server-verified, 2.2.0 clients refused); a depth-shaped sell fraction ending the depth-7 buy-out; one fair-bot pass; device-pass fixes (privacy gate, Strength on spells, melee auto-hit on helpless foes, true starting hp, +10% xp per floor).
+
+### What Worked
+- Audit table first, fixes second: each pass began with a text / engine / canon / verdict table and the user's balance calls (Q1–Q11, Q1–Q8, V1–V37), so the build plans were rulings, not debates.
+- Text-vs-engine guards that read every stated number off the real engine turned "truth in advertising" into a test that fails, not a promise.
+- Derived rng streams for every new roll kept the main stream and most fixtures still; moves that did happen were declared by label in FIXTURE-INVENTORY.
+- A device pass before the release, with short inserted phases (92.1–92.4) for what it found, caught the Compete-off privacy gate before players did.
+
+### What Was Inefficient
+- The inserted 92.1–92.4 were filed under ## Backlog with "1/0 plans", so the readiness tooling read four finished phases as incomplete; the close had to refile them by hand.
+- A stated number (Troll 75 hp) silently went false when a later dial (HERO_HP_SCALE 1.4, Phase 79.2) scaled it; it reached the debug build before anyone noticed.
+- v2.2 removed Play Games and v2.3 brought it back for identity (91.2); the SDK then signed in on launch whatever Compete said, which only a device run showed.
+- The Phase 87 transition-rules deploy was deferred for three days and had to be carried through STATE, runbook and release steps until 2.3.0.
+
+### Patterns Established
+- Audit → user rulings → build → close the table with a named pin per fixed row.
+- Every player-facing number has a guard that recomputes it from the engine for every combination (race × class × sub-class for hp).
+- Device-pass findings before a release become inserted x.1–x.N phases, each with its own CONTEXT and VERIFICATION.
+
+### Key Lessons
+1. When a dial scales something a text states, the text guard must read the scaled value, or the dial change must re-run every text guard.
+2. A native SDK must be proven inert under its off switch on the device, not only through the JS seam's fake.
+3. File inserted phases inside the milestone's phase list, not under Backlog, so the close tooling counts them.
+
+### Cost Observations
+- Model mix: Opus orchestrator and planners; Sonnet executors and scouts; gsd-debugger for the device-pass diagnoses.
+- Sessions: several (the audits, the value review, then the device pass and the release).
+- Notable: 66 plans in four days; batching each audit's rulings up front kept the build plans short.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -348,6 +386,7 @@
 | v2.0 | several | 7 (two device-round phases added) | First network feature behind an opt-in provider seam with a fake; seasons from day one; publish-then-close with UAT over play sessions |
 | v2.1 | 1 long run (several compactions) | 16 (six inserted) | Bots only at the milestone end; build part last; live cloud E2E from the orchestrator; patch notes agreed before every release build |
 | v2.2 | 1 long run (1 compaction) | 5 | Discuss/plan of later phases overlapped with execution; parallel worktree waves merged by the orchestrator; transition rules for a live backend swap; live setup by Claude with one console checkpoint |
+| v2.3 | several | 12 (six inserted) | Audit tables with user rulings before any fix; text-vs-engine guards; a pre-release device pass feeding short inserted phases |
 
 ### Cumulative Quality
 
@@ -366,6 +405,7 @@
 | v2.0 | 5483 | parity master untouched; `acts` carved out (measured-zero); fake PGS provider + recording Proxy (zero calls Compete OFF); boardsView 43 tests | 1 vendored Capacitor plugin (`@modbender/capacitor-play-games`, pinned) |
 | v2.1 | 7902 | parity 66/66 re-baselined for roll-high with declared moves; roll-ledger sync guard; mirror-theorem property test; no-committed-secrets scan | 0 (Firestore via plain fetch, no SDK) |
 | v2.2 | 8068 | engine/parity untouched; rules contract + transition-rules equality tests; fake board server; live smoke 17/17; RETIRE-02 sweep | −1 (the Play Games plugin removed; Firebase via plain fetch) |
+| v2.3 | 10,215 | closed audit tables with named pins (items 117, spells/skills 108, identities 132); text-vs-engine number guards; race × class × sub-class hp guard; declared fixture moves per phase | +1 (the PlayIdentity Capacitor plugin + Play Games SDK, for board names only) |
 
 ### Top Lessons (Verified Across Milestones)
 

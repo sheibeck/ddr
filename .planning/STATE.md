@@ -2,38 +2,34 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
-stopped_at: "RELEASE 2.3.0 SUBMITTED (2026-10-02). vc13 AAB on the closed-testing track, in review; Data safety + IARC re-read done by user; tags v2.3.0 / v2.3.0-play13 pushed; GitHub Release created; site patch notes + privacy pages deployed. Phases 88-92.4 complete (inserted 92.1-92.4 from the device pass). Live: TRANSITION rules (fixed be6716a7, smoke 8/8 + function 4/4), boardName fn, Play Games provider, rekey-deep done (22/22). DONE 2026-10-02: final rules live (plain smoke all PASS after the smoke rank-check fix 656f5e90), rekey 22/22, transition artefacts deleted (cf1c5c75, full suite 10,175/0 fail). NEXT: (2) the batched Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) incl. Part B with Compete ON; (3) /gsd-complete-milestone v2.3 then cleanup. Deferred todo: fantasy-flavor player descriptions (next milestone)."
-last_updated: "2026-10-02T15:01:46.905Z"
+status: Awaiting next milestone
+stopped_at: "v2.3 Truth in Advertising ARCHIVED 2026-10-02 (override closeout; Play 2.3.0 / vc13 submitted to closed testing, final rules live). NEXT: /gsd-new-milestone v2.4 — user picks 2026-10-02: 999.17 large-screen support, 999.18 store/site screenshots, 999.20 ability states, plus todos bad-condition-chips-first, cloak-regeneration-tick-on-use, player-facing-descriptions-fantasy-flavor. 999.19 stays in backlog (needs the user's save); 999.12 achievements stays for its own milestone. Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) still to walk."
+last_updated: "2026-10-02T17:19:26.525Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 92.4 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v2.3 completed and archived
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 12
   total_plans: 66
   completed_plans: 66
-  percent: 67
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leaderboards shipped as Play 2.2.0 / vc12 to the testing track (final Firestore rules live); open Pixel 7 UAT batches: v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
+See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase null
+**Current focus:** Planning the next milestone (v2.4) — run /gsd-new-milestone
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-02 — Phase 92.4 complete, transitioned to Phase 999.1
-
-Progress: [████████░░] 76% (2/7 phases)
+Phase: Milestone v2.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-02 — Milestone v2.3 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -65,7 +61,7 @@ Progress: [████████░░] 76% (2/7 phases)
 - [Phase 88 → Phase 92, bot]: RESOLVED 2026-10-01 by 92-01. `tools/lib/tuning-bot.mjs` treated a ready worn Cloak of Regeneration as an instant "free heal"; since 88-04 it heals 1d6 at 10/20/30 squares. Re-read that bot logic before the milestone-end bot pass (88-04 finding).
 - [Phase 89 → Phase 92, bot]: RESOLVED 2026-10-01 by 92-01. The fair bot could stall at depth with a living Joiner: its camp gate reads only the hero's appetite while `makeCamp` refuses on the party's `nightlyEats`, so it loops `campFailed` (same family as the documented seed-55434 stall in tools/lib/days-farm.mjs). 89-06 swapped tuning-bot.test.js seed 4 → 6 to keep the water-routing test on topic. Fix before the milestone-end bot pass: `c.rations >= nightlyEats(state)` in decideAction's camp branch (89-06 finding).
 
-- [Phase 87, BOARD-28 live]: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
+- [Phase 87, BOARD-28 live]: RESOLVED 2026-10-02 at Release 2.3.0 (transition rules deployed, then the final rules). Was: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
 
 - [Phase 50, tooling]: `npm run boot:check` (tools/shell-boot-check.mjs, raw `--headless=new --dump-dom`) is environment-blocked on this machine — 0-byte dump, its own `--self-test` fails, reproduces on pre-fix HTML; an interactive Chrome session appears to swallow the invocation. `tools/roller-repro.mjs`'s CDP approach works. Re-run in a clean session or migrate the tool to CDP (`.planning/phases/50-character-roller-fix/deferred-items.md`). Not a code regression.
 
@@ -167,6 +163,16 @@ detail; the backlog phases are the index.
 - Phase 91.2 inserted after Phase 91.1: Board Identity: Play Games names replace rolled handles (user 2026-09-30: unique names friends recognize, no re-roll; chose Play Games over unique rolled handles after the trade-offs; 2.2.0 clients refused until update; this milestone, before release)
 
 ## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-10-02 (v2.3 Truth in Advertising; 12/12 phases `passed`, 42/42 requirements checked; audit `tech_debt` — 5 requirements partial on SUMMARY paperwork only, 3 integration warnings, 0 blockers; the user chose "Close now"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | Batched Pixel 7 checklist for v2.3 (claude.ai artifact LMpj9qYzChoYfH6GRXCEAF), incl. Part B with Compete ON | not yet walked; findings become todos or quick tasks |
+| audit | ECON-11, VALUE-01..04 paperwork partials (no `requirements-completed` in the SUMMARY frontmatter; evidence satisfied) | accepted as tech debt — see milestones/v2.3-MILESTONE-AUDIT.md |
+| todo | 2026-10-02-bad-condition-chips-first, 2026-10-02-cloak-regeneration-tick-on-use, 2026-10-02-player-facing-descriptions-fantasy-flavor | carried to v2.4 (user pick 2026-10-02) |
+| todo | 2026-09-28-store-still-bought-out-at-depth-7 (Phase 92 ECON-12, 98% → 42%), 2026-10-02-racial-starting-hit-points-accurate (Phase 92.3) | resolved — moved to todos/completed |
+| quick_task | 260924-56z, 260924-5b8 (superseded by Phase 70); rules-text-audit-pass (20260909), 260908-kkq (v1.0-era stubs) | re-acknowledged |
 
 Items acknowledged and deferred at milestone close on 2026-09-29 (v2.2 Our Own Leaderboards; 5/5 phases `passed`, 34/35 requirements — SRV-09's live proof is a release step by user ruling; audit `tech_debt` with zero blockers; the user chose "Continue with tech debt" and "Acknowledge all"):
 
@@ -295,9 +301,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Phase 87 complete 2026-09-30; Phase 88 next (autonomous run: discuss → plan → execute)
-- BOARD-28 transition-rules deploy pending the user's go (see Blockers/Concerns)
-- Run /gsd-discuss-phase first for Phase 89 (ITEM-05 Enlarge numbers), Phase 90 (SPELL-09 Strength, ABIL-07 Pommel Strike), Phase 91 (IDENT-14 teleport destination UI) and Phase 92 (ECON-12 target)
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 
