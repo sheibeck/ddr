@@ -264,14 +264,26 @@ function field(obj, key) {
   }
 }
 
+/** readCanSignIn(identity) — the identity's canSignIn(), true when the seam has none or throws (an unknown reads as able; only a plain false hides the row). */
+function readCanSignIn(identity) {
+  try {
+    return typeof identity?.canSignIn === "function" ? identity.canSignIn() !== false : true;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * createAccountController({ identity, board, settings, notify, compete,
  * armMs, setTimer, clearTimer }) — the one place every account behaviour is
  * decided.
  *
- *   identity  { snapshot() -> { name } | Promise<{ name }> } — the player's
- *             verified Play Games name as last stored on this phone; local
- *             only, no network.
+ *   identity  { snapshot() -> { name } | Promise<{ name }>,
+ *               canSignIn() -> boolean (optional) } — the player's verified
+ *             Play Games name as last stored on this phone; local only, no
+ *             network. canSignIn() false (Play Games or Firebase not set up on
+ *             this build) hides the SIGN IN row for good (Phase 92.1); a seam
+ *             without it reads as able.
  *   board     { session() / signIn() -> Promise<{ state, name }> (the board
  *               sync's session answer: signedIn, signedOut, unavailable,
  *               offline, error or off),
@@ -313,7 +325,11 @@ function field(obj, key) {
  *   calls board.signIn() once and feeds the answer through sessionChanged; a
  *   rejection, or an answer that leaves it busy, reads as signed out. Tapping
  *   the row also counts as the player knowing runs are waiting, so the
- *   notice card is not raised after it.
+ *   notice card is not raised after it. Phase 92.1: an answer of unavailable
+ *   raises one "signinUnavailable" rail card and an error answer (or a
+ *   rejection) one "signinFailed" card, each with a plain reason; the toggle-ON
+ *   sign-in does the same. A signed-out answer (the player dismissed the
+ *   prompt) raises nothing new.
  * - eraseTap(): idle -> armed (one timer of armMs that disarms); armed -> a
  *   second tap goes busy and calls board.erase() once — ok raises one
  *   "erased" card naming the name held at that tap, a failure or rejection
@@ -337,7 +353,7 @@ export function createAccountController({
   setTimer = setTimeout,
   clearTimer = clearTimeout,
 } = {}) {
-  let current = normalizeAccountState({ compete, name: null, signin: "unknown", erase: "idle", welcomed: false });
+  let current = normalizeAccountState({ compete, name: null, signin: "unknown", erase: "idle", welcomed: false, canSignIn: readCanSignIn(identity) });
   let booted = null; // boot()'s memoized promise
   let welcomed = false; // mirrors the persisted nameWelcomed flag
   let userSet = false; // setCompete ran: the player's choice outranks a late settings read
@@ -443,9 +459,11 @@ export function createAccountController({
     return promise.then(
       (result) => {
         sessionChanged(result);
+        return result;
       },
       () => {
         // a failed session leaves the sign-in state as it was
+        return null;
       },
     );
   }
@@ -477,8 +495,15 @@ export function createAccountController({
   function startSignIn() {
     signinNoted = true;
     emit({ signin: "busy" });
-    return askBoard(() => board.signIn()).then(() => {
+    return askBoard(() => board.signIn()).then((result) => {
       if (current.signin === "busy") emit({ signin: "out" });
+      // Phase 92.1: a sign-in the player asked for that cannot be done says so,
+      // once, in plain words (never silently flipping back). A rejection (no
+      // answer at all) is an error. Dismissing the prompt (signedOut) is not.
+      if (!current.compete) return;
+      const state = field(result, "state");
+      if (state === "unavailable") raise(accountCard("signinUnavailable"));
+      else if (state === "error" || result === null) raise(accountCard("signinFailed"));
     });
   }
 

@@ -97,7 +97,8 @@ test("normalize: every malformed input returns a frozen, well-formed state witho
   for (const input of MALFORMED) {
     const s = normalizeAccountState(input);
     assert.ok(Object.isFrozen(s));
-    assert.deepStrictEqual(Object.keys(s).sort(), ["compete", "erase", "name", "signin", "welcomed"]);
+    assert.deepStrictEqual(Object.keys(s).sort(), ["canSignIn", "compete", "erase", "name", "signin", "welcomed"]);
+    assert.equal(typeof s.canSignIn, "boolean");
     assert.equal(typeof s.compete, "boolean");
     assert.ok(s.name === null || typeof s.name === "string");
     assert.ok(["unknown", "in", "out", "busy", "unavailable"].includes(s.signin));
@@ -255,6 +256,21 @@ test("sheet: Play Games unavailable — the status says so and the row stays off
   assert.equal(v.signIn.disabled, false);
 });
 
+test("92.1-01: normalize: canSignIn is true unless exactly false", () => {
+  assert.equal(normalizeAccountState({}).canSignIn, true);
+  for (const v of [undefined, null, 0, "false", {}]) assert.equal(normalizeAccountState({ canSignIn: v }).canSignIn, true, String(v));
+  assert.equal(normalizeAccountState({ canSignIn: false }).canSignIn, false);
+});
+
+test("92.1-01: sheet: the SIGN IN row is hidden whenever sign-in cannot work, in every sign-in state", () => {
+  for (const signin of ["unknown", "in", "out", "busy", "unavailable"]) {
+    const v = accountSheetView({ compete: true, name: NAME, signin, canSignIn: false });
+    assert.equal(v.signIn.visible, false, `no SIGN IN row when sign-in cannot work (${signin})`);
+    const able = accountSheetView({ compete: true, name: NAME, signin, canSignIn: true });
+    assert.equal(able.signIn.visible, signin === "out" || signin === "busy" || signin === "unavailable", `the row follows the sign-in state when able (${signin})`);
+  }
+});
+
 test("sheet: erase armed/busy change only the erase row's label and flags", () => {
   const armed = accountSheetView({ compete: true, name: NAME, erase: "armed" });
   assert.deepStrictEqual({ ...armed.erase }, { id: "erase", label: "TAP AGAIN TO ERASE", armed: true, disabled: false });
@@ -297,6 +313,15 @@ test("card: eraseFailed and signinNeeded carry no name token, tone dull, held fo
     assert.ok(RAIL_TONES.includes(c.tone));
   }
   assert.match(accountCard("signinNeeded").line, /SIGN IN/);
+});
+
+test("92.1-01: card: signinUnavailable and signinFailed carry no name token, tone dull, held for RAIL_HOLD.default", () => {
+  for (const kind of ["signinUnavailable", "signinFailed"]) {
+    const c = accountCard(kind);
+    assert.deepStrictEqual({ ...c }, { ...ACCOUNT_COPY.cards[kind], tone: "dull", hold: RAIL_HOLD.default });
+    assert.ok(Object.isFrozen(c));
+    assert.ok(RAIL_TONES.includes(c.tone));
+  }
 });
 
 test("card: welcome/erased with no usable name, or any other kind, gives null", () => {

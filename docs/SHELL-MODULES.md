@@ -242,14 +242,16 @@ over `content/safety-wordlist.js`: a flagged name renders as the
 is the device probe behind the hidden dev row (`runPgsProbe`).
 
 `src/browser/account.js` is the pure view model: the account state
-(`normalizeAccountState`: `compete`, `name`, `signin`, `erase`, `welcomed`), the
+(`normalizeAccountState`: `compete`, `name`, `signin`, `erase`, `welcomed`,
+`canSignIn`), the
 title chip and ☰-face views (`accountChipView`, `accountMenuView` — the
 name's initials avatar with Compete ON, a dim glyph otherwise; the name
 itself shows whether Compete is ON or OFF), the sheet/☰-block rows
 (`accountSheetView`: identity, the sign-in status, COMPETE ON/OFF, a SIGN IN
-row while Compete is ON and the player is not signed in, ERASE MY RUNS) and
+row while Compete is ON, sign-in can work on this build (`canSignIn`, the
+identity's `canSignIn()`) and the player is not signed in, ERASE MY RUNS) and
 the rail cards (`accountCard("welcome" | "erased" | "eraseFailed" |
-"signinNeeded")`). It has no DOM, no storage and no network.
+"signinNeeded" | "signinUnavailable" | "signinFailed")`). It has no DOM, no storage and no network.
 
 `src/browser/accountChip.js` exports the DOM renderers
 (`renderAccountChip(button, view)`, `renderAccountSheet({ rows, title },
@@ -259,9 +261,10 @@ handlers)`, the ☰ dropdown's ACCOUNT block; `ACCOUNT_CLASSES` lists every
 class they emit) and `createAccountController({ identity, board, settings,
 notify, compete, armMs })`, the one place every account transition is
 decided: `boot()` (reads settings), `setCompete(value)` (OFF purges the board
-queue and persists at once, ON flushes it), `signInTap()` (the SIGN IN row:
-one `board.signIn()` in flight at a time, its answer fed through
-`sessionChanged`), `sessionChanged(info)` (the board sync's session answer
+queue and persists at once, ON runs the same interactive `board.signIn()` the
+row does), `signInTap()` (the SIGN IN row: one `board.signIn()` in flight at a
+time, its answer fed through `sessionChanged`; an unavailable or error answer
+raises one `signinUnavailable` / `signinFailed` rail card), `sessionChanged(info)` (the board sync's session answer
 drives the signed-in / signed-out state and the once-per-launch held-runs
 card), `eraseTap()`/`disarmErase()` (the two-tap ERASE MY RUNS
 arm/expire/erase, `ERASE_ARM_MS` shared with the ☰ menu's own ABANDON arm
@@ -307,7 +310,7 @@ The shell wiring (mazeworld.html's module script):
   Android back button close it; the back button closes it first, ahead of
   every other layer. COMPETE and SIGN IN keep the ☰ open; only the
   confirming ERASE tap closes it.
-- The controller's `notify` parks the welcome/erased/eraseFailed cards
+- The controller's `notify` parks the welcome/erased/eraseFailed and sign-in failure cards
   (`parkAccountCard`) until the dungeon is visible, then hands them to
   `window.mzRailLine`; a parked placement card (below) waits behind it.
 

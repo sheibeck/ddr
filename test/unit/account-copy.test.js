@@ -83,8 +83,8 @@ test("ACCOUNT_COPY carries every fixed key and value the plan pins", () => {
   assert.equal(s.erase, "ERASE MY RUNS");
   assert.equal(s.eraseArmed, "TAP AGAIN TO ERASE");
   assert.equal(s.settings, "SETTINGS");
-  assert.deepStrictEqual(Object.keys(ACCOUNT_COPY.cards).sort(), ["eraseFailed", "erased", "signinNeeded", "welcome"]);
-  for (const kind of ["welcome", "erased", "eraseFailed", "signinNeeded"]) {
+  assert.deepStrictEqual(Object.keys(ACCOUNT_COPY.cards).sort(), ["eraseFailed", "erased", "signinFailed", "signinNeeded", "signinUnavailable", "welcome"]);
+  for (const kind of ["welcome", "erased", "eraseFailed", "signinNeeded", "signinUnavailable", "signinFailed"]) {
     assert.deepStrictEqual(Object.keys(ACCOUNT_COPY.cards[kind]).sort(), ["line", "title"]);
   }
 });
@@ -101,6 +101,18 @@ test("the only {token} in the table is {name}, and it appears in exactly chipLab
   assert.doesNotMatch(ACCOUNT_COPY.menuLabel.plain, /\{name\}/);
   assert.doesNotMatch(ACCOUNT_COPY.cards.eraseFailed.line, /\{name\}/);
   assert.doesNotMatch(ACCOUNT_COPY.cards.signinNeeded.line, /\{name\}/);
+  assert.doesNotMatch(ACCOUNT_COPY.cards.signinUnavailable.line, /\{name\}/);
+  assert.doesNotMatch(ACCOUNT_COPY.cards.signinFailed.line, /\{name\}/);
+});
+
+test("92.1-01: the two sign-in failure cards give a plain reason and say nothing is lost", () => {
+  const u = ACCOUNT_COPY.cards.signinUnavailable;
+  const f = ACCOUNT_COPY.cards.signinFailed;
+  assert.match(u.line, /not available/i);
+  assert.match(u.line, /nothing is lost/i);
+  assert.match(f.line, /did not sign you in/i);
+  assert.match(f.line, /wait here, safe/i);
+  assert.notEqual(u.title, f.title);
 });
 
 test("no leaf carries angle brackets, a WP word, or rolled-handle / re-roll wording", () => {

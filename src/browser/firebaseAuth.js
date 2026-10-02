@@ -207,7 +207,7 @@ export function parseIdpSignIn(json, nowMs) {
  * config = FIREBASE_CONFIG, playConfig = PLAY_GAMES_CONFIG, playIdentity,
  * nameClient, competeOn, now = Date.now, timeoutMs, setTimer, clearTimer,
  * AbortCtl }. Returns frozen { snapshot, getToken, forceRefresh, boardSession,
- * signIn, refreshName, deleteAccount, drop }. `storage` is the only durable
+ * signIn, canSignIn, refreshName, deleteAccount, drop }. `storage` is the only durable
  * side effect (async getItem/setItem/removeItem, per src/browser/storage.js's
  * contract); `fetchFn` is the only network side effect; `playIdentity` is the
  * only way to Play Games. Never throws.
@@ -800,5 +800,16 @@ export function createIdentity(opts = {}) {
     return refusedOrServer(r);
   }
 
-  return Object.freeze({ snapshot, getToken, forceRefresh, boardSession, signIn, refreshName, deleteAccount, drop });
+  /**
+   * canSignIn() — true when a Play Games sign-in can work at all on this build:
+   * Firebase and Play Games are configured and the PlayIdentity seam exists
+   * (the same check boardSession makes first). Sync and local: no storage, no
+   * network, no plugin call. The shell hides the SIGN IN row while it is false
+   * (Phase 92.1).
+   */
+  function canSignIn() {
+    return seamsReady();
+  }
+
+  return Object.freeze({ snapshot, getToken, forceRefresh, boardSession, signIn, canSignIn, refreshName, deleteAccount, drop });
 }

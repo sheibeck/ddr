@@ -76,5 +76,15 @@ export const ACCOUNT_COPY = Object.freeze({
       title: "RUNS ARE WAITING",
       line: "Your dead are queued up and going nowhere until Play Games knows who you are. SIGN IN WITH PLAY GAMES is in the menu in the corner.",
     }),
+    // Phase 92.1: a sign-in tap (or Compete turned back on) that Play Games
+    // could not take up. One card per failed attempt, with a plain reason.
+    signinUnavailable: Object.freeze({
+      title: "PLAY GAMES ISN'T HOME",
+      line: "Sign-in is not available on this phone right now. Your dead wait here, safe, and go on the board once it is. Nothing is lost, only delayed.",
+    }),
+    signinFailed: Object.freeze({
+      title: "THE SIGN-IN FELL OVER",
+      line: "Play Games did not sign you in this time, and it is not saying why. Your dead wait here, safe. Try the sign-in row in the menu again in a moment.",
+    }),
   }),
 });

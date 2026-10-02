@@ -8,13 +8,17 @@
 //
 //   { compete: boolean, name: string | null,
 //     signin: "unknown" | "in" | "out" | "busy" | "unavailable",
-//     erase: "idle" | "armed" | "busy", welcomed: boolean }
+//     erase: "idle" | "armed" | "busy", welcomed: boolean,
+//     canSignIn: boolean }
 //
 // The title chip and the ☰ button's own face show the name's avatar only while
 // Compete is ON (that face's whole job is to say whether you are on the board
 // right now); the sheet and the ☰ block show the avatar once a name exists,
 // ON or OFF. With Compete ON and the player not signed in, the sheet carries a
-// visible SIGN IN WITH PLAY GAMES row (D-03); it is hidden otherwise.
+// visible SIGN IN WITH PLAY GAMES row (D-03); it is hidden otherwise, and it
+// is hidden whenever sign-in cannot work on this build (canSignIn false, the
+// identity's seamsReady(): Phase 92.1, a row that does nothing is worse than no
+// row).
 //
 // ERASE MY RUNS is disabled while Compete is OFF, while there is no name, and
 // while an erase is running: every board call is Compete-gated and the erase
@@ -55,7 +59,8 @@ function fillName(template, name) {
  * (boardName.js#sanitizeBoardName) or null — a missing or unusable name always
  * reads as null, never thrown. signin is one of the five sign-in states, else
  * "unknown". erase is "idle", "armed" or "busy"; anything else reads as
- * "idle". welcomed is true only when exactly true.
+ * "idle". welcomed is true only when exactly true. canSignIn is true unless
+ * exactly false (an unknown reads as able; the controller says otherwise).
  */
 export function normalizeAccountState(input) {
   const compete = field(input, "compete") !== false;
@@ -65,7 +70,8 @@ export function normalizeAccountState(input) {
   const signin = SIGNIN_STATES.includes(rawSignin) ? rawSignin : "unknown";
   const rawErase = field(input, "erase");
   const erase = ERASE_STATES.includes(rawErase) ? rawErase : "idle";
-  return Object.freeze({ compete, name, signin, erase, welcomed });
+  const canSignIn = field(input, "canSignIn") !== false;
+  return Object.freeze({ compete, name, signin, erase, welcomed, canSignIn });
 }
 
 /** The face block shared by the title chip and the ☰ button: the name's avatar while Compete is ON, the dim glyph otherwise. A name-less state is always "pending", whatever Compete reads. */
@@ -124,7 +130,8 @@ function identityOf(state) {
 /**
  * accountSheetView(state) — the ☰ block / title sheet's rows: the identity
  * line, COMPETE, the help line, SIGN IN WITH PLAY GAMES (visible only with
- * Compete ON and the player signed out, signing in, or Play Games unavailable)
+ * Compete ON, sign-in able to work on this build, and the player signed out,
+ * signing in, or Play Games unavailable)
  * and ERASE MY RUNS (the title sheet adds SETTINGS on top of this same view —
  * the renderer's job, not this module's).
  */
@@ -141,7 +148,7 @@ export function accountSheetView(input) {
   });
   const eraseLabel = state.erase === "armed" ? s.eraseArmed : state.erase === "busy" ? s.erasing : s.erase;
   const signInBusy = state.signin === "busy";
-  const signInVisible = state.compete && (state.signin === "out" || signInBusy || state.signin === "unavailable");
+  const signInVisible = state.compete && state.canSignIn && (state.signin === "out" || signInBusy || state.signin === "unavailable");
   return Object.freeze({
     title: s.title,
     identity: Object.freeze(identityOf(state)),
@@ -166,7 +173,8 @@ export function accountSheetView(input) {
 /**
  * accountCard(kind, name) — the account rail cards: "welcome" (once, naming
  * the player's Play Games name), "erased" (the erase-succeeded card, naming
- * it), "eraseFailed" and "signinNeeded" (neither takes a name).
+ * it), "eraseFailed", "signinNeeded", "signinUnavailable" and "signinFailed"
+ * (none takes a name).
  * "welcome"/"erased" with no usable name, or any other kind, gives null.
  */
 export function accountCard(kind, name) {
@@ -176,7 +184,7 @@ export function accountCard(kind, name) {
     const c = ACCOUNT_COPY.cards[kind];
     return Object.freeze({ title: c.title, line: fillName(c.line, clean), tone: kind === "welcome" ? "odd" : "dull", hold: kind === "welcome" ? RAIL_HOLD.floor : RAIL_HOLD.default });
   }
-  if (kind === "eraseFailed" || kind === "signinNeeded") {
+  if (kind === "eraseFailed" || kind === "signinNeeded" || kind === "signinUnavailable" || kind === "signinFailed") {
     const c = ACCOUNT_COPY.cards[kind];
     return Object.freeze({ title: c.title, line: c.line, tone: "dull", hold: RAIL_HOLD.default });
   }

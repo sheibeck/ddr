@@ -313,7 +313,7 @@ test("snapshot: async, a frozen {uid, name, linked, playerId}, never touches the
 
 test("the identity's frozen surface is exactly the v2 methods (no handle methods)", () => {
   const identity = createIdentity({ storage: makeStorage() });
-  assert.deepEqual(Object.keys(identity).sort(), ["boardSession", "deleteAccount", "drop", "forceRefresh", "getToken", "refreshName", "signIn", "snapshot"]);
+  assert.deepEqual(Object.keys(identity).sort(), ["boardSession", "canSignIn", "deleteAccount", "drop", "forceRefresh", "getToken", "refreshName", "signIn", "snapshot"]);
   assert.ok(Object.isFrozen(identity));
 });
 
