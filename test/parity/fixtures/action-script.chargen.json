@@ -53,7 +53,7 @@
       "rationale": "ABIL-02: Climbing was dropped outright by the Special Skills table reshape; the table position it occupied is now Second Wind, an active split into c.abilities (secondWind) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 73 -> 81, wp 73 -> 81 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "2": {
-      "phase": "38+45+54+79.2",
+      "phase": "38+45+54+79.2+92.3",
       "requirements": [
         "ABIL-02",
         "QUICK-260918-w4n",
@@ -104,14 +104,14 @@
             "txt": "used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
           }
         },
-        "maxWP": 56,
-        "wp": 56,
+        "maxWP": 50,
+        "wp": 50,
         "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick, same table position) and Leaping was dropped outright; both landed in c.abilities as actives (dirtyTrick, smoke) instead of c.skills. QUICK-260918-w4n (2026-09-18): the Cloak of Healing was removed from the game (user ruling), leaving CLOAKS at 7 rows; the Thief starting cloak roll now draws rng.d(CLOAKS.length) — the SAME single draw as before, but this seed's u now lands on a different row (Cloak of Armor instead of Cloak of Regeneration). The rolled cloak is inert (bagged, unused) until worn and used, so nothing downstream moves. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 92.3 (user ruling 2026-10-02, a ruled chargen divergence, unmeasured): a Thief now STARTS at a final 50 max hit points (content/classes.js Thief.startWP), not scaled by HERO_HP_SCALE or the class hpMul, so the engine side of maxWP/wp moves 56 -> 50 (an Elven Thief 34 -> 30); the prototype side is unchanged (40). Re-measured live via newRun(seed)."
     },
     "3": {
-      "phase": "38+45+54+79.2",
+      "phase": "38+45+54+79.2+92.3",
       "requirements": [
         "ABIL-02",
         "HEDGE-03",
@@ -158,14 +158,14 @@
             "txt": "used, you walk through walls for ten squares (be in a corridor when it ends: the wall will not make room); then eighty squares before it will do it again"
           }
         },
-        "maxWP": 56,
-        "wp": 56,
+        "maxWP": 50,
+        "wp": 50,
         "rations": 8
       },
-      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged."
+      "rationale": "ABIL-02: Silence was converted to the Silent Step active (same table position, cost, and slot) — it now lives in c.abilities (silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 89 plan 09 (TEXT-01, ITEM-01, user 2026-09-30): the Cloak of Ether item text was reworded to say what the engine does (display text only, zero draws, the item is never used in the script); the declared after.worn.cloak.txt is re-measured live from the engine row, the prototype side is unchanged. Phase 92.3 (user ruling 2026-10-02, a ruled chargen divergence, unmeasured): a Thief now STARTS at a final 50 max hit points (content/classes.js Thief.startWP), not scaled by HERO_HP_SCALE or the class hpMul, so the engine side of maxWP/wp moves 56 -> 50 (an Elven Thief 34 -> 30); the prototype side is unchanged (40). Re-measured live via newRun(seed)."
     },
     "4": {
-      "phase": "38+45+54+79.2",
+      "phase": "38+45+54+79.2+92.3",
       "requirements": [
         "ABIL-02",
         "HEDGE-03",
@@ -213,22 +213,20 @@
             "txt": "used, a d6 hp back every ten squares you walk, three times; then fifty squares before it will do it again"
           }
         },
-        "maxWP": 56,
-        "wp": 56,
+        "maxWP": 50,
+        "wp": 50,
         "rations": 8
       },
-      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 88 (ITEM-03, user 2026-09-30): the Cloak of Regeneration heals a d6 every ten squares for thirty squares, then fifty squares of rest; its txt was rewritten to match (display text only, zero draws, the item is never used in the script)."
+      "rationale": "ABIL-02: Climbing was the Cat Burglar's FREE_SKILL grant (now Dirty Trick) and Silence converted to Silent Step; both landed in c.abilities (dirtyTrick, silentStep) instead of c.skills. Phase 45 (HEDGE-01/03, 2026-09-19): newRun now wears the Thief's starting cloak at chargen (c.worn.cloak), so c.items loses it and c.worn is populated; zero rng draws; measured by tools/worn-fixture-scan.mjs (BEFORE readout committed in 45-01). USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 50 -> 56, wp 50 -> 56 (the engine side, re-measured live; the prototype side is unchanged). Phase 88 (ITEM-03, user 2026-09-30): the Cloak of Regeneration heals a d6 every ten squares for thirty squares, then fifty squares of rest; its txt was rewritten to match (display text only, zero draws, the item is never used in the script). Phase 92.3 (user ruling 2026-10-02, a ruled chargen divergence, unmeasured): a Thief now STARTS at a final 50 max hit points (content/classes.js Thief.startWP), not scaled by HERO_HP_SCALE or the class hpMul, so the engine side of maxWP/wp moves 56 -> 50 (an Elven Thief 34 -> 30); the prototype side is unchanged (40). Re-measured live via newRun(seed)."
     },
     "6": {
-      "phase": "38+54+79.2",
+      "phase": "38+54+79.2+92.3",
       "requirements": [
         "ABIL-02",
         "BAND-02"
       ],
       "fields": [
         "skills",
-        "maxWP",
-        "wp",
         "rations"
       ],
       "before": {
@@ -236,19 +234,15 @@
           "Hardiness": 1,
           "Leaping": 1
         },
-        "maxWP": 75,
-        "wp": 75,
         "rations": 6
       },
       "after": {
         "skills": {
           "Hardiness": 1
         },
-        "maxWP": 105,
-        "wp": 105,
         "rations": 9
       },
-      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged)."
+      "rationale": "ABIL-02: Leaping was dropped outright by the reshape; its table position is now Sweep, an active split into c.abilities (sweep) rather than a c.skills entry. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged). Phase 92.3 (user ruling 2026-10-02, a ruled chargen divergence, unmeasured): a Troll now STARTS at a final 75 max hit points (RACES.Troll.flatWP, not scaled by HERO_HP_SCALE or the class hpMul), which is the prototype's own 75, so maxWP and wp are no longer declared here (they were 75 -> 105); the other declared fields are unchanged."
     },
     "7": {
       "phase": "40+54+79.2+90",
@@ -548,15 +542,13 @@
       "rationale": "ABIL-02: Agility was converted to Sidestep and Language was dropped outright; Sidestep's table position (now an active) and Language's replacement (Pommel Strike, also an active) both landed in c.abilities instead of c.skills. USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 69 -> 77, wp 69 -> 77 (the engine side, re-measured live; the prototype side is unchanged)."
     },
     "35": {
-      "phase": "54+79.2+91+91.1",
+      "phase": "54+79.2+91+91.1+92.3",
       "requirements": [
         "BAND-02",
         "IDENT-15"
       ],
       "fields": [
         "grimoire",
-        "maxWP",
-        "wp",
         "rations"
       ],
       "before": {
@@ -570,8 +562,6 @@
           "Heal",
           "Major Heal"
         ],
-        "maxWP": 75,
-        "wp": 75,
         "rations": 4
       },
       "after": {
@@ -582,11 +572,9 @@
           "Shield",
           "Major Heal"
         ],
-        "maxWP": 105,
-        "wp": 105,
         "rations": 6
       },
-      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged). Phase 91 plan 02 (IDENT-15, user ruling 2026-09-30: a Cleric cannot cast offensive spells, always starts with Heal): the offense school left the Cleric's main-rng pool shuffles (rollGrimoire draws 34 -> 10), so this Cleric's grimoire is a different book from the prototype's (no Freeze, Stupidity, Weaken or Insane; Heal and Major Heal still present). Measured live: the grimoire is the only field that moves, because nothing but the carved-out name is drawn after the grimoire; every other compared field is byte-identical. Phase 91.1 plan 03 (V20 B, user ruling 2026-10-01: a Cleric may learn Strength, one named exception in the gate data): Strength joined the Cleric's lowest-level pool, so the level-1 shuffle is one entry longer (rollGrimoire draws 10 -> 12) and this Cleric's book is a different, five-spell book (Heal, Turn Walking Dead, Strength, Shield, Major Heal). Measured live via newRun(35); the grimoire is again the only field that moves (nothing but the carved-out name is drawn after it). The prototype side is unchanged."
+      "rationale": "USER RULING D/G (Phase 54-07 fit, BAND-02, 2026-09-21): HERO_HP_SCALE fitted to 1.25 scales maxWP/wp at chargen (round(canon * 1.25)); FOOD_CLOCK held at 1.5 scales the class's starting rations (round(canon * 1.5)). STARTING_GOLD/STARTING_POTION_BONUS are held at identity, so gold and potions are unchanged. Measured live via newRun(seed) vs the frozen prototype sandbox, never hand-typed. Phase 79.2 (user ruling 2026-09-27: floors 1-12 harder; locked by RF-79.2-02-3): HERO_HP_SCALE 1.25 -> 1.4 moves maxWP 94 -> 105, wp 94 -> 105 (the engine side, re-measured live; the prototype side is unchanged). Phase 91 plan 02 (IDENT-15, user ruling 2026-09-30: a Cleric cannot cast offensive spells, always starts with Heal): the offense school left the Cleric's main-rng pool shuffles (rollGrimoire draws 34 -> 10), so this Cleric's grimoire is a different book from the prototype's (no Freeze, Stupidity, Weaken or Insane; Heal and Major Heal still present). Measured live: the grimoire is the only field that moves, because nothing but the carved-out name is drawn after the grimoire; every other compared field is byte-identical. Phase 91.1 plan 03 (V20 B, user ruling 2026-10-01: a Cleric may learn Strength, one named exception in the gate data): Strength joined the Cleric's lowest-level pool, so the level-1 shuffle is one entry longer (rollGrimoire draws 10 -> 12) and this Cleric's book is a different, five-spell book (Heal, Turn Walking Dead, Strength, Shield, Major Heal). Measured live via newRun(35); the grimoire is again the only field that moves (nothing but the carved-out name is drawn after it). The prototype side is unchanged. Phase 92.3 (user ruling 2026-10-02, a ruled chargen divergence, unmeasured): a Troll now STARTS at a final 75 max hit points (RACES.Troll.flatWP, not scaled by HERO_HP_SCALE or the class hpMul), which is the prototype's own 75, so maxWP and wp are no longer declared here (they were 75 -> 105); the other declared fields are unchanged."
     }
   }
 }

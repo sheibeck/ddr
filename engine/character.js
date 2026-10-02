@@ -599,11 +599,23 @@ export function rollCharacter(rng, exclude = [], force = null) {
   // baseWP is `{ base, dice }`; a flat class (Thief) uses a zero dice notation
   // (rollDice draws nothing), so Thief consumes no die here — matching the
   // prototype's `baseWP: () => 40`.
-  let maxWP = R.flatWP ? R.flatWP : CLASSES[cls].baseWP.base + rollDice(rng, CLASSES[cls].baseWP.dice);
-  if (R.wpMul) maxWP = Math.round(maxWP * R.wpMul);
+  //
+  // Phase 92.3 (USER RULING 2026-10-02, a ruled chargenDivergence from the
+  // prototype): two STARTING hit-point values are FINAL, no dial touches them.
+  // A race's `flatWP` (the Troll, 75 whatever the class) and a class's
+  // `startWP` (the Thief, 50) are what the player is told, so they are what the
+  // hero starts with: neither HERO_HP_SCALE nor the class hpMul is applied.
+  // The Elven `wpMul` (0.6) still applies to a class's final value (an Elven
+  // Thief starts at round(50 x 0.6) = 30), because "60% of the usual HP" is the
+  // Elf's own rule. Level-up gains are unchanged and still go through the dial
+  // for every class (see checkLevel below). Neither final value draws.
+  const finalStart = R.flatWP ?? CLASSES[cls].startWP;
+  let maxWP = R.flatWP ? R.flatWP : CLASSES[cls].startWP ?? CLASSES[cls].baseWP.base + rollDice(rng, CLASSES[cls].baseWP.dice);
+  if (R.wpMul && !R.flatWP) maxWP = Math.round(maxWP * R.wpMul);
   // Phase 54 (BAND-02, USER RULING D): HERO_HP_SCALE (+ the class's own
-  // CLASS_MITIGATION.hpMul, identity 1) — a no-op at identity.
-  maxWP = heroMaxWpFor(maxWP, cls);
+  // CLASS_MITIGATION.hpMul, identity 1) — a no-op at identity. Not applied to a
+  // final starting value (Phase 92.3, above).
+  if (finalStart === undefined) maxWP = heroMaxWpFor(maxWP, cls);
 
   const [wpn, prof] = KIT[sub];
   const draft = { cls, sub };

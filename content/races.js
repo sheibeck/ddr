@@ -68,6 +68,8 @@ export const RACES = {
     note: "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 3 from every blow.",
   },
   "Troll": {
+    // Phase 92.3 (user 2026-10-02): flatWP is a FINAL starting value, whatever the class; engine/character.js#rollCharacter
+    // applies neither HERO_HP_SCALE nor the class hpMul to it (a Troll starts at exactly 75, not 105). Level-ups still scale.
     size: "Large", upkeep: 15, flatWP: 75, dmg: 6, wpnBonus: 3, eats: 2,
     // RULES-11 (Phase 75.2, Plan 04): Large points the SAME way as the
     // Troll's own +9 (dmg+wpnBonus) trait, so nothing is masked — both

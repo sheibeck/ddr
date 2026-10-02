@@ -1,0 +1,28 @@
+[
+  {
+    "key": "bank:CLASS_NOTE.Thief",
+    "surface": "blurbs",
+    "trigger": "the Thief class blurb (roller and Hero tab): content/flavor.js#CLASS_NOTE",
+    "before": "Forty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.",
+    "after": "Fifty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked.",
+    "reasons": [
+      "fact",
+      "accurate",
+      "number"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02): a Thief now starts at a final 50 max hit points, not 40 scaled to 56, so the blurb says Fifty. The Elven 60% rule still applies on top (an Elven Thief starts at 30)."
+  },
+  {
+    "key": "bank:CLASS_NOTE.Magic User",
+    "surface": "blurbs",
+    "trigger": "the Magic User class blurb (roller and Hero tab): content/flavor.js#CLASS_NOTE",
+    "before": "Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "after": "Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.",
+    "reasons": [
+      "fact",
+      "accurate",
+      "number"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02): the blurb said Twenty-five plus the d10, but the hit points are scaled by the hero hit-point dial at the start, so a Magic User really starts at 36 to 49 (25 + d10, then x1.4). It now says so. An Elven Magic User's 60% is the Elven blurb's claim."
+  }
+]

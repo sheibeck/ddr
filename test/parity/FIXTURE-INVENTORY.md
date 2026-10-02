@@ -8109,3 +8109,30 @@ was not run, and `node tools/narrative-review.mjs --check` passes.
 
 New probes (`test/unit/strength-potion-spells.test.js`: Freeze, Fireball, Lightning, Fireballs, Earthquake and Ice with only the potion live deal the no-potion damage + 8 on the same seed, melee
 stays +8, the event fields, the Oracle and rail clauses and their absence) are additions, not moves. Nothing else moved.
+
+
+### Phase 92.3 plan 01: starting hit points (the Troll's final 75, the Thief's final 50) and melee that always hits a helpless foe
+
+**The predictor.** Ruling 1 (the user: "Trolls should start with 75, not 105. Thieves should start with 50. Update the doc and the code.") is an engine change in `rollCharacter`:
+`RACES.Troll.flatWP` (75) and a new `CLASSES.Thief.startWP` (50) are FINAL starting values, applied without `HERO_HP_SCALE` or the class `hpMul`; the Elven `wpMul` still applies to the
+Thief's (50 x 0.6 = 30). No chargen draw is added, removed or reordered (the Thief's zero dice never drew), so no rng position moves. A fixture moves only where a Thief or a Troll hero's
+`maxWP`/`wp` is declared or read: every moved entry below is a Thief or Troll hero. `test/parity/prototype-master.js.txt` is unedited and `roll-high-baseline.mjs save` was not run.
+
+**Moved (ruling 1).** Regenerated alone, each engine side re-measured live with `newRun(seed)` and, for the action-path end states, by replaying the scenario; the prototype side is unchanged:
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `action-script.chargen.json` seeds 2, 3, 4 (Thief; Wilmsry, Human, Dwarven) | declared engine `maxWP`/`wp` 56 | 50 | the Thief's final 50 (the prototype's 40 stays declared) |
+| `action-script.chargen.json` seeds 6 and 35 (Troll; Fighter, Magic User) | declared `maxWP`/`wp` 75 -> 105 | the two fields leave the record (the engine is 75, the prototype's own); `skills`/`grimoire` and `rations` stay declared | the Troll's final 75 matches the prototype again |
+| `action-script.combat.json` `chargenDivergence` of win (seed 3), lose-plain (1119), flee (17), parley (303) (all Thief) | declared engine `maxWP`/`wp` 56 | 50 | the Thief's final 50 |
+| `action-script.combat.json` action-path records of lose-plain, flee, parley | end-state engine `wp` 51, 56, 51 | 45, 50, 45 | the same fights end 6 hit points lower because the Thief started 6 lower; the other declared end-state fields are unchanged |
+| `action-script.economy.json` (seed 3), `action-script.movement.json` (seed 256) `chargenDivergence` | declared engine `maxWP`/`wp` 56 | 50 | the Thief's final 50 |
+| `action-script.encounters.json` chest (2), tablefour (3), affliction (160) `chargenDivergence` (Thief) | declared engine `maxWP`/`wp` 56 | 50 | the Thief's final 50 |
+| `action-script.encounters.json` faerie (38) `chargenDivergence` (an Elven Thief) | declared engine `maxWP`/`wp` 34 | 30 | the Thief's final 50, then the Elven 60% |
+| `test/unit/roll-high-state-pins.test.js` labels `solo-thief-pilfer` and `deep-14` (pasted by label from `tools/roll-high-baseline.mjs pins`, measured twice; `save` never run) | `solo-thief-pilfer`: 400 actions, alive, depth 4, `c07929b4...`; `deep-14`: 48 actions, dead, depth 14, `e4802ee0...` | `solo-thief-pilfer`: 400, alive, depth 4, `46152f23...`; `deep-14`: 47, dead, depth 14, `4bfd8e23...` | each run's Thief starts with 6 fewer hit points. The other labels (a Magic User, a Fighter, the party runs) are unchanged |
+| `test/unit/fixtures/shell-snapshots/thief.hero.txt` and `mu.hero.txt` (regenerated alone with `MZ_SNAPSHOT_UPDATE=1`; the other snapshots are byte-identical) | the Thief's hit-point bar read 40 and the class blurb said "Forty Hit Points"; the Magic User blurb said "Twenty-five Hit Points plus whatever the d10 pities you with" | the bar reads 50 and the blurb "Fifty Hit Points"; the Magic User blurb "Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with" | the Thief's final 50 and the Magic User text now true (36 to 49 at the shipped dial) |
+| `test/unit/identity-footer.test.js` Thief blurb anchor | `^Forty Hit Points, studded leather` | `^Fifty Hit Points, studded leather` | the Thief blurb |
+
+The Troll blurb, note and footer already said 75, so no Troll text changed (the engine now agrees with it). Determinism fixtures: unchanged.
+
+New probes (`test/unit/starting-hp-text.test.js`: the 143-combination truth table on the shipped dials, the registered claims, the coverage scan and the Hero-tab bar) are additions, not moves.

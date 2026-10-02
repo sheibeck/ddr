@@ -46,7 +46,7 @@
 - [x] **IDENT-18**: A Pickpocket who gains an item from a chest or a monster gains one extra item as well; the shop drawback stays (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 - [x] **IDENT-19**: A Cutthroat who descends with a Joiner rolls a d10; on a 1, that Joiner dies (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
 - [x] **IDENT-20**: Fridgian frenzy: each swing, a 4–6 on a d6 gives a second swing; no armour, thick hide soaks 2; the "never wastes itself on a corpse" line is removed (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
-- [x] **IDENT-21**: Troll store prices are doubled; the text states 75 starting hit points and +11 damage (the Large +2 included). The Wilmsry drawback is reworded: you refuse to take Magic User Joiners on (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`).
+- [x] **IDENT-21**: Troll store prices are doubled; the text states 75 starting hit points and +11 damage (the Large +2 included). The Wilmsry drawback is reworded: you refuse to take Magic User Joiners on (user, 2026-09-30; `.planning/notes/v2.3-user-rulings-2026-09-30.md`). Phase 92.3 (user, 2026-10-02): the 75 is now TRUE. A new Troll started at 105 (the engine scaled the flat 75 by the hero hit-point dial), so the Troll's 75 became a final starting value in every class, and the Thief starts at a final 50 (an Elven Thief 30); the Magic User text says 36 to 49. Level-ups are unchanged. Guarded by `test/unit/starting-hp-text.test.js`.
 
 ### Spells (SPELL) — backlog 999.15
 

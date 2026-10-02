@@ -124,7 +124,7 @@
     <p class="doss-rules">
       text="No advantages and no disadvantages: every other race is measured against this one."
   <section>
-    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Twenty-five Hit Points plus whatever the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
+    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
   <section>
     html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
     <p class="doss-rules">
@@ -137,7 +137,7 @@
 <div id="hero-party-list">
   html=""
   <div class="mw-party-member">
-    html="<div class=\"mw-party-head\">\n         <span class=\"mw-party-name\">Grimbeld Granitejaw</span>\n         <span class=\"mw-party-sub\">Cat Burglar / Dwarven</span>\n       </div>\n       <div class=\"mw-party-line\">Thief · I</div>\n       <div class=\"mw-party-hp-lab\">HP <b>40</b>/<b>40</b></div>\n       <div class=\"mw-map-hptrack\"><div class=\"mw-map-hpfill\" style=\"width:100%\"></div></div>\n       \n       <div class=\"mw-party-line\">Weapon: Dagger</div>\n       <div class=\"mw-party-line\">Eats 1 a rest</div>\n       <div class=\"mw-party-line mw-party-armour\">Armour: Leather · AR 6 · 15/15 hp</div>"
+    html="<div class=\"mw-party-head\">\n         <span class=\"mw-party-name\">Grimbeld Granitejaw</span>\n         <span class=\"mw-party-sub\">Cat Burglar / Dwarven</span>\n       </div>\n       <div class=\"mw-party-line\">Thief · I</div>\n       <div class=\"mw-party-hp-lab\">HP <b>50</b>/<b>50</b></div>\n       <div class=\"mw-map-hptrack\"><div class=\"mw-map-hpfill\" style=\"width:100%\"></div></div>\n       \n       <div class=\"mw-party-line\">Weapon: Dagger</div>\n       <div class=\"mw-party-line\">Eats 1 a rest</div>\n       <div class=\"mw-party-line mw-party-armour\">Armour: Leather · AR 6 · 15/15 hp</div>"
     <div class="mw-party-items">
       <div class="mw-party-item" data-kind="potions">
         <span class="mw-party-item-text">

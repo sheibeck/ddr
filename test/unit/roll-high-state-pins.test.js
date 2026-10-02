@@ -318,7 +318,8 @@ const PINNED = {
   // to 5f0056f4ce094913f13f5040dced0980c394662932edeb6a24b2f1f5f303d8ca; actions, dead and depth are unchanged.
   // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, 4f510d22... -> 395 actions, dead, depth 4, 1de589c1...): the bot's Thief now uses Smoke again after a 6 round wait instead of once a fight (3 uses in the run, measured), so the run diverges at its second Smoke and ends dead at action 395 (measured twice by tools/roll-high-baseline.mjs pins).
   // Phase 91.1 plan 02b (user ruling V9 B, 2026-10-01): "solo-thief-pilfer" re-pinned (395 actions, dead, depth 4, 1de589c1... -> 400 actions, alive, depth 4, c07929b4...): the Pilfer's Poisoned Edge now ticks d4 + the user's level a round (a level 1 thief here: +1 a tick, used 8 times for 18 ticks in the run, first at action 46), so the first tick at action 46 reads 2 where it read 1, the run diverges there (measured against the plan base 0a7cd181) and ends alive at the action budget (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "c07929b4785929d05c29c8a5ff79d45610cf6c5136839e53f941f8a4f1f4a21d" },
+  // Phase 92.3 plan 01, ruling 1 (user 2026-10-02, a Thief starts at a final 50 max hp, was 56 at the shipped dials): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, c07929b4... -> 400 actions, alive, depth 4, 46152f23...): the run's Thief now starts with 6 fewer hit points, so its fights go differently from the first blow it takes (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "46152f237b09f9e4e4f7a79fe10eff88017a68a5bd0bace1e1253a02898d7ecf" },
   // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
   // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
   // Just like players."): a foe's landed blow on a Joiner now rolls the
@@ -641,7 +642,8 @@ const PINNED = {
   // against a git archive of the base 710c3359: steps 0 to 8 identical, step 9 useItem cloak vs move E; it
   // dies in the same kind of fight, flee failing twice at depth 14, two actions later) (measured twice by
   // tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "deep-14": { actions: 48, dead: true, depth: 14, hash: "e4802ee0a803e314622d7d82e0fbc99e0155ec2e3b7c909029e460135b2cc8fd" },
+  // Phase 92.3 plan 01, ruling 1 (user 2026-10-02, a Thief starts at a final 50 max hp, was 56 at the shipped dials): "deep-14" re-pinned (48 actions, dead, depth 14, e4802ee0... -> 47 actions, dead, depth 14, 4bfd8e23...): the run's Thief starts with 6 fewer hit points, so it dies one action earlier in the same kind of fight at depth 14 (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "deep-14": { actions: 47, dead: true, depth: 14, hash: "4bfd8e23d18373f2a58e3759b54498eda0ea27b7eba82962ce5e7cda8c933fc9" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

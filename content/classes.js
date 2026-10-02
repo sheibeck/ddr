@@ -40,6 +40,12 @@ export const CLASSES = {
   "Thief": {
     toHit: 4,
     baseWP: { base: 40, dice: { n: 0, sides: 0, bonus: 0 } },
+    // Phase 92.3 (USER RULING 2026-10-02): the Thief STARTS at a final 50 max
+    // hit points. `startWP` is used instead of baseWP at chargen and is NOT
+    // scaled by HERO_HP_SCALE or the class hpMul (the Elven wpMul still
+    // applies: 30). baseWP stays the canon 40 the prototype and the mean-hero
+    // reference read; level-up gains are unchanged and go through the dial.
+    startWP: 50,
     armorCap: 1,
     subs: ["Pickpocket", "Pilfer", "Cat Burglar", "Cutthroat", "Cloaker", "Ninja", "Con Artist", "Acrobat"],
     gain: [

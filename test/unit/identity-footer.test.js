@@ -487,7 +487,7 @@ test("accuracy pin (79-12): the Thief's armour, the Woodsman's beasts, the Bard'
   assert.match(ARMORS_SRC, /name: "Studded", cost: 750, wp: 18, ar: 10, cls: "FT"/);
   assert.match(ARMORS_SRC, /name: "Mail", cost: 1000, wp: 30, ar: 12, cls: "F"/);
   assert.match(items, /c\.cls === "Thief" && skill\(c, "Heft"\) && it\.ar <= 12/);
-  assert.match(CLASS_NOTE.Thief, /^Forty Hit Points, studded leather at the very best \(mail, if you learn Heft\)/);
+  assert.match(CLASS_NOTE.Thief, /^Fifty Hit Points, studded leather at the very best \(mail, if you learn Heft\)/);
   // Woodsman: parleys Beasts and Lair Beasts, and the Drake is a Beast.
   const combat = stripJs(read("engine/combat.js"));
   assert.match(combat, /c\.sub === "Woodsman" && \(t === "Beasts" \|\| t === "Lair Beasts"\)\) return true/);
