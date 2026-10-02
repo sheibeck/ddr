@@ -19,6 +19,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const REPORT_PATH = path.join(REPO_ROOT, "docs", "economy", "econ-before-1000.json");
 const DOC_PATH = path.join(REPO_ROOT, "docs", "ECONOMY-READOUT.md");
+const AFTER_PATH = path.join(REPO_ROOT, "docs", "economy", "econ-after-1000.json");
 
 const read = (p) => fs.readFileSync(p, "utf8").replace(/\r\n/g, "\n");
 const report = JSON.parse(read(REPORT_PATH));
@@ -32,6 +33,7 @@ const H2_ORDER = [
   "## Reading",
   "## Target and levers (for the user)",
   "## Ruling",
+  "## After the retune (92-03)",
 ];
 
 function h2s(text) {
@@ -83,10 +85,51 @@ test("econ ledger: a Ruling section exists", () => {
 
 test("econ ledger: once the Status reads 'target confirmed', the Ruling carries the fixed block", () => {
   const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
-  if (!/^target confirmed/.test(status)) return; // still open: the placeholder is enough
+  if (!/^(target confirmed|retuned|no retune)/.test(status)) return; // still open: the placeholder is enough
   const ruling = section(H2_ORDER[6]);
   for (const label of ["Target", "Shape", "Lever", "First candidate", "Stop rule"]) {
     assert.ok(ruling.split("\n").some((l) => l.startsWith(`**${label}:** `) && l.length > label.length + 6), `Ruling lacks **${label}:**`);
   }
   assert.match(status, /\d{4}-\d{2}-\d{2}/, "the Status line carries the confirmation date");
+});
+
+// --- Phase 92 plan 03 (ECON-12): the After section and its stored proof run ---
+
+test("econ ledger (92-03): the After section exists once the Status reads 'retuned'", () => {
+  const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
+  assert.match(status, /^retuned \d{4}-\d{2}-\d{2}/, "92-03 retuned the economy: the Status says so with its date");
+  assert.ok(section(H2_ORDER[7]).trim().length > 0);
+});
+
+test("econ ledger (92-03): the stored after-report is 1,000 seeds on the shipped dials and its commit is named in the After section", () => {
+  const after = JSON.parse(read(AFTER_PATH));
+  assert.equal(after.meta.tool, "tune-economy");
+  assert.equal(after.meta.seeds, 1000);
+  assert.equal(after.meta.seedList, "i*7919+1");
+  assert.ok(after.meta.dials === "shipped" || (after.meta.dials && Object.keys(after.meta.dials).length === 0), "the proof run is on the shipped dials, no --dials override");
+  assert.match(after.meta.commit, /^[0-9a-f]{7,40}$/);
+  assert.equal(after.readout.depths.length, 12);
+  assert.ok(section(H2_ORDER[7]).includes(after.meta.commit), `the After section does not name ${after.meta.commit}`);
+});
+
+test("econ ledger (92-03): the After section carries the affordability and income tables verbatim from the stored after-report", () => {
+  const after = JSON.parse(read(AFTER_PATH));
+  const md = formatEconomyMarkdown(after.readout, after.projections);
+  const text = section(H2_ORDER[7]);
+  assert.ok(text.includes(md.affordability), "after affordability tables differ from the stored JSON");
+  assert.ok(text.includes(md.sources), "after income tables differ from the stored JSON");
+});
+
+test("econ ledger (92-03): the verdict line is PASS only when the stored depth-7 median is inside the ruled 33-50% band and floors 1-4 did not rise", () => {
+  const after = JSON.parse(read(AFTER_PATH));
+  const text = section(H2_ORDER[7]);
+  const share7 = after.readout.depths[6].arrivals.shareWithSalesP50;
+  assert.ok(share7 >= 0.33 && share7 <= 0.5, `depth-7 arrival share (gold plus bag) ${share7} is outside 33-50%`);
+  for (let i = 0; i < 4; i++) {
+    const a = after.readout.depths[i].arrivals;
+    const b = report.readout.depths[i].arrivals;
+    assert.equal(a.shareP50, b.shareP50, `floor ${i + 1}: gold-held share must be identical (the bot never sells)`);
+    assert.ok(a.shareWithSalesP50 <= b.shareWithSalesP50 + 1e-9, `floor ${i + 1}: with-bag share must not rise`);
+  }
+  assert.ok(text.split("\n").some((l) => l.startsWith("**ECON-12 verdict:** PASS")), "no **ECON-12 verdict:** PASS line");
 });

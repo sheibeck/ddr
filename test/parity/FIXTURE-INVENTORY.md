@@ -8024,3 +8024,44 @@ serialized field (`memberItems` lives on the bot's own tallies, never on state).
 
 Nothing else moved. New probes (`test/unit/bot-balance-close.test.js`, 13 tests: the camp gate, the cloak trigger and the potion wait, the member tally and Cutpurse) are
 additions, not moves.
+
+### Phase 92 plan 03: stores pay less when you sell, by depth (ECON-12)
+
+**Base:** `001245730faacd4988a552b488a92720f4c406da` (the plan base); engine at identity `4080ca9c`, locked `21111a88`.
+
+**The rule and the user's ruling.** ECON-12 (user, 2026-10-01, at the 92-02 checkpoint): "33-50% incl. selling", "S: stores pay less when you sell", "Scale with depth",
+"Accept and record it" (the floors 10 to 12 overshoot). `DIALS.SELL_FRACTION` (`engine/difficulty.js`) is `{ shallow: 0.5, deep: 0.125, shallowTo: 4, deepFrom: 7 }`:
+`engine/economy.js#sellPriceFor(item, race, sub, depth)` pays that share of an item's base value (`sellFractionFor(depth)`: 0.5 through floor 4, 0.375 at 5, 0.25 at 6,
+0.125 from 7). The module constant `SELL_SPREAD = 0.5` is retired. `sellItem` passes `state.floor.depth`, the Sell button (`gearTab.js`) and the readout's bag value
+(`tools/tune-economy.mjs`) pass the floor too; a caller that omits `depth` gets the shallow 0.5 (every old two-argument caller). Buy prices, the rations line, every gold
+source, bag caps and the shelf are untouched; the Pickpocket x0.75 and Q5 A (every race paid alike) stay relative to the new base. No rng draw, no event, no serialized field.
+
+**The predictor.** (a) parity fixtures: none sells at a floor past 4 (`action-script.economy.json` mentions `sellItem` in a comment only); (b) the eight roll-high state pins:
+the bot never sells, so none can move; (c) save-compat replay: records actions, no move; (d) unit pins that sell: every one runs on floor 1 or passes no depth, where the
+fraction is 0.5, so none moves; (e) shell store snapshots (`mu-store`, `thief-store`): the Sell list is empty in both, so none moves; (f) text: nothing states a sell rate
+(the Sell button prints the price the floor pays), so none changes.
+
+**The live scan (measured with the change).**
+
+1. Identity first (commit `4080ca9c`, the dial at `{ shallow: 0.5, deep: 0.5 }`): `test/unit/econ-retune.test.js` pins 64 sale prices (eight items, a Human and a Pickpocket)
+   at floors 1, 3, 7 and 10 against literals measured on the plan base before the engine was edited; the parity suite, the state pins and the store tests passed with zero edits.
+2. After the lock: `node --test "test/parity/**/*.test.js"`: **66 / 66**; `test/parity/prototype-master.js.txt` untouched; `test/determinism/*.test.js`: 32 / 32.
+3. `node tools/roll-high-baseline.mjs pins` (runs every label twice, fails on non-determinism): the printed table is byte-identical to the pinned one (**0 of 8 moved**);
+   `save` was never run. `roll-high-state-pins`, `roll-high-save-compat`, `roll-high-guard`: green.
+4. The plan's verify command (`economy-readout-ledger`, `econ-retune`, `difficulty`, the roll-high trio, `economy`, `store-roll`, `troll-prices`, `storeScreen`, `tuning-bot`,
+   `bot-tactics`, `bot-buy-policy`, `bot-balance-close`, the parity glob): **352 / 352**. The wider store, bag, gear, identity and shell list (`store-delivery`, `store-listing`,
+   `store-rations-stock`, `store-rows`, `store-sell`, `shell-map-store-polish`, `rations-audit`, `bag-cap-gate`, `identity-text`, `identity-contract`, `item-wiring`,
+   `pickpocket-item`, `shell-tab-snapshots`, `gearTab`, `gear-agreement`, `tools`, `economy-readout`): 451 / 451; the other sell-touching tests (`combat-gear-lock`, `encounters`,
+   `enlarge-potion`, `item-effect-source`, `item-stat-lines`, `item-text-refresh`, `pendant-source-link`, `save-resume`, `shell-*`): 316 / 316; the bot and ledger list (`bot-joiner-items`,
+   `value-identity`, `class-matrix`, `days-farm`, `difficulty-retune-ledger`, `roll-high-helper`): 243 / 243.
+5. The proof: `node tools/tune-economy.mjs --seeds=1000 --workers=4` (no `--dials`, commit `21111a88`) is byte-identical in `readout` to the evaluation of the same dials run through
+   `--dials` (`fit/econ-eval-1.json`); gold-held shares are identical to the before readout on every floor; the depth-7 arrival median with the bag sold is 98% -> 42.0%.
+
+**Moved.** Nothing: no parity record, no state pin, no unit pin, no shell snapshot and no text.
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| (none) | n/a | n/a | every sale a test or fixture makes is at floor 1 or names no depth; the bot never sells |
+
+New probes (`test/unit/econ-retune.test.js`, 13 tests: identity literals measured on the base, the ramp, the Pickpocket and race rules, the shelf unmoved by the dial, the locked value
+at floors 1, 3, 5, 6, 7 and 10) and the After guards in `test/unit/economy-readout-ledger.test.js` are additions, not moves. Nothing else moved.
