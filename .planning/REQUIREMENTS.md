@@ -87,10 +87,10 @@
 
 ### Value review (VALUE) — user request 2026-09-29, Phase 91.1
 
-- [ ] **VALUE-01**: A value ledger covers every race, sub-class and ability. For each one, every system its text names exists and works in the engine, or the text is updated to match.
-- [ ] **VALUE-02**: The ledger surfaces every system that adds little or no value to play, every very low bonus and every effect that lasts only a single round, each with a recommendation (buff, lengthen, rework, cut, or a new system).
-- [ ] **VALUE-03**: Every once-per-combat skill and ability is re-reviewed, with a recommendation on whether it deserves more than one use per combat.
-- [ ] **VALUE-04**: The user rules on each flagged entry before anything is built. Every approved change is built with its text updated and a pinning test, and any fixture it moves is declared.
+- [x] **VALUE-01**: A value ledger covers every race, sub-class and ability. For each one, every system its text names exists and works in the engine, or the text is updated to match.
+- [x] **VALUE-02**: The ledger surfaces every system that adds little or no value to play, every very low bonus and every effect that lasts only a single round, each with a recommendation (buff, lengthen, rework, cut, or a new system).
+- [x] **VALUE-03**: Every once-per-combat skill and ability is re-reviewed, with a recommendation on whether it deserves more than one use per combat.
+- [x] **VALUE-04**: The user rules on each flagged entry before anything is built. Every approved change is built with its text updated and a pinning test, and any fixture it moves is declared.
 
 ### Balance close (TUNE)
 
@@ -132,10 +132,10 @@
 | STORE-04 | Phase 87 | Complete |
 | ECON-11 | Phase 92 | Pending |
 | ECON-12 | Phase 92 | Pending |
-| VALUE-01 | Phase 91.1 | Pending |
-| VALUE-02 | Phase 91.1 | Pending |
-| VALUE-03 | Phase 91.1 | Pending |
-| VALUE-04 | Phase 91.1 | Pending |
+| VALUE-01 | Phase 91.1 | Complete |
+| VALUE-02 | Phase 91.1 | Complete |
+| VALUE-03 | Phase 91.1 | Complete |
+| VALUE-04 | Phase 91.1 | Complete |
 | ITEM-07 | Phase 89 | Complete |
 | TEXT-01 | Phases 89, 90, 91 | Complete |
 | SPELL-10 | Phase 90 | Complete |

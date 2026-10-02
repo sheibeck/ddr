@@ -27,7 +27,7 @@
 - [x] **Phase 89: Item Audit & Fixes** - Every item is audited against its text and canon; the Enlarge potion is worth drinking and every missing item system is built or re-ruled. (completed 2026-09-30)
 - [x] **Phase 90: Spell & Skill Audit** - Every spell and skill does what its text says, in roll-high form; Strength and Pommel Strike are fixed. (completed 2026-10-01)
 - [x] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands. (completed 2026-10-01)
-- [ ] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built.
+- [x] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built. (completed 2026-10-01)
 - [x] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update. (completed 2026-10-01)
 - [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
 
@@ -352,7 +352,7 @@ Plans:
   3. The user rules on each flagged entry at a checkpoint before any change is built, and the rulings are recorded in the ledger.
   4. Every approved change is built, its text updated to match, and each one pinned by a test. Any fixture it moves is declared and regenerated.
 
-**Plans:** 4/5 plans executed
+**Plans:** 7/5 plans complete
 
 Plans:
 
@@ -360,7 +360,7 @@ Plans:
 - [x] 91.1-02-PLAN.md — the approved Fighter and Thief skill and ability changes, text, SKILL-AUDIT, a pin each, declared drift
 - [x] 91.1-03-PLAN.md — the approved hero race and sub-class changes, text, IDENTITY-AUDIT/SPELL-AUDIT, a pin each, declared drift
 - [x] 91.1-04-PLAN.md — the approved Joiner-parity changes, hero case beside Joiner case, text, audits, declared drift
-- [ ] 91.1-05-PLAN.md — MAZEWORLD.HTML PLAN: dead Inspire chip and soothed-beasts check removed, text-only rulings, every GAP closed, VALUE-LEDGER closed
+- [x] 91.1-05-PLAN.md — MAZEWORLD.HTML PLAN: dead Inspire chip and soothed-beasts check removed, text-only rulings, every GAP closed, VALUE-LEDGER closed
 
 ### Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles (INSERTED)
 
@@ -429,7 +429,7 @@ Plans:
 | 89. Item Audit & Fixes | 10/10 | Complete    | 2026-09-30 |
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
 | 91. Race & Sub-class Audit | 10/10 | Complete    | 2026-10-01 |
-| 91.1. Value Review: Races, Sub-classes & Abilities | 4/5 | In Progress|  |
+| 91.1. Value Review: Races, Sub-classes & Abilities | 7/5 | Complete    | 2026-10-01 |
 | 92. Store Economy & Balance Close | 0/TBD | Not started | - |
 
 ## Backlog
