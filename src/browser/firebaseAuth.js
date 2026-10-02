@@ -664,6 +664,16 @@ export function createIdentity(opts = {}) {
     if (!competeGateOk(false)) return { ok: false, reason: "off" };
     if (!seamsReady()) return { ok: false, reason: "unavailable" };
 
+    // Phase 92.1: the interactive path (the SIGN IN row, or Compete turned ON
+    // mid-session) starts the Play Games SDK first when this launch never did.
+    // A Compete-ON cold launch already started it in MainActivity, and the
+    // native init is idempotent. A quiet session never calls init: it only
+    // runs while Compete is ON, when the SDK is already up.
+    if (interactive && typeof playIdentity.init === "function") {
+      const started = await playCall("init");
+      if (started.ok !== true) return { ok: false, reason: playReason(started.reason) };
+    }
+
     let status = await playCall("status");
     if (status.ok !== true) return { ok: false, reason: playReason(status.reason) };
     if (!status.signedIn) {

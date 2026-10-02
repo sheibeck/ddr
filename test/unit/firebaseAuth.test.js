@@ -616,6 +616,33 @@ test("boardSession: a signed-out player resolves signin with no network call; in
   assert.equal(rig.play.calls().filter((c) => c.method === "signIn").length, 1);
 });
 
+test("92.1-01: the interactive path starts the Play Games SDK first (init, then status, then the prompt); a quiet session never calls init", async () => {
+  const rig = makeBoardRig({ play: { signedIn: false, interactive: true } });
+  assert.deepEqual(await rig.identity.boardSession(), { ok: false, reason: "signin" });
+  assert.deepEqual(rig.play.calls().map((c) => c.method), ["status"], "a quiet session only reads the status");
+
+  const res = await rig.identity.signIn();
+  assert.equal(res.ok, true);
+  assert.deepEqual(rig.play.calls().map((c) => c.method).slice(1, 4), ["init", "status", "signIn"]);
+});
+
+test("92.1-01: an interactive sign-in whose SDK cannot start resolves a plain reason with no network call and no prompt", async () => {
+  const rig = makeBoardRig();
+  for (const [reason, expected] of [["unavailable", "unavailable"], ["error", "server"]]) {
+    let prompted = 0;
+    const stub = {
+      init: async () => ({ ok: false, reason }),
+      status: async () => ({ ok: true, signedIn: false }),
+      signIn: async () => { prompted += 1; return { ok: true, signedIn: false }; },
+      serverAuthCode: async () => ({ ok: false, reason: "error" }),
+    };
+    const identity = makeIdentity(rig, { storage: makeMemoryStorage(), playIdentity: stub });
+    assert.deepEqual(await identity.signIn(), { ok: false, reason: expected });
+    assert.equal(prompted, 0);
+  }
+  assert.equal(rig.sent.length, 0);
+});
+
 test("boardSession: a player who dismisses the sign-in prompt stays signin", async () => {
   const rig = makeBoardRig({ play: { signedIn: false, interactive: false } });
   assert.deepEqual(await rig.identity.signIn(), { ok: false, reason: "signin" });

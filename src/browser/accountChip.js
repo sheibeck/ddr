@@ -17,8 +17,9 @@
 //
 // The controller (createAccountController) owns every account transition: the
 // name read locally at boot (the injected identity seam's snapshot(), no
-// network), Compete purging the board queue when it goes off and asking the
-// board for a session when it comes back on, the SIGN IN WITH PLAY GAMES tap,
+// network), Compete purging the board queue when it goes off and running the
+// interactive Play Games sign-in when it comes back on (Phase 92.1), the SIGN
+// IN WITH PLAY GAMES tap,
 // the session answers the board sync reports (sign-in state, the name, one
 // rail card per launch when runs are waiting on a sign-in), the two-tap erase
 // (arm/expire/erase/notify) and the once-ever welcome card that tells the
@@ -297,10 +298,12 @@ function field(obj, key) {
  *   rejecting seam leaves the name null. boot never calls the board.
  * - setCompete(value): only true (or the string "true") turns it on. false
  *   emits at once, disarms an armed erase row, persists compete false and
- *   calls board.purge() once; true emits, persists and asks the board for a
- *   session once (board.session(), not a bare flush: a session signs the
- *   player in when needed and then posts whatever was held). A repeated value
- *   is a no-op.
+ *   calls board.purge() once; true emits, persists and runs the interactive
+ *   Play Games sign-in once (board.signIn(), the same call the SIGN IN row
+ *   makes: Phase 92.1, a Compete turned ON mid-session starts the Play Games
+ *   SDK if this launch never did and asks the player to sign in right away,
+ *   then the board's normal session/claim flow posts whatever was held). A
+ *   repeated value is a no-op.
  * - sessionChanged(info): the board sync's session answer. signedIn -> signin
  *   "in" and the answer's name; signedOut -> signin "out" and, once per
  *   launch while Compete is ON, one "signinNeeded" rail card (the held runs
@@ -457,7 +460,7 @@ export function createAccountController({
     emit(patch);
     persist("compete", value);
     if (value) {
-      askBoard(() => board.session());
+      startSignIn();
     } else {
       try {
         Promise.resolve(board.purge()).catch(() => {});
@@ -467,13 +470,21 @@ export function createAccountController({
     }
   }
 
-  function signInTap() {
-    if (!current.compete || current.signin === "busy") return;
+  // startSignIn() — the interactive sign-in shared by the SIGN IN row and a
+  // Compete turned ON. The player is being asked right now, so the held-runs
+  // notice is moot (signinNoted); an answer that leaves it busy reads as
+  // signed out.
+  function startSignIn() {
     signinNoted = true;
     emit({ signin: "busy" });
-    askBoard(() => board.signIn()).then(() => {
+    return askBoard(() => board.signIn()).then(() => {
       if (current.signin === "busy") emit({ signin: "out" });
     });
+  }
+
+  function signInTap() {
+    if (!current.compete || current.signin === "busy") return;
+    startSignIn();
   }
 
   function eraseTap() {

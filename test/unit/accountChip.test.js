@@ -308,22 +308,45 @@ test("setCompete(false): emits at once, disarms an armed erase row, persists com
   assert.equal(timers.live.size, 0, "the erase-arm timer is cleared");
 });
 
-test("setCompete(true) from off: emits, persists, asks for a session once (not a bare flush)", async () => {
+test("setCompete(true) from off (Phase 92.1): emits, persists, runs the interactive sign-in once (board.signIn, not a quiet session or a bare flush)", async () => {
   const { ctl, board, settings } = await booted({ settingsInit: { compete: false } });
   ctl.setCompete(true);
   assert.equal(ctl.state().compete, true);
+  assert.equal(ctl.state().signin, "busy", "the row shows SIGNING IN while the prompt is up");
   assert.deepEqual(settings.writes, [["compete", true]]);
-  assert.deepEqual(board.calls, ["session"]);
+  assert.deepEqual(board.calls, ["signIn"]);
   assert.ok(!board.calls.some((c) => c.startsWith("flush")), "no bare flush");
 });
 
-test("setCompete(true): the session answer feeds sessionChanged", async () => {
+test("setCompete(true): the sign-in answer feeds sessionChanged", async () => {
   const { ctl, board } = await booted({ settingsInit: { compete: false } });
   ctl.setCompete(true);
-  board.pending.session[0].resolve({ state: "signedIn", name: NAME2 });
+  board.pending.signIn[0].resolve({ state: "signedIn", name: NAME2 });
   await flush();
   assert.equal(ctl.state().signin, "in");
   assert.equal(ctl.state().name, NAME2);
+});
+
+test("setCompete(true): the player is being asked right now, so the held-runs notice is moot, and a tap during the prompt is ignored", async () => {
+  const { ctl, board, notes } = await booted({ settingsInit: { compete: false } });
+  ctl.setCompete(true);
+  ctl.signInTap();
+  assert.deepEqual(board.calls, ["signIn"], "a tap while the toggle-ON sign-in runs does not start a second one");
+  board.pending.signIn[0].resolve({ state: "signedOut" });
+  await flush();
+  assert.equal(ctl.state().signin, "out");
+  assert.equal(notes.filter((c) => /RUNS ARE WAITING/.test(c.title)).length, 0, "no held-runs card after the player was just asked");
+});
+
+test("setCompete(false) while the toggle-ON sign-in is running: the late answer changes nothing", async () => {
+  const { ctl, board } = await booted({ settingsInit: { compete: false } });
+  ctl.setCompete(true);
+  ctl.setCompete(false);
+  board.pending.signIn[0].resolve({ state: "signedIn", name: NAME2 });
+  await flush();
+  assert.equal(ctl.state().compete, false);
+  assert.notEqual(ctl.state().name, NAME2, "sessionChanged ignores answers while Compete is OFF");
+  assert.notEqual(ctl.state().signin, "in");
 });
 
 test("setCompete to its current value is a no-op: no write, no board call, no emit", async () => {
@@ -688,6 +711,5 @@ test("source pins: the controller persists only compete/nameWelcomed, has no rer
   assert.match(STRIPPED, /from "\.\/account\.js"/);
   assert.ok((MODULE_SRC.match(/signInTap/g) || []).length >= 2);
   assert.ok((STRIPPED.match(/"signin"/g) || []).length >= 1);
-  assert.match(STRIPPED, /board\.session\(\)/);
   assert.match(STRIPPED, /board\.signIn\(\)/);
 });
