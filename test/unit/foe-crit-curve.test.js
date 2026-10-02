@@ -204,11 +204,11 @@ test("DMG-02 (member branch): mRoll 1 doubles the dice only", () => {
 // --- pursuit strike --------------------------------------------------------
 
 test("DMG-02 (pursuit strike): a pursuer's natural 1 doubles the dice only", () => {
-  // A Cloaker's free vanish skips the fleeRolled roll, so the pursuit
-  // strike's own draws are the only ones in the sequence.
-  const state = fixedState({ c: { cls: "Thief", sub: "Cloaker" } });
+  // A tracked round-1 withdrawal skips the fleeRolled roll, so the pursuit
+  // strike's own draws are the only ones in the sequence. Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish no longer takes the pursuer's parting blow, so this test reaches pursuitStrike through the tracked round-1 withdrawal instead (also a zero-draw exit; same draws as before).
+  const state = fixedState({ c: { cls: "Thief", sub: "Cat Burglar" } });
   const foe = fixedFoe({ lvl: 2, sp: { pursues: true } });
-  state.combat = fixedCombat([foe]);
+  state.combat = fixedCombat([foe], { tracked: true, round: 1 });
   const events = flee(state, fakeRng([1, 5]), []);
   const hit = events.find((e) => e.type === "struckByFoe");
   assert.ok(hit, "the pursuit strike must land as a struckByFoe event");

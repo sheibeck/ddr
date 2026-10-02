@@ -217,10 +217,11 @@ test("applyFoeDamageToPlayer: a mirrored blow leaves halfNext and Brace both sti
 
 // ─── 7: a pursuit strike triggers the mirror too ───────────────────────────
 
-test("flee (Cloaker's free-vanish pursuit strike): the pursuer's parting blow triggers the mirror just like an ordinary swing", () => {
-  const state = fixedState({ c: { sub: "Cloaker", ward: { ...ARMED_MIRROR } } });
+// Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish no longer takes the pursuer's parting blow, so this test reaches pursuitStrike through the tracked round-1 withdrawal instead (also a zero-draw exit; same draws as before).
+test("flee (tracked withdrawal's pursuit strike): the pursuer's parting blow triggers the mirror just like an ordinary swing", () => {
+  const state = fixedState({ c: { ward: { ...ARMED_MIRROR } } });
   const foe = fixedFoe({ sp: { pursues: true }, wp: 40, maxWP: 40 });
-  state.combat = fixedCombat([foe], { pending: false, opened2: false });
+  state.combat = fixedCombat([foe], { pending: false, tracked: true, round: 1 });
   const events = flee(state, fakeRng([1, 6]), []);
   assert.ok(events.some((e) => e.type === "wardReflected" && e.mirror === true));
   assert.equal(state.c.wp, 55, "the caster took none of the pursuit strike");

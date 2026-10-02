@@ -461,8 +461,9 @@ test("Shrink: a shrunk foe's member-target damage is halved too", () => {
 
 test("Shrink: pursuitStrike halves a shrunk pursuer's parting blow", () => {
   const pursuer = fixedFoe({ name: "Ghost", sp: { pursues: true }, lvl: 3, shrunk: true, wp: 50, maxWP: 50 });
-  const state = fixedState({ c: fixedFighter({ sub: "Cloaker" }), combat: fixedCombat([pursuer]) });
-  // Cloaker's free vanish (C.opened2 falsy) calls pursuitStrike FIRST, zero
+  // Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish no longer takes the pursuer's parting blow, so this test reaches pursuitStrike through the tracked round-1 withdrawal instead (also a zero-draw exit; same draws as before).
+  const state = fixedState({ c: fixedFighter(), combat: fixedCombat([pursuer], { tracked: true, round: 1 }) });
+  // The tracked round-1 withdrawal calls pursuitStrike FIRST, zero
   // prior draws: foeDie roll=3 (hits, default need 5); d6=6 damage -> raw
   // 3*3+6=15, shrunk halves to 8 (roll!==1, no crit doubling).
   const events = flee(state, fakeRng([3, 6]), []);

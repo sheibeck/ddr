@@ -456,6 +456,7 @@ const NOT_A_CONDITION = Object.freeze({
   parleyInsulted: "the parley went badly; a fight-wide flag, not a foe status",
   tongue: "Phase 90 plan 09: Chameleon Tongue's fight-scoped fluency (the hero's own parley source), not a foe status",
   sang: "Phase 91 plan 06: the Bard's once-per-fight SING is spent (the SING row shows it), not a foe status",
+  sangAt: "Phase 91.1 plan 03 part B (V7 B): the round of the Bard's first song (null after the second), the SING row's clock (AGAIN IN n), not a foe status",
   pendingFoes: "summoned foes waiting to join the fight",
   pending: "the pre-join encounter marker",
   // Phase 77 (CMBUI-13): the foe-side fumble gifts 75.1-03 parked here

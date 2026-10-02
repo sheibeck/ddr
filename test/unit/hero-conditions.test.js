@@ -334,6 +334,8 @@ const NOT_A_CONDITION = Object.freeze({
   cut: "the Cutthroat's once-a-fight crit is spent, narrated by its own line",
   // Phase 91 (IDENT-17, plan 91-06): a Bard's once-per-fight song has been sung; the combat menu's SING row says SUNG THIS FIGHT and the Oracle names the song.
   sang: "the Bard's once-per-fight song is spent: the SING row says SUNG THIS FIGHT",
+  // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): the round of the first song (null after the second), the SING row's clock.
+  sangAt: "the round of the Bard's first song (null after the second): the SING row counts AGAIN IN n from it",
   opened: "the Cat Burglar/Ninja free opener is spent, narrated by its own line",
   opened2: "the opening strike has landed (opening-crit bookkeeping)",
   first: "initiative: who swings first",

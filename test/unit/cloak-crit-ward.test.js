@@ -220,8 +220,9 @@ test("a Soldier wearer: the foe's second face (a crit against a Soldier) is ward
 });
 
 test("a pursuer's parting crit on a fleeing wearer is warded", () => {
-  const state = wearer({ cls: "Thief", sub: "Cloaker" });
-  state.combat = fixedCombat([fixedFoe({ lvl: 2, sp: { pursues: true } })]);
+  // Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish no longer takes the pursuer's parting blow, so this test reaches pursuitStrike through the tracked round-1 withdrawal instead (also a zero-draw exit; same draws as before).
+  const state = wearer({ cls: "Thief", sub: "Cat Burglar" });
+  state.combat = fixedCombat([fixedFoe({ lvl: 2, sp: { pursues: true } })], { tracked: true, round: 1 });
   const events = flee(state, fakeRng([1, 5]), []);
   const hit = events.find((e) => e.type === "struckByFoe");
   assert.equal(hit.dmg, 9, "4 + 5, not 4 + 2*5");

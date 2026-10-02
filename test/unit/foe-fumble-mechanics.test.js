@@ -414,9 +414,10 @@ test("foeTurn (member branch): a foe with might 7 deals exactly 7 more on a land
 
 test("pursuitStrike (via flee): a foe with might 7 deals exactly 7 more than the same foe without it", () => {
   const dmgFor = (might) => {
-    const state = fixedState({ c: { sub: "Cloaker" } });
+    // Phase 91.1 plan 03 part B (V27 B, 2026-10-01): the unseen Cloaker's free vanish no longer takes the pursuer's parting blow, so this test reaches pursuitStrike through the tracked round-1 withdrawal instead (also a zero-draw exit; same draws as before).
+    const state = fixedState();
     const foe = fixedFoe({ sp: { pursues: true }, wp: 999, maxWP: 999, ...(might ? { might } : {}) });
-    state.combat = fixedCombat([foe], { pending: false, opened2: false });
+    state.combat = fixedCombat([foe], { pending: false, tracked: true, round: 1 });
     const events = [];
     flee(state, fakeRng([5, 4]), events);
     return events.find((e) => e.type === "struckByFoe").dmg;
