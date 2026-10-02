@@ -20,11 +20,11 @@ export const FIREBASE_CONFIG = Object.freeze({
 //  - webClientId is the "Game server" OAuth client the user creates at the
 //    milestone-close console step (91.2-10 writes it). It is a public id (it
 //    ships in the app), not a secret; the client SECRET never enters the repo.
-//    Empty until then, so playGamesConfigured() is false and Compete's
-//    sign-in path stays dormant.
+//    Set 2026-10-02 (Release 2.3.0 step 1.2): web application client
+//    `ddr-board-names` in Cloud project delve-die-repeat.
 export const PLAY_GAMES_CONFIG = Object.freeze({
   appId: "517177834262",
-  webClientId: "",
+  webClientId: "517177834262-869o2mk93v9n0fkqr4kvc8jues3khmfv.apps.googleusercontent.com",
 });
 
 // The 2nd-gen `boardName` Cloud Function (D-01), us-central1 in the same

@@ -247,11 +247,11 @@ test("module source touches no window or document and names @capacitor/core only
 
 // ─── config ─────────────────────────────────────────────────────────────────
 
-test("PLAY_GAMES_CONFIG ships unconfigured; playGamesConfigured validates shape", () => {
+test("PLAY_GAMES_CONFIG carries the Game server web client; playGamesConfigured validates shape", () => {
   assert.ok(Object.isFrozen(PLAY_GAMES_CONFIG));
   assert.equal(PLAY_GAMES_CONFIG.appId, "517177834262");
-  assert.equal(PLAY_GAMES_CONFIG.webClientId, "");
-  assert.equal(playGamesConfigured(PLAY_GAMES_CONFIG), false);
+  assert.equal(PLAY_GAMES_CONFIG.webClientId, "517177834262-869o2mk93v9n0fkqr4kvc8jues3khmfv.apps.googleusercontent.com");
+  assert.equal(playGamesConfigured(PLAY_GAMES_CONFIG), true);
 
   const good = { appId: "517177834262", webClientId: "517177834262-abc123def456.apps.googleusercontent.com" };
   assert.equal(playGamesConfigured(good), true);
