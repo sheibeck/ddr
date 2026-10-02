@@ -876,7 +876,8 @@ test("ledger rulings: the user's rulings of 2026-10-01 are recorded as given (V2
     assert.match(q.title, new RegExp(`\\(answered ${letter}\\)$`), `V${q.n}`);
   }
   const cloaker = DOC.tables["Sub-classes/Thief"].find((r) => r[0] === "Cloaker");
-  assert.match(cloaker[5], /^ruled \(V27, 2026-10-01\) -> 91\.1-03$/);
+  // 91.1-03 part B (2026-10-01) built V27: the row's verdict moved from "ruled (V27, 2026-10-01) -> 91.1-03" to built.
+  assert.match(cloaker[5], /^built \(91\.1-03\)$/);
   assert.match(DOC.rulings.find((r) => r.n === 27).text, /Cloaker ability should work on specter, too/);
   // 91.1-04 (Joiner parity) owns nothing, 91.1-05 owns the text-only ruling and the two cleanups
   const row = (p) => DOC.ownership.find((r) => r[0] === p)[1];

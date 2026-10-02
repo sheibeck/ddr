@@ -33,6 +33,7 @@ import {
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { decideAction, makeBotContext } from "../../tools/lib/tuning-bot.mjs";
 import { rollGrimoire, grantableAt } from "../../engine/character.js";
 import { makeRng, derivedRng } from "../../engine/rng.js";
 import { rollDice } from "../../engine/dice.js";
@@ -824,4 +825,23 @@ test("V25 text: the Con Artist's footer states the same table (a level 1 foe two
 test("V27 text: the Cloaker's footer states the vanish is free even against a Spectre", () => {
   const good = identityFooter("sub", "Cloaker").good.join(" | ");
   assert.ok(/Spectre/.test(good), good);
+});
+
+test("V7 Sing sing-once: the bot plays the new rule (it sings the second song as soon as songReady allows it, round 6, and not before)", () => {
+  const policyRng = { pick: (arr) => arr[0] };
+  const ctx = makeBotContext();
+  const state = bardHero(1);
+  state.combat.type = "Walking Dead"; // a Bard talks to Humans first
+  state.combat.foes[0].type = "Walking Dead";
+  assert.deepEqual(decideAction(state, policyRng, ctx), { type: "sing" }, "round 1: the first song");
+  sing(state, noDraws(), []);
+  for (const round of [2, 5]) {
+    state.combat.round = round;
+    assert.notEqual(decideAction(state, policyRng, ctx).type, "sing", `round ${round}: resting`);
+  }
+  state.combat.round = 6;
+  assert.deepEqual(decideAction(state, policyRng, ctx), { type: "sing" }, "round 6: the second song");
+  sing(state, noDraws(), []);
+  state.combat.round = 12;
+  assert.notEqual(decideAction(state, policyRng, ctx).type, "sing", "never a third");
 });

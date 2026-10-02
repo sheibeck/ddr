@@ -1243,8 +1243,9 @@ function preHazardFlight(state, ctx, dir) {
  *       ready worn staff;
  *   (c) talk-first (HARN-02): the identity talkers (`isTalkFirst`) try
  *       parley once at round 1, before anything else;
- *   (d) sing (HARN-02; Phase 91 IDENT-17): a Bard sings once in every fight,
- *       the first time songReady allows it (a random offense or defense
+ *   (d) sing (HARN-02; Phase 91 IDENT-17; 91.1-03 V7 B): a Bard sings the first
+ *       time songReady allows it and again the first time it allows the second
+ *       song (5 rounds after the first; never a third) (a random offense or defense
  *       spell of its level or lower, cast free; no level or type condition);
  *   (e) Summon in combat (HARN-02): round 1, no ally yet, charges remain;
  *   (f) Mirror Self opener (HARN-02): round 1, no active mirror — must
@@ -1388,7 +1389,8 @@ export function decideAction(state, policyRng, ctx) {
 
     // (d) HARN-02 sing — Phase 91 (IDENT-17, plan 91-06): SING is once per fight and
     // every song is a real offense or defense spell cast free, so a Bard sings the
-    // first time it can in every fight (songReady turns false once it has); the old
+    // first time it can in every fight (songReady turns false once it has, and true
+    // again 5 rounds after the first song for the second one, 91.1-03 V7 B: the bot plays it); the old
     // "level 2 or Beasts" condition (when the level-1 song did nothing else) is gone.
     if (songReady(state)) return { type: "sing" };
 

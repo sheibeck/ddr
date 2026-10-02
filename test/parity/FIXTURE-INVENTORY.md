@@ -7898,3 +7898,41 @@ Moved scripted tests and pins (each re-based, before to after, with a dated comm
    `school-gates.test.js` (the named exception is read from the same data table), `identity-footer.test.js` (the schoolBonus reader count in `derived.js` 3 to 5; the Dwarven +3), `identity-text.test.js` and
    `identity-footer.test.js` (the Cleric's blurb may name the Shield spell, never an armour shield), `spell-audit.test.js` (the Illusionist's Illusion 1).
 7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the checkpoint copy's Systems items follow the live footer entries (`chart-bonus-protection`, `chart-bonus-healing`, `chart-stretch-illusion`).
+
+### Phase 91.1 plan 03b: the Bard's second song, the Con Artist's level 2 foes and the Cloaker against a Spectre (VALUE-01, VALUE-02, VALUE-04; rulings V7, V25, V27)
+
+**No fixture moves: measured three ways.** Plan 03 part B (2026-10-01) builds V7 B (a Bard, hero or Joiner, may sing a second song 5 rounds after the first, never a third),
+V25 B (a level 1 foe still leaves a Con Artist 2 times in 3, a level 2 foe now 1 time in 3) and V27 B (the Cloaker's free vanish also escapes a pursuing Spectre's parting
+blow). `test/parity/prototype-master.js.txt` is untouched, no bot balance run was made (Phase 92), and nothing was regenerated.
+
+1. `node tools/fixture-inventory.mjs --json`: 18 scenarios, none with a Bard, a Cloaker or a Con Artist hero (the combat fixture's Con Artist mentions are the Phase 31 prose in its own
+   rationale), and none with a level 2 foe (every fixture scenario is floor 1: tier 1 foes only), so none reaches a changed rule.
+2. `node --test "test/parity/**/*.test.js"`: 66 of 66 pass, no divergence record touched.
+3. `node --test test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js test/unit/roll-high-guard.test.js`: 24 of 24 pass unchanged (all eight state-pin labels
+   byte-identical; `roll-high-baseline.mjs save` was never run; the save-compat hero is a Thief that meets none of the three rules; DRAW_INVENTORY unchanged).
+
+**New rolls: one, from a derived stream. Main-rng draws: none moved.** The level 2 Con Artist leave is a NEW roll in `startCombat`, `rollCheck` on
+`derivedRng(<main cursor>, "conArtistLeave", <acts>, <foe index>)`, never the main rng: a level 2 foe drew nothing there before, so no existing draw moves for any run
+(`test/unit/value-identity.test.js` "V25 ... a level 2 foe leaves one time in three ..." compares the main-draw count of a Con Artist start with a Soldier start of the same clone and
+seed: equal for a level 2 foe, exactly one more for a level 1 foe, as before). The Bard's second song is cast on the same derived streams the first always used (`"song"`
+and `"memberSong"` at the new `acts`); the Cloaker change removes the parting blow's draws on one exit and adds none.
+
+**New serialized field: `sangAt`, carved out.** `combat.sangAt` (the round of the fight's first song, `null` after the second) and `combat.allies[].sangAt` (the same for a Joiner Bard)
+are brand-new, engine-only and absent on every fixture; both are carved out beside `sang` in `stripFoeAbilityState`, which all three `*Comparable()` functions share
+(`test/parity/harness/comparables.js`, doc comment extended). `combat.sang` keeps its meaning (a song has been sung) and its value `true`.
+
+**New narration.** No new event type. The existing `actionRefused` event gains the reason `songResting` (carrying `rounds`), with its `EVENT_NARRATION` entry, its rail twin
+and a voice-guard toggle in `tools/lib/event-variants.mjs`; the `sungThisFight` refusal now reads "Two songs a fight." and the combat menu gains `singAgain` ("AGAIN IN {n}").
+
+Moved scripted tests and pins (each re-based with a dated comment naming the question; none is a fixture or a state pin):
+
+4. V7: `test/unit/bard-song.test.js` (a second SING straight after the first is `songResting` with the rounds left, not `sungThisFight`; the menu row reads `AGAIN IN n`, then
+   `SUNG THIS FIGHT` only after the second song; the description starts "Sing a random offense or defense spell" and states the second song), `test/unit/bard-song-lines.test.js`
+   (`sungThisFight` reads "Two songs a fight."), `test/unit/combatMenu.test.js` (the SING description pin), `test/unit/joiner-bard-song.test.js` (the side-by-side refusal is
+   `songResting`).
+5. V25: `test/unit/identity-footer.test.js` (the engine-source pin reads `CON_ARTIST_LEAVE_FACES` and `CON_ARTIST_LEAVE_MAX_LVL` instead of the typed `atLeastFor(4, 6)` and `f.lvl <= 1`;
+   the Con Artist blurb pin states the level-two foe).
+6. V27: `test/unit/combat.test.js` ("flee: the pursuit fires on the tracked-round-1 exit ... but not on the unseen Cloaker's free vanish": the Cloaker's exit is `fled`,
+   `combatEnded` with no `foePursued`, was `foePursued`, `struckByFoe`, `fled`, `combatEnded`).
+7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the Cloaker row's verdict is `built (91.1-03)`; the checkpoint copy's Sing text quotes the live
+   `COMBAT_MENU_COPY.singDesc`.

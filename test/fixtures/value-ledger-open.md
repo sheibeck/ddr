@@ -145,7 +145,7 @@ Rows follow `FIGHTER_SKILLS` key order, then `THIEF_SKILLS` key order, then `ABI
 
 | Entry | Systems named → exists | Value flags | Recommendation | Q | Verdict | Pinned by |
 |---|---|---|---|---|---|---|
-| Sing | txt "Once per fight: sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell."; `sing-once`: once per fight: a random offense or protection spell of your level or lower, at full strength, no charges spent — exists (`combat.js#sing`, `songReady`, `songPool`); timing: one cast this round (the spell's own effect), then spent for the fight; who: hero: `combat.js#sing`; Joiner: its first turn of every fight is its song (`alliesTurn`, `pickSong`), the Joiner's own derived stream | once-per-fight@sing-once | keep@sing-once: stays once per fight (ruled 2026-09-30, IDENT-17) | V7 | question (V7) | — |
+| Sing | txt "Sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell. A long fight gets a second song 5 rounds after the first, and never a third."; `sing-once`: once per fight: a random offense or protection spell of your level or lower, at full strength, no charges spent — exists (`combat.js#sing`, `songReady`, `songPool`); timing: one cast this round (the spell's own effect), then spent for the fight; who: hero: `combat.js#sing`; Joiner: its first turn of every fight is its song (`alliesTurn`, `pickSong`), the Joiner's own derived stream | once-per-fight@sing-once | keep@sing-once: stays once per fight (ruled 2026-09-30, IDENT-17) | V7 | question (V7) | — |
 
 ## Cross-cutting systems
 
