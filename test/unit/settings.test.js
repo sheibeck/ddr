@@ -22,6 +22,8 @@ import assert from "node:assert/strict";
 
 import { readSettings, writeSetting, SETTINGS_DEFAULTS, SETTINGS_STORAGE_KEY, textScaleForSize, effectiveTextScale } from "../../src/browser/settings.js";
 import { flush as flushStorage } from "../../src/browser/storage.js";
+import { boot as bootAdapter, waitForPending as adapterWaitForPending } from "../../src/browser/engineAdapter.js";
+import { emptyBests } from "../../engine/records.js";
 
 async function withFakeLocalStorage(fn) {
   const store = new Map();
@@ -580,16 +582,84 @@ test("2026-09-28: a fresh install (no settings, save, graveyard or bests) gets t
   });
 });
 
+// Phase 92.1: what a 2.2.0 player's bests record looks like once they have
+// played: a run held and ranked. (The record's own shape is engine/records.js's;
+// readSettings only needs to see that a PLAYER made something.)
+const PLAYED_BESTS = JSON.stringify({
+  v: 1,
+  runs: { ["a".repeat(64)]: { hash: "a".repeat(64) } },
+  boards: { deep: ["a".repeat(64)], days: [], kills: [], purse: [] },
+  last: null,
+});
+
 test("2026-09-28: an existing install without a settings blob keeps tap-to-move, written once", async () => {
-  for (const key of ["ddr.delve.v1", "ddr.graveyard.v1", "ddr.bests.v1"]) {
+  const held = { "ddr.delve.v1": "{\"x\":1}", "ddr.graveyard.v1": "[{\"x\":1}]", "ddr.bests.v1": PLAYED_BESTS };
+  for (const key of Object.keys(held)) {
     await withFakeLocalStorage(async (_ls, store) => {
-      store.set(key, "{\"x\":1}");
+      store.set(key, held[key]);
       const settings = await readSettings();
       assert.equal(settings.movement, "tap", key);
       await flushStorage();
       assert.equal(JSON.parse(store.get(SETTINGS_STORAGE_KEY)).movement, "tap", key);
     });
   }
+});
+
+// Phase 92.1 (BOARD-31): the first boot of a fresh install writes an empty
+// ddr.bests.v1 BEFORE readSettings runs, which used to make a fresh install
+// look like an existing one (tap-to-move instead of the arrow default).
+
+test("92.1-01: a REAL first boot writes the empty bests record, and the fresh install still gets arrows", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    await bootAdapter(12345);
+    await adapterWaitForPending();
+    await flushStorage();
+    // The premise of the bug: boot itself wrote ddr.bests.v1 before settings were read.
+    assert.equal(typeof store.get("ddr.bests.v1"), "string", "the first boot writes ddr.bests.v1");
+    const settings = await readSettings();
+    assert.equal(settings.movement, "arrows");
+    assert.equal(store.has(SETTINGS_STORAGE_KEY), false, "a fresh install writes no settings blob just for reading");
+  });
+});
+
+test("92.1-01: the exact empty bests record a first boot writes does not make an install 'existing'", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set("ddr.bests.v1", JSON.stringify(emptyBests()));
+    const settings = await readSettings();
+    assert.equal(settings.movement, "arrows");
+    assert.equal(store.has(SETTINGS_STORAGE_KEY), false);
+  });
+});
+
+test("92.1-01: an upgrade from 2.2.0 keeps tap-to-move whichever player-made key it holds, and the choice is stored once", async () => {
+  const upgrades = {
+    "a bests record with runs": { "ddr.bests.v1": PLAYED_BESTS },
+    "a bests record with only a ranked board": { "ddr.bests.v1": JSON.stringify({ v: 1, runs: {}, boards: { deep: ["h"], days: [], kills: [], purse: [] }, last: null }) },
+    "an unreadable bests record": { "ddr.bests.v1": "{not json" },
+    "an empty bests record plus a graveyard": { "ddr.bests.v1": JSON.stringify(emptyBests()), "ddr.graveyard.v1": "[{\"x\":1}]" },
+    "an empty bests record plus a save": { "ddr.bests.v1": JSON.stringify(emptyBests()), "ddr.delve.v1": "{\"x\":1}" },
+    "a save alone": { "ddr.delve.v1": "{\"x\":1}" },
+  };
+  for (const [label, keys] of Object.entries(upgrades)) {
+    await withFakeLocalStorage(async (_ls, store) => {
+      for (const [k, v] of Object.entries(keys)) store.set(k, v);
+      const settings = await readSettings();
+      assert.equal(settings.movement, "tap", label);
+      await flushStorage();
+      assert.equal(JSON.parse(store.get(SETTINGS_STORAGE_KEY)).movement, "tap", label);
+      assert.equal((await readSettings()).movement, "tap", `${label}: stable on the next read`);
+    });
+  }
+});
+
+test("92.1-01: an upgrade that kept a stored settings blob keeps its choice, with or without a movement field", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set("ddr.bests.v1", JSON.stringify(emptyBests()));
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ movement: "arrows", padSide: "left" }));
+    assert.equal((await readSettings()).movement, "arrows");
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L" }));
+    assert.equal((await readSettings()).movement, "tap", "a blob without movement is an existing install");
+  });
 });
 
 test("HUD-08: a tampered stored movement or padSide reads its default (an unknown movement falls back to tap-to-move)", async () => {

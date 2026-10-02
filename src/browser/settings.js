@@ -148,9 +148,34 @@ const ALLOWED_VALUES = {
 export const LEGACY_MOVEMENT = "tap";
 
 /** EXISTING_INSTALL_KEYS — durable keys that prove this device played a build
- * before the arrow default (the same proof patchNotes.js uses): a save, a
- * graveyard or a bests record. The settings blob itself is checked first. */
+ * before the arrow default: a save, a graveyard or a bests record. The
+ * settings blob itself is checked first.
+ *
+ * Phase 92.1: a key only counts when it holds something a PLAYER made. The
+ * first boot of a fresh install writes an EMPTY bests record (the adapter's
+ * loadBests backfill) before readSettings runs, so a non-empty string under
+ * ddr.bests.v1 proves nothing: ddr.bests.v1 counts only when it carries at
+ * least one run, or is unreadable (old data we cannot vouch for). The save and
+ * the graveyard are written only by play, never by boot. */
 export const EXISTING_INSTALL_KEYS = Object.freeze(["ddr.delve.v1", "ddr.graveyard.v1", "ddr.bests.v1"]);
+
+/** The one key the first boot itself writes (empty) before readSettings. */
+const BOOT_WRITTEN_KEY = "ddr.bests.v1";
+
+/** bestsHoldsRuns(raw) — false only for a readable record with no runs at all (what a first boot writes); an unreadable one is old data, so true. */
+function bestsHoldsRuns(raw) {
+  try {
+    const rec = JSON.parse(raw);
+    if (rec === null || typeof rec !== "object" || Array.isArray(rec)) return true;
+    if (rec.runs !== null && typeof rec.runs === "object" && Object.keys(rec.runs).length > 0) return true;
+    if (rec.boards !== null && typeof rec.boards === "object") {
+      for (const list of Object.values(rec.boards)) if (Array.isArray(list) && list.length > 0) return true;
+    }
+    return rec.last !== null && rec.last !== undefined;
+  } catch {
+    return true;
+  }
+}
 
 function isValidSettingValue(key, value) {
   if (!Object.prototype.hasOwnProperty.call(ALLOWED_VALUES, key)) return false;
@@ -204,7 +229,9 @@ async function hasPriorInstallData() {
   for (const key of EXISTING_INSTALL_KEYS) {
     try {
       const raw = await getItem(key);
-      if (typeof raw === "string" && raw.length > 0) return true;
+      if (typeof raw !== "string" || raw.length === 0) continue;
+      if (key === BOOT_WRITTEN_KEY && !bestsHoldsRuns(raw)) continue;
+      return true;
     } catch {
       // unreadable key: keep looking
     }

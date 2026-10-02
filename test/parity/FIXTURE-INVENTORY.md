@@ -8065,3 +8065,23 @@ fraction is 0.5, so none moves; (e) shell store snapshots (`mu-store`, `thief-st
 
 New probes (`test/unit/econ-retune.test.js`, 13 tests: identity literals measured on the base, the ramp, the Pickpocket and race rules, the shelf unmoved by the dial, the locked value
 at floors 1, 3, 5, 6, 7 and 10) and the After guards in `test/unit/economy-readout-ledger.test.js` are additions, not moves. Nothing else moved.
+
+### Phase 92.1 plan 01: the Play Games privacy gate and the sign-in fixes (BOARD-31)
+
+**The predictor.** No engine file, parity fixture, state pin, bot ledger or shell snapshot is touched: the plan changes the Android manifest and two Java classes, the account
+controller, the identity's interactive path, `ACCOUNT_COPY`, and the settings reader's existing-install detection. `engine/` and `test/parity/prototype-master.js.txt` are unedited,
+and no engine event is added (the two new rail cards are account-shell copy in `content/account.js`, so there is no `EVENT_NARRATION` entry to add;
+`node tools/narrative-review.mjs --check` passes).
+
+**Moved.** Unit fixtures only, each because the behaviour it pinned changed on purpose:
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/settings.test.js` "an existing install without a settings blob keeps tap-to-move" | the bests record fixture was `{"x":1}` (any non-empty string) | a record that holds a run (`PLAYED_BESTS`) | a fresh install's first boot writes an EMPTY `ddr.bests.v1` before `readSettings` runs, so that key now counts only when a player made something in it |
+| `test/unit/accountChip.test.js` "setCompete(true) from off" (and "the session answer feeds sessionChanged") | Compete turned ON asked the board for a quiet `session()` | it runs the interactive `signIn()` (the SIGN IN row's call) | ruling 2: Compete turned ON mid-session signs in right away |
+| `test/unit/accountChip.test.js` source pin | required `board.session()` in the controller source | requires `board.signIn()` only | the controller no longer calls the quiet session |
+| `test/unit/account.test.js`, `account-copy.test.js`, `firebaseAuth.test.js` key-set pins | the state, the card set and the identity surface listed their old keys | each lists the new key (`canSignIn`, `signinUnavailable`, `signinFailed`) | additive: the row's visibility flag, the two sign-in failure cards and `identity.canSignIn()` |
+| `test/unit/android-system-bars.test.js` MainActivity test | titled "only registers" the plugin | retitled "registers" (same assertions) | MainActivity now also initializes the Play Games SDK, gated, before `super.onCreate` |
+
+New probes (the manifest provider removal, the gated initialize before `super.onCreate`, the shared idempotent init, `test/unit/account-signin-row.test.js`, the real-first-boot and
+2.2.0-upgrade cases in `test/unit/settings.test.js`, the interactive-init cases in `test/unit/firebaseAuth.test.js`) are additions, not moves. Nothing else moved.
