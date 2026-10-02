@@ -240,6 +240,11 @@ the seam calls nothing. `src/browser/nameClient.js` is the client of the
 over `content/safety-wordlist.js`: a flagged name renders as the
 `LEADERBOARD_COPY` placeholder with a neutral avatar. `src/browser/pgsProbe.js`
 is the device probe behind the hidden dev row (`runPgsProbe`).
+`src/browser/devBuild.js` (`devToolsAllowed`) is the dev-row build gate: on a native
+build the shell shows the hidden dev rows (start at depth, the probe) only when the
+PlayIdentity plugin's `buildInfo()` (`BuildConfig.DEBUG`) answers `debug: true`; any
+failed, absent or malformed answer means a release build and the long-press is never
+attached. The browser dev loop (never hosted publicly) keeps the rows.
 
 `src/browser/account.js` is the pure view model: the account state
 (`normalizeAccountState`: `compete`, `name`, `signin`, `erase`, `welcomed`,
@@ -292,8 +297,8 @@ The shell wiring (mazeworld.html's module script):
   => account?.sessionChanged(info)`. On resume the `visibilitychange`
   listener calls `boardSync.session()` (quiet); the SIGN IN row in the ☰
   block and the title sheet call `account.signInTap()`. A hidden dev row
-  (long-press the version label) holds the PLAY GAMES PROBE button and, in the
-  browser dev loop only, a fake sign-in toggle.
+  (long-press the version label, debug builds only) holds the PLAY GAMES PROBE
+  button and, in the browser dev loop only, a fake sign-in toggle.
 - `account.boot()` starts right after the title screen is initialized and
   is never awaited, so boot, the title and play never wait on the network.
 - `renderAccountSurfaces()` runs on every account change and once before

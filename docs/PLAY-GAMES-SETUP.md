@@ -150,7 +150,7 @@ reports `signInWithIdp` failing for it), or if it turns out not to exist after a
 5. **Run the probes:** `node tools/boards-smoke.mjs --transition` and
    `node tools/boards-smoke.mjs --function` (exit 0, every step PASS, cleanup ok).
 6. After the debug APK is installed: the **dev-row PLAY GAMES PROBE** (long-press the version
-   label), which proves gates G1 to G4, A3, A4 and A6 on the phone
+   label; debug builds only), which proves gates G1 to G4, A3, A4 and A6 on the phone
    (`docs/LEADERBOARDS.md` section 15).
 
 If the probe shows the gamer name is not what Firebase stores (G1), or an end user can edit the

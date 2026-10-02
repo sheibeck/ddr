@@ -1074,7 +1074,9 @@ tester is the user, playing on the Pixel 7 — the verdict below is either
 1. Start (or resume) a normal run.
 2. Tap the HUD gear icon → **Settings**.
 3. Press and **HOLD** the last row, "Version 1.0.1 (2)" (≈ 1.2 s — a
-   plain tap does nothing).
+   plain tap does nothing). **Debug builds only:** a release build
+   (the Play AAB) does not attach the long-press, so this needs the
+   debug APK from step 1.
 4. The hidden **"Start at depth (dev)"** row appears.
 5. Type the depth (20, 35, or 50).
 6. Tap **Start**.
@@ -9919,7 +9921,8 @@ the tester fills in the Verdict block below.
 1. Start (or resume) a run.
 2. Tap the HUD gear icon → **Settings**.
 3. Press and **HOLD** the last row, "Version 1.2.0 (3)" (≈ 1.2 s — a plain tap
-   does nothing).
+   does nothing). **Debug builds only:** a release build (the Play AAB) does
+   not attach the long-press, so this needs the debug APK.
 4. The hidden **"Start at depth (dev)"** row appears.
 5. Type the depth (20, 35, or 50).
 6. Tap **Start**.

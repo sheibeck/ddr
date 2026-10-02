@@ -14,7 +14,8 @@ per row, using `src/browser/perfMarks.js` (a pure module — no clock, no DOM,
 no globals — unit-tested in node with injected samples) plus seven
 `performance.now()` call sites inside `mazeworld.html`'s module script,
 every one guarded by the shell's existing dev flag (`state.dev`, true only
-for a start-at-depth run started from the Settings sheet's hidden dev row).
+for a start-at-depth run started from the Settings sheet's hidden dev row, which
+exists on debug builds only).
 A normal run takes no timing reading and records nothing: `const perf =
 window.__mzState.get()?.dev ? perfMarks : null;`, and every clock read is
 `perf ? performance.now() : 0` or wrapped in `if (perf)`.
@@ -46,7 +47,7 @@ The ring keeps the last 100 samples per row; `summary()` reports `n`
 (samples currently in the ring), `total` (all-time record count, so a ring
 that has wrapped still shows how many steps actually ran), and `median`/
 `p95`/`max` computed by the nearest-rank method (`sorted[Math.ceil(k · n) −
-1]`). The `#mw-dev-perf` line (inside the hidden `#mw-dev-row`, under the
+1]`). The `#mw-dev-perf` line (inside the hidden `#mw-dev-row`, debug builds only, under the
 Settings sheet's Start button) is written after every recorded step:
 
 ```
@@ -348,7 +349,9 @@ than a new regression.
    `adb shell monkey -p com.darktierstudios.delvedierepeat 1`.
 6. Title → ENTER → take any roll → on the map open Settings (the gear chip
    right of MAKE CAMP) and long-press the "Version …" label for about 1.2 s
-   until the "Start at depth (dev)" row appears.
+   until the "Start at depth (dev)" row appears (debug builds only: the
+   release AAB does not attach the long-press, so this needs the debug APK
+   from step 1).
 7. Enter a depth (5 for the standard protocol above) and tap Start.
 8. Walk, then read `#mw-dev-perf` under the Start button and/or run
    `adb logcat -s chromium | grep mzperf` for the same numbers as JSON.

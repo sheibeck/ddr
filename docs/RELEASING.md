@@ -179,7 +179,8 @@ phases) keep 2.2.0 posting while 2.3 is tested; the final rules refuse 2.2.0 onc
       value is refused, a named uid cannot use the legacy branch.)
    7. **The debug APK and the dev-row probe:** build once with
       `npm run android:debug`, install with `adb install -r`, long-press the version
-      label, and run the PLAY GAMES PROBE: G4 pass, G3 pass, A4 pass, A6 pass, and
+      label (debug builds only: the release AAB never shows the dev rows), and run
+      the PLAY GAMES PROBE: G4 pass, G3 pass, A4 pass, A6 pass, and
       confirm the G1 provider name is your gamer name, not your real name. The
       fallbacks: **G1 or A4 fails** — redeploy with `--name-source games` after
       storing the secret (`node tools/board-names/deploy.mjs --setup --name-source
