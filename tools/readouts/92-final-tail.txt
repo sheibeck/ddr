@@ -1,0 +1,2 @@
+== fit-difficulty block 2026-10-02T03:29:53.408Z mode=single objective=tail budget=- seeds=200 log=tools/readouts/92-final-tail.jsonl resume-from=none
+#1 score=0.0000 verdict=PASS fresh[reach20=0 reach21=0 reachCount30=0] deep12.reach20=0 deep20[p50=0 reach30=0] deep30[p50=0 p90=1] rot.p50[20/30/40]=0/0/0 guard=fresh p50Death 5 outside [3, 4] ok=true

@@ -1,0 +1,206 @@
+
+tune-difficulty: 1000 seeded auto-play run(s), start depth 1
+(TUNING PROXY ONLY — not a pass/fail gate, not a substitute for human playtest)
+
+Death-depth distribution:
+  min=1  p50=5  p90=8  max=17
+
+Action-count distribution:
+  min=28  p50=535  p90=940  max=20000
+
+Death-cause breakdown:
+  cut down by a Poltergeist 111 (11.1%)
+  starved in the dark  105 (10.5%)
+  cut down by a Shadow 64 (6.4%)
+  cut down by a China Wolf 56 (5.6%)
+  cut down by a Werebeast 54 (5.4%)
+  cut down by a Dante  51 (5.1%)
+  undone by a trap     46 (4.6%)
+  cut down by a Cave Bear 44 (4.4%)
+  cut down by a Google 41 (4.1%)
+  spent by the dungeon itself 34 (3.4%)
+  cut down by a Blumble 32 (3.2%)
+  cut down by a Skeleton 29 (2.9%)
+  fell off a wall      29 (2.9%)
+  cut down by a Rinkle 28 (2.8%)
+  cut down by a Zit    27 (2.7%)
+  cut down by a Trachea 24 (2.4%)
+  cut down by a Frank  23 (2.3%)
+  cut down by a Hair   18 (1.8%)
+  cut down by a Gremlin 17 (1.7%)
+  cut down by a Primp  15 (1.5%)
+  came up short on a leap 14 (1.4%)
+  cut down by a Ghoul  13 (1.3%)
+  cut down by a Krupke 13 (1.3%)
+  cut down by a Zombie 11 (1.1%)
+  cut down by a Sterling 10 (1.0%)
+  cut down by a Drat   9 (0.9%)
+  cut down by a Wolf   7 (0.7%)
+  cut down by a Herman 6 (0.6%)
+  cut down by a Drarl  6 (0.6%)
+  cut down by a Drekk  5 (0.5%)
+  cut down by a Drake  5 (0.5%)
+  cut down by a Viper  5 (0.5%)
+  cut down by a Stink Bug 4 (0.4%)
+  cut down by a Ghost  4 (0.4%)
+  cut down by a Spectre 4 (0.4%)
+  cut down by a Rast   3 (0.3%)
+  cut down by a Undead 3 (0.3%)
+  cut down by a Bones  3 (0.3%)
+  cut down by a Flube  3 (0.3%)
+  cut down by a Philly 2 (0.2%)
+  cut down by a Ned    2 (0.2%)
+  cut down by a Craig  2 (0.2%)
+  cut down by a Drudge 2 (0.2%)
+  cut down by a Pogo   2 (0.2%)
+  cut down by a Goblin 1 (0.1%)
+  cut down by a Floater 1 (0.1%)
+  cut down by a M&M    1 (0.1%)
+  cut down by a Stalka Beast 1 (0.1%)
+  cut down by a Shriek 1 (0.1%)
+  cut down by a Vampire 1 (0.1%)
+  eaten by their own summoning 1 (0.1%)
+  cut down by a Hobgoblin 1 (0.1%)
+
+Parley (D-15 readout — informational, not a gate):
+  attempts=1880  successes=1158 (61.6%)  failures=722  refused=0  exhausted=0
+  runs with >=1 attempt: 369 of 1000
+  SP from parley: 8063 of 209467 total SP (3.8%)
+
+Reach table (% of runs reaching floor N):
+  >=5: 55.4%  >=10: 3.8%  >=20: 0.0%  >=30: 0.0%  >=50: 0.0%
+
+Actions per floor (actions / death depth, per run):
+  min=28  p50=110  p90=141  max=230
+
+Caster-encounter rate by depth band (encounters with >=1 kit-bearing live foe):
+  1-5: 355/8858 (4.0%)
+  6-10: 106/1704 (6.2%)
+  11-20: 20/53 (37.7%)
+  21-30: 0/0 (0.0%)
+  31-50: 0/0 (0.0%)
+  51+: 0/0 (0.0%)
+
+Foe abilities (D-07 readout — informational, not a gate):
+  foeCast=1324  foeBolted=503  foeDrained=0  foeDebuffed=290  foeHealed=0  foeSummoned=0
+  heroResisted=343  heroResistFailed=881
+  ability damage: 1676 of 150438 total damage taken (1.1%)
+
+Stuck: 6 of 1000 runs hit maxActions=20000 (own bucket; excluded from depth stats)
+
+Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=1000  startDepth=1
+
+Four-band readout (BAND-01 — Filter 1-4 / Wall 5-8 / Breakaway 9-15 / Endgame 16-20; completed runs only):
+  death-depth histogram: 1:13  2:152  3:136  4:142  5:178  6:136  7:98  8:64  9:37  10:24  11:6  12:3  13:1  14:2  15:1  17:1
+  mean death depth=4.97  floors gained p50=4 mean=3.97  encounters survived mean=9.82
+  reach: >=5 55.4%  >=8 14.0%  >=9 7.5%  >=10 3.8%  >=13 0.5%  >=16 0.1%  >=20 0.0%
+  band share of deaths: Filter 1-4 44.6% | Wall 5-8 47.9% | Breakaway 9-15 7.4% | Endgame 16-20 0.1% | beyond 20 0.0%
+  top causes — Filter: cut down by a Poltergeist 83, cut down by a Shadow 48, cut down by a China Wolf 43, cut down by a Cave Bear 36, cut down by a Dante 34
+  top causes — Wall: starved in the dark 67, cut down by a Werebeast 54, cut down by a Blumble 29, undone by a trap 29, cut down by a Poltergeist 28
+  top causes — Breakaway: starved in the dark 10, cut down by a Drarl 6, cut down by a Herman 6, cut down by a Drake 5, cut down by a Ghost 4
+  top causes — Endgame: came up short on a leap 1
+
+Per-floor survival (Phase 79.2 target, user ruling 2026-09-27 — floor L is USER RULING C's floor 2L; p_L = 1 - deaths_L / reached_L; S_L = product of p_k from the start depth; stuck runs count as reached, never as deaths; deaths split combat/dot/starvation-exhaustion/other):
+  L=1  reached=1000  deaths=13 (combat 9 / dot 4 / starvation-exhaustion 0 / other 0)  p_L=98.7%  S_L=98.7%  target p_L=95.1%  target S_L=95.1%  dS=+3.6  PASS
+  L=2  reached=987  deaths=152 (combat 145 / dot 4 / starvation-exhaustion 3 / other 0)  p_L=84.6%  S_L=83.5%  target p_L=83.8%  target S_L=79.7%  dS=+3.8  PASS
+  L=3  reached=835  deaths=136 (combat 118 / dot 12 / starvation-exhaustion 6 / other 0)  p_L=83.7%  S_L=69.9%  target p_L=73.3%  target S_L=58.4%  dS=+11.5  MISS
+  L=4  reached=698  deaths=142 (combat 98 / dot 24 / starvation-exhaustion 19 / other 1)  p_L=79.7%  S_L=55.7%  target p_L=66.3%  target S_L=38.7%  dS=+17.0  MISS
+  L=5  reached=555  deaths=178 (combat 122 / dot 26 / starvation-exhaustion 30 / other 0)  p_L=67.9%  S_L=37.8%  target p_L=62.8%  target S_L=24.3%  dS=+13.5  MISS
+  L=6  reached=377  deaths=136 (combat 99 / dot 18 / starvation-exhaustion 19 / other 0)  p_L=63.9%  S_L=24.2%  target p_L=62.1%  target S_L=15.1%  dS=+9.1  MISS
+  L=7  reached=240  deaths=98 (combat 74 / dot 14 / starvation-exhaustion 10 / other 0)  p_L=59.2%  S_L=14.3%  target p_L=62.9%  target S_L=9.5%  dS=+4.8  PASS
+  L=8  reached=141  deaths=64 (combat 48 / dot 8 / starvation-exhaustion 8 / other 0)  p_L=54.6%  S_L=7.8%  target p_L=65.3%  target S_L=6.2%  dS=+1.6  PASS
+  L=9  reached=77  deaths=37 (combat 29 / dot 4 / starvation-exhaustion 4 / other 0)  p_L=51.9%  S_L=4.1%  target p_L=67.7%  target S_L=4.2%  dS=-0.1  PASS
+  L=10  reached=39  deaths=24 (combat 16 / dot 6 / starvation-exhaustion 2 / other 0)  p_L=38.5%  S_L=1.6%  target p_L=71.4%  target S_L=3.0%  dS=-1.4  PASS
+  L=11  reached=14  deaths=6 (combat 2 / dot 1 / starvation-exhaustion 3 / other 0)  p_L=57.1%  S_L=0.9%  target p_L=73.3%  target S_L=2.2%  dS=-1.3  PASS
+  L=12  reached=8  deaths=3 (combat 2 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=62.5%  S_L=0.6%  target p_L=77.3%  target S_L=1.7%  dS=-1.1  PASS
+  L=13  reached=5  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=80.0%  S_L=0.4%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=14  reached=4  deaths=2 (combat 1 / dot 0 / starvation-exhaustion 1 / other 0)  p_L=50.0%  S_L=0.2%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=15  reached=2  deaths=1 (combat 1 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=50.0%  S_L=0.1%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=16  reached=1  deaths=0 (combat 0 / dot 0 / starvation-exhaustion 0 / other 0)  p_L=100.0%  S_L=0.1%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  L=17  reached=1  deaths=1 (combat 0 / dot 1 / starvation-exhaustion 0 / other 0)  p_L=0.0%  S_L=0.0%  target p_L=n/a  target S_L=n/a  dS=n/a  tail
+  reach-20: 0.0% (band 3.0-5.0%, reported — tail)
+  verdict: floors outside the pass band: 3 (dS +11.5), 4 (dS +17.0), 5 (dS +13.5), 6 (dS +9.1)
+
+Pace (per floor reached — mean hero level / gold / AR / weapon cost / maxWP / potions; afraid triggers, died afraid):
+  L=1  n=1000  level=1.03  gold=115.94  ar=5.73  weapon=161.55  maxWP=62.94  potions=1.74  afraid=224  diedAfraid=0
+  L=2  n=987  level=1.06  gold=224.82  ar=5.42  weapon=164.26  maxWP=65.34  potions=0.96  afraid=428  diedAfraid=0
+  L=3  n=835  level=1.12  gold=379.23  ar=5.02  weapon=156.92  maxWP=68.59  potions=0.52  afraid=375  diedAfraid=4
+  L=4  n=698  level=1.16  gold=577.94  ar=4.91  weapon=165.44  maxWP=72.18  potions=0.38  afraid=311  diedAfraid=8
+  L=5  n=555  level=1.30  gold=834.94  ar=4.90  weapon=180.50  maxWP=75.59  potions=0.24  afraid=286  diedAfraid=12
+  L=6  n=377  level=1.80  gold=1179.59  ar=4.73  weapon=197.08  maxWP=82.87  potions=0.19  afraid=133  diedAfraid=7
+  L=7  n=240  level=2.17  gold=1456.85  ar=4.61  weapon=214.79  maxWP=86.22  potions=0.16  afraid=114  diedAfraid=7
+  L=8  n=141  level=2.30  gold=1749.38  ar=4.63  weapon=232.98  maxWP=89.75  potions=0.11  afraid=65  diedAfraid=2
+  L=9  n=77  level=2.49  gold=2019.29  ar=4.91  weapon=275.00  maxWP=97.52  potions=0.03  afraid=42  diedAfraid=3
+  L=10  n=39  level=2.90  gold=2506.36  ar=5.10  weapon=276.28  maxWP=106.69  potions=0.03  afraid=18  diedAfraid=3
+  L=11  n=14  level=3.21  gold=3167.43  ar=6.43  weapon=298.21  maxWP=102.64  potions=0.00  afraid=3  diedAfraid=0
+  L=12  n=8  level=3.50  gold=3567.75  ar=4.00  weapon=321.88  maxWP=108.13  potions=0.00  afraid=3  diedAfraid=0
+  L=13  n=5  level=3.60  gold=4160.20  ar=5.20  weapon=425.00  maxWP=113.60  potions=0.00  afraid=3  diedAfraid=1
+  L=14  n=4  level=3.75  gold=4946.25  ar=4.00  weapon=368.75  maxWP=121.25  potions=0.00  afraid=1  diedAfraid=1
+  L=15  n=2  level=4.50  gold=8064.00  ar=5.00  weapon=362.50  maxWP=138.50  potions=0.00  afraid=0  diedAfraid=0
+  L=16  n=1  level=5.00  gold=7586.00  ar=10.00  weapon=650.00  maxWP=104.00  potions=0.00  afraid=1  diedAfraid=0
+  L=17  n=1  level=5.00  gold=7586.00  ar=10.00  weapon=650.00  maxWP=104.00  potions=0.00  afraid=0  diedAfraid=0
+
+Class identity (class pools only — Fighter = ABSORB, Thief = AVOID, Magic User = CHOOSE; race/sub cells are not targets):
+  Fighter  n=316  p50=5  reach5=56.0%  reach10=2.8%  reach20=0.0%  dmgTaken/fight=17.16  rounds/fight=5.92  foeMiss=66.3%  casts(def/off)=0/0  potions/run=1.07  backstabs/run=0.00  flees/run=2.31
+  Thief  n=362  p50=6  reach5=71.8%  reach10=7.5%  reach20=0.0%  dmgTaken/fight=11.32  rounds/fight=4.13  foeMiss=69.1%  casts(def/off)=0/0  potions/run=2.03  backstabs/run=6.41  flees/run=3.44
+  Magic User  n=322  p50=4  reach5=36.1%  reach10=0.6%  reach20=0.0%  dmgTaken/fight=15.34  rounds/fight=6.07  foeMiss=68.3%  casts(def/off)=2075/3199  potions/run=3.37  backstabs/run=0.00  flees/run=1.69
+
+Watch list (Phase 92 — TUNE-10, report only; a report, never a gate or a fit objective):
+  Pools (p50 = interpolated median death depth over completed runs):
+    ALL                  n=1000  stuck=6  p50=5  starved=105 (10.6% of deaths)  flees/run=2.52  doorSeen/run=0.01  doorEscape/run=0.06  heals/fight=0.03  attacks/fight=2.80
+    class Fighter        n=316  stuck=0  p50=5  starved=23 (7.3% of deaths)  flees/run=2.31  doorSeen/run=0  doorEscape/run=0  heals/fight=0  attacks/fight=3.10
+    class Thief          n=362  stuck=0  p50=6  starved=59 (16.3% of deaths)  flees/run=3.44  doorSeen/run=0  doorEscape/run=0  heals/fight=0  attacks/fight=2.25
+    class Magic User     n=322  stuck=6  p50=4  starved=23 (7.3% of deaths)  flees/run=1.69  doorSeen/run=0.02  doorEscape/run=0.19  heals/fight=0.11  attacks/fight=3.40
+    MU Illusionist       n=38  stuck=1  p50=4  starved=5 (13.5% of deaths)  flees/run=2.53  doorSeen/run=0.16  doorEscape/run=1.32  heals/fight=0  attacks/fight=3.64
+    MU Cleric            n=44  stuck=0  p50=4  starved=1 (2.3% of deaths)  flees/run=1.59  doorSeen/run=0  doorEscape/run=0  heals/fight=0.53  attacks/fight=9.11
+    MU Wizard            n=41  stuck=1  p50=4  starved=1 (2.5% of deaths)  flees/run=1.88  doorSeen/run=0  doorEscape/run=0  heals/fight=0.08  attacks/fight=2.65
+    MU Summoner          n=38  stuck=0  p50=3  starved=1 (2.6% of deaths)  flees/run=1.08  doorSeen/run=0  doorEscape/run=0  heals/fight=0.04  attacks/fight=2.27
+    MU other             n=161  stuck=4  p50=4  starved=15 (9.6% of deaths)  flees/run=1.62  doorSeen/run=0.01  doorEscape/run=0.06  heals/fight=0.05  attacks/fight=2.24
+    race Dwarven         n=120  stuck=0  p50=5  starved=10 (8.3% of deaths)  flees/run=2.31  doorSeen/run=0  doorEscape/run=0.01  heals/fight=0.02  attacks/fight=2.47
+    race Elven           n=137  stuck=0  p50=4  starved=16 (11.7% of deaths)  flees/run=1.92  doorSeen/run=0  doorEscape/run=0.04  heals/fight=0.02  attacks/fight=2.10
+    race Fridgian        n=123  stuck=0  p50=6  starved=13 (10.6% of deaths)  flees/run=2.99  doorSeen/run=0  doorEscape/run=0.07  heals/fight=0.04  attacks/fight=3.31
+    race Human           n=332  stuck=2  p50=5  starved=22 (6.7% of deaths)  flees/run=2.98  doorSeen/run=0.02  doorEscape/run=0.06  heals/fight=0.03  attacks/fight=3.23
+    race Troll           n=137  stuck=1  p50=5  starved=26 (19.1% of deaths)  flees/run=2.26  doorSeen/run=0.02  doorEscape/run=0.12  heals/fight=0.02  attacks/fight=2.45
+    race Wilmsry         n=151  stuck=3  p50=6  starved=18 (12.2% of deaths)  flees/run=2.10  doorSeen/run=0  doorEscape/run=0.05  heals/fight=0.02  attacks/fight=2.51
+  Starvation: 105 of 994 deaths (10.6%); campFailed/run=0  rations bought/run=0.38
+  Starvation by floor (deaths on the floor; 13 = 13 and deeper):
+    floor  1  deaths=13  starved=0  share=0.0%
+    floor  2  deaths=152  starved=3  share=2.0%
+    floor  3  deaths=136  starved=6  share=4.4%
+    floor  4  deaths=142  starved=19  share=13.4%
+    floor  5  deaths=178  starved=30  share=16.9%
+    floor  6  deaths=136  starved=19  share=14.0%
+    floor  7  deaths=98  starved=10  share=10.2%
+    floor  8  deaths=64  starved=8  share=12.5%
+    floor  9  deaths=37  starved=4  share=10.8%
+    floor 10  deaths=24  starved=2  share=8.3%
+    floor 11  deaths=6  starved=3  share=50.0%
+    floor 12  deaths=3  starved=0  share=0.0%
+    floor 13  deaths=5  starved=1  share=20.0%
+  Fridgian frenzy: runs=123  fights=1541  frenzies=3296  per fight=2.14  strikes=6490  per strike=0.51  (ruled: 0.50 on each strike action)
+  Abilities (uses, fights with a use, fights with a second use; 91.1 = a 91.1 cooldown ability):
+    battleRoar           runs=52  uses=365  fights=365  second=0  second/fight=0
+    brace                runs=64  uses=275  fights=146  second=60  second/fight=0.41
+    cutpurse             runs=118  uses=662  fights=662  second=0  second/fight=0
+    deathTouch           runs=59  uses=395  fights=395  second=0  second/fight=0
+    dirtyTrick           runs=139  uses=1090  fights=1090  second=0  second/fight=0
+    feint          91.1  runs=91  uses=1004  fights=719  second=180  second/fight=0.25
+    hamstring      91.1  runs=34  uses=257  fights=257  second=0  second/fight=0
+    kata           91.1  runs=62  uses=767  fights=458  second=155  second/fight=0.34
+    lastStand      91.1  runs=17  uses=27  fights=21  second=5  second/fight=0.24
+    mark           91.1  runs=42  uses=281  fights=281  second=0  second/fight=0
+    overheadBlow   91.1  runs=94  uses=907  fights=479  second=181  second/fight=0.38
+    poisonedEdge         runs=134  uses=1000  fights=879  second=115  second/fight=0.13
+    pommelStrike         runs=181  uses=2867  fights=1470  second=673  second/fight=0.46
+    riposte              runs=55  uses=166  fights=153  second=12  second/fight=0.08
+    secondWind     91.1  runs=69  uses=262  fights=172  second=45  second/fight=0.26
+    sidestep             runs=31  uses=100  fights=92  second=8  second/fight=0.09
+    silentStep           runs=102  uses=1018  fights=1018  second=0  second/fight=0
+    smoke                runs=98  uses=245  fights=222  second=18  second/fight=0.08
+    sweep                runs=85  uses=271  fights=232  second=29  second/fight=0.13
+    taunt                runs=57  uses=169  fights=138  second=18  second/fight=0.13
+  Joiners: runs=264  fights=2070  casts=848  casts/fight=0.41  downs=114  parley successes with a Joiner=195 of 1158  p50 with a Joiner=6
+  Stuck runs: 6 of 1000
+
+Outcome: 994 dead, 6 stuck (hit maxActions=20000; excluded from depth stats)
+
