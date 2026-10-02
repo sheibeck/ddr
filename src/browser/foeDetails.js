@@ -87,11 +87,14 @@ export const FOE_DETAILS_COPY = deepFreeze({
   // (src/browser/rollOdds.js), never a restated formula. Replaces the old
   // static `toHit` defence label above.
   oddsYou: "You hit it on {range}",
+  // Phase 92.3 (user ruling 2026-10-02): a helpless foe (frozen, stunned, held, stopped, asleep, dozing) is hit by melee with no roll.
+  oddsYouAuto: "You hit it automatically",
   oddsUntouchable: "You cannot touch it",
   oddsIt: "it hits you on {range}",
   // Phase 74: the effect clause a to-hit-moving foe condition adds to its
   // long-press effect line, stated from the player's side.
   effectYou: "you hit it on {range}",
+  effectYouAuto: "you hit it automatically",
   effectIt: "it hits you only on {range}",
   // Phase 77 (CMBUI-13): a chip that NARROWS the hero's own odds (a foe's
   // fumbled Mirror Self caps every strike at the top face).
@@ -239,7 +242,7 @@ function oddsLine(foe, sp, state) {
   return safe(() => {
     if (!state || typeof state.c !== "object" || state.c === null) return null;
     const hero = heroHitOddsVs(state, foe);
-    const parts = [hero.untouchable ? C.oddsUntouchable : fill(C.oddsYou, { range: hero.text })];
+    const parts = [hero.untouchable ? C.oddsUntouchable : hero.auto ? C.oddsYouAuto : fill(C.oddsYou, { range: hero.text })];
     if (!rd(sp, "never_melee")) {
       parts.push(fill(C.oddsIt, { range: foeHitOddsVs(state, foe).text }));
     }
@@ -334,7 +337,9 @@ function resistLine(foe, type, name, state) {
 // Shielded, Bubbled, Rebound, Strong, Regenerating and Senses move no
 // to-hit roll and stay null.
 // Phase 90 plan 05: a Doze's sleepers carry their own `dozing` chip, floored the same way.
-const EFFECT_YOU_KEYS = new Set(["asleep", "dozing", "held"]);
+// Phase 92.3 (user ruling 2026-10-02): every chip that makes a foe skip its turn says the hero's melee hits it
+// automatically, so the Stunned (Pommel Strike) and Stopped (Stop Time) chips join the you-part.
+const EFFECT_YOU_KEYS = new Set(["asleep", "dozing", "held", "stunned", "stopped"]);
 const EFFECT_YOU_ONLY_KEYS = new Set(["mirror"]);
 const EFFECT_IT_KEYS = new Set(["blind", "weakened"]);
 
@@ -356,7 +361,10 @@ export function foeConditionEffect(chip, foe, state) {
   return safe(() => {
     if (!chip || typeof chip !== "object") return null;
     if (!state || typeof state.c !== "object" || state.c === null) return null;
-    if (EFFECT_YOU_KEYS.has(chip.key)) return fill(C.effectYou, { range: heroHitOddsVs(state, foe).text });
+    if (EFFECT_YOU_KEYS.has(chip.key)) {
+      const hero = heroHitOddsVs(state, foe);
+      return hero.auto ? C.effectYouAuto : fill(C.effectYou, { range: hero.text });
+    }
     if (EFFECT_YOU_ONLY_KEYS.has(chip.key)) return fill(C.effectYouOnly, { range: heroHitOddsVs(state, foe).text });
     if (EFFECT_IT_KEYS.has(chip.key)) return fill(C.effectIt, { range: foeHitOddsVs(state, foe).plainText });
     return null;

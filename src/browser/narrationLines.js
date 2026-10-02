@@ -766,7 +766,9 @@ function yourRound(events, consumed) {
     const anyCrit = hits.some((x) => x.e.critical);
     if (K > 0) {
       const incl = railIncl({ might: hits.reduce((n, x) => n + (x.e.might > 0 ? x.e.might : 0), 0), strength: hits.reduce((n, x) => n + (x.e.strength > 0 ? x.e.strength : 0), 0) });
-      let text = `You hit ${target} ${K} of ${M} (${sum}${incl ? `, ${incl}` : ""})`;
+      // Phase 92.3: every landed blow was at a helpless foe (a Doze wakes on the first hit, so a mixed round says nothing).
+      const noDodge = hits.every((x) => x.e.helpless) ? ", it cannot dodge" : "";
+      let text = `You hit ${target} ${K} of ${M} (${sum}${incl ? `, ${incl}` : ""}${noDodge})`;
       if (anyCrit) {
         text += CRIT_SUFFIX;
         const firstCrit = hits.find((x) => x.e.critical && CRIT_BY_TEXT[x.e.critBy]);
@@ -1682,7 +1684,9 @@ export const LINE_FOR = {
     const crit = e?.critical ? " · CRIT" : "";
     const reason = e?.critical && CRIT_BY_TEXT[e?.critBy] ? ` (${CRIT_BY_TEXT[e.critBy]})` : "";
     const incl = railIncl(e);
-    return { text: `You hit ${e?.target ?? "it"} (${e?.dmg ?? 0}${incl ? `, ${incl}` : ""})${crit}${reason}`, tone: "hit", priority: PRIORITY.you };
+    // Phase 92.3 (user ruling 2026-10-02): a blow at a helpless foe hits automatically; `helpless` is set only then.
+    const noDodge = e?.helpless ? ", it cannot dodge" : "";
+    return { text: `You hit ${e?.target ?? "it"} (${e?.dmg ?? 0}${incl ? `, ${incl}` : ""}${noDodge})${crit}${reason}`, tone: "hit", priority: PRIORITY.you };
   },
   foeRevived: (e) => ({ text: `${e?.name ?? "It"} gets back up.`, tone: "dodge", priority: PRIORITY.them }),
   foeKilled: (e) => ({ text: `${e?.name ?? "It"} falls (+${e?.spGained ?? 0} XP).`, tone: "hit", priority: PRIORITY.you }),
@@ -1780,7 +1784,9 @@ export const LINE_FOR = {
     const who = e?.name ?? "Your ally";
     const t = e?.target ?? "it";
     const via = e?.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : "";
-    const text = e?.backstab ? `${who} backstabs ${t} (${e?.dmg ?? 0})` : `${who} lands a hit on ${t} (${e?.dmg ?? 0}).${e?.crit ? CRIT_SUFFIX : ""}${via}`;
+    // Phase 92.3 (user ruling 2026-10-02): a Joiner's blow at a helpless foe hits automatically; `helpless` is set only then.
+    const noDodge = e?.helpless ? ", it cannot dodge" : "";
+    const text = e?.backstab ? `${who} backstabs ${t} (${e?.dmg ?? 0}${noDodge})` : `${who} lands a hit on ${t} (${e?.dmg ?? 0}${noDodge}).${e?.crit ? CRIT_SUFFIX : ""}${via}`;
     return { text, tone: "hit", priority: PRIORITY.feature };
   },
   allyMissed: (e) => ({

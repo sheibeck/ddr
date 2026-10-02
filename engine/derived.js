@@ -2338,6 +2338,55 @@ export function heroStrikeFacesVs(state, t) {
 }
 
 /**
+ * foeHelplessKind(t) — Phase 92.3 (user ruling 2026-10-02: "When attacking an
+ * enemy that is frozen, stunned, sleeping, etc, should be an automatic hit with
+ * melee. If it can't move you can hit it."): the name of the condition that
+ * makes the foe `t` skip its turn RIGHT NOW, or null when it acts. This is the
+ * ONE list of helpless conditions, read in the same order engine/combat.js#
+ * foeTurn skips them:
+ *   - `held` (holdFoe, a hold with turns left): "frozen" (a Freeze's or Ice's
+ *     freeze), "stunned" (the Stun spell's hold) or "stopped" (Stop Time's
+ *     hold, kind "time");
+ *   - `asleep > 0`: "dozing" (Doze, a hit wakes it) or "asleep" (Noxious
+ *     Vapor, Insane's nap, a staff's gas, a song);
+ *   - `stunned` (Pommel Strike's one lost turn): "stunned".
+ * Not helpless: Senseless / Duplicate Foe (the foe still takes its turn, at
+ * its own side), Stupidity and blindness (it still swings), a foe that has
+ * only been weakened or frozen by an old petrify mark (that foe is dead).
+ * Pure, zero rng, never mutates `t`.
+ */
+export function foeHelplessKind(t) {
+  if (!t || typeof t !== "object") return null;
+  if (t.held) return t.held.kind === "time" ? "stopped" : t.held.kind === "stunned" ? "stunned" : "frozen";
+  if (t.asleep > 0) return t.dozing ? "dozing" : "asleep";
+  if (t.stunned) return "stunned";
+  return null;
+}
+
+/**
+ * helplessAutoHit(t, faces) — Phase 92.3: the helpless condition (foeHelplessKind)
+ * that makes a hero-side MELEE blow at `t` hit automatically, or null. `faces` is
+ * the striker's winning-face count against `t` after every per-target term
+ * (targetStrikeFaces, then Afraid): 0 means the foe is untouchable to this
+ * striker (magicOnly / daggerOnly without the right weapon), and a foe that
+ * cannot be touched cannot be hit automatically either, so a zero stays a zero.
+ * Pure, zero rng.
+ */
+export function helplessAutoHit(t, faces) {
+  return faces > 0 ? foeHelplessKind(t) : null;
+}
+
+/**
+ * heroAutoHitVs(state, t) — Phase 92.3: the display twin of playerStrike's
+ * automatic hit: the helpless condition the hero's NORMAL swing at `t` would
+ * hit on without a roll right now, or null. Reads heroStrikeFacesVs, so the
+ * foe card and the engine cannot disagree. Pure, zero rng.
+ */
+export function heroAutoHitVs(state, t) {
+  return helplessAutoHit(t, heroStrikeFacesVs(state, t));
+}
+
+/**
  * foeSwingVsHero(state, f) — Phase 74 (ROLL-02): the foe `f`'s winning faces
  * and mods list for its swing against the hero, built exactly as
  * `engine/combat.js#pursuitStrike` and `foeTurn`'s hero branch build them —

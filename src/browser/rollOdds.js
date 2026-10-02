@@ -32,7 +32,7 @@
 //
 // Pure, no DOM, no rng, no mutation of state/c/foe anywhere in this file.
 
-import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
+import { toHit, afraidNeed, strikeDie, foeDie, fleeBreakdown, heroStrikeFacesVs, heroAutoHitVs, foeSwingVsHero, scrollReaderOf, scrollReadBands } from "../../engine/derived.js";
 import { hazardOdds } from "../../engine/movement.js";
 import { facesRangeText, hitRangeText, modsText, rangeText, bottomRangeText, dieText, ROLLERS } from "./rollRange.js";
 
@@ -58,11 +58,18 @@ export function heroHitOdds(state) {
  * target-trait terms (magicOnly/daggerOnly without the right weapon) zero
  * the faces out — a caller shows the foe's own rule line instead of a
  * misleading "nothing" range in that case.
+ *
+ * Phase 92.3 (user ruling 2026-10-02): `auto` is the helpless condition ("frozen",
+ * "stunned", "stopped", "asleep", "dozing", from engine/derived.js#foeHelplessKind)
+ * that makes the hero's melee hit this foe with no roll right now, else null; a
+ * caller shows "you hit it automatically" instead of the range, which is still
+ * the floored faces the engine would otherwise read.
  */
 export function heroHitOddsVs(state, foe) {
   const faces = heroStrikeFacesVs(state, foe);
   const dieN = strikeDie(state.c);
   return {
+    auto: heroAutoHitVs(state, foe),
     faces,
     dieN,
     range: facesRangeText(faces, dieN),

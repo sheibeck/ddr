@@ -456,11 +456,12 @@ test("(Phase 74) foeConditionEffect: a blind foe reads its plain range; an insul
 });
 
 // Phase 90 plan 04 (SPELL-12): a stupid foe is no longer floored at 5 faces, so its chip has no to-hit effect (before: "you hit it on 16–20").
-test("(Phase 74) foeConditionEffect: asleep reads the hero's own floored-at-5 odds (a level-1 Magic User); stupid reads nothing (Phase 90 plan 04)", () => {
+// Phase 92.3 (user ruling 2026-10-02): a sleeping foe is hit by melee with no roll, so the asleep chip says so instead of a range.
+test("(Phase 74) foeConditionEffect: asleep says the hero hits it automatically (Phase 92.3; a level-1 Magic User); stupid reads nothing (Phase 90 plan 04)", () => {
   const asleepFoe = pick("Humans", "Ned");
   asleepFoe.asleep = 2;
   const asleepState = fullHeroState(asleepFoe, { c: { cls: "Magic User", sub: "Wizard" } });
-  assert.equal(foeConditionEffect({ key: "asleep" }, asleepFoe, asleepState), "you hit it on 16–20 (d20)");
+  assert.equal(foeConditionEffect({ key: "asleep" }, asleepFoe, asleepState), "you hit it automatically");
 
   const stupidFoe = pick("Humans", "Ned");
   stupidFoe.stupid = true;
@@ -471,7 +472,7 @@ test("(Phase 74) foeConditionEffect: asleep reads the hero's own floored-at-5 od
 test("(Phase 74) foeConditionEffect: every other chip key has no to-hit effect", () => {
   const ned = pick("Humans", "Ned");
   const state = fullHeroState(ned);
-  for (const key of ["stunned", "hamstrung", "marked", "frozen", "acid", "dot", "shrunk", "fixated", "frenzied"]) {
+  for (const key of ["hamstrung", "marked", "frozen", "acid", "dot", "shrunk", "fixated", "frenzied"]) {
     assert.equal(foeConditionEffect({ key }, ned, state), null, key);
   }
 });
@@ -509,13 +510,32 @@ test("(Phase 77) a mirrored foe's long-press line gives the range you now hit it
   assert.deepEqual(effectLines(foeDetailsCard(0, state)), [`Mirrored · 2 — you hit it only on ${range}. ${mirrored.desc}`]);
 });
 
-test("(Phase 77) a held foe states the hero's floored-at-5 odds, like a dozing one (a level-1 Magic User)", () => {
+// Phase 92.3 (user ruling 2026-10-02): a held, stopped or Pommel-stunned foe is hit with no roll; the measured range is still the engine's floored faces, now unused.
+test("(Phase 77) a held foe says the hero hits it automatically, like a dozing one (Phase 92.3; a level-1 Magic User)", () => {
   const held = pick("Humans", "Ned");
   held.held = { kind: "frozen", left: 2 };
   const state = fullHeroState(held, { c: { cls: "Magic User", sub: "Wizard" } });
   const range = heroHitOddsVs(state, held).text;
   assert.equal(range, "16–20 (d20)");
-  assert.equal(foeConditionEffect({ key: "held" }, held, state), `you hit it on ${range}`);
+  assert.equal(heroHitOddsVs(state, held).auto, "frozen");
+  assert.equal(foeConditionEffect({ key: "held" }, held, state), "you hit it automatically");
+});
+
+test("(Phase 92.3) the Stunned (Pommel Strike) and Stopped (Stop Time) chips say the hero hits the foe automatically; a foe that acts keeps its range", () => {
+  const stunned = pick("Humans", "Ned");
+  stunned.stunned = true;
+  const sState = fullHeroState(stunned);
+  assert.equal(heroHitOddsVs(sState, stunned).auto, "stunned");
+  assert.equal(foeConditionEffect({ key: "stunned" }, stunned, sState), "you hit it automatically");
+  const stopped = pick("Humans", "Ned");
+  stopped.held = { kind: "time", left: 2 };
+  const tState = fullHeroState(stopped);
+  assert.equal(heroHitOddsVs(tState, stopped).auto, "stopped");
+  assert.equal(foeConditionEffect({ key: "stopped" }, stopped, tState), "you hit it automatically");
+  const acting = pick("Humans", "Ned");
+  const aState = fullHeroState(acting);
+  assert.equal(heroHitOddsVs(aState, acting).auto, null);
+  assert.match(foeDetailsCard(0, aState).lines.map((l) => l.text).join(" | "), /You hit it on /);
 });
 
 test("(Phase 77) every other fumble gift has no to-hit effect and keeps '<text> — <desc>'", () => {

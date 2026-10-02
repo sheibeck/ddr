@@ -348,7 +348,8 @@ test('[hero-strike:dozing] "5 to hit a dozing creature" (p.27) — a bonus again
   assertBonus(withMod, without, { label: "hero-strike:dozing (MU)" });
 });
 
-test("[hero-strike:dozing] the same dozing floor, absorbed by a Fighter's already-5 need — OK (clamp)", () => {
+// Phase 92.3 (user ruling 2026-10-02): a dozing foe is hit by melee with no roll, so even a Fighter whose need was already 5 lands every face (the strike die is still drawn and ignored: the row is not vacuous).
+test("[hero-strike:dozing] a dozing foe is hit on every face, a Fighter included (Phase 92.3: no roll to hit a helpless foe)", () => {
   const dozing = () => {
     const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
     s.combat.foes[0].asleep = 3;
@@ -357,7 +358,8 @@ test("[hero-strike:dozing] the same dozing floor, absorbed by a Fighter's alread
   const awake = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Soldier", race: "Human" }), [NEUTRAL_FOE()]));
   const withMod = faceOdds((rng) => landed(dozing(), rng), { label: "hero-strike:dozing (Fighter)" });
   const without = faceOdds((rng) => landed(awake(), rng), { label: "hero-strike:dozing (Fighter, baseline)" });
-  assertSame(withMod, without, { label: "hero-strike:dozing (Fighter, clamp)" });
+  assertBonus(withMod, without, { label: "hero-strike:dozing (Fighter)" });
+  assert.equal(withMod.wins, withMod.n, "every face of the strike die lands on a dozing foe");
 });
 
 // Phase 90 plan 04 (SPELL-12): Stupidity no longer makes a foe easier to hit — it drops its intelligence to 1 and nothing else, so a stupid foe is hit EXACTLY like a plain one (the Phase 40 floor of 5 is gone).

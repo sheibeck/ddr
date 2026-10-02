@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, spellStrengthParts, spellStrengthBonus, strengthFields, weaponDamageParts, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, helplessAutoHit, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, spellStrengthParts, spellStrengthBonus, strengthFields, weaponDamageParts, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -865,7 +865,21 @@ export function playerStrike(state, rng, events = []) {
     // free opener.
     const subAuto = (c.sub === "Cat Burglar" || c.sub === "Ninja") && !C.opened;
     if (subAuto) C.opened = true;
-    const auto = subAuto || !!(AS && AS.autoHit);
+    // Phase 92.3 (user ruling 2026-10-02, "If it can't move you can hit it"): a
+    // blow at a HELPLESS foe (frozen, stunned, held, stopped, asleep, dozing:
+    // derived.js#foeHelplessKind, every condition that makes it skip its turn)
+    // hits automatically. Only the to-hit roll is skipped: the strike die is
+    // STILL drawn below, in the same position, and ignored (draw-and-ignore, so
+    // no later draw moves and the only drift is the blows that used to miss),
+    // and the damage is rolled as usual. A foe the striker cannot touch at all
+    // (faces 0: magicOnly / daggerOnly) is not hit automatically. The roll is
+    // not read, so the die-driven bonuses that read it (the natural best-face
+    // crit, Stealth's and the Ninja's roll crits, the best-face shatter) do not
+    // happen; the unconditional crits (the Thief's opening backstab, the
+    // Cutthroat's first blow, a forced-crit ability) are unchanged.
+    const helplessKind = helplessAutoHit(t, faces);
+    const helplessHit = helplessKind !== null;
+    const auto = subAuto || !!(AS && AS.autoHit) || helplessHit;
 
     // Phase 73 (ROLL-05): the ONE roll-high check helper reads the strike
     // die. `faces` converts to the lowest winning face via atLeastFor; the
@@ -906,7 +920,7 @@ export function playerStrike(state, rng, events = []) {
     // (`!C.opened2` here reads the SAME "is this the opener" state
     // `opening` below computes, before this call sets it) — that blow deals
     // no injury by rule, so there is nothing to shatter on.
-    if (!(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, roll, dieN, "you", rng, events)) {
+    if (!helplessHit && !(c.sub === "Con Artist" && !C.opened2) && shatterIfBest(state, t, roll, dieN, "you", rng, events)) {
       C.opened2 = true;
       continue;
     }
@@ -934,7 +948,7 @@ export function playerStrike(state, rng, events = []) {
     // face (weaponCrit(c) defaults to 1 for an unrecognized/Fists weapon, so
     // this mirrors the old `roll === 1` rule to the top face for every
     // weapon that is not one of the five precise blades).
-    let crit = roll >= atLeastFor(weaponCrit(c), dieN) && !noCrit;
+    let crit = !helplessHit && roll >= atLeastFor(weaponCrit(c), dieN) && !noCrit;
     // Phase 25 (FEED-01, additive payload): why THIS crit is a crit, so the
     // Oracle can name the reason instead of a bare "Critical!"; later
     // assignments win (most-specific reason, matching code order below).
@@ -980,7 +994,7 @@ export function playerStrike(state, rng, events = []) {
     // opener event. No rng change (crit only doubles already-rolled damage
     // that is then discarded by the bail), so determinism/parity are intact.
     if (opening && !noCrit && !heavy && c.sub !== "Con Artist") {
-      if (skill(c, "Stealth") && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN) && armorBulk(c) < 2) {
+      if (!helplessHit && skill(c, "Stealth") && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN) && armorBulk(c) < 2) {
         crit = true;
         critBy = "stealth";
         critAtLeast = atLeastFor(STEALTH_CRIT_FACES, dieN);
@@ -992,7 +1006,7 @@ export function playerStrike(state, rng, events = []) {
         events.push({ type: "backstab" });
       }
     }
-    if (c.sub === "Ninja" && !opening && roll >= atLeastFor(2, dieN)) {
+    if (c.sub === "Ninja" && !opening && roll >= atLeastFor(2, dieN) && !helplessHit) {
       crit = true;
       critBy = "ninja";
       critAtLeast = atLeastFor(2, dieN);
@@ -1077,9 +1091,10 @@ export function playerStrike(state, rng, events = []) {
         critical: crit,
         ...(crit && critBy ? { critBy } : {}),
         ...(crit && critBy && critAtLeast != null ? { critAtLeast } : {}),
-        ...(mods.length ? { mods } : {}),
+        ...(mods.length && !helplessHit ? { mods } : {}),
         ...(afraidMods.length ? { afraid: true } : {}),
         ...(auto ? { auto: true } : {}),
+        ...(helplessHit ? { helpless: helplessKind } : {}),
         ...(landed.soak ? { soak: landed.soak } : {}),
         ...(AS ? { via: AS.key } : {}),
       });
@@ -3276,7 +3291,13 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   }
   const roll = check.roll;
   const weapon = sheet.weapon;
-  const auto = !!(mod && mod.autoHit);
+  // Phase 92.3 (user ruling 2026-10-02): a Joiner's blow at a HELPLESS foe hits automatically, the hero's
+  // rule (playerStrike, derived.js#foeHelplessKind): the strike die is still drawn above and ignored, the
+  // damage is rolled as usual, and the roll-reading bonuses (the natural best-face crit, Stealth, the
+  // best-face shatter) do not happen; the Thief's opening backstab and a forced crit are unchanged.
+  const helplessKind = helplessAutoHit(t, faces);
+  const helplessHit = helplessKind !== null;
+  const auto = !!(mod && mod.autoHit) || helplessHit;
   if (!auto && !check.ok) {
     events.push({
       type: "allyMissed",
@@ -3291,7 +3312,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // Phase 72 (ROLL-01 (c)): a landed member strike on its die's best face
   // shatters a shatter-flagged foe (the Skeleton) outright — skip the
   // damage roll.
-  if (shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) {
+  if (!helplessHit && shatterIfBest(state, t, roll, dieN, ally.name, rng, events)) {
     ally.opened = true;
     return;
   }
@@ -3305,7 +3326,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   ally.opened = true;
   // Phase 73 (ROLL-05): a member's natural-best crit is the die's top face
   // (isBestFace), not a fixed "natural 1" — byte-identical odds, mirrored.
-  let crit = isBestFace(roll, dieN) && !noCrit;
+  let crit = !helplessHit && isBestFace(roll, dieN) && !noCrit;
   // Phase 73 (ROLL-05): the lowest winning face for the crit that landed —
   // only set for the die-driven crit above; backstab/a forced crit are
   // unconditional and carry no threshold of their own (reset below).
@@ -3345,7 +3366,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
   // blows never crit). A pure read of the roll already made, zero draws; the
   // doubling below is the one every crit takes (a natural crit never doubles
   // twice).
-  if (opening && !noCrit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses && !ally.senses) && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN)) {
+  if (opening && !noCrit && !helplessHit && skill(view, "Stealth") && armorBulk(view) < 2 && !(darkLimited(state) && !state.c.senses && !ally.senses) && roll >= atLeastFor(STEALTH_CRIT_FACES, dieN)) {
     crit = true;
     critAtLeast = atLeastFor(STEALTH_CRIT_FACES, dieN);
     events.push({ type: "stealthStrike", member: ally.name });
@@ -3366,6 +3387,7 @@ function memberStrike(state, ally, sheet, view, t, rng, events, mod = null) {
       ...(critAtLeast !== undefined ? { critAtLeast } : {}),
       ...(backstab ? { backstab: true } : {}),
       ...(auto ? { auto: true } : {}),
+      ...(helplessHit ? { helpless: helplessKind } : {}),
       ...(mod ? { via: mod.key } : {}),
       ...(hit.soak ? { soak: hit.soak } : {}),
     });

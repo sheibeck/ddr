@@ -281,7 +281,8 @@ const PINNED = {
   // pins` (each hashed identically twice); `save` was never run. The six other labels re-measured
   // byte-identical (none has a Fridgian hero or Joiner).
   // Phase 91.1 plan 03 (user ruling V17 B, 2026-10-01): "solo-1" re-pinned (400 actions, alive, depth 5, 9d764bd3... -> 400 actions, alive, depth 5, 4a9b62eb...): the hero is a Fridgian Court Mage and its thick hide soaks 3 from every blow now (was 2), so the first foe blows of the fight joined at action 101 (two struckByFoe) cost 1 HP less each; the run diverges there (measured against the plan base 1efa0bfc: same events, different hero hit points) and ends in the same shape (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "4a9b62ebac9e1242c91f35a3c374deb4d6bc8f3200e98b1412dd3f5142d9652b" },
+  // Phase 92.3 plan 01, ruling 2 (user 2026-10-02, melee hits a helpless foe automatically): "solo-1" re-pinned (400 actions, alive, depth 5, 4a9b62eb... -> 400 actions, alive, depth 5, f7329296...): the run lands 3 blows on a frozen foe, and at step 107 the blow that rolled 5 against 16 (a miss before) hits automatically, so the run diverges there (a per-step count of helpless hits through the bot's onStep hook; measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "f73292962a1f248cb4a2cf1841ae050c77f81f1dddc69f111395d461542b2e89" },
   // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
   // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
   // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
@@ -394,7 +395,8 @@ const PINNED = {
   // deep-8 300/false/11 -> 300/false/11 (the hash only). "solo-1", "solo-2", "solo-thief-pilfer", "party-1",
   // "party-fighter-knight" and "deep-14" re-measured byte-identical. Only these two labels were pasted, by hand,
   // from `node tools/roll-high-baseline.mjs pins` (each hashed identically twice); `save` was never run.
-  "solo-magicuser-sorcerer": { actions: 400, dead: false, depth: 4, hash: "f49b9400c6a21cc711ade269aa67dd9347ac7d00312f664a8f32be9fc13c15c5" },
+  // Phase 92.3 plan 01, ruling 2 (user 2026-10-02, melee hits a helpless foe automatically): "solo-magicuser-sorcerer" re-pinned (400 actions, alive, depth 4, f49b9400... -> 333 actions, dead, depth 3, 6b43af4c...): at step 185 the run strikes a frozen foe with a roll of 2 against 17 (a miss before) and now hits it automatically, so the run diverges there and ends dead at action 333 (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-magicuser-sorcerer": { actions: 333, dead: true, depth: 3, hash: "6b43af4c8f92de6119de9ec661f21e7a0ab800ddf6df19521371105747293f48" },
   // "party-1" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes

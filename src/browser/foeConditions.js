@@ -99,7 +99,8 @@ export const FOE_CONDITION_COPY = Object.freeze({
  * test/unit/foe-conditions.test.js, walked by test/unit/hp-not-wp.test.js. */
 export const FOE_CONDITION_DESC = Object.freeze({
   // engine/abilities.js applyPommel; engine/combat.js foeTurn skips one turn, then clears it.
-  stunned: "Seeing stars. It loses its next turn, then remembers where it is.",
+  // Phase 92.3 (user ruling 2026-10-02): every condition that makes a foe skip its turn also means your melee blows (and your Joiners') hit it automatically.
+  stunned: "Seeing stars. It loses its next turn, and your melee blows, and your Joiners', hit it automatically until then. Then it remembers where it is.",
   // Dirty Trick's blindFor counts down and restores sight.
   // VOX-05 (79-07): derived.js#foeSwingChain sets a blind foe's swing to one
   // face (its die's top face); the Blind spell sets no count, so that
@@ -112,9 +113,9 @@ export const FOE_CONDITION_DESC = Object.freeze({
   marked: "Every blow that lands on it does extra damage for the rest of the fight: the level of whoever studied it. It has been studied, and it shows.",
   // foeTurn skips and counts it down; playerStrike's need rises to 5 against a sleeping foe.
   // Phase 90 plan 05: the plain sleep (Noxious Vapor, Insane, a staff's gas, a song) is not woken by a hit.
-  asleep: "Asleep. It skips its turns until the count runs out, and it is easier to hit while it naps. A hit does not wake it.",
+  asleep: "Asleep. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps. A hit does not wake it.",
   // Phase 90 plan 05 (SPELL-11, Q3 A): engine/foeDamage.js#damageFoe wakes a dozing foe the moment it takes damage.
-  dozing: "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps, but the first hit that lands wakes it at once.",
+  dozing: "Dozing. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps, but the first hit that lands wakes it at once.",
   // Petrify's stone mark (the foe is dead by then); a foe that stands back up is cleared.
   frozen: "Frozen solid. As conditions go, this one is fairly final.",
   // foeTurn's acid tick: spell damage each round, past armour, until rounds reach 0.
@@ -141,10 +142,10 @@ export const FOE_CONDITION_DESC = Object.freeze({
   // Ice's rolled freeze, and since Phase 90 plan 05 Stun's rolled hold; the
   // foe's own turn skips run down alongside the chip's count. Nothing a blow
   // does ends it (engine/foeDamage.js never touches `held`).
-  held: "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers. Hitting it does not end the hold.",
+  held: "Held down instead of finished off: it skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically; then it recovers. Hitting it does not end the hold.",
   // Phase 90 plan 08 (SPELL-10): engine/combat.js#stopTime holds it kind "time"; the
   // same skip as any hold, and damageFoe never touches `held`, so a blow neither ends nor restarts it.
-  stopped: "Time has stopped for it: it takes no turns until the count runs out, and it is easier to hit. Hitting it does not start time again.",
+  stopped: "Time has stopped for it: it takes no turns until the count runs out, and your melee blows, and your Joiners', hit it automatically. Hitting it does not start time again.",
   // Phase 90 plan 08 (SPELL-10): engine/combat.js#resolveMisdirectedTurn reads `misdirect`
   // (Senseless: at "friends"; Duplicate Foe: at "self"); damageFoe never touches it, so a blow does not end it.
   senseless: "It cannot tell friend from furniture: every swing it takes hits another foe, never your side, and with nobody else to hit it swings at the air. Hitting it does not end this.",

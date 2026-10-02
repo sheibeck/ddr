@@ -199,7 +199,8 @@ const HERO_CLASSES = ["Fighter", "Thief", "Magic User"];
 
 const TARGET_CASES = [
   { label: "plain", foe: {} },
-  { label: "asleep", foe: { asleep: 1 } },
+  // Phase 92.3 (user ruling 2026-10-02): a sleeping foe is hit by melee with no roll, so the swing is a landed `struck`, not a miss at the floored faces.
+  { label: "asleep", foe: { asleep: 1 }, helpless: "asleep" },
   { label: "stupid", foe: { stupid: true } },
   { label: "sp.toHit 4", foe: { sp: { toHit: 4 } } },
   { label: "sp.toHit 1", foe: { sp: { toHit: 1 } } },
@@ -222,6 +223,13 @@ for (const cls of HERO_CLASSES) {
         const expectedFaces = heroStrikeFacesVs(state, foe);
         const expectedAtLeast = atLeastFor(expectedFaces, DIE_N);
         const events = playerStrike(state, fakeRng([DIE_N, ...FILL]), []);
+        if (tc.helpless) {
+          const struck = events.find((e) => e.type === "struck" && e.target === foe.name);
+          assert.ok(struck, `${label}: the draw that misses a foe that acts hits a helpless one`);
+          assert.equal(struck.helpless, tc.helpless, label);
+          assert.ok(!events.some((e) => e.type === "strikeMissed"), label);
+          return;
+        }
         const missed = events.find((e) => e.type === "strikeMissed" && e.target === foe.name);
         assert.ok(missed, `${label}: expected a strikeMissed event`);
         assert.equal(missed.dieN, DIE_N, label);

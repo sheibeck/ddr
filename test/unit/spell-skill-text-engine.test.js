@@ -43,7 +43,7 @@ import {
   foeToHitVs,
   risingResistFaces,
   strengthRoll,
-  targetStrikeFaces,
+  helplessAutoHit,
   schoolBonus,
   toHit,
   moveCost,
@@ -602,9 +602,12 @@ export const SPELL_TEXT_FACTS = {
     return [timerLeft("Enchant Character"), squaresStep("Enchant Character"), toHit(on) - toHit(off), foeToHitVs(on) - foeToHitVs(off)];
   } }],
   "Speed of Sound": [{ says: /^buff · you · for (#) squares, (#) squares per school bonus point: (#) blows every time you swing/, value: () => [timerLeft("Speed of Sound"), squaresStep("Speed of Sound"), hastedBlows()] }],
-  "Stop Time": [{ says: /stopped for (#) rounds, (#) round per school bonus point, unless it resists: .* at least the top (#) numbers of your die/, value: () => {
+  // Phase 92.3 (user ruling 2026-10-02): the text no longer states a five-numbers floor; it says a stopped foe is hit automatically (no number),
+  // which test/unit/helpless-auto-hit.test.js pins against the engine (a Stop Time hold is kind "time", the helpless kind "stopped").
+  "Stop Time": [{ says: /stopped for (#) rounds, (#) round per school bonus point, unless it resists: /, value: () => {
     const r = cast("Stop Time", { foes: 2 });
-    return [ev(r.events, "timeStopped").rounds, roundsStep(), targetStrikeFaces(r.state.c, r.foes[0], 1)];
+    assert.equal(helplessAutoHit(r.foes[0], 1), "stopped", "a foe Stop Time holds is hit automatically by melee");
+    return [ev(r.events, "timeStopped").rounds, roundsStep()];
   } }],
   Senseless: [{ says: /^control · (#) foe · loses its senses for (#) rounds, (#) round per school bonus point/, value: () => {
     assert.equal(SP("Senseless").stretch, "rounds", "Senseless stretches in rounds, through the one spellEffectRounds");

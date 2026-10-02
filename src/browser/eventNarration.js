@@ -757,6 +757,10 @@ export const EVENT_NARRATION = {
     // present; `e.afraid` appends the pulled-blow line (absent for every
     // non-afraid strike, byte-identical to before). Phase 73 (ROLL-05): the
     // range replaces the old "vs N" single number.
+    // Phase 92.3 (user ruling 2026-10-02): a blow at a helpless foe (frozen, stunned, held, stopped, asleep,
+    // dozing) hits automatically, so the line leads with that and prints no to-hit roll (the die is drawn
+    // and ignored). `helpless` is set only then, so every other struck line is byte-identical to before.
+    if (e.helpless) return `<span class="beat">${e.target ?? "It"} cannot dodge.</span> ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp${strengthIncl(e)}.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
     return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp${strengthIncl(e)}.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
@@ -894,9 +898,12 @@ export const EVENT_NARRATION = {
     const t = e.target ?? "it";
     const w = e.weapon ? ` with a ${e.weapon}` : "";
     const via = e.via && ABILITY_BY_ID[e.via] ? ` (${ABILITY_BY_ID[e.via].name})` : "";
+    // Phase 92.3 (user ruling 2026-10-02): `helpless` (a Joiner's blow at a frozen, stunned, held, stopped,
+    // asleep or dozing foe) adds the plain reason the blow could not miss; absent otherwise.
+    const noDodge = e.helpless ? ` ${t === "it" ? "It" : t} cannot dodge.` : "";
     if (e.backstab)
-      return `<span class="hit">${who} backstabs ${t}${w}</span> — <span class="roll">${e.dmg ?? 0}</span> hp. A blade in the back, as advertised.`;
-    return `${who} lands a hit on ${t}${w} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.crit ? ` <span class="hit">Critical.</span>` : ""}${via}`;
+      return `<span class="hit">${who} backstabs ${t}${w}</span> — <span class="roll">${e.dmg ?? 0}</span> hp. A blade in the back, as advertised.${noDodge}`;
+    return `${who} lands a hit on ${t}${w} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.crit ? ` <span class="hit">Critical.</span>` : ""}${via}${noDodge}`;
   },
   allyMissed: (e) =>
     e.target

@@ -237,6 +237,11 @@ const PHASE_79_TOGGLES = [
   // rendering) and these toggles reach the Strength clause, with and without the spell's d10.
   { only: ["struck", "spellHit", "earthquake", "volley"], might: 3, strength: 6 },
   { only: ["struck", "spellHit", "earthquake", "volley"], might: 3 },
+  // Phase 92.3 plan 01 (user ruling 2026-10-02: melee hits a helpless foe automatically), appended so every
+  // earlier toggle keeps its id: the shared base carries no `helpless`, so every plain struck and allyStruck
+  // line stays the default rendering, and these reach the clause a blow at a frozen, stunned, held, stopped,
+  // asleep or dozing foe adds (the event carries the condition's name; the lines do not vary by it).
+  { only: ["struck", "allyStruck"], helpless: "asleep" },
 ];
 
 /**

@@ -24,5 +24,126 @@
       "number"
     ],
     "why": "Phase 92.3 plan 01 (user ruling 2026-10-02): the blurb said Twenty-five plus the d10, but the hit points are scaled by the hero hit-point dial at the start, so a Magic User really starts at 36 to 49 (25 + d10, then x1.4). It now says so. An Elven Magic User's 60% is the Elven blurb's claim."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stunned",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Seeing stars. It loses its next turn, then remembers where it is.",
+    "after": "Seeing stars. It loses its next turn, and your melee blows, and your Joiners', hit it automatically until then. Then it remembers where it is.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the Stunned chip (Pommel Strike's lost turn) says the foe's next turn is lost and your melee blows, and your Joiners', hit it automatically until then."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.asleep",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Asleep. It skips its turns until the count runs out, and it is easier to hit while it naps. A hit does not wake it.",
+    "after": "Asleep. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps. A hit does not wake it.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the Asleep chip no longer says the foe is 'easier to hit' (it was a 5-number floor); a sleeper is hit automatically by your melee blows and your Joiners'. A hit still does not wake it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.dozing",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Dozing. It skips its turns until the count runs out, and it is easier to hit while it naps, but the first hit that lands wakes it at once.",
+    "after": "Dozing. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps, but the first hit that lands wakes it at once.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the Dozing chip says the same for a Doze: your melee blows, and your Joiners', hit it automatically, and the first hit that lands wakes it."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.held",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Held down instead of finished off: it skips its turns and is easier to hit until the count runs out, then it recovers. Hitting it does not end the hold.",
+    "after": "Held down instead of finished off: it skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically; then it recovers. Hitting it does not end the hold.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the Frozen and Stunned hold chip says your melee blows, and your Joiners', hit a held foe automatically instead of 'easier to hit'. Hitting it still does not end the hold."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stopped",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Time has stopped for it: it takes no turns until the count runs out, and it is easier to hit. Hitting it does not start time again.",
+    "after": "Time has stopped for it: it takes no turns until the count runs out, and your melee blows, and your Joiners', hit it automatically. Hitting it does not start time again.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the Stopped chip (Stop Time) says the same: no turns for the foe, and your melee blows, and your Joiners', hit it automatically."
+  },
+  {
+    "key": "content:SPELLS.Stop Time.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Stop Time",
+    "before": "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and you hit it on at least the top five numbers of your die; then time resumes, and so do they",
+    "after": "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and your melee blows, and your Joiners', hit it automatically; then time resumes, and so do they",
+    "reasons": [
+      "fact",
+      "accurate",
+      "number"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the text said you hit a stopped foe 'on at least the top five numbers of your die'; a stopped foe is now hit automatically, so the line says so and no number is left to state."
+  },
+  {
+    "key": "oracle:struck",
+    "surface": "oracle",
+    "trigger": "struck — engine/combat.js#playerStrike",
+    "before": "",
+    "after": "Viper cannot dodge. Critical! You hit Viper for 6 hp.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): a blow at a frozen, stunned, held, stopped, asleep or dozing foe hits with no roll, so the line leads with 'cannot dodge' and prints no to-hit range (the die is drawn and ignored). Only a blow with the event's `helpless` field reads this way; every other struck line is unchanged. The corpus base carries a critical blow, which a real helpless hit does not (the roll is skipped, so no natural critical; a Thief's opening backstab still does)."
+  },
+  {
+    "key": "oracle:allyStruck",
+    "surface": "oracle",
+    "trigger": "allyStruck — engine/combat.js#allyTurn; engine/combat.js#alliesTurn; engine/combat.js#memberStrike",
+    "before": "",
+    "after": "Viper lands a hit on Viper for 6 hp. Viper cannot dodge.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): a Joiner's blow at a helpless foe adds the plain reason it could not miss. Only a blow with the event's `helpless` field reads this way. The synthetic corpus event names the same creature twice; a real line names the Joiner and the foe."
+  },
+  {
+    "key": "rail:struck",
+    "surface": "rail",
+    "trigger": "struck — engine/combat.js#playerStrike",
+    "before": "",
+    "after": "You hit Viper (6, it cannot dodge) · CRIT",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the rail twin of the Oracle's 'cannot dodge': the same fact in the rail's short form, inside the damage parentheses. A grouped round (two or more blows at one foe) says it only when every landed blow was at a helpless foe. The corpus base carries a critical blow, which a real helpless hit does not."
+  },
+  {
+    "key": "rail:allyStruck",
+    "surface": "rail",
+    "trigger": "allyStruck — engine/combat.js#allyTurn; engine/combat.js#alliesTurn; engine/combat.js#memberStrike",
+    "before": "",
+    "after": "Viper lands a hit on Viper (6, it cannot dodge).",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 01 (user ruling 2026-10-02, melee hits a helpless foe automatically): the rail twin for a Joiner's blow at a helpless foe, in the same short form."
   }
 ]

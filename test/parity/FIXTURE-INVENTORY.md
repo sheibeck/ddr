@@ -8136,3 +8136,25 @@ Thief's (50 x 0.6 = 30). No chargen draw is added, removed or reordered (the Thi
 The Troll blurb, note and footer already said 75, so no Troll text changed (the engine now agrees with it). Determinism fixtures: unchanged.
 
 New probes (`test/unit/starting-hp-text.test.js`: the 143-combination truth table on the shipped dials, the registered claims, the coverage scan and the Hero-tab bar) are additions, not moves.
+
+**Predictor, ruling 2 (melee hits a helpless foe automatically; user 2026-10-02, a balance change recorded in docs/DIFFICULTY-RETUNE.md, unmeasured).** The strike die is still drawn in the same
+position and ignored (the existing auto-hit pattern), the damage dice are the ordinary ones, and no roll, derived stream or event type is added, so a seeded run moves only where a blow at a
+frozen, stunned, held, stopped, asleep or dozing foe used to miss (or used to crit on its natural best face) and everything after it. A parity fixture moves only if one of them fights such a foe
+and misses it: none does (every parity entry above passes unchanged, and so does every determinism test). `test/parity/prototype-master.js.txt` is unedited, `roll-high-baseline.mjs save` was not
+run, and `node tools/narrative-review.mjs --check` passes.
+
+**Moved (ruling 2).** Regenerated alone:
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/roll-high-state-pins.test.js` labels `solo-1` and `solo-magicuser-sorcerer` (pasted by label from `tools/roll-high-baseline.mjs pins`, measured twice; `save` never run) | `solo-1`: 400 actions, alive, depth 5, `4a9b62eb...`; `solo-magicuser-sorcerer`: 400, alive, depth 4, `f49b9400...` | `solo-1`: 400, alive, depth 5, `f7329296...`; `solo-magicuser-sorcerer`: 333, dead, depth 3, `6b43af4c...` | `solo-1` lands 3 blows on a frozen foe, the first would-miss a 5 against 16 at step 107; `solo-magicuser-sorcerer` lands one, a 2 against 17 on a frozen foe at step 185, then dies at action 333 (counted with a per-step hook on the bot's events). The other six labels, the two Thief labels re-pinned for ruling 1 included, are unchanged |
+| `test/unit/odds-helpers.test.js` "hero equivalence: <class> vs asleep" (and "(afraid)", 6 cases) | a swing at a sleeping foe is a `strikeMissed` at the floored faces | it is a landed `struck` carrying `helpless: "asleep"` | a sleeping foe is hit with no roll; the other target cases (plain, stupid, toHit caps, fast, magicOnly, daggerOnly) are unchanged |
+| `test/unit/rollDirection.test.js` "[hero-strike:dozing] ... Fighter" | the dozing floor was absorbed by a Fighter's already-5 need (same odds as awake) | a dozing foe is hit on every face of the strike die (the probed die is still drawn, so the row is not vacuous) | no roll to hit a helpless foe. The Magic User dozing row still reads as a bonus |
+| `test/unit/foeDetails.test.js` asleep and held chip effect lines; the "every other chip key" list | `you hit it on 16–20 (d20)`; `stunned` listed as having no to-hit effect | `you hit it automatically`; `stunned` and `stopped` now carry the same effect line (new test) | the chips say the hero's melee hits a helpless foe automatically; a foe that acts keeps its range |
+| `test/unit/spell-skill-text-engine.test.js` Stop Time fact | the text's "(#) numbers of your die" was bound to `targetStrikeFaces` | the number is gone from the text; the fact binds the rounds and asserts the held foe is a helpless kind | Stop Time's text says a stopped foe is hit automatically |
+| `tools/lib/event-variants.mjs` and `docs/narrative-pass/why/v-92.3-01.json` (pages regenerated) | no toggle reached a helpless blow | one appended toggle (`helpless` on `struck`, `allyStruck`); the ledger gains four new-line rows (Oracle and rail, hero and Joiner) and chains the five chip lines and the Stop Time text | keeps every earlier ledger `after` a line the game still prints; the corpus base is untouched |
+
+Unchanged on purpose: the foe's side (foes still roll to hit a held or sleeping hero or Joiner), the summoned ally's and the legacy sheet-less ally's strike (the ruling names the hero and Joiners),
+every spell's own to-hit roll, Sweep (no to-hit roll), and every shell snapshot (no rendered DOM names a helpless foe). New probes (`test/unit/helpless-auto-hit.test.js`: the one list of helpless
+conditions against `foeTurn`, the hero and Joiner strike, the draw-and-ignore draw order, the crit decision, the untouchable foe, a Doze waking on the first hit, the narration, the foe card and the
+chip and spell text) are additions, not moves.
