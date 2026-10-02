@@ -475,6 +475,17 @@ Plans:
 
 - [ ] TBD (run /gsd-plan-phase 92.3 to break down)
 
+### Phase 92.4: Experience grows with depth (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 92.3
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 92.4 to break down)
+
 ### Phase 999.1: Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
 
 > **Promoted 2026-09-22 into milestone v1.8.** Sound → AUD-01..06 (Phase 56); transitions, combat pacing and typed text → MOTION-01..05 (Phase 58); the party-marker ring → ANIM-03 (Phase 59). The rail-overlay prerequisite it names is LAYOUT-01 (Phase 57). Kept here for its planning context until v1.8 closes — not a runnable backlog item, do not queue it.
