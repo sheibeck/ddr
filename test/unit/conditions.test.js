@@ -403,8 +403,10 @@ test("conditionsOf: affliction then foeEffect then darkness — stable BAD order
 // The user's report (2026-09-25): "When I use the ability smoke, I have no
 // indication on myself or the enemies that it's active ... Abilities and
 // spells all need to have some sort of active indicator while in combat."
-// conditionsOf gains the ability/braced/inspired/insulted/selfDot/halfNext/
-// strengthBoost/fightDark/nightVision descriptors (appended — every older
+// conditionsOf gains the ability/braced/insulted/selfDot/halfNext/
+// strengthBoost/fightDark/nightVision descriptors (the Inspire chip, once between
+// braced and halfNext, was removed in Phase 91.1 plan 05, 2026-10-01: nothing wrote
+// combat.inspired) (appended — every older
 // descriptor keeps its exact shape and order) and memberConditionsOf(state,
 // i) lists a party member's own. States are built through the engine's own
 // useAbility/startCombat where they exist; otherwise the field is set exactly
@@ -509,9 +511,9 @@ test("CMBUI-13 braced: engine/abilities.js useAbility('brace') sets C.braced; th
   assert.equal(byKey(conditionsOf(state), "braced"), undefined);
 });
 
-test("CMBUI-13 inspired: engine/combat.js's level-2 song `C.inspired = 1` gives a good chip carrying its amount", () => {
-  const state = p77Fight({ combat: { inspired: 1 } });
-  assert.deepEqual(conditionsOf(state), [{ key: "inspired", polarity: "good", amount: 1 }]);
+// Phase 91.1 plan 05 (2026-10-01): the Inspire chip is gone; a stray `combat.inspired` from an old save gives no chip.
+test("CMBUI-13 inspired (removed 91.1-05): a stray combat.inspired from an old save gives no chip", () => {
+  assert.deepEqual(conditionsOf(p77Fight({ combat: { inspired: 1 } })), []);
   assert.deepEqual(conditionsOf(p77Fight({ combat: { inspired: 0 } })), []);
 });
 
@@ -573,18 +575,18 @@ test("CMBUI-13 empty: outside a fight the combat-only chips never appear, even w
   const state = p77Fight({
     dark: true,
     c: { timers: { "ability:smoke": abilityRec(2) } },
-    combat: { braced: true, inspired: 1, parleyInsulted: true, selfDot: { left: 2, by: "ice", spell: "Ice" } },
+    combat: { braced: true, parleyInsulted: true, selfDot: { left: 2, by: "ice", spell: "Ice" } },
   });
   const combat = state.combat;
   state.combat = null;
   assert.deepEqual(conditionsOf(state), []);
   state.combat = combat;
-  assert.deepEqual(keys(conditionsOf(state)), ["ability", "braced", "inspired", "fightDark", "insulted", "selfDot"]);
+  assert.deepEqual(keys(conditionsOf(state)), ["ability", "braced", "fightDark", "insulted", "selfDot"]);
   // a hero with no live effect in a fight on a lit square yields nothing.
   assert.deepEqual(conditionsOf(p77Fight()), []);
 });
 
-test("CMBUI-13 order: ability chips follow the item effects (the Strength spell's included); braced/inspired/halfNext/nightVision end the good block before itemCooldown; fightDark/insulted/selfDot end the bad block", () => {
+test("CMBUI-13 order: ability chips follow the item effects (the Strength spell's included); braced/halfNext/nightVision end the good block before itemCooldown; fightDark/insulted/selfDot end the bad block", () => {
   const state = p77Fight({
     dark: true,
     c: {
@@ -601,11 +603,11 @@ test("CMBUI-13 order: ability chips follow the item effects (the Strength spell'
       halfNext: true,
       foeEffect: { kind: "dazed", rounds: 2 },
     },
-    combat: { braced: true, inspired: 1, parleyInsulted: true, selfDot: { left: 1, by: "acid", spell: "Acid" }, afraid: 2 },
+    combat: { braced: true, parleyInsulted: true, selfDot: { left: 1, by: "acid", spell: "Acid" }, afraid: 2 },
   });
   // fightDark is absent: Night Vision holds the dark back.
   assert.deepEqual(keys(conditionsOf(state)), [
-    "haste", "strength", "ability", "might", "ward", "reveal", "braced", "inspired", "halfNext", "nightVision", "itemCooldown",
+    "haste", "strength", "ability", "might", "ward", "reveal", "braced", "halfNext", "nightVision", "itemCooldown",
     "foeEffect", "afraid", "insulted", "selfDot",
   ]);
   assert.deepEqual(conditionsOf(state), conditionsOf(state), "two calls are deep-equal");
@@ -659,7 +661,7 @@ test("CMBUI-13 purity: conditionsOf and memberConditionsOf never mutate the stat
     dark: true,
     c: { timers: { "ability:smoke": abilityRec(2), "spell:Strength": rec("squares", 10) }, halfNext: true },
     combat: {
-      braced: true, inspired: 1, parleyInsulted: true, selfDot: { left: 2, by: "ice", spell: "Ice" },
+      braced: true, parleyInsulted: true, selfDot: { left: 2, by: "ice", spell: "Ice" },
       allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30, braced: true }],
     },
     party,
@@ -686,12 +688,11 @@ test("CMBUI-13 relaunch: a live fight's hero and member chips read deep-equal af
   assert.ok(s.combat && Array.isArray(s.combat.allies) && s.combat.allies.length === 1, "the party joined the fight");
   s.c.timers = { ...(s.c.timers || {}), "ability:smoke": abilityRec(2) }; // engine/abilities.js useAbility("smoke")
   s.combat.braced = true; // engine/abilities.js useAbility("brace")
-  s.combat.inspired = 1; // engine/combat.js the level-2 song
   s.combat.selfDot = { left: 2, dmg: "1d6", by: "acid", spell: "Acid" }; // engine/scrollFumble.js
   s.party[0].timers = { ...(s.party[0].timers || {}), "ability:sidestep": abilityRec(1) }; // combat.js startMemberAbilityTimer
   const heroBefore = conditionsOf(s);
   const memberBefore = memberConditionsOf(s, 0);
-  for (const k of ["ability", "braced", "inspired", "selfDot"]) assert.ok(heroBefore.some((x) => x.key === k), `hero ${k}`);
+  for (const k of ["ability", "braced", "selfDot"]) assert.ok(heroBefore.some((x) => x.key === k), `hero ${k}`);
   assert.ok(memberBefore.some((x) => x.key === "ability" && x.ability === "sidestep"));
 
   const json = JSON.stringify(serializeRun(s));

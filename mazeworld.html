@@ -3601,7 +3601,6 @@ const CONDITION_COPY = {
   // feeds the HUD strip's generic countdown detail, as selfDot's does.
   ability: { label: "Ability", unit: "rds" },
   braced: { label: "Bracing" },
-  inspired: { label: "Inspired" },
   halfNext: { label: "Fortified" },
   nightVision: { label: "Nightsight" },
   fightDark: { label: "Dark" },
@@ -3704,7 +3703,7 @@ const CONDITION_TONE = { haste: "good", invis: "odd", acute: "good", ether: "odd
   heroOut: "bad", heroBlind: "bad", heroShrunk: "bad",
   // CMBUI-13 (Phase 77, plan 77-08): the new keys, good or bad by what they
   // do to the player.
-  ability: "good", braced: "good", inspired: "good", halfNext: "good", nightVision: "good", strength: "good", unlock: "odd", enchant: "good",
+  ability: "good", braced: "good", halfNext: "good", nightVision: "good", strength: "good", unlock: "odd", enchant: "good",
   fightDark: "bad", insulted: "bad", selfDot: "bad" };
 const CONDITION_EXPLAIN = {
   haste: "Two strikes a round while it lasts. Spend them on something that deserves it.",
@@ -3789,7 +3788,6 @@ const CONDITION_EXPLAIN = {
   // mechanical description of an ability); this sentence is its fallback.
   ability: "One of your own tricks, still working. The ability itself says what it does.",
   braced: "The next blow that lands does half damage. Planning ahead, for once.",
-  inspired: "Your song is still ringing in your ears: your own strikes get +1 to hit. The party is pretending not to have heard it.",
   halfNext: "The next blow that lands on you does half damage. The Pendant takes the other half personally.",
   nightVision: "Your own eyes see in the dark, so the dark cannot make your strikes harder to land. Everyone else is squinting.",
   fightDark: "You are fighting in the dark: every strike is harder to land and none of them can be critical. A light or Sense Presence would fix that.",
@@ -9205,7 +9203,7 @@ window.__mzClassicBoot = async function classicBoot() {
       }
       const c = after.c, snap = combatSnap || {};
       const data = {
-        outcome: events.some((e) => e.type === "beastsSoothed") ? "soothed" : "victory",
+        outcome: "victory",
         rounds: snap.lastRound || 1,
         goldGained: (c.gold || 0) - (snap.gold || 0),
         killsGained: (c.kills || 0) - (snap.kills || 0),

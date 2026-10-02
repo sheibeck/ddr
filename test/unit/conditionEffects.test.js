@@ -313,11 +313,12 @@ test("CMBUI-13 ability: the what-if never touches the caller's timers", () => {
   assert.ok(state.c.timers["ability:sidestep"]);
 });
 
-test("CMBUI-13 inspired: the song's to-hit plus, with the range it gives and the range without it", () => {
+// Phase 91.1 plan 05 (2026-10-01): the Inspire chip is removed (nothing wrote combat.inspired since 91-06). This case used to pin
+// "+1 to hit (15–20 instead of 16–20)"; it now pins that a stray inspired descriptor reads null and a stray field moves no roll.
+test("CMBUI-13 inspired (removed 91.1-05): a stray inspired descriptor reads null and a stray combat.inspired adds nothing to toHit", () => {
   const state = inFight({ combat: { inspired: 1 } });
-  const text = conditionEffectText({ key: "inspired", polarity: "good", amount: 1 }, state);
-  assert.equal(text, "+1 to hit (15–20 instead of 16–20)");
-  assert.equal(toHit(state), toHit({ ...state, combat: { ...state.combat, inspired: 0 } }) + 1);
+  assert.equal(conditionEffectText({ key: "inspired", polarity: "good", amount: 1 }, state), null);
+  assert.equal(toHit(state), toHit({ ...state, combat: { ...state.combat, inspired: 0 } }));
 });
 
 test("CMBUI-13 fightDark: the dark cap's to-hit change; nightVision: the to-hit it saves", () => {
@@ -356,7 +357,6 @@ test("CMBUI-13 formatting: every lead uses U+2212 for a minus and U+2013 for a r
   const texts = [
     conditionEffectText({ key: "fightDark" }, inFight({ floor: { dark: true } })),
     conditionEffectText({ key: "afraid", remaining: 2 }, fixedState({ combat: { afraid: 2 } })),
-    conditionEffectText({ key: "inspired", amount: 1 }, inFight({ combat: { inspired: 1 } })),
   ];
   for (const t of texts) {
     assert.ok(typeof t === "string" && t.includes(" instead of "), t);
@@ -364,7 +364,7 @@ test("CMBUI-13 formatting: every lead uses U+2212 for a minus and U+2013 for a r
     assert.ok(/\d–\d/.test(t), `an en-dash range in "${t}"`);
   }
   assert.ok(texts[0].startsWith("−") && texts[1].startsWith("−"));
-  for (const key of ["ability", "inspired", "fightDark", "nightVision"]) {
+  for (const key of ["ability", "fightDark", "nightVision"]) {
     assert.doesNotThrow(() => conditionEffectText({ key }, { c: {} }));
     assert.equal(conditionEffectText({ key }, null), null);
     assert.equal(conditionEffectText({ key, ability: 7 }, { c: { timers: "x" } }), null);
@@ -372,7 +372,8 @@ test("CMBUI-13 formatting: every lead uses U+2212 for a minus and U+2013 for a r
 });
 
 test("CMBUI-13 WHAT_IF: the new keys sit in the one what-if map beside the Phase 74/75.1 keys", () => {
-  for (const key of ["afraid", "foeEffect", "darkness", "mirror", "senses", "heroBlind", "ability", "inspired", "fightDark", "nightVision"]) {
+  for (const key of ["afraid", "foeEffect", "darkness", "mirror", "senses", "heroBlind", "ability", "fightDark", "nightVision"]) {
     assert.equal(typeof WHAT_IF[key], "function", key);
   }
+  assert.equal("inspired" in WHAT_IF, false, "the Inspire entry was removed in 91.1-05");
 });

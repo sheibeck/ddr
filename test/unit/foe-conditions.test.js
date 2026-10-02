@@ -441,7 +441,6 @@ const NOT_A_CONDITION = Object.freeze({
   foeToHitPenalty: "the to-hit half of Weaken, shown by the Weakened chip",
   afraid: "the HERO's fear, not a foe condition",
   braced: "the hero's Brace stance",
-  inspired: "the hero's Inspire, a hero buff",
   abilityStrike: "the hero's pending ability strike for this round",
   ally: "the hero's summoned ally",
   allies: "the party members' combat sheets",

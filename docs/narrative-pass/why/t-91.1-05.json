@@ -1,0 +1,14 @@
+[
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "a hero condition chip's explanation: mazeworld.html#CONDITION_EXPLAIN (the Inspire chip, removed by plan 91.1-05)",
+    "before": "Your song is still ringing in your ears: your own strikes get +1 to hit. The party is pretending not to have heard it.",
+    "after": "",
+    "reasons": [
+      "fact",
+      "hygiene"
+    ],
+    "why": "Dead code cleanup (docs/VALUE-LEDGER.md K19, plan 91.1-05): nothing has written the Bard's Inspire to-hit term since the level-2 song was retired in Phase 91 plan 06, so the chip, its label, its tone and this explanation could never show. Removed; no roll moves."
+  }
+]

@@ -778,7 +778,7 @@ export function playerStrike(state, rng, events = []) {
   }
 
   // CMBUI-13 (Phase 77, plan 77-07, "Dazed honesty"): the live condition
-  // terms toHit applied (inspired, dazed, the dark cap, hero Blind), named
+  // terms toHit applied (dazed, the dark cap, hero Blind), named
   // once per strike from the same state toHit reads. Payload only: the
   // faces below still come from toHit itself, so no roll, face or draw
   // changes. The frenzy second swing (toHit − 1) reads the same entries.

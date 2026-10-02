@@ -144,7 +144,6 @@ export const HERO_CONDITIONS = Object.freeze(
     { key: "foresight", fields: ["foresight"], fight: false, lasts: "nextFight", source: "spell" }, // Sense Danger: waiting for the next fight.
     { key: "reveal", fields: ["timers"], timers: ["spell:reveal"], fight: false, lasts: "untilMove", source: "spell" }, // Map the Floor: the map only, until the next step (Plan 76-06).
     { key: "braced", fields: ["braced"], fight: true, lasts: "nextBlow", source: "ability", sourceName: ABILITY_BY_ID.brace?.name }, // Brace: halves the next blow.
-    { key: "inspired", fields: ["inspired"], fight: true, lasts: "fight", source: "song" }, // the level-2 song: one more face on the hero's own strikes (toHit).
     { key: "halfNext", fields: ["halfNext"], fight: true, lasts: "nextBlow", source: "item", sourceName: "Pendant of Fortitude" }, // halves the next blow.
     { key: "nightVision", fields: ["skills"], fight: true, lasts: "fight", source: "trait" }, // Night Vision: holds the dark cap back.
     { key: "itemCooldown", fields: ["timers"], timers: ["item:*"], fight: false, lasts: "squares", source: "item" }, // an item recharging: nothing live.

@@ -40,7 +40,7 @@ import { facesRangeText, hitRangeText, modsText, rangeText, bottomRangeText, die
  * heroHitOdds(state) — the hero's own "right now" to-hit range on their
  * current strike die: `afraidNeed(state, toHit(state))` winning faces on
  * `strikeDie(state.c)`, formatted "16–20 (d20)". Includes every term
- * toHit/afraidNeed already apply (dazed, dark cap, inspired, the weapon's
+ * toHit/afraidNeed already apply (dazed, dark cap, the weapon's
  * own need modifier, and the live Afraid penalty) — this is the value the
  * hero sheet's TO HIT row and the combat menu's STRIKE row both read, so the
  * two surfaces can never disagree.

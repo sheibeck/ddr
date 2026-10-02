@@ -212,24 +212,9 @@ test('[hero-strike:cleric] "Clerics roll 4, not 3", engine/derived.js#classNeed'
   assertBonus(withMod, without, { label: "hero-strike:cleric" });
 });
 
-test('[hero-strike:inspired] a Bard\'s own song, "+1 to hit this fight" (content/abilities-adjacent combat.js#SONGS), in the light', () => {
-  const inspired = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Bard", race: "Human" }), [NEUTRAL_FOE()], { inspired: 1 }));
-  const plain = () => withClub(inCombat(heroState({ cls: "Fighter", sub: "Bard", race: "Human" }), [NEUTRAL_FOE()]));
-  const withMod = faceOdds((rng) => landed(inspired(), rng), { label: "hero-strike:inspired (light)" });
-  const without = faceOdds((rng) => landed(plain(), rng), { label: "hero-strike:inspired (light, baseline)" });
-  assertBonus(withMod, without, { label: "hero-strike:inspired (light)" });
-});
-
-test("[hero-strike:inspired] the same +1 song, absorbed by the dark cap — OK (clamp), never worsening", () => {
-  const dark = (inspiredAmt) => {
-    const s = withClub(inCombat(heroState({ cls: "Fighter", sub: "Bard", race: "Human" }), [NEUTRAL_FOE()], inspiredAmt ? { inspired: inspiredAmt } : {}));
-    s.floor.g[s.floor.py][s.floor.px].dark = true;
-    return s;
-  };
-  const withMod = faceOdds((rng) => landed(dark(1), rng), { label: "hero-strike:inspired (dark)" });
-  const without = faceOdds((rng) => landed(dark(0), rng), { label: "hero-strike:inspired (dark, baseline)" });
-  assertBonus(withMod, without, { strict: false, label: "hero-strike:inspired (dark, clamp)" });
-});
+// Phase 91.1 plan 05 (2026-10-01): the two `[hero-strike:inspired]` rows are removed with the dead Inspire term (nothing wrote
+// combat.inspired since 91-06; engine/derived.js#toHit no longer reads it). Their ledger row left docs/ROLL-LEDGER.md in the same commit;
+// test/unit/value-cleanup.test.js pins that a stray combat.inspired moves no roll.
 
 test('[hero-strike:weapon-light] "a light weapon\'s bonus" (content/weapons.js header) — Rapier (need +1) vs Club (need 0)', () => {
   const light = () => {

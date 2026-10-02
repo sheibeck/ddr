@@ -16,7 +16,7 @@
 //
 // This design is also the hook Phase 77 (CMBUI-13) used: plan 77-03 added
 // its keys to WHAT_IF as planned (ability — Smoke/Sidestep/Battle Roar/
-// Riposte/Taunt — inspired, fightDark and nightVision) rather than a second
+// Riposte/Taunt — fightDark and nightVision; the Inspire chip left in 91.1-05) rather than a second
 // what-if map, and the to-hit lead now names both ranges, CONTEXT's Dazed
 // honesty shape: "−2 to hit (18–20 instead of 16–20)".
 //
@@ -134,7 +134,6 @@ function abilityWhatIf(state, cn) {
  *     — CMBUI-13 (Phase 77); Riposte and Taunt move no roll, so they read null
  *   - enchant: the chip's own `spell:<name>` record dropped (spellSourceWhatIf) —
  *     Phase 90 plan 07; Enchant Character's +2 to hit and −2 on foes both diff
- *   - inspired: state.combat.inspired -> 0 (the Bard's level-2 song)
  *   - fightDark: c.senses -> true — Sense Presence lifts EXACTLY toHit's dark
  *     cap and nothing else this module reads, so the diff is the cap alone
  *   - nightVision: a copied c.skills without "Night Vision", so the dark cap
@@ -152,7 +151,6 @@ export const WHAT_IF = Object.freeze({
   heroBlind: (state) => (state.combat ? { ...state, combat: { ...state.combat, heroBlind: false } } : state),
   // CMBUI-13 (Phase 77, plan 77-03): the new hero chips.
   ability: (state, cn) => abilityWhatIf(state, cn),
-  inspired: (state) => (state.combat ? { ...state, combat: { ...state.combat, inspired: 0 } } : state),
   // Phase 90 plan 07 (SPELL-10): Enchant Character's own `spell:<name>` record dropped.
   enchant: (state, cn) => spellSourceWhatIf(cn && cn.source, state),
   fightDark: (state) => withC(state, { senses: true }),

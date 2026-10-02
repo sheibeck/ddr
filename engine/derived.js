@@ -956,7 +956,6 @@ export function isFlying(state) {
  * a field or moves relative to another:
  *   - ability {polarity:"good", ability:<id>, remaining:<rounds>, cadence:"rounds"} — one per live `ability:<id>` c.timers record in phase "effect" with left > 0 (Sidestep, Battle Roar, Riposte, Taunt, Smoke — engine/abilities.js DURATION_ROUNDS), insertion order, right after the live item effects; fight-only (abilityEffectActive's own test)
  *   - braced {polarity:"good"} — Brace's C.braced, until the next landed blow consumes it; fight-only; after reveal
- *   - inspired {polarity:"good", amount:<to-hit plus>} — the Bard's level-2 song, C.inspired (toHit adds it), the rest of the fight; fight-only
  *   - halfNext {polarity:"good"} — an armed Pendant of Fortitude (engine/items.js), halves the next landed blow; shows anywhere
  *   - nightVision {polarity:"good"} — a fight where inDark holds and Night Vision is the waiver (darkWaiver) holding the dark back; fight-only; ends the good block, before itemCooldown/staffCharges
  *   - fightDark {polarity:"bad"} — a fight on a dark square with toHit's dark cap live (darkLimited and no Sense Presence) and NO darkFor counter running (its `darkness` chip covers that case); fight-only
@@ -1044,12 +1043,11 @@ export function conditionsOf(state) {
   }
 
   // CMBUI-13 (Phase 77): the good effects that had no chip, appended in a
-  // fixed order before the cooldown/charges chips. braced/inspired/
+  // fixed order before the cooldown/charges chips. braced/
   // nightVision are fight-only (they live on state.combat, or only matter in
   // a fight); halfNext lives on `c` and shows anywhere.
   const inFight = !!(state && state.combat);
   if (inFight && state.combat.braced) out.push({ key: "braced", polarity: "good" });
-  if (inFight && state.combat.inspired > 0) out.push({ key: "inspired", polarity: "good", amount: state.combat.inspired });
   if (c.halfNext) out.push({ key: "halfNext", polarity: "good" });
   if (inFight && state.c && inDark(state) && darkWaiver(c) === "nightVision") out.push({ key: "nightVision", polarity: "good" });
 
@@ -1819,7 +1817,7 @@ export function gearCompareParts(c, it) {
  * strike die (Phase 73, ROLL-05: the engine reads the check roll-high via
  * `rollCheck(rng, dieN, atLeastFor(need, dieN))` — a bigger need is more
  * winning faces, always better for the roller). Reads state.c, state.combat
- * (inspired) and state.floor (darkness); ports mazeworld.html toHit() (lines
+ * and state.floor (darkness); ports mazeworld.html toHit() (lines
  * 1452-1462).
  *
  * Phase 39 (GEAR-01): the class/race/sub term is now classNeed(c) (factored
@@ -1831,7 +1829,6 @@ export function gearCompareParts(c, it) {
 export function toHit(state) {
   const c = state.c;
   let h = classNeed(c);
-  if (state.combat && state.combat.inspired) h += state.combat.inspired;
   h += eff(c, "toHit");
   h += weaponNeedMod(c);
   h = Math.max(1, h);
@@ -1862,7 +1859,6 @@ export function toHit(state) {
  * every toHit step in the SAME order and records a `{ name, delta }` entry
  * for each live CONDITION step that actually changed the running value
  * (delta = after − before, so an override records its real change):
- *   - "inspired" (+combat.inspired, before the floor),
  *   - "dazed"    (−DAZED_TO_HIT_PENALTY, floor 1),
  *   - "dark"     (the dark cap: darkLimited and no Sense Presence),
  *   - "blind"    (RULES-10 hero Blind: exactly one face).
@@ -1884,7 +1880,6 @@ export function toHitBreakdown(state) {
     return after;
   };
   let h = classNeed(c);
-  if (state.combat && state.combat.inspired) h = step("inspired", h, h + state.combat.inspired);
   h += eff(c, "toHit");
   h += weaponNeedMod(c);
   h = Math.max(1, h);
@@ -1942,7 +1937,7 @@ export function afraidDamage(state, dmg) {
  * (a count of winning faces on the strike die — Phase 73, ROLL-05, read
  * roll-high via `atLeastFor(need, dieN)`) for a PARTY MEMBER sheet (`m`), not
  * the hero. Deliberately omits every hero-only term toHit(state) reads
- * (combat.inspired, eff(c,"toHit"), the dazed/darkness overrides) — a member
+ * (eff(c,"toHit"), the dazed/darkness overrides) — a member
  * fights on its own sheet's class/race/sub alone. `?? 5` keeps the pre-25.1
  * "hit on 5" fallback for a sheet with no recognized class (mirrors
  * alliesTurn's legacy path). Pure read, no rng.

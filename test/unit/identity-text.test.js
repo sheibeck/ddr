@@ -427,12 +427,13 @@ test("numbers: class notes state the class's own level-1 range (CLASSES.toHit) i
   assert.match(CLASS_NOTE["Magic User"], /seventeen swings in twenty are decorative/);
 });
 
-test("TEXT-01 (90-12 hand-offs): the parley card, the insult chip, the Bard's song chip and the Ninja's crit line say +1 to hit and the top two numbers, never faces", () => {
+// Phase 91.1 plan 05 (2026-10-01): the Bard's song chip ("inspired") is removed with the dead Inspire term, so this hand-off keeps the insult chip and the Ninja line.
+test("TEXT-01 (90-12 hand-offs): the parley card, the insult chip and the Ninja's crit line say +1 to hit and the top two numbers, never faces", () => {
   const html = read("mazeworld.html");
   const chip = (key) => new RegExp(`^\\s*${key}: "([^"]*)"`, "m").exec(html)?.[1];
   assert.match(chip("insulted"), /^You insulted them and they took it personally: every foe gets \+1 to hit you and yours\.$/);
-  assert.match(chip("inspired"), /your own strikes get \+1 to hit/);
-  for (const key of ["insulted", "inspired"]) assert.deepEqual(faceProblems(chip(key)), [], key);
+  assert.equal(chip("inspired"), undefined, "the Inspire chip's explanation left the shell (91.1-05)");
+  assert.deepEqual(faceProblems(chip("insulted")), [], "insulted");
   const menu = stripJs(read("src/browser/combatMenu.js"));
   assert.match(menu, /every foe gets \+1 to hit you and yours until it ends/);
   const narration = stripJs(read("src/browser/eventNarration.js"));

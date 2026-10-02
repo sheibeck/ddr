@@ -7,10 +7,11 @@
 // the honesty fix end to end:
 //
 //   1. engine/derived.js#toHitBreakdown mirrors toHit step for step: its
-//      `need` equals toHit(state) over a class x race x weapon x inspired x
+//      `need` equals toHit(state) over a class x race x weapon x
 //      dazed x darkness x heroBlind matrix (the foeToHitBreakdown
 //      precedent in test/unit/feedback-payload.test.js), and its `mods`
-//      name only the live condition terms (inspired, dazed, dark, blind).
+//      name only the live condition terms (dazed, dark, blind; the Inspire term was
+//      removed in Phase 91.1 plan 05, 2026-10-01: nothing wrote combat.inspired).
 //   2. playerStrike's strikeMissed/struck `mods` carry those condition
 //      entries first, then Mirror Self, Overhead Blow and afraid; a strike
 //      with no live condition has exactly today's mods (absent when empty).
@@ -112,7 +113,7 @@ function missedStrike(sc) {
 
 // ─── 1. the breakdown matrix ──────────────────────────────────────────────
 
-const CONDITION_NAMES = new Set(["inspired", "dazed", "dark", "blind"]);
+const CONDITION_NAMES = new Set(["dazed", "dark", "blind"]);
 const TORCH_LIT = { "item:Torch": { cadence: "squares", left: 40, phase: "effect" } };
 
 const DARK_CASES = [
@@ -130,40 +131,38 @@ const DAZE_CASES = [
   { key: "weakened", c: { foeEffect: { kind: "weakened", rounds: 2 } } },
 ];
 
-test("toHitBreakdown: need equals toHit across class x race x weapon x inspired x dazed x darkness x heroBlind (and with no combat); mods name only live condition terms and account for the whole change", () => {
+test("toHitBreakdown: need equals toHit across class x race x weapon x dazed x darkness x heroBlind (and with no combat); mods name only live condition terms and account for the whole change", () => {
   let cases = 0;
   const seen = new Set();
   for (const cls of ["Fighter", "Thief", "Magic User"]) {
     for (const race of Object.keys(RACES)) {
       for (const weapon of ["Club", "Dagger", "Bastard Sword"]) {
-        for (const inspired of [0, 1]) {
-          for (const daze of DAZE_CASES) {
-            for (const dark of DARK_CASES) {
-              for (const heroBlind of [false, true]) {
-                for (const inCombat of [true, false]) {
-                  const sc = {
-                    c: { cls, race, sub: "X", weapon, ...(daze.c || {}), ...(dark.c || {}) },
-                    skills: dark.skills,
-                    dark: dark.dark,
-                    combat: { ...(inspired ? { inspired } : {}), ...(heroBlind ? { heroBlind: true } : {}) },
-                  };
-                  const state = strikeState(sc);
-                  if (!inCombat) state.combat = null;
-                  const label = `${cls}/${race}/${weapon}/insp${inspired}/${daze.key}/${dark.key}/blind${heroBlind}/combat${inCombat}`;
-                  const { need, mods } = toHitBreakdown(state);
-                  assert.equal(need, toHit(state), label);
-                  for (const m of mods) {
-                    assert.ok(CONDITION_NAMES.has(m.name), `${label}: unexpected mod name ${m.name}`);
-                    assert.notEqual(m.delta, 0, `${label}: a zero-delta entry is never recorded`);
-                    seen.add(m.name);
-                  }
-                  // The whole change the conditions made: toHit of the same
-                  // sheet with every condition stripped, plus the mods.
-                  const bare = strikeState({ c: { cls, race, sub: "X", weapon } });
-                  const deltaSum = mods.reduce((s, m) => s + m.delta, 0);
-                  assert.equal(toHit(bare) + deltaSum, need, `${label}: mods account for need − base`);
-                  cases++;
+        for (const daze of DAZE_CASES) {
+          for (const dark of DARK_CASES) {
+            for (const heroBlind of [false, true]) {
+              for (const inCombat of [true, false]) {
+                const sc = {
+                  c: { cls, race, sub: "X", weapon, ...(daze.c || {}), ...(dark.c || {}) },
+                  skills: dark.skills,
+                  dark: dark.dark,
+                  combat: { ...(heroBlind ? { heroBlind: true } : {}) },
+                };
+                const state = strikeState(sc);
+                if (!inCombat) state.combat = null;
+                const label = `${cls}/${race}/${weapon}/${daze.key}/${dark.key}/blind${heroBlind}/combat${inCombat}`;
+                const { need, mods } = toHitBreakdown(state);
+                assert.equal(need, toHit(state), label);
+                for (const m of mods) {
+                  assert.ok(CONDITION_NAMES.has(m.name), `${label}: unexpected mod name ${m.name}`);
+                  assert.notEqual(m.delta, 0, `${label}: a zero-delta entry is never recorded`);
+                  seen.add(m.name);
                 }
+                // The whole change the conditions made: toHit of the same
+                // sheet with every condition stripped, plus the mods.
+                const bare = strikeState({ c: { cls, race, sub: "X", weapon } });
+                const deltaSum = mods.reduce((s, m) => s + m.delta, 0);
+                assert.equal(toHit(bare) + deltaSum, need, `${label}: mods account for need − base`);
+                cases++;
               }
             }
           }
@@ -172,7 +171,7 @@ test("toHitBreakdown: need equals toHit across class x race x weapon x inspired 
     }
   }
   assert.ok(cases > 1000, "the matrix is not vacuous");
-  assert.deepEqual([...seen].sort(), ["blind", "dark", "dazed", "inspired"], "every condition term fires somewhere in the matrix");
+  assert.deepEqual([...seen].sort(), ["blind", "dark", "dazed"], "every condition term fires somewhere in the matrix");
 });
 
 test("DAZED_TO_HIT_PENALTY is the engine's own dazed step (2 winning faces)", () => {
@@ -182,15 +181,14 @@ test("DAZED_TO_HIT_PENALTY is the engine's own dazed step (2 winning faces)", ()
   assert.equal(toHit(plain) - toHit(dazed), DAZED_TO_HIT_PENALTY);
 });
 
-test("toHitBreakdown: each term is itemised as applied, in toHit's order (inspired, dazed, dark, blind)", () => {
-  const all = strikeState({ dark: true, c: { foeEffect: { kind: "dazed", rounds: 2 } }, combat: { inspired: 1, heroBlind: true } });
-  // Fighter 5 → inspired 6 → dazed 4 → dark cap 2 → blind 1.
+test("toHitBreakdown: each term is itemised as applied, in toHit's order (dazed, dark, blind)", () => {
+  const all = strikeState({ dark: true, c: { foeEffect: { kind: "dazed", rounds: 2 } }, combat: { heroBlind: true } });
+  // Fighter 5 → dazed 3 → dark cap 2 → blind 1. (Phase 91.1 plan 05, 2026-10-01: the Inspire term is gone, so the dazed step is -2 from 5.)
   assert.deepEqual(toHitBreakdown(all), {
     need: 1,
     mods: [
-      { name: "inspired", delta: 1 },
       { name: "dazed", delta: -2 },
-      { name: "dark", delta: -2 },
+      { name: "dark", delta: -1 },
       { name: "blind", delta: -1 },
     ],
   });
@@ -214,8 +212,7 @@ test("playerStrike: a floored daze carries the floored delta (a Magic User on a 
   assert.deepEqual(flail.mods, [{ name: "dazed", delta: -1 }]);
 });
 
-test("playerStrike: inspired, the dark cap and hero Blind each name themselves", () => {
-  assert.deepEqual(missedStrike({ combat: { inspired: 1 } }).mods, [{ name: "inspired", delta: 1 }]);
+test("playerStrike: the dark cap and hero Blind each name themselves", () => {
   assert.deepEqual(missedStrike({ dark: true }).mods, [{ name: "dark", delta: -3 }]);
   assert.deepEqual(missedStrike({ combat: { heroBlind: true } }).mods, [{ name: "blind", delta: -4 }]);
 });
@@ -228,12 +225,11 @@ test("playerStrike: a light (Night Vision) or Sense Presence lifts the dark cap,
 
 test("playerStrike: condition entries come first, then Overhead Blow, then afraid", () => {
   const e = missedStrike({
-    c: { foeEffect: { kind: "dazed", rounds: 2 } },
-    combat: { afraid: 2, inspired: 1, abilityStrike: { key: "overheadBlow", dmgMul: 2, needShift: -2 } },
+    c: { weapon: "Dagger", foeEffect: { kind: "dazed", rounds: 2 } }, // the Dagger's +1 stands in for the Inspire +1 this case used to carry (removed 91.1-05)
+    combat: { afraid: 2, abilityStrike: { key: "overheadBlow", dmgMul: 2, needShift: -2 } },
   });
-  // 5 +1 inspired = 6, −2 dazed = 4, overhead −2 = 2, afraid floors at 1 (−1).
+  // 5 +1 Dagger = 6, −2 dazed = 4, overhead −2 = 2, afraid floors at 1 (−1).
   assert.deepEqual(e.mods, [
-    { name: "inspired", delta: 1 },
     { name: "dazed", delta: -2 },
     { name: "overhead", delta: -2 },
     { name: "afraid", delta: -1 },
@@ -267,11 +263,10 @@ const STRIKE_SCENARIOS = {
   none: {},
   dazed: { c: { foeEffect: { kind: "dazed", rounds: 3 } } },
   weakened: { c: { foeEffect: { kind: "weakened", rounds: 3 } } },
-  inspired: { combat: { inspired: 1 } },
   dark: { dark: true },
   darkLit: { dark: true, skills: { "Night Vision": 1 } },
   blind: { combat: { heroBlind: true } },
-  stacked: { dark: true, c: { foeEffect: { kind: "dazed", rounds: 2 } }, combat: { inspired: 1 } },
+  stacked: { dark: true, c: { foeEffect: { kind: "dazed", rounds: 2 } } },
   afraidDazed: { c: { foeEffect: { kind: "dazed", rounds: 2 } }, combat: { afraid: 2 } },
   muFloored: { c: { cls: "Magic User", sub: "Sorcerer", foeEffect: { kind: "dazed", rounds: 2 } } },
   frenzyDazed: { c: { race: "Fridgian", foeEffect: { kind: "dazed", rounds: 3 } } },
@@ -293,11 +288,14 @@ const STRIKE_DIGESTS = {
   none: "a93fc4fe",
   dazed: "53dde3a3",
   weakened: "4a210650",
-  inspired: "9658fd58",
   dark: "939d2701",
   darkLit: "fd8ee966",
   blind: "84d1e71f",
-  stacked: "beb06a3b",
+  // Phase 91.1 plan 05 (2026-10-01, measured): the `inspired` scenario is dropped (nothing writes combat.inspired; the term is
+  // removed) and `stacked` no longer carries the stray field: beb06a3b -> 628f43c1. The dark cap absorbed the +1, so every roll,
+  // face and draw is unchanged; the digest moves only because the state it hashes no longer holds combat.inspired. The other nine
+  // digests are byte-identical. Re-recorded alone (value-cleanup.test.js pins the stray field inert).
+  stacked: "628f43c1",
   afraidDazed: "d02406de",
   muFloored: "5ba11e7b",
   // Phase 91 plan 09 (IDENT-20, measured): frenzyDazed is the one Fridgian scenario and the
