@@ -1,5 +1,6 @@
 package com.darktierstudios.delvedierepeat;
 
+import android.content.Context;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -14,12 +15,23 @@ import com.google.android.gms.games.PlayGamesSdk;
  * identity (Phase 91.2, D-02). Four methods, all of which RESOLVE and never
  * reject into the UI: init, status, signIn, serverAuthCode.
  *
- * LAZY INIT. The Play Games SDK is started by ensureInit() from the first
- * method call, never at app launch. The JS shell only calls this plugin while
- * Compete is ON, so a Compete-OFF player never starts the SDK.
- * Documented fallback (assumption A6): if lazy init proves unreliable on a
- * device, call ensureInit() from load() when the Capacitor Preferences group
- * "CapacitorStorage" holds settings with Compete ON.
+ * INIT AND THE PRIVACY GATE (Phase 92.1, BOARD-31). The Play Games SDK
+ * signs the player in as soon as it is initialized, so it must start only
+ * while Compete is ON. The manifest removes the SDK's own auto-init provider
+ * (PlayGamesInitProvider, tools:node="remove"); the SDK now starts from
+ * exactly two places, both through initSdkOnce(), which is idempotent and
+ * shared by the whole process:
+ *   1. MainActivity.onCreate, before super.onCreate, on a cold launch whose
+ *      stored settings say Compete is ON (a missing or unreadable blob is
+ *      ON, the default). Its automatic silent sign-in needs initialize to
+ *      run before the first onActivityCreated.
+ *   2. This plugin's ensureInit(), from the first init/status/signIn/
+ *      serverAuthCode call. The JS shell only calls the plugin while Compete
+ *      is ON, so a Compete turned ON mid-session starts the SDK here (the
+ *      interactive signIn then prompts the player).
+ * A Compete-OFF cold launch therefore never starts the SDK. This replaces the
+ * Phase 91.2 assumption A6 (lazy init from the first method call), which was
+ * wrong: the SDK's own provider initialized it at every launch regardless.
  *
  * SUPPRESS_GAME_PROFILE_CREATION is deliberately NOT set: a player without a
  * Play Games profile should be able to make one at sign-in.
@@ -33,14 +45,24 @@ import com.google.android.gms.games.PlayGamesSdk;
 @CapacitorPlugin(name = "PlayIdentity")
 public class PlayIdentityPlugin extends Plugin {
 
-    private boolean sdkInitialized = false;
+    /** Process-wide: MainActivity and this plugin share one initialize. */
+    private static boolean sdkInitialized = false;
 
-    /** Starts the Play Games SDK once. Throws only if the SDK itself does. */
-    private synchronized void ensureInit() {
+    /**
+     * Starts the Play Games SDK once per process, from whichever caller gets
+     * here first (MainActivity on a Compete-ON cold launch, or the plugin).
+     * Throws only if the SDK itself does; the flag is raised only after
+     * initialize returned, so a failed start can be retried.
+     */
+    static synchronized void initSdkOnce(Context context) {
         if (!sdkInitialized) {
-            PlayGamesSdk.initialize(getContext());
+            PlayGamesSdk.initialize(context.getApplicationContext());
             sdkInitialized = true;
         }
+    }
+
+    private void ensureInit() {
+        initSdkOnce(getContext());
     }
 
     private static JSObject failure(String reason) {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Phase 80 (DROID-03): declaring the app a game (the appCategory
          attribute below, value "game") keeps Android 16 (targetSdk 36)
@@ -21,6 +22,19 @@
         <meta-data
             android:name="com.google.android.gms.games.APP_ID"
             android:value="@string/game_services_project_id" />
+
+        <!-- Phase 92.1 (BOARD-31, the privacy gate): the Play Games SDK merges
+             its own PlayGamesInitProvider into the app manifest, which starts
+             the SDK (and its silent sign-in) at every process start whatever
+             the Compete setting says. Removing it is the documented route
+             (PlayGamesSdk.initialize() is needed only when the provider is
+             disabled). MainActivity.onCreate initializes the SDK itself,
+             before super.onCreate, only when the stored settings say Compete
+             is ON; PlayIdentityPlugin.init covers a Compete turned ON later. -->
+        <provider
+            android:name="com.google.android.gms.games.provider.PlayGamesInitProvider"
+            android:authorities="${applicationId}.playgamesinitprovider"
+            tools:node="remove" />
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"

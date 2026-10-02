@@ -151,7 +151,7 @@ test("DROID-02 (Task 2): AppTheme.NoActionBar sets colorPrimaryDark #1b170f and 
   assert.doesNotMatch(block[0], /android:navigationBarColor/, "navigationBarColor is deprecated on Android 15 and must not be set");
 });
 
-test("DROID-02 (Task 2): MainActivity.java only registers the PlayIdentity plugin before super.onCreate and makes no window or bar-colour call", () => {
+test("DROID-02 (Task 2): MainActivity.java registers the PlayIdentity plugin before super.onCreate and makes no window or bar-colour call", () => {
   const mainActivity = readRepoFile(
     "android/app/src/main/java/com/darktierstudios/delvedierepeat/MainActivity.java",
   );
@@ -165,7 +165,60 @@ test("DROID-02 (Task 2): MainActivity.java only registers the PlayIdentity plugi
   }
 });
 
-test("91.2-01: PlayIdentityPlugin.java is the four-method lazy plugin with the no-extra-scopes server code and no reject", () => {
+// Phase 92.1 (BOARD-31): the privacy gate. The Play Games SDK's own auto-init
+// provider signs the player in at every launch whatever Compete says, so the
+// manifest removes it and MainActivity starts the SDK itself, gated.
+
+const MAIN_ACTIVITY_PATH = "android/app/src/main/java/com/darktierstudios/delvedierepeat/MainActivity.java";
+const PLUGIN_PATH = "android/app/src/main/java/com/darktierstudios/delvedierepeat/PlayIdentityPlugin.java";
+
+/** Strip Java and XML comments so a pin cannot be satisfied by prose. */
+const stripJavaComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+const stripXmlComments = (src) => src.replace(/<!--[\s\S]*?-->/g, "");
+
+test("92.1-01: the manifest removes the Play Games SDK's auto-init provider (tools:node=remove, ${applicationId}.playgamesinitprovider)", () => {
+  const manifest = readRepoFile("android/app/src/main/AndroidManifest.xml");
+  const code = stripXmlComments(manifest);
+  assert.match(code, /<manifest[^>]*xmlns:tools="http:\/\/schemas\.android\.com\/tools"/);
+  const providers = [...code.matchAll(/<provider\b[\s\S]*?\/?>/g)].map((m) => m[0]);
+  const removal = providers.find((p) => /com\.google\.android\.gms\.games\.provider\.PlayGamesInitProvider/.test(p));
+  assert.ok(removal, "a <provider> element must name PlayGamesInitProvider");
+  assert.match(removal, /android:authorities="\$\{applicationId\}\.playgamesinitprovider"/);
+  assert.match(removal, /tools:node="remove"/);
+});
+
+test("92.1-01: MainActivity initializes the Play Games SDK before super.onCreate, only behind the stored-Compete gate", () => {
+  const code = stripJavaComments(readRepoFile(MAIN_ACTIVITY_PATH));
+  const gate = code.indexOf("if (competeIsOn(this))");
+  const init = code.indexOf("PlayIdentityPlugin.initSdkOnce(");
+  const sup = code.indexOf("super.onCreate(savedInstanceState)");
+  assert.ok(gate >= 0, "the initialize must sit behind competeIsOn(this)");
+  assert.ok(init > gate, "initSdkOnce must be inside the gate");
+  assert.ok(sup > init, "initSdkOnce must run before super.onCreate (the SDK's silent sign-in needs initialize first)");
+  // The only initialize call in the activity is through the shared helper.
+  assert.ok(!/PlayGamesSdk\.initialize\(/.test(code), "MainActivity must go through PlayIdentityPlugin.initSdkOnce, not call the SDK directly");
+  // The gate reads the Capacitor Preferences blob and treats anything but compete:false as ON.
+  assert.match(code, /getSharedPreferences\(PREFS_GROUP/);
+  assert.match(code, /PREFS_GROUP = "CapacitorStorage"/);
+  assert.match(code, /SETTINGS_KEY = "ddr\.settings\.v1"/);
+  assert.match(code, /!Boolean\.FALSE\.equals\(settings\.opt\("compete"\)\)/);
+  // A missing or unparsable blob (and any throw) is ON.
+  assert.match(code, /catch \(Throwable t\) \{\s*return true;/);
+  assert.ok(!/Log\.[a-z]\(/.test(code), "the gate never logs a stored value");
+});
+
+test("92.1-01: PlayIdentityPlugin's init is idempotent with MainActivity's (one process-wide guard) and its header no longer claims lazy init", () => {
+  const raw = readRepoFile(PLUGIN_PATH);
+  const code = stripJavaComments(raw);
+  assert.match(code, /private static boolean sdkInitialized/);
+  assert.match(code, /static synchronized void initSdkOnce\(Context context\)/);
+  assert.equal(code.split("PlayGamesSdk.initialize(").length - 1, 1, "exactly one initialize call site");
+  assert.match(code, /private void ensureInit\(\) \{\s*initSdkOnce\(getContext\(\)\);/);
+  assert.match(raw, /INIT AND THE PRIVACY GATE/);
+  assert.doesNotMatch(raw, /LAZY INIT/, "the A6 lazy-init claim is corrected");
+});
+
+test("91.2-01: PlayIdentityPlugin.java is the four-method plugin with the no-extra-scopes server code and no reject", () => {
   const plugin = readRepoFile(
     "android/app/src/main/java/com/darktierstudios/delvedierepeat/PlayIdentityPlugin.java",
   );
