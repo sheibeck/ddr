@@ -1,0 +1,4980 @@
+{
+  "meta": {
+    "tool": "tune-economy",
+    "commit": "4080ca9c",
+    "seeds": 1000,
+    "seedList": "i*7919+1",
+    "maxActions": 20000,
+    "dials": {
+      "SELL_FRACTION": {
+        "shallow": 0.5,
+        "deep": 0.125,
+        "shallowTo": 4,
+        "deepFrom": 7
+      }
+    },
+    "bot": "Bot: exploreBudget=50  maxActions=20000  party=off  flee=0.4/0.6(caster)  potion<0.6  camp<0.5  seeds=1000  startDepth=1",
+    "maxDepth": 12
+  },
+  "readout": {
+    "maxDepth": 12,
+    "runs": 1000,
+    "depths": [
+      {
+        "L": 1,
+        "runsReached": 1000,
+        "visits": {
+          "n": 85,
+          "gold": {
+            "p25": 50,
+            "p50": 52,
+            "p75": 62,
+            "p90": 163
+          },
+          "total": {
+            "p25": 1716,
+            "p50": 2734,
+            "p75": 3565
+          },
+          "share": {
+            "p25": 0.016,
+            "p50": 0.0266,
+            "p75": 0.0461
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.0309,
+          "buyOutWithSalesPct": 2.4,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 60,
+            "potions": 450,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 173,
+            "armour": 0,
+            "scroll": 0,
+            "premium": 900,
+            "rations": 135,
+            "tools": 85
+          },
+          "spentBefore": 0
+        },
+        "arrivals": {
+          "n": 1000,
+          "goldP50": 50,
+          "totalP50": 2680,
+          "shareP50": 0.0187,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.0187,
+          "buyOutWithSalesPct": 0
+        },
+        "income": {
+          "onFloor": {
+            "start": 50,
+            "chest": 42.6,
+            "parley": 2.8,
+            "tableFour": 2.8,
+            "grimoire": 5.9,
+            "off the body": 5.9,
+            "faerie": 6,
+            "parley spoils": 0.7,
+            "cutpurse": 0.2
+          },
+          "onFloorTotal": 116.9,
+          "toFloor": {
+            "start": 50,
+            "chest": 42.6,
+            "parley": 2.8,
+            "tableFour": 2.8,
+            "grimoire": 5.9,
+            "off the body": 5.9,
+            "faerie": 6,
+            "parley spoils": 0.7,
+            "cutpurse": 0.2
+          },
+          "toFloorTotal": 116.9,
+          "spentToFloor": 0.3
+        }
+      },
+      {
+        "L": 2,
+        "runsReached": 987,
+        "visits": {
+          "n": 78,
+          "gold": {
+            "p25": 62,
+            "p50": 136,
+            "p75": 258,
+            "p90": 330
+          },
+          "total": {
+            "p25": 2640,
+            "p50": 3745,
+            "p75": 5495
+          },
+          "share": {
+            "p25": 0.0173,
+            "p50": 0.0311,
+            "p75": 0.0735
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.167,
+          "buyOutWithSalesPct": 14.1,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 60,
+            "potions": 850,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 375,
+            "armour": 0,
+            "scroll": 0,
+            "premium": 1000,
+            "rations": 150,
+            "tools": 235
+          },
+          "spentBefore": 0.8
+        },
+        "arrivals": {
+          "n": 987,
+          "goldP50": 64,
+          "totalP50": 3630,
+          "shareP50": 0.0224,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.0759,
+          "buyOutWithSalesPct": 2.5
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 72.6,
+            "parley": 10.9,
+            "tableFour": 7.1,
+            "grimoire": 9,
+            "off the body": 7.8,
+            "faerie": 2.5,
+            "parley spoils": 1.2,
+            "cutpurse": 0.4
+          },
+          "onFloorTotal": 111.5,
+          "toFloor": {
+            "start": 50,
+            "chest": 115.4,
+            "parley": 13.8,
+            "tableFour": 10,
+            "grimoire": 14.9,
+            "off the body": 13.8,
+            "faerie": 8.6,
+            "parley spoils": 1.9,
+            "cutpurse": 0.6
+          },
+          "toFloorTotal": 229,
+          "spentToFloor": 4
+        }
+      },
+      {
+        "L": 3,
+        "runsReached": 835,
+        "visits": {
+          "n": 59,
+          "gold": {
+            "p25": 86,
+            "p50": 221,
+            "p75": 456,
+            "p90": 563
+          },
+          "total": {
+            "p25": 3195,
+            "p50": 3945,
+            "p75": 5523
+          },
+          "share": {
+            "p25": 0.0236,
+            "p50": 0.0515,
+            "p75": 0.097
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.3209,
+          "buyOutWithSalesPct": 10.2,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 60,
+            "potions": 900,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 438,
+            "armour": 0,
+            "scroll": 0,
+            "premium": 1050,
+            "rations": 150,
+            "tools": 235
+          },
+          "spentBefore": 2.2
+        },
+        "arrivals": {
+          "n": 835,
+          "goldP50": 184,
+          "totalP50": 3710,
+          "shareP50": 0.0442,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.283,
+          "buyOutWithSalesPct": 8.6
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 103,
+            "parley": 18.7,
+            "tableFour": 9.8,
+            "grimoire": 7.2,
+            "off the body": 6.8,
+            "faerie": 7,
+            "parley spoils": 1.6,
+            "cutpurse": 0.3
+          },
+          "onFloorTotal": 154.4,
+          "toFloor": {
+            "start": 50,
+            "chest": 224.1,
+            "parley": 33.3,
+            "tableFour": 19.9,
+            "grimoire": 22.8,
+            "off the body": 21,
+            "faerie": 15.6,
+            "parley spoils": 3.6,
+            "cutpurse": 0.9
+          },
+          "toFloorTotal": 391.2,
+          "spentToFloor": 12.1
+        }
+      },
+      {
+        "L": 4,
+        "runsReached": 698,
+        "visits": {
+          "n": 53,
+          "gold": {
+            "p25": 228,
+            "p50": 391,
+            "p75": 677,
+            "p90": 911
+          },
+          "total": {
+            "p25": 2532,
+            "p50": 3414,
+            "p75": 4600
+          },
+          "share": {
+            "p25": 0.056,
+            "p50": 0.1037,
+            "p75": 0.2229
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.6327,
+          "buyOutWithSalesPct": 26.4,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 60,
+            "potions": 630,
+            "lockpicks": 315,
+            "repair": 0,
+            "weapons": 420,
+            "armour": 0,
+            "scroll": 0,
+            "premium": 1000,
+            "rations": 126,
+            "tools": 235
+          },
+          "spentBefore": 9
+        },
+        "arrivals": {
+          "n": 698,
+          "goldP50": 318,
+          "totalP50": 3735,
+          "shareP50": 0.0764,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.489,
+          "buyOutWithSalesPct": 19.1
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 141,
+            "parley": 31.5,
+            "tableFour": 10.5,
+            "grimoire": 7.5,
+            "off the body": 6.6,
+            "faerie": 4.5,
+            "parley spoils": 1.7,
+            "cutpurse": 0.5
+          },
+          "onFloorTotal": 203.8,
+          "toFloor": {
+            "start": 50,
+            "chest": 373.6,
+            "parley": 66,
+            "tableFour": 30.5,
+            "grimoire": 30.5,
+            "off the body": 28.4,
+            "faerie": 20.6,
+            "parley spoils": 5.5,
+            "cutpurse": 1.4
+          },
+          "toFloorTotal": 606.5,
+          "spentToFloor": 28.6
+        }
+      },
+      {
+        "L": 5,
+        "runsReached": 555,
+        "visits": {
+          "n": 39,
+          "gold": {
+            "p25": 330,
+            "p50": 598,
+            "p75": 917,
+            "p90": 1686
+          },
+          "total": {
+            "p25": 3200,
+            "p50": 4215,
+            "p75": 5465
+          },
+          "share": {
+            "p25": 0.0808,
+            "p50": 0.1087,
+            "p75": 0.2297
+          },
+          "buyOutCount": 1,
+          "buyOutPct": 2.6,
+          "shareWithSalesP50": 0.4823,
+          "buyOutWithSalesPct": 12.8,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 60,
+            "potions": 1085,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 700,
+            "armour": 525,
+            "scroll": 0,
+            "premium": 1000,
+            "rations": 120,
+            "tools": 235
+          },
+          "spentBefore": 35.3
+        },
+        "arrivals": {
+          "n": 555,
+          "goldP50": 515,
+          "totalP50": 4239,
+          "shareP50": 0.1041,
+          "buyOutPct": 0.9,
+          "shareWithSalesP50": 0.461,
+          "buyOutWithSalesPct": 15.7
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 179,
+            "parley": 32.4,
+            "tableFour": 24.5,
+            "grimoire": 7.3,
+            "off the body": 8.1,
+            "faerie": 2.3,
+            "parley spoils": 2.7,
+            "cutpurse": 0.9
+          },
+          "onFloorTotal": 257.2,
+          "toFloor": {
+            "start": 50,
+            "chest": 578.4,
+            "parley": 98.4,
+            "tableFour": 53.9,
+            "grimoire": 40,
+            "off the body": 37.4,
+            "faerie": 19,
+            "parley spoils": 8.4,
+            "cutpurse": 2.3
+          },
+          "toFloorTotal": 887.8,
+          "spentToFloor": 52.9
+        }
+      },
+      {
+        "L": 6,
+        "runsReached": 377,
+        "visits": {
+          "n": 27,
+          "gold": {
+            "p25": 535,
+            "p50": 992,
+            "p75": 1317,
+            "p90": 1793
+          },
+          "total": {
+            "p25": 3286,
+            "p50": 4282,
+            "p75": 7565
+          },
+          "share": {
+            "p25": 0.1095,
+            "p50": 0.1411,
+            "p75": 0.4075
+          },
+          "buyOutCount": 1,
+          "buyOutPct": 3.7,
+          "shareWithSalesP50": 0.2919,
+          "buyOutWithSalesPct": 22.2,
+          "atBagCapPct": 3.7,
+          "groups": {
+            "food": 60,
+            "potions": 1000,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 550,
+            "armour": 375,
+            "scroll": 0,
+            "premium": 1400,
+            "rations": 189,
+            "tools": 235
+          },
+          "spentBefore": 89.3
+        },
+        "arrivals": {
+          "n": 377,
+          "goldP50": 779,
+          "totalP50": 4198,
+          "shareP50": 0.1653,
+          "buyOutPct": 1.6,
+          "shareWithSalesP50": 0.4668,
+          "buyOutWithSalesPct": 15.1
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 216.7,
+            "parley": 49.3,
+            "tableFour": 12.7,
+            "grimoire": 6.4,
+            "off the body": 8.8,
+            "faerie": 3.4,
+            "parley spoils": 3.8,
+            "cutpurse": 1.3
+          },
+          "onFloorTotal": 302.4,
+          "toFloor": {
+            "start": 50,
+            "chest": 844.4,
+            "parley": 162.3,
+            "tableFour": 73.8,
+            "grimoire": 50.5,
+            "off the body": 49.9,
+            "faerie": 24.6,
+            "parley spoils": 12.5,
+            "cutpurse": 4
+          },
+          "toFloorTotal": 1272,
+          "spentToFloor": 92.5
+        }
+      },
+      {
+        "L": 7,
+        "runsReached": 240,
+        "visits": {
+          "n": 24,
+          "gold": {
+            "p25": 710,
+            "p50": 1028,
+            "p75": 1629,
+            "p90": 2132
+          },
+          "total": {
+            "p25": 3005,
+            "p50": 3725,
+            "p75": 5995
+          },
+          "share": {
+            "p25": 0.1447,
+            "p50": 0.2427,
+            "p75": 0.4033
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.4137,
+          "buyOutWithSalesPct": 12.5,
+          "atBagCapPct": 8.3,
+          "groups": {
+            "food": 60,
+            "potions": 1085,
+            "lockpicks": 450,
+            "repair": 0,
+            "weapons": 650,
+            "armour": 375,
+            "scroll": 0,
+            "premium": 1050,
+            "rations": 120,
+            "tools": 235
+          },
+          "spentBefore": 235.6
+        },
+        "arrivals": {
+          "n": 240,
+          "goldP50": 978,
+          "totalP50": 4065,
+          "shareP50": 0.2333,
+          "buyOutPct": 4.6,
+          "shareWithSalesP50": 0.4205,
+          "buyOutWithSalesPct": 9.6
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 285.8,
+            "parley": 17.5,
+            "tableFour": 14,
+            "grimoire": 6.3,
+            "off the body": 10.1,
+            "faerie": 18.7,
+            "parley spoils": 2.8,
+            "cutpurse": 1.4
+          },
+          "onFloorTotal": 356.6,
+          "toFloor": {
+            "start": 50,
+            "chest": 1136.1,
+            "parley": 152.9,
+            "tableFour": 88.7,
+            "grimoire": 55,
+            "off the body": 65.5,
+            "faerie": 47,
+            "parley spoils": 16.1,
+            "cutpurse": 6.6
+          },
+          "toFloorTotal": 1617.9,
+          "spentToFloor": 161
+        }
+      },
+      {
+        "L": 8,
+        "runsReached": 141,
+        "visits": {
+          "n": 3,
+          "gold": {
+            "p25": 1207,
+            "p50": 2417,
+            "p75": 2774,
+            "p90": 2774
+          },
+          "total": {
+            "p25": 2973,
+            "p50": 3259,
+            "p75": 4037
+          },
+          "share": {
+            "p25": 0.3704,
+            "p50": 0.5987,
+            "p75": 0.9331
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.7335,
+          "buyOutWithSalesPct": 33.3,
+          "atBagCapPct": 66.7,
+          "groups": {
+            "food": 43,
+            "potions": 775,
+            "lockpicks": 315,
+            "repair": 0,
+            "weapons": 420,
+            "armour": 500,
+            "scroll": 0,
+            "premium": 1100,
+            "rations": 38,
+            "tools": 235
+          },
+          "spentBefore": 0
+        },
+        "arrivals": {
+          "n": 141,
+          "goldP50": 1347,
+          "totalP50": 3925,
+          "shareP50": 0.3203,
+          "buyOutPct": 3.5,
+          "shareWithSalesP50": 0.5337,
+          "buyOutWithSalesPct": 12.8
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 227.4,
+            "parley": 45.4,
+            "tableFour": 36.3,
+            "grimoire": 13.8,
+            "off the body": 10.8,
+            "faerie": 7.9,
+            "parley spoils": 3.6,
+            "cutpurse": 2.2
+          },
+          "onFloorTotal": 347.4,
+          "toFloor": {
+            "start": 50,
+            "chest": 1438.2,
+            "parley": 159.6,
+            "tableFour": 135,
+            "grimoire": 69.1,
+            "off the body": 81.4,
+            "faerie": 51.1,
+            "parley spoils": 16.8,
+            "cutpurse": 9.6
+          },
+          "toFloorTotal": 2010.8,
+          "spentToFloor": 261.5
+        }
+      },
+      {
+        "L": 9,
+        "runsReached": 77,
+        "visits": {
+          "n": 8,
+          "gold": {
+            "p25": 1032,
+            "p50": 1830,
+            "p75": 3142,
+            "p90": 4399
+          },
+          "total": {
+            "p25": 3810,
+            "p50": 4875,
+            "p75": 6810
+          },
+          "share": {
+            "p25": 0.1648,
+            "p50": 0.3353,
+            "p75": 0.605
+          },
+          "buyOutCount": 1,
+          "buyOutPct": 12.5,
+          "shareWithSalesP50": 0.432,
+          "buyOutWithSalesPct": 25,
+          "atBagCapPct": 37.5,
+          "groups": {
+            "food": 60,
+            "potions": 1150,
+            "lockpicks": 315,
+            "repair": 0,
+            "weapons": 875,
+            "armour": 0,
+            "scroll": 0,
+            "premium": 2000,
+            "rations": 150,
+            "tools": 235
+          },
+          "spentBefore": 181.9
+        },
+        "arrivals": {
+          "n": 77,
+          "goldP50": 1771,
+          "totalP50": 4525,
+          "shareP50": 0.3445,
+          "buyOutPct": 6.5,
+          "shareWithSalesP50": 0.5357,
+          "buyOutWithSalesPct": 16.9
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 221.6,
+            "parley": 0,
+            "tableFour": 18.7,
+            "grimoire": 1.9,
+            "off the body": 8.3,
+            "faerie": 0,
+            "parley spoils": 3.9,
+            "cutpurse": 2.1
+          },
+          "onFloorTotal": 256.5,
+          "toFloor": {
+            "start": 50,
+            "chest": 1755.3,
+            "parley": 145.5,
+            "tableFour": 166.2,
+            "grimoire": 77.9,
+            "off the body": 93.4,
+            "faerie": 49.9,
+            "parley spoils": 23.2,
+            "cutpurse": 13.9
+          },
+          "toFloorTotal": 2375.3,
+          "spentToFloor": 356.1
+        }
+      },
+      {
+        "L": 10,
+        "runsReached": 39,
+        "visits": {
+          "n": 2,
+          "gold": {
+            "p25": 3148,
+            "p50": 3200,
+            "p75": 3200,
+            "p90": 3200
+          },
+          "total": {
+            "p25": 3744,
+            "p50": 4053,
+            "p75": 4053
+          },
+          "share": {
+            "p25": 0.7767,
+            "p50": 0.8547,
+            "p75": 0.8547
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 1,
+          "buyOutWithSalesPct": 50,
+          "atBagCapPct": 50,
+          "groups": {
+            "food": 53,
+            "potions": 630,
+            "lockpicks": 315,
+            "repair": 0,
+            "weapons": 766,
+            "armour": 657,
+            "scroll": 630,
+            "premium": 1750,
+            "rations": 135,
+            "tools": 165
+          },
+          "spentBefore": 325
+        },
+        "arrivals": {
+          "n": 39,
+          "goldP50": 2087,
+          "totalP50": 4100,
+          "shareP50": 0.4597,
+          "buyOutPct": 12.8,
+          "shareWithSalesP50": 0.6873,
+          "buyOutWithSalesPct": 25.6
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 291.3,
+            "parley": 0,
+            "tableFour": 20.5,
+            "grimoire": 3.8,
+            "off the body": 8.9,
+            "faerie": 0,
+            "parley spoils": 7.5,
+            "cutpurse": 0.3
+          },
+          "onFloorTotal": 332.3,
+          "toFloor": {
+            "start": 50,
+            "chest": 2212.9,
+            "parley": 179.5,
+            "tableFour": 192.8,
+            "grimoire": 100,
+            "off the body": 106.9,
+            "faerie": 22.6,
+            "parley spoils": 38.3,
+            "cutpurse": 16.1
+          },
+          "toFloorTotal": 2919.1,
+          "spentToFloor": 412.6
+        }
+      },
+      {
+        "L": 11,
+        "runsReached": 14,
+        "visits": {
+          "n": 1,
+          "gold": {
+            "p25": 1431,
+            "p50": 1431,
+            "p75": 1431,
+            "p90": 1431
+          },
+          "total": {
+            "p25": 4205,
+            "p50": 4205,
+            "p75": 4205
+          },
+          "share": {
+            "p25": 0.3403,
+            "p50": 0.3403,
+            "p75": 0.3403
+          },
+          "buyOutCount": 0,
+          "buyOutPct": 0,
+          "shareWithSalesP50": 0.5246,
+          "buyOutWithSalesPct": 0,
+          "atBagCapPct": 0,
+          "groups": {
+            "food": 43,
+            "potions": 595,
+            "lockpicks": 0,
+            "repair": 0,
+            "weapons": 910,
+            "armour": 1400,
+            "scroll": 0,
+            "premium": 1050,
+            "rations": 42,
+            "tools": 165
+          },
+          "spentBefore": 396
+        },
+        "arrivals": {
+          "n": 14,
+          "goldP50": 2349,
+          "totalP50": 3845,
+          "shareP50": 0.6727,
+          "buyOutPct": 28.6,
+          "shareWithSalesP50": 0.918,
+          "buyOutWithSalesPct": 35.7
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 452.6,
+            "parley": 0,
+            "tableFour": 0,
+            "grimoire": 10.7,
+            "off the body": 2.1,
+            "faerie": 0,
+            "parley spoils": 1.4,
+            "cutpurse": 0
+          },
+          "onFloorTotal": 466.8,
+          "toFloor": {
+            "start": 50,
+            "chest": 2827.4,
+            "parley": 171.4,
+            "tableFour": 268.6,
+            "grimoire": 107.1,
+            "off the body": 129.4,
+            "faerie": 57.1,
+            "parley spoils": 37.4,
+            "cutpurse": 27.6
+          },
+          "toFloorTotal": 3676,
+          "spentToFloor": 508.8
+        }
+      },
+      {
+        "L": 12,
+        "runsReached": 8,
+        "visits": {
+          "n": 0,
+          "gold": {
+            "p25": null,
+            "p50": null,
+            "p75": null,
+            "p90": null
+          },
+          "total": {
+            "p25": null,
+            "p50": null,
+            "p75": null
+          },
+          "share": {
+            "p25": null,
+            "p50": null,
+            "p75": null
+          },
+          "buyOutCount": 0,
+          "buyOutPct": null,
+          "shareWithSalesP50": null,
+          "buyOutWithSalesPct": null,
+          "atBagCapPct": null,
+          "groups": {
+            "food": null,
+            "potions": null,
+            "lockpicks": null,
+            "repair": null,
+            "weapons": null,
+            "armour": null,
+            "scroll": null,
+            "premium": null,
+            "rations": null,
+            "tools": null
+          },
+          "spentBefore": null
+        },
+        "arrivals": {
+          "n": 8,
+          "goldP50": 3622,
+          "totalP50": 4107,
+          "shareP50": 0.7492,
+          "buyOutPct": 37.5,
+          "shareWithSalesP50": 0.8902,
+          "buyOutWithSalesPct": 37.5
+        },
+        "income": {
+          "onFloor": {
+            "start": 0,
+            "chest": 132,
+            "parley": 0,
+            "tableFour": 0,
+            "grimoire": 18.8,
+            "off the body": 1.6,
+            "faerie": 0,
+            "parley spoils": 11.8,
+            "cutpurse": 0
+          },
+          "onFloorTotal": 164.2,
+          "toFloor": {
+            "start": 50,
+            "chest": 2966,
+            "parley": 300,
+            "tableFour": 310,
+            "grimoire": 131.3,
+            "off the body": 125.1,
+            "faerie": 0,
+            "parley spoils": 75.5,
+            "cutpurse": 15.3
+          },
+          "toFloorTotal": 3973.2,
+          "spentToFloor": 405.4
+        }
+      }
+    ],
+    "deeper": {
+      "L": "13+",
+      "runsReached": 5,
+      "visits": {
+        "n": 1,
+        "gold": {
+          "p25": 6281,
+          "p50": 6281,
+          "p75": 6281,
+          "p90": 6281
+        },
+        "total": {
+          "p25": 3181,
+          "p50": 3181,
+          "p75": 3181
+        },
+        "share": {
+          "p25": 1,
+          "p50": 1,
+          "p75": 1
+        },
+        "buyOutCount": 1,
+        "buyOutPct": 100,
+        "shareWithSalesP50": 1,
+        "buyOutWithSalesPct": 100,
+        "atBagCapPct": 0,
+        "groups": {
+          "food": 31,
+          "potions": 625,
+          "lockpicks": 0,
+          "repair": 0,
+          "weapons": 525,
+          "armour": 375,
+          "scroll": 0,
+          "premium": 1375,
+          "rations": 15,
+          "tools": 235
+        },
+        "spentBefore": 0
+      },
+      "arrivals": {
+        "n": 13,
+        "goldP50": 5595,
+        "totalP50": 3131,
+        "shareP50": 1,
+        "buyOutPct": 69.2,
+        "shareWithSalesP50": 1,
+        "buyOutWithSalesPct": 69.2
+      },
+      "income": {
+        "onFloor": {
+          "start": 0,
+          "chest": 1923.2,
+          "parley": 0,
+          "tableFour": 0,
+          "grimoire": 90,
+          "off the body": 0.8,
+          "faerie": 0,
+          "parley spoils": 36.4,
+          "cutpurse": 0
+        },
+        "onFloorTotal": 2050.4,
+        "toFloor": {
+          "start": 50,
+          "chest": 4444.8,
+          "parley": 240,
+          "tableFour": 416,
+          "grimoire": 300,
+          "off the body": 93,
+          "faerie": 0,
+          "parley spoils": 130.8,
+          "cutpurse": 8.6
+        },
+        "toFloorTotal": 5683.2,
+        "spentToFloor": 493.6
+      }
+    },
+    "sources": {
+      "order": [
+        "start",
+        "chest",
+        "parley",
+        "tableFour",
+        "grimoire",
+        "off the body",
+        "faerie",
+        "parley spoils",
+        "cutpurse"
+      ],
+      "total": 940169,
+      "earned": 890169,
+      "rows": [
+        {
+          "why": "start",
+          "amt": 50000,
+          "pct": 5.3
+        },
+        {
+          "why": "chest",
+          "amt": 625784,
+          "pct": 66.6
+        },
+        {
+          "why": "parley",
+          "amt": 98400,
+          "pct": 10.5
+        },
+        {
+          "why": "tableFour",
+          "amt": 54480,
+          "pct": 5.8
+        },
+        {
+          "why": "grimoire",
+          "amt": 36900,
+          "pct": 3.9
+        },
+        {
+          "why": "off the body",
+          "amt": 36708,
+          "pct": 3.9
+        },
+        {
+          "why": "faerie",
+          "amt": 25600,
+          "pct": 2.7
+        },
+        {
+          "why": "parley spoils",
+          "amt": 9363,
+          "pct": 1
+        },
+        {
+          "why": "cutpurse",
+          "amt": 2934,
+          "pct": 0.3
+        }
+      ]
+    }
+  },
+  "projections": [
+    {
+      "lever": "price",
+      "basis": "gold",
+      "scope": [
+        "weapons",
+        "armour",
+        "premium"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1411,
+            0.2427,
+            0.5987,
+            0.3353,
+            0.8547,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1041,
+            0.1653,
+            0.2333,
+            0.3203,
+            0.3445,
+            0.4597,
+            0.6727,
+            0.7492
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2427,
+            "arrivalShare": 0.2333,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 4.6
+          }
+        },
+        {
+          "value": 1.25,
+          "visitShare": [
+            0.0245,
+            0.0283,
+            0.0454,
+            0.0971,
+            0.0954,
+            0.1205,
+            0.2233,
+            0.5327,
+            0.2833,
+            0.7605,
+            0.2836,
+            null
+          ],
+          "arrivalShare": [
+            0.0167,
+            0.0204,
+            0.0391,
+            0.0672,
+            0.0922,
+            0.1424,
+            0.2043,
+            0.2791,
+            0.2978,
+            0.3813,
+            0.5686,
+            0.6448
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2233,
+            "arrivalShare": 0.2043,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 3.8
+          }
+        },
+        {
+          "value": 1.5,
+          "visitShare": [
+            0.0222,
+            0.0252,
+            0.0405,
+            0.0896,
+            0.0858,
+            0.1067,
+            0.1957,
+            0.4798,
+            0.2452,
+            0.6849,
+            0.2432,
+            null
+          ],
+          "arrivalShare": [
+            0.0153,
+            0.0184,
+            0.0353,
+            0.0606,
+            0.0809,
+            0.1248,
+            0.1795,
+            0.2458,
+            0.2597,
+            0.331,
+            0.4924,
+            0.5659
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1957,
+            "arrivalShare": 0.1795,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 2,
+          "visitShare": [
+            0.0186,
+            0.0212,
+            0.0334,
+            0.0753,
+            0.0736,
+            0.0868,
+            0.1551,
+            0.4004,
+            0.2037,
+            0.5714,
+            0.1892,
+            null
+          ],
+          "arrivalShare": [
+            0.0128,
+            0.0155,
+            0.0299,
+            0.0503,
+            0.0669,
+            0.104,
+            0.1459,
+            0.1976,
+            0.2218,
+            0.2702,
+            0.3884,
+            0.4547
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1551,
+            "arrivalShare": 0.1459,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 2.5,
+          "visitShare": [
+            0.0165,
+            0.0183,
+            0.0295,
+            0.0668,
+            0.0645,
+            0.0755,
+            0.1285,
+            0.3435,
+            0.1752,
+            0.4902,
+            0.1548,
+            null
+          ],
+          "arrivalShare": [
+            0.011,
+            0.0135,
+            0.0257,
+            0.043,
+            0.0563,
+            0.0899,
+            0.1249,
+            0.1678,
+            0.1857,
+            0.2219,
+            0.3206,
+            0.38
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1285,
+            "arrivalShare": 0.1249,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.4
+          }
+        },
+        {
+          "value": 3,
+          "visitShare": [
+            0.0151,
+            0.0161,
+            0.0265,
+            0.0608,
+            0.0574,
+            0.0667,
+            0.1096,
+            0.3007,
+            0.1537,
+            0.4292,
+            0.131,
+            null
+          ],
+          "arrivalShare": [
+            0.0096,
+            0.012,
+            0.0226,
+            0.0374,
+            0.0497,
+            0.0781,
+            0.1092,
+            0.1453,
+            0.1617,
+            0.1933,
+            0.273,
+            0.3264
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1096,
+            "arrivalShare": 0.1092,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 4,
+          "visitShare": [
+            0.0129,
+            0.0141,
+            0.0208,
+            0.0492,
+            0.047,
+            0.0542,
+            0.0885,
+            0.2408,
+            0.1234,
+            0.3436,
+            0.1002,
+            null
+          ],
+          "arrivalShare": [
+            0.0077,
+            0.0097,
+            0.018,
+            0.03,
+            0.0389,
+            0.061,
+            0.0872,
+            0.1141,
+            0.1263,
+            0.1587,
+            0.2104,
+            0.2546
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0885,
+            "arrivalShare": 0.0872,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 5,
+          "visitShare": [
+            0.0108,
+            0.0116,
+            0.0168,
+            0.0411,
+            0.0398,
+            0.0456,
+            0.0758,
+            0.2008,
+            0.1031,
+            0.2865,
+            0.0811,
+            null
+          ],
+          "arrivalShare": [
+            0.0065,
+            0.0081,
+            0.0149,
+            0.0251,
+            0.0326,
+            0.0501,
+            0.0726,
+            0.0963,
+            0.1048,
+            0.1346,
+            0.1712,
+            0.2087
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0758,
+            "arrivalShare": 0.0726,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 6,
+          "visitShare": [
+            0.0094,
+            0.0101,
+            0.0145,
+            0.0349,
+            0.0342,
+            0.0394,
+            0.0654,
+            0.1722,
+            0.0885,
+            0.2457,
+            0.0681,
+            null
+          ],
+          "arrivalShare": [
+            0.0055,
+            0.007,
+            0.0128,
+            0.0215,
+            0.0282,
+            0.0428,
+            0.062,
+            0.0833,
+            0.0889,
+            0.116,
+            0.1443,
+            0.1768
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0654,
+            "arrivalShare": 0.062,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 8,
+          "visitShare": [
+            0.0072,
+            0.0082,
+            0.0121,
+            0.0269,
+            0.0261,
+            0.0309,
+            0.0501,
+            0.134,
+            0.069,
+            0.1912,
+            0.0516,
+            null
+          ],
+          "arrivalShare": [
+            0.0043,
+            0.0056,
+            0.0099,
+            0.0167,
+            0.0216,
+            0.0333,
+            0.0476,
+            0.065,
+            0.0683,
+            0.0901,
+            0.1098,
+            0.1354
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0501,
+            "arrivalShare": 0.0476,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 10,
+          "visitShare": [
+            0.006,
+            0.0069,
+            0.0101,
+            0.0224,
+            0.0215,
+            0.0255,
+            0.0406,
+            0.1097,
+            0.0566,
+            0.1565,
+            0.0415,
+            null
+          ],
+          "arrivalShare": [
+            0.0036,
+            0.0046,
+            0.0081,
+            0.0137,
+            0.0177,
+            0.0271,
+            0.0387,
+            0.0532,
+            0.0554,
+            0.0736,
+            0.0886,
+            0.1097
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0406,
+            "arrivalShare": 0.0387,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 12,
+          "visitShare": [
+            0.0051,
+            0.0059,
+            0.0085,
+            0.0193,
+            0.0183,
+            0.0217,
+            0.0345,
+            0.0928,
+            0.0479,
+            0.1325,
+            0.0348,
+            null
+          ],
+          "arrivalShare": [
+            0.0031,
+            0.0039,
+            0.0069,
+            0.0116,
+            0.0148,
+            0.0229,
+            0.0327,
+            0.045,
+            0.0466,
+            0.0622,
+            0.0743,
+            0.0922
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0345,
+            "arrivalShare": 0.0327,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 16,
+          "visitShare": [
+            0.0039,
+            0.0046,
+            0.0064,
+            0.0152,
+            0.0141,
+            0.0167,
+            0.0266,
+            0.071,
+            0.0367,
+            0.1013,
+            0.0262,
+            null
+          ],
+          "arrivalShare": [
+            0.0023,
+            0.003,
+            0.0052,
+            0.0088,
+            0.0113,
+            0.0174,
+            0.0249,
+            0.034,
+            0.0354,
+            0.0475,
+            0.0561,
+            0.0699
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0266,
+            "arrivalShare": 0.0249,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    },
+    {
+      "lever": "price",
+      "basis": "gold",
+      "scope": [
+        "potions",
+        "lockpicks",
+        "weapons",
+        "armour",
+        "scroll",
+        "premium"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1411,
+            0.2427,
+            0.5987,
+            0.3353,
+            0.8547,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1041,
+            0.1653,
+            0.2333,
+            0.3203,
+            0.3445,
+            0.4597,
+            0.6727,
+            0.7492
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2427,
+            "arrivalShare": 0.2333,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 4.6
+          }
+        },
+        {
+          "value": 1.25,
+          "visitShare": [
+            0.0226,
+            0.0255,
+            0.0439,
+            0.0848,
+            0.0893,
+            0.1145,
+            0.1996,
+            0.4874,
+            0.2713,
+            0.6954,
+            0.2755,
+            null
+          ],
+          "arrivalShare": [
+            0.0153,
+            0.0186,
+            0.0363,
+            0.063,
+            0.0859,
+            0.1343,
+            0.19,
+            0.2598,
+            0.2818,
+            0.373,
+            0.5454,
+            0.608
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1996,
+            "arrivalShare": 0.19,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.9
+          }
+        },
+        {
+          "value": 1.5,
+          "visitShare": [
+            0.0192,
+            0.0217,
+            0.0383,
+            0.0717,
+            0.0758,
+            0.096,
+            0.1695,
+            0.4109,
+            0.2278,
+            0.5861,
+            0.2315,
+            null
+          ],
+          "arrivalShare": [
+            0.0129,
+            0.0159,
+            0.0309,
+            0.054,
+            0.0729,
+            0.1138,
+            0.1603,
+            0.2186,
+            0.2379,
+            0.3138,
+            0.4586,
+            0.5116
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1695,
+            "arrivalShare": 0.1603,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 2,
+          "visitShare": [
+            0.0147,
+            0.0167,
+            0.0293,
+            0.0548,
+            0.0582,
+            0.0726,
+            0.1302,
+            0.3128,
+            0.1725,
+            0.446,
+            0.1754,
+            null
+          ],
+          "arrivalShare": [
+            0.0099,
+            0.0122,
+            0.0238,
+            0.0416,
+            0.0563,
+            0.0872,
+            0.1221,
+            0.1658,
+            0.1827,
+            0.2382,
+            0.3479,
+            0.3884
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1302,
+            "arrivalShare": 0.1221,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.4
+          }
+        },
+        {
+          "value": 2.5,
+          "visitShare": [
+            0.0119,
+            0.0135,
+            0.0236,
+            0.0446,
+            0.0473,
+            0.0584,
+            0.1057,
+            0.2525,
+            0.1388,
+            0.3599,
+            0.1412,
+            null
+          ],
+          "arrivalShare": [
+            0.008,
+            0.01,
+            0.0193,
+            0.0336,
+            0.0458,
+            0.0706,
+            0.1,
+            0.1336,
+            0.1493,
+            0.192,
+            0.2802,
+            0.313
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1057,
+            "arrivalShare": 0.1,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 3,
+          "visitShare": [
+            0.01,
+            0.0114,
+            0.0198,
+            0.0379,
+            0.0398,
+            0.049,
+            0.089,
+            0.2117,
+            0.1161,
+            0.3017,
+            0.1181,
+            null
+          ],
+          "arrivalShare": [
+            0.0067,
+            0.0084,
+            0.0162,
+            0.0285,
+            0.0385,
+            0.0594,
+            0.085,
+            0.113,
+            0.1255,
+            0.1607,
+            0.2346,
+            0.2622
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.089,
+            "arrivalShare": 0.085,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 4,
+          "visitShare": [
+            0.0076,
+            0.0087,
+            0.0149,
+            0.0292,
+            0.0303,
+            0.037,
+            0.0676,
+            0.16,
+            0.0875,
+            0.228,
+            0.089,
+            null
+          ],
+          "arrivalShare": [
+            0.0051,
+            0.0064,
+            0.0123,
+            0.0218,
+            0.0291,
+            0.045,
+            0.0645,
+            0.087,
+            0.0953,
+            0.1212,
+            0.1769,
+            0.1979
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0676,
+            "arrivalShare": 0.0645,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 5,
+          "visitShare": [
+            0.0061,
+            0.007,
+            0.012,
+            0.0237,
+            0.0245,
+            0.0297,
+            0.0545,
+            0.1286,
+            0.0702,
+            0.1832,
+            0.0715,
+            null
+          ],
+          "arrivalShare": [
+            0.0041,
+            0.0052,
+            0.0099,
+            0.0176,
+            0.0234,
+            0.0362,
+            0.052,
+            0.0701,
+            0.0768,
+            0.0972,
+            0.142,
+            0.1589
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0545,
+            "arrivalShare": 0.052,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 6,
+          "visitShare": [
+            0.0051,
+            0.0058,
+            0.01,
+            0.0199,
+            0.0206,
+            0.0249,
+            0.0456,
+            0.1075,
+            0.0586,
+            0.1531,
+            0.0597,
+            null
+          ],
+          "arrivalShare": [
+            0.0034,
+            0.0043,
+            0.0083,
+            0.0147,
+            0.0196,
+            0.0303,
+            0.0435,
+            0.0586,
+            0.0643,
+            0.0812,
+            0.1187,
+            0.1327
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0456,
+            "arrivalShare": 0.0435,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 8,
+          "visitShare": [
+            0.0039,
+            0.0044,
+            0.0075,
+            0.015,
+            0.0155,
+            0.0187,
+            0.0344,
+            0.0809,
+            0.0441,
+            0.1153,
+            0.0449,
+            null
+          ],
+          "arrivalShare": [
+            0.0026,
+            0.0033,
+            0.0063,
+            0.0111,
+            0.0148,
+            0.0229,
+            0.0328,
+            0.0441,
+            0.0485,
+            0.0611,
+            0.0892,
+            0.0999
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0344,
+            "arrivalShare": 0.0328,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 10,
+          "visitShare": [
+            0.0031,
+            0.0035,
+            0.006,
+            0.012,
+            0.0125,
+            0.015,
+            0.0277,
+            0.0649,
+            0.0353,
+            0.0924,
+            0.036,
+            null
+          ],
+          "arrivalShare": [
+            0.0021,
+            0.0026,
+            0.005,
+            0.0089,
+            0.0119,
+            0.0184,
+            0.0264,
+            0.0354,
+            0.0389,
+            0.0489,
+            0.0715,
+            0.08
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0277,
+            "arrivalShare": 0.0264,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 12,
+          "visitShare": [
+            0.0026,
+            0.003,
+            0.005,
+            0.01,
+            0.0105,
+            0.0125,
+            0.0231,
+            0.0542,
+            0.0295,
+            0.0771,
+            0.03,
+            null
+          ],
+          "arrivalShare": [
+            0.0017,
+            0.0022,
+            0.0042,
+            0.0075,
+            0.01,
+            0.0153,
+            0.022,
+            0.0295,
+            0.0325,
+            0.0408,
+            0.0597,
+            0.0668
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0231,
+            "arrivalShare": 0.022,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 16,
+          "visitShare": [
+            0.002,
+            0.0022,
+            0.0038,
+            0.0075,
+            0.0079,
+            0.0094,
+            0.0174,
+            0.0407,
+            0.0221,
+            0.058,
+            0.0225,
+            null
+          ],
+          "arrivalShare": [
+            0.0013,
+            0.0016,
+            0.0032,
+            0.0056,
+            0.0075,
+            0.0116,
+            0.0166,
+            0.0222,
+            0.0245,
+            0.0307,
+            0.0448,
+            0.0502
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0174,
+            "arrivalShare": 0.0166,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    },
+    {
+      "lever": "income",
+      "basis": "gold",
+      "scope": [
+        "off the body",
+        "chest",
+        "tableFour",
+        "faerie"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1411,
+            0.2427,
+            0.5987,
+            0.3353,
+            0.8547,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1041,
+            0.1653,
+            0.2333,
+            0.3203,
+            0.3445,
+            0.4597,
+            0.6727,
+            0.7492
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2427,
+            "arrivalShare": 0.2333,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 4.6
+          }
+        },
+        {
+          "value": 0.9,
+          "visitShare": [
+            0.0261,
+            0.0298,
+            0.0471,
+            0.095,
+            0.1022,
+            0.1281,
+            0.222,
+            0.5404,
+            0.3024,
+            0.7713,
+            0.3063,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0221,
+            0.041,
+            0.0695,
+            0.0952,
+            0.1494,
+            0.2108,
+            0.2821,
+            0.3105,
+            0.4184,
+            0.6143,
+            0.6798
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.222,
+            "arrivalShare": 0.2108,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 4.2
+          }
+        },
+        {
+          "value": 0.8,
+          "visitShare": [
+            0.0261,
+            0.0285,
+            0.0426,
+            0.0862,
+            0.1014,
+            0.1151,
+            0.2014,
+            0.4821,
+            0.2695,
+            0.6879,
+            0.2723,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0217,
+            0.038,
+            0.0637,
+            0.0865,
+            0.1333,
+            0.1848,
+            0.2445,
+            0.2745,
+            0.3772,
+            0.5526,
+            0.6105
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2014,
+            "arrivalShare": 0.1848,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.9
+          }
+        },
+        {
+          "value": 0.7,
+          "visitShare": [
+            0.0261,
+            0.0268,
+            0.038,
+            0.0775,
+            0.0906,
+            0.1021,
+            0.1759,
+            0.4239,
+            0.2366,
+            0.6045,
+            0.2383,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0211,
+            0.0349,
+            0.0582,
+            0.0782,
+            0.1191,
+            0.1604,
+            0.2136,
+            0.2413,
+            0.3144,
+            0.485,
+            0.5411
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1759,
+            "arrivalShare": 0.1604,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 0.6,
+          "visitShare": [
+            0.0261,
+            0.0251,
+            0.0348,
+            0.0689,
+            0.0699,
+            0.0891,
+            0.1412,
+            0.3656,
+            0.2037,
+            0.521,
+            0.2043,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0205,
+            0.0322,
+            0.0525,
+            0.0685,
+            0.1041,
+            0.1415,
+            0.1766,
+            0.2082,
+            0.2601,
+            0.4174,
+            0.4717
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1412,
+            "arrivalShare": 0.1415,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 0.5,
+          "visitShare": [
+            0.0247,
+            0.0235,
+            0.0313,
+            0.06,
+            0.0626,
+            0.076,
+            0.1184,
+            0.3073,
+            0.1708,
+            0.4376,
+            0.1703,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0197,
+            0.0293,
+            0.0463,
+            0.0588,
+            0.089,
+            0.1197,
+            0.1483,
+            0.1661,
+            0.228,
+            0.3498,
+            0.4024
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1184,
+            "arrivalShare": 0.1197,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 0.4,
+          "visitShare": [
+            0.0229,
+            0.0221,
+            0.0275,
+            0.0513,
+            0.057,
+            0.0579,
+            0.103,
+            0.249,
+            0.1379,
+            0.3542,
+            0.1363,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0187,
+            0.0265,
+            0.0399,
+            0.0506,
+            0.0738,
+            0.0996,
+            0.1168,
+            0.1412,
+            0.1814,
+            0.2821,
+            0.333
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.103,
+            "arrivalShare": 0.0996,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 0.3,
+          "visitShare": [
+            0.0214,
+            0.0208,
+            0.0253,
+            0.0427,
+            0.046,
+            0.0484,
+            0.0875,
+            0.1907,
+            0.105,
+            0.2708,
+            0.1023,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0181,
+            0.0243,
+            0.034,
+            0.0421,
+            0.0599,
+            0.082,
+            0.085,
+            0.1068,
+            0.1361,
+            0.2198,
+            0.2719
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0875,
+            "arrivalShare": 0.082,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.5
+          }
+        },
+        {
+          "value": 0.2,
+          "visitShare": [
+            0.0202,
+            0.0186,
+            0.0224,
+            0.0368,
+            0.0349,
+            0.037,
+            0.0721,
+            0.1324,
+            0.0737,
+            0.1874,
+            0.0683,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0168,
+            0.0211,
+            0.0277,
+            0.0327,
+            0.0455,
+            0.0614,
+            0.0592,
+            0.0731,
+            0.0833,
+            0.1469,
+            0.2119
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0721,
+            "arrivalShare": 0.0614,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 1.3
+          }
+        },
+        {
+          "value": 0.1,
+          "visitShare": [
+            0.0194,
+            0.0174,
+            0.0194,
+            0.0289,
+            0.0251,
+            0.0253,
+            0.0422,
+            0.0741,
+            0.0443,
+            0.104,
+            0.0342,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0158,
+            0.018,
+            0.0218,
+            0.0237,
+            0.032,
+            0.0402,
+            0.0373,
+            0.0423,
+            0.0589,
+            0.0862,
+            0.1519
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0422,
+            "arrivalShare": 0.0402,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.8
+          }
+        },
+        {
+          "value": 0,
+          "visitShare": [
+            0.0188,
+            0.0151,
+            0.0135,
+            0.017,
+            0.0131,
+            0.0158,
+            0.0202,
+            0.0159,
+            0.0063,
+            0.0206,
+            0.0002,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0142,
+            0.0144,
+            0.0152,
+            0.0139,
+            0.0157,
+            0.0159,
+            0.0114,
+            0.0131,
+            0.0206,
+            0.0117,
+            0.0555
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0202,
+            "arrivalShare": 0.0159,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.8
+          }
+        }
+      ]
+    },
+    {
+      "lever": "cap",
+      "basis": "gold",
+      "scope": null,
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1411,
+            0.2427,
+            0.4954,
+            0.3019,
+            0.7767,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1041,
+            0.164,
+            0.2198,
+            0.3053,
+            0.3445,
+            0.4147,
+            0.4673,
+            0.487
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2427,
+            "arrivalShare": 0.2198,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.9
+          }
+        },
+        {
+          "value": 0.8,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1411,
+            0.2376,
+            0.3963,
+            0.2571,
+            0.7767,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1041,
+            0.1639,
+            0.2185,
+            0.2947,
+            0.3103,
+            0.3708,
+            0.4443,
+            0.3896
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2376,
+            "arrivalShare": 0.2185,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 0.6,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1404,
+            0.2008,
+            0.3704,
+            0.1928,
+            0.7402,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1026,
+            0.1554,
+            0.2112,
+            0.2565,
+            0.2857,
+            0.3457,
+            0.3686,
+            0.2922
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2008,
+            "arrivalShare": 0.2112,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 0.5,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1384,
+            0.1956,
+            0.3364,
+            0.1648,
+            0.6168,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0764,
+            0.1025,
+            0.1479,
+            0.1947,
+            0.246,
+            0.2627,
+            0.2947,
+            0.3669,
+            0.2435
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1956,
+            "arrivalShare": 0.1947,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 1.7
+          }
+        },
+        {
+          "value": 0.4,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1037,
+            0.1087,
+            0.1384,
+            0.1939,
+            0.2691,
+            0.1648,
+            0.4935,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0442,
+            0.0759,
+            0.0975,
+            0.144,
+            0.1733,
+            0.2086,
+            0.217,
+            0.2629,
+            0.3102,
+            0.2388
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1939,
+            "arrivalShare": 0.1733,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.8
+          }
+        },
+        {
+          "value": 0.3,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1017,
+            0.1087,
+            0.1188,
+            0.1611,
+            0.2018,
+            0.1556,
+            0.3701,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0438,
+            0.0739,
+            0.0934,
+            0.1311,
+            0.1473,
+            0.1649,
+            0.1674,
+            0.1983,
+            0.2977,
+            0.2388
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1611,
+            "arrivalShare": 0.1473,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 0.25,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0515,
+            0.1017,
+            0.103,
+            0.115,
+            0.1447,
+            0.1682,
+            0.137,
+            0.3084,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0436,
+            0.0723,
+            0.0898,
+            0.1191,
+            0.1333,
+            0.1424,
+            0.1438,
+            0.1675,
+            0.2554,
+            0.2216
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1447,
+            "arrivalShare": 0.1333,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 0.2,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0445,
+            0.0952,
+            0.0925,
+            0.099,
+            0.1184,
+            0.1345,
+            0.137,
+            0.2467,
+            0.3403,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0433,
+            0.071,
+            0.0796,
+            0.1027,
+            0.1134,
+            0.1253,
+            0.1216,
+            0.134,
+            0.2043,
+            0.2145
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1184,
+            "arrivalShare": 0.1134,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 0.15,
+          "visitShare": [
+            0.0266,
+            0.0311,
+            0.0445,
+            0.0788,
+            0.0808,
+            0.0742,
+            0.0909,
+            0.1009,
+            0.137,
+            0.185,
+            0.2854,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0224,
+            0.0414,
+            0.0635,
+            0.0689,
+            0.0851,
+            0.0924,
+            0.0959,
+            0.1016,
+            0.1005,
+            0.1532,
+            0.2019
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0909,
+            "arrivalShare": 0.0924,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 0.1,
+          "visitShare": [
+            0.0266,
+            0.0294,
+            0.0387,
+            0.0548,
+            0.0579,
+            0.0495,
+            0.0642,
+            0.0673,
+            0.0932,
+            0.1234,
+            0.1902,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0222,
+            0.0371,
+            0.0492,
+            0.0512,
+            0.0628,
+            0.0672,
+            0.0661,
+            0.074,
+            0.067,
+            0.1021,
+            0.1346
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0642,
+            "arrivalShare": 0.0672,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 0.05,
+          "visitShare": [
+            0.0258,
+            0.0228,
+            0.025,
+            0.029,
+            0.0298,
+            0.0256,
+            0.0333,
+            0.0336,
+            0.0466,
+            0.0617,
+            0.0951,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.02,
+            0.025,
+            0.0292,
+            0.0281,
+            0.033,
+            0.0354,
+            0.0345,
+            0.0399,
+            0.0397,
+            0.0511,
+            0.0673
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0333,
+            "arrivalShare": 0.0354,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    },
+    {
+      "lever": "price",
+      "basis": "goldWithSales",
+      "scope": [
+        "weapons",
+        "armour",
+        "premium"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.4137,
+            0.7335,
+            0.432,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4668,
+            0.4205,
+            0.5337,
+            0.5357,
+            0.6873,
+            0.918,
+            0.8902
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.4137,
+            "arrivalShare": 0.4205,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 9.6
+          }
+        },
+        {
+          "value": 1.25,
+          "visitShare": [
+            0.0298,
+            0.154,
+            0.2786,
+            0.5525,
+            0.4233,
+            0.2515,
+            0.3563,
+            0.6526,
+            0.3855,
+            0.8836,
+            0.4373,
+            null
+          ],
+          "arrivalShare": [
+            0.0167,
+            0.0689,
+            0.2467,
+            0.4263,
+            0.4001,
+            0.4114,
+            0.3728,
+            0.4762,
+            0.4728,
+            0.5778,
+            0.7922,
+            0.7661
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3563,
+            "arrivalShare": 0.3728,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 8.3
+          }
+        },
+        {
+          "value": 1.5,
+          "visitShare": [
+            0.0285,
+            0.1359,
+            0.2658,
+            0.4903,
+            0.3793,
+            0.221,
+            0.3129,
+            0.5878,
+            0.3481,
+            0.7866,
+            0.3749,
+            null
+          ],
+          "arrivalShare": [
+            0.0153,
+            0.0621,
+            0.2209,
+            0.3833,
+            0.3551,
+            0.373,
+            0.335,
+            0.4267,
+            0.4189,
+            0.5389,
+            0.6967,
+            0.6724
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3129,
+            "arrivalShare": 0.335,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 6.7
+          }
+        },
+        {
+          "value": 2,
+          "visitShare": [
+            0.0251,
+            0.1149,
+            0.2371,
+            0.458,
+            0.314,
+            0.1779,
+            0.2516,
+            0.4905,
+            0.2915,
+            0.6563,
+            0.2916,
+            null
+          ],
+          "arrivalShare": [
+            0.0128,
+            0.0528,
+            0.1836,
+            0.3274,
+            0.2907,
+            0.3157,
+            0.2787,
+            0.3499,
+            0.3411,
+            0.439,
+            0.5614,
+            0.5403
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2516,
+            "arrivalShare": 0.2787,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 3.8
+          }
+        },
+        {
+          "value": 2.5,
+          "visitShare": [
+            0.0217,
+            0.0996,
+            0.2048,
+            0.3961,
+            0.2679,
+            0.1564,
+            0.2104,
+            0.4208,
+            0.2507,
+            0.563,
+            0.2386,
+            null
+          ],
+          "arrivalShare": [
+            0.011,
+            0.0451,
+            0.1572,
+            0.278,
+            0.2475,
+            0.2694,
+            0.2335,
+            0.2955,
+            0.2933,
+            0.3674,
+            0.4701,
+            0.4515
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2104,
+            "arrivalShare": 0.2335,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 3,
+          "visitShare": [
+            0.0195,
+            0.0878,
+            0.1802,
+            0.3404,
+            0.2336,
+            0.1395,
+            0.1836,
+            0.3684,
+            0.2199,
+            0.4929,
+            0.2019,
+            null
+          ],
+          "arrivalShare": [
+            0.0096,
+            0.0399,
+            0.1372,
+            0.2408,
+            0.2182,
+            0.2353,
+            0.2033,
+            0.2536,
+            0.2512,
+            0.3121,
+            0.4043,
+            0.3878
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1836,
+            "arrivalShare": 0.2033,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.8
+          }
+        },
+        {
+          "value": 4,
+          "visitShare": [
+            0.0157,
+            0.0759,
+            0.1453,
+            0.2639,
+            0.1841,
+            0.1112,
+            0.1451,
+            0.295,
+            0.1766,
+            0.3947,
+            0.1544,
+            null
+          ],
+          "arrivalShare": [
+            0.0077,
+            0.0318,
+            0.1106,
+            0.1917,
+            0.1762,
+            0.1887,
+            0.1629,
+            0.1975,
+            0.1957,
+            0.2398,
+            0.3159,
+            0.3025
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1451,
+            "arrivalShare": 0.1629,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.4
+          }
+        },
+        {
+          "value": 5,
+          "visitShare": [
+            0.0136,
+            0.0702,
+            0.1217,
+            0.2148,
+            0.1517,
+            0.0906,
+            0.1185,
+            0.246,
+            0.1475,
+            0.3291,
+            0.125,
+            null
+          ],
+          "arrivalShare": [
+            0.0065,
+            0.0268,
+            0.092,
+            0.1571,
+            0.1483,
+            0.1551,
+            0.1348,
+            0.1634,
+            0.1629,
+            0.1948,
+            0.2593,
+            0.2479
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1185,
+            "arrivalShare": 0.1348,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 6,
+          "visitShare": [
+            0.0124,
+            0.0619,
+            0.1047,
+            0.181,
+            0.129,
+            0.0764,
+            0.1001,
+            0.2109,
+            0.1267,
+            0.2822,
+            0.105,
+            null
+          ],
+          "arrivalShare": [
+            0.0055,
+            0.0236,
+            0.0793,
+            0.1353,
+            0.1261,
+            0.133,
+            0.1146,
+            0.1394,
+            0.1399,
+            0.1683,
+            0.2198,
+            0.21
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1001,
+            "arrivalShare": 0.1146,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 8,
+          "visitShare": [
+            0.0097,
+            0.049,
+            0.0818,
+            0.1399,
+            0.0994,
+            0.0582,
+            0.0776,
+            0.1642,
+            0.0988,
+            0.2196,
+            0.0796,
+            null
+          ],
+          "arrivalShare": [
+            0.0043,
+            0.0184,
+            0.0616,
+            0.1056,
+            0.0972,
+            0.1054,
+            0.0887,
+            0.1098,
+            0.1092,
+            0.1331,
+            0.1685,
+            0.1609
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0776,
+            "arrivalShare": 0.0887,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 10,
+          "visitShare": [
+            0.0082,
+            0.0405,
+            0.0672,
+            0.1147,
+            0.0813,
+            0.047,
+            0.0646,
+            0.1344,
+            0.0809,
+            0.1797,
+            0.064,
+            null
+          ],
+          "arrivalShare": [
+            0.0036,
+            0.0151,
+            0.0504,
+            0.0856,
+            0.0796,
+            0.086,
+            0.0724,
+            0.0888,
+            0.0898,
+            0.1075,
+            0.1367,
+            0.1304
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0646,
+            "arrivalShare": 0.0724,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 12,
+          "visitShare": [
+            0.0071,
+            0.0346,
+            0.0567,
+            0.0964,
+            0.0688,
+            0.0394,
+            0.0548,
+            0.1137,
+            0.0685,
+            0.1521,
+            0.0536,
+            null
+          ],
+          "arrivalShare": [
+            0.0031,
+            0.0129,
+            0.0427,
+            0.0726,
+            0.0669,
+            0.0726,
+            0.0614,
+            0.0757,
+            0.0758,
+            0.0901,
+            0.1149,
+            0.1096
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0548,
+            "arrivalShare": 0.0614,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 16,
+          "visitShare": [
+            0.0056,
+            0.0267,
+            0.0437,
+            0.0731,
+            0.0526,
+            0.0299,
+            0.0416,
+            0.087,
+            0.0525,
+            0.1164,
+            0.0404,
+            null
+          ],
+          "arrivalShare": [
+            0.0023,
+            0.01,
+            0.0324,
+            0.0555,
+            0.0508,
+            0.0552,
+            0.0469,
+            0.0574,
+            0.0581,
+            0.0681,
+            0.0872,
+            0.0831
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0416,
+            "arrivalShare": 0.0469,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    },
+    {
+      "lever": "price",
+      "basis": "goldWithSales",
+      "scope": [
+        "potions",
+        "lockpicks",
+        "weapons",
+        "armour",
+        "scroll",
+        "premium"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.4137,
+            0.7335,
+            0.432,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4668,
+            0.4205,
+            0.5337,
+            0.5357,
+            0.6873,
+            0.918,
+            0.8902
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.4137,
+            "arrivalShare": 0.4205,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 9.6
+          }
+        },
+        {
+          "value": 1.25,
+          "visitShare": [
+            0.0255,
+            0.1386,
+            0.2671,
+            0.5179,
+            0.3965,
+            0.237,
+            0.3368,
+            0.5971,
+            0.3503,
+            0.8602,
+            0.4247,
+            null
+          ],
+          "arrivalShare": [
+            0.0153,
+            0.0636,
+            0.2321,
+            0.4012,
+            0.3769,
+            0.3831,
+            0.3459,
+            0.4399,
+            0.438,
+            0.5566,
+            0.7555,
+            0.7224
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3368,
+            "arrivalShare": 0.3459,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 7.1
+          }
+        },
+        {
+          "value": 1.5,
+          "visitShare": [
+            0.022,
+            0.1185,
+            0.2392,
+            0.4383,
+            0.3366,
+            0.1996,
+            0.2841,
+            0.5034,
+            0.2945,
+            0.7254,
+            0.3568,
+            null
+          ],
+          "arrivalShare": [
+            0.0129,
+            0.0539,
+            0.1973,
+            0.3419,
+            0.3191,
+            0.328,
+            0.2949,
+            0.3742,
+            0.3717,
+            0.4677,
+            0.6368,
+            0.6079
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2841,
+            "arrivalShare": 0.2949,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 4.6
+          }
+        },
+        {
+          "value": 2,
+          "visitShare": [
+            0.0175,
+            0.0918,
+            0.1826,
+            0.3353,
+            0.2567,
+            0.1516,
+            0.2163,
+            0.3833,
+            0.2234,
+            0.5523,
+            0.2703,
+            null
+          ],
+          "arrivalShare": [
+            0.0099,
+            0.0416,
+            0.1511,
+            0.2616,
+            0.2471,
+            0.2542,
+            0.2289,
+            0.288,
+            0.2875,
+            0.3545,
+            0.4845,
+            0.4615
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2163,
+            "arrivalShare": 0.2289,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 1.3
+          }
+        },
+        {
+          "value": 2.5,
+          "visitShare": [
+            0.0144,
+            0.0746,
+            0.1476,
+            0.2715,
+            0.2074,
+            0.1223,
+            0.1746,
+            0.3094,
+            0.18,
+            0.4459,
+            0.2176,
+            null
+          ],
+          "arrivalShare": [
+            0.008,
+            0.0336,
+            0.123,
+            0.2139,
+            0.1998,
+            0.2063,
+            0.1864,
+            0.2342,
+            0.2339,
+            0.2854,
+            0.391,
+            0.3719
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1746,
+            "arrivalShare": 0.1864,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.4
+          }
+        },
+        {
+          "value": 3,
+          "visitShare": [
+            0.0122,
+            0.0624,
+            0.1239,
+            0.2281,
+            0.1758,
+            0.1024,
+            0.1464,
+            0.2594,
+            0.1507,
+            0.3739,
+            0.1821,
+            null
+          ],
+          "arrivalShare": [
+            0.0067,
+            0.0284,
+            0.1042,
+            0.1802,
+            0.1684,
+            0.1741,
+            0.1569,
+            0.1973,
+            0.1967,
+            0.2388,
+            0.3277,
+            0.3115
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1464,
+            "arrivalShare": 0.1569,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 4,
+          "visitShare": [
+            0.0093,
+            0.0471,
+            0.0937,
+            0.1728,
+            0.1341,
+            0.0773,
+            0.1107,
+            0.196,
+            0.1137,
+            0.2826,
+            0.1373,
+            null
+          ],
+          "arrivalShare": [
+            0.0051,
+            0.0215,
+            0.0797,
+            0.1369,
+            0.1274,
+            0.1327,
+            0.1196,
+            0.15,
+            0.1493,
+            0.1801,
+            0.2476,
+            0.2351
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.1107,
+            "arrivalShare": 0.1196,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 5,
+          "visitShare": [
+            0.0076,
+            0.0378,
+            0.0754,
+            0.1399,
+            0.1081,
+            0.0621,
+            0.0889,
+            0.1576,
+            0.0913,
+            0.2271,
+            0.1102,
+            null
+          ],
+          "arrivalShare": [
+            0.0041,
+            0.0173,
+            0.064,
+            0.1106,
+            0.1028,
+            0.1069,
+            0.0967,
+            0.121,
+            0.1203,
+            0.1445,
+            0.1989,
+            0.1888
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0889,
+            "arrivalShare": 0.0967,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 6,
+          "visitShare": [
+            0.0064,
+            0.0317,
+            0.0631,
+            0.118,
+            0.0905,
+            0.0519,
+            0.0744,
+            0.1317,
+            0.0762,
+            0.1899,
+            0.092,
+            null
+          ],
+          "arrivalShare": [
+            0.0034,
+            0.0145,
+            0.0535,
+            0.0927,
+            0.0861,
+            0.0894,
+            0.081,
+            0.1014,
+            0.1007,
+            0.1207,
+            0.1663,
+            0.1577
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0744,
+            "arrivalShare": 0.081,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 8,
+          "visitShare": [
+            0.0048,
+            0.0239,
+            0.0475,
+            0.0899,
+            0.0683,
+            0.039,
+            0.056,
+            0.0992,
+            0.0573,
+            0.143,
+            0.0692,
+            null
+          ],
+          "arrivalShare": [
+            0.0026,
+            0.0109,
+            0.0402,
+            0.07,
+            0.0649,
+            0.0674,
+            0.0609,
+            0.0766,
+            0.076,
+            0.0908,
+            0.1252,
+            0.1187
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.056,
+            "arrivalShare": 0.0609,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 10,
+          "visitShare": [
+            0.0039,
+            0.0192,
+            0.0381,
+            0.0726,
+            0.0548,
+            0.0313,
+            0.0449,
+            0.0795,
+            0.046,
+            0.1146,
+            0.0554,
+            null
+          ],
+          "arrivalShare": [
+            0.0021,
+            0.0088,
+            0.0322,
+            0.0562,
+            0.0521,
+            0.0541,
+            0.0491,
+            0.0615,
+            0.061,
+            0.0727,
+            0.1004,
+            0.0951
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0449,
+            "arrivalShare": 0.0491,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 12,
+          "visitShare": [
+            0.0033,
+            0.0161,
+            0.0318,
+            0.0608,
+            0.0458,
+            0.0261,
+            0.0375,
+            0.0664,
+            0.0383,
+            0.0957,
+            0.0462,
+            null
+          ],
+          "arrivalShare": [
+            0.0017,
+            0.0073,
+            0.0269,
+            0.047,
+            0.0435,
+            0.0453,
+            0.0412,
+            0.0514,
+            0.051,
+            0.0607,
+            0.0838,
+            0.0794
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0375,
+            "arrivalShare": 0.0412,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        },
+        {
+          "value": 16,
+          "visitShare": [
+            0.0025,
+            0.0121,
+            0.0239,
+            0.046,
+            0.0345,
+            0.0196,
+            0.0282,
+            0.0499,
+            0.0288,
+            0.0719,
+            0.0347,
+            null
+          ],
+          "arrivalShare": [
+            0.0013,
+            0.0055,
+            0.0202,
+            0.0353,
+            0.0327,
+            0.0342,
+            0.0311,
+            0.0387,
+            0.0383,
+            0.0456,
+            0.0629,
+            0.0596
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.0282,
+            "arrivalShare": 0.0311,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    },
+    {
+      "lever": "income",
+      "basis": "goldWithSales",
+      "scope": [
+        "off the body",
+        "chest",
+        "tableFour",
+        "faerie"
+      ],
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.4137,
+            0.7335,
+            0.432,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4668,
+            0.4205,
+            0.5337,
+            0.5357,
+            0.6873,
+            0.918,
+            0.8902
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.4137,
+            "arrivalShare": 0.4205,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 9.6
+          }
+        },
+        {
+          "value": 0.9,
+          "visitShare": [
+            0.0306,
+            0.1661,
+            0.3134,
+            0.6203,
+            0.4726,
+            0.2788,
+            0.3903,
+            0.6752,
+            0.4028,
+            0.9653,
+            0.4906,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0733,
+            0.2779,
+            0.4823,
+            0.4525,
+            0.4493,
+            0.4,
+            0.4951,
+            0.509,
+            0.6399,
+            0.8525,
+            0.8208
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3903,
+            "arrivalShare": 0.4,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 9.2
+          }
+        },
+        {
+          "value": 0.8,
+          "visitShare": [
+            0.0302,
+            0.1628,
+            0.3058,
+            0.6078,
+            0.463,
+            0.2658,
+            0.3697,
+            0.6169,
+            0.3737,
+            0.8741,
+            0.4566,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0718,
+            0.273,
+            0.4733,
+            0.4425,
+            0.4324,
+            0.3832,
+            0.4687,
+            0.4783,
+            0.582,
+            0.7869,
+            0.7514
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3697,
+            "arrivalShare": 0.3832,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 8.8
+          }
+        },
+        {
+          "value": 0.7,
+          "visitShare": [
+            0.0299,
+            0.1628,
+            0.2983,
+            0.5953,
+            0.4533,
+            0.2528,
+            0.3445,
+            0.5586,
+            0.3445,
+            0.7829,
+            0.4226,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0684,
+            0.2691,
+            0.4717,
+            0.4318,
+            0.4153,
+            0.3633,
+            0.4308,
+            0.4496,
+            0.5241,
+            0.7214,
+            0.6821
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3445,
+            "arrivalShare": 0.3633,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 7.5
+          }
+        },
+        {
+          "value": 0.6,
+          "visitShare": [
+            0.0299,
+            0.1627,
+            0.2908,
+            0.5828,
+            0.4465,
+            0.2398,
+            0.311,
+            0.5003,
+            0.3227,
+            0.6916,
+            0.3886,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0669,
+            0.2644,
+            0.4703,
+            0.419,
+            0.4038,
+            0.3433,
+            0.3919,
+            0.4286,
+            0.4716,
+            0.6559,
+            0.6127
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.311,
+            "arrivalShare": 0.3433,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 5.8
+          }
+        },
+        {
+          "value": 0.5,
+          "visitShare": [
+            0.0299,
+            0.1627,
+            0.2833,
+            0.5703,
+            0.4453,
+            0.2295,
+            0.2839,
+            0.4595,
+            0.3113,
+            0.6004,
+            0.3546,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0636,
+            0.2612,
+            0.4626,
+            0.4113,
+            0.3912,
+            0.3209,
+            0.3542,
+            0.3863,
+            0.4365,
+            0.5904,
+            0.5433
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2839,
+            "arrivalShare": 0.3209,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 5
+          }
+        },
+        {
+          "value": 0.4,
+          "visitShare": [
+            0.0299,
+            0.1626,
+            0.2758,
+            0.5578,
+            0.4441,
+            0.2196,
+            0.2602,
+            0.424,
+            0.2852,
+            0.5092,
+            0.3206,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0606,
+            0.2561,
+            0.4545,
+            0.4026,
+            0.3806,
+            0.2936,
+            0.3262,
+            0.3626,
+            0.3953,
+            0.523,
+            0.474
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2602,
+            "arrivalShare": 0.2936,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 4.2
+          }
+        },
+        {
+          "value": 0.3,
+          "visitShare": [
+            0.0292,
+            0.1626,
+            0.2683,
+            0.5454,
+            0.4267,
+            0.2096,
+            0.2535,
+            0.3885,
+            0.2341,
+            0.418,
+            0.2866,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0604,
+            0.2529,
+            0.4469,
+            0.3931,
+            0.3699,
+            0.2619,
+            0.2985,
+            0.3137,
+            0.3513,
+            0.4554,
+            0.4046
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2535,
+            "arrivalShare": 0.2619,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 3.8
+          }
+        },
+        {
+          "value": 0.2,
+          "visitShare": [
+            0.0291,
+            0.1625,
+            0.2608,
+            0.5329,
+            0.4049,
+            0.1997,
+            0.2378,
+            0.353,
+            0.2241,
+            0.3268,
+            0.2526,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0574,
+            0.2506,
+            0.4411,
+            0.3874,
+            0.3524,
+            0.2452,
+            0.2606,
+            0.2573,
+            0.3128,
+            0.3694,
+            0.3352
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2378,
+            "arrivalShare": 0.2452,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 2.9
+          }
+        },
+        {
+          "value": 0.1,
+          "visitShare": [
+            0.0291,
+            0.1625,
+            0.2532,
+            0.5204,
+            0.3952,
+            0.1897,
+            0.225,
+            0.3175,
+            0.2241,
+            0.2798,
+            0.2185,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0531,
+            0.2469,
+            0.4376,
+            0.3762,
+            0.3353,
+            0.2292,
+            0.2338,
+            0.2386,
+            0.2715,
+            0.3046,
+            0.2659
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.225,
+            "arrivalShare": 0.2292,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 2.9
+          }
+        },
+        {
+          "value": 0,
+          "visitShare": [
+            0.0291,
+            0.1598,
+            0.2514,
+            0.5105,
+            0.3857,
+            0.1872,
+            0.214,
+            0.282,
+            0.2049,
+            0.2798,
+            0.1845,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0503,
+            0.2425,
+            0.4311,
+            0.3717,
+            0.319,
+            0.216,
+            0.2271,
+            0.208,
+            0.2303,
+            0.2526,
+            0.2109
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.214,
+            "arrivalShare": 0.216,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 2.9
+          }
+        }
+      ]
+    },
+    {
+      "lever": "cap",
+      "basis": "goldWithSales",
+      "scope": null,
+      "note": "first guess: the bot's own buying is held fixed",
+      "values": [
+        {
+          "value": 1,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.411,
+            0.637,
+            0.4088,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4625,
+            0.4188,
+            0.5214,
+            0.5327,
+            0.5952,
+            0.7082,
+            0.628
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.411,
+            "arrivalShare": 0.4188,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 8.8
+          }
+        },
+        {
+          "value": 0.8,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.411,
+            0.637,
+            0.3682,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4538,
+            0.4156,
+            0.4767,
+            0.5092,
+            0.5853,
+            0.6715,
+            0.5306
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.411,
+            "arrivalShare": 0.4156,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 8.3
+          }
+        },
+        {
+          "value": 0.6,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.3628,
+            0.637,
+            0.3682,
+            1,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4471,
+            0.4058,
+            0.445,
+            0.4657,
+            0.5504,
+            0.6174,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3628,
+            "arrivalShare": 0.4058,
+            "visitBuyOutPct": 12.5,
+            "arrivalBuyOutPct": 5.8
+          }
+        },
+        {
+          "value": 0.5,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2919,
+            0.3628,
+            0.6182,
+            0.3682,
+            0.8966,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.489,
+            0.461,
+            0.4415,
+            0.3803,
+            0.4047,
+            0.4422,
+            0.4932,
+            0.5793,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3628,
+            "arrivalShare": 0.3803,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 5.4
+          }
+        },
+        {
+          "value": 0.4,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.3209,
+            0.6327,
+            0.4823,
+            0.2793,
+            0.3628,
+            0.551,
+            0.3682,
+            0.7733,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.4807,
+            0.4491,
+            0.4314,
+            0.3647,
+            0.3814,
+            0.415,
+            0.4436,
+            0.5017,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3628,
+            "arrivalShare": 0.3647,
+            "visitBuyOutPct": 8.3,
+            "arrivalBuyOutPct": 5
+          }
+        },
+        {
+          "value": 0.3,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.2927,
+            0.6156,
+            0.4823,
+            0.2793,
+            0.3425,
+            0.4837,
+            0.3611,
+            0.6499,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.283,
+            0.4794,
+            0.4353,
+            0.4188,
+            0.3466,
+            0.3533,
+            0.3863,
+            0.4127,
+            0.4778,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3425,
+            "arrivalShare": 0.3466,
+            "visitBuyOutPct": 4.2,
+            "arrivalBuyOutPct": 4.6
+          }
+        },
+        {
+          "value": 0.25,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.2927,
+            0.5862,
+            0.4812,
+            0.2793,
+            0.3181,
+            0.4501,
+            0.3611,
+            0.5882,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0759,
+            0.2821,
+            0.4737,
+            0.4333,
+            0.4038,
+            0.3327,
+            0.3374,
+            0.3538,
+            0.3964,
+            0.4284,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3181,
+            "arrivalShare": 0.3327,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 3.3
+          }
+        },
+        {
+          "value": 0.2,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.2927,
+            0.5808,
+            0.472,
+            0.2558,
+            0.3015,
+            0.4164,
+            0.3352,
+            0.5265,
+            0.5246,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0758,
+            0.2776,
+            0.4698,
+            0.4237,
+            0.3939,
+            0.3185,
+            0.3272,
+            0.3157,
+            0.3638,
+            0.3773,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.3015,
+            "arrivalShare": 0.3185,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 2.1
+          }
+        },
+        {
+          "value": 0.15,
+          "visitShare": [
+            0.0309,
+            0.167,
+            0.2927,
+            0.5597,
+            0.4509,
+            0.2295,
+            0.2869,
+            0.3828,
+            0.2839,
+            0.4648,
+            0.4697,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0758,
+            0.2697,
+            0.4623,
+            0.4095,
+            0.3791,
+            0.2946,
+            0.3035,
+            0.2852,
+            0.311,
+            0.3426,
+            0.437
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2869,
+            "arrivalShare": 0.2946,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 1.3
+          }
+        },
+        {
+          "value": 0.1,
+          "visitShare": [
+            0.0309,
+            0.1663,
+            0.2744,
+            0.5385,
+            0.4392,
+            0.2086,
+            0.2558,
+            0.3491,
+            0.2568,
+            0.4032,
+            0.3746,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0751,
+            0.2599,
+            0.4499,
+            0.3874,
+            0.3539,
+            0.2595,
+            0.271,
+            0.2497,
+            0.2607,
+            0.3121,
+            0.4027
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2558,
+            "arrivalShare": 0.2595,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0.8
+          }
+        },
+        {
+          "value": 0.05,
+          "visitShare": [
+            0.0299,
+            0.1534,
+            0.2533,
+            0.5134,
+            0.4126,
+            0.2015,
+            0.2193,
+            0.3155,
+            0.2309,
+            0.3415,
+            0.2794,
+            null
+          ],
+          "arrivalShare": [
+            0.0187,
+            0.0664,
+            0.2486,
+            0.43,
+            0.3642,
+            0.3222,
+            0.2221,
+            0.2439,
+            0.2168,
+            0.2331,
+            0.2731,
+            0.3004
+          ],
+          "focus": {
+            "depth": 7,
+            "visitShare": 0.2193,
+            "arrivalShare": 0.2221,
+            "visitBuyOutPct": 0,
+            "arrivalBuyOutPct": 0
+          }
+        }
+      ]
+    }
+  ],
+  "legacy": {
+    "earned": {
+      "min": 0,
+      "p50": 514,
+      "p90": 2294,
+      "max": 9000
+    },
+    "peakGold": {
+      "min": 50,
+      "p50": 561,
+      "p90": 2210,
+      "max": 8558
+    },
+    "endGold": {
+      "min": 1,
+      "p50": 538,
+      "p90": 2175,
+      "max": 8558
+    },
+    "deathDepth": {
+      "min": 1,
+      "p50": 5,
+      "p90": 8,
+      "max": 17
+    },
+    "bySource": [
+      {
+        "why": "chest",
+        "amt": 625784,
+        "pct": 70.29945999018163
+      },
+      {
+        "why": "parley",
+        "amt": 98400,
+        "pct": 11.054080741971468
+      },
+      {
+        "why": "tableFour",
+        "amt": 54480,
+        "pct": 6.120186166896398
+      },
+      {
+        "why": "grimoire",
+        "amt": 36900,
+        "pct": 4.145280278239301
+      },
+      {
+        "why": "off the body",
+        "amt": 36708,
+        "pct": 4.123711340206185
+      },
+      {
+        "why": "faerie",
+        "amt": 25600,
+        "pct": 2.8758584044153412
+      },
+      {
+        "why": "parley spoils",
+        "amt": 9363,
+        "pct": 1.0518227437711267
+      },
+      {
+        "why": "cutpurse",
+        "amt": 2934,
+        "pct": 0.3296003343185395
+      }
+    ],
+    "shared": {
+      "reach": {
+        "5": 55.4,
+        "10": 3.8,
+        "20": 0,
+        "30": 0,
+        "50": 0
+      },
+      "actionsPerFloor": {
+        "min": 28,
+        "p50": 110,
+        "p90": 141,
+        "max": 230
+      },
+      "casterRateByBand": [
+        {
+          "band": "1-5",
+          "encounters": 8858,
+          "casterEncounters": 355,
+          "rate": 4.007676676450666
+        },
+        {
+          "band": "6-10",
+          "encounters": 1704,
+          "casterEncounters": 106,
+          "rate": 6.220657276995305
+        },
+        {
+          "band": "11-20",
+          "encounters": 53,
+          "casterEncounters": 20,
+          "rate": 37.735849056603776
+        },
+        {
+          "band": "21-30",
+          "encounters": 0,
+          "casterEncounters": 0,
+          "rate": 0
+        },
+        {
+          "band": "31-50",
+          "encounters": 0,
+          "casterEncounters": 0,
+          "rate": 0
+        },
+        {
+          "band": "51+",
+          "encounters": 0,
+          "casterEncounters": 0,
+          "rate": 0
+        }
+      ],
+      "abilities": {
+        "foeCast": 1324,
+        "foeBolted": 503,
+        "foeDrained": 0,
+        "foeDebuffed": 290,
+        "foeHealed": 0,
+        "foeSummoned": 0,
+        "heroResisted": 343,
+        "heroResistFailed": 881,
+        "abilityDmg": 1676,
+        "meleeDmg": 148762,
+        "abilityShare": 0.0111408021909358
+      },
+      "stuck": 6,
+      "completed": 994,
+      "bot": {
+        "exploreBudget": 50,
+        "maxActions": 20000,
+        "party": false,
+        "fleeThreshold": 0.4,
+        "casterFleeThreshold": 0.6,
+        "potionThreshold": 0.6,
+        "campThreshold": 0.5,
+        "startDepth": 1
+      }
+    }
+  }
+}

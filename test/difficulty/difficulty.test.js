@@ -164,6 +164,41 @@ function readEarlyLock() {
   return JSON.parse(fs.readFileSync(lockPath, "utf8"));
 }
 
+// Phase 92 plan 03's economy lock (ECON-12, user ruling 2026-10-01, lever S):
+// the live phase directory first, then the v2.3 milestone archive, the same
+// fallback shape as readEarlyLock, so archiving the milestone never turns the
+// pins red.
+function readEconLock() {
+  const lockRel = ["92-store-economy-balance-close", "fit", "econ-lock.json"];
+  const planning = path.join(__dirname, "..", "..", ".planning");
+  const lockPath = [
+    path.join(planning, "phases", ...lockRel),
+    path.join(planning, "milestones", "v2.3-phases", ...lockRel),
+  ].find((p) => fs.existsSync(p));
+  assert.ok(lockPath, "92-03's fit/econ-lock.json not found in .planning/phases/ or .planning/milestones/v2.3-phases/");
+  return JSON.parse(fs.readFileSync(lockPath, "utf8"));
+}
+
+test("Phase 92 (ECON-12): every leaf of econ-lock.json equals DIALS", () => {
+  // The lock is econ-log.jsonl row 1 (fit/econ-eval-1.json, 1,000 seeds): the
+  // sell fraction shaped by depth, 0.5 through floor 4 easing to 0.125 at floor 7.
+  const lock = readEconLock();
+  let leaves = 0;
+  for (const [key, value] of Object.entries(lock)) {
+    assert.ok(key in DIALS, `econ-lock.json names ${key}, which is not a DIALS key`);
+    if (value && typeof value === "object") {
+      for (const [leaf, leafValue] of Object.entries(value)) {
+        assert.equal(DIALS[key][leaf], leafValue, `DIALS.${key}.${leaf}`);
+        leaves++;
+      }
+    } else {
+      assert.equal(DIALS[key], value, `DIALS.${key}`);
+      leaves++;
+    }
+  }
+  assert.equal(leaves, 4, "econ-lock.json carries the four SELL_FRACTION leaves (shallow, deep, shallowTo, deepFrom)");
+});
+
 test("Phase 79.2 (user ruling 2026-09-27): every leaf of the early-floor sweep's confirmed early-lock.json equals DIALS", () => {
   // The lock is c2 #18 (fit/early-log-c2.jsonl), confirmed at 1,000 seeds
   // (fit/confirm-1000-c3n1.jsonl) and on the 79.1 tail
@@ -221,7 +256,9 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75
   // the shallow merge replaces the Phase 54 / 75.3 values for exactly those
   // dials.
   const earlyLock = readEarlyLock();
-  const layered = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock };
+  // Phase 92 plan 03 economy lock (user ruling 2026-10-01): the LAST layer.
+  const econLock = readEconLock();
+  const layered = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock, ...econLock };
   // Quick 260928-nrf (user ruling 2026-09-28, "Thief flee +5 -> +3"):
   // CLASS_MITIGATION.Thief.fleeBonus is a mirror seeded from
   // content/flee.js#FLEE_THIEF_BONUS (engine/difficulty.js; no engine code

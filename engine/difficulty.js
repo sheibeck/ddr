@@ -352,9 +352,14 @@ export const DIALS = deepFreeze({
    * `## Ruling`): "stores pay less when you sell", "Scale with depth" so the
    * early stores pay about what they did and a depth-7 hero can afford about a
    * third to a half of a store, selling the bag included.
-   * Search: `deep` (and `deepFrom`) by plan 92-03's fit; shipped value locked
-   * in .planning/phases/92-store-economy-balance-close/fit/econ-lock.json. */
-  SELL_FRACTION: { shallow: 0.5, deep: 0.5, shallowTo: 4, deepFrom: 7 },
+   * LOCKED by plan 92-03 (ECON-12) at deep 0.125: econ-log.jsonl row 1,
+   * evaluated at 1,000 seeds (fit/econ-eval-1.json; depth-7 median share of a
+   * whole store 42.05% on gold plus the bag sold, band 33-50%), written to
+   * .planning/phases/92-store-economy-balance-close/fit/econ-lock.json and held
+   * equal to this entry by a traced test. Floors 1-4 pay 0.5 (today's), floors 5
+   * and 6 ease down, floors 7 and deeper pay 0.125 (an eighth of the base value).
+   * Identity (for the plumbing proof) is { shallow: 0.5, deep: 0.5 }. */
+  SELL_FRACTION: { shallow: 0.5, deep: 0.125, shallowTo: 4, deepFrom: 7 },
   /** FOE_ACCURACY — 54-06's to-hit modifier. Identity: 0 (canon, no
    * modifier).
    * held (available) — Phase 54 fit did not search this dial; shipped at

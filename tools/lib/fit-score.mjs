@@ -417,7 +417,7 @@ export const HELD_DIALS = [
   // Phase 92 plan 03 (ECON-12): the store's sell fraction; an economy dial the
   // difficulty fit never searches (plan 92-03's own fit sets it).
   { path: ["SELL_FRACTION", "shallow"], start: 0.5, releaseIf: "held (available)" },
-  { path: ["SELL_FRACTION", "deep"], start: 0.5, releaseIf: "held (available)" },
+  { path: ["SELL_FRACTION", "deep"], start: 0.125, releaseIf: "held (available)" },
   { path: ["SELL_FRACTION", "shallowTo"], start: 4, releaseIf: "held (available)" },
   { path: ["SELL_FRACTION", "deepFrom"], start: 7, releaseIf: "held (available)" },
   { path: ["DOT_MIX", "fight"], start: 1.0, releaseIf: "held (available); [0.6, 1.2] if released" },

@@ -189,3 +189,32 @@ test("econ retune: restore puts the shipped dial back exactly", () => {
   setDialsForTuning({ SELL_FRACTION: { shallow: 0.3, deep: 0.05 } })();
   assert.deepEqual([1, 5, 7, 12].map((d) => sellFractionFor(d)), before);
 });
+
+// --- Part 3: the locked value (plan 92-03, fit/econ-lock.json row 1) --------
+
+test("econ retune: the shipped fraction is 0.5 through floor 4, 0.375 and 0.25 at floors 5 and 6, 0.125 from floor 7", () => {
+  assert.deepEqual(DIALS.SELL_FRACTION, { shallow: 0.5, deep: 0.125, shallowTo: 4, deepFrom: 7 });
+  assert.deepEqual(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((d) => sellFractionFor(d)),
+    [0.5, 0.5, 0.5, 0.5, 0.375, 0.25, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125],
+  );
+});
+
+test("econ retune: under the shipped dial a store pays what it did on floors 1 to 4 and an eighth of base value from floor 7", () => {
+  // Cloak of Armor base 2500, Long Sword base 400, Healing potion base 150, Lockpicks base 450.
+  const paid = (it, sub, d) => sellPriceFor(it, "Human", sub, d);
+  for (const d of [1, 3]) {
+    assert.equal(paid(ITEMS.cloak, null, d), 1250, `cloak at ${d}`);
+    assert.equal(paid(ITEMS.longSword, null, d), 200, `Long Sword at ${d}`);
+    assert.equal(paid(ITEMS.cloak, "Pickpocket", d), 938, `cloak, Pickpocket, at ${d}`);
+  }
+  assert.equal(paid(ITEMS.cloak, null, 5), 938, "floor 5: round(2500 x 0.375)");
+  assert.equal(paid(ITEMS.cloak, null, 6), 625, "floor 6: 2500 x 0.25");
+  for (const d of [7, 10]) {
+    assert.equal(paid(ITEMS.cloak, null, d), 313, `cloak at ${d}: round(312.5)`);
+    assert.equal(paid(ITEMS.longSword, null, d), 50, `Long Sword at ${d}`);
+    assert.equal(paid(ITEMS.healing, null, d), 19, `Healing potion at ${d}: round(18.75)`);
+    assert.equal(paid(ITEMS.picks, null, d), 56, `Lockpicks at ${d}: round(56.25)`);
+    assert.equal(paid(ITEMS.cloak, "Pickpocket", d), 234, `cloak, Pickpocket, at ${d}: round(234.375)`);
+  }
+});
