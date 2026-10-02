@@ -221,8 +221,8 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
                     && runId == request.auth.uid + '_' + request.resource.data.hash
-                    && isValidBoardRun(request.resource.data)
                     && isNamed(request.auth.uid)
+                    && isValidBoardRun(request.resource.data)
                     && request.resource.data.handle == verifiedName(request.auth.uid)
                     && !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
       // D-11: no client ever updates a run (no rename path).

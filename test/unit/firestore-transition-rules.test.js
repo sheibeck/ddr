@@ -96,9 +96,9 @@ const LEGACY_CREATE_DISJUNCT = `
                     || (request.auth != null
                       && request.resource.data.uid == request.auth.uid
                       && runId == request.auth.uid + '_' + request.resource.data.hash
-                      && isValidBoardRun(request.resource.data)
                       && isLegacyHandle(request.resource.data.handle)
                       && !isNamed(request.auth.uid)
+                      && isValidBoardRun(request.resource.data)
                       && !exists(/databases/$(database)/documents/banned/$(request.auth.uid)))`;
 
 const FINAL_UPDATE = "// D-11: no client ever updates a run (no rename path).\n      allow update: if false;";
@@ -159,6 +159,36 @@ test("the transition header block sits right after rules_version and names its p
   assert.match(header, /firebase\.transition\.json/);
   assert.match(header, /firestore-transition-rules\.test\.js/);
   assert.match(header, /Release 2\.3\.0/);
+});
+
+// --- the per-request expression budget (live finding, Release 2.3.0 step 1, 2026-10-02) ---
+//
+// Firestore refuses a request that evaluates more than 1,000 expressions, and
+// isValidBoardRun alone costs well over half of that. The first transition
+// deploy asked isValidBoardRun in the named disjunct BEFORE asking isNamed, so
+// an unnamed 2.2.0 create evaluated it twice (once per disjunct) and every one
+// was refused live (403) with all its conditions satisfied. Nothing in this file
+// can count expressions; the structural guard is that a request reaches
+// isValidBoardRun in ONE disjunct only: each disjunct asks its named-ness guard
+// first, and the two guards are complements. The real engine is exercised by
+// test/emulator/firestore-rules.emulator.test.js (Firestore emulator).
+test("a create reaches isValidBoardRun in one disjunct only: each disjunct asks its complementary isNamed guard first (1,000-expression cap)", () => {
+  const body = stripTransitionHeader(normalize(fs.readFileSync(TRANSITION_PATH, "utf8")));
+  const runsBlock = body.slice(body.indexOf("match /runs/{runId}"), body.indexOf("match /banned/{uid}"));
+  const create = /allow create:([\s\S]*?);/.exec(runsBlock);
+  assert.ok(create, "runs create must exist");
+  const [named, legacy, ...rest] = create[1].split("||");
+  assert.equal(rest.length, 0, "exactly two create disjuncts");
+  const heavy = "isValidBoardRun(request.resource.data)";
+  const namedGuard = named.search(/(^|[^!])isNamed\(request\.auth\.uid\)/);
+  const legacyGuard = legacy.indexOf("!isNamed(request.auth.uid)");
+  assert.ok(namedGuard >= 0, "the named disjunct asks isNamed");
+  assert.ok(legacyGuard >= 0, "the legacy disjunct asks !isNamed");
+  assert.ok(named.indexOf(heavy) > namedGuard, "named disjunct: isNamed comes before isValidBoardRun");
+  assert.ok(legacy.indexOf(heavy) > legacyGuard, "legacy disjunct: !isNamed comes before isValidBoardRun");
+  assert.ok(legacy.indexOf(heavy) > legacy.indexOf("isLegacyHandle("), "legacy disjunct: the handle shape comes before isValidBoardRun");
+  assert.equal(named.split(heavy).length - 1, 1);
+  assert.equal(legacy.split(heavy).length - 1, 1);
 });
 
 // --- the legacy handle regex -------------------------------------------------

@@ -269,6 +269,9 @@ test("runs create needs the poster's names/{uid} to exist (isNamed first) and ha
   assert.match(expr, /isNamed\(request\.auth\.uid\)/);
   assert.match(expr, /request\.resource\.data\.handle == verifiedName\(request\.auth\.uid\)/);
   assert.ok(expr.indexOf("isNamed(request.auth.uid)") < expr.indexOf("verifiedName(request.auth.uid)"), "isNamed must come before verifiedName");
+  // Firestore refuses a request past 1,000 evaluated expressions and isValidBoardRun is most of that budget: keep the cheap guard first
+  // (the transition rules carry a second create disjunct; see test/unit/firestore-transition-rules.test.js).
+  assert.ok(expr.indexOf("isNamed(request.auth.uid)") < expr.indexOf("isValidBoardRun(request.resource.data)"), "isNamed must come before isValidBoardRun");
   assert.match(expr, /!exists\(\/databases\/\$\(database\)\/documents\/banned\/\$\(request\.auth\.uid\)\)/);
   assert.match(expr, /isValidBoardRun\(request\.resource\.data\)/);
   assert.match(expr, /request\.resource\.data\.uid == request\.auth\.uid/);
