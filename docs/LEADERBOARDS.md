@@ -92,7 +92,6 @@ tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export /
 | `src/browser/runDoc.js` | The run document contract, rank keys, the rules' JS mirror, commit/query builders | 83-02 |
 | `src/browser/reportLimits.js` | The per-player bug-report cooldown/daily-cap mirror | 83-02 |
 | `firebase/firestore.rules`, `firebase/firestore.indexes.json` | The deployed rules and composite indexes | 83-02, 91.2-04 |
-| `firebase/firestore.transition.rules`, `firebase.transition.json` | The deploy-window rules (section 6), deleted at the 2.3 cutover | 87, 91.2-04 |
 | `src/browser/firebaseAuth.js` | Identity v2: sign-up, refresh, Play Games link / adopt, claim, rename, account switch | 83-03, 91.2-05 |
 | `src/browser/fakeBoardServer.js` | The browser dev loop's in-memory REST model of the whole board, with fake Play Games, `names` and `boardName` | 83-04, 91.2-03 |
 | `src/browser/boardClient.js` | `topTen`/`total`/`rankOf`/`ownRuns`, cached, public | 83-04 |
@@ -100,7 +99,7 @@ tools/boards-admin.mjs  (top / suspicious / delete-run / ban / unban / export /
 | `src/browser/boardWrites.js`, `src/browser/runQueue.js`, `src/browser/boardSync.js` | Idempotent submit under the session name, erase, the submission queue with the sign-in hold, sessions and the D-05 re-post | 83-06, 91.2-05, 91.2-06 |
 | `src/browser/runBackfill.js` | The once-only backfill of runs from the 2.1.0 release on | 83-12 |
 | `src/browser/pgsProbe.js` | The dev-row PLAY GAMES PROBE that proves the spike gates on a device | 91.2-03 |
-| `tools/boards-smoke.mjs` | The live end-to-end smoke test (default, `--transition`, `--function`) | 83-07, 91.2-04 |
+| `tools/boards-smoke.mjs` | The live end-to-end smoke test (default, `--function`) | 83-07, 91.2-04 |
 
 Board strings (`name`, `handle`, `epitaph`) now include one player-typed one:
 `handle` is the Google Play Games name, which Google lets players choose, so it
@@ -200,8 +199,8 @@ On `runs/{runId}`:
 - **`update`** — **none.** SRV-02's "no update" wording holds again: the
   2.2.0 handle-only re-roll update is gone with the re-roll (D-11), and the
   Play Games name is restamped server-side by the function or the admin tool
-  through IAM, never by a client. (The transition file keeps the 2.2.0 re-roll
-  update for unnamed owners; section 6.)
+  through IAM, never by a client. (The deploy-window transition file once kept
+  the 2.2.0 re-roll update for unnamed owners; it is history, section 6.)
 - **`delete`** — the owner only, of their own run.
 - **`get`** — public, unconditional.
 - **`list`** — public, bounded to `request.query.limit == null ||
@@ -291,86 +290,65 @@ gcloud firestore indexes composite list --project=delve-die-repeat-6ba5f --datab
 Every composite index's `state` reaches `READY` before relying on the
 queries it backs (`topTen`, `rankOf`) live.
 
-### The transition period (over, 2026-09-29)
+### The transition periods (both over)
 
-While 2.1.0 (vc11) was the build testers ran, every rules or index deploy
-used a transition config (`firebase.transition.json`, pointing at a
-`firebase/firestore.transition.rules` copy whose `bugReports` create clause
-kept 2.1.0's unauthenticated form; `docs/BUG-REPORTS.md` section 4 "Old
-builds"). On 2026-09-29, once 2.2.0 (vc12) was live on the testing track,
-the final rules were deployed with the plain command above, `--probe-rules`
-came back ten PASS (`docs/BUG-REPORTS.md`'s release-day subsection), and the
-transition rules, their config and their test were deleted. That history
-stays here; today's transition config is the next subsection.
+**The 2.1.0 period (over, 2026-09-29).** While 2.1.0 (vc11) was the build
+testers ran, every rules or index deploy used a transition config
+(`firebase.transition.json`, pointing at a `firebase/firestore.transition.rules`
+copy whose `bugReports` create clause kept 2.1.0's unauthenticated form;
+`docs/BUG-REPORTS.md` section 4 "Old builds"). On 2026-09-29, once 2.2.0 (vc12)
+was live on the testing track, the final rules were deployed with the plain
+command above, `--probe-rules` came back ten PASS (`docs/BUG-REPORTS.md`'s
+release-day subsection), and the transition rules, their config and their test
+were deleted.
 
-### Until the 2.3 cutover: the DEPTH-key transition config (and the 2.2.0 legacy branch)
+**The 2.2.0 to 2.3.0 period (over, 2026-10-02).** The same two files were
+recreated for the DEPTH-key change and the Play Games names (Phase 87 BOARD-28,
+Phase 91.2 BOARD-33, D-13), and every rules or index deploy in that window used
+`--config firebase.transition.json`. The file was the final rules plus exactly
+four differences, so one deploy kept the shipped 2.2.0 build posting while a 2.3
+build was tested next to it:
 
-While 2.2.0 (vc12) is a build testers run, every rules or index deploy uses
-the transition config instead of the plain command above:
+1. the DEPTH key: `deepKey` could equal the new formula (`floor * 1,000,000 +
+   steps`) or the 2.2.0 one (`floor * 1,000,000 + (999,999 - steps)`);
+2. the legacy handle shape (`isLegacyHandle`, the verbatim 2.2.0 `@word+word`
+   regex);
+3. a legacy create branch, for a uid with no `names/{uid}` document (the shipped
+   2.2.0 client, an anonymous account);
+4. a legacy update rule: the 2.2.0 handle-only re-roll update, for an owner with
+   no `names/{uid}` document.
 
-```
-firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive
-```
+A uid with a names document could never use either legacy branch. The live
+record is section 14 ("Release 2.3.0 live record (2026-10-02)"): the transition
+deploy and its fix (be6716a7), the final-rules cutover and the DEPTH re-key. At
+the cutover (2026-10-02) the plain command above deployed the final rules, and
+Release 2.3.0 step 4 deleted the transition artefacts:
+`firebase/firestore.transition.rules`, `firebase.transition.json`,
+`test/unit/firestore-transition-rules.test.js`, the 2.2.0 helpers in
+`src/browser/runDoc.js` (`LEGACY_HANDLE_PATTERN`, `isLegacyHandle`,
+`legacyDeepKeyOf`, `legacyHandleUpdateCommit`), the fake board server's
+transition mode and admin run PATCH, the `rekey-deep` command in
+`tools/boards-admin.mjs` and the `--transition` probe in
+`tools/boards-smoke.mjs`. **There is one rules file and one config now: the plain
+command above is the only deploy.** A 2.2.0 client's run is refused by the live
+rules (D-13).
 
-`firebase.transition.json` points at `firebase/firestore.transition.rules`,
-which is the final rules plus exactly four differences, so one deploy keeps
-2.2.0 posting while a 2.3 build is tested next to it (Phase 87 BOARD-28 and
-Phase 91.2 BOARD-33, D-13):
+### The smoke probes
 
-1. **The DEPTH key.** `deepKey` may equal the new formula (`floor * 1,000,000 +
-   steps`) or the old 2.2.0 one (`floor * 1,000,000 + (999,999 - steps)`),
-   both computed from the doc's own floor and steps, and nothing else.
-2. **The legacy handle shape** (`isLegacyHandle`, the verbatim 2.2.0 `@word+word`
-   regex).
-3. **A legacy create branch**: a run whose handle is a legacy `@handle` from a
-   uid that has **no** `names/{uid}` document (the shipped 2.2.0 client, an
-   anonymous account).
-4. **The legacy update rule**: the 2.2.0 handle-only re-roll update, for an
-   owner with no `names/{uid}` document.
+`node tools/boards-smoke.mjs` and `node tools/boards-smoke.mjs --function`
+prove the deployed rules and function. The default probe needs the admin
+credentials the tool resolves up front (it seeds a probe name through the admin
+API); `--function` needs none.
 
-A uid that has a names document can never use either legacy branch (each
-carries `!isNamed`), so a Play Games-linked token can never post an `@handle`.
-Named 2.3 runs are accepted exactly as the final rules accept them.
-`test/unit/firestore-transition-rules.test.js` reduces the transition file by
-exactly those four things (its header excluded) and compares the result to the
-final rules byte for byte, and shows a named uid cannot reach a legacy branch.
-The plain command is the 2.3 cutover (`docs/RELEASING.md`, "Release 2.3.0"
-step 3). Until a re-key, a 2.2.0 run mis-orders only among runs tied on the
-same floor (accepted, CONTEXT).
-
-**One deploy covers both phases.** The user deferred the Phase 87 deploy
-(87-08, 2026-09-30); the 91.2 transition file now carries the Phase 87 key, so
-the single transition deploy at Release 2.3.0 step 1 (before the milestone-end
-Compete-ON device test, or the release, whichever is first) replaces the still
-pending Phase 87 one. A 2.3 build cannot post under today's live rules at all
-(its doc has no `@handle`), which is why that deploy must come first.
-
-After a transition deploy, prove the live rules with
-`node tools/boards-smoke.mjs --transition` and `node tools/boards-smoke.mjs
---function`. Both need the admin credentials the tool resolves up front
-(`--transition`) or none (`--function`); the old `--with-admin` flag is gone,
-because the default probe now always seeds a probe name through the admin API.
-
-- **`--transition`** signs up an anonymous account and (1) creates a run shaped
-  like a shipped 2.2.0 client's (a legacy `@handle`, the old DEPTH key) plus its
-  handle-only re-roll update, which must land; (2) confirms a third DEPTH key is
-  refused; (3) seeds a probe name for the uid and creates a named run with the
-  2.3 key, which must land; (4) confirms that now the uid is named, the legacy
-  create and the legacy re-roll update are both refused; then erases its runs,
-  removes the seeded name and deletes its account (in a `finally`, even when a
-  step fails). Every step must PASS. Against the final rules the legacy steps
-  fail, which is how the probe tells the two rule sets apart.
+- The **default** probe (the final rules) proves the names gate: an unnamed uid
+  cannot post, a named uid posts under the probe name, a run whose handle is not
+  the verified name is refused, no client update lands (not a handle re-roll, not
+  a stat), `names` / `nameOverrides` are closed to client reads and writes, and
+  the existing denies, ban, admin delete and erase still hold. Every step must
+  PASS and cleanup must be ok.
 - **`--function`** needs no admin: it asks the deployed `boardName` function to
   claim a name for an anonymous (not Play Games-linked) account, which must
   answer `NOT_LINKED`, and to release, which must answer ok.
-- The **default** probe (the final rules, run at the cutover) proves the names
-  gate: an unnamed uid cannot post, a named uid posts under the probe name, a
-  run whose handle is not the verified name is refused, no client update lands,
-  `names` / `nameOverrides` are closed to client reads and writes, and the
-  existing denies, ban, admin delete and erase still hold.
-
-The `--transition` probe and the transition files are artefacts deleted at the
-2.3 cutover (`docs/RELEASING.md`, "Release 2.3.0" step 4).
 
 ## 7. Identity
 
@@ -722,26 +700,15 @@ node tools/boards-admin.mjs export --format json --since 2026-09-01 --until 2026
 
 # With a service-account key file instead of gcloud:
 node tools/boards-admin.mjs top --stat purse --key ../ddr-boards-sa.json
-
-# Phase 87 (BOARD-28) transition tool: move runs filed with the old 2.2.0
-# DEPTH key onto the most-steps key. A dry run by default (prints scanned /
-# current / old / left-alone counts), --yes to patch:
-node tools/boards-admin.mjs rekey-deep
-node tools/boards-admin.mjs rekey-deep --yes
 ```
 
 (`names`, `name-override` and `name-clear` are the Phase 91.2 name
 moderation commands, below.)
 
-**`rekey-deep [--season N|--all-seasons] [--yes]`** reads every run in the
-season (one billed read per run) and classifies its `deepKey` against its own
-floor and steps: already on the new formula, on the 2.2.0 formula (to be
-re-keyed), or neither (left alone and reported). It is a dry run unless
-`--yes`, and idempotent: a second `--yes` finds nothing left to move. It
-patches only `deepKey`, with the operator's admin credentials (which bypass
-the security rules, so it works under either rule set). It is a Phase 87 transition artifact, run at the 2.3
-release and again at the final-rules cutover (`docs/RELEASING.md`, "Release
-2.3.0"), then deleted.
+**History: `rekey-deep`.** Phase 87's one-off DEPTH re-key (it moved runs filed
+with the 2.2.0 key onto the most-steps key) ran at the 2.3 release and again at
+the final-rules cutover, then was deleted with the other transition artefacts
+(section 14, "Release 2.3.0 live record").
 
 **Names (Phase 91.2, D-08).** Every board name is a Play Games name the player
 chose, so the moderation tools gained a names half. All three are dry runs
@@ -1074,8 +1041,9 @@ live board.
 
 ### DEPTH-key transition deploy (Phase 87, 2026-09-30)
 
-**Status: PENDING. Deferred by the user (2026-09-30, resume signal "defer" at
-the 87-08 checkpoint). Nothing ran live.** No firebase deploy, no gcloud call,
+**Status: DONE (2026-10-02), see "Release 2.3.0 live record (2026-10-02)"
+below. The text that follows is the record as of 2026-09-30, when the user
+deferred the deploy at the 87-08 checkpoint and nothing ran live.** No firebase deploy, no gcloud call,
 no `boards-smoke`, no `boards-admin` was run in Phase 87. The live project
 still runs the 2.2.0 final rules (`deepKey` = `floor * 1,000,000 + (999,999 -
 steps)` only), which refuse a 2.3 client's run (`floor * 1,000,000 + steps`).
@@ -1117,9 +1085,10 @@ runs.
 
 ### Play Games names (Phase 91.2, 2026-10-01): pending
 
-**Status: PENDING. Deferred by the user (2026-10-01, resume signal "defer" at
-both 91.2-10 checkpoints: the console batch and the live go). Nothing ran
-live.** No firebase deploy, no gcloud call, no admin-API write, no provider
+**Status: DONE (2026-10-02), see "Release 2.3.0 live record (2026-10-02)"
+below. The text that follows is the record as of 2026-10-01, when the user
+deferred both 91.2-10 checkpoints (the console batch and the live go) and
+nothing ran live.** No firebase deploy, no gcloud call, no admin-API write, no provider
 enable, no function deploy, no `boards-smoke` run, no console step, no push in
 any repo, and no web client ID commit (`PLAY_GAMES_CONFIG.webClientId` is still
 unset, because the client ID does not exist yet). The live project still runs
@@ -1190,6 +1159,37 @@ privacy, delete-data, terms and game pages saying the board shows the Google Pla
 Games name, `C:/projects/darktier-studio` branch `main`) is committed but not
 pushed and not deployed. Push it and run `npm run deploy` at Release 2.3.0 step
 2.7 (`docs/RELEASING.md`).
+
+### Release 2.3.0 live record (2026-10-02)
+
+The transition window closed on 2026-10-02. All of it ran on the user's go
+(`docs/RELEASING.md` "Release 2.3.0").
+
+- **Transition deploy and fix (step 1.5, 1.6).** The first live `boards-smoke
+  --transition` found the transition rules refused every legacy (2.2.0) run
+  create with 403: the named disjunct evaluated `isValidBoardRun` before it
+  failed `isNamed`, and the legacy disjunct evaluated it again, past Firestore's
+  1,000-expression cap per request. Reproduced and fixed in the Firestore
+  emulator by commit **be6716a7** (`isNamed` is asked before
+  `isValidBoardRun`; structural guards in the rules tests plus the opt-in
+  emulator test). The transition rules were redeployed with the fix: live
+  `boards-smoke --transition` **8/8 PASS**, `--function` **4/4 PASS**, every
+  index READY, the `boardName` function ACTIVE, the Play Games provider enabled
+  (client ID verified).
+- **DEPTH re-key (BOARD-28).** `node tools/boards-admin.mjs rekey-deep --yes`
+  moved **21** runs from the 2.2.0 key onto the most-steps key, then **0** were
+  left on the old key; the census at the cutover reported **22 of 22 runs on the new
+  key and 0 on the old**.
+- **Final-rules cutover (step 3, 2026-10-02).** The plain `firebase deploy
+  --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f
+  --non-interactive` put `firebase/firestore.rules` live. The plain
+  `node tools/boards-smoke.mjs` passed **every step** (cleanup ok). From this
+  moment a 2.2.0 client's run is refused by the live rules (D-13).
+- **Clean-up (step 4, 2026-10-02).** The transition artefacts were deleted
+  (section 6): the two transition files and their test, the 2.2.0 helpers in
+  `runDoc.js`, the fake board server's transition mode and admin run PATCH,
+  `rekey-deep` and its classifier, and the `--transition` probe. The
+  deploy-window records above stay as history.
 
 ## 15. Troubleshooting
 

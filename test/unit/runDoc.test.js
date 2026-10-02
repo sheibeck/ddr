@@ -51,9 +51,6 @@ import {
   BOARD_STATS,
   isBoardStat,
   deepKeyOf,
-  legacyDeepKeyOf,
-  LEGACY_HANDLE_PATTERN,
-  isLegacyHandle,
   daysKeyOf,
   killsKeyOf,
   goldKeyOf,
@@ -63,7 +60,6 @@ import {
   buildRunDoc,
   validateRunDoc,
   createRunCommit,
-  legacyHandleUpdateCommit,
   deleteCommit,
   boardFilters,
   topTenQuery,
@@ -453,19 +449,6 @@ test("createRunCommit: one Write — update (no createdAt) + updateTransforms + 
   assert.deepEqual(w.currentDocument, { exists: false });
 });
 
-test("legacyHandleUpdateCommit (transition-only, the 2.2.0 re-roll shape): one Write per id, updateMask [handle], currentDocument.exists:true", () => {
-  const ids = ["u1_aaaa1111", "u1_bbbb2222"];
-  const commit = legacyHandleUpdateCommit(FIREBASE_CONFIG, ids, "@lanternjaw");
-  assert.equal(commit.writes.length, 2);
-  ids.forEach((id, i) => {
-    const w = commit.writes[i];
-    assert.equal(w.update.name, docName(FIREBASE_CONFIG, "runs", id));
-    assert.deepEqual(w.update.fields, toFirestoreFields({ handle: "@lanternjaw" }));
-    assert.deepEqual(w.updateMask, { fieldPaths: ["handle"] });
-    assert.deepEqual(w.currentDocument, { exists: true });
-  });
-});
-
 test("deleteCommit: one delete Write per id", () => {
   const ids = ["u1_aaaa1111", "u1_bbbb2222"];
   const commit = deleteCommit(FIREBASE_CONFIG, ids);
@@ -568,22 +551,13 @@ test("deepKeyOf (Phase 87 BOARD-28): floor * 1,000,000 + steps, more steps ranks
   assert.ok(deepKeyOf({ floor: 6, steps: 0 }) > deepKeyOf({ floor: 5, steps: STEPS_MAX }));
 });
 
-test("legacyDeepKeyOf: the 2.2.0 (vc12) fewer-steps formula, never equal to deepKeyOf for any in-bound steps", () => {
-  assert.equal(legacyDeepKeyOf({ floor: 5, steps: 100 }), 5999899);
-  for (const floor of [1, 5, 200]) {
-    for (let steps = 0; steps <= STEPS_MAX; steps += 997) {
-      assert.notEqual(legacyDeepKeyOf({ floor, steps }), deepKeyOf({ floor, steps }));
-    }
-    assert.notEqual(legacyDeepKeyOf({ floor, steps: STEPS_MAX }), deepKeyOf({ floor, steps: STEPS_MAX }));
-    assert.notEqual(legacyDeepKeyOf({ floor, steps: 0 }), deepKeyOf({ floor, steps: 0 }));
-  }
-});
-
-test("validateRunDoc: a doc carrying the legacy (2.2.0) deepKey fails exactly [deepkey] against the final-rules mirror", () => {
+test("validateRunDoc: a doc carrying the old 2.2.0 deepKey (fewer steps first) fails exactly [deepkey]", () => {
   const valid = baseValidDoc();
   assert.deepEqual(validateRunDoc(valid), []);
-  const legacy = { ...valid, deepKey: legacyDeepKeyOf(valid) };
-  assert.deepEqual(validateRunDoc(legacy), ["deepkey"]);
+  // floor * 1,000,000 + (999,999 - steps): the formula 2.2.0 clients wrote.
+  const old = { ...valid, deepKey: valid.floor * 1000000 + (STEPS_MAX - valid.steps) };
+  assert.notEqual(old.deepKey, deepKeyOf(valid));
+  assert.deepEqual(validateRunDoc(old), ["deepkey"]);
 });
 
 // ---------------------------------------------------------------------------
@@ -621,14 +595,6 @@ test("buildRunDoc: the handle is copied as given (no name rule at build time)", 
   assert.deepEqual(bad, { ok: false, reason: "invalid", fails: ["handle"] });
 });
 
-test("LEGACY_HANDLE_PATTERN / isLegacyHandle: the transition-only 2.2.0 regex", () => {
-  assert.equal(typeof LEGACY_HANDLE_PATTERN, "string");
-  assert.ok(LEGACY_HANDLE_PATTERN.startsWith("^@(lantern|moss|") && LEGACY_HANDLE_PATTERN.endsWith("|goblet|pouch)$"));
-  assert.equal(isLegacyHandle("@mossjaw"), true);
-  assert.equal(isLegacyHandle("Moss Knuckle"), false);
-  assert.equal(isLegacyHandle(null), false);
-});
-
 test("purity: runDoc.js no longer imports the rolled-handle module", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "runDoc.js"), "utf8");
   assert.equal(/from\s+["']\.\/handles\.js["']/.test(raw), false);
@@ -636,10 +602,12 @@ test("purity: runDoc.js no longer imports the rolled-handle module", () => {
   assert.ok(/from\s+["']\.\/boardName\.js["']/.test(raw));
 });
 
-test("D-11: the shipped client has no handle-only commit builder (only the transition-only legacy shape remains)", () => {
+test("D-11: the client has no handle-only commit builder (the transition-only legacy shape was deleted at the 2.3 cutover)", () => {
   const raw = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "runDoc.js"), "utf8");
   assert.equal(raw.includes("handleUpdateCommit"), false);
-  assert.ok(raw.includes("export function legacyHandleUpdateCommit"));
+  for (const name of ["legacyHandleUpdateCommit", "legacyDeepKeyOf", "LEGACY_HANDLE_PATTERN", "isLegacyHandle"]) {
+    assert.equal(raw.includes(name), false, `${name} is deleted`);
+  }
   const writes = fs.readFileSync(path.join(REPO_ROOT, "src", "browser", "boardWrites.js"), "utf8");
   assert.equal(/legacyHandleUpdateCommit|handleUpdateCommit/.test(writes), false, "boardWrites never builds a handle update");
 });

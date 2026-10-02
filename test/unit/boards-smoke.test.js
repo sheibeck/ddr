@@ -4,13 +4,13 @@
 // D-13) around the names gate. Covers tools/boards-smoke.mjs against
 // src/browser/fakeBoardServer.js: the default probe (final rules: an admin
 // seeds the probe name, every create is bound to it, no client update, names
-// closed), the --transition probe (a transition-mode fake), the --function
-// probe (the boardName refusal path), the failure path with complete cleanup,
-// and the CLI. No live network call here: the CLI is only ever spawned with
+// closed), the --function probe (the boardName refusal path), the failure path
+// with complete cleanup, and the CLI (the --transition probe was deleted at the
+// 2.3 cutover). No live network call here: the CLI is only ever spawned with
 // --dry-run or an unrecognized flag, and main() is driven in-process with an
 // injected fake fetch, config and gcloud stand-in — a bare invocation would use
 // the REAL FIREBASE_CONFIG and a real gcloud login and must never run in a
-// test (the live run is 91.2-10's job).
+// test (the live run is the maintainer's, on his go).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -21,15 +21,13 @@ import url from "node:url";
 
 import { SEASON } from "../../content/season.js";
 import { runHash } from "../../engine/records.js";
-import { buildRunDoc, deepKeyOf, legacyDeepKeyOf } from "../../src/browser/runDoc.js";
+import { buildRunDoc } from "../../src/browser/runDoc.js";
 import { BOARD_NAME_FN } from "../../src/browser/firebaseConfig.js";
 import { createFakeBoardFetch, FAKE_ADMIN_TOKEN } from "../../src/browser/fakeBoardServer.js";
 import { resolveAdminAuth, createAdminApi } from "../../tools/boards-admin.mjs";
 import {
   smokeSummaries,
   runSmoke,
-  transitionSummaries,
-  runTransitionProbe,
   runFunctionProbe,
   main,
 } from "../../tools/boards-smoke.mjs";
@@ -63,11 +61,6 @@ const SMOKE_STEP_ORDER = [
   "deny-names-read", "deny-names-write", "deny-list-51",
   "ban", "admin-delete",
   "erase", "account-deleted",
-];
-
-const TRANSITION_STEP_ORDER = [
-  "signup", "create-legacy", "deny-third-key", "seed-name", "create-named",
-  "deny-legacy-when-named", "erase", "account-deleted",
 ];
 
 const FUNCTION_STEP_ORDER = ["signup", "claim-unlinked", "release", "account-deleted"];
@@ -251,10 +244,8 @@ test("runSmoke: a failure after the name was seeded still removes the names docu
   assert.equal(result.cleanup.accountDeleted, true);
 });
 
-test("runSmoke: against a fake that lets an unnamed uid post (transition mode) deny-unnamed-create fails and cleanup removes what landed", async () => {
+test("runSmoke: against rules that let an unnamed uid post, deny-unnamed-create fails and cleanup removes what landed", async () => {
   const clock = clockBox(4200000);
-  // a transition fake accepts only a 2.2.0 @handle from an unnamed uid, so the probe's named create is still refused:
-  // make the failure real by seeding the name BEFORE the probe via a stricter-than-final stand-in
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
   const admin = await makeAdmin(fake);
   const permissive = async (rawUrl, init) => {
@@ -303,7 +294,7 @@ test("CLI --dry-run: exits 0, lists every step, prints the three summaries, neve
 test("CLI --bogus: usage + exit 2, no network", () => {
   const res = runTool(["--bogus"]);
   assert.equal(res.status, 2);
-  assert.ok(res.stdout.includes("--transition"));
+  assert.ok(!res.stdout.includes("--transition"), "the transition probe is gone from the usage");
   assert.ok(res.stdout.includes("--function"));
 });
 
@@ -341,8 +332,8 @@ test("main(): without admin auth the default probe exits 2 with a message that t
   assert.deepEqual(fake.calls(), []);
 });
 
-test("main(): --transition without admin auth also exits 2 (it seeds a probe name too)", async () => {
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+test("main(): --transition is gone: usage + exit 2, and no network call", async () => {
+  const fake = createFakeBoardFetch({ config: VALID_CONFIG });
   const cap = captureOut();
   const code = await main(["node", "boards-smoke.mjs", "--transition"], {
     config: VALID_CONFIG,
@@ -374,35 +365,6 @@ test("main(): the default probe with an admin token exits 0 and prints every ste
   assertBoardLeftAsFound(fake);
 });
 
-test("main(): --transition exits 0 against a transition fake and 1 against a final-rules fake", async () => {
-  const clock = clockBox(12000000);
-  const transitionFake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, transition: true });
-  const capA = captureOut();
-  const ok = await main(["node", "boards-smoke.mjs", "--transition"], {
-    config: VALID_CONFIG,
-    fetchFn: transitionFake.fetchFn,
-    now: clock,
-    env: {},
-    execFn: () => FAKE_ADMIN_TOKEN,
-    out: capA.out,
-  });
-  assert.equal(ok, 0, capA.lines.join("\n"));
-  assertBoardLeftAsFound(transitionFake);
-
-  const finalFake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
-  const capB = captureOut();
-  const bad = await main(["node", "boards-smoke.mjs", "--transition"], {
-    config: VALID_CONFIG,
-    fetchFn: finalFake.fetchFn,
-    now: clock,
-    env: {},
-    execFn: () => FAKE_ADMIN_TOKEN,
-    out: capB.out,
-  });
-  assert.equal(bad, 1);
-  assertBoardLeftAsFound(finalFake);
-});
-
 test("main(): --function needs no admin auth and exits 0 against the fake's boardName emulation", async () => {
   const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clockBox(13000000) });
   const cap = captureOut();
@@ -418,88 +380,6 @@ test("main(): --function needs no admin auth and exits 0 against the fake's boar
   assert.equal(code, 0, cap.lines.join("\n"));
   for (const name of FUNCTION_STEP_ORDER) assert.ok(cap.lines.some((l) => l === `PASS ${name}`), name);
   assertBoardLeftAsFound(fake);
-});
-
-/* ---------------- Phase 87 + 91.2: the transition probe ---------------- */
-
-test("transitionSummaries: three frozen summaries on floor 4, distinct steps and hashes, all passing buildRunDoc", () => {
-  const clock = clockBox(7000000);
-  const { a, b, c } = transitionSummaries(clock);
-  const hashes = new Set();
-  for (const s of [a, b, c]) {
-    assert.equal(Object.isFrozen(s), true);
-    assert.equal(s.floor, 4);
-    assert.equal(s.hash, runHash(s));
-    hashes.add(s.hash);
-    const built = buildRunDoc(s, { uid: "fakeuid000001", handle: "Smoke Probe", version: s.version });
-    assert.equal(built.ok, true, JSON.stringify(built.fails));
-  }
-  assert.deepEqual([a.steps, b.steps, c.steps], [321, 123, 77]);
-  assert.equal(hashes.size, 3);
-  assert.equal(Object.isFrozen(transitionSummaries(clock)), true);
-});
-
-test("runTransitionProbe: against a transition-mode fake every step passes and the board ends empty", async () => {
-  const clock = clockBox(8000000);
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock, transition: true });
-  const admin = await makeAdmin(fake);
-  const seen = [];
-  const inner = fake.fetchFn;
-  const spy = async (rawUrl, init) => {
-    if (typeof rawUrl === "string" && rawUrl.includes(":commit") && init && init.body) seen.push(JSON.parse(init.body));
-    return inner(rawUrl, init);
-  };
-  const result = await runTransitionProbe({ fetchFn: spy, config: VALID_CONFIG, now: clock, log: () => {}, admin });
-
-  assert.equal(result.ok, true, JSON.stringify(result.steps.filter((s) => !s.pass)));
-  assert.deepEqual(result.steps.map((s) => s.name), TRANSITION_STEP_ORDER);
-  assert.equal(result.steps.every((s) => s.pass), true);
-  assert.deepEqual(result.facts.missingIndexes, []);
-  assert.equal(result.cleanup.erased, true);
-  assert.equal(result.cleanup.accountDeleted, true);
-  assert.equal(result.cleanup.nameRemoved, true);
-  assertBoardLeftAsFound(fake);
-
-  // the keys and handles the probe wrote: the exact 2.2.0 formula, the 2.3 formula, and a third value
-  const { a, b, c } = transitionSummaries(clock);
-  const keys = seen
-    .flatMap((body) => body.writes || [])
-    .map((w) => w.update && w.update.fields && w.update.fields.deepKey)
-    .filter(Boolean)
-    .map((f) => Number(f.integerValue));
-  assert.ok(keys.includes(legacyDeepKeyOf(a)));
-  assert.ok(keys.includes(deepKeyOf(b)));
-  assert.ok(keys.includes(deepKeyOf(c) + 1));
-  assert.notEqual(deepKeyOf(c) + 1, legacyDeepKeyOf(c));
-  const handles = seen
-    .flatMap((body) => body.writes || [])
-    .map((w) => w.update && w.update.fields && w.update.fields.handle)
-    .filter(Boolean)
-    .map((f) => f.stringValue);
-  assert.ok(handles.includes("@mossjaw"), "the unnamed legacy create");
-  assert.ok(handles.includes("Smoke Probe"), "the named create");
-});
-
-test("runTransitionProbe: against the default (final-rules) fake it fails at create-legacy and still cleans up", async () => {
-  const clock = clockBox(9000000);
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, now: clock });
-  const admin = await makeAdmin(fake);
-  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, now: clock, log: () => {}, admin });
-
-  assert.equal(result.ok, false);
-  assert.deepEqual(result.steps.map((s) => s.name), ["signup", "create-legacy"]);
-  assert.equal(result.steps[1].pass, false);
-  assertBoardLeftAsFound(fake);
-  assert.equal(result.cleanup.erased, true);
-  assert.equal(result.cleanup.accountDeleted, true);
-});
-
-test("runTransitionProbe: without an admin it refuses to run and touches no network", async () => {
-  const fake = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const result = await runTransitionProbe({ fetchFn: fake.fetchFn, config: VALID_CONFIG, log: () => {} });
-  assert.equal(result.ok, false);
-  assert.equal(result.error, "admin-required");
-  assert.deepEqual(fake.calls(), []);
 });
 
 /* ---------------- 91.2: the function probe ---------------- */

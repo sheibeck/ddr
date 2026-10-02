@@ -20,9 +20,9 @@
 // create with createRunCommit and the probe's own bearer token through this
 // file's request helper — never boardWrites' own run-submit call, which from
 // 91.2-05 on needs a Play Games session the smoke can never have. The admin seed is therefore
-// REQUIRED for the default and --transition probes (resolved up front, exit 2
-// without it). Nothing is deployed or run by the tests; the live run belongs to
-// 91.2-10 (transition deploy) and the final-rules cutover (Release 2.3.0).
+// REQUIRED for the default probe (resolved up front, exit 2 without it).
+// Nothing is deployed or run by the tests; the live runs were the final-rules
+// cutover (Release 2.3.0, 2026-10-02: every step PASS).
 //
 // What each step of the default probe (the FINAL rules) proves:
 //   signup                   an anonymous identity can be created
@@ -53,20 +53,8 @@
 //                            account is gone
 // The finally block also removes the seeded names/{uid}.
 //
-// Phase 87 (BOARD-28) + 91.2 add a separate --transition probe
-// (runTransitionProbe), a transition artifact deleted at the 2.3 cutover
-// (docs/RELEASING.md, Release 2.3.0), run against the transition rules:
-//   signup                   as above
-//   create-legacy            an UNNAMED uid posts a run shaped like a shipped
-//                            2.2.0 client's (an @handle, the legacyDeepKeyOf
-//                            key), and its 2.2.0 handle-only re-roll update lands
-//   deny-third-key           a run carrying any other DEPTH key is refused
-//   seed-name                as above
-//   create-named             a named run with the 2.3 DEPTH key lands under the
-//                            probe name
-//   deny-legacy-when-named   now the uid is named: the legacy @handle create
-//                            and the legacy re-roll update are both refused
-//   erase / account-deleted  as above
+// (A --transition probe, which proved the deploy-window rules, was deleted at
+// the 2.3 cutover: docs/LEADERBOARDS.md section 14.)
 //
 // 91.2 also adds --function (runFunctionProbe), which needs no admin: it asks
 // the deployed boardName function to claim a name for the probe's anonymous
@@ -95,13 +83,10 @@ import { firestoreUrl, restError, docName, toFirestoreFields } from "../src/brow
 import {
   buildRunDoc,
   createRunCommit,
-  legacyHandleUpdateCommit,
   RUN_COLLECTION,
   RANK_FIELD,
   BOARD_STATS,
   rankKeys,
-  deepKeyOf,
-  legacyDeepKeyOf,
 } from "../src/browser/runDoc.js";
 import { createBoardClient, decodeRunDocument } from "../src/browser/boardClient.js";
 import { createBoardWrites } from "../src/browser/boardWrites.js";
@@ -125,12 +110,26 @@ const SMOKE_SHARED = Object.freeze({
   version: "smoke",
 });
 
-// The probe's verified name (seeded through the admin API), a name it was never
-// given, and the two 2.2.0-shaped handles the transition probe posts and re-rolls to.
+// The probe's verified name (seeded through the admin API) and a name it was never
+// given; the re-roll handle is the target of deny-update's handle-only update.
 const SMOKE_NAME = "Smoke Probe";
 const SMOKE_WRONG_NAME = "Smoke Impostor";
-const LEGACY_PROBE_HANDLE = "@mossjaw";
-const LEGACY_REROLL_HANDLE = "@gravepouch";
+const REROLL_HANDLE = "@gravepouch";
+
+// The wire shape of the shipped 2.2.0 handle re-roll (one handle-only update Write,
+// updateMask ["handle"], the doc must exist). The final rules refuse it for every
+// client (D-11), which is what deny-update proves.
+function handleOnlyUpdateCommit(config, id, handle) {
+  return {
+    writes: [
+      {
+        update: { name: docName(config, RUN_COLLECTION, id), fields: toFirestoreFields({ handle }) },
+        updateMask: { fieldPaths: ["handle"] },
+        currentDocument: { exists: true },
+      },
+    ],
+  };
+}
 
 const ADMIN_REQUIRED_MESSAGE =
   "boards-smoke needs admin auth: the names gate is probed by seeding a probe name through the admin API (the admin seed). Run `gcloud auth login`, or set DDR_BOARDS_SA_KEY to a service-account key file outside the repo.";
@@ -612,8 +611,8 @@ export async function runSmoke(opts = {}) {
       const token = await identity.getToken();
       if (!token.ok) return { pass: false, detail: { reason: token.reason } };
       const commitUrl = firestoreUrl(config, ":commit");
-      const reroll = await rawRequest(commitUrl, bearerInit(legacyHandleUpdateCommit(config, builtAId, LEGACY_REROLL_HANDLE), token.idToken));
-      const same = await rawRequest(commitUrl, bearerInit(legacyHandleUpdateCommit(config, builtAId, SMOKE_NAME), token.idToken));
+      const reroll = await rawRequest(commitUrl, bearerInit(handleOnlyUpdateCommit(config, builtAId, REROLL_HANDLE), token.idToken));
+      const same = await rawRequest(commitUrl, bearerInit(handleOnlyUpdateCommit(config, builtAId, SMOKE_NAME), token.idToken));
       const floorBody = {
         writes: [
           {
@@ -736,167 +735,6 @@ export async function runSmoke(opts = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 87 (BOARD-28) + Phase 91.2: the transition probe
-// ---------------------------------------------------------------------------
-
-/**
- * transitionSummaries(now) — three frozen RunSummary-shaped runs on one floor
- * (4) with distinct steps (321, 123, 77), hence distinct hashes. Run a is the
- * unnamed 2.2.0-shaped create (the legacy DEPTH key), b the named 2.3 create
- * (the new key), c a third value the rules must refuse (then reused, with a
- * legacy handle, for the named-uid refusal). The seed/when come from one now()
- * read; each hash is computed after every field is set. Never throws.
- */
-export function transitionSummaries(now = Date.now) {
-  const seed = Math.trunc(now());
-  const base = { ...SMOKE_SHARED, seed, when: seed, floor: 4, day: 3, kills: 2, gold: 30, sp: 120, level: 2, acts: 300 };
-  const a = { ...base, steps: 321 };
-  const b = { ...base, steps: 123 };
-  const c = { ...base, steps: 77 };
-  a.hash = runHash(a);
-  b.hash = runHash(b);
-  c.hash = runHash(c);
-  return Object.freeze({ a: Object.freeze(a), b: Object.freeze(b), c: Object.freeze(c) });
-}
-
-/**
- * runTransitionProbe({ fetchFn, config, now, log, admin }) — proves the DEPLOYED
- * transition rules accept what a shipped 2.2.0 client sends from an unnamed uid
- * (an @handle create with the 2.2.0 DEPTH key, and its handle-only re-roll
- * update), refuse any other DEPTH key, accept a named 2.3 run under the
- * admin-seeded name, and refuse both legacy branches once the uid is named; then
- * erases its runs, removes the seeded name and deletes its anonymous account, in
- * a finally block, even when a step fails. Same option and return shape as
- * runSmoke; `admin` is required. Never throws, never logs a token or the API
- * key. A transition artifact: delete it at the 2.3 cutover (docs/RELEASING.md,
- * Release 2.3.0).
- */
-export async function runTransitionProbe(opts = {}) {
-  const { fetchFn, config = FIREBASE_CONFIG, now = Date.now, log = console.log, admin = null } = opts;
-
-  const facts = { missingIndexes: [] };
-  if (!admin || !admin.api) return refusedNoAdmin(facts);
-
-  const kit = createKit({ fetchFn, config, now, log });
-  const { steps, identity, writes, bearerInit, rawRequest, getRun, runStep, commitCreate, buildFor } = kit;
-
-  const summaries = transitionSummaries(now);
-  const state = { createdIds: [], seededNameUid: null, bannedUid: null };
-  let legacyRunId = null;
-
-  let cleanup = { erased: null, accountDeleted: false, banCleared: null, nameRemoved: null };
-
-  // Builds a doc from `summary` with its handle and deepKey set, commits it
-  // through the shipped commit shape, and reads it back.
-  async function commitWith(token, summary, handle, deepKey) {
-    const built = buildFor(token, summary, handle);
-    if (!built.ok) return { built: null };
-    const doc = { ...built.doc, deepKey };
-    const res = await commitCreate(token, built, { doc });
-    const check = await getRun(built.id);
-    return { built, res, check };
-  }
-
-  try {
-    await runStep("signup", async () => {
-      const token = await identity.getToken();
-      return { pass: token.ok === true, detail: token.ok ? { uid: token.uid } : { reason: token.reason } };
-    });
-
-    await runStep("create-legacy", async () => {
-      const token = await identity.getToken();
-      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
-      const out = await commitWith(token, summaries.a, LEGACY_PROBE_HANDLE, legacyDeepKeyOf(summaries.a));
-      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
-      if (out.res.status === 200) {
-        legacyRunId = out.built.id;
-        state.createdIds.push(out.built.id);
-      }
-      const decoded = out.check.status === 200 ? decodeRunDocument(out.check.json) : null;
-      const keyOk = !!decoded && decoded.deepKey === legacyDeepKeyOf(summaries.a) && decoded.handle === LEGACY_PROBE_HANDLE;
-      if (!(out.res.status === 200 && keyOk)) return { pass: false, detail: { status: out.res.status, getStatus: out.check.status } };
-
-      // the 2.2.0 re-roll: a handle-only update by the (still unnamed) owner
-      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(legacyHandleUpdateCommit(config, legacyRunId, LEGACY_REROLL_HANDLE), token.idToken));
-      const after = await getRun(legacyRunId);
-      const afterDoc = after.status === 200 ? decodeRunDocument(after.json) : null;
-      return {
-        pass: reroll.status === 200 && !!afterDoc && afterDoc.handle === LEGACY_REROLL_HANDLE,
-        detail: { status: out.res.status, reroll: reroll.status, handle: afterDoc ? afterDoc.handle : null },
-      };
-    });
-
-    await runStep("deny-third-key", async () => {
-      const token = await identity.getToken();
-      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
-      const third = deepKeyOf(summaries.c) + 1;
-      if (third === deepKeyOf(summaries.c) || third === legacyDeepKeyOf(summaries.c)) {
-        return { pass: false, detail: { reason: "third-key-collides" } };
-      }
-      const out = await commitWith(token, summaries.c, LEGACY_PROBE_HANDLE, third);
-      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
-      if (out.res.status === 200) state.createdIds.push(out.built.id);
-      return { pass: refused(out.res.status) && out.check.status === 404, detail: { status: out.res.status, getStatus: out.check.status } };
-    });
-
-    await runStep("seed-name", () => seedName(kit, admin, state, now));
-
-    await runStep("create-named", async () => {
-      const token = await identity.getToken();
-      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
-      const out = await commitWith(token, summaries.b, SMOKE_NAME, deepKeyOf(summaries.b));
-      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
-      if (out.res.status === 200) state.createdIds.push(out.built.id);
-      const decoded = out.check.status === 200 ? decodeRunDocument(out.check.json) : null;
-      const ok = !!decoded && decoded.deepKey === deepKeyOf(summaries.b) && decoded.handle === SMOKE_NAME;
-      return { pass: out.res.status === 200 && ok, detail: { status: out.res.status, getStatus: out.check.status } };
-    });
-
-    await runStep("deny-legacy-when-named", async () => {
-      const token = await identity.getToken();
-      if (!token.ok) return { pass: false, detail: { reason: token.reason } };
-      // a legacy create (a @handle, the 2.2.0 key) from the now-named uid
-      const out = await commitWith(token, summaries.c, LEGACY_PROBE_HANDLE, legacyDeepKeyOf(summaries.c));
-      if (!out.built) return { pass: false, detail: { reason: "could-not-build" } };
-      if (out.res.status === 200) state.createdIds.push(out.built.id);
-      // and the legacy re-roll update of the earlier legacy run
-      const reroll = await rawRequest(firestoreUrl(config, ":commit"), bearerInit(legacyHandleUpdateCommit(config, legacyRunId, LEGACY_PROBE_HANDLE), token.idToken));
-      const after = await getRun(legacyRunId);
-      const afterDoc = after.status === 200 ? decodeRunDocument(after.json) : null;
-      const unchanged = !!afterDoc && afterDoc.handle === LEGACY_REROLL_HANDLE;
-      return {
-        pass: refused(out.res.status) && out.check.status === 404 && refused(reroll.status) && unchanged,
-        detail: { create: out.res.status, getStatus: out.check.status, reroll: reroll.status },
-      };
-    });
-
-    await runStep("erase", async () => {
-      const res = await writes.eraseMyRuns();
-      if (!res.ok) return { pass: false, detail: { reason: res.reason } };
-      for (const id of state.createdIds) {
-        const check = await getRun(id);
-        if (check.status !== 404) return { pass: false, detail: { deleted: res.deleted, getStatus: check.status } };
-      }
-      return { pass: true, detail: { deleted: res.deleted } };
-    });
-
-    await runStep("account-deleted", async () => {
-      const snap = await identity.snapshot();
-      return { pass: snap.uid === null, detail: { uid: snap.uid } };
-    });
-  } catch {
-    // a step recorded its own failure via runStep; nothing more to do here
-  } finally {
-    await finishCleanup(kit, admin, state, cleanup);
-    facts.missingIndexes = missingIndexesOf(kit);
-    cleanup = Object.freeze(cleanup);
-  }
-
-  const allPass = steps.length > 0 && steps.every((s) => s.pass);
-  return { ok: allPass, steps: Object.freeze([...steps]), facts: Object.freeze({ ...facts }), cleanup };
-}
-
-// ---------------------------------------------------------------------------
 // Phase 91.2: the function probe
 // ---------------------------------------------------------------------------
 
@@ -970,10 +808,9 @@ function plannedStepNames() {
 }
 
 function usage(out) {
-  out("usage: node tools/boards-smoke.mjs [--dry-run | --transition | --function]");
+  out("usage: node tools/boards-smoke.mjs [--dry-run | --function]");
   out("  (no flag)     runs the names-gate smoke against the live project (FIREBASE_CONFIG); needs admin auth (gcloud login or DDR_BOARDS_SA_KEY): it seeds a probe name");
   out("  --dry-run     prints the planned steps and the three smoke summaries, touches nothing");
-  out("  --transition  proves the deployed TRANSITION rules (a 2.2.0 create and re-roll for an unnamed uid, a named run, no legacy branch for a named uid); needs admin auth; run right after a transition-rules deploy");
   out("  --function    proves the deployed boardName function refuses an unlinked claim (NOT_LINKED) and answers a release ok; needs no admin auth");
 }
 
@@ -999,7 +836,7 @@ export async function main(argv = process.argv, deps = {}) {
     return 2;
   }
   const flag = args[0];
-  if (flag !== undefined && flag !== "--dry-run" && flag !== "--transition" && flag !== "--function") {
+  if (flag !== undefined && flag !== "--dry-run" && flag !== "--function") {
     usage(out);
     return 2;
   }
@@ -1027,7 +864,7 @@ export async function main(argv = process.argv, deps = {}) {
     admin = { api: createAdminApi({ projectId: config.projectId, fetchFn, headers: auth.headers }) };
   }
 
-  const runner = flag === "--transition" ? runTransitionProbe : flag === "--function" ? runFunctionProbe : runSmoke;
+  const runner = flag === "--function" ? runFunctionProbe : runSmoke;
   const result = await runner({ fetchFn, config, now, log: () => {}, admin });
 
   for (const s of result.steps) {

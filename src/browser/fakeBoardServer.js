@@ -28,21 +28,15 @@
 // actually returns; every later module that reads this fake's answer should
 // treat all three as "already there, acknowledged".
 //
-// Phase 87 (BOARD-28) + Phase 91.2 (BOARD-31, BOARD-33, D-11, D-13): two modes.
-// The DEFAULT mirrors the FINAL rules (firebase/firestore.rules): a client run
-// create lands only when names/{uid} exists for the poster and the run's handle
-// equals its name (the verified Play Games name; deepKey = floor * 1,000,000 +
-// steps only), and a client NEVER updates a run (no rename path). With
-// `transition: true` the fake mirrors firebase/firestore.transition.rules
-// instead: the same, plus a deepKey in either formula (the new one or the
-// shipped 2.2.0 one, floor * 1,000,000 + (999999 - steps)), a 2.2.0 @handle
-// create from a uid with NO names entry (runDoc.js's isLegacyHandle), and the
-// 2.2.0 handle-only re-roll update for an owner with NO names entry. A named
-// uid can never use a legacy branch. Delete the option, the legacy branches
-// and the mode with the transition files at the 2.3 cutover. The fake also
-// accepts an admin single-field PATCH of a run's deepKey (the way Firestore's
-// IAM-level admin access does), which is what tools/boards-admin.mjs's
-// rekey-deep uses; no admin path ever reaches a client rule.
+// Phase 87 (BOARD-28) + Phase 91.2 (BOARD-31, BOARD-33, D-11, D-13): the fake
+// mirrors the FINAL rules (firebase/firestore.rules): a client run create lands
+// only when names/{uid} exists for the poster and the run's handle equals its
+// name (the verified Play Games name; deepKey = floor * 1,000,000 + steps
+// only), and a client NEVER updates a run (no rename path). The deploy-window
+// transition mode (a 2.2.0 deepKey or @handle, the handle-only re-roll update)
+// and the admin run-document PATCH only the DEPTH re-key used were deleted at
+// the 2.3 cutover (docs/RELEASING.md Release 2.3.0 step 4; docs/LEADERBOARDS.md
+// section 6 keeps the history).
 //
 // Phase 91.2 (BOARD-31, BOARD-32): the Play Games identity mirror and the
 // admin-only names collections. accounts:signInWithIdp (create, sign in or
@@ -73,7 +67,7 @@
 // document, navigator or localStorage. The only side effects are in-memory
 // (this module's own closures) and the injected `now()` clock.
 
-import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, legacyDeepKeyOf, isLegacyHandle, LIST_LIMIT_MAX } from "./runDoc.js";
+import { RUN_COLLECTION, validateRunDoc, runDocId, deepKeyOf, LIST_LIMIT_MAX } from "./runDoc.js";
 import { sanitizeBoardName } from "./boardName.js";
 import { validateReport } from "./bugReport.js";
 import { REPORT_LIMITS_COLLECTION, validateLimitStep, decodeLimitDoc } from "./reportLimits.js";
@@ -208,9 +202,8 @@ function sortRecords(records, orderBy) {
 
 /**
  * createFakeBoardFetch({ config, now, online, existsResponse,
- * anonymousEnabled, runs, tokenTtlMs, transition }) — the in-memory
- * fetchFn factory (final rules by default, the transition rules with
- * transition: true).
+ * anonymousEnabled, runs, tokenTtlMs }) — the in-memory fetchFn factory
+ * (it mirrors the final rules).
  * Returns { fetchFn, calls, docs, reports, limits, users, banned, setOnline,
  * ban, unban }. Never throws.
  */
@@ -223,7 +216,6 @@ export function createFakeBoardFetch(opts = {}) {
     anonymousEnabled = true,
     runs: seedRuns = [],
     tokenTtlMs = 3600000,
-    transition = false,
     playGamesEnabled = true,
     linkKeepsUid = true,
     refreshProviderName = true,
@@ -579,12 +571,10 @@ export function createFakeBoardFetch(opts = {}) {
 
   // --- :commit -------------------------------------------------------------
   //
-  // Multi-write commits: legacyHandleUpdateCommit and deleteCommit can each carry
-  // N writes for the SAME collection (the "re-roll rewrites handle on all
-  // of the player's existing runs" flow, CONTEXT "Identity & the @handle").
-  // These are validated as a batch (every write must be individually valid)
-  // and applied only once every write in the batch passes — one failing
-  // write changes nothing.
+  // Multi-write commits: deleteCommit can carry N writes for the SAME
+  // collection (ERASE MY RUNS). These are validated as a batch (every write
+  // must be individually valid) and applied only once every write in the batch
+  // passes — one failing write changes nothing.
 
   function classifyWrite(write) {
     if (write.delete) {
@@ -593,7 +583,6 @@ export function createFakeBoardFetch(opts = {}) {
     }
     if (write.update) {
       const { collection, id } = splitName(write.update.name);
-      if (write.updateMask) return { kind: "handleUpdate", collection, id, write };
       if (hasTransform(write, "createdAt")) return { kind: "runCreate", collection, id, write };
       if (hasTransform(write, "last")) return { kind: "limitWrite", collection, id, write };
       if (write.currentDocument?.exists === false && !(write.updateTransforms?.length > 0)) return { kind: "reportCreate", collection, id, write };
@@ -608,26 +597,6 @@ export function createFakeBoardFetch(opts = {}) {
     return { apply: () => runStore.delete(c.id) };
   }
 
-  // The one client update the transition rules keep: the 2.2.0 handle-only
-  // re-roll, for an owner with NO names entry. The final rules refuse every
-  // client update (D-11).
-  function validateHandleUpdateWrite(c, authKind, authUid) {
-    if (transition !== true) return null;
-    const rec = runStore.get(c.id);
-    const fieldPaths = c.write.updateMask?.fieldPaths;
-    const validMask = Array.isArray(fieldPaths) && fieldPaths.length === 1 && fieldPaths[0] === "handle";
-    const fields = fromFirestoreFields(c.write.update.fields);
-    const ownerOk = !!rec && authKind === "user" && rec.doc.uid === authUid;
-    const handleOk = isLegacyHandle(fields.handle);
-    if (!validMask || !ownerOk || !handleOk || isNamed(authUid)) return null;
-    return {
-      apply: () => {
-        const updateTimeIso = nowIso();
-        runStore.set(c.id, { ...rec, doc: Object.freeze({ ...rec.doc, handle: fields.handle }), updateTimeIso });
-      },
-    };
-  }
-
   function applyAtomic(classified, validate) {
     const applies = [];
     for (const c of classified) {
@@ -639,18 +608,8 @@ export function createFakeBoardFetch(opts = {}) {
     return { status: 200, body: commitOkBody(classified.length, nowIso()) };
   }
 
-  // Transition mode (Phase 87 BOARD-28): the one shape failure the transition
-  // rules forgive is a deepKey equal to the 2.2.0 formula; anything else denies.
   function runDocValid(clientDoc, validateOpts) {
-    const fails = validateRunDoc(clientDoc, validateOpts);
-    if (fails.length === 0) return true;
-    return (
-      transition === true &&
-      fails.length === 1 &&
-      fails[0] === "deepkey" &&
-      Number.isInteger(clientDoc.deepKey) &&
-      clientDoc.deepKey === legacyDeepKeyOf(clientDoc)
-    );
+    return validateRunDoc(clientDoc, validateOpts).length === 0;
   }
 
   // names/{uid} (Phase 91.2): isNamed is exists(), verifiedNameOf is
@@ -667,8 +626,7 @@ export function createFakeBoardFetch(opts = {}) {
   }
 
   // The runs create rule for a client: a named uid's run must carry its
-  // verified name as the handle; only in transition mode may an UNNAMED uid
-  // post a 2.2.0 @handle (the legacy create branch).
+  // verified name as the handle; an UNNAMED uid posts nothing.
   function userRunAllowed(clientDoc, authUid) {
     const validateOpts = { uid: authUid, now: now() };
     if (isNamed(authUid)) {
@@ -676,7 +634,6 @@ export function createFakeBoardFetch(opts = {}) {
       if (name === null) return false;
       return runDocValid(clientDoc, { ...validateOpts, name });
     }
-    if (transition === true && isLegacyHandle(clientDoc.handle)) return runDocValid(clientDoc, validateOpts);
     return false;
   }
 
@@ -797,9 +754,6 @@ export function createFakeBoardFetch(opts = {}) {
     if (classified.every((c) => c.kind === "delete" && c.collection === RUN_COLLECTION)) {
       return applyAtomic(classified, (c) => validateRunDeleteWrite(c, authKind, authUid));
     }
-    if (classified.every((c) => c.kind === "handleUpdate" && c.collection === RUN_COLLECTION)) {
-      return applyAtomic(classified, (c) => validateHandleUpdateWrite(c, authKind, authUid));
-    }
     if (writes.length === 1 && classified[0].kind === "runCreate" && classified[0].collection === RUN_COLLECTION) {
       return commitRunCreate(classified[0].id, classified[0].write, authKind, authUid);
     }
@@ -830,27 +784,6 @@ export function createFakeBoardFetch(opts = {}) {
     if (authKind !== "admin") return denied();
     runStore.delete(id);
     return { status: 200, body: {} };
-  }
-
-  // Admin-only single-field update of a run's deepKey (updateMask exactly
-  // ["deepKey"]). Mirrors Firestore's IAM admin bypass for a document
-  // PATCH; used by tools/boards-admin.mjs rekey-deep. Clients never reach it
-  // (they get denied()), matching the rules' `allow update: if false`.
-  function handleRunPatch(id, init, query, authKind) {
-    if (authKind !== "admin") return denied();
-    const masks = query.getAll("updateMask.fieldPaths");
-    if (masks.length !== 1 || masks[0] !== "deepKey") return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
-    const rec = runStore.get(id);
-    if (!rec) return notFound();
-    const body = parseJsonBody(init.body);
-    const fields = fromFirestoreFields(body?.fields);
-    if (!Number.isInteger(fields.deepKey)) return { status: 400, body: errorBody(400, "INVALID_ARGUMENT") };
-    const updated = { ...rec, doc: Object.freeze({ ...rec.doc, deepKey: fields.deepKey }), updateTimeIso: nowIso() };
-    runStore.set(id, updated);
-    return {
-      status: 200,
-      body: { name: updated.name, fields: encodeRunDocFields(updated.doc, updated.createdAtIso), createTime: updated.createTimeIso, updateTime: updated.updateTimeIso },
-    };
   }
 
   function encodeLimitFields(rec) {
@@ -1189,7 +1122,6 @@ export function createFakeBoardFetch(opts = {}) {
         const id = suffix.slice("/runs/".length);
         if (method === "GET") return handleRunGet(id);
         if (method === "DELETE") return handleRunDeleteDoc(id, auth.kind);
-        if (method === "PATCH") return handleRunPatch(id, init, query, auth.kind);
       }
       if (suffix.startsWith(`/${BANNED_COLLECTION}/`)) {
         const uid = suffix.slice(BANNED_COLLECTION.length + 2);

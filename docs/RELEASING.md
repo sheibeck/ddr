@@ -136,6 +136,12 @@ probe, a re-key, a publish) is the user's go first (D-14); ask before each one.*
 Backend deploys are just in time: nothing here runs before it is needed, and
 each step first checks that the shipped build (2.2.0, vc12) is unharmed by it.
 
+**Status (2026-10-02): steps 1 to 4 are done.** The final rules are live, the DEPTH
+re-key is complete and the transition artefacts are deleted (step 4;
+`docs/LEADERBOARDS.md` section 14, "Release 2.3.0 live record"). The commands in
+steps 1.5, 1.6, 2.5 and 3 name the transition config, the `--transition` probe
+and `rekey-deep`, which no longer exist; they stay below as the record of what ran.
+
 Why the order matters. The DEPTH board breaks a floor tie by MORE steps, so
 `deepKey` changed from `floor * 1,000,000 + (999,999 - steps)` to `floor *
 1,000,000 + steps`, and the shipped 2.2.0 client still writes the old value
@@ -247,7 +253,7 @@ phases) keep 2.2.0 posting while 2.3 is tested; the final rules refuse 2.2.0 onc
    Confirm it with the user before deploying. A 2.2.0 player who updates and signs
    in gets those runs re-posted once (D-05). Owner delete stays allowed, so a 2.2.0
    player can still ERASE MY RUNS, and bug reports are unchanged.
-4. **Delete the transition artefacts:** `firebase/firestore.transition.rules`,
+4. **Delete the transition artefacts (DONE 2026-10-02):** `firebase/firestore.transition.rules`,
    `firebase.transition.json`, `test/unit/firestore-transition-rules.test.js`,
    `LEGACY_HANDLE_PATTERN` and `isLegacyHandle` in `src/browser/runDoc.js` (with
    `legacyDeepKeyOf` and `legacyHandleUpdateCommit`), the fake board server's
@@ -258,7 +264,9 @@ phases) keep 2.2.0 posting while 2.3 is tested; the final rules refuse 2.2.0 onc
    (`tools/boards-smoke.mjs`) and their tests. Flip
    `test/unit/compliance-docs.test.js`'s transition-files test back to "the
    transition files are gone", turn `docs/LEADERBOARDS.md` section 6's transition
-   subsection into history, run `npm test`, commit.
+   subsection into history, run `npm test`, commit. Done 2026-10-02: every item
+   above is deleted or removed, the compliance test now asserts the transition files
+   are gone, and the full `npm test` passes.
 
 The Play Console Play Games **cleanup is cancelled**: the configuration is in use
 again and must not be removed (`docs/LEADERBOARDS.md` section 16). Deleting the

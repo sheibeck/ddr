@@ -38,8 +38,8 @@
 // Games name (the field keeps its name because shipped 2.2.0 clients decode it
 // for the board headline). The rules bind it to names/{uid}.name; validateRunDoc
 // mirrors that when it is given the verified `name`, and otherwise only checks
-// the size bound. The 2.2.0 rolled-handle regex survives only as the
-// transition artefact LEGACY_HANDLE_PATTERN / isLegacyHandle.
+// the size bound. The 2.2.0 rolled-handle regex and the 2.2.0 deepKey formula were
+// transition artefacts, deleted at the 2.3 cutover (docs/RELEASING.md Release 2.3.0 step 4).
 //
 // Pure, DOM-free: no window, document, navigator, localStorage,
 // sessionStorage or bare global fetch. Never throws.
@@ -137,38 +137,6 @@ export function deepKeyOf(run) {
   const floor = Number(run?.floor);
   const steps = Number(run?.steps);
   return floor * 1000000 + steps;
-}
-
-/**
- * legacyDeepKeyOf(run) — the formula the shipped 2.2.0 (vc12) clients still
- * write: floor * 1,000,000 + (999,999 - steps), i.e. fewer steps first.
- * Transition-only: read by test/unit/firestore-transition-rules.test.js,
- * fakeBoardServer.js's transition mode, tools/boards-admin.mjs rekey-deep and
- * tools/boards-smoke.mjs --transition. The client never writes it; delete it
- * with the transition files at the 2.3 cutover (docs/RELEASING.md, Release 2.3.0).
- */
-export function legacyDeepKeyOf(run) {
-  const floor = Number(run?.floor);
-  const steps = Number(run?.steps);
-  return floor * 1000000 + (999999 - steps);
-}
-
-/**
- * LEGACY_HANDLE_PATTERN — the 2.2.0 (vc12) rolled-handle regex source, verbatim
- * (an anchored alternation of two word tables). Transition-only, with
- * isLegacyHandle: firebase/firestore.transition.rules embeds the same literal
- * and fakeBoardServer.js's transition mode applies it. Delete both with the
- * transition files and legacyDeepKeyOf at the 2.3 cutover (docs/RELEASING.md,
- * Release 2.3.0).
- */
-export const LEGACY_HANDLE_PATTERN =
-  "^@(lantern|moss|soot|gloom|rusty|candle|cellar|crypt|torch|mildew|cobweb|gravel|barrel|dusty|toad|slug|grub|damp|grim|shadow|ember|brine|murky|tomb|ashen|briar|hollow|wretch|musty|grave)(jaw|toe|knee|nose|boot|sock|hood|beard|elbow|spoon|ladle|mop|kettle|mitten|bonnet|knuckle|thumb|chin|shin|wrist|apron|bucket|skillet|tunic|cloak|helmet|buckle|sandal|goblet|pouch)$";
-
-const LEGACY_HANDLE_RE = new RegExp(LEGACY_HANDLE_PATTERN);
-
-/** isLegacyHandle(h) — h is a string shaped like a 2.2.0 rolled @handle. Transition-only (see LEGACY_HANDLE_PATTERN). */
-export function isLegacyHandle(h) {
-  return typeof h === "string" && LEGACY_HANDLE_RE.test(h);
 }
 
 /** daysKeyOf(run) — the Phase 82 DAYS rule: min(day, 10 * floor) * 1000 + floor. */
@@ -408,26 +376,6 @@ export function createRunCommit(config, id, doc) {
         currentDocument: { exists: false },
       },
     ],
-  };
-}
-
-/**
- * legacyHandleUpdateCommit(config, ids, handle) — the shipped 2.2.0 (vc12)
- * re-roll's wire shape: one handle-only update Write per id (updateMask
- * ["handle"], currentDocument.exists true). Transition-only, like
- * legacyDeepKeyOf and isLegacyHandle: no shipped client builds it any more
- * (Phase 91.2 D-11 removed the rewrite path); the fake server's transition
- * mode and tools/boards-smoke.mjs --transition use it to play a 2.2.0 client.
- * Delete it with the transition files at the 2.3 cutover.
- */
-export function legacyHandleUpdateCommit(config, ids, handle) {
-  const list = Array.isArray(ids) ? ids : [ids];
-  return {
-    writes: list.map((id) => ({
-      update: { name: docName(config, RUN_COLLECTION, id), fields: toFirestoreFields({ handle }) },
-      updateMask: { fieldPaths: ["handle"] },
-      currentDocument: { exists: true },
-    })),
   };
 }
 

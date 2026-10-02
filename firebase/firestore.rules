@@ -33,7 +33,7 @@ rules_version = '2';
 //
 // A shipped 2.2.0 client (anonymous uid, @handle runs, handle re-roll updates)
 // is refused by these rules, silently (D-13): an anonymous uid has no names
-// document. firebase/firestore.transition.rules covers the deploy window.
+// document. (The deploy-window transition rules were deleted at the 2.3 cutover.)
 service cloud.firestore {
   match /databases/{database}/documents {
 

@@ -143,16 +143,33 @@ test("docs/LEADERBOARDS.md describes the names gate, the boardName function, ide
   assert.doesNotMatch(doc, /RE-ROLL HANDLE is unlimited/, "the re-roll paragraph is gone");
 });
 
-test("docs/LEADERBOARDS.md section 6 keeps the 2.2 transition history, and the transition files exist while the 2.3 window runs", () => {
+test("docs/LEADERBOARDS.md section 6 keeps the transition history, and the transition files are gone", () => {
   const doc = read(LEADERBOARDS_PATH);
-  assert.match(doc, /The transition period \(over, 2026-09-29\)/);
-  assert.match(doc, /Until the 2\.3 cutover: the DEPTH-key transition config/);
-  assert.ok(doc.includes("legacy branch"), "the transition file now carries the 2.2.0 legacy branch");
-  // Phase 87 recreated these and Phase 91.2 extended them; the Release 2.3.0
-  // clean-up step deletes them again and flips this assertion back to "gone".
-  for (const present of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
-    assert.ok(fs.existsSync(path.join(REPO_ROOT, present)), `${present} exists until the 2.3 cutover`);
+  assert.ok(doc.includes("### The transition periods (both over)"));
+  assert.ok(doc.includes("The 2.1.0 period (over, 2026-09-29)"));
+  assert.ok(doc.includes("The 2.2.0 to 2.3.0 period (over, 2026-10-02)"));
+  assert.ok(!doc.includes("Until the 2.3 cutover"), "no live transition instructions remain");
+  // Release 2.3.0 step 4 deleted the transition artefacts and the 2.2.0 helpers.
+  for (const gone of ["firebase.transition.json", "firebase/firestore.transition.rules", "test/unit/firestore-transition-rules.test.js"]) {
+    assert.ok(!fs.existsSync(path.join(REPO_ROOT, gone)), `${gone} is gone`);
   }
+  const runDoc = read("src/browser/runDoc.js");
+  for (const name of ["LEGACY_HANDLE_PATTERN", "isLegacyHandle", "legacyDeepKeyOf", "legacyHandleUpdateCommit"]) {
+    assert.ok(!runDoc.includes(name), `runDoc.js no longer defines ${name}`);
+  }
+});
+
+test("docs/LEADERBOARDS.md section 14 carries the Release 2.3.0 live record", () => {
+  const doc = read(LEADERBOARDS_PATH);
+  const at = doc.indexOf("### Release 2.3.0 live record (2026-10-02)");
+  assert.ok(at >= 0, "the live record subsection exists");
+  const record = doc.slice(at);
+  assert.ok(record.includes("be6716a7"), "the transition fix commit is named");
+  const flat = record.replace(/\s+/g, " ");
+  assert.ok(flat.includes("8/8 PASS"), "the transition smoke result");
+  assert.ok(flat.includes("passed **every step**"), "the plain smoke at the cutover");
+  assert.ok(flat.includes("moved **21** runs"), "the re-key moved 21 runs");
+  assert.ok(flat.includes("**22 of 22 runs on the new key and 0 on the old**"), "the census");
 });
 
 test("the docs name no deleted handle module or flag", () => {

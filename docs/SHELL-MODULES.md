@@ -459,9 +459,7 @@ keys (`deepKeyOf`/`daysKeyOf`/`killsKeyOf`/`goldKeyOf`, and the shared
 the DAYS anti-farming cap, `docs/DAYS-FARMING.md`), `validateRunDoc` (the JS
 mirror of `firebase/firestore.rules`) and the REST query/commit builders
 (`topTenQuery`, `countQuery`, `ownRunsQuery`, `createRunCommit`,
-`deleteCommit`; `legacyHandleUpdateCommit` is a transition-only builder that plays a
-2.2.0 client for the smoke probe and the fake's tests, deleted with the transition
-files). `src/browser/firestoreRest.js` is the
+`deleteCommit`). `src/browser/firestoreRest.js` is the
 one shared Firestore/Identity REST helper (the typed-value encoder/decoder,
 the URL builders, a never-throwing `timedFetch`); `src/browser/
 firebaseConfig.js` holds the one shared `FIREBASE_CONFIG` (project id and

@@ -3,18 +3,17 @@
 // Release 2.3.0 (live finding 2026-10-02). The unit tests read the rules as
 // TEXT; only Firestore's own engine enforces the per-request budget of 1,000
 // evaluated expressions, which a second evaluation of isValidBoardRun blows
-// (the shipped 2.2.0 create was refused live with every condition satisfied).
-// This test runs the real rules engine: the Firestore emulator, over REST, no
-// extra dependency. It SKIPS unless FIRESTORE_EMULATOR_HOST is set, so
+// (the 2.2.0 create was refused live with every condition satisfied; fixed in
+// be6716a7). This test runs the real rules engine: the Firestore emulator, over
+// REST, no extra dependency. It SKIPS unless FIRESTORE_EMULATOR_HOST is set, so
 // `npm test` stays dependency-free. Run it before any rules deploy:
 //
-//   RULES_UNDER_TEST=transition firebase emulators:exec --only firestore --project demo-ddr \
-//     --config firebase.transition.json "node --test test/emulator/firestore-rules.emulator.test.js"
-//   RULES_UNDER_TEST=final      firebase emulators:exec --only firestore --project demo-ddr \
-//     --config firebase.json            "node --test test/emulator/firestore-rules.emulator.test.js"
+//   firebase emulators:exec --only firestore --project demo-ddr \
+//     --config firebase.json "node --test test/emulator/firestore-rules.emulator.test.js"
 //
 // (the demo- project id keeps it off every real project; nothing is deployed).
-// Delete the transition expectations with the transition files at the 2.3 cutover.
+// It exercises the FINAL rules (firebase/firestore.rules), the only rules file:
+// the deploy-window transition mode was deleted at the 2.3 cutover.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,16 +21,15 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { buildRunDoc, createRunCommit, legacyHandleUpdateCommit, legacyDeepKeyOf, deepKeyOf } from "../../src/browser/runDoc.js";
-import { toFirestoreFields } from "../../src/browser/firestoreRest.js";
+import { buildRunDoc, createRunCommit, deepKeyOf } from "../../src/browser/runDoc.js";
+import { toFirestoreFields, docName } from "../../src/browser/firestoreRest.js";
 import { runHash } from "../../engine/records.js";
 
 const HOST = process.env.FIRESTORE_EMULATOR_HOST;
-const WHICH = process.env.RULES_UNDER_TEST === "final" ? "final" : "transition";
 const SKIP = HOST ? false : "FIRESTORE_EMULATOR_HOST is not set (run through firebase emulators:exec)";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const RULES_FILE = path.join(__dirname, "..", "..", "firebase", WHICH === "final" ? "firestore.rules" : "firestore.transition.rules");
+const RULES_FILE = path.join(__dirname, "..", "..", "firebase", "firestore.rules");
 const PROJECT = "demo-ddr";
 const CONFIG = { projectId: PROJECT, apiKey: "x" };
 const BASE = `http://${HOST}`;
@@ -98,55 +96,67 @@ function create(uid, s, handle, deepKey) {
   return commit(createRunCommit(CONFIG, built.id, { ...built.doc, deepKey }), uid);
 }
 
-const LEGACY_CREATE = WHICH === "transition" ? 200 : 403;
+// The formula a shipped 2.2.0 client wrote: floor * 1,000,000 + (999,999 - steps).
+const oldDeepKeyOf = (s) => s.floor * 1000000 + (999999 - s.steps);
+
+// The 2.2.0 handle re-roll's wire shape: one handle-only update Write, updateMask ["handle"].
+const handleOnlyUpdate = (id, handle) => ({
+  writes: [
+    {
+      update: { name: docName(CONFIG, "runs", id), fields: toFirestoreFields({ handle }) },
+      updateMask: { fieldPaths: ["handle"] },
+      currentDocument: { exists: true },
+    },
+  ],
+});
 
 for (const worst of [false, true]) {
   const label = worst ? "worst-case data" : "smoke data";
 
-  test(`[${WHICH}] a 2.2.0 create (unnamed uid, @handle, old DEPTH key) ${LEGACY_CREATE === 200 ? "lands" : "is refused"} - ${label}`, { skip: SKIP }, async () => {
+  test(`[final] a 2.2.0 create (unnamed uid, @handle, old DEPTH key) is refused - ${label}`, { skip: SKIP }, async () => {
     await loadRules();
     const uid = newUid();
     const s = summary({ worst });
-    assert.equal(await create(uid, s, "@mossjaw", legacyDeepKeyOf(s)), LEGACY_CREATE);
+    assert.equal(await create(uid, s, "@mossjaw", oldDeepKeyOf(s)), 403);
   });
 
-  test(`[${WHICH}] a named 2.3 create lands, and the legacy branches are shut for a named uid - ${label}`, { skip: SKIP }, async () => {
+  test(`[final] a named 2.3 create lands, a 2.2.0 shape or a wrong name is refused for a named uid - ${label}`, { skip: SKIP }, async () => {
     await loadRules();
     const uid = newUid();
     await ownerWrite(`names/${uid}`, toFirestoreFields({ name: "Emu Probe" }));
     const s = summary({ worst, steps: 500 });
     assert.equal(await create(uid, s, "Emu Probe", deepKeyOf(s)), 200);
     const t = summary({ worst, steps: 400 });
-    assert.equal(await create(uid, t, "@mossjaw", legacyDeepKeyOf(t)), 403, "legacy create for a named uid");
+    assert.equal(await create(uid, t, "@mossjaw", oldDeepKeyOf(t)), 403, "2.2.0 create for a named uid");
     const u = summary({ worst, steps: 300 });
     assert.equal(await create(uid, u, "Emu Impostor", deepKeyOf(u)), 403, "named uid, wrong name");
   });
 }
 
-test(`[${WHICH}] an unnamed uid is refused with a non-legacy handle, a third DEPTH key, a bad race, or a ban`, { skip: SKIP }, async () => {
+test("[final] an unnamed uid is refused with a plain handle, a third DEPTH key, a bad race, or a ban", { skip: SKIP }, async () => {
   await loadRules();
   const uid = newUid();
   const s = summary();
-  assert.equal(await create(uid, s, "Emu Probe", deepKeyOf(s)), 403, "non-legacy handle");
+  assert.equal(await create(uid, s, "Emu Probe", deepKeyOf(s)), 403, "no names document");
   const t = summary({ steps: 77 });
   assert.equal(await create(uid, t, "@mossjaw", deepKeyOf(t) + 1), 403, "third key");
   const u = summary({ steps: 78 });
   const built = buildRunDoc(u, { uid, handle: "@mossjaw", version: "2.2.0" });
-  assert.equal(await commit(createRunCommit(CONFIG, built.id, { ...built.doc, race: "Goblin", deepKey: legacyDeepKeyOf(u) }), uid), 403, "bad race");
+  assert.equal(await commit(createRunCommit(CONFIG, built.id, { ...built.doc, race: "Goblin", deepKey: oldDeepKeyOf(u) }), uid), 403, "bad race");
   const banned = newUid();
   await ownerWrite(`banned/${banned}`, toFirestoreFields({ at: "x" }));
   const v = summary({ steps: 79 });
-  assert.equal(await create(banned, v, "@mossjaw", legacyDeepKeyOf(v)), 403, "banned");
+  assert.equal(await create(banned, v, "@mossjaw", oldDeepKeyOf(v)), 403, "banned");
 });
 
-test(`[${WHICH}] the 2.2.0 handle re-roll ${WHICH === "transition" ? "works for an unnamed owner, not for a named one or to a non-legacy handle" : "is refused"}`, { skip: SKIP }, async () => {
+test("[final] no client update lands: the 2.2.0 handle re-roll is refused for an unnamed and a named owner", { skip: SKIP }, async () => {
   await loadRules();
   const uid = newUid();
   const s = summary({ steps: 321 });
   const built = buildRunDoc(s, { uid, handle: "@mossjaw", version: "2.2.0" });
-  await ownerWrite(`runs/${built.id}`, { ...toFirestoreFields({ ...built.doc, deepKey: legacyDeepKeyOf(s) }), createdAt: { timestampValue: new Date().toISOString() } });
-  assert.equal(await commit(legacyHandleUpdateCommit(CONFIG, built.id, "@gravepouch"), uid), WHICH === "transition" ? 200 : 403);
-  assert.equal(await commit(legacyHandleUpdateCommit(CONFIG, built.id, "Hacker"), uid), 403, "non-legacy handle");
+  await ownerWrite(`runs/${built.id}`, { ...toFirestoreFields({ ...built.doc, deepKey: oldDeepKeyOf(s) }), createdAt: { timestampValue: new Date().toISOString() } });
+  assert.equal(await commit(handleOnlyUpdate(built.id, "@gravepouch"), uid), 403, "unnamed owner");
+  assert.equal(await commit(handleOnlyUpdate(built.id, "Hacker"), uid), 403, "plain handle");
   await ownerWrite(`names/${uid}`, toFirestoreFields({ name: "Emu Probe" }));
-  assert.equal(await commit(legacyHandleUpdateCommit(CONFIG, built.id, "@mossjaw"), uid), 403, "named owner");
+  assert.equal(await commit(handleOnlyUpdate(built.id, "Emu Probe"), uid), 403, "named owner, its own name");
 });

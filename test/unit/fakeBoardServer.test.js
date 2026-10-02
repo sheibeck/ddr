@@ -2,7 +2,7 @@
 //
 // Phase 83 Plan 04 Task 1. Covers createFakeBoardFetch: auth, the API-key
 // check, offline, run create/exists (all three existsResponse modes),
-// handle update (including the multi-run re-roll commit), delete, atomic
+// the refused client update, delete, atomic
 // commits, query filters/order/limit/cursor, count, admin bypass, the
 // report + limit commit (first report, cooldown, forged count, sixth
 // report, other uid, missing limit write, no auth), reportLimits owner get
@@ -28,10 +28,8 @@ import {
   WHEN_SKEW_MS,
   rankKeys,
   deepKeyOf,
-  legacyDeepKeyOf,
   runDocId,
   createRunCommit,
-  legacyHandleUpdateCommit,
   deleteCommit,
   topTenQuery,
   countQuery,
@@ -52,17 +50,30 @@ const VALID_CONFIG = Object.freeze({ projectId: "delve-die-repeat-6ba5f", apiKey
 
 /* ---------------- helpers ---------------- */
 
-// 2.2.0-style "@" handles (the transition rules still accept this shape); the
-// seed picks one of a few literals so a test can tell two handles apart.
-const LEGACY_HANDLES = Object.freeze(["@lanternjaw", "@mosstoe", "@embergoblet", "@gravepouch"]);
-function validHandle(seed = 0.15) {
-  return LEGACY_HANDLES[Math.min(LEGACY_HANDLES.length - 1, Math.floor(seed * LEGACY_HANDLES.length))];
+// The verified Play Games name every run in this file is posted under (the final
+// rules need names/{uid} and a handle equal to it).
+const GAMER = "Moss Knuckle";
+
+// The formula a shipped 2.2.0 client wrote: floor * 1,000,000 + (999,999 - steps).
+const oldDeepKeyOf = (d) => d.floor * 1000000 + (999999 - d.steps);
+
+// The 2.2.0 handle re-roll's wire shape: one handle-only update Write per id,
+// updateMask ["handle"], the doc must exist. No client may send it (D-11).
+function handleOnlyUpdateCommit(config, ids, handle) {
+  const list = Array.isArray(ids) ? ids : [ids];
+  return {
+    writes: list.map((id) => ({
+      update: { name: docName(config, RUN_COLLECTION, id), fields: { handle: { stringValue: handle } } },
+      updateMask: { fieldPaths: ["handle"] },
+      currentDocument: { exists: true },
+    })),
+  };
 }
 
 function baseValidPartial(overrides = {}) {
   return {
     uid: "u1",
-    handle: validHandle(),
+    handle: GAMER,
     season: SEASON,
     name: "Test Hero",
     race: "Human",
@@ -154,6 +165,13 @@ async function newUser(server) {
   return { uid: su.json.localId, idToken: su.json.idToken, refreshToken: su.json.refreshToken };
 }
 
+// A signed-in uid that also has a names/{uid} entry (what a Play Games player has).
+async function newNamedUser(server) {
+  const u = await newUser(server);
+  server.setName(u.uid, GAMER);
+  return u;
+}
+
 function seedDocs(n, uid) {
   const out = [];
   for (let i = 0; i < n; i++) {
@@ -177,7 +195,7 @@ test("constants: FAKE_ADMIN_TOKEN, createFakeBoardFetch exported", () => {
    ================================================================ */
 
 test("key check: no key and no admin bearer -> 400 INVALID_ARGUMENT; admin bearer bypasses", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const res = await server.fetchFn(firestoreUrl({ ...VALID_CONFIG, apiKey: "wrong-key" }, "/runs/abc"), { method: "GET" });
   assert.equal(res.status, 400);
   const json = await res.json();
@@ -191,7 +209,7 @@ test("key check: no key and no admin bearer -> 400 INVALID_ARGUMENT; admin beare
 });
 
 test("offline: setOnline(false) makes fetchFn reject with a TypeError", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   server.setOnline(false);
   await assert.rejects(() => server.fetchFn(firestoreUrl(VALID_CONFIG, ":runQuery"), jsonInit("POST", {})), TypeError);
   server.setOnline(true);
@@ -200,7 +218,7 @@ test("offline: setOnline(false) makes fetchFn reject with a TypeError", async ()
 });
 
 test("unknown route returns 404", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const res = await server.fetchFn(`https://example.com/nope?key=${encodeURIComponent(VALID_CONFIG.apiKey)}`, { method: "GET" });
   assert.equal(res.status, 404);
 });
@@ -210,7 +228,7 @@ test("unknown route returns 404", async () => {
    ================================================================ */
 
 test("accounts:signUp: 200 with fresh uid, tokens, expiresIn '3600'", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const a = await signUp(server);
   assert.equal(a.status, 200);
   assert.equal(typeof a.json.idToken, "string");
@@ -222,14 +240,14 @@ test("accounts:signUp: 200 with fresh uid, tokens, expiresIn '3600'", async () =
 });
 
 test("accounts:signUp: anonymousEnabled false -> 400 OPERATION_NOT_ALLOWED", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, anonymousEnabled: false });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, anonymousEnabled: false });
   const a = await signUp(server);
   assert.equal(a.status, 400);
   assert.equal(a.json.error.message, "OPERATION_NOT_ALLOWED");
 });
 
 test("securetoken:token: known refresh token -> 200 snake_case tokens; unknown -> 400 INVALID_REFRESH_TOKEN", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const u = await newUser(server);
   const r = await refresh(server, u.refreshToken);
   assert.equal(r.status, 200);
@@ -243,7 +261,7 @@ test("securetoken:token: known refresh token -> 200 snake_case tokens; unknown -
 });
 
 test("accounts:delete: a valid idToken removes the user and its tokens", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const u = await newUser(server);
   assert.ok(server.users().includes(u.uid));
   const del = await deleteAccount(server, u.idToken);
@@ -258,8 +276,8 @@ test("accounts:delete: a valid idToken removes the user and its tokens", async (
    ================================================================ */
 
 test("commit run create: valid token + valid doc + matching id -> 200, stored", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => 1000000 });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => 1000000 });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: u.uid });
   const id = runDocId(u.uid, doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
@@ -271,7 +289,7 @@ test("commit run create: valid token + valid doc + matching id -> 200, stored", 
 });
 
 test("commit run create: no Authorization header -> 403 PERMISSION_DENIED", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const doc = docFrom();
   const id = runDocId(doc.uid, doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc));
@@ -281,8 +299,8 @@ test("commit run create: no Authorization header -> 403 PERMISSION_DENIED", asyn
 
 test("commit run create: expired token -> 401 UNAUTHENTICATED", async () => {
   let nowMs = 0;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs, tokenTtlMs: 1000 });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs, tokenTtlMs: 1000 });
+  const u = await newNamedUser(server);
   nowMs = 5000; // well past tokenTtlMs
   const doc = docFrom({ uid: u.uid });
   const id = runDocId(u.uid, doc.hash);
@@ -292,8 +310,8 @@ test("commit run create: expired token -> 401 UNAUTHENTICATED", async () => {
 });
 
 test("commit run create: doc uid not the caller -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: "someone-else" });
   const id = runDocId("someone-else", doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
@@ -301,16 +319,16 @@ test("commit run create: doc uid not the caller -> 403", async () => {
 });
 
 test("commit run create: mismatched id -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: u.uid });
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, "wrong_id", doc), u.idToken);
   assert.equal(res.status, 403);
 });
 
 test("commit run create: banned uid -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   server.ban(u.uid);
   const doc = docFrom({ uid: u.uid });
   const id = runDocId(u.uid, doc.hash);
@@ -319,8 +337,8 @@ test("commit run create: banned uid -> 403", async () => {
 });
 
 test("commit run create: invalid doc (fails validateRunDoc) -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: u.uid, floor: 99999 }); // out of bounds
   const id = runDocId(u.uid, doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
@@ -333,8 +351,8 @@ test("commit run create: existing id -> 400 FAILED_PRECONDITION (default), 403 (
     ["denied", 403, "PERMISSION_DENIED"],
     ["conflict", 409, "ALREADY_EXISTS"],
   ]) {
-    const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, existsResponse: mode });
-    const u = await newUser(server);
+    const server = createFakeBoardFetch({ config: VALID_CONFIG, existsResponse: mode });
+    const u = await newNamedUser(server);
     const doc = docFrom({ uid: u.uid });
     const id = runDocId(u.uid, doc.hash);
     const first = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
@@ -346,7 +364,7 @@ test("commit run create: existing id -> 400 FAILED_PRECONDITION (default), 403 (
 });
 
 test("commit run create: admin bypasses ownership/banned checks (still validates shape)", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const doc = docFrom({ uid: "any-uid" });
   const id = runDocId("any-uid", doc.hash);
   const res = await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), FAKE_ADMIN_TOKEN);
@@ -355,8 +373,8 @@ test("commit run create: admin bypasses ownership/banned checks (still validates
 
 test("commit run create: when bound uses the fake's own clock — one ms past now()+WHEN_SKEW_MS is denied, exactly at the bound is accepted", async () => {
   const NOW_MS = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => NOW_MS });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => NOW_MS });
+  const u = await newNamedUser(server);
 
   const atBound = docFrom({ uid: u.uid, when: NOW_MS + WHEN_SKEW_MS, hash: "0a1b2c3d" });
   const idAt = runDocId(u.uid, atBound.hash);
@@ -370,8 +388,8 @@ test("commit run create: when bound uses the fake's own clock — one ms past no
 });
 
 test("commit run create: a doc that omits note -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: u.uid });
   const { note, ...withoutNote } = doc;
   const id = runDocId(u.uid, doc.hash);
@@ -380,39 +398,29 @@ test("commit run create: a doc that omits note -> 403", async () => {
 });
 
 /* ================================================================
-   commit: handle update (single + multi-id re-roll)
+   commit: client update (always refused, D-11)
    ================================================================ */
 
-test("commit handle update: owner + valid handle -> 200, doc updated", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const doc = docFrom({ uid: u.uid });
-  const id = runDocId(u.uid, doc.hash);
-  await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
-  const newHandle = validHandle(0.85);
-  const res = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, newHandle), u.idToken);
-  assert.equal(res.status, 200);
-  assert.equal(server.docs().find((d) => d.id === id).handle, newHandle);
-});
-
-test("commit handle update: another user's doc -> 403; invalid handle -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const owner = await newUser(server);
-  const other = await newUser(server);
-  const doc = docFrom({ uid: owner.uid });
-  const id = runDocId(owner.uid, doc.hash);
-  await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), owner.idToken);
-
-  const otherRes = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, validHandle(0.85)), other.idToken);
-  assert.equal(otherRes.status, 403);
-
-  const badHandleRes = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, "@not-a-valid-handle"), owner.idToken);
-  assert.equal(badHandleRes.status, 403);
+test("commit handle update: the 2.2.0 re-roll shape is refused for the owner, another user, and a multi-run batch", async () => {
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const owner = await newNamedUser(server);
+  const other = await newNamedUser(server);
+  const doc1 = docFrom({ uid: owner.uid, hash: "00000001" });
+  const doc2 = docFrom({ uid: owner.uid, hash: "00000002" });
+  const id1 = runDocId(owner.uid, doc1.hash);
+  const id2 = runDocId(owner.uid, doc2.hash);
+  await postCommit(server, createRunCommit(VALID_CONFIG, id1, doc1), owner.idToken);
+  await postCommit(server, createRunCommit(VALID_CONFIG, id2, doc2), owner.idToken);
+  const before = JSON.stringify(server.docs());
+  assert.equal((await postCommit(server, handleOnlyUpdateCommit(VALID_CONFIG, id1, "@gravepouch"), owner.idToken)).status, 403);
+  assert.equal((await postCommit(server, handleOnlyUpdateCommit(VALID_CONFIG, [id1, id2], GAMER), owner.idToken)).status, 403);
+  assert.equal((await postCommit(server, handleOnlyUpdateCommit(VALID_CONFIG, id1, "@gravepouch"), other.idToken)).status, 403);
+  assert.equal(JSON.stringify(server.docs()), before);
 });
 
 test("commit handle update: any other mask -> 403", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const u = await newNamedUser(server);
   const doc = docFrom({ uid: u.uid });
   const id = runDocId(u.uid, doc.hash);
   await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), u.idToken);
@@ -429,37 +437,13 @@ test("commit handle update: any other mask -> 403", async () => {
   assert.equal(res.status, 403);
 });
 
-test("commit handle update: N-run re-roll is atomic (all-or-nothing)", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const doc1 = docFrom({ uid: u.uid, hash: "00000001" });
-  const doc2 = docFrom({ uid: u.uid, hash: "00000002" });
-  const id1 = runDocId(u.uid, doc1.hash);
-  const id2 = runDocId(u.uid, doc2.hash);
-  await postCommit(server, createRunCommit(VALID_CONFIG, id1, doc1), u.idToken);
-  await postCommit(server, createRunCommit(VALID_CONFIG, id2, doc2), u.idToken);
-
-  const newHandle = validHandle(0.9);
-  const ok = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, [id1, id2], newHandle), u.idToken);
-  assert.equal(ok.status, 200);
-  assert.equal(server.docs().find((d) => d.id === id1).handle, newHandle);
-  assert.equal(server.docs().find((d) => d.id === id2).handle, newHandle);
-
-  // one failing write (a nonexistent third id) rolls back the whole batch
-  const before1 = server.docs().find((d) => d.id === id1).handle;
-  const anotherHandle = validHandle(0.4);
-  const bad = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, [id1, "nope_00000000"], anotherHandle), u.idToken);
-  assert.equal(bad.status, 403);
-  assert.equal(server.docs().find((d) => d.id === id1).handle, before1);
-});
-
 /* ================================================================
    commit: delete
    ================================================================ */
 
 test("commit delete: succeeds only for the owner", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const owner = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const owner = await newNamedUser(server);
   const other = await newUser(server);
   const doc = docFrom({ uid: owner.uid });
   const id = runDocId(owner.uid, doc.hash);
@@ -475,8 +459,8 @@ test("commit delete: succeeds only for the owner", async () => {
 });
 
 test("commit delete: multi-id batch is atomic", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const owner = await newUser(server);
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
+  const owner = await newNamedUser(server);
   const doc1 = docFrom({ uid: owner.uid, hash: "00000011" });
   const doc2 = docFrom({ uid: owner.uid, hash: "00000012" });
   const id1 = runDocId(owner.uid, doc1.hash);
@@ -503,7 +487,7 @@ test("runQuery: filters/order/limit and non-admin limit gate (missing/over LIST_
     seed({ uid: "q1", hash: "00000002", race: "Elven", sub: "Wizard", cls: "Magic User", floor: 5, steps: 200 }),
     seed({ uid: "q1", hash: "00000003", race: "Human", sub: "Knight", floor: 10, steps: 50 }),
   ];
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: seeds });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: seeds });
 
   const noLimit = await server.fetchFn(firestoreUrl(VALID_CONFIG, ":runQuery"), jsonInit("POST", { structuredQuery: { from: [{ collectionId: "runs" }] } }));
   assert.equal(noLimit.status, 403);
@@ -523,7 +507,7 @@ test("runQuery: filters/order/limit and non-admin limit gate (missing/over LIST_
 });
 
 test("runQuery: admin bypasses the list limit", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [seed({ uid: "q2", hash: "00000001" })] });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [seed({ uid: "q2", hash: "00000001" })] });
   const res = await server.fetchFn(
     firestoreUrl(VALID_CONFIG, ":runQuery"),
     jsonInit("POST", { structuredQuery: { from: [{ collectionId: "runs" }] } }, FAKE_ADMIN_TOKEN),
@@ -533,7 +517,7 @@ test("runQuery: admin bypasses the list limit", async () => {
 
 test("runQuery: cursor pagination over 120 seeded docs for one uid", async () => {
   const uid = "cursoruid";
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: seedDocs(120, uid) });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: seedDocs(120, uid) });
   const page1 = await postQuery(server, ownRunsQuery({ uid, limit: 50 }));
   assert.equal(page1.length, 50);
   const page2 = await postQuery(server, ownRunsQuery({ uid, limit: 50, afterName: page1[49].document.name }));
@@ -545,7 +529,7 @@ test("runQuery: cursor pagination over 120 seeded docs for one uid", async () =>
 });
 
 test("runQuery: no hits resolves [{readTime}]", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
   assert.deepEqual(Object.keys(hits[0]), ["readTime"]);
 });
@@ -555,7 +539,7 @@ test("runAggregationQuery: count needs no limit, returns the filtered count unde
     seed({ uid: "c1", hash: "00000001", race: "Human" }),
     seed({ uid: "c1", hash: "00000002", race: "Elven" }),
   ];
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: seeds });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: seeds });
   const result = await postAggregation(server, countQuery({ stat: "deep", season: SEASON }));
   assert.equal(result[0].result.aggregateFields.count.integerValue, "2");
   const filtered = await postAggregation(server, countQuery({ stat: "deep", season: SEASON, race: "Human" }));
@@ -568,7 +552,7 @@ test("runAggregationQuery: count needs no limit, returns the filtered count unde
 
 test("GET runs/{id}: public, 200 or 404", async () => {
   const s = seed({ uid: "g1", hash: "00000001" });
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [s] });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s] });
   const found = await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), { method: "GET" });
   assert.equal(found.status, 200);
   const missing = await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/nope_00000000`), { method: "GET" });
@@ -577,7 +561,7 @@ test("GET runs/{id}: public, 200 or 404", async () => {
 
 test("DELETE runs/{id}: admin only", async () => {
   const s = seed({ uid: "g2", hash: "00000001" });
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [s] });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s] });
   const notAdmin = await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), authInit("DELETE"));
   assert.equal(notAdmin.status, 403);
   const admin = await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), authInit("DELETE", FAKE_ADMIN_TOKEN));
@@ -590,7 +574,7 @@ test("DELETE runs/{id}: admin only", async () => {
    ================================================================ */
 
 test("PATCH/DELETE banned/{uid}: admin only", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const notAdmin = await server.fetchFn(firestoreUrl(VALID_CONFIG, "/banned/u1"), authInit("PATCH"));
   assert.equal(notAdmin.status, 403);
   const admin = await server.fetchFn(firestoreUrl(VALID_CONFIG, "/banned/u1"), authInit("PATCH", FAKE_ADMIN_TOKEN));
@@ -622,7 +606,7 @@ function validReport(overrides = {}) {
 
 test("report + limit commit: first report succeeds for a signed-in user", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
   const step = nextLimitState(null, nowMs);
   const reportId = "report00000000000001";
@@ -635,7 +619,7 @@ test("report + limit commit: first report succeeds for a signed-in user", async 
 
 test("report + limit commit: 403 with no Authorization header", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const step = nextLimitState(null, nowMs);
   const res = await postCommit(server, buildReportCommit(VALID_CONFIG, "reportidnoauth00001a", validReport(), "someuid", step));
   assert.equal(res.status, 403);
@@ -643,7 +627,7 @@ test("report + limit commit: 403 with no Authorization header", async () => {
 
 test("report + limit commit: inside the cooldown -> 403; forged count -> 403; past the daily cap -> 403", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
 
   const step1 = nextLimitState(null, nowMs);
@@ -679,7 +663,7 @@ test("report + limit commit: inside the cooldown -> 403; forged count -> 403; pa
 
 test("report + limit commit: the limit write targets another uid -> 403; without the limit write -> 403", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
   const step = nextLimitState(null, nowMs);
 
@@ -694,7 +678,7 @@ test("report + limit commit: the limit write targets another uid -> 403; without
 
 test("a limit write alone that is a valid step succeeds", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
   const step = nextLimitState(null, nowMs);
   const commit = buildReportCommit(VALID_CONFIG, "reportidlimitonly0001", validReport(), u.uid, step);
@@ -707,7 +691,7 @@ test("a limit write alone that is a valid step succeeds", async () => {
 
 test("reportLimits GET: owner 200/404, admin 200/404, any other caller 403", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
   const other = await newUser(server);
 
@@ -728,7 +712,7 @@ test("reportLimits GET: owner 200/404, admin 200/404, any other caller 403", asy
 });
 
 test("reportLimits: runQuery and DELETE are 403 for users", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const u = await newUser(server);
   const q = await server.fetchFn(
     firestoreUrl(VALID_CONFIG, ":runQuery"),
@@ -740,7 +724,7 @@ test("reportLimits: runQuery and DELETE are 403 for users", async () => {
 });
 
 test("Phase 83-09: a bare collection GET (no id) on bugReports or reportLimits — a list attempt — is 403, for a user, admin or no auth at all", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const u = await newUser(server);
   for (const collection of ["bugReports", REPORT_LIMITS_COLLECTION]) {
     const url = firestoreUrl(VALID_CONFIG, `/${collection}`);
@@ -754,7 +738,7 @@ test("Phase 83-09: a bare collection GET (no id) on bugReports or reportLimits �
 });
 
 test("admin PATCH reportLimits/{uid} seeds a limit doc; DELETE removes it", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const fields = { last: { timestampValue: new Date(1000).toISOString() }, day: { timestampValue: new Date(0).toISOString() }, count: { integerValue: "3" } };
   const patch = await server.fetchFn(firestoreUrl(VALID_CONFIG, "/reportLimits/seeduid"), jsonInit("PATCH", { fields }, FAKE_ADMIN_TOKEN));
   assert.equal(patch.status, 200);
@@ -766,7 +750,7 @@ test("admin PATCH reportLimits/{uid} seeds a limit doc; DELETE removes it", asyn
 
 test("GET bugReports/{id}: 403 for users, 200/404 for the admin", async () => {
   let nowMs = 1000000;
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, now: () => nowMs });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, now: () => nowMs });
   const u = await newUser(server);
   const step = nextLimitState(null, nowMs);
   const reportId = "reportidbugreports001";
@@ -787,7 +771,7 @@ test("GET bugReports/{id}: 403 for users, 200/404 for the admin", async () => {
    ================================================================ */
 
 test("inspectors: calls(), docs(), reports(), limits(), users(), banned() are frozen; ban()/unban()", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG });
   await signUp(server);
   assert.ok(Object.isFrozen(server.calls()));
   assert.ok(Object.isFrozen(server.docs()));
@@ -806,14 +790,14 @@ test("inspectors: calls(), docs(), reports(), limits(), users(), banned() are fr
 
 test("seeded runs appear in queries", async () => {
   const s = seed({ uid: "seed1", hash: "00000001" });
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [s] });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s] });
   const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
   assert.equal(hits.length, 1);
   assert.equal(hits[0].document.name, docName(VALID_CONFIG, RUN_COLLECTION, s.id));
 });
 
 /* ================================================================
-   Phase 87 (BOARD-28): the DEPTH key transition mode + admin deepKey patch
+   Phase 87 (BOARD-28): the DEPTH key (the 2.2.0 formula is refused)
    ================================================================ */
 
 async function createWithDeepKey(server, u, deepKeyFor, overrides = {}) {
@@ -828,25 +812,11 @@ test("BOARD-28 fake: default mirrors the final rules — the legacy deepKey is d
   const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const u = await newUser(server);
   server.setName(u.uid, "Moss Knuckle");
-  const legacy = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "aaaaaaa1", handle: "Moss Knuckle" });
+  const legacy = await createWithDeepKey(server, u, oldDeepKeyOf, { hash: "aaaaaaa1", handle: "Moss Knuckle" });
   assert.equal(legacy.res.status, 403);
   const current = await createWithDeepKey(server, u, deepKeyOf, { hash: "aaaaaaa2", handle: "Moss Knuckle" });
   assert.equal(current.res.status, 200);
   assert.deepEqual(server.docs().map((d) => d.id), [current.id]);
-});
-
-test("BOARD-28 fake: transition mirrors the transition rules — old or new formula only, every other clause intact", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const legacy = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "bbbbbbb1" });
-  assert.equal(legacy.res.status, 200);
-  const current = await createWithDeepKey(server, u, deepKeyOf, { hash: "bbbbbbb2" });
-  assert.equal(current.res.status, 200);
-  const neither = await createWithDeepKey(server, u, (d) => deepKeyOf(d) + 1, { hash: "bbbbbbb3" });
-  assert.equal(neither.res.status, 403);
-  const otherClause = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "bbbbbbb4", handle: "not a handle" });
-  assert.equal(otherClause.res.status, 403);
-  assert.equal(server.docs().length, 2);
 });
 
 test("BOARD-28 fake: a runQuery by deepKey DESCENDING puts the same-floor run with more steps first", async () => {
@@ -854,58 +824,25 @@ test("BOARD-28 fake: a runQuery by deepKey DESCENDING puts the same-floor run wi
     seed({ uid: "d1", hash: "00000001", floor: 6, steps: 50 }),
     seed({ uid: "d1", hash: "00000002", floor: 6, steps: 100 }),
   ];
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: seeds });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: seeds });
   const hits = await postQuery(server, topTenQuery({ stat: "deep", season: SEASON }));
   assert.deepEqual(hits.map((h) => Number(h.document.fields.steps.integerValue)), [100, 50]);
 });
 
-function patchDeepKeyUrl(id, mask = "updateMask.fieldPaths=deepKey") {
-  return `${firestoreUrl(VALID_CONFIG, `/runs/${id}`)}&${mask}`;
+function patchDeepKeyUrl(id) {
+  return `${firestoreUrl(VALID_CONFIG, `/runs/${id}`)}&updateMask.fieldPaths=deepKey`;
 }
 
-function deepKeyBody(value) {
-  return { fields: { deepKey: { integerValue: value } } };
-}
-
-test("BOARD-28 fake: admin PATCH runs/{id} with mask deepKey sets that field alone and bumps updateTime", async () => {
-  let nowMs = Date.parse("2026-09-28T12:00:00.000Z");
+test("BOARD-28 fake: the admin run-document PATCH is gone (the re-key that used it was deleted at the 2.3 cutover)", async () => {
   const s = seed({ uid: "p1", hash: "00000001" });
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [s], now: () => nowMs });
-  const before = server.docs().find((d) => d.id === s.id);
-  const getBefore = await (await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), { method: "GET" })).json();
-  nowMs += 60000;
-  const res = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(res.status, 200);
-  const after = server.docs().find((d) => d.id === s.id);
-  assert.equal(after.deepKey, 5000900);
-  const { deepKey: _b, ...beforeRest } = before;
-  const { deepKey: _a, ...afterRest } = after;
-  assert.deepEqual(afterRest, beforeRest);
-  const getAfter = await (await server.fetchFn(firestoreUrl(VALID_CONFIG, `/runs/${s.id}`), { method: "GET" })).json();
-  assert.notEqual(getAfter.updateTime, getBefore.updateTime);
-  assert.equal(getAfter.createTime, getBefore.createTime);
-});
-
-test("BOARD-28 fake: the deepKey PATCH is refused for a user or no token, a wrong mask, a missing run and a non-integer value", async () => {
-  const s = seed({ uid: "p2", hash: "00000001" });
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true, runs: [s] });
+  const server = createFakeBoardFetch({ config: VALID_CONFIG, runs: [s] });
   const u = await newUser(server);
   const snapshot = JSON.stringify(server.docs());
-
-  const asUser = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900"), u.idToken));
-  assert.equal(asUser.status, 403);
-  const noToken = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", deepKeyBody("5000900")));
-  assert.equal(noToken.status, 403);
-  const wrongMask = await server.fetchFn(patchDeepKeyUrl(s.id, "updateMask.fieldPaths=floor"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(wrongMask.status, 400);
-  const twoMasks = await server.fetchFn(patchDeepKeyUrl(s.id, "updateMask.fieldPaths=deepKey&updateMask.fieldPaths=floor"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(twoMasks.status, 400);
-  const noMask = await server.fetchFn(patchDeepKeyUrl(s.id, "x=1"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(noMask.status, 400);
-  const missing = await server.fetchFn(patchDeepKeyUrl("nope_00000000"), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(missing.status, 404);
-  const notInt = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", { fields: { deepKey: { stringValue: "5000900" } } }, FAKE_ADMIN_TOKEN));
-  assert.equal(notInt.status, 400);
+  const body = { fields: { deepKey: { integerValue: "5000900" } } };
+  for (const token of [FAKE_ADMIN_TOKEN, u.idToken, undefined]) {
+    const res = await server.fetchFn(patchDeepKeyUrl(s.id), jsonInit("PATCH", body, token));
+    assert.notEqual(res.status, 200, `PATCH answered ${res.status} for ${token === undefined ? "no token" : token === FAKE_ADMIN_TOKEN ? "the admin" : "a user"}`);
+  }
   assert.equal(JSON.stringify(server.docs()), snapshot);
 });
 
@@ -932,12 +869,9 @@ test("purity: exports createFakeBoardFetch and mirrors validateRunDoc", () => {
 });
 
 /* ================================================================
-   Phase 91.2 (BOARD-31, BOARD-33, D-11, D-13): the names gate. The default
-   fake mirrors firebase/firestore.rules; transition: true mirrors
-   firebase/firestore.transition.rules.
+   Phase 91.2 (BOARD-31, BOARD-33, D-11, D-13): the names gate. The fake
+   mirrors firebase/firestore.rules (the only rules file since the 2.3 cutover).
    ================================================================ */
-
-const GAMER = "Moss Knuckle";
 
 async function postRun(server, u, overrides = {}) {
   const doc = docFrom({ uid: u.uid, ...overrides });
@@ -1006,7 +940,7 @@ test("final fake: no client run update at all — not the 2.2.0 re-roll, not a r
   assert.equal(made.res.status, 200);
   const before = JSON.stringify(server.docs());
   for (const handle of ["@mossjaw", GAMER, "Other Name"]) {
-    const res = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, handle), u.idToken);
+    const res = await postCommit(server, handleOnlyUpdateCommit(VALID_CONFIG, made.id, handle), u.idToken);
     assert.equal(res.status, 403, handle);
   }
   assert.equal(JSON.stringify(server.docs()), before);
@@ -1018,7 +952,7 @@ test("final fake: a shipped 2.2.0 client's whole flow is refused (anonymous crea
   const create = await postRun(server, u, { handle: "@mossjaw" });
   assert.equal(create.res.status, 403);
   const legacyDoc = docFrom({ uid: u.uid, handle: "@mossjaw", hash: "00000021" });
-  legacyDoc.deepKey = legacyDeepKeyOf(legacyDoc);
+  legacyDoc.deepKey = oldDeepKeyOf(legacyDoc);
   const id = runDocId(u.uid, legacyDoc.hash);
   assert.equal((await postCommit(server, createRunCommit(VALID_CONFIG, id, legacyDoc), u.idToken)).status, 403);
 
@@ -1027,7 +961,7 @@ test("final fake: a shipped 2.2.0 client's whole flow is refused (anonymous crea
   const held = createFakeBoardFetch({ config: VALID_CONFIG, runs: [own] });
   const w = await newUser(held);
   assert.equal(w.uid, "fakeuid000001");
-  const reroll = await postCommit(held, legacyHandleUpdateCommit(VALID_CONFIG, own.id, "@gravepouch"), w.idToken);
+  const reroll = await postCommit(held, handleOnlyUpdateCommit(VALID_CONFIG, own.id, "@gravepouch"), w.idToken);
   assert.equal(reroll.status, 403);
   assert.equal(held.docs().find((d) => d.id === own.id).handle, "@mossjaw");
 });
@@ -1048,76 +982,20 @@ test("final fake: the owner's delete still works for a named and for an unnamed 
   assert.equal(server.docs().length, 0);
 });
 
-test("final fake: the admin paths never reach a client rule (create of any shape, deepKey patch, commit over runs)", async () => {
+test("final fake: the admin paths never reach a client rule (create of any shape, a commit over runs)", async () => {
   const server = createFakeBoardFetch({ config: VALID_CONFIG });
   const doc = docFrom({ uid: "any-uid", handle: "@mossjaw" });
   const id = runDocId("any-uid", doc.hash);
   assert.equal((await postCommit(server, createRunCommit(VALID_CONFIG, id, doc), FAKE_ADMIN_TOKEN)).status, 200);
-  const patch = await server.fetchFn(patchDeepKeyUrl(id), jsonInit("PATCH", deepKeyBody("5000900"), FAKE_ADMIN_TOKEN));
-  assert.equal(patch.status, 200);
-  const renamed = await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, id, GAMER), FAKE_ADMIN_TOKEN);
+  const renamed = await postCommit(server, handleOnlyUpdateCommit(VALID_CONFIG, id, GAMER), FAKE_ADMIN_TOKEN);
   assert.equal(renamed.status, 200);
   assert.equal(server.docs().find((d) => d.id === id).handle, GAMER);
 });
 
-test("transition fake: an unnamed uid posts a 2.2.0 @handle run with either deepKey formula", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const oldKey = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000041", handle: "@mossjaw" });
-  assert.equal(oldKey.res.status, 200);
-  const newKey = await createWithDeepKey(server, u, deepKeyOf, { hash: "00000042", handle: "@mossjaw" });
-  assert.equal(newKey.res.status, 200);
-  const third = await createWithDeepKey(server, u, (d) => deepKeyOf(d) + 1, { hash: "00000043", handle: "@mossjaw" });
-  assert.equal(third.res.status, 403);
-  const notLegacy = await postRun(server, u, { handle: GAMER, hash: "00000044" });
-  assert.equal(notLegacy.res.status, 403, "an unnamed uid cannot post a Play Games style name");
-  assert.equal(server.docs().length, 2);
-});
-
-test("transition fake: an unnamed owner's 2.2.0 handle-only re-roll lands, a non-legacy handle does not", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const made = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000051", handle: "@mossjaw" });
-  assert.equal(made.res.status, 200);
-  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, "@gravepouch"), u.idToken)).status, 200);
-  assert.equal(server.docs().find((d) => d.id === made.id).handle, "@gravepouch");
-  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, GAMER), u.idToken)).status, 403);
-  const other = await newUser(server);
-  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, made.id, "@mossjaw"), other.idToken)).status, 403);
-});
-
-test("transition fake: a named uid can never use a legacy branch (T-91.2-14)", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  const early = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000061", handle: "@mossjaw" });
-  assert.equal(early.res.status, 200, "unnamed: the legacy create lands");
-  server.setName(u.uid, GAMER);
-  const late = await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000062", handle: "@mossjaw" });
-  assert.equal(late.res.status, 403, "named: the legacy @handle create is refused");
-  assert.equal((await postCommit(server, legacyHandleUpdateCommit(VALID_CONFIG, early.id, "@gravepouch"), u.idToken)).status, 403, "named: the legacy update is refused");
-  assert.equal(server.docs().find((d) => d.id === early.id).handle, "@mossjaw");
-});
-
-test("transition fake: a named create lands under the verified name, with either deepKey formula; a wrong name is refused", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  server.setName(u.uid, GAMER);
-  assert.equal((await createWithDeepKey(server, u, deepKeyOf, { hash: "00000071", handle: GAMER })).res.status, 200);
-  assert.equal((await createWithDeepKey(server, u, legacyDeepKeyOf, { hash: "00000072", handle: GAMER })).res.status, 200);
-  assert.equal((await createWithDeepKey(server, u, deepKeyOf, { hash: "00000073", handle: "Someone Else" })).res.status, 403);
-});
-
-test("transition fake: banned unnamed and named uids are refused on the legacy and the named branch alike", async () => {
-  const server = createFakeBoardFetch({ config: VALID_CONFIG, transition: true });
-  const u = await newUser(server);
-  server.ban(u.uid);
-  assert.equal((await postRun(server, u, { handle: "@mossjaw", hash: "00000081" })).res.status, 403);
-  server.setName(u.uid, GAMER);
-  assert.equal((await postRun(server, u, { handle: GAMER, hash: "00000082" })).res.status, 403);
-});
-
-test("the fake keeps no pre-91.2 legacy-deepKey option and no rolled-handle import", () => {
+test("the fake keeps no transition mode, no 2.2.0 helper import and no rolled-handle import", () => {
   assert.equal(FAKE_SERVER_SRC.includes(["accept", "LegacyDeepKey"].join("")), false, "the old option name is gone, comments included");
   assert.equal(FAKE_SERVER_SRC.includes("handles.js"), false, "the rolled-handle module is not imported or named");
-  assert.ok(/transition\s*=\s*false/.test(FAKE_SERVER_SRC), "transition defaults to false (the final rules)");
+  for (const gone of ["transition === true", "transition = false", "legacyDeepKeyOf", "isLegacyHandle", "handleRunPatch"]) {
+    assert.equal(FAKE_SERVER_SRC.includes(gone), false, `${gone} is deleted`);
+  }
 });

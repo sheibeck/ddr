@@ -2,7 +2,7 @@
 //
 // Phase 91.2-05. The one rig every board test shares now that a run posts only
 // under a verified Play Games name: the in-memory fake board server (final
-// rules unless a test asks for the transition window), a fake Play Games seam,
+// rules), a fake Play Games seam,
 // an in-memory storage and the REAL identity wired to all three. A test that
 // needs a signed-in player just calls rig.identity.boardSession(); one that
 // needs a particular name asks the fake (rig.fake.setName) or the fake player
@@ -16,7 +16,7 @@
 //              player and storage (a second launch).
 //   now        the clock handed to BOTH the fake server and the identity
 //   fakeOpts   createFakeBoardFetch options (playGamesEnabled, linkKeepsUid,
-//              refreshProviderName, nameSource, transition, runs, ...)
+//              refreshProviderName, nameSource, runs, ...)
 //   play       createFakePlayIdentity options (signedIn, playerId, displayName,
 //              interactive)
 //   competeOn  () => boolean, default () => true

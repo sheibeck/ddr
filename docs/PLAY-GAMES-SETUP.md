@@ -145,9 +145,10 @@ reports `signInWithIdp` failing for it), or if it turns out not to exist after a
    APIs, the `board-names` service account with `roles/datastore.user`), then
    `node tools/board-names/deploy.mjs --yes`. The deployed URL must equal `BOARD_NAME_FN.url`.
    A dry run (no `--yes`) prints the commands first.
-4. **Deploy the transition rules** (`docs/RELEASING.md` Release 2.3.0 step 1):
-   `firebase deploy --only firestore:rules,firestore:indexes --config firebase.transition.json --project delve-die-repeat-6ba5f --non-interactive`.
-5. **Run the probes:** `node tools/boards-smoke.mjs --transition` and
+4. **Deploy the rules** (`docs/RELEASING.md` Release 2.3.0 steps 1.5 and 3; the transition
+   config used at first was deleted at the 2.3 cutover, so today it is the plain command):
+   `firebase deploy --only firestore:rules,firestore:indexes --project delve-die-repeat-6ba5f --non-interactive`.
+5. **Run the probes:** `node tools/boards-smoke.mjs` and
    `node tools/boards-smoke.mjs --function` (exit 0, every step PASS, cleanup ok).
 6. After the debug APK is installed: the **dev-row PLAY GAMES PROBE** (long-press the version
    label; debug builds only), which proves gates G1 to G4, A3, A4 and A6 on the phone
