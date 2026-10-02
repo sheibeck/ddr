@@ -869,6 +869,18 @@ export function spellStrengthBonus(sheet, rng) {
 }
 
 /**
+ * strengthFields(parts) — Phase 92.2 plan 01: the additive event payload for a
+ * damage roll's Strength parts, `{ strength?, might? }`, each only when > 0, so
+ * a roll with neither adds no key and every existing event stays byte-identical.
+ */
+export function strengthFields(parts) {
+  return {
+    ...(parts && parts.strength > 0 ? { strength: parts.strength } : {}),
+    ...(parts && parts.might > 0 ? { might: parts.might } : {}),
+  };
+}
+
+/**
  * strengthDiceOf(sheet) — Phase 90 (SPELL-09), module-private: the live
  * Strength record's die (`{ n, sides, bonus }`), or null. The one read
  * strengthRoll and weaponDamageRange share.
@@ -2508,14 +2520,31 @@ function settleDamage(t, base) {
  * the same single dice draw, the same Sorcerer cap and floor).
  */
 export function weaponDamage(c, rng) {
+  return weaponDamageParts(c, rng).dmg;
+}
+
+/**
+ * weaponDamageParts(c, rng) — Phase 92.2 plan 01 (user ruling 2026-10-02: show
+ * Strength in the damage lines): weaponDamage's roll, plus the Strength parts
+ * that actually went into it, as `{ dmg, strength, might }`. `dmg` is exactly
+ * what weaponDamage returns, the same single dice draw and the same derived
+ * d10 (rolled once here and reported as that same value). `strength` is the
+ * spell's d10 and `might` the potion's flat bonus. Where the Sorcerer's cap or
+ * the floor of 1 changed the number, both read 0: the line stays honest and
+ * says nothing about a bonus the clamp swallowed.
+ */
+export function weaponDamageParts(c, rng) {
   const t = weaponDamageTerms(c);
   const w = t.weapon;
   let base = w.halve ? Math.ceil(rollDice(rng, w.dice) / 2) : rollDice(rng, w.dice);
   // Phase 90 (SPELL-09): a live Strength spell adds its own d10 to this roll,
   // drawn from a derived stream right after the weapon dice (the main rng
   // never advances for it), before the Sorcerer's cap and the floor of 1.
-  base += strengthRoll(c, rng);
-  return settleDamage(t, base);
+  const strength = strengthRoll(c, rng);
+  base += strength;
+  const raw = t.levelSq + base + t.bonus;
+  const clamped = (t.cap !== null && raw > t.cap) || raw < 1;
+  return { dmg: settleDamage(t, base), strength: clamped ? 0 : strength, might: clamped ? 0 : potionMight(c) };
 }
 
 /**

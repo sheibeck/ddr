@@ -54,7 +54,7 @@
 // unread by any engine code. `sp.caster` remains exactly what it always
 // was: an inert flavor flag.
 
-import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, spellStrengthParts, spellStrengthBonus, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
+import { healBonusFor, wardBonusFor, skill, eff, strikeDie, toHit, toHitBreakdown, weaponDamage, foeDie, darkLimited, armorSoak, DEATH_PANIC_THRESHOLD, AFRAID_ROUNDS, AFRAID_TO_HIT_PENALTY, AFRAID_DMG_DIV, DAZED_TO_HIT_PENALTY, afraidNeed, afraidDamage, fluency, killSpFor, castableAttackSpells, memberToHit, bestAttackSpell, schoolBonus, foeRisingResistCheck, foeWeakened, abilityEffectActive, weaponCrit, armorBulk, itemEffectActive, fleeBreakdown, neverFlees, targetStrikeFaces, foeSwingVsHero, foeSwingVsMember, foeSwingVsFoe, spellEffectRounds, weaponRow, applyCasterHealMul, controlResistCheck, spellLevelSq, spellStrengthParts, spellStrengthBonus, strengthFields, weaponDamageParts, critWardOf, WORN_SLOTS, activationFor, itemTimerId, canCast, spellLevelFor, spellEffectSquares } from "./derived.js";
 import { damageFoe } from "./foeDamage.js";
 import { rollDice, isBestFace, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { derivedRng } from "./rng.js";
@@ -911,7 +911,9 @@ export function playerStrike(state, rng, events = []) {
       continue;
     }
 
-    let dmg = weaponDamage(c, rng);
+    // Phase 92.2 plan 01: weaponDamageParts is weaponDamage plus the Strength parts that went in.
+    const wd = weaponDamageParts(c, rng);
+    let dmg = wd.dmg;
     if (AS && AS.bonusDmg) dmg += AS.bonusDmg;
     // The hero's OWN crit ban: Guard/Soldier ("your blows never crit") and
     // the dark. Quick 260928-cos (user-approved fix 2026-09-28): the Phase 15
@@ -1071,6 +1073,7 @@ export function playerStrike(state, rng, events = []) {
         target: t.name,
         ...rollFields(check),
         dmg: landed.applied,
+        ...strengthFields(wd),
         critical: crit,
         ...(crit && critBy ? { critBy } : {}),
         ...(crit && critBy && critAtLeast != null ? { critAtLeast } : {}),
@@ -1695,7 +1698,7 @@ export function iceStorm(state, sp, rng, events, caster = {}) {
     const dmg = by ? raw : afraidDamage(state, spellDamageFor(raw, sheet));
     const hit = damageFoe(state, f, dmg, { kind: "spell", school: sp.kind, casterSub: sub, ...(by ? { by } : {}) }, rng, events);
     if (by) events.push({ type: "allySpellHit", name: by, spell: sp.n, target: f.name, effect: "damage", dmg: hit.applied });
-    else events.push({ type: "spellHit", spell: sp.n, target: f.name, dmg: hit.applied, levelSq, ...(C.afraid > 0 ? { afraid: true } : {}) });
+    else events.push({ type: "spellHit", spell: sp.n, target: f.name, dmg: hit.applied, levelSq, ...strengthFields(sParts), ...(C.afraid > 0 ? { afraid: true } : {}) });
     if (f.wp <= 0) {
       killFoe(state, f, rng, events);
       continue;
@@ -3613,7 +3616,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
         damageFoe(state, f, d, bySource, rng, events);
         if (f.wp <= 0) killFoe(state, f, rng, events);
       });
-      events.push({ type: "earthquake", amount: d });
+      events.push({ type: "earthquake", amount: d, ...strengthFields(sParts) });
       if (!ally.ward) {
         const self = Math.ceil(rolled / 2);
         ally.wp -= self;
@@ -3639,6 +3642,7 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
       const shrugged = new Set(foes.filter((f) => foeResistsSpell(state, f, sp.n, rng, events, ally.name)));
       const struck = new Set();
       let tot = 0;
+      const sSum = { strength: 0, might: 0 }; // Phase 92.2 plan 01: the Strength parts of every bolt, for the event
       for (let k = 0; k < n && foes.length; k++) {
         const f = foes[k % foes.length];
         if (!f.alive || shrugged.has(f)) continue;
@@ -3646,12 +3650,14 @@ function allyCast(state, ally, sheet, view, sp, t, rng, events, opts = {}) {
         struck.add(f);
         const dice = rollDice(rng, sp.dmg);
         const bolt = spellStrengthParts(view, rng);
+        sSum.strength += bolt.strength;
+        sSum.might += bolt.might;
         const d = dice + bolt.total + (first ? levelSq : 0);
         const hit = damageFoe(state, f, d, bySource, rng, events);
         tot += hit.applied;
         if (f.wp <= 0) killFoe(state, f, rng, events);
       }
-      events.push({ type: "volley", rolls: n, totalDamage: tot });
+      events.push({ type: "volley", rolls: n, totalDamage: tot, ...strengthFields(sSum) });
     } else if (sp.kind === "turn") {
       // Walking Dead of the Joiner's level or lower, each on its own resist. The hero's
       // fixation (survivors swing only at the caster) is a hero-only targeting rule in

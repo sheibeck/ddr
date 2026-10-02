@@ -247,6 +247,25 @@ const CONTROL_EFFECT_WORD = Object.freeze({
 });
 /** joinerOf(e) — Phase 90 plan 05: the Joiner a spell line names (`by`), or null for the hero's own (an absent `by`, or the resist events' "you"). */
 const joinerOf = (e) => (e.by && e.by !== "you" ? e.by : null);
+
+/**
+ * strengthParts(e) — Phase 92.2 plan 01 (user ruling 2026-10-02: show Strength
+ * in the damage lines): the Strength terms a damage event reports, as words
+ * ("+8 Strength potion", "+6 Strength"); empty unless the event carries a
+ * `might` (the potion's flat bonus) or `strength` (the spell's d10) above 0.
+ * Null-safe for a bare `{ type }` payload. strengthIncl(e) is the whole
+ * clause, " (incl. ...)", or "" so every existing line stays byte-identical.
+ */
+const strengthParts = (e) => [
+  ...(e && e.might > 0 ? [`+${e.might} Strength potion`] : []),
+  ...(e && e.strength > 0 ? [`+${e.strength} Strength`] : []),
+];
+/** spellHitParen(e) — the spell-hit parenthetical: the level term (from level 2 up) and any Strength terms. */
+const spellHitParen = (e) => {
+  const bits = [...((e.levelSq ?? 0) > 1 ? [`the roll +${e.levelSq}, for your level`] : []), ...(strengthParts(e).length ? [`incl. ${strengthParts(e).join(", ")}`] : [])];
+  return bits.length ? ` (${bits.join(", ")})` : "";
+};
+const strengthIncl = (e) => (strengthParts(e).length ? ` (incl. ${strengthParts(e).join(", ")})` : "");
 // Phase 90 plan 08 (SPELL-10): Stop Time's hold is kind "time".
 const CONTROL_HOLD_WORD = Object.freeze({ frozen: "frozen solid", stone: "turned to stone", stupid: "stupefied", stunned: "stunned", time: "stopped" });
 
@@ -738,7 +757,7 @@ export const EVENT_NARRATION = {
     // present; `e.afraid` appends the pulled-blow line (absent for every
     // non-afraid strike, byte-identical to before). Phase 73 (ROLL-05): the
     // range replaces the old "vs N" single number.
-    return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
+    return `<span class="roll">${e.roll ?? "?"}</span> vs ${rangeText(e.atLeast, e.dieN)}${modsClause(e.mods, ROLLERS.you)}. ${critText}You hit ${e.target ?? "it"} for <span class="roll">${e.dmg ?? 0}</span> hp${strengthIncl(e)}.${e.afraid ? ` <span class="miss">Fear pulls the blow.</span>` : ""}`;
   },
   foeRevived: (e) => `<span class="miss">${e.name ?? "It"} gets back up.</span>`,
   foeKilled: (e) => `<span class="hit">${e.name ?? "It"} falls.</span> +<span class="roll">${e.spGained ?? 0}</span> XP.`,
@@ -1386,7 +1405,7 @@ export const EVENT_NARRATION = {
     `<span class="banner">${joinerOf(e) ? `${joinerOf(e)}'s ` : ""}${e.spell ?? "Ice"} sweeps the room.</span> Every foe takes a d10 plus level² (no roll to hit), and any survivor may freeze.`,
   // VOX-05 (Phase 79, plan 79-08): the number is damage, and it lands on
   // every foe (the caster's own half is earthquakeSelfDamage's line).
-  earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room.`,
+  earthquake: (e) => `<span class="banner">The floor heaves.</span> <span class="roll">${e.amount ?? 0}</span> damage to every foe in the room${strengthIncl(e)}.`,
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // Phase 91 plan 07 (IDENT-17): a Joiner's sung Earthquake costs the Joiner (`member`), not you.
   earthquakeSelfDamage: (e) =>
@@ -1403,7 +1422,7 @@ export const EVENT_NARRATION = {
       : Number.isFinite(e.roll)
         ? `Noxious vapor: <span class="roll">${e.roll}</span>. Every foe falls asleep for d6+2 rounds.`
         : `Noxious vapor: <span class="roll">?</span>.`,
-  volley: (e) => `<span class="roll">${e.rolls ?? 0}</span> shots, <span class="roll">${e.totalDamage ?? 0}</span> total damage.`,
+  volley: (e) => `<span class="roll">${e.rolls ?? 0}</span> shots, <span class="roll">${e.totalDamage ?? 0}</span> total damage${strengthIncl(e)}.`,
   // Phase 90 plan 04 (SPELL-12, Q2 A): the stone foe dies and pays its
   // experience (the foeKilled line after this one); a statue carries no spoils.
   petrified: (e) => `<span class="hit">${e.target ?? "It"} turns to stone and does not get back up.</span> A statue carries no spoils.`,
@@ -1598,7 +1617,7 @@ export const EVENT_NARRATION = {
   // caster's level² (the event's `levelSq`), already inside the number; the
   // clause names it from level 2 up (a level-1 caster's +1 goes unsaid).
   spellHit: (e) =>
-    `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${(e.levelSq ?? 0) > 1 ? ` (the roll +${e.levelSq}, for your level)` : ""}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
+    `<span class="hit">Hit.</span> ${e.target ?? "It"} takes <span class="roll">${e.dmg ?? 0}</span> hp${spellHitParen(e)}.${e.afraid ? ` <span class="miss">Fear pulls the spell.</span>` : ""}`,
   // RULES-18 (Phase 75.3, Plan 04): past floor 12, a control (Freeze, Ice's
   // last tick, a Joiner's Doze/Stun/Weaken, a Bard song) increasingly gets
   // shrugged off outright — this is that resist, always its own Oracle line

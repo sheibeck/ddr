@@ -575,6 +575,17 @@ const CRIT_SUFFIX = " · CRIT";
 const joinerOf = (e) => (e?.by && e.by !== "you" ? e.by : null);
 
 /**
+ * railStrengthTotal(e) — Phase 92.2 plan 01 (user ruling 2026-10-02: show
+ * Strength in the damage lines): the Strength a damage event reports, the
+ * potion's flat `might` plus the spell's d10 `strength`, as one number (0
+ * when the event carries neither). railIncl(e) is the compact tail "incl. +8, +6"
+ * (the same numbers the Oracle twin, eventNarration.js#strengthIncl, names), or ""
+ * for 0, so every existing line stays byte-identical.
+ */
+const railStrengthTotal = (e) => (e?.might > 0 ? e.might : 0) + (e?.strength > 0 ? e.strength : 0);
+const railIncl = (e) => (railStrengthTotal(e) > 0 ? `incl. ${[e?.might > 0 ? `+${e.might}` : "", e?.strength > 0 ? `+${e.strength}` : ""].filter(Boolean).join(", ")}` : "");
+
+/**
  * lineEvent(e) — CMBUI-10: true when `e` would produce a line of its own
  * (a LINE_FOR builder, not ORACLE_ONLY). The event order's contiguity rule
  * reads "next" as the next event that would otherwise produce a line, so a
@@ -754,7 +765,8 @@ function yourRound(events, consumed) {
     const sum = hits.reduce((s, x) => s + (x.e.dmg ?? 0), 0);
     const anyCrit = hits.some((x) => x.e.critical);
     if (K > 0) {
-      let text = `You hit ${target} ${K} of ${M} (${sum})`;
+      const incl = railIncl({ might: hits.reduce((n, x) => n + (x.e.might > 0 ? x.e.might : 0), 0), strength: hits.reduce((n, x) => n + (x.e.strength > 0 ? x.e.strength : 0), 0) });
+      let text = `You hit ${target} ${K} of ${M} (${sum}${incl ? `, ${incl}` : ""})`;
       if (anyCrit) {
         text += CRIT_SUFFIX;
         const firstCrit = hits.find((x) => x.e.critical && CRIT_BY_TEXT[x.e.critBy]);
@@ -850,7 +862,8 @@ function isFreezeHold(e, target) {
 /** freezeHitLine(spell, target, hitE, heldE) — the hero's Freeze hit and its hold on one line. */
 function freezeHitLine(spell, target, hitE, heldE) {
   const rounds = Number.isFinite(heldE.rounds) ? railPlural(heldE.rounds, "round") : "? rounds";
-  return `${spell} hits ${target} (${hitE.dmg ?? 0}), frozen for ${rounds}`;
+  const incl = railIncl(hitE);
+  return `${spell} hits ${target} (${hitE.dmg ?? 0}${incl ? `, ${incl}` : ""}), frozen for ${rounds}`;
 }
 
 /**
@@ -1668,7 +1681,8 @@ export const LINE_FOR = {
   struck: (e) => {
     const crit = e?.critical ? " · CRIT" : "";
     const reason = e?.critical && CRIT_BY_TEXT[e?.critBy] ? ` (${CRIT_BY_TEXT[e.critBy]})` : "";
-    return { text: `You hit ${e?.target ?? "it"} (${e?.dmg ?? 0})${crit}${reason}`, tone: "hit", priority: PRIORITY.you };
+    const incl = railIncl(e);
+    return { text: `You hit ${e?.target ?? "it"} (${e?.dmg ?? 0}${incl ? `, ${incl}` : ""})${crit}${reason}`, tone: "hit", priority: PRIORITY.you };
   },
   foeRevived: (e) => ({ text: `${e?.name ?? "It"} gets back up.`, tone: "dodge", priority: PRIORITY.them }),
   foeKilled: (e) => ({ text: `${e?.name ?? "It"} falls (+${e?.spGained ?? 0} XP).`, tone: "hit", priority: PRIORITY.you }),
@@ -2255,7 +2269,7 @@ export const LINE_FOR = {
   // Phase 90 plan 05 (SPELL-12, Q5 A): the rail twin of the Oracle's iceCast.
   iceCast: (e) => ({ text: `${joinerOf(e) ? `${joinerOf(e)}'s ` : ""}${e?.spell ?? "Ice"} sweeps the room: a d10 plus level² each, survivors may freeze.`, tone: "magic", priority: PRIORITY.you }),
   // VOX-05 (Phase 79, plan 79-08): the number is damage to every foe.
-  earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe.`, tone: "magic", priority: PRIORITY.you }),
+  earthquake: (e) => ({ text: `The floor heaves: ${e?.amount ?? 0} to every foe${railIncl(e) ? ` (${railIncl(e)})` : ""}.`, tone: "magic", priority: PRIORITY.you }),
   // Phase 43 (CLAR-01): cause first, cost last — see docs/CLARITY.md
   // Phase 91 plan 07 (IDENT-17): a Joiner's sung Earthquake costs the Joiner (`member`).
   earthquakeSelfDamage: (e) => ({ text: e?.member ? `Earthquake: ${e.member} −${e?.amount ?? 0} hp, theirs too.` : `Earthquake: −${e?.amount ?? 0} hp, yours too.`, tone: "hurt", priority: PRIORITY.you }),
@@ -2270,7 +2284,7 @@ export const LINE_FOR = {
     tone: "magic",
     priority: PRIORITY.other,
   }),
-  volley: (e) => ({ text: `${e?.rolls ?? 0} shots, ${e?.totalDamage ?? 0} total.`, tone: "magic", priority: PRIORITY.you }),
+  volley: (e) => ({ text: `${e?.rolls ?? 0} shots, ${e?.totalDamage ?? 0} total${railIncl(e) ? ` (${railIncl(e)})` : ""}.`, tone: "magic", priority: PRIORITY.you }),
   petrified: (e) => ({ text: `${e?.target ?? "It"} turns to stone and dies. No spoils from a statue.`, tone: "magic", priority: PRIORITY.you }),
   walkingDeadTurned: (e) => ({ text: `${e?.count ?? 0} of the dead flee.`, tone: "magic", priority: PRIORITY.you }),
   nothingToTurn: () => block("Nothing here to turn."),
@@ -2447,7 +2461,7 @@ export const LINE_FOR = {
   spellThrown: (e) => ({ text: `${e?.spell ?? "It"} at ${e?.target ?? "it"}.`, tone: "magic", priority: PRIORITY.you }),
   spellHit: (e) => ({
     // Quick 260928-sq2: the damage is the roll + level² (`levelSq`), already inside the number.
-    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0}${(e?.levelSq ?? 0) > 1 ? `, the roll +${e.levelSq} for your level` : ""})`,
+    text: `${e?.spell ?? "It"} hits ${e?.target ?? "it"} (${e?.dmg ?? 0}${(e?.levelSq ?? 0) > 1 ? `, the roll +${e.levelSq} for your level` : ""}${railIncl(e) ? `, ${railIncl(e)}` : ""})`,
     tone: "magic",
     priority: PRIORITY.you,
   }),

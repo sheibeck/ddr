@@ -19,7 +19,7 @@
 // c.mirror/C.weakened/C.foeToHitPenalty); this module is the thing that
 // finally SETS them.
 
-import { eff, canCast, canLearn, spellClosed, schoolBonus, healBonusFor, wardBonusFor, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, spellStrengthParts, spellEffectSquares } from "./derived.js";
+import { eff, canCast, canLearn, spellClosed, schoolBonus, healBonusFor, wardBonusFor, schoolGate, spellTargetsFoe, spellLevelFor, afraidNeed, afraidDamage, applyCasterHealMul, scrollReaderOf, scrollReadBands, scrollReadOutcome, spellLevelSq, spellStrengthParts, strengthFields, spellEffectSquares } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { die } from "./death.js";
 import { liveFoes, killFoe, afterPlayerAction, refuseIfPending, normalizeTarget, shatterIfBest, foeResistsSpell, roomWeakenResists, freezeFoe, startSpellEffect, dozeFoes, stunFoe, iceStorm, stopTime, misdirectFoe, fleeRefusal, parleyBlockedReason, parley, doorIllusionEscape, behemothRoar } from "./combat.js";
@@ -405,7 +405,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
     // Phase 90 (SPELL-09, Q1 A): a live Strength adds its d10 to this one roll
     // (every foe takes it); the caster's own backlash stays the dice alone.
     // Phase 92.2 plan 01 (user 2026-10-02): the Strength potion's flat bonus joins
-    // the spell's d10 here (spellStrengthParts).
+    // the spell's d10 here (spellStrengthParts); the event reports both parts.
     const rolled = rollDice(rng, sp.dmg);
     const sParts = spellStrengthParts(c, rng);
     const d = afraidDamage(state, spellDamageFor(rolled + sParts.total + spellLevelSq(c), c));
@@ -422,7 +422,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
       damageFoe(state, f, d, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
       if (f.wp <= 0) killFoe(state, f, rng, events);
     });
-    events.push({ type: "earthquake", amount: d });
+    events.push({ type: "earthquake", amount: d, ...strengthFields(sParts) });
     if (!c.ward) {
       const self = Math.ceil(backlash / 2);
       c.wp -= self;
@@ -466,6 +466,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
     const levelSq = spellLevelSq(c);
     const struck = new Set();
     let tot = 0;
+    // Phase 92.2 plan 01: the Strength parts of every bolt that was rolled, summed for the event.
+    const sSum = { strength: 0, might: 0 };
     for (let k = 0; k < n && foes.length; k++) {
       const t = foes[k % foes.length];
       if (!t.alive || shrugged.has(t)) continue;
@@ -478,6 +480,8 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
       // Strength adds its own d10 to every bolt.
       const dice = rollDice(rng, sp.dmg);
       const bolt = spellStrengthParts(c, rng);
+      sSum.strength += bolt.strength;
+      sSum.might += bolt.might;
       const d = afraidDamage(state, spellDamageFor(dice + bolt.total + (first ? levelSq : 0), c));
       // Spell damage (CANON-04, D-11): route through the seam; the volley
       // total sums APPLIED damage (post multiplier/halfDmg/bypass), not raw.
@@ -485,7 +489,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
       tot += hit.applied;
       if (t.wp <= 0) killFoe(state, t, rng, events);
     }
-    events.push({ type: "volley", rolls: n, totalDamage: tot });
+    events.push({ type: "volley", rolls: n, totalDamage: tot, ...strengthFields(sSum) });
   } else if (sp.kind === "petrify") {
     const t = C && C.foes[C.target];
     // DELIBERATE RULES CHANGE (Phase 90 plan 04, SPELL-12 and Q2 A, user
@@ -815,7 +819,7 @@ export function castSpell(state, idx, rng, events = [], now = Date.now, opts = {
         // term above (the narration says "the roll +N, for your level");
         // `dmg` is the APPLIED amount.
         const hit = damageFoe(state, t, dmg, { kind: "spell", school: sp.kind, casterSub: c.sub }, rng, events);
-        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, levelSq, ...(afraidMods.length ? { afraid: true } : {}) });
+        events.push({ type: "spellHit", target: t.name, dmg: hit.applied, levelSq, ...strengthFields(sParts), ...(afraidMods.length ? { afraid: true } : {}) });
         if (freeze) {
           // DELIBERATE RULES CHANGE (user rulings 2026-09-28): "freeze should
           // never kill outright. It should deal its damage and freeze an

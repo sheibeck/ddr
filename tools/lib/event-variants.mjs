@@ -231,6 +231,12 @@ const PHASE_79_TOGGLES = [
   // Phase 91.1 plan 03 part B (user ruling V7 B, 2026-10-01), appended so every earlier toggle keeps
   // its id: the Bard's second song is refused while it is still resting (rounds left from the event).
   { only: ["actionRefused"], reason: "songResting", rounds: 3 },
+  // Phase 92.2 plan 01 (user ruling 2026-10-02: Strength in the damage lines), appended so every
+  // earlier toggle keeps its id: the shared base carries `might: 3` for the item-effect lines, so
+  // TYPE_FIELDS below zeroes `might` on the four damage events (their plain lines stay the default
+  // rendering) and these toggles reach the Strength clause, with and without the spell's d10.
+  { only: ["struck", "spellHit", "earthquake", "volley"], might: 3, strength: 6 },
+  { only: ["struck", "spellHit", "earthquake", "volley"], might: 3 },
 ];
 
 /**
@@ -251,6 +257,11 @@ export const TYPE_FIELDS = Object.freeze({
   // rationsEaten carries `eats` (engine/movement.js#newDay); the shared base only has it inside `eaters`.
   rationsEaten: Object.freeze({ eats: 1 }),
   staffRecharged: Object.freeze({ item: "Crystal Staff" }),
+  // Phase 92.2 plan 01: the damage events carry `might` only when the Strength potion applied (the shared base's `might: 3` is the item-effect lines').
+  struck: Object.freeze({ might: 0 }),
+  spellHit: Object.freeze({ might: 0 }),
+  earthquake: Object.freeze({ might: 0 }),
+  volley: Object.freeze({ might: 0 }),
 });
 
 /** BRANCH_TOGGLES — the frozen, ordered list of field patches (see header). */
