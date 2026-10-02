@@ -1056,3 +1056,21 @@ Plans:
 Plans:
 
 - [ ] TBD (promote via /gsd-review-backlog or /gsd-new-milestone)
+
+### Phase 999.19: A Joiner's Stealth crit is logged as the hero's (bug, user 2026-10-02)
+
+**Report (Play release 2.3.0):** "When my Dwarf Samurai landed a crit strike with a katana it shows 'Unseen strike' and (stealth) in the combat rail."
+- The hero does NOT have the Stealth skill; the user checked the Hero tab.
+- A Thief Joiner was present (the user said "cutpurse": a Cutthroat or Cutpurse-ability Joiner).
+- It was NOT the hero's first hit of the fight.
+
+**Likely cause:** the Joiner's opening-blow Stealth crit (`memberStrike`, or a Cutthroat first-blow crit) emits `stealthStrike` without `member`, or the rail renders it as the hero's. `src/browser/narrationLines.js:1678` reads "Unseen strike — critical." when `e.member` is missing. `engine/combat.js` ~990-1003 is the hero's own Stealth branch (it requires `skill(c,"Stealth")`). Diagnosis is in progress (gsd-debugger, 2026-10-02); its root cause and repro go here when it reports.
+
+**Fix scope:**
+- Every Joiner crit event carries the member's name, and the Oracle and rail say whose blow it was.
+- Add a test that a hero without Stealth never gets a hero-voiced stealth line.
+- Also check the "(stealth)" crit-source tag on the rail.
+
+Plans:
+
+- [ ] TBD (next release; promote via /gsd-review-backlog or /gsd-new-milestone)
