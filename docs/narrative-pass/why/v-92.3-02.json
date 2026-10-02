@@ -1,0 +1,74 @@
+[
+  {
+    "key": "bank:FOE_CONDITION_DESC.stunned",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Seeing stars. It loses its next turn, and your melee blows, and your Joiners', hit it automatically until then. Then it remembers where it is.",
+    "after": "Seeing stars. It loses its next turn, and your melee blows, and your Joiners' and summoned allies', hit it automatically until then. Then it remembers where it is.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.asleep",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Asleep. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps. A hit does not wake it.",
+    "after": "Asleep. It skips its turns until the count runs out, and your melee blows, and your Joiners' and summoned allies', hit it automatically while it naps. A hit does not wake it.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.dozing",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Dozing. It skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically while it naps, but the first hit that lands wakes it at once.",
+    "after": "Dozing. It skips its turns until the count runs out, and your melee blows, and your Joiners' and summoned allies', hit it automatically while it naps, but the first hit that lands wakes it at once.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.held",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Held down instead of finished off: it skips its turns until the count runs out, and your melee blows, and your Joiners', hit it automatically; then it recovers. Hitting it does not end the hold.",
+    "after": "Held down instead of finished off: it skips its turns until the count runs out, and your melee blows, and your Joiners' and summoned allies', hit it automatically; then it recovers. Hitting it does not end the hold.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  },
+  {
+    "key": "bank:FOE_CONDITION_DESC.stopped",
+    "surface": "combat-screen",
+    "trigger": "a foe condition's one-line explanation on the long-press foe card and the chip tap: src/browser/foeConditions.js#FOE_CONDITION_DESC",
+    "before": "Time has stopped for it: it takes no turns until the count runs out, and your melee blows, and your Joiners', hit it automatically. Hitting it does not start time again.",
+    "after": "Time has stopped for it: it takes no turns until the count runs out, and your melee blows, and your Joiners' and summoned allies', hit it automatically. Hitting it does not start time again.",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  },
+  {
+    "key": "content:SPELLS.Stop Time.txt",
+    "surface": "spells",
+    "trigger": "the Grimoire row and the combat spell text for Stop Time",
+    "before": "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and your melee blows, and your Joiners', hit it automatically; then time resumes, and so do they",
+    "after": "control · every foe · stopped for 2 rounds, +1 round per school bonus point, unless it resists: it takes no turns, hitting it neither ends nor restarts the stop, and your melee blows, and your Joiners' and summoned allies', hit it automatically; then time resumes, and so do they",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 92.3 plan 02 (user ruling 2026-10-02, \"fix summons so they auto hit like others\"): a summoned ally's strike (and the legacy sheet-less ally's) at a helpless foe now hits automatically too, so the line that says who hits it automatically adds your summoned allies to your melee blows and your Joiners'."
+  }
+]

@@ -2590,12 +2590,19 @@ export function allyTurn(state, rng, events = []) {
     check = { roll: better, atLeast: check.atLeast, dieN, ok: better >= check.atLeast };
   }
   const roll = check.roll;
-  if (check.ok) {
+  // Phase 92.3 plan 02 (user ruling 2026-10-02: "fix summons so they auto hit like others"): a summoned ally's
+  // strike at a HELPLESS foe hits automatically, the hero's and the Joiners' rule (playerStrike,
+  // derived.js#foeHelplessKind): the strike die is still drawn above and ignored, the damage is rolled as
+  // usual, and the best-face shatter (a roll-reading bonus) does not happen. A foe it cannot touch at all
+  // (winning faces 0) stays untouchable.
+  const helplessKind = helplessAutoHit(t, faces);
+  const helplessHit = helplessKind !== null;
+  if (helplessHit || check.ok) {
     // Phase 72 (ROLL-01 (c)): a landed summoned-ally strike on its die's
     // best face shatters a shatter-flagged foe (the Skeleton) outright —
     // skip the damage roll. The `--C.ally.rounds` countdown below still
     // runs either way.
-    if (!shatterIfBest(state, t, roll, dieN, C.ally.name, rng, events)) {
+    if (helplessHit || !shatterIfBest(state, t, roll, dieN, C.ally.name, rng, events)) {
       const d = C.ally.lvl * C.ally.lvl + rng.d(6); // roll:amount
       // D-06/D-20: an ally's blow is physical (soakable) and never matches a
       // multiplier row (no cls on a summoned/party ally this phase).
@@ -2607,6 +2614,7 @@ export function allyTurn(state, rng, events = []) {
           target: t.name,
           dmg: hit.applied,
           ...rollFields(check),
+          ...(helplessHit ? { helpless: helplessKind } : {}),
           ...(hit.soak ? { soak: hit.soak } : {}),
         });
       if (t.wp <= 0) killFoe(state, t, rng, events);
@@ -2701,11 +2709,15 @@ export function alliesTurn(state, rng, events = []) {
         check = { roll: better, atLeast: check.atLeast, dieN: legacyDieN, ok: better >= check.atLeast };
       }
       const roll = check.roll;
-      if (check.ok) {
+      // Phase 92.3 plan 02 (user ruling 2026-10-02): the legacy sheet-less ally hits a HELPLESS foe
+      // automatically too (draw-and-ignore, the hero's rule); a foe it cannot touch (faces 0) stays untouchable.
+      const helplessKind = helplessAutoHit(t, faces);
+      const helplessHit = helplessKind !== null;
+      if (helplessHit || check.ok) {
         // Phase 72 (ROLL-01 (c)): a landed legacy-ally strike on its die's
         // best face shatters a shatter-flagged foe (the Skeleton) outright —
         // skip the damage roll.
-        if (shatterIfBest(state, t, roll, legacyDieN, ally.name, rng, events)) continue;
+        if (!helplessHit && shatterIfBest(state, t, roll, legacyDieN, ally.name, rng, events)) continue;
         const d = ally.lvl * ally.lvl + rng.d(6); // roll:amount
         // D-06/D-20: a party member's blow is physical (soakable) and never
         // matches a multiplier row (no cls on a legacy C.allies entry).
@@ -2717,6 +2729,7 @@ export function alliesTurn(state, rng, events = []) {
             target: t.name,
             dmg: hit.applied,
             ...rollFields(check),
+            ...(helplessHit ? { helpless: helplessKind } : {}),
             ...(hit.soak ? { soak: hit.soak } : {}),
           });
         if (t.wp <= 0) killFoe(state, t, rng, events);

@@ -16,7 +16,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { playerStrike, alliesTurn, foeTurn } from "../../engine/combat.js";
+import { playerStrike, alliesTurn, allyTurn, foeTurn } from "../../engine/combat.js";
 import { foeHelplessKind, helplessAutoHit, heroAutoHitVs } from "../../engine/derived.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR, narrativeLineText } from "../../src/browser/narrationLines.js";
@@ -248,6 +248,82 @@ test("92.3 Joiner crit decision: the natural top-face crit does not happen on a 
   assert.ok(!struck.crit, "no natural crit with the roll skipped");
 });
 
+// ─── a summoned ally's strike and the legacy sheet-less ally's (92.3 plan 02) ──
+
+function summonState(foeFields) {
+  const s = state();
+  s.combat = combat([foe(foeFields)], { ally: { name: "Wisp", lvl: 1, rounds: 3 } });
+  return s;
+}
+
+function legacyState(foeFields) {
+  const s = state();
+  // an entry with no persistent sheet (party is empty) takes the legacy strike
+  s.combat = combat([foe(foeFields)], { allies: [{ name: "Old Hand", partyIdx: 0, wp: 30, maxWP: 30, lvl: 1 }] });
+  return s;
+}
+
+test("92.3-02 summon: a draw that would miss hits every helpless foe automatically; the same draw misses a foe that acts", () => {
+  for (const [label, fields, kind] of HELPLESS) {
+    const s = summonState(fields);
+    const rng = countingRng(fakeRng([20, 4, ...FILL]));
+    const events = allyTurn(s, rng, []);
+    const struck = events.find((e) => e.type === "allyStruck");
+    assert.ok(struck, `${label}: the summon hits on a draw that would miss`);
+    assert.equal(struck.helpless, kind, label);
+    assert.ok(struck.dmg > 0, `${label}: the damage is rolled as usual`);
+    assert.ok(!events.some((e) => e.type === "allyMissed"), `${label}: no miss`);
+    assert.equal(rng.draws, 2, `${label}: the strike die is still drawn and ignored, then the damage die`);
+  }
+  const s = summonState({});
+  const events = allyTurn(s, fakeRng([20, 4, ...FILL]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "an ordinary foe is still rolled against");
+  assert.ok(!events.some((e) => e.type === "allyStruck"), "and no `helpless` field leaks onto a plain line");
+});
+
+test("92.3-02 summon: the draw order matches an ordinary hit, and a natural top face on a helpless foe shatters nothing", () => {
+  const sk = summonState({ asleep: 3, sp: { shatter: true } });
+  const evS = allyTurn(sk, fakeRng([1, 4, ...FILL]), []);
+  assert.ok(evS.some((e) => e.type === "allyStruck" && e.helpless === "asleep"), "a sleeping Skeleton is struck, not shattered by the roll");
+  assert.ok(!evS.some((e) => e.type === "foeShattered"), "no best-face shatter with the roll skipped");
+});
+
+test("92.3-02 summon: an untouchable foe (magic only) stays untouchable even asleep", () => {
+  const s = summonState({ asleep: 3, sp: { magicOnly: true } });
+  const events = allyTurn(s, fakeRng([1, 4, ...FILL]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "faces 0: the summon cannot touch it, asleep or not");
+  assert.ok(!events.some((e) => e.type === "allyStruck"));
+});
+
+test("92.3-02 summon: the countdown still runs and a summon is still rolled against nothing on the foe's side", () => {
+  const s = summonState({ held: { kind: "frozen", left: 2 } });
+  s.combat.ally.rounds = 1;
+  const events = allyTurn(s, fakeRng([20, 4, ...FILL]), []);
+  assert.ok(events.some((e) => e.type === "allyStruck" && e.helpless === "frozen"));
+  assert.ok(events.some((e) => e.type === "allyDeparted"), "its rounds still count down");
+});
+
+test("92.3-02 legacy sheet-less ally: a draw that would miss hits every helpless foe; an ordinary foe still rolls", () => {
+  for (const [label, fields, kind] of HELPLESS) {
+    const s = legacyState(fields);
+    const events = alliesTurn(s, fakeRng([20, 4, ...FILL]), []);
+    const struck = events.find((e) => e.type === "allyStruck");
+    assert.ok(struck, `${label}: the legacy ally hits`);
+    assert.equal(struck.helpless, kind, label);
+  }
+  const s = legacyState({});
+  const events = alliesTurn(s, fakeRng([20, 4, ...FILL]), []);
+  assert.ok(events.some((e) => e.type === "allyMissed"), "an ordinary foe is still rolled against");
+  const m = legacyState({ asleep: 3, sp: { magicOnly: true } });
+  assert.ok(alliesTurn(m, fakeRng([1, 4, ...FILL]), []).some((e) => e.type === "allyMissed"), "magic-only stays untouchable");
+});
+
+test("92.3-02 narration: a summon's helpless blow reads through the same allyStruck lines (Oracle and rail)", () => {
+  const e = { type: "allyStruck", name: "Wisp", target: "Viper", dmg: 5, helpless: "asleep" };
+  assert.match(EVENT_NARRATION.allyStruck(e), /Viper cannot dodge/);
+  assert.match(LINE_FOR.allyStruck(e).text, /it cannot dodge/);
+});
+
 // ─── foes still roll against a helpless hero ─────────────────────────────
 
 test("92.3 the foe's side is unchanged: a foe still rolls to hit a hero who is out", () => {
@@ -302,9 +378,9 @@ test("92.3 the foe card: a helpless foe reads 'You hit it automatically' (odds l
 
 test("92.3 chip text and spell text state the rule", () => {
   for (const key of ["stunned", "asleep", "dozing", "held", "stopped"]) {
-    assert.match(FOE_CONDITION_DESC[key], /melee blows, and your Joiners', hit it automatically/, key);
+    assert.match(FOE_CONDITION_DESC[key], /melee blows, and your Joiners' and summoned allies', hit it automatically/, key);
   }
   const stopTime = SPELLS.find((sp) => sp.n === "Stop Time");
-  assert.match(stopTime.txt, /your melee blows, and your Joiners', hit it automatically/);
+  assert.match(stopTime.txt, /your melee blows, and your Joiners' and summoned allies', hit it automatically/);
   assert.ok(!/top five numbers/.test(stopTime.txt), "the old five-numbers floor is gone from the text");
 });

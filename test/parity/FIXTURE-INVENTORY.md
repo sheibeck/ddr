@@ -8158,3 +8158,20 @@ Unchanged on purpose: the foe's side (foes still roll to hit a held or sleeping 
 every spell's own to-hit roll, Sweep (no to-hit roll), and every shell snapshot (no rendered DOM names a helpless foe). New probes (`test/unit/helpless-auto-hit.test.js`: the one list of helpless
 conditions against `foeTurn`, the hero and Joiner strike, the draw-and-ignore draw order, the crit decision, the untouchable foe, a Doze waking on the first hit, the narration, the foe card and the
 chip and spell text) are additions, not moves.
+
+
+### Phase 92.3 plan 02: summons hit a helpless foe automatically, the old rule docs, the Thief's 50 and the Troll's 75 in the damage-limit reference
+
+**Item 1 (summons auto-hit; user 2026-10-02: "fix summons so they auto hit like others").** `combat.js#allyTurn` (the summoned ally) and the legacy sheet-less branch of `#alliesTurn` now read
+the same `derived.js#helplessAutoHit` as the hero and the Joiners: the strike die is still drawn in the same position and ignored, the damage is rolled as usual, the best-face shatter does not fire
+on a skipped roll, a foe it cannot touch (faces 0) stays untouchable, and the `allyStruck` event gains `helpless` only then. A fixture moves only where a summon or a sheet-less ally missed a frozen,
+stunned, held, stopped, asleep or dozing foe: no parity or determinism fixture does (every parity and determinism entry passes unchanged), and no roll-high pin moved (`roll-high-state-pins` passes
+unchanged; `roll-high-baseline.mjs save` was not run).
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/hero-out.test.js` "loseTurn: with a party member, a summoned ally and two live foes ..." | the foes are asleep and the draw `999` (a miss on any foe that acts) made the summon and the member miss: it asserted two `allyMissed` | the same fight, with damage draws added, asserts two landed `allyStruck` carrying `helpless: "asleep"` | a sleeping foe is hit with no roll, by the summon and the member alike; the heroOut countdown, the foes' `foeSlept` and the round advance are asserted as before |
+| `src/browser/foeConditions.js` chip lines (Stunned, Asleep, Dozing, Frozen/Stunned hold, Stopped), `content/spells.js` Stop Time `txt`, `docs/SPELL-AUDIT.md` Stop Time row; `docs/narrative-pass/why/v-92.3-02.json` (pages regenerated) | "...your melee blows, and your Joiners', hit it automatically..." | "...your melee blows, and your Joiners' and summoned allies', hit it automatically..." | the text that states who hits automatically now names the summons; six ledger rows chain the plan-01 lines; `test/unit/helpless-auto-hit.test.js` pins the new wording |
+
+New probes (`test/unit/helpless-auto-hit.test.js`: the summon over every helpless condition, the draw count, the Skeleton shatter, the untouchable foe, the countdown, the legacy ally, and the
+narration) are additions, not moves.

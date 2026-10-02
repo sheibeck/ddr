@@ -132,10 +132,12 @@ test("loseTurn: with a party member, a summoned ally and two live foes, one call
     allies: [{ partyIdx: 0, name: "Ada", lvl: 1, wp: 20, maxWP: 20 }],
   });
   const roundBefore = state.combat.round;
-  const events = loseTurn(state, fakeRng([999, 999]), []);
+  // Phase 92.3 plan 02 (user ruling 2026-10-02): the foes are asleep, so the summon's and the member's blows hit them
+  // automatically (the strike die is drawn and ignored: 999 would be a miss on any other foe), then roll their damage.
+  const events = loseTurn(state, fakeRng([999, 2, 999, 2, 2, 2, 2, 2, 2, 2, 2, 2]), []);
   assert.ok(events.some((e) => e.type === "heroLostTurn"));
-  assert.ok(events.some((e) => e.type === "allyMissed" && e.name === "Summon"), "the summon acted");
-  assert.ok(events.some((e) => e.type === "allyMissed" && e.name === "Ada"), "the party member acted");
+  assert.ok(events.some((e) => e.type === "allyStruck" && e.name === "Summon" && e.helpless === "asleep"), "the summon acted");
+  assert.ok(events.some((e) => e.type === "allyStruck" && e.name === "Ada" && e.helpless === "asleep"), "the party member acted");
   assert.ok(events.some((e) => e.type === "foeSlept" && e.name === "Foe1"), "the foes acted");
   assert.ok(events.some((e) => e.type === "foeSlept" && e.name === "Foe2"), "the foes acted");
   assert.equal(state.combat.round, roundBefore + 1);
