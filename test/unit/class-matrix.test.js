@@ -136,8 +136,10 @@ test("summarizeRows: all-stuck rows are null-safe; mixed rows exclude stuck from
 
   // Phase 42 (BAL-02): usage is never null, and rows carrying no `usage`
   // field at all (every row above) contribute zero uses everywhere.
-  assert.deepStrictEqual(allStuck.usage, { abilities: {}, spells: {}, items: {} });
-  assert.deepStrictEqual(mixed.usage, { abilities: {}, spells: {}, items: {} });
+  // Phase 92 plan 01 (TUNE-10, 2026-10-01): aggregateUsage rolls up a fourth category, memberItems
+  // (the Joiners' item uses, apart from the hero's items), so the empty shape carries it too.
+  assert.deepStrictEqual(allStuck.usage, { abilities: {}, spells: {}, items: {}, memberItems: {} });
+  assert.deepStrictEqual(mixed.usage, { abilities: {}, spells: {}, items: {}, memberItems: {} });
 });
 
 // --- (6a2) summarizeRows.usage (Phase 42, BAL-02) --------------------------
@@ -160,6 +162,22 @@ test("summarizeRows: usage sums uses and counts runs over COMPLETED rows only, i
   assert.deepStrictEqual(result.usage.items, { "potion:heal": { uses: 1, runs: 1 } });
   // label insertion order is sorted ascending (brace before kata)
   assert.deepStrictEqual(Object.keys(result.usage.abilities), ["brace", "kata"]);
+});
+
+// Phase 92 plan 01 (TUNE-10, 2026-10-01): memberItems is the fourth rolled-up category.
+test("summarizeRows: usage.memberItems sums the Joiners' item uses over completed rows only, apart from items", () => {
+  const row = (seed, stuck, usage) => ({
+    seed, deathDepth: 5, stuck, cause: "trap", kills: 1, level: 1, actions: 50, floorsGained: 4, encounters: 1, encountersSurvived: 1, usage,
+  });
+  const result = summarizeRows([
+    row(1, false, { abilities: {}, spells: {}, items: { "potion:heal": 1 }, memberItems: { "Cloak of Regeneration": 2 } }),
+    row(2, false, { abilities: {}, spells: {}, items: {}, memberItems: { "Cloak of Regeneration": 1 } }),
+    row(3, true, { abilities: {}, spells: {}, items: {}, memberItems: { "Cloak of Regeneration": 50 } }),
+    // a row recorded before memberItems existed carries none
+    row(4, false, { abilities: {}, spells: {}, items: {} }),
+  ]);
+  assert.deepStrictEqual(result.usage.memberItems, { "Cloak of Regeneration": { uses: 3, runs: 2 } });
+  assert.deepStrictEqual(result.usage.items, { "potion:heal": { uses: 1, runs: 1 } });
 });
 
 // --- (6b) reach20 (Phase 27, TUNE-05) -------------------------------------------------------

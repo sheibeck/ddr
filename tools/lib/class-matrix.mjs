@@ -217,10 +217,12 @@ export function rowFromRun(run) {
 
 /**
  * aggregateUsage(rows) — Phase 42 (BAL-02): sums each row's `usage`
- * (`{ abilities, spells, items }`, each a label -> use-count map; rows with
- * no `usage` field at all — e.g. older synthetic-state test rows — are
- * treated as carrying zero uses everywhere) into
- * `{ abilities, spells, items }`, each a label -> `{ uses, runs }` map:
+ * (`{ abilities, spells, items, memberItems }`, each a label -> use-count map;
+ * rows with no `usage` field at all — e.g. older synthetic-state test rows — are
+ * treated as carrying zero uses everywhere; Phase 92 plan 01 added
+ * `memberItems`, the Joiners' item uses kept apart from the hero's `items`, and
+ * a row from before it simply has none) into
+ * `{ abilities, spells, items, memberItems }`, each a label -> `{ uses, runs }` map:
  * `uses` is the summed count across every row, `runs` is the count of rows
  * whose own count for that label was present (i.e. >= 1 — a label is only
  * ever recorded on a row when at least one use happened, see
@@ -229,8 +231,8 @@ export function rowFromRun(run) {
  * regardless of row iteration order. Never NaN, never missing a category.
  */
 function aggregateUsage(rows) {
-  const out = { abilities: {}, spells: {}, items: {} };
-  for (const cat of ["abilities", "spells", "items"]) {
+  const out = { abilities: {}, spells: {}, items: {}, memberItems: {} };
+  for (const cat of ["abilities", "spells", "items", "memberItems"]) {
     const totals = {};
     for (const r of rows) {
       const catUsage = r.usage && r.usage[cat];
@@ -268,8 +270,8 @@ function mean(arr) {
  * runs, sorted by count desc then cause asc. `usage` (Phase 42, BAL-02) is
  * `aggregateUsage(completed)` — the ability/spell/item pick-rate tally
  * summed over the SAME completed-rows-only set every other metric here uses;
- * `{ abilities: {}, spells: {}, items: {} }` (never null) when there are
- * zero completed rows.
+ * `{ abilities: {}, spells: {}, items: {}, memberItems: {} }` (never null) when
+ * there are zero completed rows.
  */
 export function summarizeRows(rows) {
   const sorted = [...rows].sort((a, b) => a.seed - b.seed);

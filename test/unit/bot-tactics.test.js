@@ -807,6 +807,10 @@ test("chooseFieldItem: in the dark with no torch, a ready worn Amulet of Light i
   assert.strictEqual(chooseFieldItem(alreadyGlowing, ctx), null);
 });
 
+// Phase 92 plan 01 (TUNE-10, 2026-10-01): the cloak is a heal over time (88-04), so it is also used
+// above potionThreshold once the missing hp covers its window's expected heal (10.5), and a potion
+// waits while its window is live; this probe's own setup (5 of 40) is below the threshold and still
+// holds. The new triggers are pinned in test/unit/bot-balance-close.test.js (the cloak: tests).
 test("chooseFieldItem: below potionThreshold, a ready worn Cloak of Regeneration is used (kind knit) — tried before a potion or camp", () => {
   const ctx = makeBotContext();
   const cloak = { kind: "cloak", n: "Cloak of Regeneration", eff: { cloakRegen: 1 } };
@@ -1148,12 +1152,14 @@ test("playRun: nine forced-cell runs (Thief/MU/Fighter x three seeds each) never
 // Plan 03, Task 2: tallyUsage — the per-run pick-rate tally.
 // ============================================================================
 
-test("makeTallies: usage is a fresh { abilities: {}, spells: {}, items: {} } every call", () => {
+// Phase 92 plan 01 (TUNE-10, 2026-10-01): usage gains a fourth category, memberItems (a Joiner's
+// itemUsed, counted apart from the hero's items; the 89-07 finding), so the fresh shape is four keys.
+test("makeTallies: usage is a fresh { abilities: {}, spells: {}, items: {}, memberItems: {} } every call", () => {
   const t1 = makeTallies();
-  assert.deepStrictEqual(t1.usage, { abilities: {}, spells: {}, items: {} });
+  assert.deepStrictEqual(t1.usage, { abilities: {}, spells: {}, items: {}, memberItems: {} });
   t1.usage.abilities.kata = 1;
   const t2 = makeTallies();
-  assert.deepStrictEqual(t2.usage, { abilities: {}, spells: {}, items: {} }); // no shared reference
+  assert.deepStrictEqual(t2.usage, { abilities: {}, spells: {}, items: {}, memberItems: {} }); // no shared reference
 });
 
 test("tallyUsage: abilityUsed increments usage.abilities[key]; repeated events accumulate", () => {
@@ -1204,7 +1210,8 @@ test("tallyUsage: a castSpell action whose spellsUsed delta is +1 tallies usage.
 test("tallyUsage: a non-castSpell/non-usage action with no matching events tallies nothing and never throws", () => {
   const tallies = makeTallies();
   tallyUsage(tallies, { type: "move", dir: "N" }, [{ type: "moved" }], { c: { spellsUsed: 0 } }, { c: { spellsUsed: 0 } });
-  assert.deepStrictEqual(tallies.usage, { abilities: {}, spells: {}, items: {} });
+  // Phase 92 plan 01 (2026-10-01): the fresh usage shape carries memberItems too.
+  assert.deepStrictEqual(tallies.usage, { abilities: {}, spells: {}, items: {}, memberItems: {} });
 });
 
 test("playRun: a real run's tallies.usage carries at least one ability/item/spell entry when the matching event fires (measured via onStep)", () => {

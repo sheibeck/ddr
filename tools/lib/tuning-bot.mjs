@@ -316,7 +316,13 @@ export function chooseAbility(state, ctx) {
   // and nothing above applies, use it in any round, not only as the round-1
   // opener (before: a stun-only opener the bot spent once a fight, in round 1).
   // A Joiner's own policy (combat.js#pickMemberAbility) is unchanged.
-  if (!meta) meta = ready.find((m) => m.id === "pommelStrike") || null;
+  // Phase 92 plan 01 (TUNE-10; VALUE-LEDGER finding; 91.1 V11): the same fallback holds
+  // for Cutpurse, since V11 a normal strike that also lifts d10 x level gold when a blow
+  // lands (once a fight): never worse than a plain STRIKE, and the gold source the ECON-11
+  // readout measures. Pommel Strike first when both are ready (a Fighter's and a Thief's
+  // never meet; the order is only stated). The damage branch above already plays it
+  // against a foe above half hp; this plays it in any other round.
+  if (!meta) meta = ready.find((m) => m.id === "pommelStrike") || ready.find((m) => m.id === "cutpurse") || null;
   if (!meta) return null;
 
   const result = { key: meta.id };
@@ -1138,13 +1144,49 @@ export function chooseCombatItem(state, ctx) {
  *   (1) dark with no live light source (`lit` OR `glow`): a bag torch first
  *       (`kind === "tool"`, activation kind "lit"); else a ready worn Amulet
  *       of Light (kind "glow");
- *   (2) hurt below `potionThreshold`: a ready worn Cloak of Regeneration
- *       (kind "knit") — a free heal tried BEFORE a potion or camp (the
- *       caller places this call above both).
+ *   (2) a ready worn Cloak of Regeneration (kind "knit"), tried BEFORE a
+ *       potion or camp (the caller places this call above both). Phase 92 plan
+ *       01 (TUNE-10; 88-04 finding): the cloak is no longer a free instant heal.
+ *       It heals a d6 at 10, 20 and 30 squares of walking (three ticks, expected
+ *       `knitWindowHeal` = 10.5, read from the item's own `act.hot`), never in a
+ *       fight. So it is used out of a fight once the missing hit points cover
+ *       that expected heal (a use that would mostly heal air is not spent: it is
+ *       fifty squares from ready again) OR the hero is below `potionThreshold`
+ *       (the old trigger, kept for a small heart that can never miss 10.5), and
+ *       never while a knit window is already live.
  * Rope/ladder stay on the existing `pendingHazard` answer (a decision the
  * engine already parked, not a timing tactic). All reads go through
  * `activationFor(it).kind` — never `it.use`. Pure, no rng.
  */
+/**
+ * knitWindowHeal(it) — Phase 92 plan 01 (TUNE-10; 88-04): the expected hit points
+ * one use of a heal-over-time item brings back over its whole window:
+ * ticks x (heal.n x (heal.sides + 1) / 2 + heal.bonus), read from the item's own
+ * `activationFor(it).hot` ({ every, ticks, heal { n, sides, bonus } }), never a
+ * hard-coded 10/20/30 (the Cloak of Regeneration: 3 x 3.5 = 10.5). 0 for an item
+ * with no (or a malformed) heal-over-time record. Pure, no rng.
+ */
+export function knitWindowHeal(it) {
+  const hot = it ? activationFor(it)?.hot : null;
+  const h = hot && hot.heal;
+  if (!hot || !h || !(hot.ticks > 0) || !(h.n > 0) || !(h.sides > 0)) return 0;
+  return hot.ticks * ((h.n * (h.sides + 1)) / 2 + (h.bonus || 0));
+}
+
+/**
+ * knitWanted(sheet, it, ctx) — Phase 92 plan 01: should this sheet (the hero or a
+ * Joiner) spend a ready heal-over-time item `it` now? The missing hit points
+ * cover the window's expected heal, or the sheet is below `potionThreshold`. An
+ * item with no heal-over-time record (window heal 0) keeps the threshold test
+ * alone. A full heart never. Pure.
+ */
+function knitWanted(sheet, it, ctx) {
+  if (!(sheet.maxWP > 0) || !(sheet.wp < sheet.maxWP)) return false;
+  const window = knitWindowHeal(it);
+  if (window > 0 && sheet.maxWP - sheet.wp >= window) return true;
+  return sheet.wp / sheet.maxWP < ctx.opts.potionThreshold;
+}
+
 export function chooseFieldItem(state, ctx) {
   const c = state.c;
   if (inDark(state) && !itemEffectActive(c, "lit") && !itemEffectActive(c, "glow")) {
@@ -1158,9 +1200,10 @@ export function chooseFieldItem(state, ctx) {
     const glow = readyWornOfKind(state, ctx, ["glow"]);
     if (glow) return { type: "useItem", slot: glow.slot };
   }
-  const ratio = c.maxWP > 0 ? c.wp / c.maxWP : 0;
+  // Phase 92 plan 01: a heal over time (see the JSDoc): missing hp that covers the
+  // window's heal, or below potionThreshold; not while a knit window is already live.
   const knit = readyWornOfKind(state, ctx, ["knit"]);
-  if (ratio < ctx.opts.potionThreshold && knit) {
+  if (knit && !itemEffectActive(c, "knit") && knitWanted(c, knit.it, ctx)) {
     return { type: "useItem", slot: knit.slot };
   }
   return null;
@@ -1175,9 +1218,12 @@ export function chooseFieldItem(state, ctx) {
  *   (1) a potion: at or below ONE THIRD of its HP (exact integer test, the same
  *       line engine/combat.js#alliesTurn uses in a fight) with `potions > 0`
  *       -> `{ type: "memberUseItem", i, potion: true }`;
- *   (2) else a ready worn Cloak of Regeneration (activation kind `knit`) while
- *       its HP ratio is below `ctx.opts.potionThreshold`, skipping an item
- *       `ctx.itemBlocked` carries -> `{ type: "memberUseItem", i, slot }`.
+ *   (2) else a ready worn Cloak of Regeneration (activation kind `knit`) when
+ *       its missing hit points cover the window's expected heal (`knitWindowHeal`:
+ *       it heals a d6 at 10, 20 and 30 squares of walking, not at once) or its HP
+ *       ratio is below `ctx.opts.potionThreshold` (Phase 92 plan 01; 88-04
+ *       finding), skipping an item `ctx.itemBlocked` carries and a Joiner whose own
+ *       window is live -> `{ type: "memberUseItem", i, slot }`.
  * Only what the engine will not refuse is proposed (a downed Joiner, a full
  * heart, a cooling or live cloak are all skipped), so the bot never loops on a
  * refusal. `null` in a fight (a Joiner's own turn handles its items there), with
@@ -1190,11 +1236,12 @@ export function chooseMemberItem(state, ctx) {
     if (!m || typeof m !== "object" || m.status === "downed") continue;
     if (!(m.maxWP > 0) || !(m.wp < m.maxWP)) continue;
     if (m.potions > 0 && m.wp * 3 <= m.maxWP) return { type: "memberUseItem", i, potion: true };
-    if (m.wp / m.maxWP < ctx.opts.potionThreshold && m.worn && typeof m.worn === "object") {
+    if (m.worn && typeof m.worn === "object" && !itemEffectActive(m, "knit")) {
       for (const slot of WORN_SLOTS) {
         const it = m.worn[slot];
         if (!it || activationFor(it)?.kind !== "knit") continue;
         if (ctx.itemBlocked.has(itemLabel(it))) continue;
+        if (!knitWanted(m, it, ctx)) continue;
         if (isReady(m, itemTimerId(it))) return { type: "memberUseItem", i, slot };
       }
     }
@@ -1262,7 +1309,8 @@ function preHazardFlight(state, ctx, dir) {
  *       kit follows (opener round 1; damage above half hp; defensive below
  *       half); a once-a-fight foe-targeted pick aims at the hardest live foe;
  *   (i) attack.
- * Out of combat: (loot) Phase 42 (BAL-01 second half): a non-empty
+ * Out of combat (Phase 92 plan 01: the Cloak of Regeneration is a heal over time:
+ * item (m) below waits while the hero's own window is live): (loot) Phase 42 (BAL-01 second half): a non-empty
  * `state.pendingLoot` — `takeAllLoot` unless `ctx.findFull`, then
  * `leaveAllLoot` — checked FIRST, before even a pending Joiner (the victory
  * loot pile the bot has ignored since v1.3); (j) decline every pending
@@ -1271,7 +1319,7 @@ function preHazardFlight(state, ctx, dir) {
  * leave the store; (staff) RULES-13 (Phase 75, Plan 09): a Magic User with a
  * bagged staff and none currently wielded equips it (`equipItem`) —
  * "first staff wins," checked right after the store step, before the field-
- * item/potion/camp checks; (m) drink below potionThreshold; (n) camp below
+ * item/potion/camp checks; (m) drink below potionThreshold (not while the hero's own Cloak of Regeneration window is live; it heals as the bot walks); (n) camp below
  * campThreshold when the rations cover the whole party's nightly need
  * (nightlyEats, the number makeCamp refuses on; Phase 92 plan 01); (torch) Phase 42 (BAL-01 second half):
  * `chooseFieldItem` — light a carried torch while in the dark; (o) Summon out
@@ -1483,7 +1531,11 @@ export function decideAction(state, policyRng, ctx) {
   // Cloak of Regeneration (memberUseItem), right after the hero's own field
   // item and before the hero's potion and the camp gate below.
   const memberItem = chooseMemberItem(state, ctx);  if (memberItem) return memberItem;
-  if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
+  // Phase 92 plan 01 (TUNE-10; 88-04 finding): while the hero's own Cloak of
+  // Regeneration window is live the bot walks on and lets it heal (a d6 at 10, 20
+  // and 30 squares) instead of drinking a potion out of a fight; the camp gate
+  // below is unchanged.
+  if (ratio < ctx.opts.potionThreshold && c.potions > 0 && !itemEffectActive(c, "knit")) return { type: "drinkPotion" }; // D-05
   // Phase 92 plan 01 (TUNE-10; 89-06 finding): the camp gate reads the whole party's
   // nightly need (nightlyEats: the hero's appetite plus every Joiner's), the very
   // number makeCamp refuses on. It used to read the hero's appetite alone, so a run
@@ -1535,7 +1587,10 @@ export function decideAction(state, policyRng, ctx) {
 /**
  * makeTallies() — a fresh D-07 ability-tally accumulator. `usage` (Phase 42,
  * BAL-02) is the per-run pick-rate source `tallyUsage` fills in place:
- * `{ abilities: {}, spells: {}, items: {} }`, each a label -> use-count map.
+ * `{ abilities: {}, spells: {}, items: {}, memberItems: {} }`, each a label ->
+ * use-count map. `memberItems` (Phase 92 plan 01; 89-07 finding) is the Joiners'
+ * item uses (an `itemUsed` carrying a `member` tag), kept apart so the hero's
+ * pick-rates in `items` read the hero's own choices.
  */
 export function makeTallies() {
   return {
@@ -1553,7 +1608,7 @@ export function makeTallies() {
     casterEncounters: 0,
     encountersByBand: {},
     casterEncountersByBand: {},
-    usage: { abilities: {}, spells: {}, items: {} },
+    usage: { abilities: {}, spells: {}, items: {}, memberItems: {} },
   };
 }
 
@@ -1626,7 +1681,11 @@ export function tallyEvents(tallies, events, stateAfter) {
  *   - `usage.abilities[key]` on an `abilityUsed { key }` event;
  *   - `usage.items[itemLabel(item)]` on an `itemUsed { item }` event (a
  *     potion -> `potion:<eff2>`, a torch/tool -> `tool:<tool>`, a
- *     staff/cloak/jewel -> its own `.n`);
+ *     staff/cloak/jewel -> its own `.n`) — the HERO's. Phase 92 plan 01 (89-07
+ *     finding): an `itemUsed { item, member }` (a Joiner's own item use, engine/
+ *     items.js#memberUseWorn) is counted in `usage.memberItems[itemLabel(item)]`
+ *     instead and never in `usage.items`; `abilityUsed`, `toolUsed` and
+ *     `scrollCast` are hero-only events (the engine never tags them with a member);
  *   - `usage.items["tool:" + tool]` on a `toolUsed { tool }` event (a
  *     rope/ladder hazard-tool spend, engine/movement.js);
  *   - `usage.items.scroll` on a `scrollCast { spell }` event — a scroll is an
@@ -1647,7 +1706,8 @@ export function tallyUsage(tallies, action, events, before, after) {
       u.abilities[e.key] = (u.abilities[e.key] || 0) + 1;
     } else if (e.type === "itemUsed") {
       const label = itemLabel(e.item);
-      u.items[label] = (u.items[label] || 0) + 1;
+      const bucket = e.member !== undefined ? (u.memberItems ??= {}) : u.items;
+      bucket[label] = (bucket[label] || 0) + 1;
     } else if (e.type === "toolUsed") {
       const label = `tool:${e.tool}`;
       u.items[label] = (u.items[label] || 0) + 1;
@@ -1818,7 +1878,8 @@ export function tallyIdentity(identity, ctx, action, dispatched, inCombat, event
     } else if (e.type === "backstab") identity.backstabs++;
     else if (e.type === "fled") identity.flees++;
     else if (e.type === "potionDrunk") identity.potionsUsed++;
-    else if (e.type === "itemUsed" && e.item && e.item.kind === "potion" && (e.item.eff2 === "heal" || e.item.eff2 === "full")) {
+    // Phase 92 plan 01: the hero's own potions only (a Joiner's itemUsed carries a member tag)
+    else if (e.type === "itemUsed" && e.member === undefined && e.item && e.item.kind === "potion" && (e.item.eff2 === "heal" || e.item.eff2 === "full")) {
       identity.potionsUsed++;
     }
   }

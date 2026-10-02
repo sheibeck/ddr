@@ -7778,6 +7778,45 @@ balance the release build packages, with the gaps above reported, not
 hidden.
 
 
+## v2.3 balance close (Phase 92) — bot readouts
+
+Phase 92 is the v2.3 milestone's one bot pass: the standing rule is that bots run once, at the milestone end, over the finished rules. Plan 92-01 (this section's first part) fixes the three bot findings the milestone logged and records how the bot plays every v2.3 rule the readout leans on, with no readout of its own; 92-02 and 92-03 are the ECON-11 store readout and its retune; 92-04 is the TUNE-10 fair-bot pass, whose numbers land under their own headings below; 92-05 closes the phase. Nothing in 92-01 touches the engine, the content or the shell: the changes are in `tools/lib/tuning-bot.mjs`, `tools/lib/class-matrix.mjs` and `tools/lib/days-farm.mjs` (comments only) and their tests.
+
+### Phase 92 — the bot plays the v2.3 rules (92-01)
+
+Verdicts: `plays it` (the bot path exists and was read), `fixed here (92-01)` (this plan changed the bot and a probe in `test/unit/bot-balance-close.test.js` pins it), `not played: <reason>`.
+
+| Rule (phase) | Bot path | Verdict |
+| --- | --- | --- |
+| Joiner camp stall (89-06 finding): `makeCamp` refuses on the party's `nightlyEats`, the bot's gate read only the hero's appetite, so a run with a Joiner and short rations looped `campFailed` to `maxActions` | `decideAction` camps below `campThreshold` only when `c.rations >= nightlyEats(state)`, the number `makeCamp` refuses on, and walks on otherwise (the ration pass in `chooseStorePurchase` already buys to `BOT_RATION_DAYS x nightlyEats`) | fixed here (92-01) |
+| Cloak of Regeneration is a heal over time (88-04 finding): a d6 at 10, 20 and 30 squares, never in a fight, then 50 squares before it is ready | `knitWindowHeal` (3 x 3.5 = 10.5, read from the item's own `act.hot`); `chooseFieldItem` uses a ready worn cloak out of a fight once the missing hp covers that or the hero is below `potionThreshold`; `chooseMemberItem` the same for a Joiner (its own live window skipped); `decideAction` no longer drinks a potion out of a fight while the hero's own knit window is live | fixed here (92-01) |
+| A Joiner's item use counted as the hero's (89-07 finding) | `tallyUsage` routes an `itemUsed` that carries a `member` tag to `usage.memberItems`; `aggregateUsage` rolls it up as a fourth category beside abilities, spells and items; `tallyIdentity` counts only the hero's own potions | fixed here (92-01) |
+| Cutpurse is a strike that also lifts d10 x level gold (91.1 V11), once a fight | `chooseAbility`: the damage branch plays it against a foe above half hp; the never-worse-than-STRIKE fallback now plays it in any other round, beside Pommel Strike, aimed at the hardest foe; the ECON-11 readout sees `goldGained { why: "cutpurse" }` | fixed here (92-01) |
+| Door Illusion in place of the flee roll (90-10) | `escapeSpellIdx` in `decideAction` branch (a), gated by the engine's own `fleeRefusal`; a `doorIllusionSeen` sets `ctx.doorBlocked` and the bot flees by the roll for the rest of the encounter | plays it |
+| Chameleon Tongue in place of a parley (90-10) | `tongueSpellIdx` in branches (a) and (c), gated by `parleyBlockedReason` at the spell's fluency | plays it |
+| Speed of Sound and Enchant Character (90-10) | the BUFF tier in `chooseSpell`: round 1 of a `hardFight`, when that kind is not already live | plays it |
+| Stop Time, Size of the Behemoth, Duplicate Foe, Senseless, Stun, the reworked Doze, Freeze, Ice (90-05, 90-10) | the DISABLE and DAMAGE tiers in `chooseSpell` (room controls against three or more foes; Stun, Duplicate Foe and Senseless aimed at the strongest foe) | plays it |
+| Speed, Strength and Enlarge potions and the worn buffs (ITEM-05) | `chooseCombatItem` reason "buff": round 1 of a `hardFight`, a bag potion in that order or a ready worn buff whose kind is not live | plays it |
+| Fly and Open/Lock (90-07) | maze tools with no planner: `chooseSpell` never scores them | not played: maze tools the bot has no planner for |
+| Joiner casters, passives (Hardiness, Ambidextrous, Stealth) and items (89, 90) | engine-run on the Joiner's own turn (`alliesTurn`, `pickMemberAbility`, `memberUseWorn`); the bot accepts one Joiner when its party is empty and declines more (USER RULING D); `chooseMemberItem` plays the out-of-fight half | plays it |
+| The 91.1 cooldown abilities (V1 to V5) | `chooseAbility` filters by `isReady`, so a second use comes back on its own after the cooldown; Hamstring and Mark go to the hardest foe that lacks the effect and are skipped when every foe has it; Last Stand only at a quarter hp; Second Wind below half hp (tag defensive); Death Touch, Silent Step and Cutpurse stay once a fight | plays it |
+| The Bard's second song (91.1 V7) | `songReady` in branch (d): the first song and again when the engine allows the second, never a third | plays it |
+| Master of Arms and Samurai never flee (91-05, canon) | `neverFlees` in branch (a); a refused flee is not retried (`ctx.fleeBlocked`) | plays it |
+| The Illusionist's teleport pick (91, IDENT-14) | `{ type: "teleportPick", auto: true }` before anything else | plays it |
+| The Cleric's offense ban and day-one Heal (91) | `canCast` refuses the offense spells so `chooseSpell` never scores one; the HEAL tier fires below `potionThreshold` | plays it |
+| The Wizard's day-one damage spell and its refusal to swing (91) | the `strikeBlocked` fallback (branch (g)) casts a utility spell or flees; the damage spell is scored in `chooseSpell` | plays it |
+| The Pickpocket's extra item instead of gold (91-08, IDENT-18) | engine-given as a second `pendingLoot` entry; `takeAllLoot` unless the bag is full (`ctx.findFull`), then `leaveAllLoot`. A probe of eight Thief/Pickpocket runs (identity dials, 3,000 actions each, scratch only) saw 0 stuck runs (all eight died, at depths 1 to 10), 38 extra drops, 49 `bagFull` events, 31 piles taken and 28 left, no loop | plays it |
+| Q8 race and Pickpocket prices, the Troll double (91-08) | `openStore` prices every non-tool line once through `priceFor`; `chooseStorePurchase`, the ration pass and `storeBuyRefusal` read the line's own cost, so the bot pays what a player pays | plays it |
+| STORE-04 rations (87) | the ration pass: `BOT_RATION_DAYS x nightlyEats(state)`, gated by `storeBuyRefusal` | plays it |
+| The Poplar Staff's party heal (89-03) | `chooseCombatItem` reason "staff": `partyHeal` when the hero or a live Joiner in the fight is below `potionThreshold` | plays it |
+| A parley's experience and loot, the Joiner split (91-09) | the bot parleys below the flee line and as a talk-first identity; the engine pays | plays it |
+| The Cutthroat's Joiner risk and the Fridgian frenzy (91, 91-09) | engine-run (a Joiner accepted by the bot is exposed to the risk; the frenzy rolls on the engine's own turn) | plays it |
+| The hero's and a Joiner's armour repair lines (v2.3 store) | the bot never buys repairs | not played: a pre-existing simplification kept so the fair bot stays the bot the difficulty curve was fitted with; a caveat the ECON-11 readout states |
+| Selling at the ordinary price for every race (Q5) | the bot never sells | not played: the same simplification; the ECON-11 readout reports the bag's sale value beside the gold held |
+
+Bot findings (none needs an engine change): a Thief's round-1 `opener` slot is shared by Dirty Trick, Silent Step, Hamstring and Mark and `chooseAbility` takes the first ready one in kit order, so a Silent Step is only played in round 1 when it comes first; the Joiner camp stall (see the first row) is the only stall shape the probes found and it is gone.
+
+
 ## v1.2 retune (Phase 27) — TUNE-05..07
 
 The deferred TUNE-04 retune lands on the corrected player power from Phases
