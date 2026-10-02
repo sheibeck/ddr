@@ -401,7 +401,15 @@ Plans:
   3. The fair-bot pass on the finished rules keeps median death at floor 3–4, and starvation deaths are re-measured after the d10 rations and recorded.
   4. Any drift the pass finds is recorded and retuned with the user before the milestone closes.
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 92-01-PLAN.md — the three bot fixes (Joiner camp stall on nightlyEats, Cloak of Regeneration as heal-over-time, tallyUsage member split) + Cutpurse fallback + the v2.3 bot-coverage table; moved bot pins/seeds declared (no readout)
+- [ ] 92-02-PLAN.md — ECON-11: store-affordability readout (floors 1–12, income by source), 1,000-seed run, docs/ECONOMY-READOUT.md; ONE checkpoint:decision on the target and the lever (autonomous: false)
+- [ ] 92-03-PLAN.md — ECON-12: the ruled lever as a dial, value found in checkpointed blocks, locked, fixtures declared, fresh readout proving the target
+- [ ] 92-04-PLAN.md — TUNE-10: the one fair-bot pass on the finished rules (p50 vs 3–4, starvation, tail measured, class/Illusionist/Cleric watch list); ONE checkpoint:decision on drift (autonomous: false)
+- [ ] 92-05-PLAN.md — the approved drift retune (or none), declared fixtures, after-readouts, and the phase's docs close
 
 ## Deferred / Not This Milestone
 
