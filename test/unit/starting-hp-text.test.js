@@ -10,7 +10,7 @@
 // This guard runs on the SHIPPED dials (never `setIdentityDials`): the hit
 // points a player meets are the ones the shipped HERO_HP_SCALE gives, so a
 // later retune of that dial, or of a class or race row, fails here until the
-// text says the new truth. It has five parts:
+// text says the new truth. It has six parts:
 //   1. a truth table over EVERY race x class x sub-class (143 combinations),
 //      measured through rollCharacter and cross-checked against a closed form;
 //   2. registered claims, parsed from the digits or number words the text
@@ -22,6 +22,7 @@
 //   4. the Elven 60% ratio at every class and level 1, plus the level-up
 //      rule (a Troll's and a Thief's gains still go through the dial);
 //   5. the Hero tab's view model reads a value inside the range.
+//   6. (plan 02) the mean-hero reference behind ROUND_DAMAGE_CEILING reads the same start (Thief 50, Troll 75).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -29,7 +30,7 @@ import assert from "node:assert/strict";
 import { rollCharacter, checkLevel } from "../../engine/character.js";
 import { newRun } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
-import { heroMaxWpFor, DIALS } from "../../engine/difficulty.js";
+import { heroMaxWpFor, heroMeanMaxWpFor, startWpMeanFor, DIALS } from "../../engine/difficulty.js";
 import { RACES, CLASSES, RACE_NOTE, CLASS_NOTE, SUB_NOTE, IDENTITY_TRAITS, THRESHOLDS } from "../../content/index.js";
 import { identityFooter } from "../../src/browser/identityFooter.js";
 import { characterSheetViewModel } from "../../src/browser/heroTab.js";
@@ -364,4 +365,44 @@ test("92.3 the Hero tab: a new hero's hit-point bar is inside the stated range f
     }
     assert.ok(checked > 0, `no seed under 4000 rolls a ${race} ${cls} (the Hero-tab check would be vacuous)`);
   }
+});
+
+// ─── 6. the damage-limit reference reads the same starting hit points (Phase 92.3 plan 02) ───
+
+test("92.3-02 the mean-hero reference reads the shipped start: startWpMeanFor agrees with rollCharacter for every race and class", () => {
+  for (const race of Object.keys(RACES)) for (const cls of Object.keys(CLASSES)) {
+    const { wp, final } = startWpMeanFor(cls, race);
+    const subs = CLASSES[cls].subs.filter((s) => !(race === "Fridgian" && s === "Samurai"));
+    const m = measured.get(`${race}|${cls}|${subs[0]}`);
+    const mean = [...m.values].reduce((a, b) => a + b, 0) / m.values.size; // a flat mean of the distinct faces: close enough for the unscaled branch
+    if (final) {
+      assert.equal(m.min, m.max, `${race} ${cls}: a final start never varies`);
+      assert.equal(m.min, Math.round(wp), `${race} ${cls}: the engine deals the final start the reference reads`);
+    } else {
+      const scaled = wp * DIALS.HERO_HP_SCALE * (DIALS.CLASS_MITIGATION[cls]?.hpMul || 1);
+      assert.ok(scaled >= m.min - 1 && scaled <= m.max + 1, `${race} ${cls}: the scaled mean ${scaled} is inside the dealt range ${m.min}-${m.max}`);
+      assert.ok(Math.abs(scaled - mean) < 2, `${race} ${cls}: the scaled mean ${scaled} is near the dealt mean ${mean}`);
+    }
+  }
+});
+
+test("92.3-02 the ruled finals: the Thief reads 50 (an Elven Thief 30) and the Troll 75 in every class; the Thief's baseWP stays the canon 40", () => {
+  assert.deepEqual(startWpMeanFor("Thief"), { wp: 50, final: true });
+  assert.deepEqual(startWpMeanFor("Thief", "Elven"), { wp: 30, final: true });
+  for (const cls of Object.keys(CLASSES)) assert.deepEqual(startWpMeanFor(cls, "Troll"), { wp: 75, final: true }, cls);
+  assert.equal(CLASSES.Thief.baseWP.base, 40, "baseWP is the prototype's canon 40; only the start reads startWP");
+});
+
+test("92.3-02 heroMeanMaxWpFor(1) is the mean of the three classes' shipped Human starts (the Thief's 50 unscaled)", () => {
+  const humanMean = (cls) => {
+    const values = [...measured.get(`Human|${cls}|${CLASSES[cls].subs[0]}`).values];
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  };
+  const dealt = Object.keys(CLASSES).reduce((sum, cls) => sum + humanMean(cls), 0) / Object.keys(CLASSES).length;
+  assert.ok(Math.abs(heroMeanMaxWpFor(1) - dealt) < 1.5, `heroMeanMaxWpFor(1) ${heroMeanMaxWpFor(1)} is near the dealt mean ${dealt}`);
+  // the Thief term is the final 50, not the canon 40 scaled to 56
+  const without = heroMeanMaxWpFor(1) * 3 - 50;
+  const mu = startWpMeanFor("Magic User").wp * DIALS.HERO_HP_SCALE;
+  const ft = startWpMeanFor("Fighter").wp * DIALS.HERO_HP_SCALE;
+  assert.ok(Math.abs(without - (mu + ft)) < 1e-9, "level 1: 3 x mean = Magic User scaled + Fighter scaled + 50");
 });

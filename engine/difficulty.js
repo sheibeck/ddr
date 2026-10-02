@@ -38,6 +38,7 @@
 
 import { FLEE_THIEF_BONUS } from "../content/flee.js";
 import { CLASSES } from "../content/classes.js";
+import { RACES } from "../content/races.js";
 import { ENCOUNTER_TABLES } from "../content/encounters.js";
 
 /**
@@ -755,25 +756,52 @@ export function foeHitFor(raw, curve, eliteRank = 0) {
 }
 
 /**
+ * startWpMeanFor(cls, race = "Human") — the mean STARTING max hp `engine/character.js#rollCharacter` gives a
+ * hero of this class and race, read off the content tables with the SAME rule (no draw): `{ wp, final }`.
+ * Phase 92.3 plan 02 (user ruling 2026-10-02): a race's `flatWP` (the Troll, 75 whatever the class) and a
+ * class's `startWP` (the Thief, 50) are FINAL starting values (`final: true`, `wp` the value itself): no
+ * dial is applied to them, which is what rollCharacter does. Any other hero's `wp` is the UNSCALED mean
+ * (base + mean dice, times the Elven `wpMul` when the race has one) and `final` is false, so the caller
+ * applies HERO_HP_SCALE (and, if it models it, the class hpMul) exactly as heroMaxWpFor does. A race's
+ * flatWP wins over a class's startWP, as in rollCharacter; the Elven wpMul applies to a class's final
+ * start (an Elven Thief: 30) but never to a race's flatWP.
+ */
+export function startWpMeanFor(cls, race = "Human") {
+  const meanDice = (d) => (d.n * (d.sides + 1)) / 2 + d.bonus;
+  const R = RACES[race] || {};
+  const def = CLASSES[cls];
+  if (R.flatWP) return { wp: R.flatWP, final: true };
+  const final = def.startWP !== undefined;
+  const wp = final ? def.startWP : def.baseWP.base + meanDice(def.baseWP.dice);
+  return { wp: R.wpMul ? wp * R.wpMul : wp, final };
+}
+
+/**
  * heroMeanMaxWpFor(level) — the unweighted mean, over the three CLASSES, of
- * a level-`level` hero's maxWP at HERO_HP_SCALE 1 (the level-appropriate
- * "mean hero" ROUND_DAMAGE_CEILING/CAMP_HEAL_FRACTION are mean-matched
- * against — DOT_HP_BASE, USER RULING G, is a flat canon table scaled by
- * HERO_HP_SCALE directly, not mean-matched). Pinned: 41.67 / 46.17 / 50.00 / 54.50 / 60.00 for
- * levels 1..5 (2 dp) — see docs/DIFFICULTY-RETUNE.md's Identity commit
- * section for the derivation. Not draw-based — reads content/classes.js's
+ * a level-`level` Human hero's maxWP (the level-appropriate "mean hero"
+ * ROUND_DAMAGE_CEILING/CAMP_HEAL_FRACTION are mean-matched against — DOT_HP_BASE,
+ * USER RULING G, is a flat canon table scaled by HERO_HP_SCALE directly, not
+ * mean-matched). It reads the SHIPPED starting hp through startWpMeanFor, so it agrees with
+ * rollCharacter: the Magic User's and Fighter's starts and every class's level-up gains are scaled by
+ * HERO_HP_SCALE, the Thief's start is its FINAL 50 (Phase 92.3 plan 02; it was the canon 40, scaled)
+ * and is not scaled. Pinned at HERO_HP_SCALE 1: 45.00 / 49.50 / 53.33 / 57.83 / 63.33 for levels 1..5
+ * (2 dp; it was 41.67 / 46.17 / 50.00 / 54.50 / 60.00 with the Thief at 40) — see
+ * docs/DIFFICULTY-RETUNE.md's Identity commit section for the derivation and its "Post-pass
+ * hp change" and "Thief 50 in the damage limit" notes. Not draw-based — reads content/classes.js's
  * static dice tables only.
  */
 export function heroMeanMaxWpFor(level) {
   const meanDice = (d) => (d.n * (d.sides + 1)) / 2 + d.bonus;
   const classMean = (cls) => {
-    let wp = CLASSES[cls].baseWP.base + meanDice(CLASSES[cls].baseWP.dice);
-    for (let lvl = 2; lvl <= level; lvl++) wp += meanDice(CLASSES[cls].gain[lvl - 1]);
-    return wp;
+    const start = startWpMeanFor(cls);
+    let gains = 0;
+    for (let lvl = 2; lvl <= level; lvl++) gains += meanDice(CLASSES[cls].gain[lvl - 1]);
+    // a final start is not scaled; the level-up gains always are (checkLevel)
+    return start.final ? start.wp + gains * live.HERO_HP_SCALE : (start.wp + gains) * live.HERO_HP_SCALE;
   };
   const classes = Object.keys(CLASSES);
   const total = classes.reduce((sum, cls) => sum + classMean(cls), 0);
-  return (total / classes.length) * live.HERO_HP_SCALE;
+  return total / classes.length;
 }
 
 /**

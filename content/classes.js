@@ -43,8 +43,8 @@ export const CLASSES = {
     // Phase 92.3 (USER RULING 2026-10-02): the Thief STARTS at a final 50 max
     // hit points. `startWP` is used instead of baseWP at chargen and is NOT
     // scaled by HERO_HP_SCALE or the class hpMul (the Elven wpMul still
-    // applies: 30). baseWP stays the canon 40 the prototype and the mean-hero
-    // reference read; level-up gains are unchanged and go through the dial.
+    // applies: 30). baseWP stays the canon 40 the prototype reads (the mean-hero
+    // reference, difficulty.js#startWpMeanFor, reads startWP since Phase 92.3 plan 02); level-up gains are unchanged and go through the dial.
     startWP: 50,
     armorCap: 1,
     subs: ["Pickpocket", "Pilfer", "Cat Burglar", "Cutthroat", "Cloaker", "Ninja", "Con Artist", "Acrobat"],

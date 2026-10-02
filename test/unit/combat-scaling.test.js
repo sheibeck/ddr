@@ -269,15 +269,15 @@ test("roundDamageCapFor: Infinity at identity (0, off) — every cliff hits exac
   assert.equal(roundDamageCapFor(1), Infinity);
 });
 
-test("round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 a three-swing foe's visit total is clamped to roundDamageCapFor(1) (21) at level 1 — restored after", () => {
+test("round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 a three-swing foe's visit total is clamped to roundDamageCapFor(1) (23) at level 1 (Phase 92.3 plan 02: the Thief's final 50 in the mean hero; it was 21) — restored after", () => {
   withIdentity({ ROUND_DAMAGE_CEILING: 0.5 }, () => {
-    assert.equal(roundDamageCapFor(1), 21);
+    assert.equal(roundDamageCapFor(1), 23);
     const foe = fixedFoe({ lvl: 1, wp: 1000, maxWP: 1000, sp: { atk: 3, dmg: { n: 1, sides: 1, bonus: 30 } } });
     const state = fixedState({ c: { level: 1, maxWP: 200, wp: 200 }, combat: { foes: [foe], type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false } });
     const rng = fakeRng([5, 5, 5, 5, 5, 5]); // 3 swings x (toHitRoll, dmgDiceRoll)
     const events = foeTurn(state, rng, []);
     const totalDealt = events.filter((e) => e.type === "struckByFoe").reduce((sum, e) => sum + e.dmg, 0);
-    assert.ok(totalDealt <= 21, `visit total ${totalDealt} must stay <= the level-1 cap (21)`);
+    assert.ok(totalDealt <= 23, `visit total ${totalDealt} must stay <= the level-1 cap (23)`);
     assert.equal(state.c.wp, 200 - totalDealt);
   });
 });

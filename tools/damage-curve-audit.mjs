@@ -31,7 +31,8 @@
 // with no cells (Breakaway/Endgame today — the Phase 51 smoke's deepest
 // p50Depth is 7) defaults to 5 (the level cap). Two HP bars per level L,
 // computed from the LIVE content/classes.js table for a Human (no race
-// wpMul/flatWP): mean max HP = baseWP.base + mean(baseWP.dice) +
+// wpMul/flatWP): mean max HP = the shipped start (baseWP.base + mean(baseWP.dice); a FINAL start, the
+// Thief's 50 or a Troll's 75, is read as it is — Phase 92.3 plan 02) +
 // sum_{k=1}^{L-1} mean(gain[k]), for "Magic User" (the weakest class) and
 // "Fighter" (the sturdiest).
 //
@@ -89,7 +90,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { BESTIARY, FOE_ABILITIES, CLASSES } from "../content/index.js";
-import { difficultyCurve, foeLevelFor, foeHitFor, roundDamageCapFor, DIALS } from "../engine/difficulty.js";
+import { difficultyCurve, foeLevelFor, foeHitFor, roundDamageCapFor, startWpMeanFor, DIALS } from "../engine/difficulty.js";
 
 // Phase 54-07 (BAND-02, USER RULING D/G, 2026-09-21) — re-keyed to the
 // GLOBAL DIFFICULTY MODEL: the retired flat `dmgBonusForBand` stub is
@@ -147,19 +148,23 @@ function meanDice(d) {
   return (d.n * (d.sides + 1)) / 2 + d.bonus;
 }
 
-/** classBarAt(clsName, level) — mean max HP at `level` for a Human with no
- * store purchases/skills: base + mean(baseWP.dice) + the mean of every
- * gain[1..level-1] dice entry, scaled by HERO_HP_SCALE and the class's own
- * CLASS_MITIGATION.hpMul (identity 1 today) — the SAME arithmetic
+/** classBarAt(clsName, level, race = "Human") — mean max HP at `level` for a hero with no
+ * store purchases/skills: the SHIPPED starting hp (`engine/difficulty.js#startWpMeanFor`, the rule
+ * rollCharacter applies) + the mean of every gain[1..level-1] dice entry, scaled by HERO_HP_SCALE and the
+ * class's own CLASS_MITIGATION.hpMul (identity 1 today) — the SAME arithmetic
  * `engine/difficulty.js#heroMaxWpFor` applies to every rolled/gained maxWP
- * (Phase 54-07, USER RULING G). */
-function classBarAt(clsName, level) {
+ * (Phase 54-07, USER RULING G). Phase 92.3 plan 02 (user ruling 2026-10-02): a FINAL starting value (the
+ * Thief's 50, a Troll's 75) is read as it is, never scaled, so the bar agrees with rollCharacter; the
+ * level-up gains are always scaled. The two bars this audit prints (Magic User, Fighter, Human) have no
+ * final start, so their numbers are unchanged. */
+function classBarAt(clsName, level, race = "Human") {
   const cls = CLASSES[clsName];
-  let hp = cls.baseWP.base + meanDice(cls.baseWP.dice);
-  for (let k = 1; k < level; k++) hp += meanDice(cls.gain[k]);
+  const start = startWpMeanFor(clsName, race);
+  let gains = 0;
+  for (let k = 1; k < level; k++) gains += meanDice(cls.gain[k]);
   const classMit = DIALS.CLASS_MITIGATION[clsName];
   const mul = DIALS.HERO_HP_SCALE * ((classMit && classMit.hpMul) || 1);
-  return hp * mul;
+  return start.final ? start.wp + gains * mul : (start.wp + gains) * mul;
 }
 
 function muBarAt(level) {

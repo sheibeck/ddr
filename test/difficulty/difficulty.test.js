@@ -504,36 +504,36 @@ test("tierSpreadFor() reads live.TIER_SPREAD (identity 1)", () => {
 
 // ─── hero-side helpers ──────────────────────────────────────────────────────
 
-test("heroMeanMaxWpFor(1..5) (identity, under an explicit identity override) === [41.67, 46.17, 50.00, 54.50, 60.00] (2dp, HERO_HP_SCALE identity)", () => {
+test("heroMeanMaxWpFor(1..5) (identity, under an explicit identity override) === [45.00, 49.50, 53.33, 57.83, 63.33] (2dp, HERO_HP_SCALE identity; Phase 92.3 plan 02: the Thief's start is its final 50, it was the canon 40: [41.67, 46.17, 50.00, 54.50, 60.00])", () => {
   withIdentity({}, () => {
     const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
-    assert.deepStrictEqual(rounded, ["41.67", "46.17", "50.00", "54.50", "60.00"]);
+    assert.deepStrictEqual(rounded, ["45.00", "49.50", "53.33", "57.83", "63.33"]);
   });
 });
 
 // Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
 // 1.25 -> 1.4 moves heroMeanMaxWpFor from [52.08, 57.71, 62.50, 68.13,
 // 75.00] to the `node -e` capture below.
-test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): heroMeanMaxWpFor(1..5) === [58.33, 64.63, 70.00, 76.30, 84.00] (2dp, HERO_HP_SCALE locked at 1.4 — 2dp rounding of the scaled mean, not the identity mean scaled after)", () => {
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): heroMeanMaxWpFor(1..5) === [56.33, 62.63, 68.00, 74.30, 82.00] (Phase 92.3 plan 02: the Thief's start is its final 50 and is not scaled, it was the canon 40 scaled: [58.33, 64.63, 70.00, 76.30, 84.00]; 2dp, HERO_HP_SCALE locked at 1.4 — 2dp rounding of the scaled mean, not the identity mean scaled after)", () => {
   const rounded = [1, 2, 3, 4, 5].map((l) => heroMeanMaxWpFor(l).toFixed(2));
-  assert.deepStrictEqual(rounded, ["58.33", "64.63", "70.00", "76.30", "84.00"]);
+  assert.deepStrictEqual(rounded, ["56.33", "62.63", "68.00", "74.30", "82.00"]);
 });
 
-test("roundDamageCapFor: Infinity at the ROUND_DAMAGE_CEILING-off identity value (under an explicit identity override); round(0.5 * 41.67) = 21 at level 1 under a 0.5 override (restored after)", () => {
+test("roundDamageCapFor: Infinity at the ROUND_DAMAGE_CEILING-off identity value (under an explicit identity override); round(0.5 * 45.00) = 23 at level 1 under a 0.5 override (Phase 92.3 plan 02: the Thief's final 50; it was round(0.5 * 41.67) = 21; restored after)", () => {
   withIdentity({}, () => {
     assert.equal(roundDamageCapFor(1), Infinity);
   });
   const restore = setDialsForTuning({ ...IDENTITY_COLUMN, ROUND_DAMAGE_CEILING: 0.5 });
-  assert.equal(roundDamageCapFor(1), 21);
+  assert.equal(roundDamageCapFor(1), 23);
   restore();
 });
 
 // Phase 79.2 early-floor lock (user ruling 2026-09-27): HERO_HP_SCALE
 // 1.25 -> 1.4 moves the level-appropriate mean max HP the ceiling reads, so
 // the caps move 26 -> 29 (level 1) and 31 -> 35 (level 3), `node -e`.
-test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): roundDamageCapFor is ALREADY on (held at its start value 0.5, not identity 0) — round(0.5 * 58.33) = 29 at level 1, round(0.5 * 70.00) = 35 at level 3", () => {
-  assert.equal(roundDamageCapFor(1), 29);
-  assert.equal(roundDamageCapFor(3), 35);
+test("USER RULING G (cycle 3), Phase 79.2 early-floor lock (user ruling 2026-09-27): roundDamageCapFor is ALREADY on (held at its start value 0.5, not identity 0) — round(0.5 * 56.33) = 28 at level 1, round(0.5 * 68.00) = 34 at level 3 (Phase 92.3 plan 02: the Thief's final 50; they were 29 and 35)", () => {
+  assert.equal(roundDamageCapFor(1), 28);
+  assert.equal(roundDamageCapFor(3), 34);
 });
 
 test("setDialsForTuning throws on an unknown dial key and restore() returns live to DIALS", () => {

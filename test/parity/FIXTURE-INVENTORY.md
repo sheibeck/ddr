@@ -8181,3 +8181,20 @@ narration) are additions, not moves.
 section) say the current rule; `docs/SPELL-AUDIT.md`'s Summon row names it. The sweep for the old Troll 105 and Thief 40 or 56 starting-hp statements found none left in a rule or text document
 (plan 01 had fixed them); the remaining hits are measured bot tables in `docs/CLASS-PASS.md` and `docs/DIFFICULTY-RETUNE.md`, which are dated records of what was measured and stay as they were.
 No fixture moved. The ledger ids are unchanged, so `test/unit/roll-ledger-sync.test.js` (every ledger id has its direction row) passes without a new row.
+
+**Item 3 (the Thief's 50 and the Troll's 75 in the damage-limit mean hero; user 2026-10-02: "Update the thief's old 40 hit point damage-limit calculation to the 50 hitpoints", then "You don't have to re-run the balance tools. Just fix the hit point listing").**
+`engine/difficulty.js#heroMeanMaxWpFor` and `tools/damage-curve-audit.mjs#classBarAt` now read the shipped starting hp through one helper, `startWpMeanFor(cls, race)`: a race's `flatWP` (Troll 75) and a class's
+`startWP` (Thief 50) are final and unscaled; the level-up gains are still scaled. Only the Thief changes a number: the mean hero loses 2.00 at every level, so `roundDamageCapFor` (0.5 of it) drops by one
+at every level (29, 32, 35, 38, 42 to 28, 31, 34, 37, 41). No balance or tuning tool was run (neither `damage-curve-audit.mjs` nor a bot), `ROUND_DAMAGE_CEILING` was not recomputed, and
+`tools/damage-curve-audit-output.txt` is not regenerated; the new numbers are arithmetic, pinned by the tests below. Parity, determinism and the roll-high state pins pass unchanged (re-run).
+`test/parity/prototype-master.js.txt` is unedited and `roll-high-baseline.mjs save` was not run.
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/difficulty/difficulty.test.js` "heroMeanMaxWpFor(1..5) (identity ...)" | `[41.67, 46.17, 50.00, 54.50, 60.00]` | `[45.00, 49.50, 53.33, 57.83, 63.33]` | the Thief's start is the final 50, not the canon 40 |
+| `test/difficulty/difficulty.test.js` "USER RULING G ... heroMeanMaxWpFor(1..5)" (shipped 1.4) | `[58.33, 64.63, 70.00, 76.30, 84.00]` | `[56.33, 62.63, 68.00, 74.30, 82.00]` | the same, unscaled at the start, so 2.00 lower at every level |
+| `test/difficulty/difficulty.test.js` "roundDamageCapFor: Infinity at ... identity" | level 1 under a 0.5 override: `round(0.5 * 41.67) = 21` | `round(0.5 * 45.00) = 23` | the mean hero above |
+| `test/difficulty/difficulty.test.js` "USER RULING G ... roundDamageCapFor is ALREADY on" | level 1 `29`, level 3 `35` | `28`, `34` | the mean hero above, shipped 1.4 |
+| `test/unit/combat-scaling.test.js` "round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 ... (21)" | the identity level-1 cap `21`, a three-swing visit total `<= 21` | `23`, `<= 23` | the mean hero above, at identity |
+
+New probes (`test/unit/starting-hp-text.test.js` part 6: `startWpMeanFor` against `rollCharacter` for every race and class, the ruled finals, and `heroMeanMaxWpFor(1)` against the dealt Human mean) are additions, not moves.
