@@ -165,7 +165,7 @@ test("V17 Fridgian race-hide: the hero's thick hide soaks 3 from a landed blow (
   assert.equal(b2 - state.c.wp, 1, "the floor of 1");
 });
 
-test("V17 Fridgian race-hide: a Joiner Fridgian's hide soaks 3 as well (a Human Joiner takes the whole 7; the other races carry no hide)", () => {
+test("V17 Fridgian race-hide: a Joiner Fridgian's hide soaks 3 as well (a Human Joiner takes the whole 7, the other races carry no hide)", () => {
   const rows = [];
   for (const race of ["Fridgian", "Human", "Dwarven", "Elven", "Troll", "Wilmsry"]) {
     const sheet = { name: "Brom", cls: "Fighter", sub: "Soldier", race, level: 1, wp: 30, maxWP: 30, status: "ok", timers: [], armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0 };
@@ -201,7 +201,7 @@ test("V18 Cleric chart-bonus-healing: Major Heal adds the same 4 once (a bonus p
   assert.equal(events.find((e) => e.type === "healed").amount, 15 + 4);
 });
 
-test("V18 Court Mage chart-bonus-healing: every heal a Court Mage casts adds 1; a Wizard, Warlock and Apprentice add nothing", () => {
+test("V18 Court Mage chart-bonus-healing: every heal a Court Mage casts adds 1, a Wizard, Warlock and Apprentice add nothing", () => {
   assert.equal(healCast("Court Mage", 8, { level: 5 }).healed.amount, 9);
   for (const sub of ["Wizard", "Warlock", "Sorcerer", "Soldier", undefined]) {
     assert.equal(healBonusFor(sub), 0, `${sub}`);

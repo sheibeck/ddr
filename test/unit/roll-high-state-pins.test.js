@@ -280,7 +280,8 @@ const PINNED = {
   // 400/alive/5. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
   // pins` (each hashed identically twice); `save` was never run. The six other labels re-measured
   // byte-identical (none has a Fridgian hero or Joiner).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "9d764bd3b45ddf52f79413f0da07ef21e03c4cefaa70e415ccc3a0e09553e0ca" },
+  // Phase 91.1 plan 03 (user ruling V17 B, 2026-10-01): "solo-1" re-pinned (400 actions, alive, depth 5, 9d764bd3... -> 400 actions, alive, depth 5, 4a9b62eb...): the hero is a Fridgian Court Mage and its thick hide soaks 3 from every blow now (was 2), so the first foe blows of the fight joined at action 101 (two struckByFoe) cost 1 HP less each; the run diverges there (measured against the plan base 1efa0bfc: same events, different hero hit points) and ends in the same shape (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "4a9b62ebac9e1242c91f35a3c374deb4d6bc8f3200e98b1412dd3f5142d9652b" },
   // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
   // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
   // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
@@ -413,7 +414,8 @@ const PINNED = {
   // swing), and the stream moves on. 372/dead/3 -> 257/dead/2. The other seven labels re-measured
   // byte-identical. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
   // pins` (each hashed identically twice); `save` was never run.
-  "party-1": { actions: 257, dead: true, depth: 2, hash: "e8b49922a03f73346e56d4bad2d516ebc10fa8ec96fc35afd3ac6afdd72681d8" },
+  // Phase 91.1 plan 03 (user ruling V17 B, 2026-10-01): "party-1" re-pinned (257 actions, dead, depth 2, e8b49922... -> 400 actions, alive, depth 4, b085d741...): the hero is a Fridgian Court Mage (as in "solo-1"), its hide soaks 3 now, so the blow at action 185 (combatJoined, struckByFoe) costs 1 HP less, the run diverges there (measured against the plan base 1efa0bfc) and the party now survives the action budget it used to die inside (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "party-1": { actions: 400, dead: false, depth: 4, hash: "b085d741ec39d8e908126cda7b2a29d74ac85514b3df37d2eb51ba902cc30260" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a

@@ -613,7 +613,10 @@ export const SPELL_TEXT_FACTS = {
   "Duplicate Foe": [{ says: /^control · (#) foe · meets its double and fights it for (#) rounds, (#) round per school bonus point/, value: () => {
     assert.equal(SP("Duplicate Foe").stretch, "rounds", "Duplicate Foe stretches in rounds, through the one spellEffectRounds");
     const r = cast("Duplicate Foe", { foes: 1, fn: () => 1 });
-    return [reach("Duplicate Foe", { fn: () => 3 }, (f) => !!f.misdirect), die(r.sides[0], ev(r.events, "foeMisdirected").rounds - 1), roundsStep()];
+    // Phase 91.1 plan 03 (V19 B, 2026-10-01): the Illusionist's own Illusion bonus (1) is part of the cast's rounds now; the text's "d4+1" is the
+    // spell's dice, so the caster's school stretch (schoolBonus, +1 round a point) is taken off the measured rounds.
+    const stretch = schoolBonus(r.state.c.sub, "illusion");
+    return [reach("Duplicate Foe", { fn: () => 3 }, (f) => !!f.misdirect), die(r.sides[0], ev(r.events, "foeMisdirected").rounds - 1 - stretch), roundsStep()];
   } }],
   "Door Illusion": [{ says: /rolls (#) resist and may see through it/, value: () => doorResists() }],
   "Chameleon Tongue": [{ says: /at (#) to the roll, which even Magical foes will hear \(the Walking Dead still won't\); it spends the fight's (#) parley$/, value: () => [tongueBonus(), parleysSpent()] }],

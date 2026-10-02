@@ -7849,3 +7849,52 @@ Moved scripted tests and pins (each re-based, before to after, with a dated comm
    derived stream), Poisoned Edge's "d4 + your level", Mark's wait (the level itself is pinned in `value-abilities.test.js`) and Runes/Signs'
    one-in-six (`runesKeep`, counted off 6000 real reads); `spell-skill-text-wording.test.js`: Stealth's top three numbers and Sewing's 6 times.
 7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the checkpoint copy quotes the eight live texts.
+
+### Phase 91.1 plan 03a: race and Magic User chart value changes (VALUE-01, VALUE-02, VALUE-04; rulings V15 to V20)
+
+Measured against the plan base `1efa0bfc` (the same runs on that tree, extracted read-only with `git archive` into a scratch directory, and on this one), then
+declared. Six changes, by the user's rulings of 2026-10-01 (`docs/VALUE-LEDGER.md`): an Elf Illusionist strikes like any Elf, a d12 at level 1 and a d10 at
+level 2 (V15: `derived.js#strikeDie`); Dwarven +3 damage (V16: `RACES.Dwarven.dmg`); the Fridgian's thick hide soaks 3 (V17: `RACES.Fridgian.hide`, the hero's and a
+Joiner's); the chart's healing bonus adds to every heal the caster casts, the Cleric's 4 replacing its separate +3, and the protection bonus adds 5 HP a point
+to Shield's soak and Bubble's film, every divination number set to 0 (V18: `derived.js#healBonusFor`, `wardBonusFor`, `SCHOOL_WARD_HP`); the Illusionist's Illusion
+bonus is 1 (V19: `MU_CHART`); a Cleric may learn Strength (V20: `content/mu-chart.js#MU_SPELL_EXCEPTIONS`, read by `derived.js#spellException`). `test/parity/prototype-master.js.txt`
+is untouched, no bot balance run was made, and the three `*Comparable()` functions in `test/parity/harness/comparables.js` are untouched: no new serialized
+field is added (`c.ward.pool` and `popPool` carry a larger number, the `wardRaised` event carries it; nothing new is stored).
+
+**New rolls: none. Main-rng draws: one declared change.** No new roll is added and no derived stream is used. The one main-rng change is a longer shuffle:
+Strength (a level 1 offense spell) rejoins a Cleric's lowest-level pool and its day-one pool (V20), so `rollGrimoire` draws 10 to 12 values for a Cleric (the formula
+`chargen-rng-pin.test.js` derives: 5 + 4 + 1 + 2). Every other sub-class draws the same count (Wizard 36, Warlock 33, Sorcerer 35, Summoner 36, Illusionist 33,
+Court Mage 34, Apprentice 37).
+
+**Parity: 66 of 66 pass, one divergence record updated.** `node --test "test/parity/**/*.test.js"` exits 0. The chargen fixture's seed 35 (a Troll Cleric) carries a
+declared record (Phase 54 to 91); its engine-side `after.grimoire` re-measured live with `newRun(35)`: eight spells (Turn Walking Dead, Shield, Heal, Sense Presence,
+Regeneration, Plane Gate, Bubble, Major Heal) to five (Heal, Turn Walking Dead, Strength, Shield, Major Heal), the record's `phase` extended to `54+79.2+91+91.1` and
+its rationale extended. The grimoire is again the only field that moves (nothing but the carved-out name is drawn after it). No other chargen seed rolls a Cleric, and no
+other record, fixture or scenario moved (measured: the other 65 parity tests pass unchanged).
+
+**State pins: 2 of 8 moved, the other six byte-identical. Save-compat unchanged.** `node tools/roll-high-baseline.mjs pins` was run (each label hashed identically twice); only
+the two moved labels were pasted, by hand, by label, with a dated comment; `save` was never run. Both moved runs are a Fridgian Court Mage hero, and the first divergence of
+each was found by replaying it on the plan-base tree and on this one, side by side (the same event types at every step, the first different hero hit points):
+
+1. `test/unit/roll-high-state-pins.test.js` `solo-1`: 400 actions / alive / depth 5 to 400 / alive / depth 5 (hash `9d76...ca` to `4a9b...2b`). The hero's thick hide soaks 3 now (V17),
+   so the two foe blows at action 101 (`combatJoined`, `struckByFoe` twice: 7 and 8 damage before the soak) take 4 and 5 where they took 5 and 6 (hide 3 instead of 2), and the run diverges there.
+2. `party-1`: 257 actions / dead / depth 2 to 400 / alive / depth 4 (hash `e8b4...d8` to `b085...60`). The same Fridgian Court Mage hero; the blow at action 185 costs 1 HP less (hide 3), the
+   run diverges there and the party now lives through the action budget it used to die inside.
+3. `roll-high-save-compat` (`fixtures/roll-high/pre-switch-save.json`): `expected` re-measured and unchanged (the hero is a Thief; it meets no changed rule), so no `expected` was rewritten.
+   `roll-high-guard` DRAW_INVENTORY: unchanged (no new draw line).
+
+The other six labels (`solo-2`, `solo-thief-pilfer`, `solo-magicuser-sorcerer`, `party-fighter-knight`, `deep-8`, `deep-14`) re-measured byte-identical.
+
+Moved scripted tests and pins (each re-based, before to after, with a dated comment naming the question):
+
+4. `test/unit/chargen-rng-pin.test.js`: seed 35's `rollCharacter` cursor `440012114` to `-191823556`, its `newRun` cursor `898507590` to `-365163750`, and the Cleric's `rollGrimoire` draw count 10 to 12;
+   the same count in `day-one-damage.test.js`, `grimoire-legality.test.js` and `guaranteed-attack-spell.test.js`; `cleric-offense-ban.test.js` (the ban now has one named exception: the gate data, the
+   no-offense-spell sweeps, the scroll test and the draw count). The other 19 chargen cursors are byte-identical.
+5. V16 and V17 numbers: `hero-size.test.js` (Dwarven +3, a Gauntlet-wearing Dwarf +5 over a Human), `size-items.test.js` (an Enlarged Dwarf +14), `size-voice.test.js`, `identity-race.test.js`,
+   `identity-contract.test.js`, `fridgian-frenzy.test.js`, `joiner-armour-soak.test.js`, `feedback-payload.test.js` (the hide soaks 3: a 5 takes 2, 10 with Hardiness takes 4, a bolt of 6 takes 3).
+6. V18 to V20: `summoner-heal.test.js` and `joiner-casters.test.js` (a Cleric heals 4 more, hero and Joiner), `spell-damage-level-sq.test.js` (the heal-dice pin casts as a Wizard), `bubble-mirror.test.js`
+   (the three base-shape casts use a Wizard: a Cleric's Shield is 65 and its film 40), `control-slate-spells.test.js` and `joiner-casters.test.js` (an Illusionist's Senseless and Duplicate Foe last 1 round
+   longer), `spell-skill-text-engine.test.js` (Duplicate Foe's text die takes the caster's school stretch off), `removed-spells-load.test.js` and `spell-level-overrides.test.js` (Strength stays in an old Cleric's book),
+   `school-gates.test.js` (the named exception is read from the same data table), `identity-footer.test.js` (the schoolBonus reader count in `derived.js` 3 to 5; the Dwarven +3), `identity-text.test.js` and
+   `identity-footer.test.js` (the Cleric's blurb may name the Shield spell, never an armour shield), `spell-audit.test.js` (the Illusionist's Illusion 1).
+7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the checkpoint copy's Systems items follow the live footer entries (`chart-bonus-protection`, `chart-bonus-healing`, `chart-stretch-illusion`).

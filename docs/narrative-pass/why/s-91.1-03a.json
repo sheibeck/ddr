@@ -1,0 +1,251 @@
+[
+ {
+  "key": "bank:IDENTITY_FOOTER.race.Dwarven",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: store prices halved (torches, rope and ladders aside); being small means foes −1 to hit you; a night without rations costs only 1 HP (a Human's costs 4); +2 damage with every weapon; armour wears at half the rate. Bad: foes strike on a die one size smaller (a d12 for a level 1 foe, never below a d8), so they hit you more often.",
+  "after": "Good: store prices halved (torches, rope and ladders aside); being small means foes −1 to hit you; a night without rations costs only 1 HP (a Human's costs 4); +3 damage with every weapon; armour wears at half the rate. Bad: foes strike on a die one size smaller (a d12 for a level 1 foe, never below a d8), so they hit you more often.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V16 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Dwarven damage is +3 (was +2). The footer reads RACES.Dwarven.dmg through the engine's own damageLines, so only the number moves."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.race.Fridgian",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit); thick hide soaks 2 from every blow. Bad: can never wear armour; can never be a Samurai (the job comes with plate); never wins initiative.",
+  "after": "Good: each time you strike, a 4–6 on a d6 gives you a second, wilder swing (−1 to hit); thick hide soaks 3 from every blow. Bad: can never wear armour; can never be a Samurai (the job comes with plate); never wins initiative.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V17 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Fridgian's thick hide soaks 3 (was 2), hero and Joiner alike. The footer reads RACES.Fridgian.hide."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Cleric",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: every healing spell heals 3 more; +1 to hit over other Magic Users (17–20 on a d20 at level 1); always starts with Heal in the book; starts in chain mail, where every other Magic User starts in cloth. Bad: never learns offense, special or illusion spells; no divination spells until level 3.",
+  "after": "Good: +1 to hit over other Magic Users (17–20 on a d20 at level 1); always starts with Heal in the book; starts in chain mail, where every other Magic User starts in cloth; your Shield soaks 15 more HP and your Bubble's film holds 15 more; every healing spell you cast heals 4 more. Bad: never learns offense (except Strength), special or illusion spells; no divination spells until level 3.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 and V20 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cleric's heal bonus is now the chart's healing 4 (a generated line that replaces the authored \"every healing spell heals 3 more\"), its protection 3 is real (Shield soaks 15 more HP, Bubble's film holds 15 more), and the offense ban names its one exception, Strength. Every number comes from healBonusFor, wardBonusFor and spellException."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Court Mage",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: one foe in six dies of boredom before the fight starts; can always parley with Humans; +2 to hit with thrown offense spells. Bad: foes act first in round one; no divination spells until level 4; never learns special or illusion spells.",
+  "after": "Good: one foe in six dies of boredom before the fight starts; can always parley with Humans; +2 to hit with thrown offense spells; your Shield soaks 10 more HP and your Bubble's film holds 10 more; every healing spell you cast heals 1 more. Bad: foes act first in round one; no divination spells until level 4; never learns special or illusion spells.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Court Mage's chart bonuses are real: healing 1 adds to every heal it casts, protection 2 makes Shield soak 10 more HP and Bubble's film hold 10 more. The numbers come from healBonusFor and wardBonusFor."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Illusionist",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose; starts with Mirror Self, Door Illusion and one random Illusion spell; your Open/Lock, Fly, Enchant Character and Speed of Sound last 40 squares longer, and Stop Time lasts 4 rounds longer. Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+  "after": "Good: you choose where every teleport lands: any explored floor square up to 12 away in the 8 directions, or let it choose; starts with Mirror Self, Door Illusion and one random Illusion spell; your Open/Lock, Fly, Enchant Character and Speed of Sound last 40 squares longer, and Stop Time lasts 4 rounds longer; your Senseless and Duplicate Foe last 1 round longer. Bad: strikes on a d20 until level 3; no protection spells until level 3; never learns healing spells.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V19 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Illusionist's Illusion bonus is 1, so Senseless and Duplicate Foe last 1 round longer; the line is the generated stretch line, read from spellEffectRounds."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Sorcerer",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: starts with Freeze and Fireball in the book; learns two new spells at every level; +4 to hit with thrown offense spells; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer. Bad: weapon damage never goes above 9; one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning; no healing spells until level 4; never learns illusion spells.",
+  "after": "Good: starts with Freeze and Fireball in the book; learns two new spells at every level; +4 to hit with thrown offense spells; your Shield soaks 5 more HP and your Bubble's film holds 5 more; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer. Bad: weapon damage never goes above 9; one level-up in eight forgets a spell that isn't Freeze, Fireball or Lightning; no healing spells until level 4; never learns illusion spells.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Sorcerer's protection 1 is real: Shield soaks 5 more HP and Bubble's film holds 5 more (wardBonusFor). Its divination 3 is set to 0 and was never stated."
+ },
+ {
+  "key": "bank:IDENTITY_FOOTER.sub.Summoner",
+  "surface": "blurbs",
+  "trigger": "the generated mechanical footer under a sub-class or race blurb (roller and Hero tab)",
+  "before": "Good: a Summon is always in the book from day one; a full Summon arrives a level stronger, and its duration die counts double; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer; Summon castable from level 1 (level 2 for everyone else). Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+  "after": "Good: a Summon is always in the book from day one; a full Summon arrives a level stronger, and its duration die counts double; your Shield soaks 10 more HP and your Bubble's film holds 10 more; your Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, and Stop Time lasts 1 round longer; Summon castable from level 1 (level 2 for everyone else). Bad: one full Summon in eight turns on you; never learns illusion spells; healing spells you cast heal at half strength.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Summoner's protection 2 is real: Shield soaks 10 more HP and Bubble's film holds 10 more (wardBonusFor). Its divination 4 is set to 0 and was never stated."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.0.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "every healing spell heals 3 more",
+  "after": "+1 to hit over other Magic Users (17–20 on a d20 at level 1)",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the authored trait cleric-heal (\"every healing spell heals 3 more\") is retired: the chart's healing bonus 4 is the Cleric's heal bonus, stated by the generated line chart-bonus-healing. The trait list shifts up one, so +1 to hit is now the first authored good line."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.1.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "+1 to hit over other Magic Users (17–20 on a d20 at level 1)",
+  "after": "always starts with Heal in the book",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cleric's authored good lines shift up one place when cleric-heal is retired; Heal in the book is now the second."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.2.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "always starts with Heal in the book",
+  "after": "starts in chain mail, where every other Magic User starts in cloth",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cleric's authored good lines shift up one place when cleric-heal is retired; the chain mail line is now the third."
+ },
+ {
+  "key": "bank:IDENTITY_TRAITS.sub.Cleric.good.3.text",
+  "surface": "blurbs",
+  "trigger": "an authored advantage or disadvantage line in a sub-class or race footer",
+  "before": "starts in chain mail, where every other Magic User starts in cloth",
+  "after": "",
+  "reasons": [
+   "fact"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cleric has three authored good lines now (cleric-heal retired), so the fourth slot is empty."
+ },
+ {
+  "key": "bank:RACE_NOTE.Dwarven",
+  "surface": "blurbs",
+  "trigger": "the race blurb (roller and Hero tab)",
+  "before": "Two extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising (a die one size smaller, so a level 1 foe rolls a d12) — but your armour shrugs off wear at half the rate everyone else's does, and being small means foes get −1 to hit you besides. Shops halve their prices for you (torches, rope and ladders aside). Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+  "after": "Three extra damage, a single Hit Point a night when the rations run out, and every creature down here swings at you like it has been practising (a die one size smaller, so a level 1 foe rolls a d12) — but your armour shrugs off wear at half the rate everyone else's does, and being small means foes get −1 to hit you besides. Shops halve their prices for you (torches, rope and ladders aside). Built low, built cheap, built to be hit, built to keep the dents. Dwarves call this a fair trade. Dwarves are rarely asked.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V16 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): \"Two extra damage\" is \"Three extra damage\": the blurb states the new +3."
+ },
+ {
+  "key": "bank:RACE_NOTE.Fridgian",
+  "surface": "blurbs",
+  "trigger": "the race blurb (roller and Hero tab)",
+  "before": "You will not wear armour — which is why there are no Fridgian Samurai — though your hide alone soaks two points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (−1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
+  "after": "You will not wear armour — which is why there are no Fridgian Samurai — though your hide alone soaks three points off every blow that lands. You will not strike first. Half the time (a 4, 5 or 6 on a d6) you lose the plot entirely and swing twice, the second one wilder (−1 to hit) — and if the first swing finishes the job, the second is simply lost with it. The Game Master has notes about you.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V17 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the hide soaks \"three points\" off every blow now (was two)."
+ },
+ {
+  "key": "bank:SUB_NOTE.Cleric",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "Healing, chain mail and a better aim than the rest of the book: your healing spells heal 3 more and you get +1 to hit over other Magic Users (17–20 on a d20 at level 1). You start in chain mail, with Heal always on the first page. The gods approve of mending and have ruled out fireballs: you can never learn offense, special or illusion spells, so no offense spell ever lands in your book — though a scroll will still fire one, because the gods do not proofread scrolls. Divination waits until level 3. The gods have rounded up.",
+  "after": "Healing, chain mail and a better aim than the rest of the book: your healing spells heal 4 more and you get +1 to hit over other Magic Users (17–20 on a d20 at level 1). You start in chain mail, with Heal always on the first page, and your Shield soaks 15 more HP and your Bubble's film holds 15 more. The gods approve of mending and have ruled out fireballs: you can never learn offense (except Strength), special or illusion spells, so no offense spell but Strength ever lands in your book (the gods count being stronger as a blessing, not an attack) — though a scroll will still fire one, because the gods do not proofread scrolls. Divination waits until level 3. The gods have rounded up.",
+  "reasons": [
+   "fact",
+   "number",
+   "joke"
+  ],
+  "why": "V18 and V20 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the Cleric's blurb states the new numbers: healing spells heal 4 more, Shield soaks 15 more HP and Bubble's film holds 15 more, and the offense ban has its one exception, Strength, with the gods' own excuse for it."
+ },
+ {
+  "key": "bank:SUB_NOTE.Court Mage",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "You talk. Through encounters, through corridors, through other people's turns — you can always parley with Humans, which is talking a fight down, and when a fight actually starts, everyone else gets there first. One creature in six dies of boredom before it comes to that, and the book counts that as a kill. Your thrown offense spells land at +2 to hit, divination waits until level 4, and Special and Illusion are closed to you for good.",
+  "after": "You talk. Through encounters, through corridors, through other people's turns — you can always parley with Humans, which is talking a fight down, and when a fight actually starts, everyone else gets there first. One creature in six dies of boredom before it comes to that, and the book counts that as a kill. Your thrown offense spells land at +2 to hit, your healing spells heal 1 more, your Shield soaks 10 more HP and your Bubble's film holds 10 more, divination waits until level 4, and Special and Illusion are closed to you for good.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the blurb states the Court Mage's real chart bonuses: healing spells heal 1 more, Shield soaks 10 more HP and Bubble's film holds 10 more."
+ },
+ {
+  "key": "bank:SUB_NOTE.Illusionist",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "Step on a teleport square and you choose where it puts you: any explored floor square up to 12 squares away in the eight directions, or let it choose, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting. Your Special spells run very long (40 squares longer, Stop Time 4 rounds longer), protection waits until level 3, and healing is closed to you for good: the mirror can't bandage anyone.",
+  "after": "Step on a teleport square and you choose where it puts you: any explored floor square up to 12 squares away in the eight directions, or let it choose, which in a dungeon is very close to owning the floor. Three illusions from day one (Mirror Self, Door Illusion and one more), and a d20 to strike until level three — let the mirror do the hitting. Your Special spells run very long (40 squares longer, Stop Time 4 rounds longer), your Senseless and Duplicate Foe last 1 round longer, protection waits until level 3, and healing is closed to you for good: the mirror can't bandage anyone.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V19 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the blurb states that Senseless and Duplicate Foe last 1 round longer."
+ },
+ {
+  "key": "bank:SUB_NOTE.Sorcerer",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your thrown offense spells land at +4 to hit, and your Special spells run long: Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, Stop Time 1 round longer. Healing waits until level 4, Illusion is closed to you for good, and your arm caps out at 9 damage. Nobody hired the arm.",
+  "after": "Freeze and Fireball in the book from day one and two more spells each level, with a one-in-eight chance per level of simply forgetting one that isn't fire, frost or lightning. Your thrown offense spells land at +4 to hit, and your Special spells run long: Open/Lock, Fly, Enchant Character and Speed of Sound last 10 squares longer, Stop Time 1 round longer. Your Shield soaks 5 more HP and your Bubble's film holds 5 more. Healing waits until level 4, Illusion is closed to you for good, and your arm caps out at 9 damage. Nobody hired the arm.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the blurb states that Shield soaks 5 more HP and Bubble's film holds 5 more."
+ },
+ {
+  "key": "bank:SUB_NOTE.Summoner",
+  "surface": "blurbs",
+  "trigger": "the sub-class blurb (roller and Hero tab)",
+  "before": "A Summon is always in your book, and you can call it from your very first day (everyone else waits for level 2) — a full Summon, a level stronger and longer-lived than anyone else's, and one time in eight it arrives on the wrong side. Your Special spells run long (10 squares longer, Stop Time 1 round longer), your own healing spells heal at half strength, and Illusion is closed to you for good. The book declines to say whose fault any of that is.",
+  "after": "A Summon is always in your book, and you can call it from your very first day (everyone else waits for level 2) — a full Summon, a level stronger and longer-lived than anyone else's, and one time in eight it arrives on the wrong side. Your Special spells run long (10 squares longer, Stop Time 1 round longer), your Shield soaks 10 more HP and your Bubble's film holds 10 more, your own healing spells heal at half strength, and Illusion is closed to you for good. The book declines to say whose fault any of that is.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the blurb states that Shield soaks 10 more HP and Bubble's film holds 10 more."
+ },
+ {
+  "key": "content:RACES.Dwarven.note",
+  "surface": "blurbs",
+  "trigger": "a race's rules note",
+  "before": "+2 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
+  "after": "+3 damage and 1 HP/night upkeep; foes strike on a smaller die; armour wears at half the rate; being small means foes get −1 to hit it; store prices halved (torches, rope and ladders aside).",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V16 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the rules note reads \"+3 damage\" (was +2), the same number the footer computes."
+ },
+ {
+  "key": "content:RACES.Fridgian.note",
+  "surface": "blurbs",
+  "trigger": "a race's rules note",
+  "before": "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 2 from every blow.",
+  "after": "Never wears armour (so never a Samurai), never strikes first; half the time (a 4, 5 or 6 on a d6) a strike frenzies into a second, wilder swing at −1 to hit, lost if the first one fells its target; thick hide soaks 3 from every blow.",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V17 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): the rules note reads \"thick hide soaks 3 from every blow\" (was 2), the same number the footer computes."
+ },
+ {
+  "key": "raw:src/browser/identityFooter.js#chartLines",
+  "surface": "other",
+  "trigger": "inline literal in src/browser/identityFooter.js#chartLines",
+  "before": "… to hit with thrown … spells",
+  "after": "your Shield soaks … more HP and your Bubble's film holds … more",
+  "reasons": [
+   "fact",
+   "number"
+  ],
+  "why": "V18 (user ruling, 2026-10-01, docs/VALUE-LEDGER.md): chartLines gains the generated lines chart-bonus-protection (\"your Shield soaks N more HP and your Bubble's film holds N more\") and chart-bonus-healing (\"every healing spell you cast heals N more\"), and the never line names a spell exception (\"offense (except Strength)\"); every number is the engine's own (wardBonusFor, healBonusFor, spellException)."
+ }
+]
