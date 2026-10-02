@@ -12,8 +12,9 @@ import com.google.android.gms.games.PlayGamesSdk;
 
 /**
  * PlayIdentity: the in-repo Capacitor plugin that gives the game a Play Games
- * identity (Phase 91.2, D-02). Four methods, all of which RESOLVE and never
- * reject into the UI: init, status, signIn, serverAuthCode.
+ * identity (Phase 91.2, D-02). Four Play Games methods, all of which RESOLVE
+ * and never reject into the UI: init, status, signIn, serverAuthCode. A fifth,
+ * buildInfo, is not Play Games at all (see below).
  *
  * INIT AND THE PRIVACY GATE (Phase 92.1, BOARD-31). The Play Games SDK
  * signs the player in as soon as it is initialized, so it must start only
@@ -39,6 +40,13 @@ import com.google.android.gms.games.PlayGamesSdk;
  * SCOPES. serverAuthCode uses the two-argument requestServerSideAccess, which
  * requests no extra scopes. PROFILE, EMAIL and OPEN_ID are never requested
  * (they expose a real name and email).
+ *
+ * BUILD INFO (dev-row gate). buildInfo() answers { ok: true, debug } from
+ * BuildConfig.DEBUG, so the JS shell can show its hidden dev rows (start at
+ * depth, the Play Games probe) on a debug build only, never on the release
+ * AAB. It does NOT call ensureInit(): reading the build flag must never start
+ * the Play Games SDK, or the 92.1 privacy gate above would be bypassed by a
+ * Compete-OFF launch. The shell treats a failed or missing answer as NOT debug.
  *
  * PRIVACY. Nothing here logs a player id, a display name or an auth code.
  */
@@ -77,6 +85,22 @@ public class PlayIdentityPlugin extends Plugin {
         out.put("ok", true);
         out.put("signedIn", false);
         return out;
+    }
+
+    /**
+     * Debug-or-release flag for the shell's dev-row gate. Touches no Play
+     * Games API and never calls ensureInit() (the SDK stays uninitialized).
+     */
+    @PluginMethod
+    public void buildInfo(PluginCall call) {
+        try {
+            JSObject out = new JSObject();
+            out.put("ok", true);
+            out.put("debug", BuildConfig.DEBUG);
+            call.resolve(out);
+        } catch (Exception e) {
+            call.resolve(failure("error"));
+        }
     }
 
     @PluginMethod

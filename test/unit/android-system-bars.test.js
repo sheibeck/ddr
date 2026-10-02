@@ -218,13 +218,13 @@ test("92.1-01: PlayIdentityPlugin's init is idempotent with MainActivity's (one 
   assert.doesNotMatch(raw, /LAZY INIT/, "the A6 lazy-init claim is corrected");
 });
 
-test("91.2-01: PlayIdentityPlugin.java is the four-method plugin with the no-extra-scopes server code and no reject", () => {
+test("91.2-01: PlayIdentityPlugin.java is the four Play Games methods plus buildInfo with the no-extra-scopes server code and no reject", () => {
   const plugin = readRepoFile(
     "android/app/src/main/java/com/darktierstudios/delvedierepeat/PlayIdentityPlugin.java",
   );
   assert.match(plugin, /@CapacitorPlugin\(name = "PlayIdentity"\)/);
   const methods = [...plugin.matchAll(/@PluginMethod\s+public void (\w+)\(/g)].map((m) => m[1]);
-  assert.deepEqual(methods, ["init", "status", "signIn", "serverAuthCode"]);
+  assert.deepEqual(methods, ["buildInfo", "init", "status", "signIn", "serverAuthCode"]);
   assert.match(plugin, /requestServerSideAccess\([^,()]+(\([^)]*\))?[^,()]*,\s*false\)/, "two-argument overload, no extra scopes");
   assert.ok(!/AuthScope|PROFILE|OPEN_ID/.test(plugin.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")), "no scope constants outside comments");
   assert.ok(!plugin.includes("call.reject("), "every method resolves, none rejects");

@@ -41,6 +41,12 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // AGP 8 no longer generates BuildConfig by default. PlayIdentityPlugin.buildInfo
+    // reads BuildConfig.DEBUG so the shell's hidden dev rows show on debug builds
+    // only (never on the release AAB), so the class is switched back on here.
+    buildFeatures {
+        buildConfig = true
+    }
     signingConfigs {
         release {
             if (hasReleaseKeystore) {

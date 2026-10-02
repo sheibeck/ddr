@@ -7171,6 +7171,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // plugin, or its in-memory fake in the browser dev loop) and the dev-row
   // spike probe — each on its own line per this file's import convention.
   import { createPlayIdentity, createFakePlayIdentity } from "./src/browser/playIdentity.js";
+  import { devToolsAllowed } from "./src/browser/devBuild.js";
   import { runPgsProbe } from "./src/browser/pgsProbe.js";
   import { LOCAL_LIMIT_KEY, sanitizeLocalLimit, checkLocalLimit } from "./src/browser/reportLimits.js";
   // Phase 79.3 (NOTES-02, D-20/D-21): the bundled release notes and the
@@ -8329,22 +8330,48 @@ window.__mzClassicBoot = async function classicBoot() {
   // anyway. A
   // ~1.2 s pointer hold on the version label reveals #mw-dev-row; releasing/
   // cancelling early clears the timer so a normal tap does nothing.
+  //
+  // DEBUG BUILDS ONLY (user ruling 2026-10-02). On a native platform the
+  // whole dev surface is gated on the PlayIdentity plugin's buildInfo()
+  // (BuildConfig.DEBUG), asked once at boot through devToolsAllowed(): the
+  // long-press listeners below are not even attached unless it answers
+  // debug === true, and mzDevStartAtDepth, the probe click and the fake
+  // sign-in click each re-check devToolsOn. devToolsOn starts false on
+  // native, so a failed, slow or absent check leaves the release build
+  // closed. In the browser dev loop (never hosted publicly) it starts true.
   const DEV_LONG_PRESS_MS = 1200;
+  const devNative = window.Capacitor?.isNativePlatform?.() === true;
+  let devToolsOn = !devNative;
   let devPressTimer = null;
   const mwSettingsVersion = document.getElementById("mw-settings-version");
-  mwSettingsVersion?.addEventListener("pointerdown", () => {
-    devPressTimer = setTimeout(() => {
-      const row = document.getElementById("mw-dev-row");
-      if (row) row.hidden = false;
-      const pgsRow = document.getElementById("mw-dev-pgs-row");
-      if (pgsRow) pgsRow.hidden = false;
-    }, DEV_LONG_PRESS_MS);
-  });
-  ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
-    mwSettingsVersion?.addEventListener(ev, () => clearTimeout(devPressTimer)),
-  );
-  mwSettingsVersion?.addEventListener("contextmenu", (e) => e.preventDefault());
+  function attachDevLongPress() {
+    mwSettingsVersion?.addEventListener("pointerdown", () => {
+      devPressTimer = setTimeout(() => {
+        if (!devToolsOn) return;
+        const row = document.getElementById("mw-dev-row");
+        if (row) row.hidden = false;
+        const pgsRow = document.getElementById("mw-dev-pgs-row");
+        if (pgsRow) pgsRow.hidden = false;
+      }, DEV_LONG_PRESS_MS);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
+      mwSettingsVersion?.addEventListener(ev, () => clearTimeout(devPressTimer)),
+    );
+    mwSettingsVersion?.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+  if (devNative) {
+    devToolsAllowed({ native: true, identity: playIdentity() }).then(
+      (ok) => {
+        devToolsOn = ok === true;
+        if (devToolsOn) attachDevLongPress();
+      },
+      () => {},
+    );
+  } else {
+    attachDevLongPress();
+  }
   document.getElementById("mw-dev-start-btn")?.addEventListener("click", () => {
+    if (!devToolsOn) return;
     const raw = parseInt(document.getElementById("mw-dev-start-depth")?.value, 10);
     const depth = Number.isInteger(raw) ? Math.min(999, Math.max(1, raw)) : 20;
     window.mzDevStartAtDepth?.(depth);
@@ -8368,6 +8395,7 @@ window.__mzClassicBoot = async function classicBoot() {
     else pgsFakeBtn.textContent = pgsFakeLabel(pgsFakeSignedIn);
   }
   pgsProbeBtn?.addEventListener("click", async () => {
+    if (!devToolsOn) return;
     if (pgsProbeBtn.disabled) return;
     pgsProbeBtn.disabled = true;
     let text;
@@ -8389,6 +8417,7 @@ window.__mzClassicBoot = async function classicBoot() {
     pgsProbeBtn.disabled = false;
   });
   pgsFakeBtn?.addEventListener("click", () => {
+    if (!devToolsOn) return;
     if (pgsNative) return;
     pgsFakeSignedIn = !pgsFakeSignedIn;
     playIdentity().setSignedIn?.(pgsFakeSignedIn);
@@ -9638,6 +9667,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // threads startDepth through startNewRun() and closes the Settings sheet
   // first (closeSettingsSheet is in this same module scope).
   window.mzDevStartAtDepth = async function devStartAtDepth(depth) {
+    // Debug builds only: a release build refuses (devToolsOn is false on a
+    // native build until the plugin reports debug === true).
+    if (!devToolsOn) return;
     closeSettingsSheet();
     // Phase 49: a fresh dev run starts its timing rings at n=0.
     perfMarks.reset();

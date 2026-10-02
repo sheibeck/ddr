@@ -16,9 +16,18 @@
 // Every method resolves a plain object and never rejects or throws. Reasons
 // are the closed set PLAY_IDENTITY_REASONS.
 //
-// LAZY. Constructing a seam loads nothing. The native plugin (and so the Play
-// Games SDK on the Java side) is touched only when a method is first called,
-// and the shell only calls while Compete is ON.
+// BUILD INFO. The native seam (only) also has buildInfo() -> { ok: true,
+// debug: boolean } | { ok: false, reason }, the plugin's BuildConfig.DEBUG.
+// It is not a Play Games call: the plugin answers it without initializing the
+// SDK, so asking never breaks the Compete-OFF privacy gate. The shell's dev
+// rows use it through src/browser/devBuild.js and fail closed on anything but
+// debug === true. The fake has no buildInfo (the browser dev loop is not a
+// release build, devBuild.js never asks it).
+//
+// LAZY. Constructing a seam loads nothing. The native plugin is touched only
+// when a method is first called. The Play Games methods are only called while
+// Compete is ON (the SDK starts on the first one); buildInfo is the one
+// exception and never starts the SDK.
 //
 // THE PROXY-THENABLE RULE. The plugin object from Capacitor's registerPlugin
 // is a Proxy that forwards EVERY property read, `then` included, to the
@@ -75,7 +84,21 @@ function normCode(raw) {
   return fail("error");
 }
 
-const NORMALIZERS = { init: normInit, status: normStatus, signIn: normStatus, serverAuthCode: normCode };
+/** buildInfo: only a literal boolean `debug` on an ok answer counts. */
+function normBuildInfo(raw) {
+  if (!raw || typeof raw !== "object") return fail("error");
+  if (raw.ok === false) return fail(raw.reason);
+  if (raw.ok === true && typeof raw.debug === "boolean") return Object.freeze({ ok: true, debug: raw.debug });
+  return fail("error");
+}
+
+const NORMALIZERS = {
+  init: normInit,
+  status: normStatus,
+  signIn: normStatus,
+  serverAuthCode: normCode,
+  buildInfo: normBuildInfo,
+};
 
 /**
  * defaultLoadPlugin() — the dynamic import of @capacitor/core lives only in
@@ -139,6 +162,7 @@ export function createPlayIdentity({ loadPlugin } = {}) {
     status: () => invoke("status"),
     signIn: () => invoke("signIn"),
     serverAuthCode: ({ serverClientId } = {}) => invoke("serverAuthCode", { serverClientId }),
+    buildInfo: () => invoke("buildInfo"),
   });
 }
 
