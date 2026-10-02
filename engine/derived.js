@@ -9,7 +9,7 @@
 
 import { CLASSES, RACES, WEAPONS, STRIKE_DICE, THRESHOLDS, MU_CHART, MU_SPELL_EXCEPTIONS, ARMORS, BAGS, SPELLS, SPELL_LEVEL_OVERRIDES, SLOT_OF, POTIONS, JEWELRY, CLOAKS, STAVES, TOOLS, ACTIVATION_OF, FLEE_NEED, FLEE_THIEF_BONUS, FLEE_CLASS_MOD, FLEE_RACE_MOD, STAFF_WEAPON, STAFF_NAMES, SIZE_STEP_OF, SIZE_NAMES, SIZE_NAME_ORIGIN } from "../content/index.js";
 import { rollDice, rollCheck, atLeastFor } from "./dice.js";
-import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor, controlResistFacesFor } from "./difficulty.js";
+import { foeAccuracyFor, classEvasionFor, classArmorMulFor, fleeNeedModFor, controlResistFacesFor, xpFoeMulFor } from "./difficulty.js";
 import { derivedRng } from "./rng.js";
 // 260918-w4n: `remaining`/`isReady` are no longer read here — isFlying and
 // conditionsOf's flight chip now read purely through itemEffectActive/
@@ -2933,12 +2933,22 @@ export function scrollReadOutcome(check, bands) {
  * break parity, so this must stay the exact expression `killFoe` used
  * inline. Pure: no rng, no mutation — the caller draws the d6 and passes it
  * in as `roll`.
+ *
+ * Phase 92.4 (XP_DEPTH_SCALE, user ruling 2026-10-02): the optional 4th
+ * argument `depth` (the floor the foe stood on; default 1, so a call with no
+ * depth pays as before) and the foe's own `f.elite` rank feed
+ * `difficulty.js#xpFoeMulFor`, a multiplier `(1 + perDepth * (depth - 1)) *
+ * (1 + FOE_ELITE.hpPerRank * elite)` applied INSIDE the one `Math.round`:
+ * `round(raw * mul * xpFoeMulFor(depth, f.elite))`. At the dial's identity (0)
+ * the multiplier is exactly 1 and this is the expression above unchanged. The
+ * party split and HERO_SP_SCALE apply after it, in the callers. Kills and won
+ * parleys both pay through here, so both carry it.
  */
-export function killSpFor(c, f, roll) {
+export function killSpFor(c, f, roll, depth = 1) {
   const R = RACES[c.race];
   const raw = roll * f.lvl;
   const mul = 5 * (R.spMul || 1) * (c.sub === "Barbarian" ? 0.5 : 1) * (c.sub === "Apprentice" && c.level < 3 ? 2 : 1);
-  return Math.round(raw * mul);
+  return Math.round(raw * mul * xpFoeMulFor(depth, f.elite));
 }
 
 /**

@@ -1226,7 +1226,9 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
   const roll = rng.d(6); // roll:amount
   // PARLEY-01 / D-01 (Phase 20): same draw, same call site, same arithmetic —
   // now shared with parley() via engine/derived.js#killSpFor.
-  const gained = killSpFor(c, f, roll);
+  // Phase 92.4 (XP_DEPTH_SCALE): the floor's depth (and the foe's elite rank)
+  // scale the pay inside killSpFor — pure arithmetic, the draw above is unmoved.
+  const gained = killSpFor(c, f, roll, state.floor.depth);
   // PARTY-06 (Phase 8): canon splits the XP award among participants (hero +
   // members present). Members are hired muscle in v1 (no XP progression), so
   // their shares are simply DISCARDED — the split's only effect is to damp the
@@ -2283,7 +2285,7 @@ export function parley(state, rng, events = []) {
     // pay is the plain sum, byte-identical to before. The draws are unchanged.
     const shares = partyXpShares(state);
     const combatEquivalent = talked.reduce((sum, f) => {
-      const gained = killSpFor(c, f, rng.d(6)); // roll:amount
+      const gained = killSpFor(c, f, rng.d(6), state.floor.depth); // roll:amount
       return sum + (shares > 1 ? Math.round(gained / shares) : gained);
     }, 0);
     const sp = heroSpFor(Math.round(combatEquivalent));

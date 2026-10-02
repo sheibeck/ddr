@@ -71,6 +71,13 @@
 // Proven: replaying and writing Lesser Summon back over Denn's Summon re-hashes to
 // the old pin 0e2cc518... exactly. No rule, draw or event moved.
 
+// Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02): `expected.hash`
+// re-recorded ONLY (`dead`/`depth`/`actions` still false/3/300; `save`/
+// `dispatched` untouched). A foe killed below floor 1 pays its experience
+// times 1 + 0.10 x (depth - 1), so the hero's experience differs in the final
+// state. Proven: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the
+// replay re-hashes to the old pin 22990ca1... exactly. No draw or event type moved.
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";

@@ -430,6 +430,9 @@ export const HELD_DIALS = [
   { path: ["PARLEY_NEED_MOD"], start: 0, releaseIf: "available, canon" },
   { path: ["STARTING_GOLD"], start: 50, releaseIf: "available, canon" },
   { path: ["STARTING_POTION_BONUS"], start: 0, releaseIf: "available, canon" },
+  // Phase 92.4: foe experience grows with depth; user-ruled 0.10 (2026-10-02),
+  // never searched by the difficulty fit (identity 0 = today).
+  { path: ["XP_DEPTH_SCALE", "perDepth"], start: 0.1, releaseIf: "user-ruled (2026-10-02); never searched" },
 ];
 
 /**

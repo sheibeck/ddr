@@ -8198,3 +8198,27 @@ at every level (29, 32, 35, 38, 42 to 28, 31, 34, 37, 41). No balance or tuning 
 | `test/unit/combat-scaling.test.js` "round-damage ceiling: with ROUND_DAMAGE_CEILING 0.5 ... (21)" | the identity level-1 cap `21`, a three-swing visit total `<= 21` | `23`, `<= 23` | the mean hero above, at identity |
 
 New probes (`test/unit/starting-hp-text.test.js` part 6: `startWpMeanFor` against `rollCharacter` for every race and class, the ruled finals, and `heroMeanMaxWpFor(1)` against the dealt Human mean) are additions, not moves.
+
+### Phase 92.4 plan 01: foe experience grows with depth (XP_DEPTH_SCALE, +10% per floor)
+
+**The predictor.** The user's ruling (2026-10-02, "Since monster hitpoints and such go up per floor, we should also increase xp as well", +10% per floor, "don't run 1000 games. 10% is fine.") multiplies every foe experience grant by `1 + 0.10 x (depth - 1)` (an elite also by `1 + 0.1 x rank`) inside `derived.js#killSpFor`'s one rounding, before the party split and `HERO_SP_SCALE`. It is pure arithmetic after the existing experience d6: no draw is added, removed or reordered, no event type changes (only `foeKilled.spGained` and a parley's `spGained.amount` carry a different number). A fixture moves only where a foe is killed (or a parley won) on floor 2 or deeper, and everything after it (the hero's experience is in the state; a level-up is not required). Floor 1 pays exactly as before. `test/parity/prototype-master.js.txt` is unedited, `roll-high-baseline.mjs save` was not run, and no bot or tuning run was made (the user ruled it out).
+
+**Parity and determinism: no entry moved.** Every parity scenario fights on floor 1 (the chargen, combat, economy, movement, encounters and magic fixtures, including the parley scenario of `action-script.combat.json`), and no determinism test reads an experience figure: all of `test/parity/*.test.js` and `test/determinism/*.test.js` pass unchanged.
+
+**Moved.** Each measured twice, and proven to be this rule alone: with `setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } })` every run below re-hashes to its old value exactly:
+
+| Entry | before | after | rationale |
+| --- | --- | --- | --- |
+| `test/unit/roll-high-state-pins.test.js` label `solo-1` (pasted by label from `tools/roll-high-baseline.mjs pins`; `save` never run) | 400 actions, alive, depth 5, `f7329296...` | 400, alive, 5, `a7c6f21a...` | the run's kills below floor 1 pay more experience; actions, dead and depth are unchanged |
+| the same file, label `solo-thief-pilfer` | 400, alive, 4, `46152f23...` | 400, alive, 4, `6ef8507e...` | the same |
+| the same file, label `solo-magicuser-sorcerer` | 333, dead, 3, `6b43af4c...` | 333, dead, 3, `cc339fb0...` | the same |
+| the same file, label `party-1` | 400, alive, 4, `b085d741...` | 400, alive, 4, `de6ebf64...` | the same (the party split rounds the scaled grant per foe) |
+| the same file, label `party-fighter-knight` | 268, dead, 3, `97e7955e...` | 268, dead, 3, `6bf6f077...` | the same |
+| the same file, label `deep-8` | 300, alive, 11, `85673de6...` | 300, alive, 11, `ff879f76...` | the same |
+| the same file, label `deep-14` | 47, dead, 14, `4bfd8e23...` | 47, dead, 14, `9f87e12d...` | the same |
+| `test/unit/fixtures/roll-high/pre-switch-save.json` `expected.hash` only (`save`, `dispatched`, `dead`, `depth`, `actions` untouched; the file's `note` and `test/unit/roll-high-save-compat.test.js`'s header record it) | `22990ca1...` | `b81c0765...` | the same: the replayed hero's experience differs |
+| `test/difficulty/difficulty.test.js` key-set pin, identity column and layered-merge pin; `test/unit/harness/identityDials.js`; `tools/lib/fit-score.mjs` HELD_DIALS | no `XP_DEPTH_SCALE` | the key, at identity `{ perDepth: 0 }` in both identity columns, an `xpLock` layer `{ perDepth: 0.1 }` in the merge pin, and a held row (user-ruled, never searched) | one new dial; every pre-92.4 pin that runs under the identity override still reads today's flat pay |
+
+`solo-2` (239 actions, dead, depth 2) is byte-identical (measured under both dials). Unchanged on purpose: every shell snapshot (no rendered DOM names a kill's experience), the narrative corpus and ledgers (no game string changed; `node tools/narrative-review.mjs --check` passes), the descend bonus and the table-four XP dots.
+
+New probes (`test/unit/xp-depth-scale.test.js`: the dial and its identity, the multiplier at identity, floors 1, 2, 5, 11 and an elite, the single rounding, a kill and a won parley on a deep floor, the order against the party split and `HERO_SP_SCALE`, no new draw, the descend bonus and the dots unchanged, and the docs that state the rule) are additions, not moves.

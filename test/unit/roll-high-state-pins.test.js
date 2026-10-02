@@ -282,7 +282,8 @@ const PINNED = {
   // byte-identical (none has a Fridgian hero or Joiner).
   // Phase 91.1 plan 03 (user ruling V17 B, 2026-10-01): "solo-1" re-pinned (400 actions, alive, depth 5, 9d764bd3... -> 400 actions, alive, depth 5, 4a9b62eb...): the hero is a Fridgian Court Mage and its thick hide soaks 3 from every blow now (was 2), so the first foe blows of the fight joined at action 101 (two struckByFoe) cost 1 HP less each; the run diverges there (measured against the plan base 1efa0bfc: same events, different hero hit points) and ends in the same shape (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
   // Phase 92.3 plan 01, ruling 2 (user 2026-10-02, melee hits a helpless foe automatically): "solo-1" re-pinned (400 actions, alive, depth 5, 4a9b62eb... -> 400 actions, alive, depth 5, f7329296...): the run lands 3 blows on a frozen foe, and at step 107 the blow that rolled 5 against 16 (a miss before) hits automatically, so the run diverges there (a per-step count of helpless hits through the bot's onStep hook; measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "solo-1": { actions: 400, dead: false, depth: 5, hash: "f73292962a1f248cb4a2cf1841ae050c77f81f1dddc69f111395d461542b2e89" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "solo-1" re-pinned (hash f7329296... -> a7c6f21a...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-1": { actions: 400, dead: false, depth: 5, hash: "a7c6f21adda63067aaa51e40d0bf82650cff0edbce43ea2da44875e0b8e78743" },
   // Phase 89 plan 09 (TEXT-01 for items, ITEM-01, 2026-09-30): six labels re-recorded,
   // "solo-2", "solo-thief-pilfer", "solo-magicuser-sorcerer", "party-1",
   // "party-fighter-knight" and "deep-8"; "solo-1" and "deep-14" are unchanged. The
@@ -320,7 +321,8 @@ const PINNED = {
   // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, 4f510d22... -> 395 actions, dead, depth 4, 1de589c1...): the bot's Thief now uses Smoke again after a 6 round wait instead of once a fight (3 uses in the run, measured), so the run diverges at its second Smoke and ends dead at action 395 (measured twice by tools/roll-high-baseline.mjs pins).
   // Phase 91.1 plan 02b (user ruling V9 B, 2026-10-01): "solo-thief-pilfer" re-pinned (395 actions, dead, depth 4, 1de589c1... -> 400 actions, alive, depth 4, c07929b4...): the Pilfer's Poisoned Edge now ticks d4 + the user's level a round (a level 1 thief here: +1 a tick, used 8 times for 18 ticks in the run, first at action 46), so the first tick at action 46 reads 2 where it read 1, the run diverges there (measured against the plan base 0a7cd181) and ends alive at the action budget (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
   // Phase 92.3 plan 01, ruling 1 (user 2026-10-02, a Thief starts at a final 50 max hp, was 56 at the shipped dials): "solo-thief-pilfer" re-pinned (400 actions, alive, depth 4, c07929b4... -> 400 actions, alive, depth 4, 46152f23...): the run's Thief now starts with 6 fewer hit points, so its fights go differently from the first blow it takes (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "46152f237b09f9e4e4f7a79fe10eff88017a68a5bd0bace1e1253a02898d7ecf" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "solo-thief-pilfer" re-pinned (hash 46152f23... -> 6ef8507e...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-thief-pilfer": { actions: 400, dead: false, depth: 4, hash: "6ef8507ec3a88937b3e4bdbedbed99beff4a214dd35c2c985deff35434a1d52d" },
   // "solo-magicuser-sorcerer", "party-1" and "party-fighter-knight" re-pinned
   // (Phase 89, Plan 04, 2026-09-30, ITEM-07: "let their armor soak damage.
   // Just like players."): a foe's landed blow on a Joiner now rolls the
@@ -396,7 +398,8 @@ const PINNED = {
   // "party-fighter-knight" and "deep-14" re-measured byte-identical. Only these two labels were pasted, by hand,
   // from `node tools/roll-high-baseline.mjs pins` (each hashed identically twice); `save` was never run.
   // Phase 92.3 plan 01, ruling 2 (user 2026-10-02, melee hits a helpless foe automatically): "solo-magicuser-sorcerer" re-pinned (400 actions, alive, depth 4, f49b9400... -> 333 actions, dead, depth 3, 6b43af4c...): at step 185 the run strikes a frozen foe with a roll of 2 against 17 (a miss before) and now hits it automatically, so the run diverges there and ends dead at action 333 (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "solo-magicuser-sorcerer": { actions: 333, dead: true, depth: 3, hash: "6b43af4c8f92de6119de9ec661f21e7a0ab800ddf6df19521371105747293f48" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "solo-magicuser-sorcerer" re-pinned (hash 6b43af4c... -> cc339fb0...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "solo-magicuser-sorcerer": { actions: 333, dead: true, depth: 3, hash: "cc339fb0f5aac2be1ad0cffa28a6ede55c03d8e85f9d519c3168ee0317e82b83" },
   // "party-1" re-recorded (Phase 89 plan 09, TEXT-01, 2026-09-30): the item objects the run
   // ends holding carry reworded `txt` (see the block comment above "solo-2"). 89-09's
   // measurement: with the three content text files at the plan base, this label hashes
@@ -423,7 +426,8 @@ const PINNED = {
   // byte-identical. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs
   // pins` (each hashed identically twice); `save` was never run.
   // Phase 91.1 plan 03 (user ruling V17 B, 2026-10-01): "party-1" re-pinned (257 actions, dead, depth 2, e8b49922... -> 400 actions, alive, depth 4, b085d741...): the hero is a Fridgian Court Mage (as in "solo-1"), its hide soaks 3 now, so the blow at action 185 (combatJoined, struckByFoe) costs 1 HP less, the run diverges there (measured against the plan base 1efa0bfc) and the party now survives the action budget it used to die inside (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "party-1": { actions: 400, dead: false, depth: 4, hash: "b085d741ec39d8e908126cda7b2a29d74ac85514b3df37d2eb51ba902cc30260" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "party-1" re-pinned (hash b085d741... -> de6ebf64...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "party-1": { actions: 400, dead: false, depth: 4, hash: "de6ebf644c2660cebac2a02bdf6a1874059d72d7b194a8e8a1875d39e7d0ff61" },
   // "party-fighter-knight" and "deep-8" re-pinned (Phase 75.2, Plan 02,
   // 2026-09-26, RULES-11): NOT a gameplay-decision change — bisected live
   // (playRun's own onStep hook, scanning every step's c.items/c.worn for a
@@ -520,7 +524,8 @@ const PINNED = {
   // 400/alive/3. Only the moved labels were pasted, by hand, from `node tools/roll-high-baseline.mjs pins`
   // (each hashed identically twice); `save` was never run.
   // Phase 91.1 plan 02a (user rulings V1 to V5, 2026-10-01): "party-fighter-knight" re-pinned (400 actions, alive, depth 3, a803f03b... -> 268 actions, dead, depth 3, 97e7955e...): the bot's Knight now uses Second Wind again after a 5 round wait instead of once a fight (3 uses in the run, plus the Joiner's own, measured), so the run diverges at its second Second Wind and the party dies at action 268 (measured twice by tools/roll-high-baseline.mjs pins).
-  "party-fighter-knight": { actions: 268, dead: true, depth: 3, hash: "97e7955e46215bb3567d33d82107c41c66cfe42ea82daced566cae677539ef34" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "party-fighter-knight" re-pinned (hash 97e7955e... -> 6bf6f077...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "party-fighter-knight": { actions: 268, dead: true, depth: 3, hash: "6bf6f07704f580f0553da27286b44dd512780c324b57084f6e3fd4603f9568a5" },
   // "deep-8" and "deep-14" first re-pinned (Phase 75, Plan 02, 2026-09-25):
   // RULES-02 deliberately cut WILMST_CACHE_PER_DEPTH 300 -> 100
   // (engine/encounters.js). "deep-8" re-pinned AGAIN here (Plan 05) — see
@@ -565,7 +570,8 @@ const PINNED = {
   // measurement: with the three content text files at the plan base, this label hashes
   // to 0d9ca103d12007b9066ef0d5a5578995a4fc13f45dbde4419df5b2c817c9c263; actions, dead and depth are unchanged.
   // "deep-8" re-pinned (Phase 90 plan 09, SPELL-10, 2026-10-01): see the block comment above "solo-magicuser-sorcerer".
-  "deep-8": { actions: 300, dead: false, depth: 11, hash: "85673de6ad134f2a1fda38d548ba5b92997817bdb295f1117ebe2a44df3ad7af" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "deep-8" re-pinned (hash 85673de6... -> ff879f76...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "deep-8": { actions: 300, dead: false, depth: 11, hash: "ff879f76aa1339dec2116af3580da1ebd6e912d222d9bc714ed24e18ad7a64b5" },
   // "solo-thief-pilfer" and "deep-14" re-pinned (Phase 75.1, Plan 06,
   // 2026-09-26): RULES-10 removes canRead's blanket class/skill gate — the
   // bot (tools/lib/tuning-bot.mjs#decideAction) now reads a carried scroll
@@ -645,7 +651,8 @@ const PINNED = {
   // dies in the same kind of fight, flee failing twice at depth 14, two actions later) (measured twice by
   // tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
   // Phase 92.3 plan 01, ruling 1 (user 2026-10-02, a Thief starts at a final 50 max hp, was 56 at the shipped dials): "deep-14" re-pinned (48 actions, dead, depth 14, e4802ee0... -> 47 actions, dead, depth 14, 4bfd8e23...): the run's Thief starts with 6 fewer hit points, so it dies one action earlier in the same kind of fight at depth 14 (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
-  "deep-14": { actions: 47, dead: true, depth: 14, hash: "4bfd8e23d18373f2a58e3759b54498eda0ea27b7eba82962ce5e7cda8c933fc9" },
+  // Phase 92.4 plan 01 (XP_DEPTH_SCALE, user ruling 2026-10-02, +10% per floor below the first, unmeasured): "deep-14" re-pinned (hash 4bfd8e23... -> 9f87e12d...; actions, dead and depth unchanged): every foe killed below floor 1 pays its experience times 1 + 0.10 x (depth - 1) (an elite also times 1 + 0.1 x rank), so the run's experience, and the state hash that holds it, differ. Proven the only cause: under setDialsForTuning({ XP_DEPTH_SCALE: { perDepth: 0 } }) the run re-hashes to the old pin exactly (measured twice by tools/roll-high-baseline.mjs pins; pasted by label, `save` never run).
+  "deep-14": { actions: 47, dead: true, depth: 14, hash: "9f87e12d1dea7ab97480d173fdc2205932b906b42b9d081964b442321650455f" },
 };
 
 test("PIN_RUNS/PINNED cover the same labels, 1:1", () => {

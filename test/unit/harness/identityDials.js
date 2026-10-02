@@ -65,6 +65,9 @@ export const IDENTITY_DIALS = {
   PARLEY_NEED_MOD: 0,
   STARTING_GOLD: 50,
   STARTING_POTION_BONUS: 0,
+  // Phase 92.4 (XP_DEPTH_SCALE): identity = a foe pays the same at any depth
+  // (the shipped dial is 0.10; every pre-92.4 pin below it is an identity pin).
+  XP_DEPTH_SCALE: { perDepth: 0 },
   CLASS_MITIGATION: {
     Fighter: { hpMul: 1, armorMul: 1, killSpeed: 1 },
     Thief: { evasion: 0, fleeBonus: FLEE_THIEF_BONUS, trapAvoid: 0, killSpeed: 1 },

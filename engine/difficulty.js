@@ -395,6 +395,22 @@ export const DIALS = deepFreeze({
    * held (available) — Phase 54 fit did not search this dial; shipped at
    * its start value 0 (= identity, "available, canon"). */
   STARTING_POTION_BONUS: 0,
+  /** XP_DEPTH_SCALE — Phase 92.4 (user ruling 2026-10-02: "Since monster
+   * hitpoints and such go up per floor, we should also increase xp as well.
+   * Getting the same xp for a goblin on floor 5 that matches the weaker
+   * version on floor 1 is rough."; "+10% per floor"). Every experience grant
+   * from a FOE (a kill, and a won parley, which pays the same killSpFor) is
+   * multiplied by `1 + perDepth * (depth - 1)` (floor 1 pays exactly as
+   * before), and an elite also by `1 + FOE_ELITE.hpPerRank * eliteRank`
+   * (its extra hit points); see `xpFoeMulFor` below. The descend bonus and
+   * the table-four XP dots are not foe grants and are untouched. Identity: `{
+   * perDepth: 0 }` (the multiplier is 1 at every depth and for every elite =
+   * today). Direction: up = faster leveling at depth (easier).
+   * Ruled, never fitted: user-set 0.10 on 2026-10-02, a post-pass change
+   * recorded UNMEASURED in docs/DIFFICULTY-RETUNE.md (no bot or tuning run was
+   * made; the user: "don't run 1000 games. 10% is fine."). A later
+   * measurement can compare 0 and 0.10 through `setDialsForTuning` / --dials. */
+  XP_DEPTH_SCALE: { perDepth: 0.1 },
   /** CLASS_MITIGATION — 54-06's per-class mitigation rows; `Fighter.hpMul`
    * is already read by `heroMaxWpFor` below (identity 1, a no-op multiplier
    * on top of HERO_HP_SCALE). `Thief.fleeBonus` is seeded from
@@ -833,6 +849,25 @@ export function heroMaxWpFor(rolled, cls) {
  */
 export function heroSpFor(amount) {
   return live.HERO_SP_SCALE === 1 ? amount : Math.round(amount * live.HERO_SP_SCALE);
+}
+
+/**
+ * xpFoeMulFor(depth, eliteRank = 0) — XP_DEPTH_SCALE (Phase 92.4): the one
+ * multiplier on every foe experience grant, `(1 + perDepth * (safeDepth - 1))
+ * * (1 + FOE_ELITE.hpPerRank * eliteRank)`. Pure arithmetic, no rng. The
+ * strict `perDepth === 0` fast path returns exactly 1 (identity is
+ * structural, the elite term included), and floor 1 of a plain foe is 1 too
+ * (`1 + perDepth * 0`), so nothing on floor 1 moves. `killSpFor` multiplies
+ * its raw product by this BEFORE its single `Math.round`; the party split and
+ * HERO_SP_SCALE then apply after it, as before. `depth` goes through
+ * `safeDepth` (a missing or corrupt depth reads floor 1); `eliteRank` is read
+ * as a finite positive number or 0.
+ */
+export function xpFoeMulFor(depth, eliteRank = 0) {
+  const perDepth = live.XP_DEPTH_SCALE.perDepth;
+  if (perDepth === 0) return 1;
+  const rank = Number.isFinite(eliteRank) && eliteRank > 0 ? eliteRank : 0;
+  return (1 + perDepth * (safeDepth(depth) - 1)) * (1 + live.FOE_ELITE.hpPerRank * rank);
 }
 
 /**

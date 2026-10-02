@@ -79,6 +79,7 @@ test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key 
     "STORE_TIER",
     "TIER_SPREAD",
     "WANDER_RATE",
+    "XP_DEPTH_SCALE",
   ].sort());
 });
 
@@ -123,6 +124,8 @@ const IDENTITY_COLUMN = {
   PARLEY_NEED_MOD: 0,
   STARTING_GOLD: 50,
   STARTING_POTION_BONUS: 0,
+  // Phase 92.4 (XP_DEPTH_SCALE): identity = a foe pays the same at any depth.
+  XP_DEPTH_SCALE: { perDepth: 0 },
   CLASS_MITIGATION: {
     Fighter: { hpMul: 1, armorMul: 1, killSpeed: 1 },
     Thief: { evasion: 0, fleeBonus: FLEE_THIEF_BONUS, trapAvoid: 0, killSpeed: 1 },
@@ -258,7 +261,10 @@ test("USER RULING D (Phase 54-07 fit, USER RULING G cycle 3), RULES-16 (Phase 75
   const earlyLock = readEarlyLock();
   // Phase 92 plan 03 economy lock (user ruling 2026-10-01): the LAST layer.
   const econLock = readEconLock();
-  const layered = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock, ...econLock };
+  // Phase 92.4 (user ruling 2026-10-02, +10% per floor, unmeasured): the XP
+  // dial is the next layer, ruled and never fitted (no artifact carries it).
+  const xpLock = { XP_DEPTH_SCALE: { perDepth: 0.1 } };
+  const layered = { ...IDENTITY_COLUMN, ...bestLive, ...overlay, ...earlyLock, ...econLock, ...xpLock };
   // Quick 260928-nrf (user ruling 2026-09-28, "Thief flee +5 -> +3"):
   // CLASS_MITIGATION.Thief.fleeBonus is a mirror seeded from
   // content/flee.js#FLEE_THIEF_BONUS (engine/difficulty.js; no engine code
