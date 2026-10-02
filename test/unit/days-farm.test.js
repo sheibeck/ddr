@@ -266,28 +266,37 @@ test("Task 2: makeFarmerPolicy", async (t) => {
     assert.deepStrictEqual(policyResult, directResult);
   });
 
-  await t.test("camp guard: decideAction picks camp but c.rations < nightlyEats(state) — the farmer moves instead and stats.campGuard becomes 1", () => {
-    // Pinned: seed 1 (Fridgian Fighter) is the first seedList(60) entry whose
-    // decideAction returns {type:"camp"} under this setup (rations set to
-    // exactly the hero's own appetite, wp under campThreshold, no potions) —
-    // verified live via a throwaway probe in the planner's scratchpad.
+  await t.test("camp guard (Phase 92): with rations below the party's need, decideAction no longer picks camp, so the farmer's guard never fires", () => {
+    // History: this test used to pin that decideAction picked camp with rations
+    // at the hero's own appetite (seed 1, a Fridgian Fighter, rations set to
+    // eatsFor(hero), wp under campThreshold, no potions) while the party's real
+    // appetite was higher, and that the farmer's guard then moved instead and
+    // stats.campGuard became 1.
+    //
+    // Phase 92 plan 01 (TUNE-10, 2026-10-01): the fair bot's own camp gate reads
+    // nightlyEats(state) now, the number makeCamp refuses on, so the same setup
+    // no longer camps at all. Same setup; the precondition is still asserted
+    // first (rations short of the party's need); decideAction's action is not a
+    // camp, the farmer policy's action is not a camp, and stats.campGuard stays
+    // 0. The mirror case: rations equal to nightlyEats(state) camp.
     let state = newRun(1, [], { ...RUN_FLAGS });
     forceParty(state);
     assert.ok(state.party.length >= 1, "forceParty must recruit at least one member for this precondition");
-    state.c.rations = eatsFor(state.c); // the fair bot's OWN gate: c.rations >= RACES[c.race].eats
+    state.c.rations = eatsFor(state.c); // the hero's own appetite: short of the party's need
     state.c.wp = Math.max(1, Math.floor(state.c.maxWP * BOT_DEFAULTS.campThreshold) - 1);
     state.c.potions = 0;
-    // Precondition asserted FIRST: decideAction picks camp, and the party's
-    // real appetite exceeds what was provisioned.
-    const probe = decideAction(state, { pick: (arr) => arr[0] }, makeBotContext());
-    assert.deepStrictEqual(probe, { type: "camp" });
     assert.ok(state.c.rations < nightlyEats(state), "precondition: rations must be short of the party's real nightly need");
+    const probe = decideAction(state, { pick: (arr) => arr[0] }, makeBotContext());
+    assert.notEqual(probe.type, "camp", "the fair bot's gate reads nightlyEats, so it does not pick a camp makeCamp would refuse");
 
     const { policy, stats } = makeFarmerPolicy({ variant: "noStairs", farmFloor: 1 });
     const action = policy(state, { pick: (arr) => arr[0] }, makeBotContext());
     assert.notEqual(action.type, "camp");
-    assert.equal(action.type, "move");
-    assert.equal(stats.campGuard, 1);
+    assert.equal(stats.campGuard, 0);
+
+    // The mirror case: rations equal to the party's need camp.
+    state.c.rations = nightlyEats(state);
+    assert.deepStrictEqual(decideAction(state, { pick: (arr) => arr[0] }, makeBotContext()), { type: "camp" });
   });
 });
 
@@ -354,9 +363,15 @@ test("Task 2: playFarmRun — floor-1 farming", async (t) => {
   // seedList(120), in index order, found the first (and only) one whose measured run fires the
   // guard: seed 863172 (index 109, a Court Mage), campGuard 200, campFailed 0, outcome dead,
   // the same shape of run (a solo Magic User start). The assertion itself is unchanged.
-  await t.test("camp-guard regression on a real run: seed 863172, noStairs, farmFloor 1 — campGuard fires, campFailed never does", () => {
+  //
+  // Rebased (Phase 92 plan 01, TUNE-10, 2026-10-01): the fair bot's camp gate reads
+  // nightlyEats now, so seed 863172's run (campGuard 200 before the fix, measured live
+  // against the plan base, outcome dead at action 915 either way) no longer reaches the
+  // guard: campGuard 0 and campFailed 0. The stall is gone at its source, so the
+  // regression asserts both counters are zero.
+  await t.test("camp-guard regression on a real run: seed 863172, noStairs, farmFloor 1 — neither campGuard nor campFailed fires (the stall is gone at its source)", () => {
     const row = playFarmRun(863172, { variant: "noStairs", farmFloor: 1, maxActions: 1500 });
-    assert.ok(row.campGuard >= 1, `campGuard was ${row.campGuard}`);
+    assert.equal(row.campGuard, 0, `campGuard was ${row.campGuard}`);
     assert.equal(row.campFailed, 0);
   });
 });

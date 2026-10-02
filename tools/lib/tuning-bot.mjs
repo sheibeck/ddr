@@ -15,7 +15,7 @@
 // plus READ-ONLY helpers with an existing precedent (both tools already
 // import canParley from engine/combat.js): canCast (engine/derived.js),
 // maxCharges (engine/movement.js), songReady/liveFoes (engine/combat.js,
-// Phase 22 HARN-02), SPELLS/RACES (content/index.js). Phase 42 (BAL-01 second half) adds:
+// Phase 22 HARN-02), SPELLS (content/index.js). Phase 42 (BAL-01 second half) adds:
 // isReady (engine/effects.js); itemReady/toolIndex/TARGETED_KINDS
 // (engine/items.js); inDark/itemEffectActive/activationFor/
 // DEATH_PANIC_THRESHOLD (engine/derived.js); ABILITY_BY_ID (content/index.js).
@@ -36,7 +36,7 @@ import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, i
 import { isReady } from "../../engine/effects.js";
 import { abilityUnavailableReason, abilityTargetShortfall } from "../../engine/abilities.js";
 import { meetJoiner, resolveJoiner } from "../../engine/encounters.js";
-import { SPELLS, RACES, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
+import { SPELLS, ABILITY_BY_ID, WEAPONS } from "../../content/index.js";
 import { abilityAblated, applyStartAblation, applyStrikeAblation } from "./ablation.mjs";
 
 // The four cardinal directions the movement domain understands. Defined
@@ -1272,7 +1272,8 @@ function preHazardFlight(state, ctx, dir) {
  * bagged staff and none currently wielded equips it (`equipItem`) —
  * "first staff wins," checked right after the store step, before the field-
  * item/potion/camp checks; (m) drink below potionThreshold; (n) camp below
- * campThreshold (rations permitting); (torch) Phase 42 (BAL-01 second half):
+ * campThreshold when the rations cover the whole party's nightly need
+ * (nightlyEats, the number makeCamp refuses on; Phase 92 plan 01); (torch) Phase 42 (BAL-01 second half):
  * `chooseFieldItem` — light a carried torch while in the dark; (o) Summon out
  * of combat (HARN-02) when no ally is pending and charges exceed half of
  * maxCharges; (p) read a carried scroll when able (Claude's Discretion —
@@ -1483,7 +1484,11 @@ export function decideAction(state, policyRng, ctx) {
   // item and before the hero's potion and the camp gate below.
   const memberItem = chooseMemberItem(state, ctx);  if (memberItem) return memberItem;
   if (ratio < ctx.opts.potionThreshold && c.potions > 0) return { type: "drinkPotion" }; // D-05
-  if (ratio < ctx.opts.campThreshold && c.rations >= (RACES[c.race]?.eats || 1)) return { type: "camp" }; // D-05
+  // Phase 92 plan 01 (TUNE-10; 89-06 finding): the camp gate reads the whole party's
+  // nightly need (nightlyEats: the hero's appetite plus every Joiner's), the very
+  // number makeCamp refuses on. It used to read the hero's appetite alone, so a run
+  // with a Joiner and short rations looped campFailed until maxActions.
+  if (ratio < ctx.opts.campThreshold && c.rations >= nightlyEats(state)) return { type: "camp" }; // D-05
 
   // HARN-02: Summon out of combat — bank charges for the fight unless there
   // is plenty to spare (no pendingAlly, more than half of maxCharges left).

@@ -158,11 +158,15 @@ export function hoarderStorePick(state) {
  *         like the fair bot);
  *     (ii) `action` is `camp` but `c.rations < nightlyEats(state)`: the
  *         fair bot's own camp gate (tools/lib/tuning-bot.mjs#decideAction)
- *         reads only the HERO's own appetite (`RACES[c.race].eats`), while
- *         `makeCamp` (engine/movement.js) refuses on the PARTY's real
- *         appetite (`nightlyEats`) — the probe's seed-55434 stall. Increment
- *         `stats.campGuard` and return the farmer move instead of a refused
- *         camp the bot would otherwise repeat until `maxActions`;
+ *         once read only the HERO's own appetite, while `makeCamp`
+ *         (engine/movement.js) refuses on the PARTY's real appetite
+ *         (`nightlyEats`) — the probe's seed-55434 stall. Phase 92 plan 01
+ *         (TUNE-10, 2026-10-01): the fair bot's gate now reads `nightlyEats`
+ *         itself, so this guard can no longer fire on the shipped bot (the
+ *         measured campGuard counts are 0). It stays as a zero-cost
+ *         regression counter: if the gate ever drifts back to the hero's
+ *         appetite alone, `stats.campGuard` counts it and the farmer moves
+ *         instead of repeating a refused camp until `maxActions`;
  *     (iii) the breaker: `BREAKER_LIMIT` consecutive actions taken out of
  *         combat, with no open decision pending (no store, no
  *         `pendingLoot` items, no `pendingJoiner`, no `pendingFind`, no
@@ -219,8 +223,11 @@ export function makeFarmerPolicy({ variant, farmFloor }) {
       return pick ?? action;
     }
 
-    // (ii) camp guard — the fair bot's own gate reads only the hero's
-    // appetite; makeCamp refuses on the party's real one (nightlyEats).
+    // (ii) camp guard — the fair bot's own gate once read only the hero's
+    // appetite; makeCamp refuses on the party's real one (nightlyEats). Since
+    // Phase 92 plan 01 the gate reads nightlyEats too, so this never fires on
+    // the shipped bot: a zero-cost regression counter, kept so the
+    // docs/DAYS-FARMING.md `camp guard` column keeps its meaning.
     if (action.type === "camp" && c.rations < nightlyEats(state)) {
       stats.campGuard++;
       noDecisionStreak = 0;

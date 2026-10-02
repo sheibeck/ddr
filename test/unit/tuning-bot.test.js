@@ -1012,7 +1012,14 @@ test("Phase 41 (TERR-02): the bot paths across water and never stalls", () => {
   // actions; the same known fair-bot camp-gate stall, fixed in Phase 92), not
   // a water-routing stall. Measured under identity dials: seed 3 dies at
   // action 963 and wades, so seed 3 takes seed 1's place.
-  for (const seed of [3, 5, 6]) {
+  // [Phase 92 plan 01, TUNE-10, 2026-10-01]: the camp gate reads nightlyEats now, so the
+  // campFailed loop that swapped seed 4 (89-06) and seed 1 (Phase 91 close) out is gone at
+  // its source. Measured live at identity dials, maxActions 1500: seed 1 dies at action 1216
+  // (depth 10, day 17, wades, 0 campFailed), seed 4 dies at action 528 (depth 6, day 7, wades;
+  // before the fix it stalled at depth 5 with 1032 campFailed events), seed 5 dies at action
+  // 673. The pre-stall seeds [1, 4, 5] are restored; seeds 3 and 6 still die naturally (619 and
+  // 322 actions) but are no longer needed.
+  for (const seed of [1, 4, 5]) {
     const r = playRun(seed, { ...BOT_DEFAULTS, maxActions: 1500 }, (events) => {
       if (events.some((e) => e.type === "waded")) sawWaded = true;
     });
