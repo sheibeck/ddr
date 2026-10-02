@@ -337,7 +337,9 @@ after the asleep block, mirroring Pommel Strike's `f.stunned` skip — no
 counter, the flag never clears itself, so it lasts exactly as long as the
 foe does or the fight does). `playerStrike`'s to-hit floor (`need =
 Math.max(need, 5)`, "5 to hit a dozing creature") now also applies to a
-stupid foe — struck exactly like a dozing one.
+stupid foe — struck exactly like a dozing one. SUPERSEDED twice: Phase 90 plan 04 took the floor and the turn skip off
+Stupidity (the foe keeps swinging and is no easier to hit), and Phase 92.3 replaced the floor for a sleeping, dozing or
+held foe with an automatic hit (see "Phase 92.3: a helpless foe is hit automatically" at the end of this file).
 
 **Shrink's real half damage.** Three foe-melee damage sites gain `if
 (f.shrunk) dmg = Math.ceil(dmg / 2)` (resp. `mDmg`, and `pursuer.shrunk` in
@@ -1213,7 +1215,7 @@ measurement.
 - **A hit deals its damage** (d6 × the level multiplier), as before. If that
   kills the foe, it is a normal kill: no frozen-solid, at any depth.
 - **A survivor is frozen for 1d4 rounds** (it skips that many turns, and it
-  is easier to hit meanwhile), then it thaws. The d4 is drawn right after the
+  your melee blows hit it automatically meanwhile — Phase 92.3; it was easier to hit before), then it thaws. The d4 is drawn right after the
   damage.
 - **Resists.** The foe's intel resist (2026-09-27) is rolled after the damage,
   never before the throw, and a resist stops only the freeze: the damage
@@ -1400,7 +1402,7 @@ holds one foe for d4 rounds and a hit does not end it." The rulings Q3 A, Q4 A a
   wakes it) instead of Asleep.
 - **Stun** (level 1, `stunFoe`): holds **one foe**, the one you picked, for **d4 rounds** after its
   one resist. It is the existing hold (`holdFoe`, kind `stunned`): the foe skips that many of its
-  turns, is struck on at least 5 winning faces, and **a hit does not end the hold**. A new hold never
+  turns, is hit automatically by melee (Phase 92.3; it was struck on at least 5 winning faces), and **a hit does not end the hold**. A new hold never
   shortens a longer one still running. The foe chip reads **Stunned · N**.
 - **Ice** (level 3): see "Ice — the area freeze" above.
 - **Scroll fumbles.** Doze and Stun stay `out` asleep d4 rows (a fumbled one costs the reader up
@@ -1565,8 +1567,8 @@ a foe's blows away from your side.
   the 90-07 spells, not these). A scroll's free cast by a non-Magic-User reads the base.
 - **Stop Time** (`combat.js#stopTime`, wiring B). Every live foe, in `C.foes` order, rolls the one
   depth-rising resist; each that fails is held kind `"time"` (`holdFoe`): it takes no turns, a blow neither
-  ends nor restarts it, strikes against it land on at least the top five faces (`targetStrikeFaces`, as for a
-  sleeper), and a longer live hold (a Stun of 4 rounds) is never shortened. Every foe resisting says so in one
+  ends nor restarts it, melee blows against it hit automatically (Phase 92.3; the top five faces, `targetStrikeFaces`, before that, as
+  for a sleeper), and a longer live hold (a Stun of 4 rounds) is never shortened. Every foe resisting says so in one
   line (`timeStopped { count: 0 }`). No main-rng draw.
 - **Senseless and Duplicate Foe** (`combat.js#misdirectFoe` and `resolveMisdirectedTurn`, wiring C, the one
   new combat system). The picked foe's resist is rolled up front; a landed spell sets `f.misdirect = { at,
@@ -1731,7 +1733,7 @@ Generated from the Rolls cells of `docs/SPELL-AUDIT.md` (`test/unit/spell-audit.
 | Fireballs | 4 · offense | no to-hit roll per bolt (the rulebook rolls each ball; the prototype and the engine never do) | foe resist per foe (intelligence 10: 16–20) rising with depth, one roll and no floor-12 extras since 90-04 (15–20 at floor 13, 10–20 at floor 20) | damage d10+2 (3–12) per bolt, level² once per foe struck | Strength adds its d10 to each bolt (Q1); bolts 1–8 | Apprentice backfire 1 in 8 | scroll fumble row area/volley (the reader and the party take it) |
 | Petrify | 5 · offense | no to-hit roll (the rulebook calls Petrify thrown, the prototype never rolls to hit) | foe resist rising with depth, one roll (intelligence 10: 16–20 up to floor 12, 10–20 at floor 20) | no damage, an outright kill that pays its experience (Q2 A) and drops no coin or treasure | — | Apprentice backfire 1 in 8 | scroll fumble row harmful/heavy (a d10 + depth blow on the reader, plus Afraid) |
 | Insane | 2 · offense | no to-hit roll | foe resist (intelligence 10: 16–20); one depth-rising resist and no floor-12 extras (built in 90-04) | damage on a 2 is the maddened foe's own level² + d6 to a neighbour | d6 table, each face 1 in 6; sleep d4 on a 4 | Apprentice backfire 1 in 8 | scroll fumble row harmful/out (the reader is maddened up to d4 turns) |
-| Summon | 2 · special | no to-hit roll for you | never resisted | no damage roll of your own (the ally hits on 5 winning faces of its die and deals level² + d6) | d4+2 rounds (3–6), a Summoner's 2×d4+2 (4–10) at level + 1 | backfire: Apprentice 1 in 8 and a Summoner's summon 1 in 8 (hurt level² + d6) | scroll fumble row helpful/summon (the summon joins the foes) |
+| Summon | 2 · special | no to-hit roll for you | never resisted | no damage roll of your own (the ally hits on 5 winning faces of its die, automatically at a helpless foe, and deals level² + d6) | d4+2 rounds (3–6), a Summoner's 2×d4+2 (4–10) at level + 1 | backfire: Apprentice 1 in 8 and a Summoner's summon 1 in 8 (hurt level² + d6) | scroll fumble row helpful/summon (the summon joins the foes) |
 | Fireball | 3 · offense | to hit: 4 winning faces on a d8, so hits on 5–8 (50%) before bonuses (Wizard +3 hits on 2–8, Warlock or Sorcerer +4 on 1–8, Court Mage +2 on 3–8) | foe resist first (intelligence 10: 16–20) rising with depth, one roll and no floor-12 extras since 90-04 (15–20 at floor 13, 10–20 at floor 20) | damage 2d10+4 (6–24) + level² (Strength adds its d10 per Q1) | instant | Apprentice backfire 1 in 8 and the spell turns on you for half its damage roll | scroll fumble row harmful/damage (2d10+4 × the caster's level over the spell's, to the reader) |
 | Major Heal | 3 · healing | no to-hit roll | never resisted | no damage; heals 3d10 (3–30), a Cleric +3 | instant | Apprentice backfire 1 in 8 | scroll fumble row helpful/heal |
 | Bubble | 3 · protection | no to-hit roll | never resisted | no damage of its own: the next landed blow is reflected in full, then 25 hp absorbed for the rest of that round | armed until a blow lands or the fight ends | Apprentice backfire 1 in 8 | scroll fumble row helpful/ward |
@@ -1797,3 +1799,12 @@ A scroll's spell is `rng.pick(SPELLS.filter(sp => sp.lvl <= min(5, depth + 1)))`
 ### Where each rule is pinned
 
 `docs/SPELL-AUDIT.md` names, per spell, the test that would fail if the fix were reverted (a `Pinned by` cell of `test/unit/<file>.test.js: <title>` pins, each read by `test/unit/spell-audit.test.js`); the text-vs-engine guard `test/unit/spell-skill-text-engine.test.js` pins every number a spell text states to the engine.
+
+## Phase 92.3: a helpless foe is hit automatically (user rulings 2026-10-02)
+
+User ruling: "When attacking an enemy that is frozen, stunned, sleeping, etc, should be an automatic hit with melee. If it can't move you can hit it." Plan 02 extended it to summons: "fix summons so they auto hit like others." This is the current rule for every spell that makes a foe skip its turns (Freeze and Ice, Stun, Doze, Noxious Vapor, Stop Time, a staff's gas, a song's sleep, and Pommel Strike's stun):
+
+- While the foe cannot move, your melee blows, a Joiner's, a summoned ally's and a legacy ally's hit it automatically. Only the to-hit result is skipped: the strike die is still drawn and ignored, the damage is rolled as usual, and there is no natural crit from the die (the Thief's opening backstab and forced crits stay). A foe you cannot touch at all (magic-only, dagger-only) stays untouchable.
+- This replaces every older line here that gave a held, sleeping or dozing foe a floor of five winning faces. A Doze still ends on the first hit that lands; a plain sleep, a Stun, a Freeze and Stop Time do not end on a hit.
+- Senseless, Duplicate Foe, Stupidity, Blind and Weaken do not make a foe helpless (it still takes its turn).
+- The one list is `derived.js#foeHelplessKind`; the audit is in docs/ROLL-LEDGER.md ("Phase 92.3: melee at a helpless foe is an automatic hit") and the balance record in docs/DIFFICULTY-RETUNE.md.

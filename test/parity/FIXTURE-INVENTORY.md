@@ -8175,3 +8175,9 @@ unchanged; `roll-high-baseline.mjs save` was not run).
 
 New probes (`test/unit/helpless-auto-hit.test.js`: the summon over every helpless condition, the draw count, the Skeleton shatter, the untouchable foe, the countdown, the legacy ally, and the
 narration) are additions, not moves.
+
+**Item 2 (the old rule docs, docs only).** `docs/ROLL-LEDGER.md` (the `[hero-strike:dozing]` and `[hero-strike:stupid]` Modifier rows, the Stun line of the 90-05 section, the F1 notes, and a new
+"Phase 92.3: melee at a helpless foe is an automatic hit" section) and `docs/SPELLS.md` (the Stupidity, Freeze, Stun and Stop Time "5 winning faces" sentences, the Summon table row, and a new "Phase 92.3"
+section) say the current rule; `docs/SPELL-AUDIT.md`'s Summon row names it. The sweep for the old Troll 105 and Thief 40 or 56 starting-hp statements found none left in a rule or text document
+(plan 01 had fixed them); the remaining hits are measured bot tables in `docs/CLASS-PASS.md` and `docs/DIFFICULTY-RETUNE.md`, which are dated records of what was measured and stay as they were.
+No fixture moved. The ledger ids are unchanged, so `test/unit/roll-ledger-sync.test.js` (every ledger id has its direction row) passes without a new row.
