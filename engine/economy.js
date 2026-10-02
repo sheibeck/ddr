@@ -33,7 +33,7 @@ import {
   endSourceEffects,
 } from "./items.js";
 import { clampCarry, slotItems, hasTool, gearCompareParts, wieldedStaff } from "./derived.js";
-import { difficultyCurve } from "./difficulty.js";
+import { difficultyCurve, sellFractionFor } from "./difficulty.js";
 import {
   WEAPONS,
   ARMORS,
@@ -77,10 +77,10 @@ export function priceFor(base, race, sub = null) {
 }
 
 // ECON-06 (Phase 14, Economy C): the buy/sell spread. A store buys any carried
-// item back for ~50% of its base value (no race multiplier, Phase 91 plan 08). A TUNING KNOB —
-// Phase 16 (Numbers) tunes the spread. Kept module-local so it is the one place
-// the sell discount lives.
-const SELL_SPREAD = 0.5;
+// item back for a fraction of its base value (no race multiplier, Phase 91 plan 08).
+// Phase 92 plan 03 (ECON-12, lever S) moved the fraction out of this module's
+// constant SELL_SPREAD (0.5) into the DIALS entry SELL_FRACTION
+// (engine/difficulty.js#sellFractionFor), shaped by the floor the store is on.
 
 // ECON-06 FALLBACK base value for treasure items that carry no `cost` yet —
 // jewelry, cloaks, and staves (content/treasure-tables.js) have no base value
@@ -97,8 +97,8 @@ const TREASURE_FALLBACK_VALUE = 200;
 // the rolled item shapes byte-identical to the frozen prototype master (adding
 // a `cost` field to a rolled cloak/jewel/staff would diverge c.items on any
 // fixture that rolls one). Values are set roughly in proportion to each item's
-// power and are a Phase-16 tuning knob, not frozen. sellPriceFor halves these
-// (SELL_SPREAD); no race multiplier reaches the sale (Phase 91 plan 08, Q5 A).
+// power and are a Phase-16 tuning knob, not frozen. sellPriceFor pays a fraction of these
+// (SELL_FRACTION); no race multiplier reaches the sale (Phase 91 plan 08, Q5 A).
 const TREASURE_BASE_VALUES = {
   // JEWELRY (content/treasure-tables.js)
   "Ring of Power": 1500,
@@ -172,10 +172,18 @@ function baseValueFor(item) {
 }
 
 /**
- * sellPriceFor(item, race, sub = null) — what a store PAYS for a carried
- * item: ~50% of its base value (SELL_SPREAD). Always at least 1 so a sale
- * never yields nothing. Pure, no rng. Phase 16 tunes SELL_SPREAD; Phase 15
- * refines the treasure base values baseValueFor falls back on.
+ * sellPriceFor(item, race, sub = null, depth = null) — what a store PAYS for a
+ * carried item: the floor's SELL_FRACTION of its base value (sellFractionFor;
+ * 0.5 at the shallow floors, lower deeper). Always at least 1 so a sale never
+ * yields nothing. Pure, no rng. `depth` is the floor the store is on; omitted,
+ * the shallow fraction applies (every old caller). Phase 15 refines the
+ * treasure base values baseValueFor falls back on.
+ *
+ * DELIBERATE RULES CHANGE (Phase 92 plan 03, ECON-12, user 2026-10-01):
+ * "stores pay less when you sell", scaled with depth: the early stores pay
+ * what they always did and the deeper ones pay less, so the bag no longer
+ * buys a depth-7 hero the whole shelf. The Pickpocket's x0.75 and Q5 A below
+ * stay relative rules on top of the new base.
  *
  * DELIBERATE RULES CHANGE (Phase 91 plan 08, IDENT-21, audit Q5 A, user
  * 2026-09-30): "stores pay every race the ordinary price; the race multiplier
@@ -191,9 +199,9 @@ function baseValueFor(item) {
  * sells from). A non-Pickpocket (including every existing 2-argument caller) gets
  * a value-identical result to before this change.
  */
-export function sellPriceFor(item, _race, sub = null) {
+export function sellPriceFor(item, _race, sub = null, depth = null) {
   const buy = baseValueFor(item);
-  return Math.max(1, Math.round(buy * SELL_SPREAD * (sub === "Pickpocket" ? 0.75 : 1)));
+  return Math.max(1, Math.round(buy * sellFractionFor(depth) * (sub === "Pickpocket" ? 0.75 : 1)));
 }
 
 /**
@@ -210,7 +218,7 @@ export function sellItem(state, i, events = []) {
   const c = state.c;
   const it = (c.items || [])[i];
   if (!it) return events;
-  const price = sellPriceFor(it, c.race, c.sub);
+  const price = sellPriceFor(it, c.race, c.sub, state.floor?.depth);
   c.items.splice(i, 1);
   c.gold += price;
   // Phase-12 gated clamp: shrinks c.gold to BAGS[c.bag].wilmst when over-cap,

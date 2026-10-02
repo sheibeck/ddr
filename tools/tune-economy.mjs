@@ -62,10 +62,10 @@ function bagCapOf(c) {
   return BAGS[c.bag]?.wilmst ?? null;
 }
 
-/** sellValueOf(c) -- what the bag would fetch at a store (the bot never sells; a human does). */
-function sellValueOf(c) {
+/** sellValueOf(c, depth) -- what the bag would fetch at the store on `depth` (the bot never sells; a human does). */
+function sellValueOf(c, depth) {
   let s = 0;
-  for (const it of c.items || []) s += sellPriceFor(it, c.race, c.sub);
+  for (const it of c.items || []) s += sellPriceFor(it, c.race, c.sub, depth);
   return s;
 }
 
@@ -107,7 +107,7 @@ function autoPlayOnce(seed, opts) {
     arrivals.push({
       depth: state.floor.depth,
       gold: state.c.gold,
-      sellValue: sellValueOf(state.c),
+      sellValue: sellValueOf(state.c, state.floor.depth),
       bagCap: bagCapOf(state.c),
       wouldFace: wouldFaceGroups(state, seed),
       incomeSoFar: copyMap(running),
@@ -132,7 +132,7 @@ function autoPlayOnce(seed, opts) {
           depth: e.depth,
           gold: state.c.gold,
           bagCap: bagCapOf(state.c),
-          sellValue: sellValueOf(state.c),
+          sellValue: sellValueOf(state.c, state.floor.depth),
           groups: stockGroups(state.store.stock),
           incomeSoFar: copyMap(running),
           spentSoFar: spent,

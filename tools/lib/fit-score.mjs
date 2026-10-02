@@ -414,6 +414,12 @@ export const HELD_DIALS = [
   { path: ["STORE_TIER", "base"], start: 0, releaseIf: "held (available)" },
   { path: ["STORE_TIER", "perDepth"], start: 0.3, releaseIf: "held (available); perDepth [0.15, 0.6] if released" },
   { path: ["LOOT_SCALE"], start: 0.8, releaseIf: "held (available); [0.4, 1.5] if released" },
+  // Phase 92 plan 03 (ECON-12): the store's sell fraction; an economy dial the
+  // difficulty fit never searches (plan 92-03's own fit sets it).
+  { path: ["SELL_FRACTION", "shallow"], start: 0.5, releaseIf: "held (available)" },
+  { path: ["SELL_FRACTION", "deep"], start: 0.5, releaseIf: "held (available)" },
+  { path: ["SELL_FRACTION", "shallowTo"], start: 4, releaseIf: "held (available)" },
+  { path: ["SELL_FRACTION", "deepFrom"], start: 7, releaseIf: "held (available)" },
   { path: ["DOT_MIX", "fight"], start: 1.0, releaseIf: "held (available); [0.6, 1.2] if released" },
   { path: ["DOT_MIX", "harm"], start: 1.0, releaseIf: "available, canon" },
   { path: ["DOT_MIX", "loot"], start: 1.0, releaseIf: "available, canon" },

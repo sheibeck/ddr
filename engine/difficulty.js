@@ -339,6 +339,22 @@ export const DIALS = deepFreeze({
    * held (available) — Phase 54 fit did not search this dial; shipped at
    * its start value 0.8 ([0.4, 1.5] if released). */
   LOOT_SCALE: 0.8,
+  /** SELL_FRACTION — Phase 92 plan 03 (ECON-12), lever S: the fraction of an
+   * item's base value a store PAYS the hero for it, by floor. `{ shallow,
+   * deep, shallowTo, deepFrom }`: floors up to `shallowTo` pay `shallow`,
+   * floors from `deepFrom` pay `deep`, and the floors between ease linearly
+   * from one to the other (sellFractionFor). Identity: shallow 0.5 = deep 0.5
+   * (today's half everywhere; the retired module constant SELL_SPREAD of
+   * engine/economy.js). Direction: up = the bag is worth more at a store
+   * (easier). Read by engine/economy.js#sellPriceFor only: buy prices, the
+   * Pickpocket x0.75 and Q5 A (every race is paid alike) are relative rules on
+   * top of this base. User ruling 2026-10-01 (docs/ECONOMY-READOUT.md
+   * `## Ruling`): "stores pay less when you sell", "Scale with depth" so the
+   * early stores pay about what they did and a depth-7 hero can afford about a
+   * third to a half of a store, selling the bag included.
+   * Search: `deep` (and `deepFrom`) by plan 92-03's fit; shipped value locked
+   * in .planning/phases/92-store-economy-balance-close/fit/econ-lock.json. */
+  SELL_FRACTION: { shallow: 0.5, deep: 0.5, shallowTo: 4, deepFrom: 7 },
   /** FOE_ACCURACY — 54-06's to-hit modifier. Identity: 0 (canon, no
    * modifier).
    * held (available) — Phase 54 fit did not search this dial; shipped at
@@ -833,6 +849,21 @@ export function startingRationsFor(canon) {
  */
 export function lootFor(coin) {
   return live.LOOT_SCALE === 1 ? coin : Math.round(coin * live.LOOT_SCALE);
+}
+
+/**
+ * sellFractionFor(depth) — SELL_FRACTION (Phase 92 plan 03, ECON-12 lever S):
+ * the fraction of an item's base value the store on `depth` pays for it. Flat
+ * `shallow` up to `shallowTo`, flat `deep` from `deepFrom`, linear between.
+ * A missing or non-finite depth reads `shallow` (every old two-argument
+ * caller of sellPriceFor). Identity: shallow === deep returns that value
+ * untouched (0.5, so the identity sale is bit-for-bit today's). Pure, no rng.
+ */
+export function sellFractionFor(depth) {
+  const f = live.SELL_FRACTION;
+  if (f.shallow === f.deep || !Number.isFinite(depth) || depth <= f.shallowTo) return f.shallow;
+  if (depth >= f.deepFrom) return f.deep;
+  return f.shallow + ((f.deep - f.shallow) * (depth - f.shallowTo)) / (f.deepFrom - f.shallowTo);
 }
 
 /**

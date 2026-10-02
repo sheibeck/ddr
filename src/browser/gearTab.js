@@ -812,7 +812,7 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
         if (opts.gearRow) li.appendChild(mkDropConfirm(i));
         else li.appendChild(mkBtn("Drop", () => deps.dropItem?.(i)));
       } else if (a === "sell") {
-        const price = sellPriceFor(it, state.c.race, state.c.sub);
+        const price = sellPriceFor(it, state.c.race, state.c.sub, state.floor?.depth);
         li.appendChild(mkBtn(price != null ? `Sell · ${price.toLocaleString()} wm` : "Sell", () => deps.sellItem?.(i)));
       } else if (a === "lootEquip") {
         // Phase 29 (LOOT-03): Equip now — only when it's a legal upgrade

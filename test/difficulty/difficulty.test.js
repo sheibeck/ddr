@@ -44,7 +44,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 // ─── USER RULING D: the remove list is GONE — no floor-range name survives ──
 
-test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 29 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Plan 01; FOE_ELITE added, Plan 03; CONTROL_AT_DEPTH added, Plan 04)", () => {
+test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key set is exactly the global model's 30 dials (DOT_HP_FRACTION retired, USER RULING G, cycle 3 — DOT_HP_BASE is a flat canon table, not a DIALS key; FOE_COUNT_DEPTH added, Plan 01; FOE_ELITE added, Plan 03; CONTROL_AT_DEPTH added, Plan 04)", () => {
   assert.equal(Object.isFrozen(DIALS), true);
   const keys = Object.keys(DIALS).sort();
   assert.deepStrictEqual(keys, [
@@ -73,6 +73,7 @@ test("USER RULING D/G, RULES-16/17/18 (Phase 75.3): DIALS is frozen and its key 
     "LOOT_SCALE",
     "PARLEY_NEED_MOD",
     "ROUND_DAMAGE_CEILING",
+    "SELL_FRACTION",
     "STARTING_GOLD",
     "STARTING_POTION_BONUS",
     "STORE_TIER",
@@ -113,6 +114,8 @@ const IDENTITY_COLUMN = {
   DARK_RADIUS_CAP: 7,
   STORE_TIER: { base: 0, perDepth: 0.3 },
   LOOT_SCALE: 1,
+  // Phase 92 plan 03 (ECON-12): identity = a store pays half everywhere.
+  SELL_FRACTION: { shallow: 0.5, deep: 0.5, shallowTo: 4, deepFrom: 7 },
   FOE_ACCURACY: 0,
   DOT_MIX: { fight: 1, harm: 1, loot: 1, help: 1 },
   WANDER_RATE: 1,
