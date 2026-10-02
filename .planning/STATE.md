@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-current_phase: 91.2
-current_phase_name: "Board Identity: Play Games Names Replace Rolled Handles"
-status: planning
+status: executing
 stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). Phases 88, 89, 90, 91, 91.1, 91.2 COMPLETE (last phase-close full suite 10,026/10,024/0/2 after 91.1). NEXT: Phase 92 (ECON-11 readout -> user sets the economy target -> ECON-12 retune -> TUNE-10 one fair-bot pass); before the bot pass fix the three bot findings (Joiner camp stall `c.rations >= nightlyEats(state)`, Cloak of Regeneration logic, tallyUsage counting member itemUsed as the hero's). Then milestone lifecycle (audit -> debug APK -> one batched Pixel 7 checklist -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: user console batch + Claude deploys; patch notes agreed first; vc13; site push at 2.7; final rules step 3). Dispatch conventions now: this session runs from the home folder (not a git repo) so executors run directly on master in C:/projects/mazeworld, one at a time (verify-only HEAD/clean check, plain git commit + trailers, no STATE/ROADMAP/REQUIREMENTS edits, targeted tests only); watcher scratchpad/masterwatch.sh <repo> 15; orchestrator runs the full suite once at phase close. Open one-number user calls: Smoke 6 rounds from use, Taunt use+next round, Mark = marker's level, V15 Elf Illusionist = plain Elf die. Device: Pixel 7 wireless adb connect 10.0.0.175:<port from the Wireless debugging screen>; debug APK only after the last wave (user 2026-10-01)."
-last_updated: "2026-10-02T01:11:53.138Z"
+last_updated: "2026-10-02T02:06:02.002Z"
 last_activity: 2026-10-01
-last_activity_desc: Phase 91.1 complete, transitioned to Phase 91.2
+last_activity_desc: Phase null execution started
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 61
-  completed_plans: 61
+  total_plans: 66
+  completed_plans: 62
   percent: 88
+current_phase: 91.2
+current_phase_name: "Board Identity: Play Games Names Replace Rolled Handles"
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 
 ## Current Position
 
-Phase: 91.2 — Board Identity: Play Games Names Replace Rolled Handles
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-01 — Phase 91.1 complete, transitioned to Phase 91.2
+Phase: null — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase null
+Last activity: 2026-10-01 — Phase null execution started
 
 Progress: [████████░░] 76% (2/7 phases)
 

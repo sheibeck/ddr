@@ -45,3 +45,8 @@ A depth-7 hero can't buy out a store, and ONE bot pass over the finished rules c
 ## Deferred Ideas
 None.
 </deferred>
+
+## User answers before the readout (2026-10-01)
+- The 91.1 interpretation calls are final as built: Smoke ready again 6 rounds after use (3-round effect + 3 wait); Taunt = use round + next; Mark adds the level of whoever laid it; an Elf Illusionist uses the plain Elf die.
+- The fair bot stays as is: it does not sell or buy repairs (the target is judged on gold + bag sale value instead).
+- The bot pass includes both optional runs: the deep-floor slices (13–20, measured only) and the 200-seed party run.
