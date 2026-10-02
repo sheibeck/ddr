@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: Truth in Advertising
-status: Awaiting next milestone
-stopped_at: "v2.3 Truth in Advertising ARCHIVED 2026-10-02 (override closeout; Play 2.3.0 / vc13 submitted to closed testing, final rules live). NEXT: /gsd-new-milestone v2.4 — user picks 2026-10-02: 999.17 large-screen support, 999.18 store/site screenshots, 999.20 ability states, plus todos bad-condition-chips-first, cloak-regeneration-tick-on-use, player-facing-descriptions-fantasy-flavor. 999.19 stays in backlog (needs the user's save); 999.12 achievements stays for its own milestone. Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) still to walk."
-last_updated: "2026-10-02T17:19:26.525Z"
+milestone: v2.4
+milestone_name: Fit & Finish
+status: planning
+last_updated: "2026-10-02T19:19:23.640Z"
 last_activity: 2026-10-02
-last_activity_desc: Milestone v2.3 completed and archived
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 66
-  completed_plans: 66
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -26,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: Milestone v2.3 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-02 — Milestone v2.3 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-02 — Milestone v2.4 started
 
 ## Ground Truth (durable facts every session needs)
 

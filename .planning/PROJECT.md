@@ -108,9 +108,21 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Next Milestone: v2.4 (not started — run /gsd-new-milestone)
+## Current Milestone: v2.4 Fit & Finish
 
-Picked by the user on 2026-10-02: backlog 999.17 (large-screen support), 999.18 (store and website screenshots, after 999.17) and 999.20 (ability states), plus the todos bad-condition-chips-first, cloak-regeneration-tick-on-use and player-facing-descriptions-fantasy-flavor. Kept in backlog: 999.19 (a Joiner's Stealth crit, not reproduced; needs the user's save) and 999.12 (achievements, its own milestone).
+**Goal:** the game works on every screen size, shows its state at a glance, and tells its story in fantasy voice instead of rulebook text.
+
+**Target features:**
+- **Large-screen support** (backlog 999.17): drop the portrait lock Play flagged on the 2.3.0 upload; responsive landscape, tablet, foldable and Chromebook layouts; rotation and resizing never restart a run
+- **Ability states you can tell apart** (999.20): ready / recharging (ready in N) / can't use now / spent this fight (/ active), each with a non-colour cue too
+- **Harmful condition chips first** (todo): disease and poison chips always sit at the far left
+- **Cloak of Regeneration heals on use** (todo): one tick at once, then the every-N-squares ticks (ruling A or B in discuss-phase)
+- **Fantasy-flavour player text** (todo): players read narrative; the exact rules stay in code, docs and the audit pins
+- **Fresh store and website screenshots** (999.18): last, so the tablet and landscape shots are real
+
+**Open decisions for discuss-phase:** phones portrait-only or free rotation, and the landscape play-screen layout; the cloak's immediate tick as one of the three or a fourth; where the exact numbers live in game.
+
+**Not this milestone:** 999.19 (a Joiner's Stealth crit, not reproduced; needs the user's save) and 999.12 (achievements, its own milestone).
 
 ## Last Milestone: v2.3 Truth in Advertising (shipped 2026-10-02 as Play 2.3.0 / vc13 to closed testing)
 
@@ -352,7 +364,7 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
 
-## Current State (2026-10-02, v2.3 Truth in Advertising shipped; v2.4 picked, not started)
+## Current State (2026-10-02, v2.3 Truth in Advertising shipped; v2.4 Fit & Finish started)
 
 **On Play's closed-testing track:** 2.3.0 / versionCode 13, in review (tags `v2.3.0`, `v2.3.0-play13`; GitHub Release; patch notes on darktierstudios.com). The live Firebase project runs the final 2.3 rules with the boardName function and the Play Games provider; DEPTH keys re-keyed (22/22). Tests 10,215 (8 skipped). The next Play build is versionCode 14. Play flagged the portrait lock as a large-screen quality issue: that is v2.4's 999.17.
 
@@ -509,4 +521,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-02 after the v2.3 milestone*
+*Last updated: 2026-10-02 at the start of milestone v2.4 Fit & Finish*
