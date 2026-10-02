@@ -80,3 +80,13 @@ test("econ ledger: the Measured line names the stored report's commit and the ru
 test("econ ledger: a Ruling section exists", () => {
   assert.ok(section(H2_ORDER[6]).trim().length > 0);
 });
+
+test("econ ledger: once the Status reads 'target confirmed', the Ruling carries the fixed block", () => {
+  const status = doc.match(/^\*\*Status:\*\* (.+)$/m)[1];
+  if (!/^target confirmed/.test(status)) return; // still open: the placeholder is enough
+  const ruling = section(H2_ORDER[6]);
+  for (const label of ["Target", "Shape", "Lever", "First candidate", "Stop rule"]) {
+    assert.ok(ruling.split("\n").some((l) => l.startsWith(`**${label}:** `) && l.length > label.length + 6), `Ruling lacks **${label}:**`);
+  }
+  assert.match(status, /\d{4}-\d{2}-\d{2}/, "the Status line carries the confirmation date");
+});

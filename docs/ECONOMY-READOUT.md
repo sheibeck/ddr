@@ -1,7 +1,7 @@
 # Store economy readout (Phase 92, ECON-11 / ECON-12)
 
 **Date:** 2026-10-01
-**Status:** open (target pending the user)
+**Status:** target confirmed 2026-10-01
 **Measured:** commit 3995a6e3, node tools/tune-economy.mjs --seeds=1000 --workers=4 (the fair bot of 92-01, shipped dials)
 
 ## What this measures
@@ -304,4 +304,20 @@ The three levers (first guesses are the value that puts the depth-7 median share
 
 ## Ruling
 
-Pending the 92-02 checkpoint.
+**Date:** 2026-10-01 (the 92-02 checkpoint).
+
+The user's words: "33–50% incl. selling", "S: stores pay less when you sell", "Floors 1–4 about unchanged, 8–12 no richer than 7". That is E1 A on the arrival sample (store visits reported beside it), E2 A, and E3 a lever the checkpoint did not list, S, offered by the orchestrator and chosen by the user in place of P, G and C.
+
+**Target:** at depth 7 the typical hero's median share of a whole store is 33% to 50%, judged on gold held PLUS the bag's sale value (`sellPriceFor` over the bag), on the floor-arrival sample (n = 240 at depth 7 in the 1,000-seed readout), with the store-visit sample (n = 24) reported beside it. Today: 98% (arrivals) and 86% (visits).
+
+**Shape:** floors 1–4 about unchanged; floors 8–12 no higher than depth 7. Judged on the arrival sample, both bases reported.
+
+**Lever:** S, stores pay less when you sell. The sell-price fraction in `engine/economy.js#sellPriceFor` (today the module constant `SELL_SPREAD = 0.5`, half the item's base value) is lowered until the target holds. Scope: the sale price only. Buy prices, the rations line, every gold source, the bag caps and floor-1 play are untouched; the Pickpocket's sell drawback (x0.75 of the ordinary sell price) and Q5 A (every race sells at the ordinary price) stay as relative rules on top of the new base fraction. **92-03's plan was written around P, G and C: the lever is S, so 92-03 builds a sell-fraction dial (a DIALS entry read by `sellPriceFor`) at identity (0.5) first, with nothing moving until the value is locked, then finds the value.** The fair bot never sells, so this lever does not change any bot run; the gold-held numbers cannot move, and only the bag's sale value (and so the with-bag share) does.
+
+**First candidate:** a sell fraction of 0.125 (an eighth of the base value, a quarter of today's 0.5). The stored projections cannot estimate S directly (the per-visit bag value is not stored), so this is a first guess from the stored depth-7 medians: with the bag sold today the arrival median is 98% against 23% on gold alone, so the bag adds about 75 points; scaling that by f/0.5 and solving for 42% gives f/0.5 = (0.42 - 0.233) / (0.978 - 0.233) = 0.25, so f = 0.125 (the visit sample gives 0.144). The band 33–50% brackets about f = 0.065 to 0.18. The first guess is likely a little high, because the shares are capped at 100% and the stored with-bag median understates the bag. 92-03 finds the value in blocks (suggested first block: 0.10, 0.125, 0.15, 0.20), each a fresh readout.
+
+**Stop rule:** the first candidate whose 1,000-seed readout puts the depth-7 median share inside 33–50% (gold plus bag, arrival sample) and meets the shape is locked. A block of up to 10 evaluations that does not close the gap by 10% or more, or a pattern showing the lever cannot reach the band, returns to the orchestrator.
+
+Two things for 92-03 to check and report, not to hide:
+- Early floors: S lowers the with-bag share on every floor, so floors 1–4 are unchanged on gold alone (by construction) but fall on the with-bag basis (floor 4 arrivals: 49% today, roughly 18% at f = 0.125, by the same scaling). "About unchanged" is read as: gold-held shares identical, and no floor 1–4 with-bag share above today's.
+- Floors 8–12: on gold alone the arrival median is already 32% at floor 8, 34% at 9, 46% at 10, 67% at 11 and 75% at 12 (n = 141, 77, 39, 14, 8; thin past floor 9), so a sell fraction alone cannot hold floors 10–12 at or under depth 7's share: that tail is income, not sales. 92-03 reports it with its n; a lever on the tail (income or prices by tier) is a decision for the user, not a silent addition.
