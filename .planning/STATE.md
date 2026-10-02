@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Truth in Advertising
-status: executing
-stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). Phases 88, 89, 90, 91, 91.1, 91.2 COMPLETE (last phase-close full suite 10,026/10,024/0/2 after 91.1). Phase 92 EXECUTING: 92-01 merged (bot fixes: camp gate on nightlyEats, cloak heal-over-time, memberItems tally, Cutpurse fallback; deep-14 pin moved). 92-02 merged (ruling: 33-50% incl. selling, lever S depth-shaped, deep overshoot accepted). 92-03 RUNNING (sell-fraction retune, 92-04 bot pass (checkpoint on drift; includes tail slices + 200-seed party run per user), 92-05 close). User answers 2026-10-01 recorded in 92-CONTEXT (91.1 calls final as built; bot never sells/repairs; both optional runs included). Phase 92 sequence: (ECON-11 readout -> user sets the economy target -> ECON-12 retune -> TUNE-10 one fair-bot pass); before the bot pass fix the three bot findings (Joiner camp stall `c.rations >= nightlyEats(state)`, Cloak of Regeneration logic, tallyUsage counting member itemUsed as the hero's). Then milestone lifecycle (audit -> debug APK -> one batched Pixel 7 checklist -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: user console batch + Claude deploys; patch notes agreed first; vc13; site push at 2.7; final rules step 3). Dispatch conventions now: this session runs from the home folder (not a git repo) so executors run directly on master in C:/projects/mazeworld, one at a time (verify-only HEAD/clean check, plain git commit + trailers, no STATE/ROADMAP/REQUIREMENTS edits, targeted tests only); watcher scratchpad/masterwatch.sh <repo> 15; orchestrator runs the full suite once at phase close. Open one-number user calls: Smoke 6 rounds from use, Taunt use+next round, Mark = marker's level, V15 Elf Illusionist = plain Elf die. Device: Pixel 7 wireless adb connect 10.0.0.175:<port from the Wireless debugging screen>; debug APK only after the last wave (user 2026-10-01)."
-last_updated: "2026-10-02T02:06:02.002Z"
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
+status: planning
+stopped_at: "AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). ALL v2.3 PHASES COMPLETE (88, 89, 90, 91, 91.1, 91.2, 92); Phase 92 close full suite 10,086/10,084/0/2. User rulings in 92-CONTEXT: sell fraction 0.5 on floors 1-4 falling to 0.125 from floor 7 (depth-7 42%); floors 8-12 overshoot accepted; TUNE-10 drift (p50 5 vs [3,4]) accepted and recorded. NEXT: milestone lifecycle (audit -> debug APK (now allowed: the last wave is done) -> install on the Pixel 7 (adb connect 10.0.0.175:<port from the Wireless debugging screen>) -> one batched Pixel 7 checklist from every phase's VERIFICATION human_verification -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: the user's console batch + Claude's deploys; agree patch notes first; vc13; site push at 2.7; final rules at step 3). Dispatch conventions: the session runs from the home folder, so executors run on master in C:/projects/mazeworld, one at a time."
+last_updated: "2026-10-02T03:54:33.842Z"
 last_activity: 2026-10-01
-last_activity_desc: Phase null execution started
+last_activity_desc: Phase 92 complete, transitioned to Phase 999.1
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 66
-  completed_plans: 62
-  percent: 88
-current_phase: 91.2
-current_phase_name: "Board Identity: Play Games Names Replace Rolled Handles"
+  completed_plans: 66
+  percent: 100
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-30 after Phase 88; v2.2 Our Own Leade
 
 ## Current Position
 
-Phase: null — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase null
-Last activity: 2026-10-01 — Phase null execution started
+Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-01 — Phase 92 complete, transitioned to Phase 999.1
 
 Progress: [████████░░] 76% (2/7 phases)
 
@@ -277,7 +277,7 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 ## Session Continuity
 
 Last session: 2026-09-30T15:00:16.664Z
-Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). Phases 88, 89, 90, 91, 91.1, 91.2 COMPLETE (last phase-close full suite 10,026/10,024/0/2 after 91.1). Phase 92 EXECUTING: 92-01 merged (bot fixes: camp gate on nightlyEats, cloak heal-over-time, memberItems tally, Cutpurse fallback; deep-14 pin moved). 92-02 merged (ruling: 33-50% incl. selling, lever S depth-shaped, deep overshoot accepted). 92-03 RUNNING (sell-fraction retune, 92-04 bot pass (checkpoint on drift; includes tail slices + 200-seed party run per user), 92-05 close). User answers 2026-10-01 recorded in 92-CONTEXT (91.1 calls final as built; bot never sells/repairs; both optional runs included). Phase 92 sequence: (ECON-11 readout -> user sets the economy target -> ECON-12 retune -> TUNE-10 one fair-bot pass); before the bot pass fix the three bot findings (Joiner camp stall `c.rations >= nightlyEats(state)`, Cloak of Regeneration logic, tallyUsage counting member itemUsed as the hero's). Then milestone lifecycle (audit -> debug APK -> one batched Pixel 7 checklist -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: user console batch + Claude deploys; patch notes agreed first; vc13; site push at 2.7; final rules step 3). Dispatch conventions now: this session runs from the home folder (not a git repo) so executors run directly on master in C:/projects/mazeworld, one at a time (verify-only HEAD/clean check, plain git commit + trailers, no STATE/ROADMAP/REQUIREMENTS edits, targeted tests only); watcher scratchpad/masterwatch.sh <repo> 15; orchestrator runs the full suite once at phase close. Open one-number user calls: Smoke 6 rounds from use, Taunt use+next round, Mark = marker's level, V15 Elf Illusionist = plain Elf die. Device: Pixel 7 wireless adb connect 10.0.0.175:<port from the Wireless debugging screen>; debug APK only after the last wave (user 2026-10-01).
+Stopped at: AUTONOMOUS RUN IN PROGRESS (/gsd-autonomous --from 88). ALL v2.3 PHASES COMPLETE (88, 89, 90, 91, 91.1, 91.2, 92); Phase 92 close full suite 10,086/10,084/0/2. User rulings in 92-CONTEXT: sell fraction 0.5 on floors 1-4 falling to 0.125 from floor 7 (depth-7 42%); floors 8-12 overshoot accepted; TUNE-10 drift (p50 5 vs [3,4]) accepted and recorded. NEXT: milestone lifecycle (audit -> debug APK (now allowed: the last wave is done) -> install on the Pixel 7 (adb connect 10.0.0.175:<port from the Wireless debugging screen>) -> one batched Pixel 7 checklist from every phase's VERIFICATION human_verification -> complete -> cleanup), then Release 2.3.0 per docs/RELEASING.md (step 1 live gate: the user's console batch + Claude's deploys; agree patch notes first; vc13; site push at 2.7; final rules at step 3). Dispatch conventions: the session runs from the home folder, so executors run on master in C:/projects/mazeworld, one at a time.
 
 - (history below is the pre-close record)
 

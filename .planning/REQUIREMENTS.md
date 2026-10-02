@@ -82,8 +82,8 @@
 ### Store & economy (STORE, ECON)
 
 - [x] **STORE-04**: Each store stocks d10 rations, rolled when it opens from a derived stream. The player can buy them one at a time until the stock runs out, and the store shows how many are left. The fair bot gets a ration target: it tops up to about three days of its party's ration upkeep when it can afford to (user, 2026-09-29). The DAYS-farm hoarder buys one ration at a time up to its cap. A ration buy at the pack's ration cap is refused before any gold moves.
-- [ ] **ECON-11**: A milestone-end readout (`tools/tune-economy.mjs`) measures, for each depth on floors 1–12, the gold a hero holds on reaching a store against that store's total stock price, and breaks gold income down by source.
-- [ ] **ECON-12**: Store prices and gold income are retuned so that at depth 7 a typical hero can afford about a third to a half of a store. The exact target is confirmed with the user from the ECON-11 readout.
+- [x] **ECON-11**: A milestone-end readout (`tools/tune-economy.mjs`) measures, for each depth on floors 1–12, the gold a hero holds on reaching a store against that store's total stock price, and breaks gold income down by source.
+- [x] **ECON-12**: Store prices and gold income are retuned so that at depth 7 a typical hero can afford about a third to a half of a store. The exact target is confirmed with the user from the ECON-11 readout.
 
 ### Value review (VALUE) — user request 2026-09-29, Phase 91.1
 
@@ -94,7 +94,7 @@
 
 ### Balance close (TUNE)
 
-- [ ] **TUNE-10**: After every rule change in the milestone lands, one milestone-end bot pass confirms the fair-bot p50 death stays at floor 3–4 and re-measures starvation deaths after STORE-04. Any drift is recorded and retuned with the user.
+- [x] **TUNE-10**: After every rule change in the milestone lands, one milestone-end bot pass confirms the fair-bot p50 death stays at floor 3–4 and re-measures starvation deaths after STORE-04. Any drift is recorded and retuned with the user.
 
 ## Future Requirements
 
@@ -130,8 +130,8 @@
 | BOARD-29 | Phase 87 | Complete |
 | BOARD-30 | Phase 87 | Complete |
 | STORE-04 | Phase 87 | Complete |
-| ECON-11 | Phase 92 | Pending |
-| ECON-12 | Phase 92 | Pending |
+| ECON-11 | Phase 92 | Complete |
+| ECON-12 | Phase 92 | Complete |
 | VALUE-01 | Phase 91.1 | Complete |
 | VALUE-02 | Phase 91.1 | Complete |
 | VALUE-03 | Phase 91.1 | Complete |
@@ -149,7 +149,7 @@
 | IDENT-20 | Phase 91 | Complete |
 | IDENT-21 | Phase 91 | Complete |
 | PARLEY-01 | Phase 91 | Complete |
-| TUNE-10 | Phase 92 | Pending |
+| TUNE-10 | Phase 92 | Complete |
 | BOARD-31 | Phase 91.2 | Complete |
 | BOARD-32 | Phase 91.2 | Complete |
 | BOARD-33 | Phase 91.2 | Complete |

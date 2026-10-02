@@ -29,7 +29,7 @@
 - [x] **Phase 91: Race & Sub-class Audit** - Every race and sub-class blurb is true, Wizards always open with a damage spell, and Illusionists choose where a teleport lands. (completed 2026-10-01)
 - [x] **Phase 91.1: Value Review: Races, Sub-classes & Abilities** (INSERTED) - Every race, sub-class and ability has the systems its text names; weak systems, tiny bonuses, one-round effects and once-per-combat limits are surfaced for the user's rulings, and the approved changes are built. (completed 2026-10-01)
 - [x] **Phase 91.2: Board Identity: Play Games Names Replace Rolled Handles** (INSERTED) - The board names every player by their Google Play Games name (unique, verified on the server); no handle re-roll; 2.2.0 clients refused until they update. (completed 2026-10-01)
-- [ ] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held.
+- [x] **Phase 92: Store Economy & Balance Close** - A depth-7 hero can't buy out a store, and one bot pass on the finished rules confirms the difficulty curve held. (completed 2026-10-01)
 
 **Sequencing (user standing rules):** bots run ONCE, at the milestone end (Phase 92). Every rule change lands in Phases 87–91, STORE-04 included. The audits drive the fixes, so the item systems (Phase 88) come before the item audit (Phase 89). No phase needs research (user, 2026-09-29).
 
@@ -401,7 +401,7 @@ Plans:
   3. The fair-bot pass on the finished rules keeps median death at floor 3–4, and starvation deaths are re-measured after the d10 rations and recorded.
   4. Any drift the pass finds is recorded and retuned with the user before the milestone closes.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 
@@ -409,7 +409,7 @@ Plans:
 - [x] 92-02-PLAN.md — ECON-11: store-affordability readout (floors 1–12, income by source), 1,000-seed run, docs/ECONOMY-READOUT.md; ONE checkpoint:decision on the target and the lever (autonomous: false)
 - [x] 92-03-PLAN.md — ECON-12: the ruled lever as a dial, value found in checkpointed blocks, locked, fixtures declared, fresh readout proving the target
 - [x] 92-04-PLAN.md — TUNE-10: the one fair-bot pass on the finished rules (p50 vs 3–4, starvation, tail measured, class/Illusionist/Cleric watch list); ONE checkpoint:decision on drift (autonomous: false)
-- [ ] 92-05-PLAN.md — the approved drift retune (or none), declared fixtures, after-readouts, and the phase's docs close
+- [x] 92-05-PLAN.md — the approved drift retune (or none), declared fixtures, after-readouts, and the phase's docs close
 
 ## Deferred / Not This Milestone
 
@@ -438,7 +438,7 @@ Plans:
 | 90. Spell & Skill Audit | 12/12 | Complete    | 2026-10-01 |
 | 91. Race & Sub-class Audit | 10/10 | Complete    | 2026-10-01 |
 | 91.1. Value Review: Races, Sub-classes & Abilities | 7/5 | Complete    | 2026-10-01 |
-| 92. Store Economy & Balance Close | 4/5 | In Progress|  |
+| 92. Store Economy & Balance Close | 5/5 | Complete    | 2026-10-01 |
 
 ## Backlog
 
