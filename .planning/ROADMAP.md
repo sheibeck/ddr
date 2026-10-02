@@ -1064,7 +1064,20 @@ Plans:
 - A Thief Joiner was present (the user said "cutpurse": a Cutthroat or Cutpurse-ability Joiner).
 - It was NOT the hero's first hit of the fight.
 
-**Likely cause:** the Joiner's opening-blow Stealth crit (`memberStrike`, or a Cutthroat first-blow crit) emits `stealthStrike` without `member`, or the rail renders it as the hero's. `src/browser/narrationLines.js:1678` reads "Unseen strike — critical." when `e.member` is missing. `engine/combat.js` ~990-1003 is the hero's own Stealth branch (it requires `skill(c,"Stealth")`). Diagnosis is in progress (gsd-debugger, 2026-10-02); its root cause and repro go here when it reports.
+**Likely cause:** the Joiner's opening-blow Stealth crit (`memberStrike`, or a Cutthroat first-blow crit) emits `stealthStrike` without `member`, or the rail renders it as the hero's. `src/browser/narrationLines.js:1678` reads "Unseen strike — critical." when `e.member` is missing. `engine/combat.js` ~990-1003 is the hero's own Stealth branch (it requires `skill(c,"Stealth")`). **Diagnosis (gsd-debugger, 2026-10-02): NOT reproduced as a mis-attribution.**
+- The "(stealth)" tag comes only from the hero's own Stealth crit (combat.js:997-1001, `critBy:"stealth"`).
+- A Joiner's Stealth line is always named ("<Joiner>: unseen strike, critical.").
+- Thief Joiners can never have Stealth (THIEF_SKILLS has none).
+- A 3,400-fight sweep with a no-Stealth hero produced 0 hero-voiced stealth lines.
+- The exact pair reproduces ONLY for a hero WITH Stealth in non-Plate armour, on the first LANDED blow (misses don't count as the opener).
+- Hero tab rendering matched `c.skills` in 300/300 cases.
+- Open: confirm against the user's save (Hero tab Special skills list, armour worn, Joiner name and sub).
+- Optional rulings:
+  - name the skill in the hero line;
+  - credit Stealth only when it changed the outcome (a Katana crits 19-20 anyway, so only 18 is Stealth's);
+  - give allyStruck its own critBy.
+
+Regression pins are specified in the diagnosis: a no-Stealth sweep, Joiner `member` always set, no Thief Stealth, and Plate/Katana rows.
 
 **Fix scope:**
 - Every Joiner crit event carries the member's name, and the Oracle and rail say whose blow it was.
