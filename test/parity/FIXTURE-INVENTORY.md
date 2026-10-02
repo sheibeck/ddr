@@ -7939,3 +7939,33 @@ Moved scripted tests and pins (each re-based with a dated comment naming the que
    NOT_A_CONDITION beside `sang` (their coverage guards scan every flag the engine assigns).
 7. `test/unit/value-ledger.test.js` and `test/fixtures/value-ledger-open.md`: the Cloaker row's verdict is `built (91.1-03)`; the checkpoint copy's Sing text quotes the live
    `COMBAT_MENU_COPY.singDesc`.
+
+### Phase 91.1 plan 05: cleanup, text-only rulings and the ledger close (VALUE-01, VALUE-04)
+
+**No fixture moves: measured three ways.** Plan 05 (2026-10-01) removes the dead Inspire to-hit term and the dead soothed-beasts check (nothing has written `combat.inspired` or
+emitted `beastsSoothed` since Phase 91 plan 06), says "even in the dark" in the Cutthroat's and the Ninja's text (V26 A: the engine keeps the ruling), re-quotes the Sing row of
+the skill audit, and closes `docs/VALUE-LEDGER.md`. `test/parity/prototype-master.js.txt` is untouched, no bot balance run was made (Phase 92), and nothing was regenerated.
+
+1. `node tools/fixture-inventory.mjs --json`: 18 scenarios, none carries `combat.inspired` (nothing writes it), a Cutthroat or a Ninja hero, so none reaches a changed rule.
+2. `node --test "test/parity/**/*.test.js"`: 66 of 66 pass, no divergence record touched.
+3. `node --test test/unit/roll-high-state-pins.test.js test/unit/roll-high-save-compat.test.js test/unit/roll-high-guard.test.js`: 24 of 24 pass unchanged (all eight state-pin labels
+   byte-identical; `roll-high-baseline.mjs save` was never run; DRAW_INVENTORY unchanged).
+
+**Zero behaviour, proved before the edit.** `test/unit/value-cleanup.test.js` records `toHit`, `toHitBreakdown(...).need` and the chip keys of a Bard, a Soldier and a Sorcerer over levels 1 to 5, five states
+and in and out of a fight (150 rows, digest `7576c70d`) at the base commit fef7c779, BEFORE the Inspire term was removed, and the same digest holds after; a stray `combat.inspired` from an old save gives
+identical numbers, identical strikes (events, draws and state, eight seeds) and no chip, and still validates on load (tolerant load, no migration). No new draw, no new serialized field.
+
+**One scripted digest moved, measured and re-recorded alone** (a unit pin, not a fixture or a state pin): `test/unit/condition-roll-mods.test.js` STRIKE_DIGESTS. The `inspired` scenario is dropped (it set the
+stray field) and `stacked` (dark, dazed and `inspired: 1`) loses the stray field: `beb06a3b` to `628f43c1`. Every roll, face and draw of that scenario is unchanged (the dark cap absorbed the +1); the digest moves
+only because the state it hashes no longer holds `combat.inspired`. The other nine digests are byte-identical.
+
+Re-based scripted tests and pins (each with a dated comment naming plan 91.1-05; none is a fixture or a state pin):
+
+4. The Inspire term: `test/unit/condition-roll-mods.test.js` (the matrix drops the inspired axis, the term lists read dazed, dark and blind, the overhead-and-afraid case borrows a Dagger's +1), `conditionEffects.test.js`
+   (the CMBUI-13 inspired case now pins that a stray descriptor reads null), `conditions.test.js` (the inspired chip case pins no chip; the order and purity lists lose it), `hero-conditions.test.js`
+   (the emittable, fight-rule and chipSheetFacts lists lose it), `foe-conditions.test.js` (the NOT_A_CONDITION table loses `inspired`), `rollDirection.test.js` and `docs/ROLL-LEDGER.md` (the two
+   `[hero-strike:inspired]` tests and their ledger row), `identity-text.test.js` (the song chip's wording case keeps the insult chip and the Ninja line).
+5. V26: `identity-text.test.js` (the Ninja's ninja-crit footer reads ", even in the dark"), `identity-audit.test.js` (no change: the two rows carry `value change (91.1-05)`).
+6. The Sing row: `test/unit/skill-audit.test.js` (`SING_TEXT` is the live `COMBAT_MENU_COPY.singDesc`); `docs/ABILITIES.md`'s generated skills table regenerated from the audit row.
+7. `test/unit/value-ledger.test.js`: the close rules (a former gap reads accepted or fixed and names its question, a cleaned row is pinned by `value-cleanup.test.js`, K19 and K20 read cleaned) and the
+   doctored-closed-ledger tests.

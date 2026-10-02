@@ -26,6 +26,11 @@
 //     its slash, Master of Arms, Con Artist), and every number written in a Systems or
 //     Recommendation cell uses the U+2212 minus and the U+2013 en dash (no ASCII-hyphen range).
 //
+// Phase 91.1 plan 05 (2026-10-01): the ledger is CLOSED (**Status:** closed), so the close rules run on the live doc: every verdict final, every
+// built and cleaned row pinned by a titled test that exists, the Closed line's distinct-pin count true, no Systems item reading GAP (a former gap
+// reads `accepted: <reason> (V<n>)` or `fixed in 91.1-0N (V<n>` and names every question that covers it), and the doctored-closed-ledger tests
+// below prove each rule fails when broken. The open-state tests keep running on test/fixtures/value-ledger-open.md (the checkpoint copy).
+//
 // The doc is text and the test only reads it (plus content, the identity footer, the combat menu
 // copy and the named test files); no engine, rng or shell module runs.
 
@@ -323,7 +328,14 @@ function checkDoc(text) {
       if (qcell !== "—") add(`cleanup row "${name}" must have no question`);
       if (!ids.includes(id)) add(`cleanup row "${name}" has no Systems item \`${id}\``);
       if (!/^(cleanup|cleaned) \(91\.1-05\)$/.test(verdict)) add(`cleanup row "${name}" verdict must be cleanup (91.1-05) or cleaned (91.1-05), not "${verdict}"`);
-      if (/^cleanup/.test(verdict)) ownerPairs.add(`${name}|91.1-05`);
+      ownerPairs.add(`${name}|91.1-05`); // the plan owns the row before and after it is cleaned
+      // Phase 91.1 plan 05: a cleaned row pins at least one titled test that exists; an open cleanup row pins nothing
+      if (/^cleaned/.test(verdict)) {
+        for (const p of pinProblems(`cleanup row "${name}"`, pinned, { needTitle: true, allowDash: false })) add(p);
+        if (!/^test\/unit\/value-cleanup\.test\.js: Cleanup: /.test(pinned)) add(`cleanup row "${name}" must be pinned by test/unit/value-cleanup.test.js: Cleanup: ...`);
+      } else if (pinned !== "—") add(`cleanup row "${name}" is pinned but not yet cleaned`);
+      if (closed && /^cleanup /.test(verdict)) add(`row "${name}" is still a cleanup (not cleaned) in a closed ledger`);
+      if (closed && /GAP:/.test(systems)) add(`row "${name}" still has a GAP: item in a closed ledger (a closed gap reads exists or accepted: <reason> (V<n>))`);
       continue;
     }
     // ---- flags and recommendations
@@ -361,13 +373,28 @@ function checkDoc(text) {
       }
       if (!/^V\d+(, V\d+)*$/.test(qcell)) add(`row "${name}" is flagged but its Q cell is "${qcell}"`);
     }
-    // GAP rules: a GAP item is flagged, and a gap or joiner-gap flag has a GAP item
-    for (const it of items) {
-      if (/GAP:/.test(it.text) && !pairs.some((p) => p.id === it.id)) add(`row "${name}": item \`${it.id}\` says GAP but no flag names it`);
-    }
-    for (const p of pairs) {
-      const it = items.find((i) => i.id === p.id);
-      if (it && (p.flag === "gap" || p.flag === "joiner-gap") && !/GAP:/.test(it.text)) add(`row "${name}": ${p.flag}@${p.id} but the item does not say GAP`);
+    // GAP rules. While the ledger is open: a GAP item is flagged, and a gap or joiner-gap flag has a GAP item.
+    // Phase 91.1 plan 05: once closed, no item reads GAP (the rule below); a gap or joiner-gap flag stays (the question was asked) and its item
+    // reads "accepted: <reason> (V<n>)" (the user's keep ruling) or "fixed in 91.1-0N (V<n>" (built), naming every question that covers the pair.
+    if (!closed) {
+      for (const it of items) {
+        if (/GAP:/.test(it.text) && !pairs.some((p) => p.id === it.id)) add(`row "${name}": item \`${it.id}\` says GAP but no flag names it`);
+      }
+      for (const p of pairs) {
+        const it = items.find((i) => i.id === p.id);
+        if (it && (p.flag === "gap" || p.flag === "joiner-gap") && !/GAP:/.test(it.text)) add(`row "${name}": ${p.flag}@${p.id} but the item does not say GAP`);
+      }
+    } else {
+      for (const p of pairs) {
+        if (p.flag !== "gap" && p.flag !== "joiner-gap") continue;
+        const it = items.find((i) => i.id === p.id);
+        if (!it) continue;
+        if (!/accepted: .+\(V\d+/.test(it.text) && !/fixed in 91\.1-0[2-5] \(V\d+/.test(it.text)) add(`row "${name}": ${p.flag}@${p.id} reads neither "accepted: <reason> (V<n>)" nor "fixed in 91.1-0N (V<n>)" in a closed ledger`);
+        for (const q of doc.questions) {
+          const covers = (q.rows || []).some((r) => r.entry === name && r.pairs.includes(`${p.flag}@${p.id}`));
+          if (covers && !new RegExp(`\\(V${q.n}\\b|\\bV${q.n} [A-Z]\\b`).test(it.text)) add(`row "${name}": the closed item \`${p.id}\` does not name V${q.n}, which covers ${p.flag}@${p.id}`);
+        }
+      }
     }
     pairsOf.set(name, pairs);
     // ---- the Q cell and the verdict
@@ -480,7 +507,7 @@ function checkDoc(text) {
     cells.forEach((c, i) => c || add(`known finding "${cells[0]}" has an empty cell ${i + 1}`));
     for (const e of cells[3].split(", ")) if (!byEntry.has(e)) add(`known finding ${cells[0]} names "${e}", which is not a ledger entry`);
     if (K_CLEANUP.includes(cells[0])) {
-      if (cells[4] !== "cleanup (91.1-05)") add(`known finding ${cells[0]} must read cleanup (91.1-05)`);
+      if (!/^clean(up|ed) \(91\.1-05\)$/.test(cells[4]) || (closed && cells[4] !== "cleaned (91.1-05)")) add(`known finding ${cells[0]} must read cleanup (91.1-05), or cleaned (91.1-05) once the ledger is closed`);
     } else if (!/^V\d+(, V\d+)*$/.test(cells[4])) add(`known finding ${cells[0]} must name its question(s), not "${cells[4]}"`);
     else for (const v of cells[4].split(", ")) if (!questionNs.has(Number(v.slice(1)))) add(`known finding ${cells[0]} cites ${v}, which is not in Value calls`);
   }
@@ -689,12 +716,18 @@ test("ledger abilities: every once-per-fight ability, skill and first-blow syste
   }
 });
 
-test("ledger abilities: the cross-cutting rows exist and the two cleanup rows are cleanup (91.1-05) with their worklists", () => {
+test("ledger abilities: the cross-cutting rows exist; the two cleanup rows were cleanup (91.1-05) at the checkpoint and read cleaned (91.1-05), pinned by value-cleanup.test.js, once closed", () => {
   assert.deepEqual(DOC.tables["Cross-cutting systems"].map((r) => r[0]), CROSS_NAMES);
-  const inspired = DOC.tables["Cross-cutting systems"].find((r) => r[0] === "Inspired chip");
-  const soothed = DOC.tables["Cross-cutting systems"].find((r) => r[0] === "Soothed-beasts outcome");
-  assert.deepEqual(inspired.slice(2), ["—", "cleanup@inspired-chip", "—", "cleanup (91.1-05)", "—"]);
-  assert.deepEqual(soothed.slice(2), ["—", "cleanup@soothed-outcome", "—", "cleanup (91.1-05)", "—"]);
+  const at = (d, name) => d.tables["Cross-cutting systems"].find((r) => r[0] === name);
+  // the open copy (the checkpoint): cleanup, no pin, the worklist in the Systems cell
+  assert.deepEqual(at(OPEN_DOC, "Inspired chip").slice(2), ["—", "cleanup@inspired-chip", "—", "cleanup (91.1-05)", "—"]);
+  assert.deepEqual(at(OPEN_DOC, "Soothed-beasts outcome").slice(2), ["—", "cleanup@soothed-outcome", "—", "cleanup (91.1-05)", "—"]);
+  // the live ledger (Phase 91.1 plan 05, 2026-10-01): cleaned and pinned; the worklist the plan worked through is still in the cell
+  const inspired = at(DOC, "Inspired chip");
+  const soothed = at(DOC, "Soothed-beasts outcome");
+  assert.deepEqual(inspired.slice(2, 6), ["—", "cleanup@inspired-chip", "—", "cleaned (91.1-05)"]);
+  assert.deepEqual(soothed.slice(2, 6), ["—", "cleanup@soothed-outcome", "—", "cleaned (91.1-05)"]);
+  for (const row of [inspired, soothed]) assert.match(row[6], /^test\/unit\/value-cleanup\.test\.js: Cleanup: /);
   for (const f of ["engine/derived.js", "src/browser/conditionEffects.js", "src/browser/heroConditions.js", "mazeworld.html", "docs/ROLL-LEDGER.md"]) assert.ok(inspired[1].includes(f), f);
   for (const f of ["mazeworld.html", "THEY STAND DOWN"]) assert.ok(soothed[1].includes(f), f);
 });
@@ -737,7 +770,7 @@ test("ledger questions: a recommended default of keep builds nothing, a building
 test("ledger findings: K01 to K20 each have a row, an existing entry and a question (K19 and K20 are cleanups)", () => {
   assert.deepEqual(DOC.known.map((r) => r[0]), K_KEYS);
   for (const cells of DOC.known) {
-    if (K_CLEANUP.includes(cells[0])) assert.equal(cells[4], "cleanup (91.1-05)");
+    if (K_CLEANUP.includes(cells[0])) assert.equal(cells[4], DOC.header.Status.startsWith("closed") ? "cleaned (91.1-05)" : "cleanup (91.1-05)");
     else assert.match(cells[4], /^V\d+/);
   }
   assert.deepEqual(problemsIn([/known finding/i]), []);
@@ -752,12 +785,27 @@ test("ledger rulings: the ledger is open (no rulings yet) or every question is r
 });
 
 test("ledger close: an open ledger needs no close rules, and a closed one fails while any row is open", () => {
-  const status = DOC.header.Status.startsWith("closed");
-  if (!status) {
-    const closed = DOC_TEXT.replace(/\*\*Status:\*\* open/, "**Status:** closed");
-    assert.ok(checkDoc(closed).some((p) => /still open|no "\*\*Closed:\*\*"|Closed:/.test(p)), "a closed ledger with open verdicts fails");
+  // Phase 91.1 plan 05: the live ledger is closed, so the open-state half runs on the checkpoint copy
+  assert.match(DOC.header.Status, /^closed/, "the live ledger is closed");
+  assert.deepEqual(checkDoc(OPEN_TEXT.replace("**Status:** open", "**Status:** open")).filter((p) => /Closed:|still open|GAP: item/.test(p)), [], "an open ledger is not held to the close rules");
+  const closedEarly = OPEN_TEXT.replace(/\*\*Status:\*\* open/, "**Status:** closed");
+  assert.ok(checkDoc(closedEarly).some((p) => /still open|no "\*\*Closed:\*\*"|Closed:/.test(p)), "a closed ledger with open verdicts fails");
+  assert.ok(checkDoc(DOC_TEXT.replace("**Status:** closed", "**Status:** sort of")).some((p) => /Status line must start with open or closed/.test(p)));
+});
+
+test("ledger close: the closed ledger states its date and plan, every built and cleaned row is pinned, and no Systems cell reads GAP", () => {
+  assert.match(DOC.header.Closed, /^2026-10-01 \(plan 91\.1-05\): /);
+  const rows = Object.values(DOC.tables).flat();
+  for (const r of rows) {
+    assert.doesNotMatch(r[1], /GAP:/, r[0]);
+    assert.doesNotMatch(r[5], /question \(|ruled \(|^cleanup /, r[0]);
+    if (/built \(|cleaned \(/.test(r[5])) assert.match(r[6], /^test\/unit\/[A-Za-z0-9_.-]+\.test\.js: \S/, `${r[0]} is built or cleaned and names a titled pin`);
   }
-  assert.ok(checkDoc(DOC_TEXT.replace("**Status:** open", "**Status:** sort of")).some((p) => /Status line must start with open or closed/.test(p)));
+  // every former GAP item is a flagged gap or joiner-gap item that reads accepted or fixed, never GAP
+  const accepted = rows.filter((r) => /accepted: /.test(r[1])).length;
+  assert.ok(accepted >= 20, `accepted gap items: ${accepted}`);
+  assert.deepEqual(problemsIn([/GAP/, /accepted/, /fixed in/, /pin/i]), []);
+  assert.match(DOC.findings, /Phase 92/);
 });
 
 // ---- the doctored-doc tests: the checker must fail each broken copy -----------------------------------
@@ -865,7 +913,54 @@ test("ledger close: a closed copy is held to the close rules (no open verdict, n
   assert.ok(problems.some((p) => /is still open/.test(p)), "a ruled-but-not-built row is still open");
   assert.ok(problems.some((p) => /still has a GAP: item/.test(p)), "a GAP item must read exists or accepted when closed");
   assert.ok(problems.some((p) => /Closed:/.test(p)), "the Closed line states the pin count");
-  assert.ok(checkDoc(DOC_TEXT.replace("**Status:** open", "**Status:** closed")).some((p) => /still open/.test(p)));
+  assert.ok(checkDoc(OPEN_TEXT.replace("**Status:** open", "**Status:** closed")).some((p) => /still open/.test(p)));
+});
+
+// ---- Phase 91.1 plan 05: the doctored CLOSED ledger. The checker must fail each way a closed ledger can be wrong. -----
+
+const closedDoctor = (fn) => doctor(fn, DOC_TEXT);
+
+test("ledger close: a doctored closed ledger fails on an open verdict part, a leftover cleanup, a GAP item and a gap item that is neither accepted nor fixed", () => {
+  assert.deepEqual(checkDoc(DOC_TEXT), [], "the live closed ledger is clean");
+  // a question or ruled part left in a verdict
+  const open = closedDoctor((c, at) => (c[at("Knight")] = setCell(c[at("Knight")], 5, "question (V21)")));
+  assert.ok(checkDoc(open).some((p) => /row "Knight" is still open/.test(p)));
+  const ruled = closedDoctor((c, at) => (c[at("Kata")] = setCell(c[at("Kata")], 5, "ruled (V1, 2026-10-01) -> 91.1-02")));
+  assert.ok(checkDoc(ruled).some((p) => /row "Kata" is still open/.test(p)));
+  // a cleanup that is not cleaned (and a cleaned row with no pin)
+  const cleanup = closedDoctor((c, at) => (c[at("Inspired chip")] = setCell(setCell(c[at("Inspired chip")], 5, "cleanup (91.1-05)"), 6, "—")));
+  assert.ok(checkDoc(cleanup).some((p) => /Inspired chip/.test(p) && /still a cleanup/.test(p)));
+  const unpinnedClean = closedDoctor((c, at) => (c[at("Soothed-beasts outcome")] = setCell(c[at("Soothed-beasts outcome")], 6, "—")));
+  assert.ok(checkDoc(unpinnedClean).some((p) => /Soothed-beasts outcome/.test(p) && /not pinned|titled/.test(p)));
+  // the K cleanup cells read cleaned once closed
+  const kOpen = closedDoctor((c) => { const i = c.findIndex((l) => l.startsWith("| K19 |")); c[i] = setCell(c[i], 4, "cleanup (91.1-05)"); });
+  assert.ok(checkDoc(kOpen).some((p) => /K19 must read/.test(p)));
+  // a GAP item back in a Systems cell
+  const gap = closedDoctor((c, at) => (c[at("Fridgian")] = c[at("Fridgian")].replace("accepted: a Joiner Fridgian never frenzies", "GAP: a Joiner Fridgian never frenzies")));
+  assert.ok(checkDoc(gap).some((p) => /row "Fridgian" still has a GAP: item/.test(p)));
+  // a gap flag whose item reads neither accepted nor fixed, and one that forgets the question that covers it
+  const neither = closedDoctor((c, at) => (c[at("Barbarian")] = c[at("Barbarian")].replace("accepted: a Joiner Barbarian swings once (hero only, K12) (V33)", "a Joiner Barbarian swings once (hero only, K12)")));
+  assert.ok(checkDoc(neither).some((p) => /row "Barbarian": joiner-gap@barbarian-two reads neither/.test(p)));
+  const noQ = closedDoctor((c, at) => (c[at("Barbarian")] = c[at("Barbarian")].replace("(hero only, K12) (V33)", "(hero only, K12) (V34)")));
+  assert.ok(checkDoc(noQ).some((p) => /row "Barbarian": the closed item .barbarian-two. does not name V33/.test(p)));
+});
+
+test("ledger close: a doctored closed ledger fails on a stale Closed count, a missing Closed line, a built row with no pin or a pin whose test is gone", () => {
+  const stale = DOC_TEXT.replace(/\((\d+) distinct pins\)/, (_, n) => `(${Number(n) + 1} distinct pins)`);
+  assert.ok(checkDoc(stale).some((p) => /Closed line says \d+ distinct pins, the tables hold \d+/.test(p)));
+  const missing = DOC_TEXT.split("\n").filter((l) => !l.startsWith("**Closed:**")).join("\n");
+  assert.ok(checkDoc(missing).some((p) => /no "\*\*Closed:\*\*" line/.test(p)));
+  const unpinned = closedDoctor((c, at) => (c[at("Kata")] = setCell(c[at("Kata")], 6, "—")));
+  assert.ok(checkDoc(unpinned).some((p) => /row "Kata" is built but not pinned/.test(p)));
+  const fileOnly = closedDoctor((c, at) => (c[at("Kata")] = setCell(c[at("Kata")], 6, "test/unit/value-abilities.test.js")));
+  assert.ok(checkDoc(fileOnly).some((p) => /row "Kata": pinned by file only/.test(p)));
+  const gone = closedDoctor((c, at) => (c[at("Kata")] = setCell(c[at("Kata")], 6, "test/unit/value-abilities.test.js: V1 Kata: a title nobody wrote")));
+  assert.ok(checkDoc(gone).some((p) => /row "Kata": pin .* names a test title that is not in the file/.test(p)));
+  const missingFile = closedDoctor((c, at) => (c[at("Cutthroat")] = setCell(c[at("Cutthroat")], 6, "test/unit/no-such-file.test.js: V26 Cutthroat")));
+  assert.ok(checkDoc(missingFile).some((p) => /row "Cutthroat": is pinned by "test\/unit\/no-such-file\.test\.js", which does not exist/.test(p)));
+  // Findings for other phases must still name Phase 92
+  const noHandoff = DOC_TEXT.replace(/Phase 92/g, "a later phase");
+  assert.ok(checkDoc(noHandoff).some((p) => /does not name Phase 92/.test(p)));
 });
 
 test("ledger rulings: the user's rulings of 2026-10-01 are recorded as given (V27 B after the Cloaker change, Joiner parity skipped)", () => {
