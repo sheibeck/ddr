@@ -78,16 +78,16 @@
     <small>
       text="special skill · active"
     <i>
-      text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; once per fight"
+      text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it"
     <span>
-      text="once per fight"
+      text="cd 3 rounds"
   <li>
     <b>
       text="Poisoned Edge"
     <small>
       text="trick"
     <i>
-      text="the blade weeps: d4 a round to the target for three rounds"
+      text="the blade weeps: d4 + your level a round to the target for three rounds"
     <span>
       text="cd 5 rounds"
 ## #s-grim-count
