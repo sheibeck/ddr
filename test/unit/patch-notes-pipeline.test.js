@@ -222,9 +222,9 @@ test("the committed src/browser/patchNotesData.js equals notesModuleSource(readV
   assert.equal(committed, expected);
 });
 
-test("readVersionName() is 2.2.0 with a notes file that exists for it", () => {
+test("readVersionName() is 2.3.0 with a notes file that exists for it", () => {
   const version = readVersionName(REPO_ROOT);
-  assert.equal(version, "2.2.0");
+  assert.equal(version, "2.3.0");
   assert.ok(fs.existsSync(notesPathFor(version, REPO_ROOT)));
   assert.deepStrictEqual(validatePatchNotes(fs.readFileSync(notesPathFor(version, REPO_ROOT), "utf8"), version), []);
 });
@@ -361,8 +361,8 @@ test("CLI: --site <dir> validates, writes the file under the site dir, and print
     const res = run(["--site", site], { cwd: REPO_ROOT });
     assert.equal(res.status, 0, res.stderr);
     const written = res.stdout.trim();
-    assert.equal(written, siteNotesPathFor("2.2.0", site));
-    assert.equal(fs.readFileSync(written, "utf8"), readNotesFor("2.2.0", REPO_ROOT));
+    assert.equal(written, siteNotesPathFor("2.3.0", site));
+    assert.equal(fs.readFileSync(written, "utf8"), readNotesFor("2.3.0", REPO_ROOT));
   } finally {
     fs.rmSync(site, { recursive: true, force: true });
   }
