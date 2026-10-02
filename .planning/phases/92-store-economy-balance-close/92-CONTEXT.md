@@ -56,3 +56,4 @@ None.
 - Lever S: stores pay less when you sell, DEPTH-SHAPED (shallow stores ~today's rate, falling to the target by depth 7).
 - Floors 10–12 gold-alone overshoot: accepted and recorded (revisit after a device playthrough).
 - Floors 8–9 with-bag overshoot after 92-03 (53%/54% vs 42% at depth 7, sell fraction 0.125 from floor 7): ACCEPTED and recorded with the 10–12 overshoot (user 2026-10-01); revisit after a device playthrough.
+- TUNE-10 drift ruling (user 2026-10-01, after 92-04): D1/D2 (fair-bot p50 death 5 vs [3,4]; floors 3–6 MISS, about one floor easier on 2–6) — ACCEPT AND RECORD (option A). No dial or rule change. Verify on device runs. Before the pass the user said: "It's ok if the numbers move. Let's see where they land."
