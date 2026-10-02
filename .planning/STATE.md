@@ -61,8 +61,8 @@ Progress: [████████░░] 76% (2/7 phases)
 
 ### Blockers/Concerns (open)
 
-- [Phase 88 → Phase 92, bot]: `tools/lib/tuning-bot.mjs` still treats a ready worn Cloak of Regeneration as an instant "free heal"; since 88-04 it heals 1d6 at 10/20/30 squares. Re-read that bot logic before the milestone-end bot pass (88-04 finding).
-- [Phase 89 → Phase 92, bot]: the fair bot can stall at depth with a living Joiner: its camp gate reads only the hero's appetite while `makeCamp` refuses on the party's `nightlyEats`, so it loops `campFailed` (same family as the documented seed-55434 stall in tools/lib/days-farm.mjs). 89-06 swapped tuning-bot.test.js seed 4 → 6 to keep the water-routing test on topic. Fix before the milestone-end bot pass: `c.rations >= nightlyEats(state)` in decideAction's camp branch (89-06 finding).
+- [Phase 88 → Phase 92, bot]: RESOLVED 2026-10-01 by 92-01. `tools/lib/tuning-bot.mjs` treated a ready worn Cloak of Regeneration as an instant "free heal"; since 88-04 it heals 1d6 at 10/20/30 squares. Re-read that bot logic before the milestone-end bot pass (88-04 finding).
+- [Phase 89 → Phase 92, bot]: RESOLVED 2026-10-01 by 92-01. The fair bot could stall at depth with a living Joiner: its camp gate reads only the hero's appetite while `makeCamp` refuses on the party's `nightlyEats`, so it loops `campFailed` (same family as the documented seed-55434 stall in tools/lib/days-farm.mjs). 89-06 swapped tuning-bot.test.js seed 4 → 6 to keep the water-routing test on topic. Fix before the milestone-end bot pass: `c.rations >= nightlyEats(state)` in decideAction's camp branch (89-06 finding).
 
 - [Phase 87, BOARD-28 live]: the DEPTH-key transition-rules deploy was DEFERRED by the user (2026-09-30). It must run, with the user's go, before whichever comes first: the milestone-end debug-APK device testing with Compete ON, or Release 2.3.0 step 1. A 2.3 client must not submit to the live board before it runs (the 2.2.0 final rules refuse the new key). Command, trigger and post-deploy order: `docs/LEADERBOARDS.md` section 14; live checks listed in `87-VERIFICATION.md`.
 
