@@ -541,10 +541,15 @@ export async function runSmoke(opts = {}) {
           if (!(Number.isInteger(res.rank) && res.rank >= 1)) {
             return { pass: false, detail: { stat: statId, reason: "bad-rank" } };
           }
-          if (statId === "deep" && shape.keys === keysA && shape.race === null && shape.sub === null) deepA = res.rank;
           if (statId === "deep" && shape.keys === keysB && shape.race === summaries.a.race && shape.sub === summaries.a.sub) deepB = res.rank;
         }
       }
+      // A and B are compared on the SAME filtered board (A's race and sub-class).
+      // A's global rank depends on how many real runs are deeper, so comparing it
+      // with B's filtered rank failed once the live board held real data (2026-10-02).
+      const sameBoardA = await client.rankOf("deep", keysA[RANK_FIELD.deep], summaries.a.race, summaries.a.sub);
+      if (!sameBoardA.ok) return { pass: false, detail: { stat: "deep", reason: sameBoardA.reason } };
+      deepA = sameBoardA.rank;
       if (!(deepA !== null && deepB !== null && deepA < deepB)) {
         return { pass: false, detail: { deepA, deepB, reason: "deep-rank-order" } };
       }
