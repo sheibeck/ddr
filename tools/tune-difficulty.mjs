@@ -56,6 +56,7 @@ import {
   classIdentityReadout,
   formatClassIdentityReadout,
 } from "./lib/band-readout.mjs";
+import { makeWatchTally, tallyWatch, watchReadout, formatWatchReadout } from "./lib/watch-readout.mjs";
 
 /**
  * autoPlayOnce(seed, opts) — plays one full run to completion via the
@@ -71,7 +72,12 @@ function autoPlayOnce(seed, opts) {
   let parleyRefused = 0;
   let parleyExhausted = 0;
   let parleySp = 0;
-  const run = playRun(seed, opts, (events) => {
+  // Phase 92 plan 04 (TUNE-10): the report-only watch-list tally rides the same hook.
+  const watch = makeWatchTally();
+  let prev = null;
+  const run = playRun(seed, opts, (events, after, action) => {
+    tallyWatch(watch, events, prev, after, action);
+    prev = after;
     for (const e of events) {
       if (e.type === "parleyRolled") parleyAttempts++;
       else if (e.type === "spGained" && e.reason === "parley") {
@@ -92,6 +98,7 @@ function autoPlayOnce(seed, opts) {
     parleyExhausted,
     parleySp,
     spTotal: state.c.sp,
+    watch,
   };
 }
 
@@ -192,6 +199,11 @@ function printReport(results, opts) {
     console.log(line);
   }
 
+  console.log("");
+  for (const line of formatWatchReadout(watchReadout(results))) {
+    console.log(line);
+  }
+
   console.log(`\nOutcome: ${deadCount} dead, ${stuckCount} stuck (hit maxActions=${opts.maxActions}; excluded from depth stats)`);
   console.log("");
 }
@@ -255,6 +267,7 @@ function main() {
           survival: survivalReadout(results, opts),
           pace: paceReadout(results),
           classIdentity: classIdentityReadout(results),
+          watch: watchReadout(results),
           ...sharedJson(results, opts),
         },
         null,

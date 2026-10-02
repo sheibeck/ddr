@@ -171,6 +171,14 @@ test("tune-difficulty.mjs source: prints the band block after printSharedReadout
   assert.ok(idxFormatClassIdentity < idxOutcome);
   assert.ok(src.includes("pace: paceReadout(results)"));
   assert.ok(src.includes("classIdentity: classIdentityReadout(results)"));
+
+  // Phase 92 plan 04 (TUNE-10): the report-only Watch list block prints after
+  // the class identity block and before Outcome:, and lands in --json.
+  const idxFormatWatch = src.indexOf("formatWatchReadout(watchReadout(");
+  assert.ok(idxFormatWatch > -1);
+  assert.ok(idxFormatWatch > idxFormatClassIdentity);
+  assert.ok(idxFormatWatch < idxOutcome);
+  assert.ok(src.includes("watch: watchReadout(results)"));
 });
 
 // --- USER RULING C (2026-09-21): the per-floor survival block ------------
