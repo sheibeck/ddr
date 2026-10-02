@@ -55,3 +55,4 @@ None.
 - Target 33–50% of a whole store for the typical depth-7 hero, judged on gold + bag sale value (arrival sample); floors 1–4 about unchanged; floors 8–12 no richer than 7 on the with-bag basis.
 - Lever S: stores pay less when you sell, DEPTH-SHAPED (shallow stores ~today's rate, falling to the target by depth 7).
 - Floors 10–12 gold-alone overshoot: accepted and recorded (revisit after a device playthrough).
+- Floors 8–9 with-bag overshoot after 92-03 (53%/54% vs 42% at depth 7, sell fraction 0.125 from floor 7): ACCEPTED and recorded with the 10–12 overshoot (user 2026-10-01); revisit after a device playthrough.
