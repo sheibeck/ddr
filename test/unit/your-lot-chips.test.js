@@ -35,7 +35,7 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
 import { createFakeClock } from "./harness/fakeClock.js";
 import { applyAction, newRun } from "../../engine/engine.js";
-import { conditionsOf } from "../../engine/derived.js";
+import { conditionsOf, memberConditionsOf } from "../../engine/derived.js";
 import { startCombat } from "../../engine/combat.js";
 import { makeRng } from "../../engine/rng.js";
 import { serializeRun } from "../../engine/saveState.js";
@@ -44,7 +44,7 @@ import { fightLogLinesFor, appendFightLog } from "../../src/browser/fightLog.js"
 import { planBeat, beatEndMs } from "../../src/browser/combatBeat.js";
 import { typeDurationMs } from "../../src/browser/typewriter.js";
 import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
-import { HERO_CONDITIONS } from "../../src/browser/heroConditions.js";
+import { HERO_CONDITIONS, lotChips } from "../../src/browser/heroConditions.js";
 import { ABILITY_BY_ID } from "../../content/abilities.js";
 
 // ─── fixtures ──────────────────────────────────────────────────────────────
@@ -383,4 +383,67 @@ test("(g) conditionLabel names every table key (never the raw key), and an abili
   }
   assert.equal(r.ctx.conditionLabel({ key: "ability", ability: "battleRoar" }), "Roaring");
   assert.equal(r.ctx.conditionLabel({ key: "darkness" }), "Dark");
+});
+
+// ─── (h) harmful chips first (CHIP-01, Phase 93) ───────────────────────────
+//
+// The user's report (2026-10-02, on 2.3.0): "Negative affects like
+// disease/poison should always be on the far left slot for combat condition
+// chits so they don't get pushed off the screen." conditionsOf emits every good
+// descriptor first, so the harmful ones sat at the far right. The view layer
+// (heroConditions.js#harmfulFirst, applied by paintConditions and by the hero
+// branch of yourLotChipsFor) now puts the polarity-bad chips first; the engine's
+// own order, lotChips and a Joiner's card are untouched.
+
+/** hudKeys(r) — the dataset.key of each chip on the #mm-conditions strip, left to right. */
+const hudKeys = (r) => byId(r.doc, "mm-conditions").children.filter((el) => el.className === "mw-cond").map((el) => el.dataset.key);
+
+/** harmfulFirstKeys(conds) — the polarity-bad keys then the rest, each in conditionsOf's own order. */
+const harmfulFirstKeys = (conds) => [...conds.filter((cn) => cn.polarity === "bad"), ...conds.filter((cn) => cn.polarity !== "bad")].map((cn) => cn.key);
+
+test("(h) the hero card in a fight puts Dazed first, then Smoke and Shield in conditionsOf order", () => {
+  const r = rig();
+  const state = fightState({ c: { timers: { "ability:smoke": live(2) }, foeEffect: { kind: "dazed", rounds: 2 }, ward: { name: "Shield", pool: 9, rounds: 3 } } });
+  const conds = conditionsOf(state);
+  assert.notEqual(conds[0].key, "foeEffect", "the engine emits the good descriptors before the bad one");
+  const goodOrder = conds.filter((cn) => cn.polarity !== "bad" && ["ability", "ward"].includes(cn.key)).map((cn) => (cn.key === "ability" ? "Smoke · 2" : "Shield · 3"));
+  assert.equal(goodOrder.length, 2);
+  const texts = chipTexts(render(r, state)[0]);
+  assert.equal(texts[0], "Dazed · 2", "the harmful chip is the far-left chip");
+  assert.deepEqual(texts.slice(1), goodOrder, "the good chips follow in conditionsOf's relative order");
+});
+
+test("(h) the HUD strip puts every harmful chip first", () => {
+  const r = rig();
+  const state = fightState({ c: { timers: { "ability:smoke": live(2) }, foeEffect: { kind: "dazed", rounds: 2 }, ward: { name: "Shield", pool: 9, rounds: 3 } } });
+  render(r, state);
+  r.ctx.paint();
+  const keys = hudKeys(r);
+  assert.equal(keys[0], "foeEffect");
+  assert.deepEqual(keys, harmfulFirstKeys(conditionsOf(state)));
+});
+
+test("(h) the strip shows Poisoned first out of a fight", () => {
+  const r = rig();
+  const state = fightState({ c: { might: 2, mirror: 1, affliction: { kind: "Poison" }, darkFor: 3 } });
+  delete state.combat;
+  const conds = conditionsOf(state);
+  assert.ok(conds.findIndex((cn) => cn.key === "affliction") >= 2, "at least two good conditions precede the affliction in the engine's order");
+  r.w.__mzState.set(state);
+  r.ctx.paint();
+  const keys = hudKeys(r);
+  assert.equal(keys[0], "affliction", "Poisoned is the far-left chip");
+  assert.deepEqual(keys, harmfulFirstKeys(conds), "bad first, then the good ones, each group in conditionsOf's order");
+});
+
+test("(h) a Joiner's card keeps its old order (control)", () => {
+  const r = rig();
+  const state = fightState({
+    party: [member({ timers: { "ability:sidestep": live(1) } })],
+    combat: { allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30, braced: true }] },
+  });
+  const cards = render(r, state);
+  assert.equal(cards.length, 2, "the hero and the Joiner");
+  const expected = lotChips(memberConditionsOf(state, 0)).map((ch) => r.ctx.conditionLabel(ch.cn));
+  assert.deepEqual(chipTexts(cards[1]).map((t) => t.replace(/ · \d+$/, "")), expected, "memberConditionsOf's own order");
 });

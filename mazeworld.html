@@ -3958,7 +3958,9 @@ function paintConditions(c) {
   const host = document.getElementById("mm-conditions");
   if (!host) return;
   const enumerate = window.__mzConditionsOf;
-  const conds = (typeof enumerate === "function" ? enumerate(S) : []) || [];
+  const rawConds = (typeof enumerate === "function" ? enumerate(S) : []) || [];
+  // Phase 93 (CHIP-01): harmful chips first, view layer only (engine order untouched).
+  const conds = window.__mzHeroChips?.harmfulFirst?.(rawConds) ?? rawConds;
   if (!conds.length) {
     host.hidden = true;
     host.innerHTML = "";
@@ -5118,7 +5120,8 @@ function yourLotChipsFor(V, ref) {
   if (!HC || !V) return [];
   const member = ref?.kind === "member";
   const conds = member ? window.__mzMemberConditionsOf?.(V, ref.partyIdx) : window.__mzConditionsOf?.(V);
-  return HC.lotChips(conds || []).map((ch) => {
+  // Phase 93 (CHIP-01): the hero's card puts harmful chips first; a Joiner's card keeps today's order.
+  return HC.lotChips(member ? (conds || []) : (HC.harmfulFirst?.(conds || []) ?? conds ?? [])).map((ch) => {
     const label = conditionLabel(ch.cn);
     return { text: HC.chipText(label, ch), tone: ch.tone, label, cn: ch.cn, tapText: () => conditionTapText(ch.cn, label, V, { member }) };
   });
@@ -7341,7 +7344,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // the YOUR LOT chip rows; bridged below as window.__mzMemberConditionsOf
   // and window.__mzHeroChips.
   import { memberConditionsOf } from "./engine/derived.js";
-  import { lotChips, chipText, chipSheetFacts } from "./src/browser/heroConditions.js";
+  import { lotChips, chipText, chipSheetFacts, harmfulFirst } from "./src/browser/heroConditions.js";
   import { nightlyEats } from "./engine/movement.js";
   import { PARTY_CAP } from "./engine/state.js";
   import { normalizeTarget } from "./engine/combat.js";
@@ -7393,7 +7396,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // strip reads, and conditionTapText adds each chip's "how long" and "where
   // from" facts. No rng, no mutation.
   window.__mzMemberConditionsOf = memberConditionsOf;
-  window.__mzHeroChips = Object.freeze({ lotChips, chipText, chipSheetFacts });
+  window.__mzHeroChips = Object.freeze({ lotChips, chipText, chipSheetFacts, harmfulFirst });
 
   // 260919-00d (Cloak of Ether wall-walking, user ruling 2026-09-19): a
   // read-only bridge (same pattern as __mzConditionsOf above) so the shell's

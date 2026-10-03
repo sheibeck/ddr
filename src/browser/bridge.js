@@ -208,8 +208,8 @@ export const BRIDGE = Object.freeze({
   }),
   __mzHeroChips: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderYourLot / conditionTapText)"]),
-    purpose: "Bridges src/browser/heroConditions.js's lotChips, chipText and chipSheetFacts (Phase 77, CMBUI-13): the one hero/member chip table, so YOUR LOT's chip rows and every condition chip's tap text (lasts and source) come from one source.",
+    consumers: Object.freeze(["mazeworld.html (classic: renderYourLot / conditionTapText / paintConditions)"]),
+    purpose: "Bridges src/browser/heroConditions.js's lotChips, chipText and chipSheetFacts (Phase 77, CMBUI-13): the one hero/member chip table, so YOUR LOT's chip rows and every condition chip's tap text (lasts and source) come from one source. Phase 93 (CHIP-01): harmfulFirst puts the hero's harmful chips first on the HUD strip and the hero card.",
   }),
   __mzHudBands: Object.freeze({
     owner: "mazeworld.html (module)",
