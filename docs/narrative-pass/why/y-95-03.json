@@ -1,0 +1,652 @@
+[
+  {
+    "key": "bank:SPELL_FLAVOR.Heal",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Closes wounds the polite way: quickly, and without asking how you got them.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Heal's player line, the user's accepted example; its exact rules text is unchanged in content:SPELLS.Heal.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Shield",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A cushion of wishful thinking that soaks up blows until it gives out.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Shield's player line; its exact rules text is unchanged in content:SPELLS.Shield.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Strength",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Lends every blow and spell a little extra conviction until the magic wears off.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Strength's player line; its exact rules text is unchanged in content:SPELLS.Strength.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Doze",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A lullaby for several foes together, undone by the first rude interruption.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Doze's player line; its exact rules text is unchanged in content:SPELLS.Doze.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Freeze",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A well-aimed bolt of winter: it stings, and what survives goes stiff and cross.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Freeze's player line; its exact rules text is unchanged in content:SPELLS.Freeze.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Map the Floor",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Lays out the whole floor in your mind, right up until you take a step.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Map the Floor's player line; its exact rules text is unchanged in content:SPELLS.Map the Floor.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Mirror Self",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A reflection that gets in the way, so most swings miss the real you.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Mirror Self's player line; its exact rules text is unchanged in content:SPELLS.Mirror Self.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Stun",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Dazes a foe into standing still, however rudely you poke it.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Stun's player line; its exact rules text is unchanged in content:SPELLS.Stun.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Weaken",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Takes the wind out of every foe, who swing sloppily and hit like damp towels.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Weaken's player line; its exact rules text is unchanged in content:SPELLS.Weaken.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Acid",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Eats at a foe round after round, with a hiss that really sets the mood.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Acid's player line; its exact rules text is unchanged in content:SPELLS.Acid.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Stupidity",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Leaves a foe too dim to resist much, and still perfectly able to hit you.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Stupidity's player line; its exact rules text is unchanged in content:SPELLS.Stupidity.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Blind",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Blinds a foe for the fight, so it flails at the scenery and rarely finds you.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Blind's player line; its exact rules text is unchanged in content:SPELLS.Blind.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Shrink",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Leaves a handful of foes pocket-sized, with pocket-sized hit points to match.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Shrink's player line; its exact rules text is unchanged in content:SPELLS.Shrink.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Ice",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A blizzard for the whole room, whether or not anyone dressed for it.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Ice's player line; its exact rules text is unchanged in content:SPELLS.Ice.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Earthquake",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Hurts everyone in the room, caster included, by making the ground lose its temper.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Earthquake's player line; its exact rules text is unchanged in content:SPELLS.Earthquake.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Noxious Vapor",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A cloud of dubious intent that puts foes to sleep, or something sterner.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Noxious Vapor's player line; its exact rules text is unchanged in content:SPELLS.Noxious Vapor.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Fireballs",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A volley of little fireballs, scattered among the foes with more enthusiasm than aim.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Fireballs's player line; its exact rules text is unchanged in content:SPELLS.Fireballs.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Petrify",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Turns a foe into garden statuary: permanent, decorative and entirely without loot.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Petrify's player line; its exact rules text is unchanged in content:SPELLS.Petrify.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Insane",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Loosens a foe's grip on reality, and the results are anyone's guess.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Insane's player line; its exact rules text is unchanged in content:SPELLS.Insane.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Summon",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Calls a helper out of thin air, who fights for you until they remember their errands.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Summon's player line; its exact rules text is unchanged in content:SPELLS.Summon.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Fireball",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A proper ball of fire with a foe's name on it, and no sense of proportion.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Fireball's player line; its exact rules text is unchanged in content:SPELLS.Fireball.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Major Heal",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Knits you back together with a firm hand and a long, disapproving look.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Major Heal's player line; its exact rules text is unchanged in content:SPELLS.Major Heal.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Bubble",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A shimmering bubble that sends the next blow home to whoever threw it, then pops.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Bubble's player line; its exact rules text is unchanged in content:SPELLS.Bubble.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Sense Danger",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "A prickle at the back of your neck, so the next fight never gets the first word.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Sense Danger's player line; its exact rules text is unchanged in content:SPELLS.Sense Danger.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Turn Walking Dead",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Tells the Walking Dead to go back to bed, and the stubborn ones take it personally.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Turn Walking Dead's player line; its exact rules text is unchanged in content:SPELLS.Turn Walking Dead.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Plane Gate",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Opens a door to The Planes and shoos a few Demons or Walking Dead through it.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Plane Gate's player line; its exact rules text is unchanged in content:SPELLS.Plane Gate.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Sense Presence",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Your skin crawls in a helpful direction: no ambushes, and the dark stops mattering.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Sense Presence's player line; its exact rules text is unchanged in content:SPELLS.Sense Presence.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Lightning",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Jumps from foe to foe in a crackle of bad news, leaving each of them singed.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Lightning's player line; its exact rules text is unchanged in content:SPELLS.Lightning.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Regeneration",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Persuades your body to keep mending itself for the length of the fight.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Regeneration's player line; its exact rules text is unchanged in content:SPELLS.Regeneration.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Mangle",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "The heaviest blow in the book, saved for a foe that has really earned it.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Mangle's player line; its exact rules text is unchanged in content:SPELLS.Mangle.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Death",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Ends a foe outright, and bills you in health for the privilege.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Death's player line; its exact rules text is unchanged in content:SPELLS.Death.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Open/Lock",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Persuades your next chest to open itself, to the visible dismay of every lockpick.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Open/Lock's player line; its exact rules text is unchanged in content:SPELLS.Open/Lock.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Fly",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Lifts you over walls and gaps as if they were rumours, though it is no help in a scrap.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Fly's player line; its exact rules text is unchanged in content:SPELLS.Fly.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Enchant Character",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Wraps you in a shimmer that sharpens your aim and spoils everyone else's.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Enchant Character's player line; its exact rules text is unchanged in content:SPELLS.Enchant Character.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Speed of Sound",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Makes you quicker than your own excuses: you swing more and always go first.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Speed of Sound's player line; its exact rules text is unchanged in content:SPELLS.Speed of Sound.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Stop Time",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Pauses every foe mid-sneer, which makes them wonderfully easy to hit, until time resumes.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Stop Time's player line; its exact rules text is unchanged in content:SPELLS.Stop Time.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Senseless",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Turns a foe's temper on its friends, and on thin air when it has none.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Senseless's player line; its exact rules text is unchanged in content:SPELLS.Senseless.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Duplicate Foe",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Gives a foe a twin to argue with, and it is far too busy to bother you.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Duplicate Foe's player line; its exact rules text is unchanged in content:SPELLS.Duplicate Foe.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Door Illusion",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Paints a door on the nearest wall and leaves through it, if the foes buy it.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Door Illusion's player line; its exact rules text is unchanged in content:SPELLS.Door Illusion.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Chameleon Tongue",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Lets you talk to foes in their own tongue, which improves the odds of a polite exit.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Chameleon Tongue's player line; its exact rules text is unchanged in content:SPELLS.Chameleon Tongue.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Size of the Behemoth",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "",
+    "after": "Makes you loom enormously, so the smaller foes flee and the rest lose heart.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): Size of the Behemoth's player line; its exact rules text is unchanged in content:SPELLS.Size of the Behemoth.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SCROLL_FLAVOR",
+    "surface": "items",
+    "trigger": "a scroll's flavour line (the Gear SCROLLS row, the combat ITEMS menu and the store)",
+    "before": "",
+    "after": "The scroll picks the spell and you do the reading, which seems about fair.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-01, CONTEXT 'Tone'): the one shared scroll line, hinting that the scroll, not the reader, picks the spell; the exact rules text stays in GEAR_COPY.scrollDesc and COMBAT_MENU_COPY.scrollDesc, with the reader's odds, and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Healing",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "A reassuring swig that tops you up, and tastes exactly like medicine.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Healing potion's player line, which also heads the healing-potion counter; its exact rules text is unchanged in content:POTIONS.Healing.txt, and the counter's rules stay in GEAR_COPY.healingDesc and COMBAT_MENU_COPY.potionDesc, under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Cure Poison",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Clears out poison, politely but firmly, and leaves a taste behind as a reminder.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Cure Poison potion's player line; its exact rules text is unchanged in content:POTIONS.Cure Poison.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Speed",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Drink it and everyone else seems to be wading through porridge, for a while.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Speed potion's player line; its exact rules text is unchanged in content:POTIONS.Speed.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Xtra Healing",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "The expensive bottle: swallow it and you are restored right to the brim.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Xtra Healing potion's player line; its exact rules text is unchanged in content:POTIONS.Xtra Healing.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Strength",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Bottled biceps: blows and spells land harder until the effect wears off.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Strength potion's player line; its exact rules text is unchanged in content:POTIONS.Strength.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Cure Disease",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Shows disease the door, and reminds your insides who actually lives there.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Cure Disease potion's player line; its exact rules text is unchanged in content:POTIONS.Cure Disease.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Enlarge",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Swells you up big and heavy-handed, though it also makes you a better target.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Enlarge potion's player line; its exact rules text is unchanged in content:POTIONS.Enlarge.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Acuteness",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Sharpens your swing until you almost look like you know what you are doing.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Acuteness potion's player line; its exact rules text is unchanged in content:POTIONS.Acuteness.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Death",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Drinking this will kill you, which is a poor reason to be curious about it.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Death potion's player line; it is the only warning a find card gives, so it says in words that drinking it kills you; its exact rules text is unchanged in content:POTIONS.Death.txt and shows under RULES."
+  },
+  {
+    "key": "bank:POTION_FLAVOR.Invisible",
+    "surface": "items",
+    "trigger": "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Fades you from sight, so foes mostly swing at where you used to be.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Invisible potion's player line; its exact rules text is unchanged in content:POTIONS.Invisible.txt and shows under RULES."
+  },
+  {
+    "key": "bank:TOOL_FLAVOR.Torch",
+    "surface": "items",
+    "trigger": "a tool's or the lockpicks' flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Pushes the dark back for a good stretch, then burns out without apology.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Torch's player line; its exact rules text is unchanged in content:TOOLS.torch.txt and shows under RULES."
+  },
+  {
+    "key": "bank:TOOL_FLAVOR.Rope",
+    "surface": "items",
+    "trigger": "a tool's or the lockpicks' flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Gets you across a crevice with some dignity, and is used up for the favour.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Rope's player line; its exact rules text is unchanged in content:TOOLS.rope.txt and shows under RULES."
+  },
+  {
+    "key": "bank:TOOL_FLAVOR.Ladder",
+    "surface": "items",
+    "trigger": "a tool's or the lockpicks' flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Turns a stubborn wall into a courteous stairway, then retires from the profession.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Ladder's player line; its exact rules text is unchanged in content:TOOLS.ladder.txt and shows under RULES."
+  },
+  {
+    "key": "bank:TOOL_FLAVOR.Lockpicks",
+    "surface": "items",
+    "trigger": "a tool's or the lockpicks' flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "",
+    "after": "Thin bits of metal and good intentions, for locks that need persuading.",
+    "reasons": [
+      "natural"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the lockpicks' player line; they have no TOOLS row, and their exact rules text is the lockpicks item's own txt in engine/items.js, unchanged, shown under RULES."
+  },
+  {
+    "key": "bank:BAG_FLAVOR.Medium bag",
+    "surface": "items",
+    "trigger": "a bag's flavour line (Gear, store, loot and find cards)",
+    "before": "",
+    "after": "A step up from the starter sack, and a bigger place to keep your poor decisions.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Medium bag's player line, a fresh joke that grows with the bag; its exact rules text, capacities included, is unchanged in content:BAG_ITEMS.txt and shows under RULES."
+  },
+  {
+    "key": "bank:BAG_FLAVOR.Large bag",
+    "surface": "items",
+    "trigger": "a bag's flavour line (Gear, store, loot and find cards)",
+    "before": "",
+    "after": "Big enough to lose an afternoon in, rummaging for the thing you actually need.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Large bag's player line, a fresh joke that grows with the bag; its exact rules text, capacities included, is unchanged in content:BAG_ITEMS.txt and shows under RULES."
+  },
+  {
+    "key": "bank:BAG_FLAVOR.Enormous bag",
+    "surface": "items",
+    "trigger": "a bag's flavour line (Gear, store, loot and find cards)",
+    "before": "",
+    "after": "A bag so large it has its own weather, and a regrettable echo.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 95 (FLAVOR-02, CONTEXT 'Tone'): the Enormous bag's player line, a fresh joke that grows with the bag; its exact rules text, capacities included, is unchanged in content:BAG_ITEMS.txt and shows under RULES."
+  }
+]
