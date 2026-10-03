@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, 91-04, 91-05, 91-06, 91-07, 91-08, 91-09, 91-10, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug, r-91-10, s-91.1-02a, s-91.1-02b, s-91.1-03a, s-91.1-03b, t-91.1-05, u-92.2-01, v-92.3-01, v-92.3-02, w-93.1-01, x-94-03, x-94-04.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, 91-04, 91-05, 91-06, 91-07, 91-08, 91-09, 91-10, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug, r-91-10, s-91.1-02a, s-91.1-02b, s-91.1-03a, s-91.1-03b, t-91.1-05, u-92.2-01, v-92.3-01, v-92.3-02, w-93.1-01, x-94-03, x-94-04, y-95-02.
 
 ## How to ask for changes
 
@@ -50,11 +50,11 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
 | boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 4 |
-| panels (hero, gear, store and final-sheet panels) | 190 | 18 | 172 | 5 | 24 | 4 |
+| panels (hero, gear, store and final-sheet panels) | 190 | 18 | 172 | 8 | 27 | 4 |
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 74 | 56 |
 | other (everything else) | 32 | 5 | 27 | 14 | 31 | 2 |
-| **Total** | **1871** | **458** | **1413** | **282** | **876** | **137** |
+| **Total** | **1871** | **458** | **1413** | **285** | **879** | **137** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -877,7 +877,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## panels — hero, gear, store and final-sheet panels
 
-24 changed lines.
+27 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
@@ -902,6 +902,9 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | `bank:GEAR_SHEET_COPY.use.charges`<br>the Gear sheet's USE line for a recharging charged item | Charges {state}. | {k} of {max} charges left; the next one comes back in {n} squares. | **79-09** (reads aloud, what happened, to whom): The sentence repeated the row tag ("Charges 1/3 · 5 SQ."); it now says how many charges are left and when the next one returns (one per recharge). |
 | `bank:GEAR_SHEET_COPY.use.chargesOne`<br>the Gear sheet's USE line for a recharging charged item | *(new line)* | {k} of {max} charges left; the next one comes back in 1 square. | **79-09** (reads aloud): The singular form of the new recharge sentence, so one square does not read "1 squares". |
 | `bank:GRIMOIRE_COPY.resistNote`<br>the Hero tab's Grimoire rows and the combat menu's spell rows (the resist sentence) | *(new line)* | a foe may resist this on its intelligence, and the deeper the floor, the likelier it does | **90-11** (what happened, to whom): TEXT-01 (user, 2026-09-30: "the spell texts state the resist plainly"): every spell a foe can resist now says so on its Grimoire row and its combat menu row, once, in one sentence, including that deeper floors resist more (engine/derived.js#risingResistFaces). One copy constant instead of thirty hand edits. |
+| `bank:RULES_COPY.closed`<br>the RULES toggle that reveals an item's or spell's exact rules | *(new line)* | RULES ▸ | **y-95-02** (what happened, to whom): Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): the closed toggle's words under every flavour line; one tap opens the exact rules text the line used to show. |
+| `bank:RULES_COPY.label`<br>the RULES toggle that reveals an item's or spell's exact rules | *(new line)* | Rules for {name} | **y-95-02** (what happened, to whom): Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): the toggle's spoken label, naming the item or spell whose exact rules it reveals. |
+| `bank:RULES_COPY.open`<br>the RULES toggle that reveals an item's or spell's exact rules | *(new line)* | RULES ▾ | **y-95-02** (what happened, to whom): Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): the open toggle's words, so the same chip shows the exact rules are showing and a second tap hides them. |
 | `raw:src/browser/heroTab.js#renderHeroTab`<br>the Hero tab's Special skills heading (a Fighter's or Thief's chargen skill budget) | …/… vp | … of … points spent | **79-09** (reads aloud, what happened, to whom): "12/12 vp" named a unit the game never explains; it is how many of the class's chargen skill points the rolled skills used. |
 | `raw:src/browser/storeScreen.js#renderStoreScreen`<br>the store header's purse line | · triple for armour, double for arms | *(removed)* | **79-09** (accurate to the engine): Nothing in the engine sets a store markup, so the clause could never show, and it described a rule the game does not have (prices vary by race, via priceFor). |
 | `raw:src/browser/storeScreen.js#renderStoreScreen`<br>the store screen's header and sections | A store … wilmst in your purse… … … Your gear Leave | A store … wilmst in your purse … … Your gear Leave | **79-09** (accurate to the engine): The purse line lost the dead markup interpolation above; its words are unchanged. |
