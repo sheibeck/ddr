@@ -14,6 +14,8 @@ import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import { ABILITY_VIEW_COPY } from "../../src/browser/heroTab.js";
+// Phase 94 (ASTATE-01): the combat row's words come from the shared ability-state copy.
+import { ABILITY_STATE_COPY } from "../../src/browser/abilityStates.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
 setIdentityDials();
@@ -67,15 +69,18 @@ test("the spent refusal reads in voice on the Oracle and the rail", () => {
 test("the combat menu row says once per fight, ready or spent", () => {
   const s = fightState(["silentStep", "dirtyTrick"]);
   const rowOf = (st, key) => combatMenuViewModel(st).submenus.abilities.rows.find((r) => r.id === `ability-${key}`);
-  assert.equal(rowOf(s, "silentStep").cost, COMBAT_MENU_COPY.abilityReadyOnce);
-  assert.equal(COMBAT_MENU_COPY.abilityReadyOnce, "READY · ONCE PER FIGHT");
+  // Phase 94 (ASTATE-01): READY · ONCE PER FIGHT / READY / SPENT THIS FIGHT now live in ABILITY_STATE_COPY.
+  assert.equal(rowOf(s, "silentStep").cost, ABILITY_STATE_COPY.readyOnce);
+  assert.equal(ABILITY_STATE_COPY.readyOnce, "READY · ONCE PER FIGHT");
   assert.match(rowOf(s, "silentStep").desc, /once per fight/);
-  assert.equal(rowOf(s, "dirtyTrick").cost, COMBAT_MENU_COPY.abilityReady);
+  assert.equal(rowOf(s, "dirtyTrick").cost, ABILITY_STATE_COPY.ready);
   assert.equal(combatMenuViewModel(s).actions.find((a) => a.key === "abilities").sub, "2/2 READY");
   useAbility(s, "silentStep", fakeRng(FILL), []);
-  assert.equal(rowOf(s, "silentStep").cost, COMBAT_MENU_COPY.abilityUsedUp);
-  assert.equal(COMBAT_MENU_COPY.abilityUsedUp, "ONCE PER FIGHT · SPENT");
-  assert.equal(rowOf(s, "silentStep").enabled, true, "still tappable; the engine's refusal explains");
+  assert.equal(rowOf(s, "silentStep").cost, ABILITY_STATE_COPY.spent);
+  assert.equal(ABILITY_STATE_COPY.spent, "SPENT THIS FIGHT");
+  assert.equal(rowOf(s, "silentStep").enabled, false, "Phase 94: a spent row is not enabled (state spent)");
+  assert.equal(rowOf(s, "silentStep").state, "spent");
+  assert.deepEqual(rowOf(s, "silentStep").dispatch, { type: "useAbility", key: "silentStep" }, "still tappable; the engine's refusal explains");
   assert.equal(combatMenuViewModel(s).actions.find((a) => a.key === "abilities").sub, "1/2 READY");
 });
 

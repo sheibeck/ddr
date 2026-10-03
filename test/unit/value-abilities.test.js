@@ -407,8 +407,9 @@ test("V1 V3 V4: the combat row and the Hero row say the ruled state: READY, then
   assert.equal(rows()["ability-deathTouch"], "READY · ONCE PER FIGHT");
   useAbility(s, "kata", constRng(1), []);
   useAbility(s, "deathTouch", constRng(1), []);
-  assert.equal(rows()["ability-kata"], "2 ROUNDS", "used in round 1, one more round has passed");
-  assert.equal(rows()["ability-deathTouch"], "ONCE PER FIGHT · SPENT");
+  // Phase 94 (ASTATE-02): a recharging row reads READY IN N, a spent once-per-fight row SPENT THIS FIGHT.
+  assert.equal(rows()["ability-kata"], "READY IN 2", "used in round 1, one more round has passed");
+  assert.equal(rows()["ability-deathTouch"], "SPENT THIS FIGHT");
   const hero = characterSheetViewModel(s);
   const byId = Object.fromEntries(hero.abilities.map((a) => [a.id, a.state]));
   assert.equal(byId.kata, "2 rounds");

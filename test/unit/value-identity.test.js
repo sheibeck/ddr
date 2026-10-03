@@ -31,6 +31,8 @@ import {
   sing, songReady, songDue, SONG_GAP_ROUNDS, SONGS_PER_FIGHT, startCombat, endCombat, flee, CON_ARTIST_LEAVE_FACES, CON_ARTIST_LEAVE_MAX_LVL,
 } from "../../engine/combat.js";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+// Phase 94 (ASTATE-02): the Sing row reads the shared ability-state words.
+import { ABILITY_STATE_COPY } from "../../src/browser/abilityStates.js";
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { decideAction, makeBotContext } from "../../tools/lib/tuning-bot.mjs";
@@ -541,20 +543,21 @@ test("V7 Sing sing-once: only the exact Bard sings; a Soldier, a near-miss 'bard
   assert.equal(songReady(pending), false);
 });
 
-test("V7 Sing sing-once: the combat menu row counts the rounds then reads READY, SUNG THIS FIGHT after the second song, and the next fight starts with no song sung", () => {
+test("V7 Sing sing-once: the combat menu row counts the rounds then reads READY, SPENT THIS FIGHT after the second song, and the next fight starts with no song sung", () => {
   const state = bardHero(1);
   sing(state, noDraws(), []);
   const resting = combatMenuViewModel(state).submenus.abilities.rows[0];
-  assert.equal(resting.cost, COMBAT_MENU_COPY.singAgain.replace("{n}", String(state.combat.sangAt + SONG_GAP_ROUNDS - state.combat.round)));
+  // Phase 94 (ASTATE-02): the Sing row's words are the shared ability-state words (READY IN N / READY / SPENT THIS FIGHT).
+  assert.equal(resting.cost, ABILITY_STATE_COPY.recharging.replace("{n}", String(state.combat.sangAt + SONG_GAP_ROUNDS - state.combat.round)));
   assert.equal(resting.enabled, false);
   state.combat.round = 6;
   const due = combatMenuViewModel(state);
-  assert.equal(due.submenus.abilities.rows[0].cost, COMBAT_MENU_COPY.singReady);
+  assert.equal(due.submenus.abilities.rows[0].cost, ABILITY_STATE_COPY.ready);
   assert.equal(due.submenus.abilities.rows[0].enabled, true);
   assert.equal(due.actions[1].sub, "SING · READY");
   sing(state, noDraws(), []);
   const done = combatMenuViewModel(state).submenus.abilities.rows[0];
-  assert.equal(done.cost, COMBAT_MENU_COPY.singSung, "after the second song: SUNG THIS FIGHT");
+  assert.equal(done.cost, ABILITY_STATE_COPY.spent, "after the second song: SPENT THIS FIGHT");
   assert.equal(done.enabled, false);
   endCombat(state, []);
   inCombat(state, [{ ...foeFrom("Humans", 1, "Ned", { wp: 5000 }), asleep: 99 }]);

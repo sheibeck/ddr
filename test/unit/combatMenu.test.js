@@ -85,6 +85,12 @@ function fixedCombat(foes, overrides = {}) {
   return { foes, type: foes[0]?.type || "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, ...overrides };
 }
 
+// Phase 94 (ASTATE-03): a foe ability with no live foe now reads NO FOE IN REACH, so the ABILITIES rows
+// below fight one live foe.
+function phase94Foe(overrides = {}) {
+  return { name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1, ...overrides };
+}
+
 // ─── Fighter: STRIKE / no-spells ABILITIES fallback / ITEMS / SOCIAL ──────
 
 // CMBUI-14 re-pin (Phase 77): the default Fighter holds 1 potion at full HP,
@@ -141,13 +147,16 @@ test("Phase 74 (ROLL-02): the STRIKE sub's range is exactly characterSheetViewMo
 test("Bard: ABILITIES opens SING, ready vs. sung this fight", () => {
   const ready = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
   assert.deepEqual(ready.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "SING · READY", enabled: true, accent: false, opens: "abilities" });
+  // Phase 94 (ASTATE-01): every ability row carries `state` (ready | recharging | unavailable | spent).
   assert.deepEqual(ready.submenus.abilities.rows[0], {
-    id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" },
+    id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" },
   });
 
   const sung = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, steps: 40, combat: { ...fixedCombat([]), sang: true } }));
   assert.equal(sung.actions[1].sub, "SING · SUNG");
-  assert.equal(sung.submenus.abilities.rows[0].cost, "SUNG THIS FIGHT");
+  // Phase 94 (ASTATE-01, user decision 2026-10-03): the spent Sing row reads SPENT THIS FIGHT (was SUNG THIS FIGHT).
+  assert.equal(sung.submenus.abilities.rows[0].cost, "SPENT THIS FIGHT");
+  assert.equal(sung.submenus.abilities.rows[0].state, "spent");
   assert.equal(sung.submenus.abilities.rows[0].enabled, false);
   assert.deepEqual(sung.submenus.abilities.rows[0].dispatch, { type: "sing" });
 });
@@ -617,14 +626,16 @@ test("state.combat === null never throws; strike/social rows still compute from 
 
 test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an empty/absent abilities array keeps today's fallback", () => {
   const c = { cls: "Fighter", sub: "Soldier", abilities: ["kata", "brace"] };
-  const state = fixedState({ c, combat: fixedCombat([]) });
+  // Phase 94 (ASTATE-03): a foe ability with no live foe reads NO FOE IN REACH, so this fight has one live foe.
+  const state = fixedState({ c, combat: fixedCombat([phase94Foe()]) });
   const vm = combatMenuViewModel(state);
 
   assert.deepEqual(vm.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "2/2 READY", enabled: true, accent: false, opens: "abilities" });
   assert.deepEqual(vm.submenus.abilities.rows, [
     // Phase 91.1 plan 02 (V1, user ruling 2026-10-01): Kata is ready again after 4 rounds, so its ready row is plain READY.
-    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" } },
-    { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, dispatch: { type: "useAbility", key: "brace" } },
+    // Phase 94 (ASTATE-01): the rows gain `state: "ready"`.
+    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "kata" } },
+    { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "brace" } },
   ]);
 
   const emptyState = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: [] }, combat: fixedCombat([]) });
@@ -644,43 +655,49 @@ test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an e
 // Quick 260927-opf (user ruling 2026-09-27): Kata is once per fight now, so
 // the plain-cooldown rows are pinned on Pommel Strike (cd 4), and a used
 // once-per-fight ability reads "ONCE PER FIGHT · SPENT".
-test("ABILITIES cost text: '3 ROUNDS' / '1 ROUND' on a plain cooldown; 'ONCE PER FIGHT · SPENT' on a used once-per-fight ability; '6 ROUNDS' on a sidestep effect record (left 2, cd 4); a row stays enabled on cooldown", () => {
+// Phase 94 (ASTATE-02, user decision 2026-10-03): a recharging row reads READY IN N (no plural), a spent
+// once-per-fight row reads SPENT THIS FIGHT, and a row on cooldown is enabled false (state recharging)
+// with its dispatch intact.
+test("ABILITIES cost text: 'READY IN 3' / 'READY IN 1' on a plain cooldown; 'SPENT THIS FIGHT' on a used once-per-fight ability; 'READY IN 6' on a sidestep effect record (left 2, cd 4); a row on cooldown is enabled false, state recharging, dispatch still useAbility", () => {
   const c = { cls: "Fighter", sub: "Soldier", abilities: ["pommelStrike", "brace"] };
-  const state = fixedState({ c, combat: fixedCombat([]) });
+  const state = fixedState({ c, combat: fixedCombat([phase94Foe()]) });
   startCooldown(state.c, "ability:pommelStrike", { rounds: 3 });
   const vm = combatMenuViewModel(state);
   const pommelRow = vm.submenus.abilities.rows.find((r) => r.id === "ability-pommelStrike");
-  assert.equal(pommelRow.cost, "3 ROUNDS");
-  assert.equal(pommelRow.enabled, true);
+  assert.equal(pommelRow.cost, "READY IN 3");
+  assert.equal(pommelRow.enabled, false);
+  assert.equal(pommelRow.state, "recharging");
+  assert.deepEqual(pommelRow.dispatch, { type: "useAbility", key: "pommelStrike" });
   assert.equal(vm.actions[1].sub, "1/2 READY");
 
-  const state1 = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: ["pommelStrike"] }, combat: fixedCombat([]) });
+  const state1 = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: ["pommelStrike"] }, combat: fixedCombat([phase94Foe()]) });
   startCooldown(state1.c, "ability:pommelStrike", { rounds: 1 });
-  assert.equal(combatMenuViewModel(state1).submenus.abilities.rows[0].cost, "1 ROUND");
+  assert.equal(combatMenuViewModel(state1).submenus.abilities.rows[0].cost, "READY IN 1");
 
   const c2 = { cls: "Fighter", sub: "Soldier", abilities: ["deathTouch", "sidestep"] };
-  const state2 = fixedState({ c: c2, combat: fixedCombat([]) });
+  const state2 = fixedState({ c: c2, combat: fixedCombat([phase94Foe()]) });
   startCooldown(state2.c, "ability:deathTouch", { rounds: 999 });
   startEffect(state2.c, "ability:sidestep", { rounds: 2, cd: 4 });
   const vm2 = combatMenuViewModel(state2);
-  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-deathTouch").cost, "ONCE PER FIGHT · SPENT");
-  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-sidestep").cost, "6 ROUNDS");
+  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-deathTouch").cost, "SPENT THIS FIGHT");
+  assert.equal(vm2.submenus.abilities.rows.find((r) => r.id === "ability-sidestep").cost, "READY IN 6");
 });
 
 test("Bard: ABILITIES rows are [sing row, ...ability rows], sing row/sub-line byte-identical", () => {
   const c = { sub: "Bard", abilities: ["kata"] };
-  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) }));
+  // Phase 94 (ASTATE-01/03): one live foe for Kata; the rows gain `state: "ready"`.
+  const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([phase94Foe()]) }));
   assert.equal(vm.actions[1].sub, "SING · READY");
   assert.deepEqual(vm.submenus.abilities.rows[0], {
-    id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" },
+    id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" },
   });
   assert.deepEqual(vm.submenus.abilities.rows[1], {
-    id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, dispatch: { type: "useAbility", key: "kata" },
+    id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "kata" },
   });
 
   const noAbilities = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
   assert.deepEqual(noAbilities.submenus.abilities.rows, [
-    { id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, dispatch: { type: "sing" } },
+    { id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" } },
   ]);
 });
 

@@ -1,0 +1,101 @@
+[
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityReady",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "READY",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): the plain ready word moved to bank:ABILITY_STATE_COPY.ready, shared with the Hero tab; the combat menu keeps no wording of its own."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityReadyOnce",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "READY · ONCE PER FIGHT",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): moved to bank:ABILITY_STATE_COPY.readyOnce, same words, one shared bank."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityUsedUp",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "ONCE PER FIGHT · SPENT",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by SPENT THIS FIGHT (bank:ABILITY_STATE_COPY.spent), the full-word spent label the Hero tab now shares."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityTooFewFoes",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "NEEDS TWO OR MORE FOES",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): moved to bank:ABILITY_STATE_COPY.reason.tooFewFoes, same words, shared with the Hero tab."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityRound",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "1 ROUND",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by READY IN 1 (bank:ABILITY_STATE_COPY.recharging, no plural), the countdown that says what the number means."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.abilityRounds",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "{n} ROUNDS",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by READY IN {n} (bank:ABILITY_STATE_COPY.recharging), the countdown that says what the number means."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.singReady",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "READY",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): the Sing row reads the same shared ready word, bank:ABILITY_STATE_COPY.ready."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.singAgain",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "AGAIN IN {n}",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by READY IN {n} (bank:ABILITY_STATE_COPY.recharging): the Sing row counts down in the same words as every other ability."
+  },
+  {
+    "key": "bank:COMBAT_MENU_COPY.singSung",
+    "surface": "combat-screen",
+    "trigger": "the combat action grid and its submenus",
+    "before": "SUNG THIS FIGHT",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by SPENT THIS FIGHT (bank:ABILITY_STATE_COPY.spent): the Sing row and every once-a-fight ability say the same spent words."
+  }
+]

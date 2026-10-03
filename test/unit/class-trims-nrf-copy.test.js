@@ -18,6 +18,8 @@ import { ABILITY_BY_ID, FIGHTER_SKILLS, THIEF_SKILLS, IDENTITY_TRAITS, SUB_NOTE 
 import { EVENT_NARRATION } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+// Phase 94 (ASTATE-03): Sweep's reason and the ready word live in the shared ability-state copy.
+import { ABILITY_STATE_COPY } from "../../src/browser/abilityStates.js";
 import { resistRoll } from "../../engine/derived.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
@@ -70,13 +72,13 @@ test("(2) the ability menu shows Sweep disabled with its reason while one foe st
   const rowOf = (st, key) => combatMenuViewModel(st).submenus.abilities.rows.find((r) => r.id === `ability-${key}`);
   const one = fightState({}, [foe("A"), foe("B", { alive: false, wp: 0 })]);
   const sweep = rowOf(one, "sweep");
-  assert.equal(COMBAT_MENU_COPY.abilityTooFewFoes, "NEEDS TWO OR MORE FOES");
-  assert.equal(sweep.cost, COMBAT_MENU_COPY.abilityTooFewFoes);
+  assert.equal(ABILITY_STATE_COPY.reason.tooFewFoes, "NEEDS TWO OR MORE FOES");
+  assert.equal(sweep.cost, ABILITY_STATE_COPY.reason.tooFewFoes);
   assert.equal(sweep.enabled, false, "disabled-styled");
   assert.deepEqual(sweep.dispatch, { type: "useAbility", key: "sweep" }, "still tappable: the engine's refusal explains");
   assert.equal(combatMenuViewModel(one).actions.find((a) => a.key === "abilities").sub, "1/2 READY", "Sweep is not counted ready");
   const two = fightState({}, [foe("A"), foe("B")]);
-  assert.equal(rowOf(two, "sweep").cost, COMBAT_MENU_COPY.abilityReady);
+  assert.equal(rowOf(two, "sweep").cost, ABILITY_STATE_COPY.ready);
   assert.equal(rowOf(two, "sweep").enabled, true);
   assert.equal(combatMenuViewModel(two).actions.find((a) => a.key === "abilities").sub, "2/2 READY");
 });

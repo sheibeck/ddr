@@ -18,9 +18,9 @@ import { itemRowState } from "./gearTab.js";
 import { canCast, neverFlees, spellLevelFor, WORN_SLOTS, activationFor, wieldedStaff, slotFor, spellTargetsFoe, risingResistFaces } from "../../engine/derived.js";
 import { hitRangeText } from "./rollRange.js";
 import { maxCharges } from "../../engine/movement.js";
-import { canParley, parleyBlockedReason, fleeRefusal, songReady, SONG_GAP_ROUNDS } from "../../engine/combat.js";
-import { abilityRoundsLeft, abilityUnavailableReason, abilityTargetShortfall } from "../../engine/abilities.js";
-import { isReady } from "../../engine/effects.js";
+import { canParley, parleyBlockedReason, fleeRefusal, singState, SONG_GAP_ROUNDS } from "../../engine/combat.js";
+import { abilityState } from "../../engine/abilities.js";
+import { abilityStateLabel } from "./abilityStates.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
 
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
@@ -42,22 +42,8 @@ export const COMBAT_MENU_COPY = Object.freeze({
   socialSub: "FLEE · PARLEY",
   noAbilities: "NOTHING UP YOUR SLEEVE",
   noAbilitiesDesc: "Hit it with the pointy end.",
-  // Phase 38 (ABIL-01/04) — the melee ABILITIES branch's cost/sub vocabulary.
-  abilityReady: "READY",
-  // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
-  // (`cd: "fight"`) says so ready, and reads spent once used.
-  abilityReadyOnce: "READY · ONCE PER FIGHT",
-  abilityUsedUp: "ONCE PER FIGHT · SPENT",
-  // Quick 260928-nrf (user ruling 2026-09-28): Sweep with fewer than two
-  // living foes (engine/abilities.js#abilityUnavailableReason, the same rule
-  // the engine refuses on) reads disabled with its reason.
-  abilityTooFewFoes: "NEEDS TWO OR MORE FOES",
-  // Phase 91.1 plan 02 (user ruling V5, 2026-10-01): Hamstring and Mark come
-  // back 3 rounds after the use, only on a foe that does not carry the effect
-  // (engine/abilities.js#abilityTargetShortfall, the rule the engine refuses on).
-  abilityAlreadyOn: "ALREADY ON IT",
-  abilityRound: "1 ROUND",
-  abilityRounds: "{n} ROUNDS",
+  // Phase 94 (ASTATE-01..03): an ability row's state words (READY, READY · ONCE PER FIGHT, READY IN N,
+  // SPENT THIS FIGHT and the gate reasons) live in src/browser/abilityStates.js, shared with the Hero tab.
   abilitiesSub: "{ready}/{n} READY",
   // Quick 260927-rsx: appended to a foe-targeted spell's row, the current
   // target's resist against it (every foe rolls; a resist means no effect).
@@ -94,15 +80,9 @@ export const COMBAT_MENU_COPY = Object.freeze({
   scroll: "SCROLL",
   scrollDesc: "A random spell, read aloud. No refunds.",
   sing: "SING",
-  singReady: "READY",
-  // Phase 91 (IDENT-17, plan 91-06): SING is once per fight (songReady), and the
-  // song is one random offense or defense spell of your level or lower, at full
-  // strength, no charges spent (engine/combat.js#sing). No squares countdown.
-  singSung: "SUNG THIS FIGHT",
+  // Phase 94 (ASTATE-01): the Sing row's state words are the shared ability-state words (singState).
   // Phase 91.1 plan 03 part B (V7 B, 2026-10-01): a second song comes SONG_GAP_ROUNDS rounds after the
   // first, never a third; the number is the engine's own (combat.js#SONG_GAP_ROUNDS), never typed.
-  // `singAgain` is the row's state between the two songs ({n} rounds to go).
-  singAgain: "AGAIN IN {n}",
   singDesc: `Sing a random offense or defense spell of your level or lower, at full strength, no charges spent. You pick the moment, the song picks the spell. A long fight gets a second song ${SONG_GAP_ROUNDS} rounds after the first, and never a third.`,
   flee: "FLEE",
   withdraw: "WITHDRAW",
@@ -160,58 +140,28 @@ export const COMBAT_MENU_COPY = Object.freeze({
 
 /**
  * abilityRows(c, state) — Phase 38 (ABIL-01/04): one row per `c.abilities` catalog
- * id, in `c.abilities` order. Every row is `enabled: true` (except a ready
- * ability the fight refuses, below) — CONTEXT's
- * "unavailable rows render disabled-styled but stay tappable" rule applies
- * to SPELLS, not this branch: a tap on cooldown dispatches `useAbility`
- * exactly like a ready one, and the engine's own `abilityRefused { reason:
- * "cooldown" }` lands the canon refusal line in the fight log (a deliberate
- * departure from SPELLS' castable-gated `enabled`). `cost` reads READY (or
- * abilityReadyOnce for a ready `cd: "fight"` ability, quick 260927-opf) /
- * "N ROUND(S)" / the abilityUsedUp copy (a `cd: "fight"` ability that is not
- * ready, regardless of its remaining phase; the engine refuses it `spent`).
- * Quick 260928-nrf (user ruling 2026-09-28): a ready ability
- * engine/abilities.js#abilityUnavailableReason refuses in this fight (Sweep
- * with fewer than two living foes) reads abilityTooFewFoes and `enabled:
- * false` — still dispatchable, so a tap lands the engine's refusal line.
- * An id absent from the catalog
- * (a tampered save) is silently dropped. Pure, no rng.
+ * id, in `c.abilities` order. Phase 94 (ASTATE-01..04): the row's state, rounds
+ * and reason come from engine/abilities.js#abilityState (the same ladder
+ * useAbility refuses on, so a tap always agrees with the words); the words
+ * come from src/browser/abilityStates.js; `state` (ready | recharging |
+ * unavailable | spent) drives the shell's data-state look; `enabled` is
+ * `state === "ready"`. Every row stays dispatchable, so a tap on a non-ready
+ * row lands the engine's own refusal line in the fight log. An id absent from
+ * the catalog (a tampered save) is silently dropped. Pure, no rng.
  */
 function abilityRows(c, state) {
   return (c.abilities || [])
     .map((key) => {
       const meta = ABILITY_BY_ID[key];
       if (!meta) return null;
-      const id = `ability:${key}`;
-      const ready = isReady(c, id);
-      // Quick 260928-nrf: a ready ability the fight itself refuses (Sweep
-      // with one living foe) shows its reason and reads disabled; it stays
-      // dispatchable, so a tap lands the engine's own refusal line.
-      let shortfall = ready ? abilityUnavailableReason(state, key) : null;
-      // Phase 91.1 plan 02 (V5): the current target already carries the effect.
-      if (ready && !shortfall && state && state.combat) {
-        const aimed = state.combat.foes && state.combat.foes[state.combat.target];
-        if (aimed && aimed.alive && abilityTargetShortfall(key, aimed)) shortfall = "alreadyOn";
-      }
-      let cost;
-      if (shortfall === "tooFewFoes") {
-        cost = COMBAT_MENU_COPY.abilityTooFewFoes;
-      } else if (shortfall === "alreadyOn") {
-        cost = COMBAT_MENU_COPY.abilityAlreadyOn;
-      } else if (ready) {
-        cost = meta.cd === "fight" ? COMBAT_MENU_COPY.abilityReadyOnce : COMBAT_MENU_COPY.abilityReady;
-      } else if (meta.cd === "fight") {
-        cost = COMBAT_MENU_COPY.abilityUsedUp;
-      } else {
-        const left = abilityRoundsLeft(c, key);
-        cost = left === 1 ? COMBAT_MENU_COPY.abilityRound : COMBAT_MENU_COPY.abilityRounds.replace("{n}", left);
-      }
+      const st = abilityState(state, c, key);
       return {
         id: `ability-${key}`,
         label: meta.name.toUpperCase(),
-        cost,
+        cost: abilityStateLabel(st, meta),
         desc: meta.txt || "",
-        enabled: !shortfall,
+        enabled: st.state === "ready",
+        state: st.state,
         dispatch: { type: "useAbility", key },
       };
     })
@@ -262,12 +212,11 @@ function combatMenuViewModelUnlocked(state) {
   const isBard = c.sub === "Bard";
   const charges = Math.max(0, maxCharges(c) - (c.spellsUsed || 0));
   const known = (c.grimoire || []).length;
-  // Phase 91 (IDENT-17): once per fight, read from the engine's own songReady.
-  const singReady = isBard && songReady(state);
+  // Phase 94 (ASTATE-01/04): the Sing row reads the engine's own singState (ready | recharging | spent),
+  // the same rule sing() refuses on; the grid sub-line still reads the bare `sang` flag.
+  const singSt = isBard ? singState(state) : null;
+  const singReady = !!singSt && singSt.state === "ready";
   const singSung = isBard && !!(state.combat && state.combat.sang);
-  // V7 B: between the first song and the second (sangAt is the first song's round) the row counts the
-  // rounds left; after the second (sangAt null) or a bare `sang` it reads SUNG THIS FIGHT as before.
-  const singWait = singSung && Number.isFinite(state.combat.sangAt) ? Math.max(1, state.combat.sangAt + SONG_GAP_ROUNDS - state.combat.round) : 0;
   const heroName = String(c.name || "YOU").toUpperCase();
 
   const submenus = {};
@@ -368,9 +317,10 @@ function combatMenuViewModelUnlocked(state) {
         {
           id: "sing",
           label: COMBAT_MENU_COPY.sing,
-          cost: !singSung || singReady ? COMBAT_MENU_COPY.singReady : singWait ? COMBAT_MENU_COPY.singAgain.replace("{n}", String(singWait)) : COMBAT_MENU_COPY.singSung,
+          cost: abilityStateLabel(singSt, null),
           desc: COMBAT_MENU_COPY.singDesc,
           enabled: singReady,
+          state: singSt.state,
           dispatch: { type: "sing" },
         },
         // Phase 38 (ABIL-01): the Bard keeps Sing FIRST (CONTEXT); because a
@@ -383,7 +333,7 @@ function combatMenuViewModelUnlocked(state) {
     // rolled ability. An empty/absent c.abilities falls through to the
     // fallback branch below, byte-identical to before this phase.
     const rows = abilityRows(c, state);
-    const readyCount = rows.filter((r) => r.cost === COMBAT_MENU_COPY.abilityReady || r.cost === COMBAT_MENU_COPY.abilityReadyOnce).length;
+    const readyCount = rows.filter((r) => r.state === "ready").length;
     secondAction = {
       key: "abilities",
       num: 2,

@@ -402,7 +402,7 @@ test("IDENT-17 edge (ordering): the sang event comes first, then the spell's own
 // Task 2 (plan 91-06): the combat menu row, the bot, the drawback.
 // ============================================================================
 
-test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then SUNG THIS FIGHT, and describes the song in plain words", () => {
+test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then SPENT THIS FIGHT, and describes the song in plain words", () => {
   const state = bardFight(3, [sleeper()]);
   const ready = combatMenuViewModel(state);
   const readyRow = ready.submenus.abilities.rows[0];
@@ -420,8 +420,9 @@ test("IDENT-17 menu: the SING row is enabled while songReady, says READY, then S
   assert.equal(state.combat.sang, true);
   const sung = combatMenuViewModel(state);
   const sungRow = sung.submenus.abilities.rows[0];
-  // V7 B (91.1-03): between the two songs the row counts the rounds left; "SUNG THIS FIGHT" is after the second (or a bare sang flag).
-  assert.equal(sungRow.cost, `AGAIN IN ${state.combat.sangAt + 5 - state.combat.round}`);
+  // V7 B (91.1-03): between the two songs the row counts the rounds left; the spent words are after the second (or a bare sang flag).
+  // Phase 94 (ASTATE-02): the count reads READY IN N (was AGAIN IN N) and the spent words SPENT THIS FIGHT (was SUNG THIS FIGHT).
+  assert.equal(sungRow.cost, `READY IN ${state.combat.sangAt + 5 - state.combat.round}`);
   assert.equal(sungRow.enabled, false);
   assert.equal(sung.actions[1].sub, "SING · SUNG");
 });
