@@ -115,12 +115,13 @@
 **Target features:**
 - **Large-screen support** (backlog 999.17): drop the portrait lock Play flagged on the 2.3.0 upload; responsive landscape, tablet, foldable and Chromebook layouts; rotation and resizing never restart a run
 - **Ability states you can tell apart** (999.20): ready / recharging (ready in N) / can't use now / spent this fight (/ active), each with a non-colour cue too
-- **Harmful condition chips first** (todo): disease and poison chips always sit at the far left
-- **Cloak of Regeneration heals on use** (todo): one tick at once, then the every-N-squares ticks (ruling A or B in discuss-phase)
+- ✓ **Harmful condition chips first** (todo): every engine-bad chip leads the HUD strip and the hero's YOUR LOT card; Joiner and foe rows unchanged — Phase 93 (CHIP-01)
+- ✓ **Cloak of Regeneration heals on use** (todo): ruling (B), user 2026-10-03: a d6 at once, then a d6 at 10, 20 and 30 squares (4 ticks); heals in a fight too; price unchanged — Phase 93 (ITEM-08)
+- **Gauntlet of the Giant worth wearing** (GitHub player report #6, added 2026-10-03): its size step's damage bonus made worth foes +1 to hit, as Enlarge was in 2.3.0 — Phase 93.1 (ITEM-09); issue #6 closes when it ships
 - **Fantasy-flavour player text** (todo): players read narrative; the exact rules stay in code, docs and the audit pins
 - **Fresh store and website screenshots** (999.18): last, so the tablet and landscape shots are real
 
-**Open decisions for discuss-phase:** phones portrait-only or free rotation, and the landscape play-screen layout; the cloak's immediate tick as one of the three or a fourth; where the exact numbers live in game.
+**Open decisions for discuss-phase:** phones portrait-only or free rotation, and the landscape play-screen layout; the Gauntlet of the Giant's new numbers (Phase 93.1); where the exact numbers live in game. (Ruled: the cloak's immediate tick is a fourth tick, Phase 93.)
 
 **Not this milestone:** 999.19 (a Joiner's Stealth crit, not reproduced; needs the user's save) and 999.12 (achievements, its own milestone).
 
