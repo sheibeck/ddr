@@ -549,10 +549,18 @@ test("Stats: the container is created once, sits after the note and before why, 
   );
   assert.equal(statsEl.parentNode, head);
   assert.equal(statsEl.hidden, false);
-  assert.equal(statsEl.children.length, model.stats.length);
-  statsEl.children.forEach((row, i) => {
+  // Phase 95 (FLAVOR-02/05), Plan 06: declared re-pin: an Axe has a flavour, so its stat rows now sit inside the RULES body under
+  // a collapsed toggle (children: button, body); the rows are the exact old note (weaponMundane) then every stat, in order.
+  assert.equal(statsEl.children.length, 2);
+  assert.equal(statsEl.children[0].className, "mw-rules-btn");
+  const body = statsEl.children[1];
+  assert.equal(body.className, "mw-rules-body");
+  assert.equal(body.hidden, true);
+  assert.deepStrictEqual(model.rules, [model.note, ...model.stats]);
+  assert.equal(body.children.length, model.rules.length);
+  body.children.forEach((row, i) => {
     assert.ok(row.className.split(/\s+/).includes("mw-gsheet-note"), "each stat row reuses the note typography class");
-    assert.equal(row.textContent, model.stats[i]);
+    assert.equal(row.textContent, model.rules[i]);
     assert.notEqual(row._content.kind, "html");
   });
 
@@ -560,7 +568,7 @@ test("Stats: the container is created once, sits after the note and before why, 
   renderGearSheet(host, state, target, makeDeps().deps);
   assert.equal(doc.document.getElementById(GEAR_SHEET_IDS.stats), statsEl);
   assert.equal(head.children.filter((n) => n.id === GEAR_SHEET_IDS.stats).length, 1);
-  assert.equal(statsEl.children.length, model.stats.length);
+  assert.equal(statsEl.children.length, 2, "Phase 95 declared re-pin: toggle plus body, replaced not appended");
 });
 
 test("Stats: an empty stat list hides the container and leaves it with no rows; re-targeting replaces, never appends", () => {

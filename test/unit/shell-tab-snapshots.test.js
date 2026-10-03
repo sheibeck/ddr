@@ -123,6 +123,8 @@
 //
 // Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05), Plan 06, Task 1: two declared regenerations, thief.gear and mu.gear. Every flavoured WORN row (weapon, jewel, cloak; the armour row keeps its wear note) and every BAG card now shows its flavour line in the note or desc slot (a BAG card keeps its usable-by tag after it); every CONSUMABLES row shows its flavour, then a collapsed RULES toggle and a hidden body holding the exact old description. WORN rows and BAG cards carry no toggle: they open the Gear sheet. Every other fixture re-wrote the same bytes (git diff --ignore-cr-at-eol --stat).
 //
+// Phase 95 (FLAVOR-02, FLAVOR-05), Plan 06, Task 2: two declared regenerations, thief.gear-sheet-bag and thief.gear-sheet-worn. The sheet's note now shows the item's flavour line (visible), and #mw-gear-sheet-stats holds a collapsed RULES toggle and a hidden body whose lines are the exact old note (when there was one) and stats; a jewel or cloak SWAP FOR or EQUIP candidate's sub reads that candidate's flavour instead of its rules text. Every other fixture re-wrote the same bytes.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

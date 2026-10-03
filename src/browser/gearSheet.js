@@ -36,6 +36,8 @@ import { gearLockReason } from "../../engine/items.js";
 import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "./gearTab.js";
 import { lootCompare, armorDisplay, itemStatLines, wornItemFor } from "./viewModels.js";
 import { LINE_FOR } from "./narrationLines.js";
+import { flavorOfItem } from "./flavorText.js";
+import { mountRules } from "./rulesLayer.js";
 
 /**
  * GEAR_SHEET_COPY — every new player-facing string the sheet shows, frozen
@@ -158,7 +160,9 @@ export function gearSheetModel(state, target) {
     const cmp = isGear ? lootCompare(c, it) : null;
     const reason = lockLine("equipItem") || (cmp && !cmp.legal ? cmp.line : "");
     const enabled = !reason;
-    const sub = enabled ? (cmp ? cmp.line : card.desc) : reason;
+    // Phase 95 (FLAVOR-02/05): a jewel or cloak candidate is described by its flavour (card.lead); its rules are one tap away
+    // in its own sheet. A weapon or armour card still reads lootCompare's line; a greyed one its reason (Claude's discretion, named in 95-06).
+    const sub = enabled ? (cmp ? cmp.line : (card.lead ?? card.desc)) : reason;
     const template = kind === "swap" ? GEAR_SHEET_COPY.act.swapFor : GEAR_SHEET_COPY.act.equip;
     return {
       key: `${kind}:${card.i}`,
@@ -253,7 +257,14 @@ export function gearSheetModel(state, target) {
       }
     }
 
-    return { target, label, title, note, why, actions, stats };
+    // Phase 95 (FLAVOR-02/05; CONTEXT 'Where the exact numbers live'): the sheet is the Gear tab's RULES surface. Note, stats and
+    // every action keep their values for the guards and older tests; `lead` (the item's flavour), `rules` (exactly what the note
+    // and stats slots printed before: the note when it is non-empty, then every stat text) and `rulesId` are additive and appear
+    // only for an item with a flavour (an empty slot, the magic plate alone and a removed item get nothing).
+    const lead = flavorOfItem(wornItemFor(c, slot));
+    return lead
+      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:worn:" + slot }
+      : { target, label, title, note, why, actions, stats };
   }
 
   // ─── BAG target ──────────────────────────────────────────────────────
@@ -317,7 +328,11 @@ export function gearSheetModel(state, target) {
       confirm: true,
     });
 
-    return { target, label, title, note, why, actions, stats };
+    // Phase 95 (FLAVOR-02/05): the same additive fields, keyed by name so a revealed body follows the item, not its bag index.
+    const lead = flavorOfItem(it);
+    return lead
+      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:bag:" + card.name }
+      : { target, label, title, note, why, actions, stats };
   }
 
   return null;
@@ -502,9 +517,11 @@ export function renderGearSheet(host, state, target, deps = {}) {
   doc.getElementById(GEAR_SHEET_IDS.label).textContent = m.label;
   doc.getElementById(GEAR_SHEET_IDS.title).textContent = m.title;
   const noteEl = doc.getElementById(GEAR_SHEET_IDS.note);
-  noteEl.textContent = m.note;
+  // Phase 95: the note slot shows the item's flavour when it has one (visible), else today's note.
+  const noteText = m.lead ?? m.note;
+  noteEl.textContent = noteText;
   // Phase 71 (R-06): an emptied note (its content now in the stats) hides.
-  noteEl.hidden = !m.note;
+  noteEl.hidden = !noteText;
   const whyEl = doc.getElementById(GEAR_SHEET_IDS.why);
   whyEl.textContent = m.why;
   whyEl.hidden = !m.why;
@@ -512,15 +529,23 @@ export function renderGearSheet(host, state, target, deps = {}) {
   // Phase 71 (D-04): one row per stat, textContent only; a re-render
   // replaces the rows, and an empty list hides the container.
   const statsEl = ensureStatsEl(doc, whyEl);
-  statsEl.replaceChildren(
-    ...m.stats.map((text) => {
-      const row = doc.createElement("p");
-      row.className = "mw-gsheet-note mw-gsheet-stat";
-      row.textContent = text;
-      return row;
-    })
-  );
-  statsEl.hidden = !m.stats.length;
+  if (Array.isArray(m.rules) && m.rules.length) {
+    // Phase 95: the RULES toggle sits around the stats (orchestrator); the hidden body holds the exact old note and stat lines.
+    // A revealed body stays open across refreshGearSheet because the open set lives in rulesLayer.js.
+    statsEl.replaceChildren();
+    mountRules(doc, statsEl, { id: m.rulesId, name: m.title, rules: m.rules, lineClass: "mw-gsheet-note mw-gsheet-stat" });
+    statsEl.hidden = false;
+  } else {
+    statsEl.replaceChildren(
+      ...m.stats.map((text) => {
+        const row = doc.createElement("p");
+        row.className = "mw-gsheet-note mw-gsheet-stat";
+        row.textContent = text;
+        return row;
+      })
+    );
+    statsEl.hidden = !m.stats.length;
+  }
 
   doc.getElementById(GEAR_SHEET_IDS.actions).replaceChildren(
     ...m.actions.map((a, index) => buildActionButton(doc, a, index, deps))

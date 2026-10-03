@@ -19,6 +19,9 @@ import { gearSheetModel, GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js"
 import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "../../src/browser/gearTab.js";
 import { armorDisplay, lootCompare, itemStatLines, wornItemFor, usableBy } from "../../src/browser/viewModels.js";
 import { WEAPONS } from "../../content/index.js";
+import { WEAPON_FLAVOR } from "../../content/weapons.js";
+import { ARMOR_FLAVOR } from "../../content/armors.js";
+import { MAGIC_ITEM_FLAVOR } from "../../content/treasure-tables.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
 import { newRun } from "../../engine/engine.js";
 import { toolItem } from "../../engine/items.js";
@@ -771,4 +774,66 @@ test("Module contract (d): GEAR_SHEET_COPY and every nested object are frozen", 
     }
   };
   walk(GEAR_SHEET_COPY);
+});
+
+// ═══════════ Phase 95 (FLAVOR-02/05), Plan 06: the flavour layer on the Gear sheet model ═══════════
+//
+// lead / rules / rulesId are ADDITIVE: they appear only for an item with a flavour; note, stats, why, label, title and the
+// actions keep their values.
+
+const REAL_ANKLET = { kind: "jewel", n: "Anklet of Invisibility", txt: "foes aim badly", eff: { foeToHit: -2 } };
+const REAL_RING = { kind: "jewel", n: "Ring of Power", txt: "a ring, of power, allegedly", eff: { dmg: 1 } };
+
+test("Phase 95: the bagged Anklet's sheet gains lead, rules (the unchanged stats; the note was empty) and a name-keyed rulesId", () => {
+  const c = fixedChar({ items: [REAL_ANKLET] });
+  const m = gearSheetModel(st(c), { from: "bag", i: 0, n: "Anklet of Invisibility" });
+  assert.equal(m.lead, MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  assert.equal(m.note, "");
+  assert.deepStrictEqual(m.rules, m.stats);
+  assert.ok(m.stats.length > 0);
+  assert.equal(m.rulesId, "gsheet:bag:Anklet of Invisibility");
+});
+
+test("Phase 95: the worn Long Sword sheet's rules are the unchanged note (weaponMundane) then the unchanged stats", () => {
+  const c = fixedChar({ weapon: "Long Sword" });
+  const m = gearSheetModel(st(c), { from: "worn", slot: "weapon" });
+  assert.equal(m.lead, WEAPON_FLAVOR["Long Sword"]);
+  assert.equal(m.note, GEAR_COPY.weaponMundane);
+  assert.deepStrictEqual(m.rules, [GEAR_COPY.weaponMundane, ...m.stats]);
+  assert.equal(m.rulesId, "gsheet:worn:weapon");
+});
+
+test("Phase 95: worn armour's sheet leads with the armour flavour and its rules are the stats (the note is emptied there)", () => {
+  const c = fixedChar({ armor: "Mail" });
+  const m = gearSheetModel(st(c), { from: "worn", slot: "armor" });
+  assert.equal(m.lead, ARMOR_FLAVOR.Mail);
+  assert.equal(m.note, "");
+  assert.deepStrictEqual(m.rules, m.stats);
+  assert.equal(m.rulesId, "gsheet:worn:armor");
+});
+
+test("Phase 95: an empty slot, and the armour slot showing only the Cloak of Armor's magic plate, have no lead, rules or rulesId", () => {
+  const empty = gearSheetModel(st(fixedChar()), { from: "worn", slot: "jewelry2" });
+  assert.ok(!("lead" in empty) && !("rules" in empty) && !("rulesId" in empty));
+  const plate = fixedChar({ armor: "Nothing", ar: 0, armorWP: 0, armorMax: 0, worn: { cloak: { kind: "cloak", n: "Cloak of Armor", txt: "plate", eff: { ar: 15 } } } });
+  const m = gearSheetModel(st(plate), { from: "worn", slot: "armor" });
+  assert.ok(!("lead" in m) && !("rules" in m) && !("rulesId" in m));
+});
+
+test("Phase 95: a jewel SWAP FOR candidate's sub is the candidate's flavour; a greyed one keeps its reason; a weapon candidate keeps lootCompare's line", () => {
+  const c = fixedChar({ worn: { jewelry1: REAL_RING }, items: [REAL_ANKLET] });
+  const swap = gearSheetModel(st(c), { from: "worn", slot: "jewelry1" }).actions.find((a) => a.key === "swap:0");
+  assert.equal(swap.sub, MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  assert.equal(swap.sub, gearBagCardsModel(st(c))[0].lead);
+
+  const club = { kind: "weapon", n: "Club", base: "Club", bonus: 0 };
+  const w = fixedChar({ weapon: "Axe", items: [club] });
+  const cand = gearSheetModel(st(w), { from: "worn", slot: "weapon" }).actions.find((a) => a.key === "swap:0");
+  assert.equal(cand.sub, lootCompare(w, club).line);
+});
+
+test("Phase 95: an old save's removed item (a Cloak of Healing jewel) renders a sheet model as before", () => {
+  const old = { kind: "jewel", n: "Cloak of Healing", txt: "an old cloak's text" };
+  const m = gearSheetModel(st(fixedChar({ items: [old] })), { from: "bag", i: 0, n: "Cloak of Healing" });
+  assert.ok(!("lead" in m) && !("rules" in m) && !("rulesId" in m));
 });

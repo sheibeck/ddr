@@ -36,7 +36,8 @@ import { rollJewel } from "../../engine/items.js";
 import { offerFind } from "../../engine/encounters.js";
 import { makeRng } from "../../engine/rng.js";
 import { renderGearTab, GEAR_COPY, gearWornModel } from "../../src/browser/gearTab.js";
-import { usableBy } from "../../src/browser/viewModels.js";
+import { usableBy, itemStatLines, wornItemFor } from "../../src/browser/viewModels.js";
+import { renderGearSheet, gearSheetModel, GEAR_SHEET_IDS } from "../../src/browser/gearSheet.js";
 import { scrollReadOdds } from "../../src/browser/rollOdds.js";
 import { WEAPON_FLAVOR } from "../../content/weapons.js";
 import { ARMOR_FLAVOR } from "../../content/armors.js";
@@ -457,5 +458,78 @@ test("(i) Tolerant load: a bagged removed item an old save may hold shows its ow
     const doc = paintGear(state);
     assert.equal(textOf(descOf(bagLi(doc, 0))), "an old cloak's text");
     assert.equal(findAll(bagLi(doc, 0), "mw-rules-btn").length + findAll(bagLi(doc, 0), "mw-rules-body").length, 0);
+  }
+});
+
+// ─── Gear sheet (Plan 06, Task 2) ─────────────────────────────────────────
+
+function openSheet(state, target) {
+  const doc = createRecordingDocument();
+  const host = doc.document.getElementById("mw-gear-sheet");
+  const render = () => renderGearSheet(host, state, target, {});
+  assert.equal(render(), true);
+  return { doc, render, get: (id) => doc.document.getElementById(GEAR_SHEET_IDS[id]) };
+}
+
+// ─── (j) the bagged Anklet's sheet ────────────────────────────────────────
+
+test("(j) Gear sheet, bag: the note shows the flavour; RULES sit around the stats (collapsed, exact old stats), a tap opens it, a re-render keeps it open; Always on shows the body with no button", () => {
+  const state = { c: gearChar({ items: [ANKLET] }) };
+  const target = { from: "bag", i: 0, n: "Anklet of Invisibility" };
+  const oldStats = itemStatLines(ANKLET, state.c).map((l) => l.text);
+  assert.ok(oldStats.length > 0, "the Anklet has stat lines to hide");
+  const sheet = openSheet(state, target);
+  assert.equal(textOf(sheet.get("note")), MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  assert.equal(sheet.get("note").hidden, false);
+  const statsEl = sheet.get("stats");
+  const btn = findAll(statsEl, "mw-rules-btn")[0];
+  const body = findAll(statsEl, "mw-rules-body")[0];
+  assert.equal(btn.getAttribute("aria-expanded"), "false");
+  assert.equal(body.hidden, true);
+  assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), oldStats);
+  assert.ok(findAll(body, "mw-rules-line").every((p) => hasClass(p, "mw-gsheet-note") && hasClass(p, "mw-gsheet-stat")));
+  tap(btn);
+  assert.equal(body.hidden, false);
+  sheet.render();
+  assert.equal(findAll(sheet.get("stats"), "mw-rules-body")[0].hidden, false, "a revealed body stays open when the sheet re-renders");
+
+  clearRulesOpen();
+  setAlwaysRules(true);
+  const on = openSheet(state, target);
+  assert.equal(findAll(on.get("stats"), "mw-rules-btn").length, 0);
+  assert.equal(findAll(on.get("stats"), "mw-rules-body")[0].hidden, false);
+  assert.deepEqual(findAll(on.get("stats"), "mw-rules-line").map(textOf), oldStats);
+});
+
+// ─── (k) the worn weapon's sheet ──────────────────────────────────────────
+
+test("(k) Gear sheet, worn weapon: the note shows the weapon flavour; the RULES body holds the exact old voice line then every stat line", () => {
+  const state = { c: gearChar() };
+  const stats = itemStatLines(wornItemFor(state.c, "weapon"), state.c).map((l) => l.text);
+  const sheet = openSheet(state, { from: "worn", slot: "weapon" });
+  assert.equal(textOf(sheet.get("note")), WEAPON_FLAVOR["Long Sword"]);
+  assert.deepEqual(findAll(sheet.get("stats"), "mw-rules-line").map(textOf), [GEAR_COPY.weaponMundane, ...stats]);
+});
+
+// ─── (l) candidate subs and tolerant load ─────────────────────────────────
+
+test("(l) Gear sheet: a jewel SWAP FOR candidate's sub is that jewel's flavour; an old save's removed item renders note and stats as before with no toggle", () => {
+  const state = { c: gearChar({ worn: { jewelry1: RING }, items: [ANKLET] }) };
+  const model = gearSheetModel(state, { from: "worn", slot: "jewelry1" });
+  const swap = model.actions.find((a) => a.key === "swap:0");
+  assert.equal(swap.sub, MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  const sheet = openSheet(state, { from: "worn", slot: "jewelry1" });
+  assert.ok(findAll(sheet.get("actions"), "mw-gsheet-act-sub").map(textOf).includes(MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]));
+
+  const old = { c: gearChar({ items: [OLD_CLOAK] }) };
+  const target = { from: "bag", i: 0, n: "Cloak of Healing" };
+  const before = gearSheetModel(old, target);
+  assert.ok(!("lead" in before) && !("rules" in before) && !("rulesId" in before));
+  for (const on of [false, true]) {
+    setAlwaysRules(on);
+    const s = openSheet(old, target);
+    assert.equal(textOf(s.get("note")), before.note);
+    assert.deepEqual(findAll(s.get("stats"), "mw-gsheet-stat").map(textOf), before.stats);
+    assert.equal(findAll(s.get("stats"), "mw-rules-btn").length + findAll(s.get("stats"), "mw-rules-body").length, 0);
   }
 });
