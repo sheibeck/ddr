@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 95
-current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
-status: verifying
+current_phase: 96
+current_phase_name: "Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review"
+status: planning
 stopped_at: Completed 95-08-PLAN.md
-last_updated: "2026-10-03T23:51:56.250Z"
+last_updated: "2026-10-03T23:52:46.009Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 95 execution started
+last_activity_desc: Phase 95 complete, transitioned to Phase 96
 progress:
   total_phases: 8
   completed_phases: 5
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 95 (Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items) — EXECUTING
-Plan: 8 of 8
-Status: Phase complete — ready for verification
-Last activity: 2026-10-03 — Phase 95 execution started
+Phase: 96 — Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-03 — Phase 95 complete, transitioned to Phase 96
 Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
