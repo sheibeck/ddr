@@ -211,6 +211,16 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/treasure-tables.js", "MISC_MAGIC", "items", "a misc-magic treasure kind"),
   // Pre-registered for wave-1 sibling 79-03 (absent at the phase base).
   bank("content/identity.js", "IDENTITY_TRAITS", "blurbs", "an authored advantage or disadvantage line in a sub-class or race footer", { pick: ["text"] }),
+  // Phase 95 (FLAVOR-01/02/05): the flavour layer's banks, pre-registered by 95-01 (absent until their batch lands).
+  bank("content/spells.js", "SPELL_FLAVOR", "spells", "a spell's flavour line (the Grimoire and the combat SPELLS menu)"),
+  bank("content/spells.js", "SCROLL_FLAVOR", "items", "a scroll's flavour line (the Gear SCROLLS row, the combat ITEMS menu and the store)"),
+  bank("content/potions.js", "POTION_FLAVOR", "items", "a potion's flavour line (Gear, store, loot and find cards, combat ITEMS menu)"),
+  bank("content/tools.js", "TOOL_FLAVOR", "items", "a tool's or the lockpicks' flavour line (Gear, store, loot and find cards, combat ITEMS menu)"),
+  bank("content/bags.js", "BAG_FLAVOR", "items", "a bag's flavour line (Gear, store, loot and find cards)"),
+  bank("content/treasure-tables.js", "MAGIC_ITEM_FLAVOR", "items", "a jewel's, cloak's or staff's flavour line (Gear, store, loot and find cards, combat ITEMS menu)"),
+  bank("content/weapons.js", "WEAPON_FLAVOR", "items", "a weapon type's flavour line (Gear, store, loot and find cards)"),
+  bank("content/armors.js", "ARMOR_FLAVOR", "items", "an armour type's flavour line (Gear, store, loot and find cards)"),
+  bank("src/browser/rulesLayer.js", "RULES_COPY", "panels", "the RULES toggle that reveals an item's or spell's exact rules"),
 ]);
 
 /**
@@ -299,6 +309,8 @@ export const NON_COPY_EXPORTS = Object.freeze([
   // 79-13: an engine lookup, so only the raw sweep ever met it (the
   // completeness audit walks src/browser and content, not engine).
   nonCopy("engine/derived.js", "PARTY_WIDE_ITEM_EFFECTS", "activation keys (item names used as ids) for the party-wide item effects quick fix 79-02b added; the lookup is never printed, and the Crystal Staff's text is walked as content:STAVES"),
+  // Phase 95 (FLAVOR-05): the flavour domain registry.
+  nonCopy("src/browser/flavorText.js", "FLAVOR_DOMAINS", "the flavour domain registry: ids, content keys and the map each domain reads; the lines themselves are walked through the *_FLAVOR banks"),
 ]);
 
 /** Modules that cannot be imported under node, each with why (raw sweep still covers them). */

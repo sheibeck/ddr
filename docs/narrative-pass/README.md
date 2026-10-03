@@ -230,3 +230,11 @@ tools/lib/voice-corpus.mjs (the registry) is not edited after 79-01 except by
 copy. The same holds for tools/lib/event-variants.mjs and the exception
 lists in tools/lib/voice-checks.mjs: only 79-12 edits them, and it prunes
 the exception lists for rot.
+
+Phase 95 (FLAVOR-01/02/05) amends this rule for the flavour layer: the eight
+*_FLAVOR maps and src/browser/rulesLayer.js#RULES_COPY are new banks, registered
+in tools/lib/voice-corpus.mjs by plan 95-01 (FLAVOR_DOMAINS is a non-copy row).
+Their lines are new-line ledger rows (`before` "") in
+docs/narrative-pass/why/y-95-NN.json, the `y-` prefix keeping the ledgers in plan
+order after `x-94-04`. Phase 96 registers its own banks the same way. See
+docs/TEXT-LAYERS.md.

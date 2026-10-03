@@ -78,6 +78,8 @@ import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../co
 import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
 import { PLAYER_WP_SOURCE } from "../../tools/lib/voice-checks.mjs";
 import { playerNote } from "../../src/browser/combatPanel.js";
+// Phase 95 (FLAVOR-01/02/05): the player-layer flavour lines.
+import { everyFlavorLine } from "../../src/browser/flavorText.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -266,6 +268,7 @@ test("Content banks: every note/txt/txt2 is free of a standalone wp/WP token", (
   }
   for (const s of SPELLS) check(`SPELLS.${s.n}.txt`, s.txt);
   for (const a of ABILITIES) check(`ABILITIES.${a.id ?? a.name}.txt`, a.txt);
+  for (const [domain, key, line] of everyFlavorLine()) check(`FLAVOR.${domain}.${key}`, line);
   for (const [k, v] of Object.entries(TOOLS)) check(`TOOLS.${k}.txt`, v.txt);
   for (const [bankName, bank] of [["RACE_NOTE", RACE_NOTE], ["CLASS_NOTE", CLASS_NOTE], ["SUB_NOTE", SUB_NOTE]]) {
     for (const [k, v] of Object.entries(bank)) check(`${bankName}.${k}`, v);

@@ -111,6 +111,9 @@ import { ENCOUNTER_TABLES } from "../../content/encounters.js";
 // ran on (every builder, bank, content field and raw literal, the 79-03
 // footers and the banks Phases 75.1-78 added).
 import { buildCorpus } from "../../tools/lib/voice-corpus.mjs";
+// Phase 95 (FLAVOR-01/02/05): the player-layer flavour lines (spells, scrolls,
+// potions, tools, bags, magic items, weapons, armour).
+import { everyFlavorLine } from "../../src/browser/flavorText.js";
 
 // ─── Matching logic (lives HERE, not in the pure-data wordlist) ─────────────
 
@@ -342,6 +345,11 @@ function collectAuthoredStrings() {
   for (const [bank, arr] of Object.entries({ JEWELRY, CLOAKS, STAVES })) {
     arr.forEach((it) => { push(`${bank}.${it.n}(name)`, it.n); push(`${bank}.${it.n}.txt`, it.txt); });
   }
+  // Phase 95 (FLAVOR-01/02/05): every flavour line, scanned AND counted here.
+  // The walk is FLAVOR_DOMAINS-driven (everyFlavorLine), so Phase 96's domains
+  // need no edit here; RULES_COPY is covered by the corpus-wide scans and by
+  // test/unit/rules-layer.test.js (95-02).
+  for (const [domain, key, line] of everyFlavorLine()) push(`FLAVOR.${domain}.${key}`, line);
   // Phase 19 (D-16 / RESEARCH Pitfall 7) — new content banks are NOT
   // auto-discovered here; every foe-ability telegraph line must be scanned.
   FOE_ABILITIES.forEach((a) => { push(`FOE_ABILITIES.${a.id}(id)`, a.id); push(`FOE_ABILITIES.${a.id}.txt`, a.txt); });
