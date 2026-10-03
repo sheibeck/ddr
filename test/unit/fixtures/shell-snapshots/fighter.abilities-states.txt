@@ -1,0 +1,45 @@
+## #cb-sub-title
+<span id="cb-sub-title" class="cb-sub-title">
+  text="TEST DELVER · ABILITIES"
+## #cb-sub-list
+<div id="cb-sub-list" class="cb-sub-list">
+  <button id="cb-row-ability-kata" class="cb-row" aria-disabled="true" data-cbRow="1" data-state="ready" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="KATA"
+      <span class="cb-row-cost">
+        text="READY"
+    <div class="cb-row-desc">
+      text="one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it"
+  <button id="cb-row-ability-pommelStrike" class="cb-row" aria-disabled="true" data-cbRow="2" data-state="recharging" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="POMMEL STRIKE"
+      <span class="cb-row-cost">
+        text="READY IN 3"
+    <div class="cb-row-desc">
+      text="the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn"
+  <button id="cb-row-ability-deathTouch" class="cb-row" aria-disabled="true" data-cbRow="3" data-state="spent" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="DEATH TOUCH"
+      <span class="cb-row-cost">
+        text="SPENT THIS FIGHT"
+    <div class="cb-row-desc">
+      text="call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight"
+  <button id="cb-row-ability-sweep" class="cb-row" aria-disabled="true" data-cbRow="4" data-state="unavailable" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="SWEEP"
+      <span class="cb-row-cost">
+        text="NEEDS TWO OR MORE FOES"
+    <div class="cb-row-desc">
+      text="one wide arc: every living foe takes half damage; needs two or more foes"
+  <button id="cb-row-ability-lastStand" class="cb-row" aria-disabled="true" data-cbRow="5" data-state="unavailable" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="LAST STAND"
+      <span class="cb-row-cost">
+        text="NEEDS A QUARTER HP OR LESS"
+    <div class="cb-row-desc">
+      text="under a quarter hp: three attacks this round; ready again 4 rounds after you use it"
