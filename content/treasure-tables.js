@@ -431,3 +431,40 @@ export const FAERIE = [
 ];
 
 export const MISC_MAGIC = ["Cloak", "Potion", "Scroll", "Grimoire", "Potion", "Staff", "Cloak", "Jewelry", "Potion", "Scroll"];
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): the player
+// line for each jewel, cloak and staff, keyed by the row name a rolled item keeps
+// as `n` (JEWELRY, CLOAKS then STAVES, in table order). The `txt` on every row
+// above stays the exact rules text, pinned by the v2.3 guards and shown under
+// RULES. The flavour is never inline on JEWELRY_ROWS, CLOAKS_ROWS or STAVES_ROWS,
+// because those rows are spread onto rolled items and a field there would be
+// saved; it is looked up by name at draw time (src/browser/flavorText.js). Each
+// line is one sentence of about 90 characters or fewer that hints at what the
+// thing does or how it feels to use without a number, die or percentage
+// (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const MAGIC_ITEM_FLAVOR = Object.freeze({
+  "Ring of Power": "Puts a little extra spite into every swing for a while, then needs a lie-down.",
+  "Gauntlet of the Giant": "A glove with ambitions: you grow, hit harder, and become far easier to aim at.",
+  "Amulet of Light": "A pocket sunrise: the dark backs off for a good while, then the amulet holds a grudge.",
+  "Pendant of Fortitude": "Softens a blow into a mere insult, though it wants a long rest between favours.",
+  "Anklet of Invisibility": "Makes you a little easy to overlook, so foes aim badly until the effect lapses.",
+  "Helm of Knowledge": "Lends you the gift of the gab, so Humans, Demons and Beasts may let you finish talking.",
+  "Bracelet of Flight": "A bangle that waives gravity for a short flight, then reinstates it without warning.",
+  "Amulet of Stone": "Gives several foes a look so cold they set solid, unless they have the nerve to resist.",
+  "Cloak of Strength": "Strength in name only: it keeps a foe's luckiest strike from hurting you any extra.",
+  "Cloak of Invisibility": "A proper vanishing act that leaves foes hitting you purely by accident, now and then.",
+  "Cloak of Speed": "Stitched by a tailor in a hurry: you get swings in while the foe is clearing its throat.",
+  "Cloak of Regeneration": "Tucks you in with a quick patch-up, then fusses over you every few steps until it tires.",
+  "Cloak of Armor": "Wears like silk and turns blows like plate, whatever you do for a living.",
+  "Cloak of Flying": "Billows dramatically and lifts you over obstacles for a while, then drops the subject.",
+  "Cloak of Ether": "Makes walls a polite suggestion for a short while, so mind where you are when it ends.",
+  "Rowan Staff": "Raises a dome around you that swallows blows until it has had quite enough.",
+  "Birch Staff": "Breathes frost on the nearest foes, who stand around stiff and cross until they thaw.",
+  "Walnut Staff": "Drains the fight from every foe in the room, who then swing feebly and mostly miss.",
+  "Oak Staff": "Sends a rumble of bad geology at the foes it picks, who set solid unless they dodge it.",
+  "Crystal Staff": "Sweeps a veil over the whole party, so everyone becomes a rumour and foes mostly flail.",
+  "Poplar Staff": "Hands out first aid to you and every Joiner, like a very small and very kind hospital.",
+  "Pine Staff": "Hands each foe in turn a fireball that needs no aiming and comes with no apology.",
+  "Cedar Staff": "Puffs out a drowsy fog that packs foes off to bed for the fight, if they let it.",
+});
