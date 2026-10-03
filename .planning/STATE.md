@@ -5,15 +5,15 @@ milestone_name: Fit & Finish
 current_phase: 95
 current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
 status: executing
-stopped_at: Completed 95-04-PLAN.md
-last_updated: "2026-10-03T22:31:17.755Z"
+stopped_at: Completed 95-05-PLAN.md
+last_updated: "2026-10-03T22:48:46.330Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 95 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 18
-  completed_plans: 14
+  completed_plans: 15
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 ## Current Position
 
 Phase: 95 (Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items) — EXECUTING
-Plan: 5 of 5
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 95 execution started
 Progress: [████████░░] 78% (0 of 6 phases)
@@ -291,8 +291,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T22:31:17.682Z
-Stopped at: Completed 95-04-PLAN.md
+Last session: 2026-10-03T22:48:40.833Z
+Stopped at: Completed 95-05-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -516,6 +516,7 @@ Resume file: None
 | Phase 95 P02 | 25min | 3 tasks | 12 files |
 | Phase 95 P03 | 35min | 3 tasks | 7 files |
 | Phase 95 P04 | 40min | 3 tasks | 6 files |
+| Phase 95 P05 | ~30 min | 3 tasks | 9 files |
 
 ## Decisions
 
@@ -896,6 +897,7 @@ Resume file: None
 - [Phase ?]: 95-02: RULES toggle is a plain-onclick inspection with open ids in a module-level set; wrapRow places the toggle beside, never inside, an action row
 - [Phase ?]: Phase 95-03: flavour lines live in keyed frozen maps (SPELL/SCROLL/POTION/TOOL/BAG_FLAVOR); Lockpicks gets a TOOL_FLAVOR entry though it has no TOOLS row
 - [Phase ?]: 95-04: weapon and armour flavour lines hint at heft, speed, temper and wearer only, never a bonus, name or magic, so premium and warded variants share their type's line
+- [Phase 95]: 95-05: the niche label stays as the leading category tag before the flavour on the Grimoire and combat rows; rules ids carry the bag index or slot so same-named items never share a toggle
 
 ### Blockers
 
