@@ -27,7 +27,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Condition chips (todo)
 
-- [ ] **CHIP-01**: Harmful condition chips (disease, poison, any `tone: "bad"`) always render first (far left), with a stable order within each group; done in the view layer so engine `conditionsOf` order and fixtures don't move
+- [x] **CHIP-01**: Harmful condition chips (disease, poison, any `tone: "bad"`) always render first (far left), with a stable order within each group; done in the view layer so engine `conditionsOf` order and fixtures don't move
 
 ### Cloak of Regeneration (todo)
 
@@ -72,7 +72,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHIP-01 | Phase 93 | Pending |
+| CHIP-01 | Phase 93 | Complete |
 | ITEM-08 | Phase 93 | Pending |
 | ITEM-09 | Phase 93.1 | Pending |
 | ASTATE-01 | Phase 94 | Pending |

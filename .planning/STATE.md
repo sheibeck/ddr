@@ -4,16 +4,16 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 93
 current_phase_name: "Quick Wins: Harmful Chips First & Cloak Heals on Use"
-status: planning
-stopped_at: "RELEASE 2.3.0 SUBMITTED (2026-10-02). vc13 AAB on the closed-testing track, in review; Data safety + IARC re-read done by user; tags v2.3.0 / v2.3.0-play13 pushed; GitHub Release created; site patch notes + privacy pages deployed. Phases 88-92.4 complete (inserted 92.1-92.4 from the device pass). Live: TRANSITION rules (fixed be6716a7, smoke 8/8 + function 4/4), boardName fn, Play Games provider, rekey-deep done (22/22). DONE 2026-10-02: final rules live (plain smoke all PASS after the smoke rank-check fix 656f5e90), rekey 22/22, transition artefacts deleted (cf1c5c75, full suite 10,175/0 fail). NEXT: (2) the batched Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) incl. Part B with Compete ON; (3) /gsd-complete-milestone v2.3 then cleanup. Deferred todo: fantasy-flavor player descriptions (next milestone)."
-last_updated: "2026-10-03T13:26:53.415Z"
+status: executing
+stopped_at: Completed 93-01-PLAN.md
+last_updated: "2026-10-03T14:29:42.302Z"
 last_activity: 2026-10-03
-last_activity_desc: Roadmap created for v2.4 (Phases 93–98, 22/22 requirements mapped)
+last_activity_desc: Phase 93 execution started
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** v2.4 Fit & Finish — roadmap created (Phases 93–98, 22/22 requirements mapped); next: /gsd-discuss-phase 93, then /gsd-plan-phase 93
+**Current focus:** Phase 93 — Quick Wins: Harmful Chips First & Cloak Heals on Use
 
 ## Current Position
 
-Phase: 93 of 98 (Quick Wins: Harmful Chips First & Cloak Heals on Use) — not started
-Plan: —
-Status: Roadmap created; ready to plan Phase 93
-Last activity: 2026-10-03 — Roadmap created for v2.4 (Phases 93–98, 22/22 requirements mapped)
-Progress: [░░░░░░░░░░] 0% (0 of 6 phases)
+Phase: 93 (Quick Wins: Harmful Chips First & Cloak Heals on Use) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-10-03 — Phase 93 execution started
+Progress: [███░░░░░░░] 33% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -290,8 +290,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-09-30T15:00:16.664Z
-Stopped at: RELEASE 2.3.0 SUBMITTED (2026-10-02). vc13 AAB on the closed-testing track, in review; Data safety + IARC re-read done by user; tags v2.3.0 / v2.3.0-play13 pushed; GitHub Release created; site patch notes + privacy pages deployed. Phases 88-92.4 complete (inserted 92.1-92.4 from the device pass). Live: TRANSITION rules (fixed be6716a7, smoke 8/8 + function 4/4), boardName fn, Play Games provider, rekey-deep done (22/22). DONE 2026-10-02: final rules live (plain smoke all PASS after the smoke rank-check fix 656f5e90), rekey 22/22, transition artefacts deleted (cf1c5c75, full suite 10,175/0 fail). NEXT: (2) the batched Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) incl. Part B with Compete ON; (3) /gsd-complete-milestone v2.3 then cleanup. Deferred todo: fantasy-flavor player descriptions (next milestone).
+Last session: 2026-10-03T14:29:42.201Z
+Stopped at: Completed 93-01-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -501,6 +501,7 @@ Resume file: None
 | Phase 88 P02 | 11 min | 2 tasks | 5 files |
 | Phase 88 P03 | 6 min | 2 tasks | 1 files |
 | Phase 88 P04 | 31 min | 3 tasks | 25 files |
+| Phase 93 P01 | 40min | 2 tasks | 7 files |
 
 ## Decisions
 
@@ -868,6 +869,7 @@ Resume file: None
 - [Phase ?]: 87-09: board-row long-press click suppression shares the shell's single window click listener with the foe press (ui-tap-shell pins exactly one)
 - [Phase ?]: 87-10: leaderboard sheet bottom inset applied once per entry path (base rule adds it, in-game override resets since the tab bar pads it)
 - [Phase ?]: 87-08: user deferred the live DEPTH-key transition-rules deploy; it runs before milestone-end debug-APK testing with Compete ON or at Release 2.3.0 step 1, whichever is first
+- [Phase ?]: 93-01: harmfulFirst partitions on engine polarity (not tone); applied in paintConditions and the hero branch of yourLotChipsFor only
 
 ### Blockers
 
