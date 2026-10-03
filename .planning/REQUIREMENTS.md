@@ -19,11 +19,11 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Ability states (999.20)
 
-- [ ] **ASTATE-01**: The player sees each ability row in one of four states — Ready, Recharging, Can't use now, Spent this fight — each with its own colour token plus a non-colour cue (icon or label)
+- [x] **ASTATE-01**: The player sees each ability row in one of four states — Ready, Recharging, Can't use now, Spent this fight — each with its own colour token plus a non-colour cue (icon or label)
 - [x] **ASTATE-02**: A Recharging ability shows its countdown ("ready in N")
 - [x] **ASTATE-03**: A Can't-use-now ability shows the gate's reason on the row (e.g. "no foe in reach", "needs a weapon")
 - [x] **ASTATE-04**: The engine exposes each ability row's state category and rounds left, so the view never infers it
-- [ ] **ASTATE-05**: The states are readable in the shipped (dark) theme and for colour-blind players, pinned by shell snapshot and a11y tests (user 2026-10-03: no light theme ships, so "light and dark" became the shipped theme)
+- [x] **ASTATE-05**: The states are readable in the shipped (dark) theme and for colour-blind players, pinned by shell snapshot and a11y tests (user 2026-10-03: no light theme ships, so "light and dark" became the shipped theme)
 
 ### Condition chips (todo)
 
@@ -75,11 +75,11 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | CHIP-01 | Phase 93 | Complete |
 | ITEM-08 | Phase 93 | Complete |
 | ITEM-09 | Phase 93.1 | Complete |
-| ASTATE-01 | Phase 94 | Pending |
+| ASTATE-01 | Phase 94 | Complete |
 | ASTATE-02 | Phase 94 | Complete |
 | ASTATE-03 | Phase 94 | Complete |
 | ASTATE-04 | Phase 94 | Complete |
-| ASTATE-05 | Phase 94 | Pending |
+| ASTATE-05 | Phase 94 | Complete |
 | FLAVOR-01 | Phase 95 | Pending |
 | FLAVOR-02 | Phase 95 | Pending |
 | FLAVOR-05 | Phase 95 | Pending |

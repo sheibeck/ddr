@@ -95,9 +95,9 @@
 - ✓ **A store purchase never loses the item** — v1.9 Phase 61 (STORE-02/03): `storeBuyRefusal` settles gold, then legality, then room, before payment. A not-better buy is bagged (`purchaseBagged`), and an upgrade auto-equips with the old piece traded in and said so. Store rows grey exactly when the engine refuses, and the explained upgrade line (`d8 vs your d6 · −1 to hit · 4.1 vs 5.0 a swing`) shows on store, loot and find. One fixture was declared (economy).
 - [ ] **Large-screen support** (next milestone v2.4, backlog 999.17) — drop the portrait lock Play flagged on the 2.3.0 upload; responsive landscape, tablet, foldable and Chromebook layouts; rotation never restarts a run
 - [ ] **Fresh store and website screenshots** (v2.4, backlog 999.18) — after large-screen support, so tablet shots are real
-- [ ] **Ability states you can tell apart** (v2.4, backlog 999.20) — ready / recharging (ready in N) / can't use now / spent this fight (/ active), not by colour alone
+- ✓ **Ability states you can tell apart** — v2.4 Phase 94 (ASTATE-01..05): the engine's `abilityState`/`singState` drive the combat ABILITIES rows and the Hero tab: READY / READY IN N / the gate's reason / SPENT THIS FIGHT, by word, row edge and four colour-blind-checked tokens; a tap always agrees with the label (Active state deferred)
 - [ ] **Fantasy-flavour player text** (v2.4 todo) — players read narrative; the exact rules stay in code, docs and the audit pins
-- [ ] **Small v2.4 todos** — harmful condition chips always first; the Cloak of Regeneration heals once on use (ruling A or B pending)
+- ✓ **Small v2.4 todos** — v2.4 Phase 93: harmful condition chips first; the Cloak of Regeneration heals a d6 on use (ruling B); plus Phase 93.1, the Gauntlet of the Giant at +6
 
 ### Out of Scope
 
@@ -114,7 +114,7 @@
 
 **Target features:**
 - **Large-screen support** (backlog 999.17): drop the portrait lock Play flagged on the 2.3.0 upload; responsive landscape, tablet, foldable and Chromebook layouts; rotation and resizing never restart a run
-- **Ability states you can tell apart** (999.20): ready / recharging (ready in N) / can't use now / spent this fight (/ active), each with a non-colour cue too
+- ✓ **Ability states you can tell apart** (999.20): READY / READY IN N / the gate's reason / SPENT THIS FIGHT, each with a word, an edge style and a colour-blind-checked colour; dark theme only (user 2026-10-03) — Phase 94 (ASTATE-01..05)
 - ✓ **Harmful condition chips first** (todo): every engine-bad chip leads the HUD strip and the hero's YOUR LOT card; Joiner and foe rows unchanged — Phase 93 (CHIP-01)
 - ✓ **Cloak of Regeneration heals on use** (todo): ruling (B), user 2026-10-03: a d6 at once, then a d6 at 10, 20 and 30 squares (4 ticks); heals in a fight too; price unchanged — Phase 93 (ITEM-08)
 - ✓ **Gauntlet of the Giant worth wearing** (GitHub player report #6, added 2026-10-03): its size step's damage bonus made worth foes +1 to hit, as Enlarge was in 2.3.0 — Phase 93.1 (ITEM-09); issue #6 closes when it ships
