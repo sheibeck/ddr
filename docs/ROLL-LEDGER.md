@@ -103,7 +103,7 @@ Every remaining non-comment `rng.d(` call, listed as `file#function — SELECTIO
 - encounters.js#newDay food pick (L357, `FOODS[rng.d(6)-1]`).
 - encounters.js#findMisc misc-magic pick (L411), potion pick (L419), cloak pick (L430), jewelry pick (L437).
 - encounters.js#meetFaerie gift-table pick (L449, `FAERIE[r-1]`).
-- encounters.js#learnSpells spell-level table pick (L532).
+- encounters.js#meetJoiner Level Table pick (`SPELL_LEVEL_TABLE[d10]`, capped by `joinerLevelCap(depth)` since Phase 94.1, JOIN-01; the d10 is drawn first and tagged `roll:selection`).
 - encounters.js#catchAffliction affliction-kind pick (L633), phobia pick (L637, and the second catchAffliction-family phobia pick at L678).
 - encounters.js#goInsane insanity-table pick (L657).
 - magic.js#castSpell insane outcome-table pick (L423, `r` 1-6 dispatch).

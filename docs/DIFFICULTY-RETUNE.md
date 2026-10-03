@@ -2781,6 +2781,8 @@ fixture moves (no replay site meets a Joiner — `test/parity/FIXTURE-INVENTORY.
 Phase 53 section, JOIN-02 guard in `test/parity/divergence-records.test.js`),
 pinned by `test/unit/joiner-level-cap.test.js` (SC1–SC3).
 
+**Superseded (Phase 94.1, JOIN-01, 2026-10-03):** the cap is no longer the floor number but the floor's band, `joinerLevelCap(depth)` = ceil(depth / 3), at least 1 and at most 5 (the d10 still drawn first). See "Post-pass rule change (94.1, 2026-10-03)" under the v2.3 balance close.
+
 **Parameters (identical BEFORE/AFTER):**
 - `node tools/tune-difficulty.mjs --seeds=200` (solo)
 - `node tools/tune-difficulty.mjs --seeds=200 --party`
@@ -8227,6 +8229,24 @@ TUNE-10 is closed and this change was not part of any measured pass. It is a rul
 - **Unchanged.** The descend bonus (`heroSpFor(40 + 30 x floor)`) and the table-four XP dots (+10, +25). Floor 1 pays exactly as before. No rng draw is added or moved.
 - **What was measured.** Only fixtures: parity and determinism pass unchanged (every parity fixture fights on floor 1), the roll-high state pins moved (seven labels, hash only; actions, dead and depth are unchanged), the pre-switch save's expected hash moved, and each was proven to be this rule alone by re-running under `XP_DEPTH_SCALE: { perDepth: 0 }`, which reproduces the old values exactly. Declared under test/parity/FIXTURE-INVENTORY.md "Phase 92.4 plan 01". No difficulty table, band or constant was re-measured.
 - **Open question (for the user, when a measurement is wanted).** Faster leveling at depth raises the hero's skill level, hit points and strike die sooner on every floor below the first, so it eases the curve the Phase 79.2 lock fitted (fair-bot p50 death depth 5, target 3 to 4). A later bot pass, if one is ever run, will see this rule in its base; comparing `--dials '{"XP_DEPTH_SCALE":{"perDepth":0}}'` against the shipped 0.10 is the one switch that measures it.
+
+### Post-pass rule change (94.1, 2026-10-03): a Joiner's level follows the floor
+
+TUNE-10 is closed and this change was not part of any measured pass. It is a rule the user ruled from play ("I find that i'm usually still level 1 by the time I reach floor 4-ish. So, Joiners should be at most depth/3 minimum 1 for level."; and, on the shape of it, "you should never find a level 5 Joiner at level 5 dungeon. Max level on find should be dungeon depth / 3 (min. 1)"), recorded here as a post-pass, user-ruled change. It was measured by one informational `--party` readout only (no target, no verdict, no dial change).
+
+- **Before.** A Joiner's level was the Level Table d10 (1 to 5), capped at the floor number since Phase 53, so a floor-4 Joiner could be level 4.
+- **After.** The same roll capped by `engine/encounters.js#joinerLevelCap(depth)`: ceil(depth / 3) held to 1..5, so floors 1–3 give 1, 4–6 at most 2, 7–9 at most 3, 10–12 at most 4, 13 and deeper at most 5. It is a cap, not an exact level: a low roll stays low. Hit points (`20 x level + d20`) and the level-pool abilities follow the level. A Joiner keeps the level it was met at.
+- **Unchanged.** The d10 is still drawn first, so no draw is added or moved and the cursor is byte-identical; the meeting line, the Joiner card and the Company panel (they already state the level); `SPELL_LEVEL_TABLE`.
+- **What was measured.** The parity fixtures did not move (66 / 66, no replay site meets a Joiner). Of the eight roll-high pins, one moved by behaviour: `solo-1` (the run meets a level 3 Cat Burglar on floor 4 who is now level 2); the other seven re-measured byte-identical. Declared under test/parity/FIXTURE-INVENTORY.md "Phase 94.1 plan 01". The readout pair, same command both times, `node tools/tune-difficulty.mjs --seeds=200 --party`, BASE `fff4b8d7` (a `git archive`) against the finished engine (`4b1dd2a6`), saved as tools/readouts/94.1-01-party-before.txt and tools/readouts/94.1-01-party-after.txt:
+
+  | line | before (BASE) | after (94.1) |
+  | --- | --- | --- |
+  | Death-depth distribution | `min=1  p50=5  p90=8  max=14` | `min=1  p50=5  p90=8  max=14` |
+  | Reach table | `>=5: 64.8%  >=10: 1.0%  >=20: 0.0%` | `>=5: 64.8%  >=10: 0.5%  >=20: 0.0%` |
+  | Party | `member forced at run start in 192/200 runs; member alive at run end: 127 (63.5%)` | `member forced at run start in 192/200 runs; member alive at run end: 127 (63.5%)` |
+  | Joiners | `runs=194  fights=1797  casts=630  casts/fight=0.35  downs=104  parley successes with a Joiner=153 of 206  p50 with a Joiner=5` | `runs=194  fights=1798  casts=640  casts/fight=0.36  downs=105  parley successes with a Joiner=154 of 207  p50 with a Joiner=5` |
+
+  The `--party` harness forces its ally on floor 1, where both rules give level 1, so the readout moves only through Joiners met later, after a forced ally dies or is refused. Nothing was retuned from it: no dial, constant, band or bot policy changed.
 
 ## v1.2 retune (Phase 27) — TUNE-05..07
 

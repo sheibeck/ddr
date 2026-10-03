@@ -113,8 +113,10 @@ A no-op for a Magic User (no table).
   pushing an `abilityLearned { key, name, txt, level }` event directly after
   each `leveled` event (folded into the same SKILL LEVEL N rail card).
 - **Joiner:** `engine/encounters.js#meetJoiner` calls
-  `grantLevelAbilities(joinerChar, `joiner:${name}:${depth}`, lvl)` — the
-  Joiner's table actives (from its own `rollCharacter` roll) plus its
+  `grantLevelAbilities(joinerChar, `joiner:${name}:${depth}`, lvl)`, where
+  `lvl` is the Joiner's level when met (the Level Table d10 capped by
+  `joinerLevelCap(depth)`, ceil(depth / 3) held to 1..5, since Phase 94.1) and
+  fixed for good — the Joiner's table actives (from its own `rollCharacter` roll) plus its
   level-pool picks, before `pendingJoiner` is stashed.
 - **Derived-stream key formats:** `<seed>:abilities:<level>` (the hero),
   `joiner:<name>:<depth>:abilities:<level>` (a live Joiner roll — the key

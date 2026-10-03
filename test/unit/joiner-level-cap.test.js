@@ -35,6 +35,7 @@ import { SPELL_LEVEL_TABLE } from "../../content/misc-tables.js";
 import { SPELLS } from "../../content/index.js";
 import { narrateEvent } from "../../src/browser/eventNarration.js";
 import { LINE_FOR } from "../../src/browser/narrationLines.js";
+import { validatePatchNotes } from "../../tools/lib/patch-notes.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -474,4 +475,19 @@ test("meetJoiner reads the cap from joinerLevelCap(state.floor.depth): the lvl l
   const src = fs.readFileSync(path.join(REPO_ROOT, "engine", "encounters.js"), "utf8").replace(/\r\n/g, "\n");
   const line = "Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], joinerLevelCap(state.floor.depth)); // roll:selection";
   assert.equal(src.split(line).length - 1, 1, "the capped lvl line appears exactly once");
+});
+
+test("patch notes: 2.4.0 is a DRAFT that validates, and its Joiners bullet states one level per three floors, old → new", () => {
+  const md = fs.readFileSync(path.join(REPO_ROOT, "docs", "patch-notes", "2.4.0.md"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(md, /\*\*DRAFT, not yet agreed\.\*\*/, "2.4.0 stays a DRAFT");
+  assert.deepStrictEqual(validatePatchNotes(md, "2.4.0"), []);
+  const start = md.indexOf("## Monsters & difficulty\n");
+  assert.ok(start !== -1, "the Monsters & difficulty category is present");
+  const next = md.indexOf("\n## ", start + 1);
+  const body = md.slice(start, next === -1 ? md.length : next);
+  const bullets = body.split("\n").filter((l) => l.startsWith("- Joiners:"));
+  assert.equal(bullets.length, 1, "exactly one Joiners bullet");
+  for (const needle of ["→", "floors 1–3", "4–6", "7–9", "10–12", "from floor 13", "keeps the level it was met at"]) {
+    assert.ok(bullets[0].includes(needle), `the Joiners bullet carries "${needle}"`);
+  }
 });
