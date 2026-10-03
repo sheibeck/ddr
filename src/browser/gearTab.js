@@ -795,10 +795,25 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
     // an item name in this region).
     const b = doc.createElement("b");
     b.textContent = it.n + (st.text ? ` · ${st.text}` : "");
+    // Phase 95 (FLAVOR-02/05): flavour first, the row's exact old line behind RULES. A host that writes its own sub line (the loot card)
+    // opts in by naming its advice (opts.adviceFor), so the advice stays visible (orchestrator); a host that does not (the sell list)
+    // gets the flavour alone. createElement and textContent only.
+    const flavor = flavorOfItem(it);
+    const layered = flavor !== "" && (typeof opts.subFor !== "function" || typeof opts.adviceFor === "function");
     const descEl = doc.createElement("i");
-    descEl.textContent = sub;
+    descEl.textContent = layered ? flavor : sub;
     li.appendChild(b);
     li.appendChild(descEl);
+    if (layered) {
+      const advice = typeof opts.adviceFor === "function" ? opts.adviceFor(it) : "";
+      if (advice) {
+        const adviceEl = doc.createElement("i");
+        adviceEl.className = "mw-carried-advice";
+        adviceEl.textContent = advice;
+        li.appendChild(adviceEl);
+      }
+      mountRules(doc, li, { id: (container.id || "carried") + ":" + i + ":" + it.n, name: it.n, rules: sub });
+    }
     for (const a of (opts.actions || [])) {
       if (a === "use") {
         // Phase 31 (CMB-02/CMB-03, Phase 25.1 DFB-06 precedent): never

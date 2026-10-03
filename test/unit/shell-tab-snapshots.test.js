@@ -125,6 +125,8 @@
 //
 // Phase 95 (FLAVOR-02, FLAVOR-05), Plan 06, Task 2: two declared regenerations, thief.gear-sheet-bag and thief.gear-sheet-worn. The sheet's note now shows the item's flavour line (visible), and #mw-gear-sheet-stats holds a collapsed RULES toggle and a hidden body whose lines are the exact old note (when there was one) and stats; a jewel or cloak SWAP FOR or EQUIP candidate's sub reads that candidate's flavour instead of its rules text. Every other fixture re-wrote the same bytes.
 //
+// Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05), Plan 07: two declared regenerations, thief-store.store and mu-store.store. Every stock row that sells a flavoured item, and the Sealed scroll, now shows the flavour first in its italic line (then the usable-by tag, the count, the compare line and the reason as before) and sits in a .mw-rules-wrap with a sibling RULES toggle and a hidden body holding the row's exact old stat line (the Sealed scroll's: GEAR_COPY.scrollDesc and the reading odds); food, rations and repair rows are unchanged; the Your gear sell list's flavoured rows show the flavour with a RULES toggle and the old line in its hidden body. Every other fixture re-wrote the same bytes.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

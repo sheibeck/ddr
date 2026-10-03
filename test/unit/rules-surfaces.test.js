@@ -36,7 +36,8 @@ import { rollJewel } from "../../engine/items.js";
 import { offerFind } from "../../engine/encounters.js";
 import { makeRng } from "../../engine/rng.js";
 import { renderGearTab, GEAR_COPY, gearWornModel } from "../../src/browser/gearTab.js";
-import { usableBy, itemStatLines, wornItemFor } from "../../src/browser/viewModels.js";
+import { usableBy, itemStatLines, wornItemFor, bagArmorText } from "../../src/browser/viewModels.js";
+import { storeRowLayer } from "../../src/browser/storeScreen.js";
 import { renderGearSheet, gearSheetModel, GEAR_SHEET_IDS } from "../../src/browser/gearSheet.js";
 import { scrollReadOdds } from "../../src/browser/rollOdds.js";
 import { WEAPON_FLAVOR } from "../../content/weapons.js";
@@ -532,4 +533,137 @@ test("(l) Gear sheet: a jewel SWAP FOR candidate's sub is that jewel's flavour; 
     assert.deepEqual(findAll(s.get("stats"), "mw-gsheet-stat").map(textOf), before.stats);
     assert.equal(findAll(s.get("stats"), "mw-rules-btn").length + findAll(s.get("stats"), "mw-rules-body").length, 0);
   }
+});
+
+// ─── Plan 07: the store, the Sealed scroll and the Your gear sell list ────
+
+/** Paints the store the way the shell does: setState, then renderEncounter(). */
+function paintStore(state, existing = null) {
+  const doc = existing ? existing.doc : createRecordingDocument();
+  const sandbox = existing ? existing.sandbox : loadShellSandbox({ doc });
+  sandbox.setState(state);
+  sandbox.renderEncounter();
+  return { doc, sandbox, shelf: doc.document.getElementById("shelf"), sell: doc.document.getElementById("sell-list") };
+}
+
+const italicIn = (el) => {
+  const m = /<i>([\s\S]*?)<\/i>/.exec(String(el.innerHTML));
+  return m ? m[1] : null;
+};
+
+/** The stock button whose name span starts with `name`. */
+function stockButton(shelf, name) {
+  const buttons = shelf.children.flatMap((n) => (hasClass(n, "mw-rules-wrap") ? [n.children[0]] : [n]));
+  const b = buttons.find((x) => String(x.innerHTML).includes(`<span class="g-n">${name}`));
+  assert.ok(b, `a stock row for ${name}`);
+  return b;
+}
+
+/** The mw-rules-wrap a stock button sits in, or null when it is appended bare. */
+const wrapOf = (shelf, button) => shelf.children.find((n) => hasClass(n, "mw-rules-wrap") && n.children[0] === button) || null;
+
+test("(m0) storeRowLayer: food, rations and repairs return null; a potion leads with its flavour and hides the exact old stat text", () => {
+  const c = fixedStates().thiefStore.c;
+  const state = fixedStates().thiefStore;
+  assert.equal(storeRowLayer({ n: "Bread", effectId: "eatRation", effectParams: { wp: 5 }, sub: null }, c, state, true, null), null);
+  assert.equal(storeRowLayer({ n: "Rations (+1 ration)", effectId: "buyRations", effectParams: { amount: 1 } }, c, state, true, "3 left"), null);
+  assert.equal(storeRowLayer({ n: "Repair your leather", effectId: "repairArmor", effectParams: null }, c, state, true, "4 points"), null);
+  assert.equal(storeRowLayer({ n: "Mystery", effectId: "givePotion", effectParams: { item: { kind: "potion", n: "Mystery potion", eff2: "nope" } } }, c, state, true, "x"), null);
+  const potion = state.store.stock.find((l) => l.effectId === "givePotion" && l.effectParams.item.eff2 === "heal");
+  const layer = storeRowLayer(potion, c, state, false, "+d10+2 hp");
+  assert.equal(layer.lead, POTION_FLAVOR.Healing);
+  assert.equal(layer.rules, "+d10+2 hp");
+});
+
+test("(m) store: a flavoured stock row leads with its flavour, keeps count/compare/reason, and its exact old stat line sits behind a RULES toggle that is a sibling of BUY", () => {
+  const state = fixedStates().thiefStore;
+  const { shelf } = paintStore(state);
+
+  const heal = stockButton(shelf, "Healing potion");
+  const healWrap = wrapOf(shelf, heal);
+  assert.ok(healWrap, "the Healing potion row is wrapped");
+  const lead = italicIn(heal);
+  assert.ok(lead.startsWith(POTION_FLAVOR.Healing), lead);
+  assert.ok(!/\d/.test(lead.split(" · ")[0]), "no digit before the first separator");
+  assert.equal(findAll(heal, "mw-rules-btn").length, 0, "the toggle is never inside the BUY button");
+  const [btn] = findAll(healWrap, "mw-rules-btn");
+  assert.equal(btn.getAttribute("aria-expanded"), "false");
+  assert.ok(healWrap.children.includes(btn) && healWrap.children[0] === heal, "the toggle is the BUY button's sibling");
+  const [body] = findAll(healWrap, "mw-rules-body");
+  assert.equal(body.hidden, true);
+  assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), ["+d10+2 hp"]);
+
+  // The compare line (advice) stays visible in the italic.
+  const weapon = state.store.stock.find((l) => l.effectId === "buyWeapon");
+  const wb = stockButton(shelf, weapon.n);
+  assert.match(italicIn(wb), /(upgrade|not an upgrade)(?= ·|$)/);
+  assert.ok(wrapOf(shelf, wb), "weapon rows are wrapped too");
+
+  // Rations are unwrapped and unchanged.
+  const rations = stockButton(shelf, "Rations (+1 ration)");
+  assert.equal(wrapOf(shelf, rations), null);
+  assert.match(italicIn(rations), /^\d+ left$/);
+  assert.ok(shelf.children.includes(rations), "Rations are appended bare");
+
+  tap(btn);
+  assert.equal(body.hidden, false);
+});
+
+test("(m) store: a revealed body survives a repaint; Always on shows every body with no toggle", () => {
+  const state = fixedStates().thiefStore;
+  const first = paintStore(state);
+  const heal = stockButton(first.shelf, "Healing potion");
+  tap(findAll(wrapOf(first.shelf, heal), "mw-rules-btn")[0]);
+  const second = paintStore(state, first);
+  const wrap2 = wrapOf(second.shelf, stockButton(second.shelf, "Healing potion"));
+  assert.equal(findAll(wrap2, "mw-rules-body")[0].hidden, false, "still open after the repaint");
+
+  clearRulesOpen();
+  setAlwaysRules(true);
+  const on = paintStore(state);
+  const wrap = wrapOf(on.shelf, stockButton(on.shelf, "Healing potion"));
+  assert.equal(findAll(wrap, "mw-rules-btn").length, 0);
+  assert.equal(findAll(wrap, "mw-rules-body")[0].hidden, false);
+});
+
+test("(n) store: the Sealed scroll row shows the scroll flavour; its RULES hold the scroll's rules as the Gear SCROLLS row states them", () => {
+  const state = fixedStates().muStore;
+  const { shelf } = paintStore(state);
+  const b = stockButton(shelf, "Sealed scroll");
+  assert.ok(italicIn(b).startsWith(SCROLL_FLAVOR), italicIn(b));
+  const wrap = wrapOf(shelf, b);
+  assert.ok(wrap, "the Sealed scroll row is wrapped");
+  assert.deepEqual(findAll(wrap, "mw-rules-line").map(textOf), [`${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`]);
+  assert.equal(findAll(wrap, "mw-rules-body")[0].hidden, true);
+});
+
+test("(o) Your gear sell list: each flavoured row shows its flavour with a collapsed toggle holding the exact old line; a tap opens it and a repaint keeps it open", () => {
+  const state = fixedStates().thiefStore;
+  const first = paintStore(state);
+  const lis = first.sell.children;
+  assert.equal(lis.length, state.c.items.length);
+  let flavoured = 0;
+  lis.forEach((li, i) => {
+    const it = state.c.items[i];
+    const flavor = flavorOfItem(it);
+    const old = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
+    const [italic] = li.children.filter((n) => n.tagName === "I" || n.tagName === "i");
+    if (!flavor) {
+      assert.equal(textOf(italic), old);
+      assert.equal(findAll(li, "mw-rules-btn").length, 0);
+      return;
+    }
+    flavoured++;
+    assert.equal(textOf(italic), flavor);
+    const [btn] = findAll(li, "mw-rules-btn");
+    const [body] = findAll(li, "mw-rules-body");
+    assert.equal(btn.getAttribute("aria-expanded"), "false");
+    assert.equal(body.hidden, true);
+    assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [old]);
+  });
+  assert.ok(flavoured >= 3, "the fixture sells several flavoured items");
+
+  tap(findAll(lis[0], "mw-rules-btn")[0]);
+  const second = paintStore(state, first);
+  assert.equal(findAll(second.sell.children[0], "mw-rules-body")[0].hidden, false, "open after a second renderEncounter");
 });

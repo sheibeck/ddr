@@ -34,6 +34,10 @@
 import { armorDisplay, usableBy, storeRowState, itemStatLines } from "./viewModels.js";
 import { storeCountText } from "./viewModels.js";
 import { bagUsage, renderCarriedList } from "./gearTab.js";
+import { flavorOfItem, flavorOfScroll } from "./flavorText.js";
+import { wrapRow } from "./rulesLayer.js";
+import { GEAR_COPY } from "./gearTab.js";
+import { scrollReadOdds } from "./rollOdds.js";
 
 // Phase 33 (STORE-01, CONTEXT Area 3 "Feedback") — the store header's one-line
 // nod to the depth roll; shown ONLY on a run whose S.storeRoll is true
@@ -61,6 +65,32 @@ export function storeItemStats(line, c, showUsable = true) {
     .filter((l) => showUsable || l.key !== "usable")
     .map((l) => l.text);
   return stats.length ? stats : null;
+}
+
+/**
+ * storeRowLayer(line, c, state, showUsable, oldSub) — Phase 95 (FLAVOR-01/02/05;
+ * CONTEXT 'Where the exact numbers live'; orchestrator: usable-by, count,
+ * compare and reason stay visible): the store row's flavour lead and its
+ * rules. The rules are exactly the italic stat text the row printed before
+ * (`oldSub`); the Sealed scroll had no text at all, so its rules are the
+ * scroll's rules as the Gear SCROLLS row states them (Claude's discretion,
+ * named in 95-07). The lead is the flavour, then the "(usable by …)" tag when
+ * the row still shows one. Returns null for a line with no flavour (food,
+ * rations, repairs, an unknown item), which then renders as before. Pure.
+ */
+export function storeRowLayer(line, c, state, showUsable, oldSub) {
+  if (!line) return null;
+  if (line.effectId === "buyScroll") {
+    const lead = flavorOfScroll();
+    if (!lead) return null;
+    return { lead, rules: `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}` };
+  }
+  const item = line.effectParams && line.effectParams.item;
+  if (!item) return null;
+  const flavor = flavorOfItem(item);
+  if (!flavor) return null;
+  const tag = showUsable ? usableBy(item, c) : "";
+  return { lead: tag ? `${flavor} ${tag}` : flavor, rules: oldSub || "" };
 }
 
 /**
@@ -121,11 +151,14 @@ export function renderStoreScreen(host, state, deps = {}) {
     // Phase 89 plan 08 (ITEM-06, Q4): a Joiner's repair line (`member` param)
     // reads THAT Joiner's armour and points, never the hero's.
     const repairSheet = item.effectId === "repairArmor" && item.effectParams && Number.isInteger(item.effectParams.member) ? (state.party || [])[item.effectParams.member] : null;
-    const sub = item.effectId === "repairArmor"
+    const itemSub = item.effectId === "repairArmor"
       ? repairSheet
         ? `${repairSheet.armor} · ${Math.max(0, Number(repairSheet.armorMax) - Number(repairSheet.armorWP))} hp to mend at a tenth of its cost each`
         : `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each`
       : stats ? stats.join(" · ") : item.sub;
+    // Phase 95 (FLAVOR-01/02/05): a flavoured row leads with its flavour; the exact old italic text rides behind a RULES toggle.
+    const layer = storeRowLayer(item, c, state, rs.showUsable, itemSub);
+    const sub = layer ? layer.lead : itemSub;
     // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
     // names only, never user/item text) — safe inside innerHTML. Phase 61
     // (STORE-02/03): also gated on rs.showUsable — an illegal item's row
@@ -142,7 +175,8 @@ export function renderStoreScreen(host, state, deps = {}) {
     row.innerHTML = `<span class="g-n">${item.n}${subText || usable ? `<i>${subText || ""}${subText && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
     row.onclick = () => deps.buyItem?.(i);
-    shelf.appendChild(row);
+    // Phase 95: the RULES toggle is a sibling of the BUY button, never inside it (orchestrator); a row with no flavour is appended exactly as before.
+    shelf.appendChild(layer && layer.rules ? wrapRow(doc, row, { id: "store:" + i + ":" + item.n, name: item.n, rules: layer.rules }) : row);
   });
   // Phase 14 (ECON-06): the "Your gear" SELL section — every carried item with
   // a Sell button (deps.sellItem, forwarding to window.mzSellItem), rendered

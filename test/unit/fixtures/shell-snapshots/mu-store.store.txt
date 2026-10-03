@@ -11,30 +11,96 @@
     html="<span class=\"g-n\">Bread (+5 hp)</span>\n        <span class=\"g-c\">15 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Meat (+15 hp)</span>\n        <span class=\"g-c\">25 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Healing potion<i>+d10+2 hp</i></span>\n        <span class=\"g-c\">150 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Xtra Healing potion<i>heal to maximum</i></span>\n        <span class=\"g-c\">500 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Strength potion<i>+8 damage to blows and spells, 25 squares</i></span>\n        <span class=\"g-c\">100 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Speed potion<i>double attacks, 50 squares</i></span>\n        <span class=\"g-c\">500 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Set of lockpicks<i>6–10 on d10 against any lock</i></span>\n        <span class=\"g-c\">450 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Spear<i>d8 · d8 vs your d6 · 1.1 vs 0.9 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">150 wm</span>"
-  <button class="goods" onclick>
-    html="<span class=\"g-n\">Quarter Staff<i>d6 · 0.9 vs 0.9 average damage a swing · not an upgrade</i></span>\n        <span class=\"g-c\">25 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Sealed scroll</span>\n        <span class=\"g-c\">900 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Warded plate<i>AR 17 · 65/65 hp · enchanted · −2 to climb, leap and flee rolls · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Healing potion<i>A reassuring swig that tops you up, and tastes exactly like medicine.</i></span>\n        <span class=\"g-c\">150 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-3-Healing-potion" aria-expanded="false" aria-label="Rules for Healing potion" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-3-Healing-potion" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="+d10+2 hp"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Xtra Healing potion<i>The expensive bottle: swallow it and you are restored right to the brim.</i></span>\n        <span class=\"g-c\">500 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-4-Xtra-Healing-potion" aria-expanded="false" aria-label="Rules for Xtra Healing potion" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-4-Xtra-Healing-potion" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="heal to maximum"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Strength potion<i>Bottled biceps: blows and spells land harder until the effect wears off.</i></span>\n        <span class=\"g-c\">100 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-5-Strength-potion" aria-expanded="false" aria-label="Rules for Strength potion" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-5-Strength-potion" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="+8 damage to blows and spells, 25 squares"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Speed potion<i>Drink it and everyone else seems to be wading through porridge, for a while.</i></span>\n        <span class=\"g-c\">500 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-6-Speed-potion" aria-expanded="false" aria-label="Rules for Speed potion" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-6-Speed-potion" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="double attacks, 50 squares"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Set of lockpicks<i>Thin bits of metal and good intentions, for locks that need persuading.</i></span>\n        <span class=\"g-c\">450 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-7-Set-of-lockpicks" aria-expanded="false" aria-label="Rules for Set of lockpicks" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-7-Set-of-lockpicks" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="6–10 on d10 against any lock"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Spear<i>The original point-first argument: long reach, simple manners and few moving parts. · d8 vs your d6 · 1.1 vs 0.9 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">150 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-8-Spear" aria-expanded="false" aria-label="Rules for Spear" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-8-Spear" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="d8"
+  <div class="mw-rules-wrap">
+    <button class="goods" onclick>
+      html="<span class=\"g-n\">Quarter Staff<i>A plain, long stick: reliable, cheap, and good for walking, poking and the odd argument. · 0.9 vs 0.9 average damage a swing · not an upgrade</i></span>\n        <span class=\"g-c\">25 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-9-Quarter-Staff" aria-expanded="false" aria-label="Rules for Quarter Staff" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-9-Quarter-Staff" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="d6"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Sealed scroll<i>The scroll picks the spell and you do the reading, which seems about fair.</i></span>\n        <span class=\"g-c\">900 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-10-Sealed-scroll" aria-expanded="false" aria-label="Rules for Sealed scroll" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-10-Sealed-scroll" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="A random spell, read aloud. No refunds. Reads without fail (Magic User)."
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Warded plate<i>Gleaming metal head to toe: superb protection and all the grace of a falling wardrobe. · can't use (Fighter only)</i></span>\n        <span class=\"g-c\">4,000 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-11-Warded-plate" aria-expanded="false" aria-label="Rules for Warded plate" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-11-Warded-plate" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="AR 17 · 65/65 hp · enchanted · −2 to climb, leap and flee rolls"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Rations (+1 ration)<i>6 left</i></span>\n        <span class=\"g-c\">30 wm</span>"
-  <button class="goods" onclick>
-    html="<span class=\"g-n\">Torch<i>lights the dark once, and keeps it off for forty squares</i></span>\n        <span class=\"g-c\">25 wm</span>"
-  <button class="goods" disabled onclick>
-    html="<span class=\"g-n\">Rope<i>the honest way across a crevice. Once.</i></span>\n        <span class=\"g-c\">60 wm</span>"
+  <div class="mw-rules-wrap">
+    <button class="goods" onclick>
+      html="<span class=\"g-n\">Torch<i>Pushes the dark back for a good stretch, then burns out without apology.</i></span>\n        <span class=\"g-c\">25 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-13-Torch" aria-expanded="false" aria-label="Rules for Torch" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-13-Torch" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="lights the dark once, and keeps it off for forty squares"
+  <div class="mw-rules-wrap">
+    <button class="goods" disabled onclick>
+      html="<span class=\"g-n\">Rope<i>Gets you across a crevice with some dignity, and is used up for the favour.</i></span>\n        <span class=\"g-c\">60 wm</span>"
+    <button class="mw-rules-btn" aria-controls="mw-rules-store-14-Rope" aria-expanded="false" aria-label="Rules for Rope" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-store-14-Rope" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="the honest way across a crevice. Once."
 ## #sell-head
 <div id="sell-head" style="display:none;">
 ## #sell-list
