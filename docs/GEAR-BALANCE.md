@@ -457,7 +457,7 @@ where noted above:
 | Cloak of Ether | ether | 10 | 80 | 260919-00d: 10-square wall-walk window; cd unchanged (10 + 80 <= 100) |
 | Cloak of Flying | fly | 20 | 50 | canon "once every 50" — the row has no `every` field, so `act.cd: 50` is the explicit override; 260918-w4n removes the auto-activation on a climb/gorge tile — a ready-but-unstarted Cloak of Flying is not flying, only `useItem` on the worn cloak starts the record |
 | Ring of Power (260918-w4n) | power | 50 | 50 | `{ dmg: 1 }` while live — outside the orchestrator's originally-proposed list, but inside the rule as the user stated it ("ring... amulet, etc") |
-| Gauntlet of the Giant (260918-w4n) | giant | 50 | 50 | `{ size: 1 }` while live — RULES-11 (Phase 75.2, Plan 02): a +1 size step, race base plus items, never masked; +2 damage, one face easier for foes to hit |
+| Gauntlet of the Giant (260918-w4n; Phase 93.1) | giant | 50 | 50 | `{ size: 1, dmg: 4 }` while live — RULES-11 (Phase 75.2, Plan 02): a +1 size step, race base plus items, never masked; Phase 93.1 (ITEM-09, user ruling 2026-10-03): plus +4 bulk, +6 damage in all, foes +1 to hit you; price unchanged (1,200) |
 | Amulet of Light (260918-w4n) | glow | 50 | 50 | `{ sight: 1, light: 1 }` while live; dispels `c.darkFor` the instant it is used |
 | Anklet of Invisibility (260918-w4n) | unseen | 50 | 50 | `{ foeToHit: -2 }` while live |
 | Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
@@ -835,6 +835,8 @@ squares does not undercut the Strength potion (+8 for 25 squares at 100). A
 Troll drinking it stacks (+11 on its own +11, size Large to Huge). The Gauntlet
 of the Giant is unchanged (+2, foes +1 to hit, 50 squares every 100). Phase 92
 may retune the price with the store economy.
+
+**The Gauntlet of the Giant is worth wearing (ITEM-09, Phase 93.1).** The owner's comment on report #6: "Same thing with Gauntlet of the Giant." User ruling 2026-10-03: the Gauntlet's activation carries +4 bulk (`eff: { size: 1, dmg: 4 }`, the term Enlarge's +9 and the Ring of Power's +1 ride) on top of the step's +2, so a use is +6 damage for 50 squares, foes +1 to hit the wearer, then 50 squares to recharge; price unchanged (1,200). Less than Enlarge's +11 because the Gauntlet comes back. A Troll wearing it stacks (+6 on its own +11, Large to Huge); with Enlarge also live a Human is Huge at +17, foes +2.
 
 **The Poplar Staff heals the party (ITEM-01, ITEM-06, 89-03).** User,
 2026-09-30: it heals every party member d20+10 each (the party is the hero and
