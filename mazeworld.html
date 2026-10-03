@@ -160,6 +160,11 @@
      on a 412px screen (full line shown for 4.2% of 2,000 seeds); at 1.1 it
      is 29.3% (M 72.4%). S 0.85 < M 1 < L 1.1 stays strictly increasing. */
   --mw-font-hud-ident:calc(0.8125rem * min(var(--mw-text-scale), 1.1));
+  /* Phase 94 (ASTATE-01/05): the four ability-state inks, defined once. Each is a state's label ink and its row edge; test/unit/ability-state-a11y.test.js pins contrast, greyscale and colour-blind distinctness. */
+  --mw-ast-ready:#cbee86;
+  --mw-ast-recharging:#eeb433;
+  --mw-ast-unavailable:#fc7970;
+  --mw-ast-spent:#86898c;
 }
 *{box-sizing:border-box}
 body{
@@ -257,6 +262,16 @@ ul.skills li.none{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-te
 /* Phase 38 (ABIL-01/04) — the abilities list's provenance tag/state suffix. */
 ul.skills li small{font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));letter-spacing:.03em;color:var(--ink-soft)}
 ul.skills li span{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--moss)}
+/* Phase 94 (ASTATE-01): the Hero tab's in-combat ability rows carry the same four edges on the left rule, 4px so dashed and dotted read. */
+ul.skills li[data-state="ready"]{border-left:4px solid var(--mw-ast-ready)}
+ul.skills li[data-state="recharging"]{border-left:4px dashed var(--mw-ast-recharging)}
+ul.skills li[data-state="unavailable"]{border-left:4px dotted var(--mw-ast-unavailable)}
+ul.skills li[data-state="spent"]{border-left:4px solid transparent}
+ul.skills li[data-state="ready"] span{color:var(--mw-ast-ready)}
+ul.skills li[data-state="recharging"] span{color:var(--mw-ast-recharging)}
+ul.skills li[data-state="unavailable"] span{color:var(--mw-ast-unavailable)}
+ul.skills li[data-state="spent"] span{color:var(--mw-ast-spent)}
+ul.skills li[data-state="spent"] b{color:var(--ink-soft)}
 /* Phase 33 (UIF-01) — the GEAR row's action row + the in-place Drop confirm;
    min-height 48px comes from button.small; the revert is a timer, so there
    is deliberately no transition here. */
@@ -904,6 +919,20 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-row-cost{font-family:var(--mono);font-weight:700;font-size:calc(0.875rem * var(--mw-text-scale));color:#e8c97a;flex:none}
 .cb-row-off .cb-row-cost{color:#8f856f}
 .cb-row-desc{font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#a89c82;margin-top:6px;line-height:1.4;overflow-wrap:anywhere}
+/* Phase 94 (ASTATE-01): a row that carries a state is drawn by edge plus ink
+   plus, for unavailable, a faint hatch. Never a height, never nowrap. Spent
+   uses explicit colours, never opacity (opacity would drag the label under
+   4.5:1). The cost slot may wrap so a long reason never pushes the label. */
+.cb-row[data-state="ready"]{border:2px solid var(--mw-ast-ready)}
+.cb-row[data-state="recharging"]{border:2px dashed var(--mw-ast-recharging)}
+.cb-row[data-state="unavailable"]{border:2px dotted var(--mw-ast-unavailable);background-image:repeating-linear-gradient(135deg,rgba(252,121,112,.12) 0 1px,transparent 1px 6px)}
+.cb-row[data-state="spent"]{border:2px solid #241f16;background:#191510;color:#8f856f}
+.cb-row[data-state] .cb-row-cost{flex:0 1 auto;text-align:right;overflow-wrap:anywhere}
+.cb-row[data-state="ready"] .cb-row-cost{color:var(--mw-ast-ready)}
+.cb-row[data-state="recharging"] .cb-row-cost{color:var(--mw-ast-recharging)}
+.cb-row[data-state="unavailable"] .cb-row-cost{color:var(--mw-ast-unavailable)}
+.cb-row[data-state="spent"] .cb-row-cost{color:var(--mw-ast-spent)}
+.cb-row[data-state="spent"] .cb-row-desc{color:#8f856f}
 .cb-over{padding:13px 12px 28px;animation:mwfade .2s ease}
 .cb-over-title{font-family:var(--disp);font-size:calc(0.6875rem * var(--mw-text-scale));line-height:1.6;color:#e8c97a}
 .cb-over-title.dead{color:#e07260}
