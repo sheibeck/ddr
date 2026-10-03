@@ -542,9 +542,30 @@ export function meetFaerie(state, rng, events = []) {
   return events;
 }
 
+/** One Joiner level of cap per this many floors (Phase 94.1, JOIN-01). */
+const JOINER_FLOORS_PER_LEVEL = 3;
+
+/**
+ * joinerLevelCap(depth) — Phase 94.1 (JOIN-01, user ruling 2026-10-03: "you
+ * should never find a level 5 Joiner at level 5 dungeon. Max level on find
+ * should be dungeon depth / 3 (min. 1)"): the highest level a Joiner met on
+ * this floor may be, one level per three floors, ceil(depth / 3) held to 1..5:
+ * floors 1–3 give 1, 4–6 give 2, 7–9 give 3, 10–12 give 4, 13 and deeper give
+ * 5. The depth is guarded as engine/difficulty.js#safeDepth guards it (floored;
+ * not finite or below 1 reads as floor 1). Pure, no rng. meetJoiner and
+ * test/unit/joiner-level-cap.test.js read this one function. The top is the
+ * Level Table's own maximum, read inside the body (this module's header: no
+ * import is read at module-evaluation time).
+ */
+export function joinerLevelCap(depth) {
+  const d = Math.floor(depth);
+  const floor = Number.isFinite(d) ? Math.max(1, d) : 1;
+  return Math.min(Math.ceil(floor / JOINER_FLOORS_PER_LEVEL), Math.max(...SPELL_LEVEL_TABLE));
+}
+
 /**
  * meetJoiner(state, rng, events) — an NPC ally rolled via rollCharacter joins
- * for `min(SPELL_LEVEL_TABLE[d10], state.floor.depth)` levels of fight. Ports
+ * for `min(SPELL_LEVEL_TABLE[d10], joinerLevelCap(state.floor.depth))` levels of fight. Ports
  * mazeworld.html meetJoiner() (lines 2210-2217). NOTE (fidelity): the
  * prototype rolls TWO separate `D(20)` draws (`wp: 20*lvl+D(20), maxWP:
  * 20*lvl+D(20)`) then immediately overwrites `maxWP` with `wp`, discarding
@@ -572,7 +593,8 @@ export function meetFaerie(state, rng, events = []) {
  * RACE_NOTE and RACES.Wilmsry.note). The refusal keys on the exact race key
  * "Wilmsry".
  *
- * DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
+ * DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20; SUPERSEDED by Phase
+ * 94.1, JOIN-01): the Level Table
  * roll is clamped to the floor it is met on — early floors stop handing the
  * player a free deep-tier ally. The d10 is still drawn FIRST (zero draw-shape
  * change; the cap is a free `Math.min`), so the draw count and cursor stay
@@ -587,6 +609,20 @@ export function meetFaerie(state, rng, events = []) {
  * recruits a depth-1 (or --start-depth) ally by design — a deliberate
  * distribution shift, not a bug (docs/DIFFICULTY-RETUNE.md, Plan 02).
  *
+ * DELIBERATE RULES CHANGE (Phase 94.1, JOIN-01, user ruling 2026-10-03: a cap,
+ * not an exact level; Don't level Joiners): the Level Table roll is capped by
+ * the floor's BAND, joinerLevelCap(depth) = ceil(depth / 3) held to 1..5, in
+ * place of the floor number: floors 1–3 give level 1, 4–6 at most 2, 7–9 at
+ * most 3, 10–12 at most 4, 13 and deeper at most 5. A low roll stays low (the
+ * cap never raises a level). The d10 is still drawn FIRST (no draw added,
+ * moved or removed; the draw count and cursor are byte-identical).
+ * grantLevelAbilities, both wp rolls, c.joiner, pendingJoiner, joinerMet and
+ * joinerRefused read the one `lvl` binding. A Joiner keeps the level it was
+ * met at: nothing re-levels it on descent or on load. The bot's forceParty (the
+ * --party and start-depth recruit) follows through this function with no
+ * bot-side path. The roll-high pins this moves are declared in
+ * test/parity/FIXTURE-INVENTORY.md's Phase 94.1 plan 01 section.
+ *
  * After the joiner is rolled EXACTLY as above (all four draws unchanged,
  * `c.joiner` set identically either way), a pure read decides whether the
  * joiner will travel with this hero. On a refusal `state.pendingJoiner` is
@@ -596,13 +632,14 @@ export function meetFaerie(state, rng, events = []) {
  */
 export function meetJoiner(state, rng, events = []) {
   const c = state.c;
-  // DELIBERATE RULES CHANGE (Phase 53, JOIN-02, 2026-09-20): the Level Table
-  // roll is clamped to the floor it is met on. The d10 is still drawn first
-  // (draw count/cursor byte-identical); every downstream read (abilities, wp,
-  // c.joiner, pendingJoiner, joinerMet/joinerRefused) takes this ONE binding —
-  // the pre-cap value is remembered nowhere. No explicit [1,5] clamp needed:
-  // state.floor.depth >= 1 and the table is 1-5, so min() already bounds it.
-  const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], state.floor.depth); // roll:selection
+  // DELIBERATE RULES CHANGE (Phase 94.1, JOIN-01, user ruling 2026-10-03): the
+  // Level Table roll is capped by the floor's band, joinerLevelCap(depth) =
+  // ceil(depth / 3), 1 to 5 (it was capped at the floor number since Phase 53,
+  // JOIN-02). The d10 is still drawn first (draw count/cursor byte-identical);
+  // every downstream read (abilities, wp, c.joiner, pendingJoiner,
+  // joinerMet/joinerRefused) takes this ONE binding; a Joiner keeps this level
+  // for good (nothing re-levels it).
+  const lvl = Math.min(SPELL_LEVEL_TABLE[rng.d(10) - 1], joinerLevelCap(state.floor.depth)); // roll:selection
   const joinerChar = rollCharacter(rng);
   const wp = 20 * lvl + rng.d(20); // roll:amount
   // eslint-disable-next-line no-unused-vars -- consumed for RNG-order fidelity only

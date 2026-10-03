@@ -1806,6 +1806,11 @@ export function observe(ctx, events, stateAfter = null) {
  * engine's own meetJoiner + resolveJoiner directly on a fresh newRun state.
  * These draws shift the run's trajectory, so `--party` is its own
  * distribution, not a paired diff against the solo seed list.
+ *
+ * Phase 94.1 (JOIN-01): the recruit's level is meetJoiner's, capped by
+ * engine/encounters.js#joinerLevelCap, so a start-depth-1 --party run always
+ * recruits a level-1 ally and --start-depth N caps it at ceil(N / 3), 1 to 5;
+ * the bot carries no level logic of its own.
  */
 export function forceParty(state) {
   const rng = makeRng(state.rngState);
