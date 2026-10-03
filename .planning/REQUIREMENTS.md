@@ -28,6 +28,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 ### Condition chips (todo)
 
 - [ ] **CHIP-01**: Harmful condition chips (disease, poison, any `tone: "bad"`) always render first (far left), with a stable order within each group; done in the view layer so engine `conditionsOf` order and fixtures don't move
+
 ### Cloak of Regeneration (todo)
 
 - [ ] **ITEM-08**: Using the Cloak of Regeneration heals one tick immediately, then continues the every-N-squares ticks (ruling A — one of the three — or B — a fourth — decided in discuss-phase); the tick draws from the heal-over-time stream, never the main rng; Joiners follow the same rule; item text, chip, narration + rail twin, ITEM-AUDIT row, patch notes and the fair bot's cloak model are updated; any moved fixture is declared
@@ -67,9 +68,31 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by the roadmapper) | | |
+| CHIP-01 | Phase 93 | Pending |
+| ITEM-08 | Phase 93 | Pending |
+| ASTATE-01 | Phase 94 | Pending |
+| ASTATE-02 | Phase 94 | Pending |
+| ASTATE-03 | Phase 94 | Pending |
+| ASTATE-04 | Phase 94 | Pending |
+| ASTATE-05 | Phase 94 | Pending |
+| FLAVOR-01 | Phase 95 | Pending |
+| FLAVOR-02 | Phase 95 | Pending |
+| FLAVOR-05 | Phase 95 | Pending |
+| FLAVOR-03 | Phase 96 | Pending |
+| FLAVOR-04 | Phase 96 | Pending |
+| FLAVOR-06 | Phase 96 | Pending |
+| SCREEN-01 | Phase 97 | Pending |
+| SCREEN-02 | Phase 97 | Pending |
+| SCREEN-03 | Phase 97 | Pending |
+| SCREEN-04 | Phase 97 | Pending |
+| SCREEN-05 | Phase 97 | Pending |
+| SCREEN-06 | Phase 97 | Pending |
+| SHOTS-01 | Phase 98 | Pending |
+| SHOTS-02 | Phase 98 | Pending |
+| SHOTS-03 | Phase 98 | Pending |
 
-**Coverage:** 22 requirements — mapped: 0 (pending roadmap)
+**Coverage:** 22 requirements — mapped: 22 — unmapped: 0 (roadmap created 2026-10-03; all Pending)
 
 ---
 *Requirements defined: 2026-10-03*
+*Traceability filled: 2026-10-03 (roadmap Phases 93–98)*

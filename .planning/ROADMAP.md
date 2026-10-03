@@ -16,9 +16,23 @@
 - ✅ **v2.1 Bug Fixes** — Phases 72–81, incl. 75.1–75.3 and 79.1–79.3 (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; override closeout: 68/68 requirements, 16/16 phases passed, audit tech_debt; UAT batch `docs/UAT-v2.1.md`, 80-05 emulator pass deferred) → `.planning/milestones/v2.1-ROADMAP.md`
 - ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track; override closeout: 35/35 requirements — SRV-09's live proof passed on release day — 5/5 phases passed, Pixel 7 batch `docs/UAT-v2.2.md` passed bar 3 upgrade-path rows) → `.planning/milestones/v2.2-ROADMAP.md`
 - ✅ **v2.3 Truth in Advertising** — Phases 87–92.4, incl. 91.1–91.2 and 92.1–92.4 (shipped 2026-10-02 as Play 2.3.0 / vc13 to closed testing; override closeout: 42/42 requirements, 12/12 phases passed, audit tech_debt — 5 SUMMARY-paperwork partials; batched Pixel 7 checklist (claude.ai artifact LMpj9qYzChoYfH6GRXCEAF, incl. Part B with Compete ON) not yet walked) → `.planning/milestones/v2.3-ROADMAP.md`
+- 🚧 **v2.4 Fit & Finish** — Phases 93–98 (started 2026-10-03; promoted from backlog 999.17, 999.18, 999.20 and three 2026-10-02 todos; 22 requirements; release as Play 2.4.0 / vc14 follows the milestone)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### v2.4 Fit & Finish (Phases 93–98) — IN PROGRESS
+
+- [ ] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once.
+- [ ] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour.
+- [ ] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach.
+- [ ] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review.
+- [ ] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run.
+- [ ] **Phase 98: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the current game, with real tablet and landscape shots.
+
+**Sequencing:** SHOTS is last (user): after large-screen support so the tablet and landscape shots are real, and after the flavour text so the shots show the final words. The two quick wins go first: the cloak's final text feeds the flavour pass, and the chip strip is in its final order before the other UI work. Ability states (94) and the flavour text (95–96) land before large-screen support (97), so the landscape and tablet layouts are designed once against the final rows, the details surface and the real text lengths, and one refreshed set of shell snapshots and one perf baseline describe the final UI. Engine bytes move only in Phase 93 (ITEM-08, a derived-stream tick with declared fixtures) and Phase 94 (ASTATE-04, additive derived state, zero draws); the rest is shell, content, Android manifest and tooling. No bot pass is planned (no balance change beyond the cloak tick; the fair bot's cloak model is updated in Phase 93).
+
+**After the milestone (not requirements, not a phase):** per `docs/RELEASING.md`: patch notes agreed with the user first, one batched Pixel 7 and emulator checklist (`docs/UAT-v2.4.md`), then the release build (`npm run play:release`, versionCode 14), the user's Play upload, tags, the GitHub Release and the darktierstudios.com deploy. Uploading the new listing screenshots in Play Console is also the user's step.
 
 <details>
 <summary>✅ v2.3 Truth in Advertising (Phases 87–92.4) — SHIPPED 2026-10-02</summary>
@@ -92,9 +106,118 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 </details>
 
+## Phase Details
+
+### Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use
+
+**Goal**: A poisoned or diseased hero can't miss it, and using the Cloak of Regeneration heals right away instead of feeling like a dead tap.
+**Depends on**: Nothing (first phase of v2.4). Two small, independent fixes that land first: the cloak's final item text, chip and narration exist before Phase 95 rewrites item text (so it is rewritten once), and the chip strip is in its final order before the ability-state and large-screen work touch the same HUD. CHIP-01 is view-layer only (`src/browser/heroConditions.js`; engine `conditionsOf` order and fixtures do not move). ITEM-08 is the milestone's one rule change: the immediate tick draws from the heal-over-time derived stream (never the main rng), every new event gets an `EVENT_NARRATION` entry plus its rail twin, any moved fixture is measured, declared and regenerated, and the fair bot's cloak model (`tools/lib/tuning-bot.mjs`) plays the new rule.
+**Requirements**: CHIP-01, ITEM-08
+**Open decisions (discuss-phase)**: the cloak ruling. (A) the immediate tick is one of the three: use, +10, +20 squares, then done, same total heal as today; or (B) it is a fourth: use, +10, +20, +30 squares, a small buff to total heal. The ruling fixes the item text, the Regenerating chip's count, the ITEM-AUDIT row and the patch-notes line.
+**Success Criteria** (what must be TRUE):
+
+  1. A hero carrying a harmful condition (Poisoned, Diseased or any other bad-tone chip) plus several buffs sees every harmful chip at the far left of the chip strip, then the good ones, each group in its existing relative order, so a long row can only push good chips off the right edge.
+  2. Using a worn Cloak of Regeneration heals one tick at once, with a narrated line and its rail twin, and the every-N-squares ticks that follow match the ruling (A or B); the item text, the Regenerating chip and the Gear, store and find cards all state the same count.
+  3. A Joiner who uses the cloak gets the same immediate tick and the same follow-ups, and taking the cloak off still stops any ticks left.
+  4. A seeded run that never uses the cloak plays out identically before and after (the main rng does not move); any fixture that does move is declared; the fair bot plays the new cloak rule; and the ITEM-AUDIT row and the patch-notes entry say the same thing as the item.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 94: Ability States You Can Tell Apart
+
+**Goal**: In a fight, a player can see at a glance which abilities are ready, which are recharging, which can't be used right now and which are spent, without relying on colour alone.
+**Depends on**: Phase 93 (sequencing only: both touch the HUD's status vocabulary, so the chip order is settled first). The engine exposes each ability row's state category and rounds left as additive derived data (ASTATE-04): zero rng draws, nothing new serialized beyond what the three `*Comparable()` carve-outs already cover, so the view never infers a state. The rows live in `src/browser/combatMenu.js`, where every unavailable row today shares one disabled style and stays tappable, with the tap landing the refusal reason in the fight log.
+**Requirements**: ASTATE-01, ASTATE-02, ASTATE-03, ASTATE-04, ASTATE-05
+**Open decisions (discuss-phase; `/gsd-ui-phase` recommended)**: the four state names and labels; each state's colour token and its non-colour cue (icon, word or both); whether Recharging and Spent share a visual family; whether a Can't-use-now row stays tappable to log its refusal (today's behaviour); which themes ship, so "light and dark" is pinned correctly. Deferred to Future Requirements: a fifth Active state (chips already show running effects) and the same states on spells.
+**Success Criteria** (what must be TRUE):
+
+  1. Every ability row in the combat ABILITIES submenu shows exactly one of four states, Ready, Recharging, Can't use now or Spent this fight, each with its own colour token and a non-colour cue (an icon or a label), so the four still read apart in greyscale.
+  2. A recharging ability shows "ready in N", and N drops each round until the row flips to Ready.
+  3. A can't-use-now row states the gate's reason on the row itself ("no foe in reach", "needs a weapon"), without a tap.
+  4. The state and the rounds left come from the engine for every ability of every class and Joiner, and a tap always agrees with the label: a Ready row acts, any other row refuses with the reason it shows.
+  5. The four states stay distinguishable in light and dark themes and under colour-blind simulation, pinned by shell snapshot and a11y tests.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
+
+**Goal**: Players read fantasy flavour for every spell, scroll, weapon, armour piece, magic item and potion, while the exact rules and numbers live in a technical layer that stays reachable in game and keeps every v2.3 truth-in-advertising guard in force.
+**Depends on**: Phase 93 (the cloak's final text exists, so item text is rewritten once). This phase owns the two-layer model for every text domain in the milestone (spells and scrolls, equipment, items and potions, races and sub-classes, abilities and chips): the exact v2.3 text moves into the technical layer, and all the guards re-pin to it here, so Phase 96 can rewrite the identity, ability and chip flavour against guards that are already pinned. This phase rewrites the player layer for spells, scrolls, equipment, magic items and potions (`content/spells.js`, `content/treasure-tables.js` and the item and potion content). It changes no rule and no number; the only snapshots that move are text-layer ones, each declared. Player text stays in the house voice (sarcastic, family-friendly).
+**Requirements**: FLAVOR-01, FLAVOR-02, FLAVOR-05
+**Open decisions (discuss-phase, the milestone's biggest design call; `/gsd-discuss-phase` strongly recommended)**: where the exact numbers live in game (a details toggle on the Gear and spell sheets, the chip-tap text, a Hero-tab footer, or only in docs and code); the data shape (a flavour string beside a rules string on each entry, or a separate content file); how "no guard lost" is proven (the v2.3 audit tables' row counts before and after); the tone guide for the rewrite. The v2.3 guards that re-pin: item-text-engine, authored-ranges, spell-audit, skill-audit, value-identity and the identity tests.
+**Success Criteria** (what must be TRUE):
+
+  1. Opening any spell, scroll, weapon, armour piece, magic item or potion (Gear sheet, store, loot and find cards, combat SPELLS and ITEMS menus, grimoire) shows short, evocative fantasy flavour in the house voice, not a rules sentence.
+  2. The exact rules and numbers for each are still reachable in game, in the place the discuss-phase rules, and they match what the engine does.
+  3. Every v2.3 truth guard pins the technical layer with the same rows, none dropped, and a number deliberately drifted in the technical layer still fails a test.
+  4. Every spell and item plays exactly as before: no rule or number moved, and every snapshot that changed is a declared text-layer change.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review
+
+**Goal**: Race and sub-class blurbs, ability descriptions and condition-chip explanations read as fantasy flavour that still tells the player each one's good and bad, and every new player text clears the family-friendly scan and the narrative review.
+**Depends on**: Phase 95 (the text layer, the in-game details surface and the re-pinned guards) and Phase 94 (the ability rows' states are settled, so the descriptions are written beside their final states). Boundaries: the state labels and gate reasons from Phase 94 ("ready in N", "no foe in reach") are functional and stay plain and exact; FLAVOR-04 rewrites ability description text and `CONDITION_EXPLAIN` chip explanations only. Oracle, rail and fight-log narration lines stay as reviewed in v2.1 Phase 79 (out of scope). FLAVOR-06 closes over the text from both flavour phases.
+**Requirements**: FLAVOR-03, FLAVOR-04, FLAVOR-06
+**Open decisions (discuss-phase)**: how a flavour blurb carries its good and its bad while the identity guard still pins both (a tagged good and bad cue per blurb, or the check on the technical layer); whether the Phase 94 gate reasons stay plain; the review mechanism (reuse the v2.1 Phase 79 why-ledgers and review page).
+**Success Criteria** (what must be TRUE):
+
+  1. Every race and sub-class blurb reads as fantasy flavour and still tells the player, in voice, what that race or sub-class is good and bad at; none loses its good or its bad.
+  2. Ability descriptions (combat ABILITIES submenu, Hero tab) and condition-chip explanations (tap a chip) read as fantasy flavour, with their exact numbers and durations in the technical layer Phase 95 built.
+  3. Every player text rewritten in Phases 95 and 96 passes the family-friendly safety scan and a narrative review in the house sarcastic voice, and a review page lists each text with its verdict.
+  4. A walk across every screen (Gear, store, loot and find, spells, Hero, combat, chip taps, title) finds no description that still reads as a rulebook sentence, no rule or number moved, and every truth guard is still green against the technical layer.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 97: Large-Screen Support
+
+**Goal**: The game installs and plays on every Android screen (phone in portrait and landscape, 7" and 10" tablet, foldable, Chromebook window), and rotating, folding or resizing never loses a run.
+**Depends on**: Phases 93–96 (the HUD, the ability rows, the details surface and the final text exist, so the layouts are designed once against them and the refreshed shell snapshots and perf baseline describe the final UI). This is the milestone's largest phase. Context: `AndroidManifest.xml` sets `android:screenOrientation="portrait"` on MainActivity (the Phase 80 lock, kept honoured on Android 16 by `appCategory="game"`) and Phase 80's large-screen answer was a centred 480 CSS px column on gutters with no landscape layout (`docs/ANDROID-DISPLAY.md`). MainActivity already declares `configChanges` for orientation, screenSize, smallestScreenSize and screenLayout, so rotation should reach the WebView without recreating the activity; the emulator profiles prove it. The deferred 80-05 emulator pass (tablet, foldable, nav modes on the R8 build) overlaps this phase's verification and can be absorbed here.
+**Requirements**: SCREEN-01, SCREEN-02, SCREEN-03, SCREEN-04, SCREEN-05, SCREEN-06
+**Open decisions (discuss-phase; `/gsd-ui-phase` strongly recommended)**: (1) phones: portrait-only as a runtime Settings preference, or free rotation; (2) the landscape play-screen layout (where the maze viewport, rail, HUD, tabs, combat panel and sheets sit when the screen is wide and short); (3) the tablet, foldable and Chromebook layout (breakpoints, whether wide screens get two panes, what replaces the 480 px column); (4) whether `appCategory="game"` stays once the restrictions go; (5) whether to absorb the 80-05 emulator pass. If the discussion finds a clean seam (a rotation-safe foundation: SCREEN-01, 02, 05, then the layouts: SCREEN-03, 04, 06), `/gsd-phase` can split the phase before planning.
+**Success Criteria** (what must be TRUE):
+
+  1. The release build's merged manifest carries no orientation, resizability or max-aspect restriction, the app installs and runs, and Play's large-screen notice no longer fires on the next upload.
+  2. On a phone, rotation behaves as ruled in discuss-phase: portrait-only as a Settings choice, or free rotation.
+  3. A player can play a full run in landscape on a phone: the maze viewport, rail, HUD, tabs and every sheet and screen (combat, store, Gear, Hero, leaderboards) fit and stay usable.
+  4. On a 10" tablet, a foldable (folded and unfolded) and a Chromebook-sized window, the layout uses the space sensibly, not a stretched phone column.
+  5. Rotating, folding, unfolding, resizing and multi-window never restart or lose a run, a combat or an open store, and the safe areas and system bars are correct in every orientation; the shell snapshots and the perf baseline are refreshed.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 98: Fresh Store & Website Screenshots
+
+**Goal**: The Play listing and darktierstudios.com show the game as it now is: the final flavour text, the ability states, the board with Play Games names, and real tablet and landscape shots.
+**Depends on**: Phase 97 (the tablet and landscape shots are real) and Phases 95–96 (the shots show the final text). The last phase of the milestone, by the user's ruling. Shots come from the Pixel 7 debug build and the emulator profiles for the 7" and 10" tablets; the dev row (debug builds only) can reach deep floors, but its chip stays out of frame. Uploading the exported shots in Play Console is the user's step.
+**Requirements**: SHOTS-01, SHOTS-02, SHOTS-03
+**Open decisions (discuss-phase)**: the shot list, agreed with the user (candidates: title, combat with damage lines and ability states, the leaderboard with Play Games names, the Hero tab, a store, spells, the map), and which landscape shots earn a place.
+**Success Criteria** (what must be TRUE):
+
+  1. An agreed shot list is captured on the current build for the phone, the 7" tablet, the 10" tablet and, where it fits, landscape, with no dev chip or debug UI in frame and the final flavour text and ability states visible.
+  2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots, exported to Play's size rules, and `store-listing/LISTING.md` describes them.
+  3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live.
+
+**Plans**: TBD
+
+## Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 0/TBD | Not started | - |
+| 94. Ability States You Can Tell Apart | 0/TBD | Not started | - |
+| 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 0/TBD | Not started | - |
+| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 0/TBD | Not started | - |
+| 97. Large-Screen Support | 0/TBD | Not started | - |
+| 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
+
 ## Deferred / Not This Milestone
 
-- **80-05 emulator pass** (tablet, foldable, nav modes on the R8 build) — deferred by the user 2026-09-28 until the features are in.
+- **80-05 emulator pass** (tablet, foldable, nav modes on the R8 build) — deferred by the user 2026-09-28 until the features are in. v2.4 Phase 97 (large-screen support) is the natural place to absorb it; the user decides in that phase's discuss-phase.
 
 - **Pixel 7 UAT batches** — `docs/UAT-v2.2.md` (42 + 8 user tasks), `docs/UAT-v2.1.md` (108 + 12 quick), `docs/UAT-v2.0.md` (142), `UAT-v1.9.md` (21), `UAT-v1.8.md` (30), `UAT-v1.7.md` (25 + DR bar), `UAT-v1.6.md` (26) and `UAT-v1.5.md` (140), walked over the user's play sessions; findings become todos or quick tasks, never ad-hoc edits.
 - **UX-06** first-run tutorial — deliberately last; rebuilt on the Phase 47 modular shell (the reason SHELL-01..03 exist). Includes the UIF-04 on/off toggle dropped from v1.3.
@@ -613,7 +736,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.17: Large-screen support: drop the portrait lock (→ v2.4 — user pick, 2026-10-02)
+### Phase 999.17: Large-screen support: drop the portrait lock (PROMOTED → Phase 97)
+
+> **Promoted 2026-10-03 into milestone v2.4** as SCREEN-01..06 (Phase 97). Kept here for its planning context until v2.4 closes. Not a runnable backlog item, do not queue it.
 
 **Goal:** Delve, Die, Repeat works on tablets, foldables and Chromebooks in any orientation and window size, with no resizability or orientation restriction in the manifest.
 
@@ -637,7 +762,9 @@ Plans:
 
 - [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.18: Updated screenshots for the store listing and the website (→ v2.4, after 999.17 — user pick, 2026-10-02)
+### Phase 999.18: Updated screenshots for the store listing and the website (PROMOTED → Phase 98)
+
+> **Promoted 2026-10-03 into milestone v2.4** as SHOTS-01..03 (Phase 98, the last phase, after large-screen support and the flavour text). Kept here for its planning context until v2.4 closes. Not a runnable backlog item, do not queue it.
 
 **Goal:** the Play Store listing and darktierstudios.com show the current game (2.3+): the Play Games names on the board, SIGN IN, the new spells and the current HUD and rail.
 
@@ -688,7 +815,9 @@ Plans:
 
 - [ ] TBD (next release; promote via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.20: Tell apart an ability on cooldown, one that can't be used, and one not in effect (UI → v2.4 — user pick, 2026-10-02)
+### Phase 999.20: Tell apart an ability on cooldown, one that can't be used, and one not in effect (PROMOTED → Phase 94)
+
+> **Promoted 2026-10-03 into milestone v2.4** as ASTATE-01..05 (Phase 94). The optional fifth Active state and the same states on spells are deferred to Future Requirements. Kept here for its planning context until v2.4 closes. Not a runnable backlog item, do not queue it.
 
 **Ask (user, on 2.3.0):** "Differentiate an ability that is on cooldown from one that is not usable and one that is not active. Some sort of color difference."
 

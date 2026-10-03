@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
 status: planning
-last_updated: "2026-10-02T19:19:23.640Z"
-last_activity: 2026-10-02
+last_updated: "2026-10-03T00:00:00.000Z"
+last_activity: 2026-10-03
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Planning the next milestone (v2.4) — run /gsd-new-milestone
+**Current focus:** v2.4 Fit & Finish — roadmap created (Phases 93–98, 22/22 requirements mapped); next: /gsd-discuss-phase 93, then /gsd-plan-phase 93
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 93 of 98 (Quick Wins: Harmful Chips First & Cloak Heals on Use) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-02 — Milestone v2.4 started
+Status: Roadmap created; ready to plan Phase 93
+Last activity: 2026-10-03 — Roadmap created for v2.4 (Phases 93–98, 22/22 requirements mapped)
+Progress: [░░░░░░░░░░] 0% (0 of 6 phases)
+
+Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
 ## Ground Truth (durable facts every session needs)
 
@@ -158,6 +161,7 @@ detail; the backlog phases are the index.
 - v2.2 roadmap created 2026-09-28: Phases 82–86 (30 requirements), promoted from backlog 999.13 by the user; order 82 DAYS farming check → 83 server (research flagged) → 84 panel v3 → 85 Play Games out → 86 compliance close.
 - v2.3 roadmap created 2026-09-29: Phases 87–92 (20 requirements), promoted from backlog 999.15 (spell and skill review) and 999.16 (itemization pass), plus player reports #3–#6, #8, #9 and the two 2026-09-28 store todos. Order: 87 player-report fixes (PARTY-11, STORE-04, BOARD-28: the small independent fixes go first so the reported bugs ship even if an audit runs long, PARTY-11 pins the foe-hits-a-Joiner path before ITEM-04 extends it, and BOARD-28's live-backend check against shipped 2.2.0 clients gets the most slack; BOARD-28 sits in its own plan(s), apart from engine work) → 88 item systems (ITEM-02/03/04) → 89 item audit and fixes (ITEM-01/05/06) → 90 spell and skill audit (SPELL-08/09, ABIL-06/07; before 91 so the blurb checks and the Wizard's day-one pool run against audited spells) → 91 race and sub-class audit (IDENT-11..14) → 92 store economy and balance close (ECON-11/12, TUNE-10: bots run once, at the milestone end). No research pass (user). `/gsd-discuss-phase` recommended for ITEM-05 (Phase 89), SPELL-09 and ABIL-07 (Phase 90), IDENT-14 (Phase 91) and ECON-12's target (Phase 92). Release (patch notes agreed first, then `npm run play:release` vc13, the user's Play upload) follows the milestone and is not a phase.
 - Phase 91.1 inserted after Phase 91: Value Review: every race, sub-class and ability accounts for its systems; weak systems, tiny bonuses, one-round effects and once-per-combat limits surfaced for user rulings, then built (user, 2026-09-29)
+- v2.4 roadmap created 2026-10-03: Phases 93–98 (22 requirements), promoted from backlog 999.17 (large screens), 999.18 (screenshots), 999.20 (ability states) and the three 2026-10-02 todos (bad chips first, cloak tick on use, fantasy-flavour text). Order: 93 quick wins (CHIP-01 view-layer; ITEM-08 is the one rule change, so the cloak's final text exists before the flavour pass) → 94 ability states (ASTATE-04 is additive engine-derived state) → 95-96 the flavour pass split in two (95 builds the two-layer text model for every domain, re-pins every v2.3 truth guard to the technical layer, and rewrites spells, scrolls, equipment, items and potions; 96 rewrites races, sub-classes, abilities and chip explanations and closes with the safety scan and narrative review) → 97 large-screen support (after the UI and text surfaces are final, so layouts, shell snapshots and the perf baseline are done once; the largest phase, splittable at the rotation-foundation / layouts seam) → 98 screenshots (last by user ruling). Open decisions for discuss-phase: 93 cloak ruling A (one of three) vs B (a fourth tick); 94 state names, colour tokens and non-colour cues; 95 where the exact numbers live in game and the data shape; 96 how a flavour blurb carries good and bad while the identity guard pins both; 97 phones portrait-only (runtime Settings preference) vs free rotation, the landscape play layout, the tablet/foldable/Chromebook layout, and whether to absorb the deferred 80-05 emulator pass; 98 the shot list. No research pass. Phase numbering continues from v2.3 (last phase 92.4).
 - Phase 91.2 inserted after Phase 91.1: Board Identity: Play Games names replace rolled handles (user 2026-09-30: unique names friends recognize, no re-roll; chose Play Games over unique rolled handles after the trade-offs; 2.2.0 clients refused until update; this milestone, before release)
 
 ## Deferred Items
@@ -284,6 +288,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 Last session: 2026-09-30T15:00:16.664Z
 Stopped at: RELEASE 2.3.0 SUBMITTED (2026-10-02). vc13 AAB on the closed-testing track, in review; Data safety + IARC re-read done by user; tags v2.3.0 / v2.3.0-play13 pushed; GitHub Release created; site patch notes + privacy pages deployed. Phases 88-92.4 complete (inserted 92.1-92.4 from the device pass). Live: TRANSITION rules (fixed be6716a7, smoke 8/8 + function 4/4), boardName fn, Play Games provider, rekey-deep done (22/22). DONE 2026-10-02: final rules live (plain smoke all PASS after the smoke rank-check fix 656f5e90), rekey 22/22, transition artefacts deleted (cf1c5c75, full suite 10,175/0 fail). NEXT: (2) the batched Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) incl. Part B with Compete ON; (3) /gsd-complete-milestone v2.3 then cleanup. Deferred todo: fantasy-flavor player descriptions (next milestone).
 
+- v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
+
 - (history below is the pre-close record)
 
 - v2.0 status: Phases 65–71 COMPLETE (VERIFICATION passed each; master npm test 5483/5483). The user STOPPED the milestone lifecycle after the first audit (.planning/v2.0-MILESTONE-AUDIT.md, written before 70–71) — no archive, no push. Resume the lifecycle (re-audit incl. 70–71 → complete → cleanup → push master + tags) only when the user says.
@@ -299,7 +305,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Approve the v2.4 roadmap, then /gsd-discuss-phase 93 and /gsd-plan-phase 93
 
 ## Performance Metrics
 
