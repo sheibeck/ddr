@@ -161,13 +161,13 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. The state and the rounds left come from the engine for every ability of every class and Joiner, and a tap always agrees with the label: a Ready row acts, any other row refuses with the reason it shows.
   5. The four states stay distinguishable in light and dark themes and under colour-blind simulation, pinned by shell snapshot and a11y tests.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans executed
 
 - [x] 94-01-PLAN.md
 - [x] 94-02-PLAN.md
 - [x] 94-03-PLAN.md
 - [x] 94-04-PLAN.md
-- [ ] 94-05-PLAN.md
+- [x] 94-05-PLAN.md
 
 **UI hint**: yes
 
@@ -239,7 +239,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
-| 94. Ability States You Can Tell Apart | 4/5 | In Progress|  |
+| 94. Ability States You Can Tell Apart | 5/5 | In Progress|  |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 0/TBD | Not started | - |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 0/TBD | Not started | - |
 | 97. Large-Screen Support | 0/TBD | Not started | - |
