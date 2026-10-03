@@ -150,7 +150,9 @@ test("(a) a find with room (or any other card) gets no head wrapper: its lines s
   sandbox.context.renderRail();
   const kids = doc.document.getElementById("mw-rail-lines").children;
   assert.ok(kids.length > 0);
-  assert.ok(kids.every((el) => /mw-rail-(line|roll)/.test(String(el.className))), "plain lines only");
+  // Phase 95 (FLAVOR-02/05): declared re-pin: the found item's line now carries a RULES toggle and its body as direct children of the lines column too (no head wrapper still).
+  assert.ok(kids.every((el) => /mw-rail-(line|roll)|mw-rules-(btn|body)/.test(String(el.className))), "plain lines (and the RULES toggle and body) only");
+  assert.ok(!kids.some((el) => /mw-find-head/.test(String(el.className))), "no head wrapper");
 });
 
 // ─── (b) the scroll regions ───────────────────────────────────────────────

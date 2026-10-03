@@ -5971,7 +5971,16 @@ function renderRail() {
     key = "find:" + (it.n || "") + ":" + (full ? "full" : "room");
     tone = "good"; icon = "▪"; title = copy.find.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
-    lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}${usable ? ` ${usable}` : ""}`, roll: null });
+    // Phase 95 (FLAVOR-02, plan 05; CONTEXT 'Where the exact numbers live'): with a flavour line the item line reads
+    // `name · flavour` (usable-by suffix and the compare line below stay visible) and the old item text (findSub) rides on the
+    // line's `rules` property, mounted OUTSIDE the typed lines by the lines loop. With none (a removed item an old save may
+    // hold) the line is exactly as before and there is no toggle.
+    const findFlavor = window.__mzRules.flavorOfItem(it);
+    if (findFlavor) {
+      lines.push({ text: `${it.n || "An item"} · ${findFlavor}${usable ? ` ${usable}` : ""}`, roll: null, rules: findSub || "", rulesId: "find:" + (it.n || ""), rulesName: it.n || "the item" });
+    } else {
+      lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}${usable ? ` ${usable}` : ""}`, roll: null });
+    }
     if (it.kind === "weapon" || it.kind === "armor") lines.push({ text: window.__mzLootCompare(c, it).line, roll: null });
     if (full) {
       lines.push({ text: copy.find.full.replace("{have}", usage.have).replace("{slots}", usage.slots), roll: null });
@@ -6177,6 +6186,10 @@ function renderRail() {
       typedTargets.push(rollEl);
       typedTexts.push(line.roll);
     }
+    // Phase 95 (FLAVOR-02/05): a line's `rules` (the exact old text) mounts the shared RULES toggle and body under it. They are
+    // NEVER pushed to typedTargets or typedTexts, so the typewriter and the aria-live announcement (syncRailLive) stay flavour only.
+    // The `rules` property on a rail line is the reuse point for Phase 96's chip card.
+    if (line.rules) window.__mzRules.mount(document, lineHost, { id: line.rulesId, name: line.rulesName, rules: line.rules });
   }
   if (shelfItems) {
     // Phase 78 (HUD-09, user 2026-09-25): the drop list is its own bounded,
@@ -6329,6 +6342,8 @@ document.getElementById("mw-rail").onclick = (e) => {
   const target = e && e.target;
   const btnTarget = target && typeof target.closest === "function" ? target.closest(".mw-rail-btn") : null;
   if (btnTarget) return;
+  // Phase 95 (FLAVOR-02/05): a RULES tap is an inspection: it must never dismiss, pulse or complete the card.
+  if (target && typeof target.closest === "function" && target.closest(".mw-rules-btn")) return;
   // Quick task 260928-fcs: a tap or a drag inside the full-bag drop list
   // belongs to the list (its rows, its scroll), never to the card body.
   if (target && typeof target.closest === "function" && target.closest(".mw-find-drop")) return;
