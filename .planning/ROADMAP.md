@@ -203,16 +203,16 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Plans**: 4/8 plans executed
 
-- [ ] 95-07-PLAN.md
-- [ ] 95-08-PLAN.md
 
-- [ ] 95-06-PLAN.md
 
 - [x] 95-01-PLAN.md — the two-layer data shape: a pure name-to-flavour lookup, one keyed map per content file, and the re-pinned truth guards
 - [x] 95-02-PLAN.md — the in-game technical layer: the shared RULES reveal component and the "Always show the rules" setting
 - [x] 95-03-PLAN.md — player layer batch 1: spells, the scroll, potions, tools
 - [x] 95-04-PLAN.md — player layer batch 2: magic items, weapon types, armour types
 - [ ] 95-05-PLAN.md — the flavour on screen: Grimoire, combat SPELLS and ITEMS rows, the find card and the remaining surfaces
+- [ ] 95-06-PLAN.md — the Gear tab, CONSUMABLES and the Gear sheet show flavour, with RULES
+- [ ] 95-07-PLAN.md — store rows and the Sealed scroll, the sell and loot lists and the drop shelf show flavour, with RULES
+- [ ] 95-08-PLAN.md — the phase gate: the complete layer, the guard-diff proof, the 2.4.0 DRAFT bullets, TEXT-LAYERS final, full suite
 
 **UI hint**: yes
 
