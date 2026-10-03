@@ -72,8 +72,12 @@ unknown or the value is empty. `everyFlavorLine()` lists every
   non-empty line and there is no orphan key; no line states a digit, a percent
   sign, a die or a number word (except "one"); one sentence of at most 100
   characters; no two lines equal; no line equals its rules text; no spell line
-  starts with its niche label. Table-driven over `FLAVOR_DOMAINS`. A domain whose
-  map is not exported yet is skipped by name until 95-08 makes absence a failure.
+  starts with its niche label. Table-driven over `FLAVOR_DOMAINS`. Since 95-08 a
+  domain whose map is missing fails by name (all 8 domains, 111 entries).
+- `test/unit/rules-layer.test.js` (95-02): the RULES component, the open set,
+  Always mode, wrapRow's sibling placement and RULES_COPY's safety.
+- `test/unit/rules-surfaces.test.js` (95-05 to 95-08): one rule on every surface,
+  Always mode, repaint survival, tolerant load of an old save, and the 2.4.0 notes.
 - `test/unit/flavor-drift.test.js`: the fail-first proof. In a temp mirror of the
   tree, Heal's "d10 hp" becomes "d12 hp" and the Ring of Power's "fifty squares"
   becomes "sixty squares"; the real guard files (`spell-skill-text-engine`,
@@ -144,5 +148,84 @@ pages in the same commit. The user reviews every line on
 
 ## The RULES surface
 
-Plan 95-02 builds the RULES toggle and the "Always show the rules" setting; plan
-95-08 completes this section with the table of surfaces.
+The exact rules are one tap away on every surface that shows flavour, or always
+shown when the player turns on the Always show the rules setting. The component is
+`src/browser/rulesLayer.js`; the surfaces below call it.
+
+### The component
+
+`src/browser/rulesLayer.js` exports `RULES_COPY`, `setAlwaysRules`, `alwaysRules`,
+`rulesOpen`, `toggleRulesOpen`, `clearRulesOpen`, `layerText`, `mountRules` and
+`wrapRow`. The classic script in `mazeworld.html` reaches it through the frozen
+`window.__mzRules` (`mount`, `wrap`, `layer`, `always`, `flavorOf`, `flavorOfItem`,
+`flavorOfSpell`, `flavorOfScroll`).
+
+- A reveal is an inspection, not a decision: a plain `onclick` that flips the DOM in
+  place. Never `guardTap`, never a render, never a dispatch.
+- Which bodies are open lives in a module-level set keyed by the surface id, never on
+  game state, so a repaint keeps a body open and a save never holds it.
+- `RULES_COPY` holds the three words the toggle uses: `RULES ▸` (closed), `RULES ▾`
+  (open) and `Rules for {name}` (the aria-label).
+
+### The setting
+
+`alwaysRules` is the thirteenth field of the Settings object, default `false`, with a
+Settings row after Set dressing (Always show the rules). `applySettings` calls
+`setAlwaysRules`, and a change repaints through `window.paint`. With it on, every body
+shows open and no toggle is drawn; with it off, bodies start closed and a tapped
+one stays open across a repaint.
+
+### The rule every surface follows
+
+- The flavour line plus the slot's functional tags shows first (the cost tag, a
+  blocked reason, a live resist hint, the usable-by tag, the stock count, the compare
+  line).
+- A RULES body holds exactly the text that slot printed before Phase 95, so the
+  v2.3 wording stays reachable and every guard keeps pinning it.
+- A row with no flavour, such as an old save's removed item, renders as it did
+  before. Nothing throws and nothing is hidden.
+- `mountRules` goes under a content block (a card, a list entry). `wrapRow` goes
+  beside an action row's button in a `.mw-rules-wrap` grid, never inside the button,
+  so a toggle tap can never buy, drop or use.
+- A row that opens a sheet (Gear WORN rows and BAG cards) shows flavour only and
+  carries no toggle: its rules sit in the sheet, and statically on the row when
+  Always is on.
+
+### Surfaces
+
+| Surface | Renderer | Shows first | Stays visible | RULES (where and what) | Id prefix |
+| --- | --- | --- | --- | --- | --- |
+| Grimoire | `heroTab.js#renderGrimoire` | niche label, then the spell's flavour | level badge, locked state | `mountRules` under the italic line: the old whole line | `grim:` |
+| Combat SPELLS rows | `combatMenu.js` (`withFlavor`), `renderActionArea` | niche label and flavour as `lead` | cost tag, blocked reason (first), live resist hint | `wrapRow` beside the row: the spell's `txt` | `combat:spell:` |
+| Combat ITEMS rows (items, potion counter, scroll) | `combatMenu.js`, `renderActionArea` | the item, potion or scroll flavour | state, charges, recharge, reason rows | `wrapRow` beside the row: the item's `txt`, `potionDesc` or the scroll rules | `combat:item:`, `combat:worn:`, `combat:potion`, `combat:scroll` |
+| Find card | `mazeworld.html#renderRail` | item name and flavour, then the usable-by tag | compare and fit lines | the rail line's `rules` property, mounted outside the typed lines | `find:` |
+| Gear WORN rows | `gearTab.js#gearWornModel`, `renderGearTab` | the worn item's flavour (the weapon type's for a weapon) | the armour row's live wear note, empty rows | opener row: none; static under the flavour when Always is on; the rest in the sheet | `gear:worn:` |
+| Gear BAG cards | `gearTab.js#gearBagCardsModel`, `renderGearTab` | flavour plus the usable-by tag | bag meter, state | opener card: none; static when Always is on; the rest in the sheet | `gear:bag:` |
+| Gear CONSUMABLES | `gearTab.js#gearConsumablesModel` | potion or scroll flavour | the count, USE or READ button | its own toggle after the description: `healingDesc`, the potion `txt` or the scroll rules and odds | `gear:cons:` |
+| Gear sheet | `gearSheet.js` | flavour in the note slot (a jewel or cloak candidate reads its flavour) | the title, the actions, the compare line of a weapon or armour candidate | `mountRules` around the stats: the old note and every stat text | `gsheet:` |
+| Store stock rows | `storeScreen.js#storeRowLayer` | flavour plus the usable-by tag | price, stock count, compare line, refusal reason | `wrapRow` beside BUY: the exact old stat line | `store:` |
+| Sealed scroll | `storeScreen.js#storeRowLayer` | the scroll flavour | price | `wrapRow` beside BUY: `scrollDesc` plus the reader's odds | `store:` |
+| Your gear sell list | `gearTab.js#renderCarriedList` | the item's flavour | the Sell and Drop buttons | a toggle under the italic: the old sub line | `sell-list:` |
+| Loot list | `gearTab.js#renderCarriedList` (`opts.adviceFor`) | flavour, then an advice line | the verdict (upgrade, can't use, bag comparison), the usable-by tag, TAKE ALL and LEAVE ALL | a toggle under the lines: the old sub line | `loot-list:` |
+| Drop shelf | `mazeworld.html#renderDropShelf` | flavour inside the Drop button | the usable-by tag, the bounded scrolling list | `window.__mzRules.wrap` beside Drop: the old sub line | `drop:` |
+
+### Deliberately plain
+
+These keep their text with no flavour layer:
+
+- Ability, SING, FLEE and PARLEY rows: abilities are Phase 96's (the combat
+  ABILITIES rows adopt `wrapRow` then), and the others are functional.
+- The not-wielded and not-equipped reason rows: a reason is a rule, not a
+  description.
+- Food, rations and repair store rows: they have no description to dress.
+- The Gear kit rows and the armour WORN row's wear note: live state, not prose.
+- All narration: the Oracle, the rail and the fight log.
+
+### Reuse in Phase 96
+
+- `layerText` and `mountRules` for the Hero dossier blurbs and footers: the blurb is
+  the flavour, the footer is the rules.
+- `wrapRow` for the combat ABILITIES rows, beside the button, exactly as the SPELLS
+  rows do.
+- The rail line's `rules` property for the chip tap card.
+- The same Always show the rules switch; no new setting is needed.

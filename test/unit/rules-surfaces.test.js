@@ -44,6 +44,7 @@ import { scrollReadOdds } from "../../src/browser/rollOdds.js";
 import { WEAPON_FLAVOR } from "../../content/weapons.js";
 import { ARMOR_FLAVOR } from "../../content/armors.js";
 import { POTION_FLAVOR } from "../../content/potions.js";
+import { validatePatchNotes } from "../../tools/lib/patch-notes.mjs";
 import { SCROLL_FLAVOR } from "../../content/spells.js";
 import { MAGIC_ITEM_FLAVOR } from "../../content/treasure-tables.js";
 
@@ -824,4 +825,20 @@ test("(r) tolerant: a bagged old-save Cloak of Healing appears on the drop shelf
   const li = list.children[0];
   assert.equal(findAll(li, "mw-rules-btn").length + findAll(li, "mw-rules-body").length, 0);
   assert.equal(textOf(italicsOf(li)[0]), lootCompare(loot.c, OLD_CLOAK).line);
+});
+
+test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets name the flavour layer and the Always show the rules switch, old → new", () => {
+  const md = fs.readFileSync(path.join(__dirname, "..", "..", "docs", "patch-notes", "2.4.0.md"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(md, /\*\*DRAFT, not yet agreed\.\*\*/, "2.4.0 stays a DRAFT");
+  assert.deepStrictEqual(validatePatchNotes(md, "2.4.0"), []);
+  const start = md.indexOf("## Interface\n");
+  assert.ok(start !== -1, "the Interface category is present");
+  const next = md.indexOf("\n## ", start + 1);
+  const lines = md.slice(start, next === -1 ? md.length : next).split("\n");
+  const flavour = lines.filter((l) => l.startsWith("- Spell, scroll, weapon, armour"));
+  assert.equal(flavour.length, 1, "exactly one flavour-layer bullet");
+  for (const needle of ["→", "RULES"]) assert.ok(flavour[0].includes(needle), `the flavour bullet carries "${needle}"`);
+  const setting = lines.filter((l) => l.startsWith("- Settings:"));
+  assert.equal(setting.length, 1, "exactly one Settings bullet");
+  for (const needle of ["→", "Always show the rules", "Off by default"]) assert.ok(setting[0].includes(needle), `the Settings bullet carries "${needle}"`);
 });
