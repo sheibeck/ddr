@@ -43,8 +43,8 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Fantasy-flavour text (todo)
 
-- [ ] **FLAVOR-01**: Spell and scroll descriptions shown to the player read as fantasy flavour, not rules text
-- [ ] **FLAVOR-02**: Equipment, magic-item and potion descriptions shown to the player read as fantasy flavour
+- [x] **FLAVOR-01**: Spell and scroll descriptions shown to the player read as fantasy flavour, not rules text
+- [x] **FLAVOR-02**: Equipment, magic-item and potion descriptions shown to the player read as fantasy flavour
 - [ ] **FLAVOR-03**: Race and sub-class blurbs read as fantasy flavour and still convey each one's good and bad
 - [ ] **FLAVOR-04**: Ability rows and condition-chip explanations (CONDITION_EXPLAIN) read as fantasy flavour
 - [x] **FLAVOR-05**: Exact rules and numbers live in a separate technical layer, reachable in game where discuss-phase decides; the v2.3 truth-in-advertising guards (item-text-engine, authored-ranges, spell-audit, skill-audit, value-identity, identity tests) re-pin to that layer with no guard lost
@@ -85,8 +85,8 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | ASTATE-04 | Phase 94 | Complete |
 | ASTATE-05 | Phase 94 | Complete |
 | JOIN-01 | Phase 94.1 | Complete |
-| FLAVOR-01 | Phase 95 | Pending |
-| FLAVOR-02 | Phase 95 | Pending |
+| FLAVOR-01 | Phase 95 | Complete |
+| FLAVOR-02 | Phase 95 | Complete |
 | FLAVOR-05 | Phase 95 | Complete |
 | FLAVOR-03 | Phase 96 | Pending |
 | FLAVOR-04 | Phase 96 | Pending |
