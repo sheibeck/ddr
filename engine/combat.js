@@ -2411,18 +2411,20 @@ export function sing(state, rng, events = [], now = Date.now) {
   if (!C) return events;
   // CMB-02 (Phase 31): each refusal names its own reason (never fear-related;
   // this is a class / once-per-fight gate, not a phobia refusal).
-  if (c.sub !== "Bard") {
+  // Phase 94 (ASTATE-04): singState holds the rule. V7 B: after the second song (sangAt null) it is
+  // "sungThisFight"; between the two (fewer than SONG_GAP_ROUNDS rounds since the first) it is
+  // "songResting", with how many rounds are left.
+  const st = singState(state);
+  if (st.reason === "wrongClass") {
     events.push({ type: "actionRefused", action: "sing", reason: "wrongClass" });
     return events;
   }
-  if (!songDue(C.sang, C.sangAt, C.round)) {
-    // V7 B: after the second song (sangAt null) it is "sungThisFight"; between the two (fewer than
-    // SONG_GAP_ROUNDS rounds since the first) it is "songResting", with how many rounds are left.
-    if (C.sang && Number.isFinite(C.sangAt)) {
-      events.push({ type: "actionRefused", action: "sing", reason: "songResting", rounds: C.sangAt + SONG_GAP_ROUNDS - C.round });
-    } else {
-      events.push({ type: "actionRefused", action: "sing", reason: "sungThisFight" });
-    }
+  if (st.state === "recharging") {
+    events.push({ type: "actionRefused", action: "sing", reason: "songResting", rounds: st.roundsLeft });
+    return events;
+  }
+  if (st.state === "spent") {
+    events.push({ type: "actionRefused", action: "sing", reason: "sungThisFight" });
     return events;
   }
   // The first song records the round it was sung in; the second closes the fight's songs.

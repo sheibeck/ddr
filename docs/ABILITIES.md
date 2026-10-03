@@ -698,3 +698,45 @@ A Joiner uses a skill the way its text describes (`engine/combat.js#pickMemberAb
 ### Where each rule is pinned
 
 `docs/SKILL-AUDIT.md` names, per skill, the test that would fail if the fix were reverted (a `Pinned by` cell of `test/unit/<file>.test.js: <title>` pins, each read by `test/unit/skill-audit.test.js`); the text-vs-engine guard `test/unit/spell-skill-text-engine.test.js` pins every number a skill or ability text states to the engine.
+
+## Phase 94: ability states (ASTATE-04)
+
+One pure, derived function says which of four states an ability is in: `abilityState(state, sheet, key)` in `engine/abilities.js` returns `{ state, roundsLeft, reason }`. `state` is `ready`, `recharging`, `unavailable` or `spent`. `roundsLeft` is the rounds until it is ready again (0 unless recharging). `reason` is `null` when ready, `"cooldown"` when recharging, `"spent"` when spent, and one of `ABILITY_UNAVAILABLE_REASONS` when unavailable. It takes any sheet: the hero (`state.c`) or a Joiner (`state.party[i]`).
+
+`useAbility` reads it. Each non-ready state maps to its refusal, so a tap always agrees with the label (ROADMAP criterion 4): ready means the first event is `abilityUsed`; anything else is a single `abilityRefused` whose `reason` is the state's `reason` (and, when recharging, whose `left` is `roundsLeft`). The refusal payloads are unchanged, key for key and in the same order: a single event, no rng draw, no timer, no turn. `refuseIfPending` still runs first, and `normalizeTarget` still runs at its old point (after the cooldown rungs, before the foe rungs), so a cooldown refusal never moves a dead `combat.target` and a refused Sweep does.
+
+| Order | Condition | state | reason | roundsLeft |
+| --- | --- | --- | --- | --- |
+| 0 | the fight is pending (before FIGHT), even for a key the hero does not own | unavailable | `notFought` | 0 |
+| 1 | not a catalog id, not a string, or not in `sheet.abilities` | unavailable | `unknown` | 0 |
+| 2 | no fight | unavailable | `notInCombat` | 0 |
+| 3 | a once-per-fight ability (`cd: "fight"`) with a timer record | spent | `spent` | 0 |
+| 4 | any other ability with a timer record (a cooldown, or a duration ability's effect then cooldown) | recharging | `cooldown` | `abilityRoundsLeft` |
+| 5 | a foe or foes ability with no live foe | unavailable | `noTarget` | 0 |
+| 6 | Sweep with fewer than `SWEEP_MIN_FOES` live foes | unavailable | `tooFewFoes` | 0 |
+| 7 | Hamstring or Mark on the aimed foe, which already carries the effect | unavailable | `alreadyOn` | 0 |
+| 8 | Last Stand above a quarter of its hp (`DEATH_PANIC_THRESHOLD`) | unavailable | `notLowEnough` | 0 |
+| 9 | none of the above | ready | `null` | 0 |
+
+Aim and hp reads: the hero aims at `combat.target` when it is a live foe, else the first live foe (what `normalizeTarget` settles on, computed without moving it). A Joiner is always aimed at the first live foe, as `alliesTurn` hands `pickMemberAbility` the first live foe. The hero's Last Stand reads its own hp; a Joiner's reads its live combat entry (`state.combat.allies`, matched by `partyIdx`), the same fields `pickMemberAbility` reads, and its own sheet when it has no entry. A Joiner's timers are its own sheet's. Whatever `pickMemberAbility` picks is `ready` here (pinned by a sweep). There is no class check inside it (the off-class filter stays `pickMemberAbility`'s) and no hero-cannot-act check (that menu shape replaces the whole menu and never shows ability rows).
+
+The Bard's Sing row is not in the catalog, so `singState(state)` in `engine/combat.js` gives it the same contract. `SING_UNAVAILABLE_REASONS` is `notFought`, `notInCombat`, `wrongClass`.
+
+| Condition | state | reason | roundsLeft |
+| --- | --- | --- | --- |
+| the fight is pending | unavailable | `notFought` | 0 |
+| no fight | unavailable | `notInCombat` | 0 |
+| not a Bard | unavailable | `wrongClass` | 0 |
+| no song yet, or the second is due (`songDue`) | ready | `null` | 0 |
+| between the two songs | recharging | `songResting` | `sangAt + SONG_GAP_ROUNDS - round` |
+| after the second song, or a bare `sang` with no `sangAt` | spent | `sungThisFight` | 0 |
+
+`sing()` reads it. Its three refusals (`wrongClass`, `songResting` with `rounds`, `sungThisFight`) are unchanged, and `songReady` is unchanged and equivalent to `singState(state).state === "ready"`.
+
+Purity: both functions draw no rng, write nothing (they never retarget) and store nothing, so there is no new serialized field, no `*Comparable()` carve-out and no new event type. No parity, determinism, round-trip or roll-high fixture moved.
+
+Things to know:
+
+- Joiners have no UI surface: no screen lists a Joiner's abilities (RESEARCH Finding F1, orchestrator ruling), so a Joiner's states are pinned in the engine tests only.
+- Last Stand's hp gate was always a refusal (`notLowEnough`) but the menu never showed it; it is a real rung now, so the row will show it (RESEARCH Finding F4, intended).
+- A duration ability (Sidestep, Battle Roar, Riposte, Taunt, Smoke) reads `recharging` while its effect is running, with `roundsLeft` the effect's remaining rounds plus its cooldown. A separate Active state is deferred (RESEARCH Pitfall 8).

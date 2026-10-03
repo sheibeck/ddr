@@ -18,6 +18,13 @@
 // and never touches state.rngState (no draw ever happens before the ladder
 // clears).
 //
+// Phase 94 (ASTATE-04): abilityState(state, sheet, key) HOLDS this ladder, for any
+// sheet (the hero or a Joiner), as a pure derived { state, roundsLeft, reason }.
+// useAbility keeps refuseIfPending first, maps each non-ready state to its unchanged
+// refusal payload, and keeps normalizeTarget at its old point (after the cooldown
+// rungs, before the foe rungs); the combat menu's rows read the same function, so a
+// tap always agrees with the label.
+//
 // Round economy (CONTEXT "Action economy: using an ability is the round's
 // action"): a success resolves in the SAME dispatch and ends the round
 // exactly once. The eight strike-modifying abilities (kata/feint/deathTouch/
@@ -386,57 +393,52 @@ export function useAbility(state, key, rng, events = []) {
   const c = state.c;
   const C = state.combat;
   const meta = typeof key === "string" ? ABILITY_BY_ID[key] : null;
-  const owned = !!meta && Array.isArray(c.abilities) && c.abilities.includes(key);
-  if (!owned) {
+  // Phase 94 (ASTATE-04): abilityState holds the ladder; this maps each non-ready state to its
+  // unchanged refusal payload. refuseIfPending stayed first above and normalizeTarget stays at
+  // its old point (after the cooldown rungs, before the foe rungs).
+  const st = abilityState(state, c, key);
+  if (st.reason === "unknown") {
     events.push({ type: "abilityRefused", key, reason: "unknown", name: meta ? meta.name : undefined });
     return events;
   }
-  if (!C) {
+  if (st.reason === "notInCombat") {
     events.push({ type: "abilityRefused", key, reason: "notInCombat", name: meta.name });
     return events;
   }
-  const id = `ability:${key}`;
   // Quick 260927-opf (user ruling 2026-09-27): a once-per-fight ability
   // (`cd: "fight"`) that has been used is SPENT until the fight ends — its
   // record is cleared only by endCombat, so it refuses with `spent`, never a
   // rounds count (the ONCE_A_FIGHT figure is bookkeeping, not a wait).
-  if (!isReady(c, id)) {
-    if (meta.cd === "fight") events.push({ type: "abilityRefused", key, reason: "spent", name: meta.name });
-    else events.push({ type: "abilityRefused", key, reason: "cooldown", name: meta.name, left: abilityRoundsLeft(c, key) });
+  if (st.state === "spent") {
+    events.push({ type: "abilityRefused", key, reason: "spent", name: meta.name });
+    return events;
+  }
+  if (st.state === "recharging") {
+    events.push({ type: "abilityRefused", key, reason: "cooldown", name: meta.name, left: st.roundsLeft });
     return events;
   }
   // Phase 36 (TGT-01) precedent, same reasoning castSpell documents: a
   // targeted ability retargets a dead C.target onto the first live foe
-  // before resolving, so `noTarget` is structurally unreachable while
+  // before the foe rungs, so `noTarget` is structurally unreachable while
   // state.combat exists (an empty encounter has already cleared). Proven
   // reachable only by a hand-built zero-foe combat (test-only).
   const needsFoe = meta.target === "foe" || meta.target === "foes";
-  if (needsFoe) {
-    normalizeTarget(C);
-    if (!liveFoes(state).length) {
+  if (needsFoe) normalizeTarget(C);
+  if (st.state === "unavailable") {
+    // Quick 260928-nrf (user ruling 2026-09-28): Sweep with fewer than two
+    // living foes refuses before anything is spent — no turn, no cooldown, no
+    // draw — exactly like the spent/cooldown refusals above.
+    if (st.reason === "noTarget") {
       events.push({ type: "abilityRefused", key, reason: "noTarget", name: meta.name });
-      return events;
+    } else if (st.reason === "tooFewFoes") {
+      events.push({ type: "abilityRefused", key, reason: "tooFewFoes", name: meta.name, need: SWEEP_MIN_FOES, have: liveFoes(state).length });
+    } else if (st.reason === "alreadyOn") {
+      // Phase 91.1 plan 02 (V5): Hamstring and Mark only on a foe that does not
+      // carry the effect yet; refused before anything is spent, like the rungs above.
+      events.push({ type: "abilityRefused", key, reason: "alreadyOn", name: meta.name, target: C.foes[C.target].name });
+    } else if (st.reason === "notLowEnough") {
+      events.push({ type: "abilityRefused", key, reason: "notLowEnough", name: meta.name, have: c.wp, max: c.maxWP });
     }
-  }
-  // Quick 260928-nrf (user ruling 2026-09-28): Sweep with fewer than two
-  // living foes refuses before anything is spent — no turn, no cooldown, no
-  // draw — exactly like the spent/cooldown refusals above.
-  const shortfall = abilityUnavailableReason(state, key);
-  if (shortfall) {
-    events.push({ type: "abilityRefused", key, reason: shortfall, name: meta.name, need: SWEEP_MIN_FOES, have: liveFoes(state).length });
-    return events;
-  }
-  // Phase 91.1 plan 02 (V5): Hamstring and Mark only on a foe that does not
-  // carry the effect yet; refused before anything is spent, like the rungs above.
-  if (needsFoe) {
-    const t = C.foes[C.target];
-    if (abilityTargetShortfall(key, t) === "alreadyOn") {
-      events.push({ type: "abilityRefused", key, reason: "alreadyOn", name: meta.name, target: t.name });
-      return events;
-    }
-  }
-  if (key === "lastStand" && c.wp > c.maxWP * DEATH_PANIC_THRESHOLD) {
-    events.push({ type: "abilityRefused", key, reason: "notLowEnough", name: meta.name, have: c.wp, max: c.maxWP });
     return events;
   }
 
