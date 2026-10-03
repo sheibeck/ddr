@@ -228,13 +228,20 @@ test("Amulet of Light dispels the persistent darkness counter outright on USE (w
 // Cloak of Healing tests). Phase 88 (ITEM-03, user 2026-09-30): using the
 // Cloak of Regeneration starts a 30-square heal-over-time window (a d6 at 10,
 // 20 and 30 squares, derived stream), then 50 squares of cooldown. The
-// instant d6 on use, and its ONE main-rng draw, are gone. A worn-but-unused
-// cloak still heals nothing while walking. Full pins: heal-over-time.test.js.
+// instant main-rng d6 on use, and its ONE main-rng draw, are gone. A worn-but-
+// unused cloak still heals nothing while walking. Phase 93 (ITEM-08, user
+// ruling B 2026-10-03): a use heals one d6 at once again, but from the
+// healTick derived stream (zero main-rng draws), then the three walking ticks.
+// Full pins: heal-over-time.test.js.
 
-test("Cloak of Regeneration USE starts a 30-square window with zero main-rng draws and no instant heal", () => {
+test("Cloak of Regeneration USE starts a 30-square window with zero main-rng draws and one d6 at once (tick 1 of 4)", () => {
   const st = fixedState({ c: { worn: { cloak: CLOAK_REGEN }, wp: 10, maxWP: 55 } });
   const events = useItem(st, { slot: "cloak" }, fakeRng([]), []); // fakeRng([]) throws on any draw
-  assert.equal(st.c.wp, 10, "no instant heal on use (retired, Phase 88)");
+  const instant = events.filter((e) => e.type === "healTick");
+  assert.equal(instant.length, 1, "exactly one d6 at once");
+  assert.equal(instant[0].tick, 1);
+  assert.equal(instant[0].ticks, 4);
+  assert.equal(st.c.wp, 10 + instant[0].gained, "the d6 is in at once, from the derived stream");
   assert.equal(events.some((e) => e.type === "cloakRegenerated"), false, "the retired instant-heal event is gone");
   assert.ok(events.some((e) => e.type === "itemEffectStarted" && e.kind === "knit" && e.left === 30), "the 30-square window starts");
   assert.deepStrictEqual(st.c.timers["item:Cloak of Regeneration"], {

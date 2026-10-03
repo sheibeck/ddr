@@ -43,6 +43,8 @@ import {
   SPELL_ACT_OF,
   healTicksDue,
   healTicksLeft,
+  healTicksTotal,
+  activationKeyFor,
 } from "./derived.js";
 import { rollDice, rollCheck, atLeastFor, rollFields } from "./dice.js";
 import { startEffect, startCooldown, isReady, remaining, endEffectEarly } from "./effects.js";
@@ -1486,9 +1488,23 @@ function applyActivation(state, it, rng, events, slot = null, sheet = null) {
       started.every = act.hot.every;
       started.ticks = act.hot.ticks;
       started.heal = { ...act.hot.heal };
+      if (act.hot.onUse === true) started.now = true;
     }
     if (c !== state.c) started.member = c.name;
     events.push(started);
+    // Phase 93 (ITEM-08, user ruling B 2026-10-03): a d6 at once, told as tick 1
+    // right after the start line, from the healTick derived stream (tick key 0,
+    // the walking ticks are 1..ticks); the main rng is only READ for its cursor.
+    // Serves the hero in or out of a fight (useItem) and a Joiner outside one
+    // (memberUseWorn; memberUseItem refuses a fight and MEMBER_COMBAT_KINDS
+    // leaves knit out, so a Joiner's sheet is the live body here).
+    if (act.hot && act.hot.onUse === true && c.wp > 0 && !state.dead) {
+      const isMember = c !== state.c;
+      const partyIdx = isMember && Array.isArray(state.party) ? state.party.indexOf(c) : -1;
+      const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
+      const key = activationKeyFor(it);
+      if (typeof key === "string") healTickOnce(state, c, key, act, 0, cursor, events, isMember, partyIdx);
+    }
   } else if (act.cd) {
     startCooldown(c, itemTimerId(it), { squares: act.cd });
   }
@@ -1565,7 +1581,10 @@ export function narrateTimerTransitions(state, transitions, events = [], sheet =
  * only READ for its cursor and never advanced (floor generation and existing
  * draws do not reorder). The heal is clamped to maxWP; every tick pushes
  * `healTick { type, item, amount, gained, tick, ticks }` (a full-hp tick has
- * gained 0 and is still spent: it counts as one of the ticks).
+ * gained 0 and is still spent: it counts as one of the ticks). Phase 93
+ * (ITEM-08): when the item also heals on use (`hot.onUse`), walking tick k is
+ * told as tick k + 1 of healTicksTotal(act) (the d6 at once was tick 1); the
+ * stream key stays k. See healTickOnce.
  *
  * The hero, and since Phase 89 (ITEM-07) each Joiner on its own sheet
  * (`sheet`, the optional trailing parameter, defaults to the hero: CONTEXT
@@ -1587,15 +1606,27 @@ export function tickHealOverTime(state, cost, rng, events = [], sheet = null) {
   const cursor = typeof rng?.getState === "function" ? rng.getState() : 0;
   for (const { key, act, rec } of liveItemEffects(c)) {
     if (!act.hot) continue;
-    for (const k of healTicksDue(act, rec.left, cost)) {
-      const tickRng = isMember ? derivedRng(cursor, "healTick", key, k, state.steps, "member", partyIdx) : derivedRng(cursor, "healTick", key, k, state.steps);
-      const amount = rollDice(tickRng, act.hot.heal);
-      const gained = Math.max(0, Math.min(c.maxWP - c.wp, amount));
-      c.wp += gained;
-      events.push({ type: "healTick", item: key, amount, gained, tick: k, ticks: act.hot.ticks, ...(isMember ? { member: c.name } : {}) });
-    }
+    for (const k of healTicksDue(act, rec.left, cost)) healTickOnce(state, c, key, act, k, cursor, events, isMember, partyIdx);
   }
   return events;
+}
+
+/**
+ * healTickOnce — Phase 93 (ITEM-08): ONE heal-over-time tick, instant or
+ * walking: one die, one clamp, one event shape. `k` is the stream tick key:
+ * 0 is the tick at once (an `onUse` item), 1..hot.ticks the walking ones, so a
+ * walking tick rolls exactly what it rolled before the instant tick existed.
+ * The die comes from `derivedRng(cursor, "healTick", key, k, state.steps
+ * [, "member", partyIdx])`, never the main rng. The event numbers the tick for
+ * the player: the instant tick is 1 of healTicksTotal, walking tick k is
+ * k + 1 of it when the item heals on use (k of it otherwise). Module-private.
+ */
+function healTickOnce(state, c, key, act, k, cursor, events, isMember, partyIdx) {
+  const tickRng = isMember ? derivedRng(cursor, "healTick", key, k, state.steps, "member", partyIdx) : derivedRng(cursor, "healTick", key, k, state.steps);
+  const amount = rollDice(tickRng, act.hot.heal);
+  const gained = Math.max(0, Math.min(c.maxWP - c.wp, amount));
+  c.wp += gained;
+  events.push({ type: "healTick", item: key, amount, gained, tick: k + (act.hot.onUse === true ? 1 : 0), ticks: healTicksTotal(act), ...(isMember ? { member: c.name } : {}) });
 }
 
 /**
@@ -2138,9 +2169,11 @@ export function useItem(state, ref, rng, events = [], now = Date.now) {
     // is the item's entire effect; nothing else fires here.
     // Phase 88 (ITEM-03, user 2026-09-30): `knit` (Cloak of Regeneration) joins
     // the list. It used to heal a d6 at once from the main rng; now using it
-    // only starts the 30-square heal-over-time window (act.hot), whose ticks
-    // come from tickHealOverTime on later steps, from a derived stream. No
-    // instant heal and no main-rng draw on use.
+    // starts the 30-square heal-over-time window (act.hot), whose ticks come
+    // from tickHealOverTime on later steps, from a derived stream.
+    // Phase 93 (ITEM-08, user ruling B 2026-10-03): the cloak's d6 at once is
+    // applyActivation's `onUse` tick (derived stream, tick key 0), so nothing
+    // fires in this case and the main rng is not drawn.
     case "knit":
     case "strength":
     case "enlarge":

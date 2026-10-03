@@ -666,8 +666,10 @@ const D6 = { n: 1, sides: 6, bonus: 0 };
 
 test("heal-over-time: a hurt Joiner's own Cloak of Regeneration heals a d6 on its 10th, 20th and 30th square from the member-keyed stream; healTick carries member", () => {
   const state = partyState({ wp: 10, maxWP: 40, worn: { cloak: cloakRow(REGEN) } });
-  memberUseItem(state, 0, { slot: "cloak" }, fakeRng([]), []);
-  assert.equal(state.party[0].wp, 10, "no instant heal on use");
+  const useEvents = memberUseItem(state, 0, { slot: "cloak" }, fakeRng([]), []);
+  const instant = useEvents.filter((e) => e.type === "healTick");
+  assert.equal(instant.length, 1, "Phase 93 (ITEM-08): the use heals a d6 at once");
+  state.party[0].wp = 10; // walk the three ticks from the same hurt state
   const rng = makeRng(4242);
   const seen = [];
   for (let step = 1; step <= 30; step++) {
@@ -684,12 +686,30 @@ test("heal-over-time: a hurt Joiner's own Cloak of Regeneration heals a d6 on it
     assert.equal(ticks.length, 1);
     const k = step / 10;
     const expected = rollDice(derivedRng(cursor, "healTick", REGEN, k, state.steps, "member", 0), D6);
-    assert.deepEqual(ticks[0], { type: "healTick", item: REGEN, amount: expected, gained: expected, tick: k, ticks: 3, member: "Brom" });
+    assert.deepEqual(ticks[0], { type: "healTick", item: REGEN, amount: expected, gained: expected, tick: k + 1, ticks: 4, member: "Brom" });
     assert.equal(state.party[0].wp, before + expected);
     assert.equal(state.c.wp, heroBefore, "the hero is not healed by a Joiner's cloak");
     seen.push(k);
   }
   assert.deepEqual(seen, [1, 2, 3]);
+});
+
+test("heal-over-time: a Joiner's own Cloak of Regeneration heals a d6 at once on use (tick 1 of 4) from the member-keyed stream key 0; the hero is untouched", () => {
+  const state = partyState({ wp: 10, maxWP: 40, worn: { cloak: cloakRow(REGEN) } });
+  const heroBefore = state.c.wp;
+  const rng = makeRng(31);
+  const cursor = rng.getState();
+  const events = memberUseItem(state, 0, { slot: "cloak" }, rng, []);
+  assert.equal(rng.getState(), cursor, "the instant tick only reads the cursor");
+  assert.deepEqual(events.map((e) => e.type), ["itemUsed", "itemEffectStarted", "healTick"]);
+  assert.equal(events[1].now, true);
+  assert.equal(events[1].ticks, 3, "three more times");
+  assert.equal(events[1].member, "Brom");
+  const amount = rollDice(derivedRng(cursor, "healTick", REGEN, 0, state.steps, "member", 0), D6);
+  assert.deepEqual(events[2], { type: "healTick", item: REGEN, amount, gained: amount, tick: 1, ticks: 4, member: "Brom" });
+  assert.equal(state.party[0].wp, 10 + amount);
+  assert.equal(state.c.wp, heroBefore, "the hero's hp is untouched");
+  assert.equal(state.party[0].timers[`item:${REGEN}`].left, 30);
 });
 
 test("heal-over-time: a Joiner at full hp spends the tick with gained 0 (the tick still counts)", () => {

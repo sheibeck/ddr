@@ -203,14 +203,21 @@ const CLOAKS_ROWS = [
     // Phase 88 (ITEM-03, user 2026-09-30): "The cloak should be active for 30
     // squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50
     // squares." Use-activated (260918-w4n) still: worn + used starts a 30-square
-    // window; the instant d6 on use is gone. `act.hot` is the general
-    // heal-over-time record (every / ticks / heal dice), read by
-    // engine/items.js#tickHealOverTime on each squares step: three ticks, a d6
-    // each, at 10, 20 and 30 squares after the use. 30 + 50 = 80 keeps the
-    // once-a-day rule. `eff` stays (it is on every rolled item).
+    // window. `act.hot` is the general heal-over-time record (every / ticks /
+    // heal dice), read by engine/items.js#tickHealOverTime on each squares
+    // step: three walking ticks, a d6 each, at 10, 20 and 30 squares after the
+    // use. 30 + 50 = 80 keeps the once-a-day rule. `eff` stays (it is on every
+    // rolled item).
+    // Phase 93 (ITEM-08, user ruling B 2026-10-03): "Cloak of Regeneration
+    // should do one tick of healing on activation, then after every x steps."
+    // `hot.onUse: true` adds a d6 AT ONCE on use (a fourth tick, from the
+    // healTick derived stream, never the main rng; engine/items.js
+    // applyActivation) on top of that schedule, which is unchanged. `ticks`
+    // still counts the WALKING ticks only (3); derived.js#healTicksTotal makes
+    // the "of 4".
     n: "Cloak of Regeneration", slot: "cloak", eff: { cloakRegen: 1 },
-    txt: "used, a d6 hp back every ten squares you walk, three times; then fifty squares before it will do it again",
-    act: { kind: "knit", effect: 30, cd: 50, hot: { every: 10, ticks: 3, heal: { n: 1, sides: 6, bonus: 0 } } },
+    txt: "used, a d6 hp back at once, and again every ten squares you walk, three more times; then fifty squares before it will do it again",
+    act: { kind: "knit", effect: 30, cd: 50, hot: { every: 10, ticks: 3, onUse: true, heal: { n: 1, sides: 6, bonus: 0 } } },
   },
   // Phase 28 (ARMOR-04): states the rule plainly — AR 15, never wears, any
   // class — with a wink of the original "weighs nothing" flavor. Use-

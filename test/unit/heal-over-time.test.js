@@ -3,11 +3,15 @@
 // Phase 88 plan 04 (ITEM-03): the general heal-over-time system, first used by
 // the Cloak of Regeneration. User, 2026-09-30: "The cloak should be active for
 // 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50
-// squares." Using the worn cloak starts a 30-square window (no instant heal);
-// a d6 comes back 10, 20 and 30 squares after the use, each rolled from a
-// DERIVED stream (never the main one); ticks follow squares (a water step is
-// 2), never taps, never in a fight; every tick is a `healTick` event, the
-// full-hp one included; taking the cloak off stops the ticks left.
+// squares." Using the worn cloak starts a 30-square window; a d6 comes back 10,
+// 20 and 30 squares after the use, each rolled from a DERIVED stream (never the
+// main one); ticks follow squares (a water step is 2), never taps, never in a
+// fight; every tick is a `healTick` event, the full-hp one included; taking the
+// cloak off stops the ticks left.
+//
+// Phase 93 (ITEM-08, user ruling B 2026-10-03): the use also heals a d6 AT
+// ONCE (tick 1 of 4, in a fight too), from the same derived stream with tick
+// key 0; the walking ticks are told 2, 3 and 4 of 4 and roll what they rolled.
 //
 // Helpers mirror the per-file convention (copied, not imported).
 
@@ -19,7 +23,7 @@ import { rollDice } from "../../engine/dice.js";
 import { GW, GH } from "../../engine/maze.js";
 import { move } from "../../engine/movement.js";
 import { useItem, unequipSlot, tickHealOverTime } from "../../engine/items.js";
-import { conditionsOf, healTicksDue, healTicksLeft } from "../../engine/derived.js";
+import { conditionsOf, healTicksDue, healTicksLeft, healTicksTotal } from "../../engine/derived.js";
 import { ACTIVATION_OF, CLOAKS } from "../../content/index.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
@@ -123,7 +127,7 @@ const ticksOf = (events) => events.filter((e) => e.type === "healTick");
 test("content: the Cloak of Regeneration is 30 squares of window, a d6 every 10, three ticks, 50 to cool", () => {
   assert.deepStrictEqual(ACTIVATION_OF[CLOAK], {
     kind: "knit", effect: 30, cd: 50, eff: { cloakRegen: 1 },
-    hot: { every: 10, ticks: 3, heal: D6 },
+    hot: { every: 10, ticks: 3, onUse: true, heal: D6 },
   });
 });
 
@@ -143,27 +147,94 @@ test("content: the exported cloak row carries no act/hot key and its text states
   const row = CLOAKS.find((r) => r.n === CLOAK);
   assert.equal("act" in row, false);
   assert.equal("hot" in row, false);
+  assert.equal(row.txt, "used, a d6 hp back at once, and again every ten squares you walk, three more times; then fifty squares before it will do it again");
   assert.match(row.txt, /d6/);
+  assert.match(row.txt, /at once/);
   assert.match(row.txt, /every ten squares/);
-  assert.match(row.txt, /three times/);
+  assert.match(row.txt, /three more times/);
   assert.match(row.txt, /fifty squares/);
+});
+
+// ─── healTicksTotal: the "of N" of every healTick ───────────────────────────
+
+test("healTicksTotal: the cloak is four ticks (one at once, three walking); a plain hot is its walking ticks; no valid hot is 0", () => {
+  assert.equal(healTicksTotal(ACTIVATION_OF[CLOAK]), 4);
+  const base = { kind: "knit", effect: 30, cd: 50 };
+  assert.equal(healTicksTotal({ ...base, hot: { every: 10, ticks: 3, heal: D6 } }), 3, "no onUse: just the walking ticks");
+  assert.equal(healTicksTotal({ ...base, hot: { every: 10, ticks: 3, onUse: "yes", heal: D6 } }), 3, "only exactly true counts");
+  assert.equal(healTicksTotal({ ...base, hot: { every: 10, ticks: 3, onUse: 1, heal: D6 } }), 3);
+  assert.equal(healTicksTotal(null), 0);
+  assert.equal(healTicksTotal(undefined), 0);
+  assert.equal(healTicksTotal({ kind: "fly", effect: 20, cd: 50 }), 0, "no hot");
+  assert.equal(healTicksTotal({ ...base, hot: { every: 0, ticks: 3, onUse: true, heal: D6 } }), 0, "every 0");
+  assert.equal(healTicksTotal({ ...base, hot: { every: 10, ticks: 1.5, onUse: true, heal: D6 } }), 0, "ticks 1.5");
+  assert.equal(healTicksTotal({ hot: { every: 10, ticks: 3, onUse: true, heal: D6 } }), 0, "no effect window");
 });
 
 // ─── use ────────────────────────────────────────────────────────────────────
 
-test("use: starts a 30-square knit window linked to the cloak slot; no instant heal, zero main-rng draws", () => {
+test("use: heals a d6 at once from the healTick stream (tick 1 of 4) and starts the 30-square knit window linked to the cloak slot; zero main-rng draws", () => {
   const { state, events } = used();
-  assert.equal(state.c.wp, 10, "no instant heal on use");
+  assert.deepStrictEqual(events.map((e) => e.type), ["itemUsed", "itemEffectStarted", "healTick"]);
   const started = events.find((e) => e.type === "itemEffectStarted");
   assert.equal(started.kind, "knit");
   assert.equal(started.left, 30);
   assert.equal(started.every, 10);
-  assert.equal(started.ticks, 3);
+  assert.equal(started.ticks, 3, "the walking ticks still to come");
+  assert.equal(started.now, true, "a d6 comes now");
   assert.deepStrictEqual(started.heal, D6);
+  const amount = rollDice(derivedRng(0, "healTick", CLOAK, 0, state.steps), D6);
+  const gained = Math.min(45, amount);
+  assert.deepStrictEqual(events[2], { type: "healTick", item: CLOAK, amount, gained, tick: 1, ticks: 4 });
+  assert.equal(state.c.wp, 10 + gained, "the d6 is in at once");
   assert.deepStrictEqual(state.c.timers[ID], {
     cadence: "squares", left: 30, cd: 50, phase: "effect", src: { slot: "cloak", n: CLOAK },
   });
-  assert.equal(events.some((e) => e.type === "healTick"), false);
+});
+
+test("use: the instant tick only reads the main cursor, it never draws (a real rng is where it was)", () => {
+  const state = fixedState({ c: { worn: { cloak: cloak() }, wp: 10, maxWP: 55 } });
+  const rng = makeRng(777);
+  const before = rng.getState();
+  const events = useItem(state, { slot: "cloak" }, rng, []);
+  assert.equal(rng.getState(), before, "the cursor did not move");
+  const [t] = ticksOf(events);
+  assert.equal(t.amount, rollDice(derivedRng(before, "healTick", CLOAK, 0, state.steps), D6), "the die is keyed on the cursor it read");
+});
+
+test("use: at full hp the instant tick is told (gained 0, amount is the die) and spent", () => {
+  const { state, events } = used({ wp: 55, maxWP: 55 });
+  const [t] = ticksOf(events);
+  assert.ok(t, "the tick is told");
+  assert.equal(t.tick, 1);
+  assert.equal(t.ticks, 4);
+  assert.equal(t.gained, 0);
+  assert.ok(t.amount >= 1 && t.amount <= 6);
+  assert.equal(state.c.wp, 55);
+  assert.equal(conditionsOf(state).find((c) => c.key === "knit").ticks, 3, "the chip still counts the walking ticks");
+});
+
+test("use: in a fight the d6 lands at once too, the fight stays open and the window is untouched", () => {
+  const state = fixedState({ c: { worn: { cloak: cloak() }, wp: 10, maxWP: 55 } });
+  state.combat = { foes: [{ name: "Target", alive: true, wp: 5, maxWP: 5 }], round: 1, target: 0, spellOpen: false, tracked: false };
+  const events = useItem(state, { slot: "cloak" }, fakeRng([]), []);
+  assert.deepStrictEqual(events.map((e) => e.type), ["itemUsed", "itemEffectStarted", "healTick"]);
+  const [t] = ticksOf(events);
+  assert.equal(t.tick, 1);
+  assert.equal(t.ticks, 4);
+  assert.equal(state.c.wp, 10 + t.gained);
+  assert.ok(state.combat, "the fight is still on");
+  assert.equal(state.c.timers[ID].left, 30, "the window is untouched by the fight");
+});
+
+test("use: a hero at 0 hp or a dead state gets no instant tick", () => {
+  const down = used({ wp: 0 });
+  assert.equal(ticksOf(down.events).length, 0);
+  assert.equal(down.state.c.wp, 0);
+  const state = fixedState({ c: { worn: { cloak: cloak() }, wp: 10, maxWP: 55 }, dead: true });
+  const events = useItem(state, { slot: "cloak" }, fakeRng([]), []);
+  assert.equal(ticksOf(events).length, 0);
+  assert.equal(state.c.wp, 10);
 });
 
 // ─── the three ticks, from a derived stream ─────────────────────────────────
@@ -187,8 +258,8 @@ test("ticks: heal exactly on the 10th, 20th and 30th step; each die is the deriv
     const k = step / 10;
     const [t] = ticks;
     assert.equal(t.item, CLOAK);
-    assert.equal(t.tick, k);
-    assert.equal(t.ticks, 3);
+    assert.equal(t.tick, k + 1, "the instant d6 was tick 1");
+    assert.equal(t.ticks, 4);
     const expected = rollDice(derivedRng(cursor, "healTick", CLOAK, k, state.steps), D6);
     assert.equal(t.amount, expected, `tick ${k}: the die comes from derivedRng(cursor, "healTick", item, tick, steps)`);
     assert.equal(t.gained, expected, "hurt enough that nothing is clamped");
@@ -226,10 +297,10 @@ test("water: a 2-square step landing on or crossing a 10-square mark ticks exact
   const crossing = waterState(21);
   const e1 = move(crossing, "N", fakeRng([]), []);
   assert.equal(crossing.steps, 2, "the water step cost 2");
-  assert.deepStrictEqual(ticksOf(e1).map((t) => t.tick), [1]);
+  assert.deepStrictEqual(ticksOf(e1).map((t) => t.tick), [2]);
   // elapsed 8 -> 10 lands on the mark.
   const landing = waterState(22);
-  assert.deepStrictEqual(ticksOf(move(landing, "N", fakeRng([]), [])).map((t) => t.tick), [1]);
+  assert.deepStrictEqual(ticksOf(move(landing, "N", fakeRng([]), [])).map((t) => t.tick), [2]);
   // elapsed 10 -> 12: nothing (tick 1 already fired at the mark, never doubled).
   const past = waterState(20);
   assert.deepStrictEqual(ticksOf(move(past, "N", fakeRng([]), [])), []);
@@ -238,11 +309,11 @@ test("water: a 2-square step landing on or crossing a 10-square mark ticks exact
 test("water: the last mark ticks once, and a 2-square step from elapsed 29 ends the window on that same step", () => {
   const near = waterState(2); // elapsed 28 -> 30
   const e = move(near, "N", fakeRng([]), []);
-  assert.deepStrictEqual(ticksOf(e).map((t) => t.tick), [3]);
+  assert.deepStrictEqual(ticksOf(e).map((t) => t.tick), [4]);
 
   const over = waterState(1); // elapsed 29 -> min(30, 31)
   const events = move(over, "N", fakeRng([]), []);
-  assert.deepStrictEqual(ticksOf(events).map((t) => t.tick), [3]);
+  assert.deepStrictEqual(ticksOf(events).map((t) => t.tick), [4]);
   assert.equal(over.c.timers[ID].phase, "cooldown", "the window closed on that step");
 });
 
@@ -252,7 +323,7 @@ test("ordering: on the step that brings the third tick, the heal line comes befo
   const { state } = used();
   state.c.timers[ID].left = 1; // elapsed 29: the next square is the 30th
   const events = pace(state, 1, makeRng(3));
-  const tick = events.findIndex((e) => e.type === "healTick" && e.tick === 3);
+  const tick = events.findIndex((e) => e.type === "healTick" && e.tick === 4);
   const faded = events.findIndex((e) => e.type === "itemEffectFaded" && e.item === CLOAK);
   assert.ok(tick >= 0 && faded >= 0, `both events fire: ${events.map((e) => e.type)}`);
   assert.ok(tick < faded, "healTick precedes itemEffectFaded");
@@ -275,11 +346,13 @@ test("full hp: a tick is narrated (gained 0, amount is the die) and spent; the t
 test("empty: a dead state, a hero at 0 hp, and a sheet with no timers tick nothing and heal nothing", () => {
   const dead = used().state;
   dead.c.timers[ID].left = 21;
+  dead.c.wp = 10; // the use healed at once; the point here is the walking tick
   dead.dead = true;
   assert.deepStrictEqual(tickHealOverTime(dead, 1, fakeRng([]), []), []);
   assert.equal(dead.c.wp, 10);
 
   const down = used({ wp: 0 }).state;
+  assert.equal(down.c.wp, 0, "no instant tick for a body at 0 hp");
   down.c.timers[ID].left = 21;
   assert.deepStrictEqual(tickHealOverTime(down, 1, fakeRng([]), []), []);
   assert.equal(down.c.wp, 0);

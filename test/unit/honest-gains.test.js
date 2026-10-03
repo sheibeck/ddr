@@ -179,7 +179,10 @@ test("healTick: `gained` equals the clamped die (`amount` stays the die); zero m
   for (const missing of [NEAR, FAR, 0]) {
     const state = fixedState({ c: { wp: 100 - missing, worn: { cloak: { ...CLOAK } } } });
     const rng = countingRng([]);
-    useItem(state, { slot: "cloak" }, rng, []);
+    // Phase 93 (ITEM-08): the use itself heals a d6 at once (tick 1 of 4).
+    const used = find(useItem(state, { slot: "cloak" }, rng, []), "healTick");
+    assert.equal(used.gained, Math.min(missing, used.amount), `missing ${missing}: the instant tick's gained is the clamped die`);
+    state.c.wp = 100 - missing; // measure the walking tick from the same hurt state
     state.steps = 10;
     state.c.timers["item:Cloak of Regeneration"].left = 21; // nine squares walked; the tenth step ticks
     const e = find(tickHealOverTime(state, 1, rng, []), "healTick");

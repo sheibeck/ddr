@@ -721,7 +721,7 @@ export const ITEM_TEXT_FACTS = {
   ],
   "Cloak of Regeneration": [
     {
-      says: /a (#) hp back every (#) squares you walk, (#) times; then (#) squares/d,
+      says: /a (#) hp back at once, and again every (#) squares you walk, (#) more times; then (#) squares/d,
       value: () => [{ n: 1, sides: regenStats().max - (regenStats().min - 1), bonus: regenStats().min - 1 }, regenStats().every, regenStats().ticks, CD("Cloak of Regeneration")],
     },
   ],

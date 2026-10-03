@@ -764,6 +764,19 @@ export function healTicksLeft(act, rec) {
 }
 
 /**
+ * healTicksTotal(act) — Phase 93 (ITEM-08): how many heal ticks one use brings
+ * in all: the walking ticks (`hot.ticks`) plus the one at once when the item
+ * heals on use (`hot.onUse === true`, the Cloak of Regeneration: 4). 0 for a
+ * missing or malformed hot. It is the "of N" of every healTick and the fair
+ * bot's window. `hot.ticks` itself stays the WALKING count, so healTicksDue,
+ * healTicksLeft and the chip's ticks are unchanged. Pure.
+ */
+export function healTicksTotal(act) {
+  if (!validHot(act)) return 0;
+  return act.hot.ticks + (act.hot.onUse === true ? 1 : 0);
+}
+
+/**
  * SOURCE_SLOTS — Phase 88 (ITEM-02): the slots a timed item effect can be
  * started from and is linked to: the three worn keys (WORN_SLOTS) and the
  * weapon slot, where a Magic User wields a staff. Order is the stable one.
@@ -967,7 +980,7 @@ export function isFlying(state) {
  *     Giant or Enlarge, dmgTotal?:<that item's whole damage bonus — the
  *     size step's plus its own eff.dmg bulk; Phase 89, ITEM-05: Enlarge 11,
  *     the Gauntlet 2>}
- *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>
+ *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>; Phase 93 (ITEM-08): these are the WALKING ticks still owed (an `onUse` tick is spent at the use)
  *   - strength {polarity:"good", remaining:<squares left>, cadence:"squares", source:"Strength"} — Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record, reported by the same generic loop as an item effect (a spell-sourced timed effect, liveItemEffects)
  *   - might  {polarity:"good"}                            — the phobia rage's flat +d10 until the day ends (engine/encounters.js insanityRage is the only writer of c.might since Phase 90) — distinct from a potion's timed "might" chip above; both may appear together
  *   - ward   {polarity:"good", pool:<hp>, remaining?:<rounds>, name:<spell/item name>, mirror?:true} — Phase 31 (CMB-04): the Shield chip, mirroring c.ward's own {pool, rounds, name} shape. RULES-14 (Phase 75): an ARMED Bubble mirror also fires this (pool 0, no `remaining`, `mirror: true`); a popped Bubble pool keeps the plain Shield shape

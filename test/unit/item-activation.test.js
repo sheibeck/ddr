@@ -97,9 +97,11 @@ test("ACTIVATION_OF: 29 entries (9 new use-activated rows + 6 existing treasure 
   // Phase 88 (ITEM-03, user 2026-09-30): was { kind: "knit", effect: 0, cd: 20,
   // eff } (an instant d6, twenty squares of rest); now a 30-square
   // heal-over-time window (a d6 every 10 squares, three ticks), 50 squares of rest.
+  // Phase 93 (ITEM-08, user ruling B 2026-10-03): `onUse` adds a d6 at once on
+  // top of those three walking ticks (four in all).
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Regeneration"], {
     kind: "knit", effect: 30, cd: 50, eff: { cloakRegen: 1 },
-    hot: { every: 10, ticks: 3, heal: { n: 1, sides: 6, bonus: 0 } },
+    hot: { every: 10, ticks: 3, onUse: true, heal: { n: 1, sides: 6, bonus: 0 } },
   });
   // Quick 260928-cos: its own kind and payload (was kind "brace", eff noCrit).
   assert.deepStrictEqual(ACTIVATION_OF["Cloak of Strength"], { kind: "critWard", effect: 50, cd: 50, eff: { critWard: 1 } });
