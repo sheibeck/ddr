@@ -2842,7 +2842,7 @@ export const LINE_FOR = {
         acute: `strikes on a d6 for ${Number.isFinite(n) ? railPlural(n, "round") : "a few rounds"}.`,
         might: `+${e?.might ?? "?"} damage to blows and spells for ${sq}.`,
         power: `+1 damage for ${sq}.`,
-        giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
+        giant: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
         enlarge: e?.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, foes ${signedText(e?.step ?? 1)} to hit.` : `is one size larger for ${sq}.`,
         unseen: `unseen for ${sq}: foes ${RAIL_UNSEEN_SHIFT} to hit them.`,
         critWard: `has ${sq} with nothing critical landing on them.`,
@@ -2872,8 +2872,10 @@ export const LINE_FOR = {
       // RULES-11 (Phase 75.2, Plan 04): mirrors eventNarration.js's own
       // giant/enlarge lines — narrated from the event's own size fields,
       // never a restated formula; no overhead-clearance/corridor promise.
+      // Phase 93.1 (ITEM-09): the Gauntlet reads the event's dmgTotal first
+      // (the step's +2 and its +4 bulk), sizeDmg only as a fallback.
       giant: e?.size
-        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.sizeDmg ?? 0)} damage, and foes ${signedText(e?.step ?? 1)} to hit you. You are, on reflection, a bigger target.`
+        ? `${sq} one size larger: you are ${e.size}. ${signedText(e?.dmgTotal ?? e?.sizeDmg ?? 0)} damage, and foes ${signedText(e?.step ?? 1)} to hit you. You are, on reflection, a bigger target.`
         : `One size larger for ${sq}.`,
       // Phase 89 (ITEM-05): Enlarge's own rail line, the Oracle's numbers
       // (dmgTotal and the step) in the rail's short form.

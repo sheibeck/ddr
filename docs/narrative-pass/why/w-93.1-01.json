@@ -1,0 +1,26 @@
+[
+  {
+    "key": "content:JEWELRY.Gauntlet of the Giant.txt",
+    "surface": "items",
+    "trigger": "JEWELRY.Gauntlet of the Giant's txt, shown on the Gear tab, the store, and the loot and find cards",
+    "before": "used, you are one size larger for fifty squares: +2 damage, and foes +1 to hit you; then fifty squares before it will do it again",
+    "after": "used, you are one size larger for fifty squares: +6 damage, and foes +1 to hit you; then fifty squares before it will do it again",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Phase 93.1 (ITEM-09, user ruling 2026-10-03, player report #6): using the Gauntlet is now +6 damage, the size step's +2 and +4 bulk, still for foes +1 to hit you, so the text states the new number."
+  },
+  {
+    "key": "raw:mazeworld.html#CONDITION_EXPLAIN",
+    "surface": "combat-screen",
+    "trigger": "CONDITION_EXPLAIN — the chip-tap sentence for an item effect",
+    "before": "One size larger while it lasts: +2 damage, and foes +1 to hit you.",
+    "after": "One size larger while it lasts: +6 damage, and foes +1 to hit you.",
+    "reasons": [
+      "number",
+      "accurate"
+    ],
+    "why": "Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet's Enlarged chip states its new +6 (the step's +2 and +4 bulk). The Giant chip."
+  }
+]

@@ -2095,7 +2095,7 @@ export const EVENT_NARRATION = {
         acute: `strikes on a d6 for ${Number.isFinite(n) ? plural(n, "round") : "a few rounds"}.`,
         might: `+${e.might ?? "?"} damage to blows and spells for ${sq}. Hit things.`,
         power: `+1 damage for ${sq}. The ring approves.`,
-        giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit them. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
+        giant: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit them. A bigger target, on reflection.` : `is one size larger for ${sq}.`,
         enlarge: e.size ? `is one size larger for ${sq}: ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit. Nobody said it was free.` : `is one size larger for ${sq}.`,
         unseen: `unseen for ${sq}: foes ${ITEM_UNSEEN_SHIFT} to hit them.`,
         critWard: `has ${sq} with nothing critical landing on them.`,
@@ -2128,8 +2128,11 @@ export const EVENT_NARRATION = {
       // formula. An event carrying no `size` (should not happen for either
       // kind, but defensive) falls back to the plain line. No overhead-
       // clearance/corridor promise — that promise is dropped (75.2-CONTEXT).
+      // Phase 93.1 (ITEM-09): the Gauntlet's line reads the event's `dmgTotal`
+      // (the step's +2 and its +4 bulk, engine/items.js), `sizeDmg` only as a
+      // fallback.
       giant: e.size
-        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit you. You are, on reflection, a bigger target.</span>`
+        ? `<span class="hit">${sq} one size larger: you are ${e.size}. ${signedText(e.dmgTotal ?? e.sizeDmg ?? 0)} damage, and foes ${signedText(e.step ?? 1)} to hit you. You are, on reflection, a bigger target.</span>`
         : `<span class="hit">One size larger for ${sq}.</span>`,
       // Phase 89 (ITEM-05, report #6, ruling 2026-09-30): Enlarge is Troll-
       // sized, so its line is its own — it reads the event's `dmgTotal` (the

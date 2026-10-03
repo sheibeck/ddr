@@ -640,19 +640,20 @@ test("CONDITION_EXPLAIN.acute and itemEffectStarted (acute): 'you strike on a d6
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(`strike on a d${die}`), LINE_FOR.itemEffectStarted(ev, {}).text);
 });
 
-test("CONDITION_EXPLAIN.giant and itemEffectStarted (giant): one size step is '+2 damage, and foes +1 to hit you' (Phase 89, TEXT-01)", () => {
+test("CONDITION_EXPLAIN.giant and itemEffectStarted (giant): the Gauntlet is '+6 damage, and foes +1 to hit you', both numbers from the engine (Phase 93.1, ITEM-09)", () => {
   const item = "Gauntlet of the Giant";
-  const hero = fixedFighter({ timers: itemTimer(item) });
-  const dmg = SIZE_DAMAGE_PER_STEP * sizeAxisStep(hero, "dmg");
+  const dmg = gauntletDamage();
   const faces = foeToHitVs(fixedState({ timers: itemTimer(item) })) - foeToHitVs(fixedState({}));
-  assert.equal(faces, 1, `${item}: foes one face easier`);
+  assert.equal(dmg, 6);
+  assert.equal(faces, SIZE_FACES_PER_STEP * ACTIVATION_OF[item].eff.size);
   const phrase = `+${dmg} damage, and foes ${toHitShift(faces)} to hit you`;
   assert.ok(EXPLAIN.giant.includes(phrase), `giant: ${EXPLAIN.giant}`);
-  // engine/items.js stamps `size`, `step` and `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) on the event.
-  const ev = { type: "itemEffectStarted", kind: "giant", item, left: 3, size: "Large", step: 1, sizeDmg: dmg };
+  // engine/items.js stamps `size`, `step`, `sizeDmg` (SIZE_DAMAGE_PER_STEP × the item's step) and `dmgTotal` (that plus the bulk) on the event.
+  const ev = { type: "itemEffectStarted", kind: "giant", item, left: 3, size: "Large", step: 1, sizeDmg: SIZE_DAMAGE_PER_STEP, dmgTotal: dmg };
   assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(ev)).includes(phrase), plainText(EVENT_NARRATION.itemEffectStarted(ev)));
   assert.ok(LINE_FOR.itemEffectStarted(ev, {}).text.includes(phrase), LINE_FOR.itemEffectStarted(ev, {}).text);
   const joiner = { ...ev, member: "Joiny" };
+  assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(joiner)).includes(`+${dmg} damage`), plainText(EVENT_NARRATION.itemEffectStarted(joiner)));
   assert.ok(plainText(EVENT_NARRATION.itemEffectStarted(joiner)).includes(`foes ${toHitShift(faces)} to hit them`), plainText(EVENT_NARRATION.itemEffectStarted(joiner)));
 });
 

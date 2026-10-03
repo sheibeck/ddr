@@ -163,7 +163,7 @@ test("(b) a Human with a live Gauntlet: the tap card leads with the measured eff
   assert.equal(card.lines[0].text, `${effectLead}. ${explainText}`);
   assert.equal(
     card.lines[0].text,
-    "−1 vs their swings. Gauntlet of the Giant — large, 50 squares. One size larger while it lasts: +2 damage, and foes +1 to hit you."
+    "−1 vs their swings. Gauntlet of the Giant — large, 50 squares. One size larger while it lasts: +6 damage, and foes +1 to hit you."
   );
 });
 
@@ -184,11 +184,12 @@ test("(c) a chip with no size field renders its old label and detail (a Ring of 
 // ─── (d) the Oracle and the rail narrate a size item's start ───────────────
 
 test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) names the resulting size, the signed damage and the foes' side, with no overhead-clearance/corridor promise", () => {
-  // The Gauntlet keeps its step-only line; Enlarge (Phase 89, ITEM-05) states
-  // its dmgTotal and the to-hit cost in TEXT-01 wording.
-  const giant = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "giant", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 2 });
+  // Enlarge (Phase 89, ITEM-05) and the Gauntlet (Phase 93.1, ITEM-09) both
+  // state their dmgTotal (the step's 2 plus the bulk) and the to-hit cost in
+  // TEXT-01 wording.
+  const giant = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "giant", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 6 });
   assert.match(giant, /50 squares one size larger: you are Large\./);
-  assert.match(giant, /\+2 damage, and foes \+1 to hit you\./);
+  assert.match(giant, /\+6 damage, and foes \+1 to hit you\./);
   const enlarge = EVENT_NARRATION.itemEffectStarted({ type: "itemEffectStarted", kind: "enlarge", item: "X", left: 50, cadence: "squares", size: "Large", step: 1, sizeDmg: 2, dmgTotal: 11 });
   assert.match(enlarge, /50 squares one size larger: you are Large\./);
   assert.match(enlarge, /\+11 damage, and foes \+1 to hit you\./);
@@ -207,10 +208,10 @@ test("(d) EVENT_NARRATION.itemEffectStarted (giant/enlarge) with no size fields 
 
 test("(d) LINE_FOR.itemEffectStarted (giant/enlarge) mirrors the Oracle line, tone magic", () => {
   for (const kind of ["giant", "enlarge"]) {
-    const line = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Huge", step: 1, sizeDmg: 2, dmgTotal: kind === "enlarge" ? 11 : 2 });
+    const line = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares", size: "Huge", step: 1, sizeDmg: 2, dmgTotal: kind === "enlarge" ? 11 : 6 });
     assert.equal(line.tone, "magic");
     assert.match(line.text, /50 squares one size larger: you are Huge\./);
-    if (kind === "giant") assert.match(line.text, /\+2 damage, and foes \+1 to hit you\./);
+    if (kind === "giant") assert.match(line.text, /\+6 damage, and foes \+1 to hit you\./);
     else assert.match(line.text, /\+11 damage, foes \+1 to hit you\./);
     const fallback = LINE_FOR.itemEffectStarted({ type: "itemEffectStarted", kind, item: "X", left: 50, cadence: "squares" });
     assert.match(fallback.text, /One size larger for 50 squares\./);

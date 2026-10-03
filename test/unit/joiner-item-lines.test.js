@@ -66,7 +66,7 @@ const STARTED_KINDS = [
   ["acute", { item: "Acute Potion", left: 5 }],
   ["might", { item: "Potion of Strength", left: 25, might: 8 }],
   ["power", { item: "Ring of Power", left: 50 }],
-  ["giant", { item: "Gauntlet of the Giant", left: 50, size: "Large", step: 1, sizeDmg: 2 }],
+  ["giant", { item: "Gauntlet of the Giant", left: 50, size: "Large", step: 1, sizeDmg: 2, dmgTotal: 6 }],
   ["enlarge", { item: "Potion of Enlarge", left: 50, size: "Large", step: 1, sizeDmg: 2, dmgTotal: 11 }],
   ["critWard", { item: "Cloak of Strength", left: 50 }],
   ["plate", { item: "Cloak of Armor", left: 50 }],
@@ -87,6 +87,12 @@ for (const [surface, render] of Object.entries(SURFACES)) {
   test(`${surface}: a Joiner's Enlarge states the ruled +11 from the event's own dmgTotal and the to-hit cost`, () => {
     const text = render({ type: "itemEffectStarted", kind: "enlarge", member: M, left: 50, size: "Large", step: 1, sizeDmg: 2, dmgTotal: 11 });
     assert.match(text, /\+11 damage/);
+    assert.match(text, /\+1 to hit/);
+  });
+
+  test(`${surface}: a Joiner's Gauntlet states the ruled +6 from the event's own dmgTotal and the to-hit cost`, () => {
+    const text = render({ type: "itemEffectStarted", kind: "giant", member: M, left: 50, size: "Large", step: 1, sizeDmg: 2, dmgTotal: 6 });
+    assert.match(text, /\+6 damage/);
     assert.match(text, /\+1 to hit/);
   });
 
