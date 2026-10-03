@@ -5,15 +5,15 @@ milestone_name: Fit & Finish
 current_phase: 95
 current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
 status: executing
-stopped_at: Completed 95-06-PLAN.md
-last_updated: "2026-10-03T23:00:50.808Z"
+stopped_at: Completed 95-07-PLAN.md
+last_updated: "2026-10-03T23:26:50.784Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 95 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 50
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 ## Current Position
 
 Phase: 95 (Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 95 execution started
-Progress: [█████████░] 89% (0 of 6 phases)
+Progress: [█████████░] 94% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -291,8 +291,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T23:00:50.770Z
-Stopped at: Completed 95-06-PLAN.md
+Last session: 2026-10-03T23:26:50.741Z
+Stopped at: Completed 95-07-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -518,6 +518,7 @@ Resume file: None
 | Phase 95 P04 | 40min | 3 tasks | 6 files |
 | Phase 95 P05 | ~30 min | 3 tasks | 9 files |
 | Phase 95 P06 | 45min | 2 tasks | 12 files |
+| Phase 95 P07 | 70min | 2 tasks | 13 files |
 
 ## Decisions
 
@@ -900,6 +901,7 @@ Resume file: None
 - [Phase ?]: 95-04: weapon and armour flavour lines hint at heft, speed, temper and wearer only, never a bonus, name or magic, so premium and warded variants share their type's line
 - [Phase 95]: 95-05: the niche label stays as the leading category tag before the flavour on the Grimoire and combat rows; rules ids carry the bag index or slot so same-named items never share a toggle
 - [Phase ?]: 95-06: WORN rows and BAG cards are sheet openers (flavour only, rules static with Always on); CONSUMABLES rows carry their own RULES toggle; the Gear sheet's toggle wraps its stats. Discretion: armour WORN row keeps its wear note; weapon voice line yields to the type flavour; candidate subs read the flavour.
+- [Phase ?]: 95-07: loot card opts into flavour via renderCarriedList opts.adviceFor (verdict and usable-by stay visible on their own line); store lead is flavour plus usable-by tag, Sealed scroll RULES = scrollDesc + reader odds
 
 ### Blockers
 
