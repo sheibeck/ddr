@@ -219,6 +219,28 @@ export function lotChips(conds) {
 }
 
 /**
+ * harmfulFirst(conds) — Phase 93 (CHIP-01, user 2026-10-03): the hero's
+ * descriptor list with every harmful chip first, so a long row can only push
+ * good chips off the right edge. A stable partition on the engine's own
+ * `polarity` (never the strip's tone, so an amber Darkness, Afraid or
+ * Fear-armed chip goes first while Ether-in-stone, engine-good, stays with the
+ * good ones): the `polarity: "bad"` entries in input order, then everything
+ * else in input order. mazeworld.html applies it to the hero's two rows only
+ * (the strip under the HUD and the hero's card in YOUR LOT); the engine's
+ * conditionsOf order, lotChips and the Joiner rows are untouched. Pure: no
+ * DOM, no rng, no mutation; same descriptor objects out as in. A non-array
+ * gives a frozen empty list; an entry that throws on read, is null or has no
+ * polarity is kept in the rest group, never thrown or dropped.
+ */
+export function harmfulFirst(conds) {
+  if (!Array.isArray(conds)) return Object.freeze([]);
+  const bad = [];
+  const rest = [];
+  for (const cn of conds) (safe(() => cn.polarity, null) === "bad" ? bad : rest).push(cn);
+  return Object.freeze([...bad, ...rest]);
+}
+
+/**
  * chipText(label, chip) — the house style: the label, plus " · n" when the
  * chip carries a whole-number `rounds` above 0 ("Smoke · 2"), else the bare
  * label. A non-string or empty label gives "" (no orphan " · n").
