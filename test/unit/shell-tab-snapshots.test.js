@@ -121,6 +121,8 @@
 //
 // Phase 95 (FLAVOR-01, FLAVOR-05), Plan 05: one declared regeneration, mu.hero: each Grimoire row's italic line now reads the spell's niche label and flavour line, followed by a RULES toggle (collapsed) and its hidden rules body holding the exact old text (txt plus the resist sentence). thief.hero (no Grimoire) and every other fixture stay byte-identical.
 //
+// Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05), Plan 06, Task 1: two declared regenerations, thief.gear and mu.gear. Every flavoured WORN row (weapon, jewel, cloak; the armour row keeps its wear note) and every BAG card now shows its flavour line in the note or desc slot (a BAG card keeps its usable-by tag after it); every CONSUMABLES row shows its flavour, then a collapsed RULES toggle and a hidden body holding the exact old description. WORN rows and BAG cards carry no toggle: they open the Gear sheet. Every other fixture re-wrote the same bytes (git diff --ignore-cr-at-eol --stat).
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

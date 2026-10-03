@@ -23,6 +23,8 @@ import { sellPriceFor } from "../../engine/economy.js";
 import { WEAPONS, BAGS } from "../../content/index.js";
 import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
 import { scrollReadOdds } from "./rollOdds.js";
+import { flavorOf, flavorOfItem, flavorOfScroll } from "./flavorText.js";
+import { mountRules, alwaysRules } from "./rulesLayer.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -311,6 +313,18 @@ export function gearUseCell(state, it) {
 }
 
 /**
+ * layerRow(row, flavor, tag, rules, rulesId) — Phase 95 (FLAVOR-01/02/05; CONTEXT 'Where the exact numbers live' and
+ * 'Data shape and guards'): the one layering rule for the Gear models, mirroring 95-05's combat rows. A row with a flavour
+ * line gains `lead` (the flavour, plus a functional tag such as usable-by when one is passed), `rules` (exactly the text
+ * this slot showed before Phase 95) and `rulesId`; every existing field is untouched and a row without flavour is returned
+ * as it is.
+ */
+function layerRow(row, flavor, tag, rules, rulesId) {
+  if (typeof flavor !== "string" || !flavor) return row;
+  return { ...row, lead: tag ? `${flavor} ${tag}` : flavor, rules, rulesId };
+}
+
+/**
  * gearWornModel(state) — Phase 62 (GSCR-02): the rebuilt WORN list's five
  * fixed rows, in `GEAR_WORN_ORDER`. Built on `emptySlotRows(c)` (the ONE
  * empty-slot read), `armorDisplay(c)` (the ONE effective-armor read),
@@ -325,7 +339,7 @@ export function gearWornModel(state) {
   const armorD = armorDisplay(c);
   const usage = bagUsage(c);
 
-  const rows = GEAR_WORN_ORDER.map((key) => {
+  const plainRows = GEAR_WORN_ORDER.map((key) => {
     const label = GEAR_COPY.slot[key];
 
     if (key === "weapon") {
@@ -391,6 +405,18 @@ export function gearWornModel(state) {
     };
   });
 
+  // Phase 95 (FLAVOR-02/05): a filled weapon (ordinary or wielded staff), cloak or jewel row gains its flavour; its old
+  // note is its rules. The armour row's note is live wear state (hp left, destroyed, under the cloak), read at a glance
+  // like a Phase 94 label, so it stays as it is: armour's flavour shows on its BAG card and in its Gear sheet (Claude's
+  // discretion, named in 95-06). Empty rows and the magic-plate row get nothing.
+  const rows = plainRows.map((row) => {
+    if (!row.filled || row.key === "armor") return row;
+    if (row.key === "weapon") {
+      const staff = wieldedStaff(c);
+      return layerRow(row, staff ? flavorOfItem(staff) : flavorOf("weapon", c.weapon), "", row.note, "gear:worn:weapon");
+    }
+    return layerRow(row, flavorOfItem(c.worn && c.worn[row.key]), "", row.note, "gear:worn:" + row.key);
+  });
   const filled = rows.filter((r) => r.filled).length;
   const countText = GEAR_COPY.count.replace("{n}", filled).replace("{max}", 5);
   return { filled, max: 5, countText, rows };
@@ -462,7 +488,8 @@ export function gearBagCardsModel(state) {
     const base = it.kind === "armor" ? bagArmorText(it) : (it.txt ?? "");
     const usable = usableBy(it, c);
     const desc = usable ? `${base} ${usable}` : base;
-    return { i, name: it.n, desc, family, tag, swap: family ? swap : false, use, useRef };
+    // Phase 95 (FLAVOR-02/05): the card leads with the item's flavour plus its usable-by tag; the exact old card text is its rules.
+    return layerRow({ i, name: it.n, desc, family, tag, swap: family ? swap : false, use, useRef }, flavorOfItem(it), usable, desc, "gear:bag:" + i);
   });
 }
 
@@ -488,7 +515,9 @@ export function gearConsumablesModel(state) {
   const c = (state && state.c) || {};
   const qtyText = (n) => GEAR_COPY.qty.replace("{n}", n);
 
-  const heal = {
+  // Phase 95 (FLAVOR-02/05): the heal counter has no content row; its player line is the Healing potion's and its rules
+  // stay GEAR_COPY.healingDesc.
+  const heal = layerRow({
     key: "heal",
     name: GEAR_COPY.healingPotion,
     qty: c.potions || 0,
@@ -498,7 +527,7 @@ export function gearConsumablesModel(state) {
     enabled: (c.potions || 0) > 0 && c.wp < c.maxWP,
     reason: "",
     dispatch: { type: "drinkPotion" },
-  };
+  }, flavorOf("potion", "Healing"), "", GEAR_COPY.healingDesc, "gear:cons:heal");
   const rows = [heal];
 
   const buffGroups = [];
@@ -514,7 +543,7 @@ export function gearConsumablesModel(state) {
     buffGroups[buffIndexOf.get(it.n)].count++;
   }
   for (const g of buffGroups) {
-    rows.push({
+    rows.push(layerRow({
       key: `potion:${g.name}`,
       name: g.name,
       qty: g.count,
@@ -524,7 +553,7 @@ export function gearConsumablesModel(state) {
       enabled: true,
       reason: "",
       dispatch: { type: "useItem", i: g.firstIndex },
-    });
+    }, flavorOfItem(items[g.firstIndex]), "", g.firstTxt, `gear:cons:potion:${g.name}`));
   }
 
   if (c.scrolls > 0) {
@@ -532,17 +561,18 @@ export function gearConsumablesModel(state) {
     // so this row is always enabled with no refusal reason. 75.1-07: the
     // reader's own odds (scrollReadOdds) are appended so they are visible
     // BEFORE a tap, never only after a bad read.
-    rows.push({
+    const scrollDesc = `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`;
+    rows.push(layerRow({
       key: "scroll",
       name: GEAR_COPY.scrolls,
       qty: c.scrolls,
       qtyText: qtyText(c.scrolls),
-      desc: `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`,
+      desc: scrollDesc,
       verb: GEAR_COPY.use.read,
       enabled: true,
       reason: "",
       dispatch: { type: "readScroll" },
-    });
+    }, flavorOfScroll(), "", scrollDesc, "gear:cons:scroll"));
   }
 
   const buffCount = buffGroups.reduce((sum, g) => sum + g.count, 0);
@@ -942,7 +972,10 @@ export function renderGearTab(host, state, deps = {}) {
       li.appendChild(el("span", "mw-gear-slot", row.label));
       const main = el("div", "mw-gear-main");
       main.appendChild(el("span", "mw-gear-name", row.name));
-      main.appendChild(el("span", "mw-gear-note", row.note));
+      // Phase 95 (FLAVOR-02/05): flavour first. WORN rows and BAG cards open the Gear sheet, so they carry no toggle (a button
+      // inside the opener would steal its tap); the RULES sit in the sheet, and "Always show the rules" shows them here too.
+      main.appendChild(el("span", "mw-gear-note", row.lead ?? row.note));
+      if (row.rules && alwaysRules()) mountRules(doc, main, { id: row.rulesId, name: row.name, rules: row.rules });
       li.appendChild(main);
       li.onclick = opener(main, { from: "worn", slot: row.key }, "gear-open-" + row.key);
       li.appendChild(el("span", "mw-gear-val", row.value));
@@ -986,7 +1019,8 @@ export function renderGearTab(host, state, deps = {}) {
         top.appendChild(el("span", "mw-gear-name", card.name));
         if (card.tag) top.appendChild(el("span", "mw-gear-tag" + (card.swap ? " mw-gear-tag-swap" : ""), card.tag));
         main.appendChild(top);
-        main.appendChild(el("div", "mw-gear-desc", card.desc));
+        main.appendChild(el("div", "mw-gear-desc", card.lead ?? card.desc));
+        if (card.rules && alwaysRules()) mountRules(doc, main, { id: card.rulesId, name: card.name, rules: card.rules });
         li.appendChild(main);
         li.onclick = opener(main, { from: "bag", i: card.i, n: card.name }, "gear-open-bag-" + card.i);
         if (card.use) li.appendChild(useCellEl(card.use, card.useRef, card.name));
@@ -1008,7 +1042,10 @@ export function renderGearTab(host, state, deps = {}) {
       top.appendChild(el("span", "mw-gear-name", row.name));
       top.appendChild(el("span", "mw-gear-qty" + (row.qty === 0 ? " mw-gear-qty-zero" : ""), row.qtyText));
       main.appendChild(top);
-      main.appendChild(el("div", "mw-gear-desc", row.desc));
+      main.appendChild(el("div", "mw-gear-desc", row.lead ?? row.desc));
+      // Phase 95: a CONSUMABLES card is not an opener, so it carries its own RULES toggle (the shared layer shows the body open
+      // with no toggle under "Always show the rules").
+      if (row.rules) mountRules(doc, main, { id: row.rulesId, name: row.name, rules: row.rules });
       if (row.reason) main.appendChild(el("p", "mw-gear-cons-tag", row.reason));
       li.appendChild(main);
       const btn = doc.createElement("button");

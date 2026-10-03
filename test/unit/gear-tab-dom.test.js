@@ -605,16 +605,19 @@ test("CONSUMABLES: the SCROLLS row's .mw-gear-desc shows the reader's own odds �
     const main = scrollLi.children.find((n) => n.className === "mw-gear-card-main");
     const desc = main.children.find((n) => n.className === "mw-gear-desc");
     assert.ok(desc, "expected a .mw-gear-desc node on the SCROLLS row");
-    assert.ok(desc.textContent.includes("without fail (Magic User)"));
+    // Phase 95 (FLAVOR-01/02/05), Plan 06: declared re-pin: the desc now holds the scroll flavour; the reader's odds sit in the RULES body line under it.
+    const rulesLine = main.children.find((n) => n.className === "mw-rules-body").children[0].textContent;
+    assert.ok(rulesLine.includes("without fail (Magic User)"));
   }
   {
     const state = { c: fixedChar({ cls: "Fighter", scrolls: 1, intel: 14 }) };
     const { doc } = renderFresh(state);
     const scrollLi = doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === "scroll");
     const main = scrollLi.children.find((n) => n.className === "mw-gear-card-main");
-    const desc = main.children.find((n) => n.className === "mw-gear-desc");
-    assert.ok(desc.textContent.includes("8–20 (d20, intel 14)"));
-    assert.ok(desc.textContent.includes("1–3 backfires"));
+    const rulesLine = main.children.find((n) => n.className === "mw-rules-body").children[0].textContent;
+    assert.ok(rulesLine.includes("8–20 (d20, intel 14)"));
+    assert.ok(rulesLine.includes("1–3 backfires"));
+    assert.ok(main.children.find((n) => n.className === "mw-gear-desc").textContent.length > 0);
   }
 });
 

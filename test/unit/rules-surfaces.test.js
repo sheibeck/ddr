@@ -35,6 +35,14 @@ import { newRun } from "../../engine/state.js";
 import { rollJewel } from "../../engine/items.js";
 import { offerFind } from "../../engine/encounters.js";
 import { makeRng } from "../../engine/rng.js";
+import { renderGearTab, GEAR_COPY, gearWornModel } from "../../src/browser/gearTab.js";
+import { usableBy } from "../../src/browser/viewModels.js";
+import { scrollReadOdds } from "../../src/browser/rollOdds.js";
+import { WEAPON_FLAVOR } from "../../content/weapons.js";
+import { ARMOR_FLAVOR } from "../../content/armors.js";
+import { POTION_FLAVOR } from "../../content/potions.js";
+import { SCROLL_FLAVOR } from "../../content/spells.js";
+import { MAGIC_ITEM_FLAVOR } from "../../content/treasure-tables.js";
 
 setIdentityDials();
 
@@ -313,4 +321,141 @@ test("(e) Tolerant load: a removed item an old save may hold shows name · its o
   assert.ok(itemLine, "an item line for the removed cloak");
   assert.ok(textOf(itemLine).startsWith("Cloak of Healing · an old cloak's text"), textOf(itemLine));
   assert.equal(lines.children.filter((el) => hasClass(el, "mw-rules-btn") || hasClass(el, "mw-rules-body")).length, 0, "no toggle, no body");
+});
+
+// ─── Gear tab (Plan 06, Task 1): helpers copied by value from gear-tab-dom.test.js ───
+
+function gearChar(overrides = {}) {
+  return {
+    cls: "Fighter",
+    race: "Human",
+    level: 1,
+    weapon: "Long Sword",
+    armor: "Leather",
+    ar: 8,
+    armorWP: 20,
+    armorMax: 20,
+    magicWpn: 0,
+    gold: 250,
+    items: [],
+    worn: {},
+    bag: "small",
+    potions: 2,
+    scrolls: 0,
+    rations: 3,
+    kills: 2,
+    wp: 4,
+    maxWP: 10,
+    timers: {},
+    ...overrides,
+  };
+}
+
+const RING = { kind: "jewel", n: "Ring of Power", txt: "used, it adds +1 damage to every attack for fifty squares; then fifty squares of quiet", eff: { dmg: 1 } };
+const ANKLET = { kind: "jewel", n: "Anklet of Invisibility", txt: "used, foes aim at -2 for fifty squares; then fifty squares of visibility", eff: { foeToHit: -2 } };
+const OLD_CLOAK = { kind: "jewel", n: "Cloak of Healing", txt: "an old cloak's text" };
+
+function gearDeps() {
+  const spy = () => Object.assign((...a) => spy.calls.push(a), { calls: [] });
+  return { useItem: spy(), unequip: spy(), equipItem: spy(), dropItem: spy(), drinkPotion: spy(), readScroll: spy(), openGearSheet: spy() };
+}
+
+function paintGear(state, doc = createRecordingDocument()) {
+  renderGearTab(doc.document.getElementById("screen-gear"), state, gearDeps());
+  return doc;
+}
+
+const wornLi = (doc, slot) => doc.document.getElementById("gear-worn").children.find((li) => li.dataset.slot === slot);
+const mainOf = (li) => li.children.find((n) => hasClass(n, "mw-gear-main") || hasClass(n, "mw-gear-card-main"));
+const noteOf = (li) => mainOf(li).children.find((n) => hasClass(n, "mw-gear-note"));
+const descOf = (li) => mainOf(li).children.find((n) => hasClass(n, "mw-gear-desc"));
+const bagLi = (doc, i) => doc.document.getElementById("gear-bag").children.find((li) => li.dataset.i === String(i));
+const consLi = (doc, key) => doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === key);
+const rulesLinesOf = (main) => findAll(main, "mw-rules-line").map(textOf);
+
+// ─── (f) Gear tab: WORN rows ──────────────────────────────────────────────
+
+test("(f) Gear WORN: a flavoured row shows its flavour and no toggle; the armour row keeps its wear note; Always on shows the exact old line statically", () => {
+  const state = { c: gearChar({ worn: { jewelry1: RING } }) };
+  const doc = paintGear(state);
+  const jewel = wornLi(doc, "jewelry1");
+  assert.equal(textOf(noteOf(jewel)), MAGIC_ITEM_FLAVOR["Ring of Power"]);
+  assert.doesNotMatch(textOf(noteOf(jewel)), /\d/, "the flavour line has no digit");
+  assert.equal(textOf(noteOf(wornLi(doc, "weapon"))), WEAPON_FLAVOR["Long Sword"]);
+  const armourNote = gearWornModel(state).rows.find((r) => r.key === "armor").note;
+  assert.equal(textOf(noteOf(wornLi(doc, "armor"))), armourNote, "the armour row keeps its live wear note");
+  assert.match(armourNote, /\d/, "the wear note is state, with numbers");
+  assert.equal(findAll(doc.document.getElementById("gear-worn"), "mw-rules-btn").length, 0, "WORN rows are openers: no toggle");
+  assert.equal(findAll(doc.document.getElementById("gear-worn"), "mw-rules-body").length, 0);
+
+  setAlwaysRules(true);
+  const again = paintGear(state);
+  const jewelOn = wornLi(again, "jewelry1");
+  assert.deepEqual(rulesLinesOf(mainOf(jewelOn)), [RING.txt]);
+  assert.equal(findAll(mainOf(jewelOn), "mw-rules-body")[0].hidden, false);
+  assert.equal(findAll(again.document.getElementById("gear-worn"), "mw-rules-btn").length, 0);
+  assert.deepEqual(rulesLinesOf(mainOf(wornLi(again, "weapon"))), [GEAR_COPY.weaponMundane]);
+  assert.equal(findAll(mainOf(wornLi(again, "armor")), "mw-rules-body").length, 0, "the armour row carries no rules body");
+  assert.ok(jewelOn.children.every((n) => n.className !== "mw-rules-body"), "the body is inside main, never a direct child of the li");
+});
+
+// ─── (g) Gear tab: BAG cards ──────────────────────────────────────────────
+
+test("(g) Gear BAG: a card shows its flavour (plus the usable-by tag for armour), no toggle; Always on shows the exact old desc", () => {
+  const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
+  const state = { c: gearChar({ items: [ANKLET, studded] }) };
+  const doc = paintGear(state);
+  const usable = usableBy(studded, state.c);
+  assert.equal(textOf(descOf(bagLi(doc, 0))), MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  assert.equal(textOf(descOf(bagLi(doc, 1))), usable ? `${ARMOR_FLAVOR.Studded} ${usable}` : ARMOR_FLAVOR.Studded);
+  assert.equal(findAll(doc.document.getElementById("gear-bag"), "mw-rules-btn").length, 0);
+
+  setAlwaysRules(true);
+  const again = paintGear(state);
+  assert.deepEqual(rulesLinesOf(mainOf(bagLi(again, 0))), [ANKLET.txt]);
+  assert.deepEqual(rulesLinesOf(mainOf(bagLi(again, 1))), [usable ? `AR 10 · 18/18 hp ${usable}` : "AR 10 · 18/18 hp"]);
+  assert.equal(findAll(again.document.getElementById("gear-bag"), "mw-rules-btn").length, 0);
+});
+
+// ─── (h) Gear tab: CONSUMABLES ────────────────────────────────────────────
+
+test("(h) Gear CONSUMABLES: each row shows flavour then a collapsed RULES toggle with the exact old text; a tap reveals it and a repaint keeps it open", () => {
+  const state = { c: gearChar({ scrolls: 2 }) };
+  const doc = paintGear(state);
+  const heal = consLi(doc, "heal");
+  assert.equal(textOf(descOf(heal)), POTION_FLAVOR.Healing);
+  const main = mainOf(heal);
+  const btn = findAll(main, "mw-rules-btn")[0];
+  const body = findAll(main, "mw-rules-body")[0];
+  assert.equal(btn.getAttribute("aria-expanded"), "false");
+  assert.equal(body.hidden, true);
+  assert.deepEqual(rulesLinesOf(main), [GEAR_COPY.healingDesc]);
+  assert.ok(main.children.indexOf(btn) > main.children.indexOf(descOf(heal)), "the toggle sits after the description");
+  tap(btn);
+  assert.equal(body.hidden, false);
+  const fresh = paintGear(state);
+  assert.equal(findAll(mainOf(consLi(fresh, "heal")), "mw-rules-body")[0].hidden, false, "a repaint keeps it revealed");
+
+  const scroll = consLi(doc, "scroll");
+  assert.equal(textOf(descOf(scroll)), SCROLL_FLAVOR);
+  assert.deepEqual(rulesLinesOf(mainOf(scroll)), [`${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`]);
+  assert.ok(scroll.children.some((n) => hasClass(n, "mw-gear-cons-btn")), "the READ button is unchanged");
+
+  clearRulesOpen();
+  setAlwaysRules(true);
+  const on = paintGear(state);
+  assert.equal(findAll(on.document.getElementById("gear-cons"), "mw-rules-btn").length, 0);
+  assert.equal(findAll(mainOf(consLi(on, "heal")), "mw-rules-body")[0].hidden, false);
+});
+
+// ─── (i) Gear tab: tolerant load ──────────────────────────────────────────
+
+test("(i) Tolerant load: a bagged removed item an old save may hold shows its own text and no rules body, even with Always on", () => {
+  const state = { c: gearChar({ items: [OLD_CLOAK] }) };
+  for (const on of [false, true]) {
+    setAlwaysRules(on);
+    const doc = paintGear(state);
+    assert.equal(textOf(descOf(bagLi(doc, 0))), "an old cloak's text");
+    assert.equal(findAll(bagLi(doc, 0), "mw-rules-btn").length + findAll(bagLi(doc, 0), "mw-rules-body").length, 0);
+  }
 });

@@ -33,6 +33,11 @@ import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { newRun } from "../../engine/state.js";
 import { maxCharges } from "../../engine/movement.js";
 import { WEAPONS } from "../../content/index.js";
+import { WEAPON_FLAVOR } from "../../content/weapons.js";
+import { ARMOR_FLAVOR } from "../../content/armors.js";
+import { POTION_FLAVOR } from "../../content/potions.js";
+import { SCROLL_FLAVOR } from "../../content/spells.js";
+import { MAGIC_ITEM_FLAVOR } from "../../content/treasure-tables.js";
 // RULES-10 (Phase 75.1, plan 75.1-07): the SCROLLS row's desc now appends
 // scrollReadOdds(state) — asserted against the real function, never a
 // hand-typed string.
@@ -693,6 +698,10 @@ test("gearConsumablesModel, nothing held: rows are exactly [heal] at ×0, heldTe
     enabled: false,
     reason: "",
     dispatch: { type: "drinkPotion" },
+    // Phase 95 (FLAVOR-01/02/05), Plan 06: declared re-pin: the heal row gains its additive flavour fields; every field above is unchanged.
+    lead: POTION_FLAVOR.Healing,
+    rules: "Heals 7–25 hp (double for a Wilmsry). Stays corked at full health.",
+    rulesId: "gear:cons:heal",
   });
   assert.equal(model.heldText, "0 HELD");
 });
@@ -977,4 +986,98 @@ test("Purity: every new model is pure — two calls deep-equal, the state's JSON
     assert.deepStrictEqual(a, b);
     assert.equal(JSON.stringify(rich), before);
   }
+});
+
+// ═══════════════ Phase 95 (FLAVOR-01/02/05), Plan 06: the flavour layer on the Gear models ═══════════════
+//
+// lead / rules / rulesId are ADDITIVE: they appear only on rows with a flavour, and every field above keeps its value.
+
+test("Phase 95: gearWornModel layers a worn Ring of Power with its flavour; its note is unchanged and becomes the rules", () => {
+  const ring = { kind: "jewel", n: "Ring of Power", txt: "a ring, of power, allegedly", eff: { dmg: 1 } };
+  const row = gearWornModel(st(fixedChar({ worn: { jewelry1: ring } }))).rows.find((r) => r.key === "jewelry1");
+  assert.equal(row.lead, MAGIC_ITEM_FLAVOR["Ring of Power"]);
+  assert.equal(row.rules, ring.txt);
+  assert.equal(row.rulesId, "gear:worn:jewelry1");
+  assert.equal(row.note, ring.txt, "the note is exactly what it was");
+});
+
+test("Phase 95: gearWornModel layers a Long Sword row with the weapon flavour; weaponMundane stays its note and becomes the rules", () => {
+  const row = gearWornModel(st(fixedChar({ weapon: "Long Sword" }))).rows.find((r) => r.key === "weapon");
+  assert.equal(row.lead, WEAPON_FLAVOR["Long Sword"]);
+  assert.equal(row.rules, GEAR_COPY.weaponMundane);
+  assert.equal(row.note, GEAR_COPY.weaponMundane);
+  assert.equal(row.rulesId, "gear:worn:weapon");
+  const magic = gearWornModel(st(fixedChar({ weapon: "Long Sword", magicWpn: 2 }))).rows.find((r) => r.key === "weapon");
+  assert.equal(magic.rules, GEAR_COPY.weaponMagic.replace("{n}", 2));
+  assert.equal(magic.value, `${WEAPONS["Long Sword"].lab} +2`);
+});
+
+test("Phase 95: gearWornModel layers a wielded staff row with its magic-item flavour and txt as the rules", () => {
+  const staff = { kind: "staff", n: "Poplar Staff", use: "partyHeal", txt: "heals you and every Joiner", charges: 3 };
+  const row = gearWornModel(st(fixedChar({ cls: "Magic User", weapon: "Poplar Staff", staff }))).rows.find((r) => r.key === "weapon");
+  assert.equal(row.lead, MAGIC_ITEM_FLAVOR["Poplar Staff"]);
+  assert.equal(row.rules, staff.txt);
+  assert.equal(row.rulesId, "gear:worn:weapon");
+});
+
+test("Phase 95: the armour row, the magic-plate row and every empty row carry no lead, rules or rulesId", () => {
+  const rows = gearWornModel(st(fixedChar({ weapon: "Fists" }))).rows;
+  for (const key of ["weapon", "cloak", "jewelry1", "jewelry2"]) {
+    const r = rows.find((x) => x.key === key);
+    assert.equal(r.filled, false);
+    assert.ok(!("lead" in r) && !("rules" in r) && !("rulesId" in r), `${key} empty row`);
+  }
+  const armour = rows.find((r) => r.key === "armor");
+  assert.equal(armour.filled, true);
+  assert.ok(!("lead" in armour) && !("rules" in armour) && !("rulesId" in armour), "the wear note is state, not description");
+});
+
+test("Phase 95: gearBagCardsModel layers a bagged jewel with its flavour; desc stays the exact old text and becomes the rules", () => {
+  const anklet = { kind: "jewel", n: "Anklet of Invisibility", txt: "foes aim badly", eff: { foeToHit: -2 } };
+  const card = gearBagCardsModel(st(fixedChar({ items: [anklet] })))[0];
+  assert.equal(card.lead, MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
+  assert.equal(card.desc, "foes aim badly");
+  assert.equal(card.rules, "foes aim badly");
+  assert.equal(card.rulesId, "gear:bag:0");
+});
+
+test("Phase 95: a bagged armour card leads with the armour flavour then its usable-by tag; rules are bagArmorText plus the tag", () => {
+  const bagged = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
+  const c = fixedChar({ items: [bagged] });
+  const card = gearBagCardsModel(st(c))[0];
+  const usable = usableBy(bagged, c);
+  assert.ok(usable, "Studded carries a usable-by tag for a Fighter");
+  assert.equal(card.lead, `${ARMOR_FLAVOR.Studded} ${usable}`);
+  assert.equal(card.rules, `${bagArmorText(bagged)} ${usable}`);
+  assert.equal(card.rules, card.desc);
+});
+
+test("Phase 95: an old save's removed item (a Cloak of Healing jewel) has no lead, rules or rulesId and an unchanged card", () => {
+  const old = { kind: "jewel", n: "Cloak of Healing", txt: "an old cloak's text" };
+  const card = gearBagCardsModel(st(fixedChar({ items: [old] })))[0];
+  assert.equal(card.desc, "an old cloak's text");
+  assert.ok(!("lead" in card) && !("rules" in card) && !("rulesId" in card));
+});
+
+test("Phase 95: gearConsumablesModel layers the heal row, a buff-potion row and the SCROLLS row; every old field keeps its value", () => {
+  const speed = { kind: "potion", n: "Speed potion (yellow)", eff2: "speed", txt: "you act twice" };
+  const state = st(fixedChar({ potions: 2, scrolls: 1, items: [speed, { ...speed }] }));
+  const rows = gearConsumablesModel(state).rows;
+  const heal = rows.find((r) => r.key === "heal");
+  assert.equal(heal.lead, POTION_FLAVOR.Healing);
+  assert.equal(heal.rules, GEAR_COPY.healingDesc);
+  assert.equal(heal.desc, GEAR_COPY.healingDesc);
+  assert.equal(heal.rulesId, "gear:cons:heal");
+  const buff = rows.find((r) => r.key === "potion:Speed potion (yellow)");
+  assert.equal(buff.qty, 2);
+  assert.equal(buff.desc, "you act twice");
+  assert.equal(buff.rules, "you act twice");
+  assert.equal(buff.lead, POTION_FLAVOR.Speed);
+  assert.equal(buff.rulesId, "gear:cons:potion:Speed potion (yellow)");
+  const scroll = rows.find((r) => r.key === "scroll");
+  assert.equal(scroll.lead, SCROLL_FLAVOR);
+  assert.equal(scroll.desc, `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`);
+  assert.equal(scroll.rules, scroll.desc);
+  assert.equal(scroll.rulesId, "gear:cons:scroll");
+  assert.equal(scroll.verb, GEAR_COPY.use.read);
 });

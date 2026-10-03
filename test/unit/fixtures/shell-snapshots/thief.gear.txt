@@ -25,7 +25,7 @@
       <span class="mw-gear-name">
         text="Dagger"
       <span class="mw-gear-note">
-        text="no enchantment. Just you and the swing."
+        text="A small, quick blade: more sting than damage, but it has a gift for finding gaps."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-val">
@@ -53,7 +53,7 @@
       <span class="mw-gear-name">
         text="Cloak of Armor"
       <span class="mw-gear-note">
-        text="used, it soaks as plate (AR 15) for fifty squares over whatever you wear — any class, never wears out; then fifty squares of ordinary cloth"
+        text="Wears like silk and turns blows like plate, whatever you do for a living."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-val">
@@ -70,7 +70,7 @@
       <span class="mw-gear-name">
         text="Bracelet of Flight"
       <span class="mw-gear-note">
-        text="used, twenty squares of flight when you ask; fifty to catch its breath"
+        text="A bangle that waives gravity for a short flight, then reinstates it without warning."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-val">
@@ -87,7 +87,7 @@
       <span class="mw-gear-name">
         text="Amulet of Light"
       <span class="mw-gear-note">
-        text="used, it lights fifty squares and tells the dark to leave at once; then it sulks for fifty"
+        text="A pocket sunrise: the dark backs off for a good while, then the amulet holds a grudge."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-val">
@@ -126,7 +126,7 @@
         <span class="mw-gear-tag mw-gear-tag-swap">
           text="WEAPON · SWAP"
       <div class="mw-gear-desc">
-        text="d6+1 (usable by Fighters, Thieves)"
+        text="The katana's little sibling, quick and keen, and happy to share a cramped corridor. (usable by Fighters, Thieves)"
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
@@ -139,7 +139,7 @@
         <span class="mw-gear-tag mw-gear-tag-swap">
           text="ARMOUR · SWAP"
       <div class="mw-gear-desc">
-        text="AR 11 · 28/28 hp (usable by Fighters, Thieves)"
+        text="Leather with metal studs added for confidence, and a little extra weight to go with it. (usable by Fighters, Thieves)"
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
@@ -152,7 +152,7 @@
         <span class="mw-gear-tag mw-gear-tag-swap">
           text="JEWELRY · SWAP"
       <div class="mw-gear-desc">
-        text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
+        text="Makes you a little easy to overlook, so foes aim badly until the effect lapses."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
@@ -163,7 +163,7 @@
         <span class="mw-gear-name">
           text="Rope"
       <div class="mw-gear-desc">
-        text="the honest way across a crevice. Once."
+        text="Gets you across a crevice with some dignity, and is used up for the favour."
       <span class="sr-only">
         text="opens actions"
     <span class="mw-gear-chev" aria-hidden="true">
@@ -184,7 +184,12 @@
         <span class="mw-gear-qty">
           text="×2"
       <div class="mw-gear-desc">
-        text="Heals 7–25 hp (double for a Wilmsry). Stays corked at full health."
+        text="A reassuring swig that tops you up, and tastes exactly like medicine."
+      <button class="mw-rules-btn" aria-controls="mw-rules-gear-cons-heal" aria-expanded="false" aria-label="Rules for HEALING POTION" type="button" type="button" onclick>
+        text="RULES ▸"
+      <div id="mw-rules-gear-cons-heal" class="mw-rules-body" hidden>
+        <p class="mw-rules-line">
+          text="Heals 7–25 hp (double for a Wilmsry). Stays corked at full health."
     <button class="mw-gear-cons-btn" disabled>
       text="USE"
   <li class="mw-gear-card mw-gear-cons" data-key="potion:Healing potion">
@@ -195,7 +200,12 @@
         <span class="mw-gear-qty">
           text="×1"
       <div class="mw-gear-desc">
-        text="+d10+2 hp"
+        text="A reassuring swig that tops you up, and tastes exactly like medicine."
+      <button class="mw-rules-btn" aria-controls="mw-rules-gear-cons-potion-Healing-potion" aria-expanded="false" aria-label="Rules for Healing potion" type="button" type="button" onclick>
+        text="RULES ▸"
+      <div id="mw-rules-gear-cons-potion-Healing-potion" class="mw-rules-body" hidden>
+        <p class="mw-rules-line">
+          text="+d10+2 hp"
     <button class="mw-gear-cons-btn" onclick>
       text="USE"
 ## #gear-kit-head
