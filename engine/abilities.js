@@ -223,6 +223,71 @@ export function abilityRoundsLeft(c, key) {
   return rec.phase === "effect" && rec.cd ? rec.left + rec.cd : rec.left;
 }
 
+/**
+ * ABILITY_UNAVAILABLE_REASONS — Phase 94 (ASTATE-04): every reason
+ * abilityState can give for an "unavailable" ability, in the refusal
+ * ladder's own order (notFought first). Frozen; the view maps each to words.
+ */
+export const ABILITY_UNAVAILABLE_REASONS = Object.freeze(["notFought", "unknown", "notInCombat", "noTarget", "tooFewFoes", "alreadyOn", "notLowEnough"]);
+
+/**
+ * abilityState(state, sheet, key) — Phase 94 (ASTATE-04): the one derived
+ * answer to "can this ability be used, and if not, why". Returns
+ * `{ state, roundsLeft, reason }` with state one of "ready" | "recharging" |
+ * "unavailable" | "spent": recharging carries the rounds left (reason
+ * "cooldown"), spent is a once-per-fight ability used this fight (reason
+ * "spent"), unavailable carries one of ABILITY_UNAVAILABLE_REASONS, ready has
+ * roundsLeft 0 and reason null. It mirrors useAbility's refusal ladder rung
+ * for rung, in the ladder's own order, so a tap always agrees with the label
+ * (ROADMAP criterion 4); useAbility and the view both read it. Takes any
+ * sheet: the hero (`state.c`, aimed at `combat.target`) or a Joiner
+ * (`state.party[i]`, aimed at the first live foe as alliesTurn does, and its
+ * Last Stand gated on its live combat entry's hp). Pure: no rng, writes
+ * nothing (never retargets a dead `combat.target`), stores nothing (so no
+ * `*Comparable()` carve-out). No class check (pickMemberAbility's filter) and
+ * no heroOut check (that menu shape never shows ability rows). The view maps
+ * it to words in src/browser/abilityStates.js (plan 94-03).
+ */
+export function abilityState(state, sheet, key) {
+  const unavailable = (reason) => ({ state: "unavailable", roundsLeft: 0, reason });
+  const C = state && state.combat;
+  if (C && C.pending) return unavailable("notFought");
+  const meta = typeof key === "string" ? ABILITY_BY_ID[key] : null;
+  const owned = !!meta && !!sheet && Array.isArray(sheet.abilities) && sheet.abilities.includes(key);
+  if (!owned) return unavailable("unknown");
+  if (!C) return unavailable("notInCombat");
+  if (!isReady(sheet, `ability:${key}`)) {
+    if (meta.cd === "fight") return { state: "spent", roundsLeft: 0, reason: "spent" };
+    return { state: "recharging", roundsLeft: abilityRoundsLeft(sheet, key), reason: "cooldown" };
+  }
+  // Never liveFoes(state) here: a combat with no foes array must not throw.
+  const live = Array.isArray(C.foes) ? C.foes.filter((f) => f && f.alive) : [];
+  const needsFoe = meta.target === "foe" || meta.target === "foes";
+  if (needsFoe && !live.length) return unavailable("noTarget");
+  if (abilityShortfall(key, live.length)) return unavailable(abilityShortfall(key, live.length));
+  if (needsFoe) {
+    // The hero's aim is combat.target when it is a live foe, else the first live foe (what
+    // useAbility's normalizeTarget would settle on, computed here without moving it); a Joiner
+    // is always handed the first live foe (combat.js#alliesTurn).
+    const t = sheet === state.c ? C.foes[C.target] : null;
+    const aimed = t && t.alive ? t : live[0];
+    if (abilityTargetShortfall(key, aimed) === "alreadyOn") return unavailable("alreadyOn");
+  }
+  if (key === "lastStand") {
+    let hp = sheet.wp;
+    let max = sheet.maxWP;
+    if (sheet !== state.c && Array.isArray(C.allies) && Array.isArray(state.party)) {
+      const ally = C.allies.find((a) => a && state.party[a.partyIdx] === sheet);
+      if (ally) {
+        hp = ally.wp;
+        max = ally.maxWP;
+      }
+    }
+    if (hp > max * DEATH_PANIC_THRESHOLD) return unavailable("notLowEnough");
+  }
+  return { state: "ready", roundsLeft: 0, reason: null };
+}
+
 /** applyPommel(t) — Pommel Strike: the target loses its next turn (foeTurn's
  * f.asleep skip-turn pattern, Task 2). Since Phase 90 (ABIL-07) it is applied
  * by combat.js#playerStrike (the hero) and #memberStrike (a Joiner Fighter)

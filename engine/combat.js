@@ -2360,6 +2360,33 @@ export function songReady(state) {
 }
 
 /**
+ * SING_UNAVAILABLE_REASONS — Phase 94 (ASTATE-04): every reason singState can
+ * give for an "unavailable" Sing row. Frozen; the view maps each to words.
+ */
+export const SING_UNAVAILABLE_REASONS = Object.freeze(["notFought", "notInCombat", "wrongClass"]);
+
+/**
+ * singState(state) — Phase 94 (ASTATE-04): the Sing row's state (Sing is not
+ * in ABILITY_BY_ID, so it cannot go through abilities.js#abilityState); the
+ * same `{ state, roundsLeft, reason }` contract. Pending fight, no fight and a
+ * non-Bard are "unavailable" (notFought / notInCombat / wrongClass); a song
+ * due is "ready"; between the two songs it is "recharging" (reason
+ * "songResting", roundsLeft the rounds until the second song, the figure
+ * sing() pushes as `rounds`); after the second song (or a bare `sang` with
+ * no `sangAt`) it is "spent" (reason "sungThisFight"). sing()'s refusals read
+ * it. Pure: no rng, writes and stores nothing.
+ */
+export function singState(state) {
+  const C = state.combat;
+  if (C && C.pending) return { state: "unavailable", roundsLeft: 0, reason: "notFought" };
+  if (!C) return { state: "unavailable", roundsLeft: 0, reason: "notInCombat" };
+  if (state.c.sub !== "Bard") return { state: "unavailable", roundsLeft: 0, reason: "wrongClass" };
+  if (songDue(C.sang, C.sangAt, C.round)) return { state: "ready", roundsLeft: 0, reason: null };
+  if (C.sang && Number.isFinite(C.sangAt)) return { state: "recharging", roundsLeft: C.sangAt + SONG_GAP_ROUNDS - C.round, reason: "songResting" };
+  return { state: "spent", roundsLeft: 0, reason: "sungThisFight" };
+}
+
+/**
  * sing(state, rng, events, now) — the Bard's action, once per fight. IDENT-17
  * (Phase 91, plan 91-06), user 2026-09-30: the song's effect is one spell
  * picked uniformly from songPool(level) and resolved at full strength exactly
