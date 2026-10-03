@@ -184,9 +184,9 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   2. The joinerMet line, the Joiner card and the Company panel show that level.
   3. A seeded run with no Joiner encounter plays out identically; every fixture that moves is declared; the fair bot reads the new levels; the 2.4.0 DRAFT patch notes name the change.
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans executed
 
-- [ ] 94.1-01-PLAN.md — joinerLevelCap and meetJoiner's capped level, the rewritten joiner-level-cap test, the measured fixture moves (roll-high solo-1 predicted), the 2.4.0 DRAFT bullet, docs and the --party readout pair
+- [x] 94.1-01-PLAN.md — joinerLevelCap and meetJoiner's capped level, the rewritten joiner-level-cap test, the measured fixture moves (roll-high solo-1 predicted), the 2.4.0 DRAFT bullet, docs and the --party readout pair
 
 ### Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
 

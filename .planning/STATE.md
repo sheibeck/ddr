@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 95
-current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
-status: planning
-stopped_at: Completed 94-05-PLAN.md
-last_updated: "2026-10-03T20:39:13.231Z"
+current_phase: 94.1
+current_phase_name: Joiner Level Follows Depth
+status: verifying
+stopped_at: Completed 94.1-01-PLAN.md
+last_updated: "2026-10-03T21:42:08.198Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 94 complete, transitioned to Phase 95
+last_activity_desc: Phase 94.1 execution started
 progress:
   total_phases: 8
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 9
-  percent: 38
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 10
+  percent: 50
 ---
 
 # Project State
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 94 — Ability States You Can Tell Apart
+**Current focus:** Phase 94.1 — Joiner Level Follows Depth
 
 ## Current Position
 
-Phase: 95 — Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-03 — Phase 94 complete, transitioned to Phase 95
-Progress: [██████████] 100% (0 of 6 phases)
+Phase: 94.1 (Joiner Level Follows Depth) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-10-03 — Phase 94.1 execution started
+Progress: [███████░░░] 67% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -291,8 +291,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T18:30:38.477Z
-Stopped at: Completed 94-05-PLAN.md
+Last session: 2026-10-03T21:42:08.099Z
+Stopped at: Completed 94.1-01-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -511,6 +511,7 @@ Resume file: None
 | Phase 94 P03 | 20min | 2 tasks | 7 files |
 | Phase 94 P04 | 40min | 2 tasks | 14 files |
 | Phase 94 P05 | 35min | 3 tasks | 9 files |
+| Phase 94.1 P01 | 25min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -886,6 +887,7 @@ Resume file: None
 - [Phase ?]: 94-01: abilityState holds the ability refusal ladder (pending rung first); useAbility and sing() read abilityState/singState; no rng, nothing serialized
 - [Phase ?]: 94-03: ability-state words in one frozen bank (src/browser/abilityStates.js); notLowEnough reads NEEDS A QUARTER HP OR LESS; Sing row uses the common words
 - [Phase ?]: 94-04: enabled is state===ready, dispatch never nulled; Hero rows gain stateKind in a fight only
+- [Phase ?]: 94.1-01: Joiner level is the Level Table d10 capped by joinerLevelCap(depth) = ceil(depth/3) in 1..5; a cap not an exact level; Joiners keep the level they were met at; --party readout information only
 
 ### Blockers
 

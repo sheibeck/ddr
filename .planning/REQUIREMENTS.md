@@ -35,7 +35,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Joiner level (user, added 2026-10-03)
 
-- [ ] **JOIN-01**: A Joiner's level follows the floor it is met on, one level per three floors, at least 1 and at most 5 (floors 1–3 → 1, 4–6 → 2, 7–9 → 3, 10–12 → 4, 13+ → 5; exact or as a cap on today's roll, ruled in discuss-phase); its hp, abilities, Joiner lines, the fair bot and the patch notes follow, and any moved fixture is declared
+- [x] **JOIN-01**: A Joiner's level follows the floor it is met on, one level per three floors, at least 1 and at most 5 (floors 1–3 → 1, 4–6 → 2, 7–9 → 3, 10–12 → 4, 13+ → 5; exact or as a cap on today's roll, ruled in discuss-phase); its hp, abilities, Joiner lines, the fair bot and the patch notes follow, and any moved fixture is declared
 
 ### Gauntlet of the Giant (player report #6, added 2026-10-03)
 
@@ -84,7 +84,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | ASTATE-03 | Phase 94 | Complete |
 | ASTATE-04 | Phase 94 | Complete |
 | ASTATE-05 | Phase 94 | Complete |
-| JOIN-01 | Phase 94.1 | Pending |
+| JOIN-01 | Phase 94.1 | Complete |
 | FLAVOR-01 | Phase 95 | Pending |
 | FLAVOR-02 | Phase 95 | Pending |
 | FLAVOR-05 | Phase 95 | Pending |
