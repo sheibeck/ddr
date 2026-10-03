@@ -33,7 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 
-import { HERO_CONDITIONS, HERO_CHIP_COPY, LASTS, SOURCES, lotChips, chipText, chipSheetFacts } from "../../src/browser/heroConditions.js";
+import { HERO_CONDITIONS, HERO_CHIP_COPY, LASTS, SOURCES, lotChips, harmfulFirst, chipText, chipSheetFacts } from "../../src/browser/heroConditions.js";
 import { FOE_CONDITIONS } from "../../src/browser/foeConditions.js";
 import { conditionsOf, memberConditionsOf, SPELL_ACT_OF } from "../../engine/derived.js";
 import { DURATION_ROUNDS } from "../../engine/abilities.js";
@@ -190,6 +190,108 @@ test("lotChips: a member's chips come from memberConditionsOf through the same t
   const party = [hero({ name: "Joiner", timers: { "ability:sidestep": live(1) } })];
   const state = fight({ combat: { allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30, braced: true }] }, party });
   assert.deepEqual(lotChips(memberConditionsOf(state, 0)).map((c) => [c.key, c.sub, c.rounds]), [["ability", "sidestep", 1], ["braced", null, null]]);
+});
+
+// ─── (b2) harmfulFirst (Phase 93, CHIP-01) ─────────────────────────────────
+
+const BAD_KEYS = ["affliction", "foeEffect", "darkness", "fearArmed", "afraid", "heroOut", "heroBlind", "heroShrunk", "fightDark", "insulted", "selfDot"];
+
+test("harmfulFirst: a stable bad-first partition — same objects, each group in input order", () => {
+  const g1 = { key: "haste", polarity: "good" };
+  const b1 = { key: "darkness", polarity: "bad" };
+  const g2 = { key: "might", polarity: "good" };
+  const b2 = { key: "affliction", polarity: "bad" };
+  const g3 = { key: "mirror", polarity: "good" };
+  const out = harmfulFirst([g1, b1, g2, b2, g3]);
+  assert.equal(out.length, 5);
+  [b1, b2, g1, g2, g3].forEach((cn, i) => assert.equal(out[i], cn, `slot ${i} is the same object`));
+});
+
+test("harmfulFirst: an all-good list and an all-bad list come back in their own order", () => {
+  const goods = [{ key: "haste", polarity: "good" }, { key: "might", polarity: "good" }, { key: "mirror", polarity: "good" }];
+  const bads = [{ key: "darkness", polarity: "bad" }, { key: "afraid", polarity: "bad" }, { key: "selfDot", polarity: "bad" }];
+  assert.deepEqual(harmfulFirst(goods).map((c) => c.key), ["haste", "might", "mirror"]);
+  assert.deepEqual(harmfulFirst(bads).map((c) => c.key), ["darkness", "afraid", "selfDot"]);
+  assert.deepEqual(harmfulFirst([]), []);
+});
+
+test("harmfulFirst: the input is not mutated and the result is frozen", () => {
+  const input = [{ key: "haste", polarity: "good" }, { key: "darkness", polarity: "bad" }];
+  const snapshot = [...input];
+  const out = harmfulFirst(input);
+  assert.deepEqual(input, snapshot);
+  assert.equal(input[0], snapshot[0]);
+  assert.notEqual(out, input);
+  assert.ok(Object.isFrozen(out));
+  assert.ok(Object.isFrozen(harmfulFirst([])));
+});
+
+test("harmfulFirst: null, undefined, a string and a non-array object give a frozen empty array", () => {
+  for (const bad of [null, undefined, "affliction", 7, { length: 2, 0: { polarity: "bad" } }]) {
+    const out = harmfulFirst(bad);
+    assert.deepEqual(out, [], String(bad));
+    assert.ok(Object.isFrozen(out));
+  }
+});
+
+test("harmfulFirst: a throwing polarity getter, a null entry and a missing polarity are kept in the rest group, in order", () => {
+  const hostile = {};
+  Object.defineProperty(hostile, "polarity", { get() { throw new Error("hostile"); } });
+  hostile.key = "haste";
+  const noPolarity = { key: "might" };
+  const bad = { key: "darkness", polarity: "bad" };
+  let out;
+  assert.doesNotThrow(() => { out = harmfulFirst([hostile, null, noPolarity, bad]); });
+  assert.equal(out.length, 4);
+  assert.equal(out[0], bad);
+  assert.equal(out[1], hostile);
+  assert.equal(out[2], null);
+  assert.equal(out[3], noPolarity);
+});
+
+test("harmfulFirst: all eleven polarity-bad keys go first, in input order, ahead of interleaved good ones", () => {
+  const goods = ["haste", "might", "mirror", "foresight"].map((key) => ({ key, polarity: "good" }));
+  const conds = [];
+  BAD_KEYS.forEach((key, i) => {
+    conds.push(goods[i % goods.length]);
+    conds.push({ key, polarity: "bad" });
+  });
+  const out = harmfulFirst(conds);
+  assert.deepEqual(out.slice(0, 11).map((c) => c.key), BAD_KEYS);
+  assert.ok(out.slice(0, 11).every((c) => c.polarity === "bad"));
+  assert.ok(out.slice(11).every((c) => c.polarity === "good"));
+  assert.equal(out.length, conds.length);
+});
+
+test("harmfulFirst: the test is polarity, never tone — an engine-good ether stays in the good group", () => {
+  const ether = { key: "ether", polarity: "good" };
+  const afraid = { key: "afraid", polarity: "bad" };
+  const haste = { key: "haste", polarity: "good" };
+  assert.deepEqual(harmfulFirst([ether, haste, afraid]).map((c) => c.key), ["afraid", "ether", "haste"]);
+});
+
+test("harmfulFirst: a real conditionsOf list — Poisoned leads, then the rest in conditionsOf's own order", () => {
+  const state = fight({ c: { might: 2, mirror: 1, affliction: { kind: "Poison" }, darkFor: 3, timers: { "ability:smoke": live(2) } } });
+  const conds = conditionsOf(state);
+  const keys = conds.map((c) => c.key);
+  assert.notEqual(keys[0], "affliction", "the engine emits good descriptors first");
+  assert.ok(keys.indexOf("affliction") >= 2, "at least two good conditions precede the affliction");
+  const out = harmfulFirst(conds);
+  assert.equal(out[0].key, "affliction");
+  assert.deepEqual(
+    out.map((c) => c.key),
+    [...conds.filter((c) => c.polarity === "bad"), ...conds.filter((c) => c.polarity !== "bad")].map((c) => c.key),
+  );
+  assert.deepEqual(conds.map((c) => c.key), keys, "conditionsOf's own list is untouched");
+});
+
+test("lotChips: keeps its input order — the partition lives only in harmfulFirst, so the member card never reorders", () => {
+  const conds = [
+    { key: "haste", polarity: "good", remaining: 34, cadence: "squares", source: "Cloak of Speed" },
+    { key: "foeEffect", polarity: "bad", kind: "dazed", remaining: 2 },
+  ];
+  assert.deepEqual(lotChips(conds).map((c) => c.key), ["haste", "foeEffect"]);
+  assert.deepEqual(lotChips(harmfulFirst(conds)).map((c) => c.key), ["foeEffect", "haste"]);
 });
 
 test("chipText: the house style — ' · n' only for a whole-number rounds above 0", () => {
