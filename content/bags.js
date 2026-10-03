@@ -54,3 +54,19 @@ export const BAG_ITEMS = {
   large: { kind: "bag", tier: "large", n: "Large bag", txt: "8 slots, 8000 wilmst and 40 rations. Your spine has filed a complaint." },
   exlarge: { kind: "bag", tier: "exlarge", n: "Enormous bag", txt: "10 slots, 10000 wilmst and 60 rations. Technically luggage." },
 };
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): the player
+// line for each takeable bag, keyed by bag name. A bag's `txt` in BAG_ITEMS
+// above stays the exact rules text (capacities included), pinned by the v2.3
+// guards and shown under RULES; the flavour is keyed here, never inline on the
+// row (bag rows are spread onto items, so the house rule keeps every flavour in
+// a keyed map). Each line grows with the bag, and is never a capacity or a copy
+// of the joke already in its txt. Every line is one sentence of about 90
+// characters or fewer with no number, die or percentage
+// (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const BAG_FLAVOR = Object.freeze({
+  "Medium bag": "A step up from the starter sack, and a bigger place to keep your poor decisions.",
+  "Large bag": "Big enough to lose an afternoon in, rummaging for the thing you actually need.",
+  "Enormous bag": "A bag so large it has its own weather, and a regrettable echo.",
+});

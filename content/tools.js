@@ -65,3 +65,20 @@ export const TOOL_LOOT_WEIGHTS = { torch: 4, rope: 3, ladder: 1 };
 export const TOOL_ACTIVATION_OF = Object.freeze({
   Torch: { kind: "lit", effect: 40 },
 });
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): the player
+// line for each tool, keyed by tool name, in the TOOL_ORDER walk (Torch, Rope,
+// Ladder), then Lockpicks. Lockpicks has no TOOLS row: its rules text is the
+// lockpicks item's own txt, built in engine/items.js (and sold through
+// engine/economy.js). A row's `txt` above stays the exact rules text, pinned by
+// the v2.3 guards and shown under RULES; the flavour is keyed here, never
+// inline on the row. Rope and Ladder are spent on use and say so without a
+// count word. Every line is one sentence of about 90 characters or fewer with
+// no number, die or percentage (test/unit/flavor-layer.test.js), and is
+// reviewed on docs/narrative-pass/review.html.
+export const TOOL_FLAVOR = Object.freeze({
+  "Torch": "Pushes the dark back for a good stretch, then burns out without apology.",
+  "Rope": "Gets you across a crevice with some dignity, and is used up for the favour.",
+  "Ladder": "Turns a stubborn wall into a courteous stairway, then retires from the profession.",
+  "Lockpicks": "Thin bits of metal and good intentions, for locks that need persuading.",
+});

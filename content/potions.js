@@ -72,3 +72,26 @@ export const POTIONS = [
 export const POTION_ACTIVATION_OF = Object.freeze(
   Object.fromEntries(POTIONS.filter((p) => p.act).map((p) => [p.n, Object.freeze({ ...p.act })])),
 );
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): the player
+// line for each potion, keyed by potion name, in table order. A row's `txt`
+// above stays the exact rules text, pinned by the v2.3 guards and shown under
+// RULES; the flavour is keyed here, never inline on the row. Healing's line
+// also heads the healing-potion counter (its rules are GEAR_COPY.healingDesc
+// and COMBAT_MENU_COPY.potionDesc). Death's line is the only warning a find
+// card gives, so it says in words that drinking it kills you. Every line is
+// one sentence of about 90 characters or fewer with no number, die or
+// percentage (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const POTION_FLAVOR = Object.freeze({
+  "Healing": "A reassuring swig that tops you up, and tastes exactly like medicine.",
+  "Cure Poison": "Clears out poison, politely but firmly, and leaves a taste behind as a reminder.",
+  "Speed": "Drink it and everyone else seems to be wading through porridge, for a while.",
+  "Xtra Healing": "The expensive bottle: swallow it and you are restored right to the brim.",
+  "Strength": "Bottled biceps: blows and spells land harder until the effect wears off.",
+  "Cure Disease": "Shows disease the door, and reminds your insides who actually lives there.",
+  "Enlarge": "Swells you up big and heavy-handed, though it also makes you a better target.",
+  "Acuteness": "Sharpens your swing until you almost look like you know what you are doing.",
+  "Death": "Drinking this will kill you, which is a poor reason to be curious about it.",
+  "Invisible": "Fades you from sight, so foes mostly swing at where you used to be.",
+});
