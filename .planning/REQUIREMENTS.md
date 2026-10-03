@@ -23,7 +23,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 - [ ] **ASTATE-02**: A Recharging ability shows its countdown ("ready in N")
 - [ ] **ASTATE-03**: A Can't-use-now ability shows the gate's reason on the row (e.g. "no foe in reach", "needs a weapon")
 - [ ] **ASTATE-04**: The engine exposes each ability row's state category and rounds left, so the view never infers it
-- [ ] **ASTATE-05**: The states are readable in light and dark themes and for colour-blind players, pinned by shell snapshot and a11y tests
+- [ ] **ASTATE-05**: The states are readable in the shipped (dark) theme and for colour-blind players, pinned by shell snapshot and a11y tests (user 2026-10-03: no light theme ships, so "light and dark" became the shipped theme)
 
 ### Condition chips (todo)
 
