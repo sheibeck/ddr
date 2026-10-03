@@ -123,6 +123,49 @@ test("knit ended: with no ticks left (or a bare payload) the line is plain", () 
   }
 });
 
+// ─── Phase 93 (ITEM-08): the start line when the first d6 comes at once ────
+
+test("knit start (now): the hero line says a d6 comes now, then every 10 squares, 3 more times; the follow-ups still need walking", () => {
+  assert.equal(
+    oracle(started({ now: true })),
+    "30 squares of knitting: a d6 hp back now, then every 10 squares you walk, 3 more times. Fights do not count for the rest. Only walking does.",
+  );
+  assert.equal(rail(started({ now: true })), "30 squares of knitting: a d6 hp now, then every 10 squares walked, 3 more times.");
+});
+
+test("knit start (now): a Joiner's own cloak reads the same, by name, on both surfaces", () => {
+  assert.match(oracle(started({ now: true, member: "Brom" })), /is knitting for 30 squares: a d6 hp back now, then every 10 squares walked, 3 more times\./);
+  assert.match(rail(started({ now: true, member: "Brom" })), /is knitting for 30 squares: a d6 hp now, then every 10 squares walked, 3 more times\./);
+});
+
+test("knit start (now): the numbers read through, and one follow-up reads 'once more', never '1 more times'", () => {
+  const other = started({ now: true, left: 20, every: 5, ticks: 4, heal: { n: 2, sides: 4, bonus: 1 } });
+  assert.match(oracle(other), /2d4\+1 hp back now, then every 5 squares you walk, 4 more times/);
+  assert.match(rail(other), /2d4\+1 hp now, then every 5 squares walked, 4 more times/);
+  const one = started({ now: true, ticks: 1, every: 1 });
+  assert.match(oracle(one), /then every 1 square you walk, once more\./);
+  assert.match(rail(one), /then every 1 square walked, once more\./);
+  for (const text of [oracle(one), rail(one)]) assert.doesNotMatch(text, /1 more times/);
+});
+
+test("knit start (now): without now the 2.3.0 shape is unchanged, and a bare payload with now falls back to the plain line", () => {
+  assert.match(oracle(started()), /a d6 hp back every 10 squares you walk, 3 times. Fights do not count. Only walking does./);
+  assert.doesNotMatch(oracle(started({ now: false })), /now, then/);
+  for (const e of [{ type: "itemEffectStarted", kind: "knit", now: true }, started({ now: true, every: undefined }), started({ now: true, heal: undefined })]) {
+    for (const text of [oracle(e), rail(e)]) {
+      assert.doesNotMatch(text, /undefined|NaN/, text);
+      assert.match(text, /knitting/);
+    }
+  }
+});
+
+test("knit start (now): the start line is followed by the existing tick line, 'Tick 1 of 4' and its rail twin '(1/4)'", () => {
+  const events = [started({ now: true }), tick({ amount: 4, gained: 4, tick: 1, ticks: 4 })];
+  assert.match(oracle(events[0]), /now, then every 10 squares you walk, 3 more times/);
+  assert.equal(oracle(events[1]), "Cloak of Regeneration knits you back: +4 hp. Tick 1 of 4.");
+  assert.equal(rail(events[1]), "+4 hp: Cloak of Regeneration (1/4).");
+});
+
 // ─── the chip, in the real shell ───────────────────────────────────────────
 
 function chipState(left) {
@@ -182,7 +225,9 @@ test("chip: the copy names the chip Regenerating and CONDITION_EXPLAIN.knit is i
   const fallback = vm.runInContext("CONDITION_EXPLAIN.default", ctx);
   assert.ok(typeof explain === "string" && explain.length > 0 && explain !== fallback);
   assert.match(explain, /d6/);
+  assert.match(explain, /the moment you used/);
   assert.match(explain, /ten squares/);
+  assert.match(explain, /three more times/);
   assert.match(explain, /fighting/);
   assert.doesNotMatch(explain, /\bWP\b/);
 });

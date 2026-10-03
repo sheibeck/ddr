@@ -121,7 +121,7 @@ export const HERO_CONDITIONS = Object.freeze(
     item("plate", true), // Cloak of Armor: soaks as plate (armorSoak).
     item("power", true), // Ring of Power: +1 damage (eff dmg).
     item("lit", true), // a lit torch: lifts the dark cap in a dark fight (darkWaiver).
-    item("knit", false), // Cloak of Regeneration (Phase 88, ITEM-03): heals on squares walked, never in a fight (no steps in a fight).
+    item("knit", false), // Cloak of Regeneration (Phase 88 ITEM-03; Phase 93 ITEM-08): a d6 at once on use (in or out of a fight), then ticks on squares walked; the chip counts the walking ticks left; not a fight chip.
     item("flight", false), // Cloak of Flying / Bracelet of Flight: crossing terrain, not a fight.
     // Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record (a spell-sourced timed effect, derived.js#liveItemEffects): an extra d10 on every damage roll, 100 squares from the cast.
     { key: "strength", fields: ["timers"], timers: ["spell:Strength"], fight: true, lasts: "squares", source: "spell" },

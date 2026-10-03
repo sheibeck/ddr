@@ -2102,7 +2102,9 @@ export const EVENT_NARRATION = {
         plate: `wears ${sq} of weightless plate.`,
         knit:
           Number.isFinite(e.every) && Number.isFinite(e.ticks) && e.heal && Number.isFinite(e.heal.sides)
-            ? `is knitting for ${sq}: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+            ? e.now === true
+              ? `is knitting for ${sq}: ${healDiceText(e.heal)} hp back now, then every ${squaresText(e.every)} walked, ${e.ticks === 1 ? "once more" : `${e.ticks} more times`}.`
+              : `is knitting for ${sq}: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
             : `is knitting for ${sq}.`,
       };
       return `<span class="hit">${m} ${them[e.kind] ?? `has ${e.item ?? "an item"} in effect for ${sq}.`}</span>`;
@@ -2143,9 +2145,13 @@ export const EVENT_NARRATION = {
       plate: `<span class="hit">${sq} of weightless plate.</span>`,
       // Phase 88 (ITEM-03): the Cloak of Regeneration's window, stated from
       // the event's own numbers (a bare payload falls back to a plain line).
+      // Phase 93 (ITEM-08): a use that heals at once says so (e.now); the first d6 is
+      // the healTick line right after this one, and only the follow-ups need walking.
       knit:
         Number.isFinite(e.every) && Number.isFinite(e.ticks) && e.heal && Number.isFinite(e.heal.sides)
-          ? `<span class="hit">${sq} of knitting: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} you walk, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.</span> Fights do not count. Only walking does.`
+          ? e.now === true
+            ? `<span class="hit">${sq} of knitting: ${healDiceText(e.heal)} hp back now, then every ${squaresText(e.every)} you walk, ${e.ticks === 1 ? "once more" : `${e.ticks} more times`}.</span> Fights do not count for the rest. Only walking does.`
+            : `<span class="hit">${sq} of knitting: ${healDiceText(e.heal)} hp back every ${squaresText(e.every)} you walk, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.</span> Fights do not count. Only walking does.`
           : `<span class="hit">${sq} of knitting. Flesh mends as you walk.</span>`,
     };
     return map[e.kind] ?? `<span class="hit">${e.item ?? "It"} is in effect for ${sq}.</span>`;

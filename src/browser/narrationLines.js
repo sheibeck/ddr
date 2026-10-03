@@ -2849,7 +2849,9 @@ export const LINE_FOR = {
         plate: `wears ${sq} of weightless plate.`,
         knit:
           Number.isFinite(e?.every) && Number.isFinite(e?.ticks) && e?.heal && Number.isFinite(e.heal.sides)
-            ? `is knitting for ${sq}: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+            ? e.now === true
+              ? `is knitting for ${sq}: ${railHealDice(e.heal)} hp now, then every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once more" : `${e.ticks} more times`}.`
+              : `is knitting for ${sq}: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
             : `is knitting for ${sq}.`,
       };
       return { text: `${m} ${them[e?.kind] ?? `has ${e?.item ?? "an item"} in effect for ${sq}.`}`, tone: "magic", priority: PRIORITY.you };
@@ -2884,9 +2886,12 @@ export const LINE_FOR = {
       critWard: `${sq} with nothing critical landing on you.`,
       plate: `${sq} of weightless plate.`,
       // Phase 88 (ITEM-03): the Cloak of Regeneration's window from the event's own numbers.
+      // Phase 93 (ITEM-08): e.now means the first d6 lands at once (the healTick line right after).
       knit:
         Number.isFinite(e?.every) && Number.isFinite(e?.ticks) && e?.heal && Number.isFinite(e.heal.sides)
-          ? `${sq} of knitting: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
+          ? e.now === true
+            ? `${sq} of knitting: ${railHealDice(e.heal)} hp now, then every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once more" : `${e.ticks} more times`}.`
+            : `${sq} of knitting: ${railHealDice(e.heal)} hp every ${railSquares(e.every)} walked, ${e.ticks === 1 ? "once" : `${e.ticks} times`}.`
           : `${sq} of knitting.`,
     };
     return { text: map[e?.kind] ?? `${e?.item ?? "It"} is in effect for ${sq}.`, tone: "magic", priority: PRIORITY.you };
