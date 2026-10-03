@@ -4,16 +4,16 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 95
 current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
-status: planning
-stopped_at: Completed 94.1-01-PLAN.md
-last_updated: "2026-10-03T21:43:16.529Z"
+status: executing
+stopped_at: Completed 95-01-PLAN.md
+last_updated: "2026-10-03T21:56:09.905Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 94.1 complete, transitioned to Phase 95
+last_activity_desc: Phase 95 execution started
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 15
-  completed_plans: 10
+  completed_plans: 11
   percent: 50
 ---
 
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 94.1 — Joiner Level Follows Depth
+**Current focus:** Phase 95 — Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
 
 ## Current Position
 
-Phase: 95 — Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-03 — Phase 94.1 complete, transitioned to Phase 95
-Progress: [███████░░░] 67% (0 of 6 phases)
+Phase: 95 (Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-03 — Phase 95 execution started
+Progress: [███████░░░] 73% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -291,8 +291,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T21:42:08.099Z
-Stopped at: Completed 94.1-01-PLAN.md
+Last session: 2026-10-03T21:56:09.799Z
+Stopped at: Completed 95-01-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -512,6 +512,7 @@ Resume file: None
 | Phase 94 P04 | 40min | 2 tasks | 14 files |
 | Phase 94 P05 | 35min | 3 tasks | 9 files |
 | Phase 94.1 P01 | 25min | 3 tasks | 11 files |
+| Phase 95 P01 | 30min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -888,6 +889,7 @@ Resume file: None
 - [Phase ?]: 94-03: ability-state words in one frozen bank (src/browser/abilityStates.js); notLowEnough reads NEEDS A QUARTER HP OR LESS; Sing row uses the common words
 - [Phase ?]: 94-04: enabled is state===ready, dispatch never nulled; Hero rows gain stateKind in a fight only
 - [Phase ?]: 94.1-01: Joiner level is the Level Table d10 capped by joinerLevelCap(depth) = ceil(depth/3) in 1..5; a cap not an exact level; Joiners keep the level they were met at; --party readout information only
+- [Phase ?]: Phase 95-01: flavour lives in keyed frozen maps per content file plus a pure name lookup (flavorText.js); items never carry flavour, saves untouched
 
 ### Blockers
 
