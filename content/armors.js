@@ -33,3 +33,18 @@ export const MAGIC_ARMOR_TABLE = [
   { ar: 2, wp: 15 },
   { ar: 1, wp: 5 },
 ];
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): one player
+// line per armour type, keyed by the ARMORS name, in ARMORS order. A warded
+// piece shares its type's line, so no line implies magic. The generated stat
+// line stays the rules layer, shown under RULES. Each line is one sentence of
+// about 90 characters or fewer that hints at protection and weight without a
+// number, die or percentage (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const ARMOR_FLAVOR = Object.freeze({
+  "Cloth": "Soft and light enough for any adventurer, and it stops about as much as a stern look.",
+  "Leather": "Supple hide that creaks, smells faintly of cow and turns the odd glancing blow.",
+  "Studded": "Leather with metal studs added for confidence, and a little extra weight to go with it.",
+  "Mail": "A jingling shirt of linked rings: sturdy, heavy and best left to fighters.",
+  "Plate": "Gleaming metal head to toe: superb protection and all the grace of a falling wardrobe.",
+});

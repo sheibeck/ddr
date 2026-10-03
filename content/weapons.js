@@ -77,3 +77,39 @@ export const WEAPON_MAX = {
 };
 
 export const WEAPON_TYPE_TABLE = ["Pole Arm", "Bludgeoning", "Cutting", "Cutting", "Thrown", "Explosive"];
+
+// Phase 95 (FLAVOR-02; CONTEXT 'Data shape and guards' and 'Tone'): one player
+// line per weapon type, keyed by the WEAPONS key, in WEAPONS order. Enchanted,
+// premium and found variants share their type's line through the item's `base`,
+// so no line implies a bonus, a name or magic. The generated stat line
+// (src/browser/viewModels.js#itemStatLines) stays the rules layer, shown under
+// RULES. Each line is one sentence of about 90 characters or fewer that hints at
+// heft, speed or temper without a number, die or percentage
+// (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const WEAPON_FLAVOR = Object.freeze({
+  "Axe": "A woodcutter's tool pressed into service, with all the subtlety that implies.",
+  "Bastard Sword": "Too big for polite company and too clumsy for a duel, but it hits hard when it lands.",
+  "Battle Axe": "An axe that has taken up weightlifting: slow to bring round, and ruinous when it arrives.",
+  "Broadsword": "A broad, dependable blade that settles most arguments without any fancy footwork.",
+  "Claymore": "A big sword from the highlands, long on reach and just as long on opinions.",
+  "Dagger": "A small, quick blade: more sting than damage, but it has a gift for finding gaps.",
+  "Katana": "A slim, quick blade with an edge so keen it makes its point before the argument starts.",
+  "Kopesh Sword": "An ancient sickle-shaped blade, awkward to swing but dreadfully rude when it connects.",
+  "Long Sword": "The sword everyone pictures first: balanced, dependable and far too polite to boast.",
+  "Ninja-to": "Straight, swift and quiet, favoured by people who would rather not be introduced.",
+  "Rapier": "A slender duelling blade, quick to find its mark and fond of an elegant insult.",
+  "Short Sword": "A handy blade for tight corridors, simple enough that even wizards hold it correctly.",
+  "Wakazashi": "The katana's little sibling, quick and keen, and happy to share a cramped corridor.",
+  "Club": "A lump of wood with strong opinions and absolutely no finesse.",
+  "Flail": "A weighty ball on a chain: hard to aim, impossible to ignore, and rude on arrival.",
+  "Mace": "A heavy, flanged cudgel that makes dents in armour and arguments alike.",
+  "Morning Star": "A cheerful name for a spiked ball on a stick, which is neither cheerful nor easy to swing.",
+  "Quarter Staff": "A plain, long stick: reliable, cheap, and good for walking, poking and the odd argument.",
+  "Spiked Staff": "Take a staff, add spikes, regret the balance: it hits hard but is awkward to bring round.",
+  "Whip": "More crack than punch: it hits easily, hurts a little and mostly makes a point.",
+  "Awl Pike": "A pole with a sharp end and plenty of heft, so it wants room, patience and a clear aisle.",
+  "Bardiche": "A pole axe so big and slow that hitting anything is the hard part, and the rest is easy.",
+  "Naganita": "A curved blade on a long pole: elegant for the practised, and a menace to everyone else.",
+  "Spear": "The original point-first argument: long reach, simple manners and few moving parts.",
+});
