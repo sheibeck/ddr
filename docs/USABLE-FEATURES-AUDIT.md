@@ -442,6 +442,7 @@ phase's change (if any).
   — the Grimoire's reason string split into its three distinct diagnostics
   instead of one collapsed "Not ready yet."
 - Sing button: READY, or SUNG THIS FIGHT once the one song is spent (Phase 91 plan 06; it was a squares countdown).
+- Since Phase 94 (ASTATE-01): every ability row and the SING row read READY, READY IN n, the reason it cannot be used right now, or SPENT THIS FIGHT, each with its own colour and edge.
 - The ward chip: "Shield · 34 hp · 3 rds" (both numbers at once, mirroring
   the existing `flight` two-number chip precedent).
 - An "Acute" chip that visibly counts down, in and out of combat, and

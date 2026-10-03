@@ -692,7 +692,7 @@ A Joiner uses a skill the way its text describes (`engine/combat.js#pickMemberAb
 | Poisoned Edge | pool active · Thief | cd 5 rounds; three ticks of d4 + your level (level 3: 12–21 in all, 16.5 on average; level 5: 18–27, 22.5); no to-hit roll | `resolveMemberAbility` case poisonedEdge (the same record, at the Joiner's own level); tag damage | match; value change (91.1-02) |
 | Hamstring | pool active · Thief | ready again 3 rounds after the use, on a foe that is not already hamstrung (otherwise refused `alreadyOn`, nothing spent); half damage from that foe for the fight; no roll | `resolveMemberAbility` case hamstring; tag opener; its own sheet's timer, the same 3 rounds, never aimed at a foe that carries it (`pickMemberAbility`) | match; value change (91.1-02) |
 | Mark | pool active · Thief | ready again 3 rounds after the use, on a foe that is not already marked (otherwise refused `alreadyOn`, nothing spent); your level in damage (3 at level 3, 5 at level 5) per strike from you and your Joiner for the fight; no roll | `resolveMemberAbility` case mark (stamps the Joiner's own level); tag opener; its own sheet's timer, the same 3 rounds, never aimed at a foe that carries it | match; value change (91.1-02) |
-| Sing | class action · Bard | the first song in any round; the second song 5 rounds after the first (the SING row reads AGAIN IN n between them), never a third; the spell's own numbers | `combat.js#alliesTurn`: a Joiner Bard sings through `allyCast` on the same clock (its own `sang` and `sangAt`: a first song, then a second 5 rounds later, never a third) | Phase 91 (IDENT-17) |
+| Sing | class action · Bard | the first song in any round; the second song 5 rounds after the first (the SING row reads READY IN n between them), never a third; the spell's own numbers | `combat.js#alliesTurn`: a Joiner Bard sings through `allyCast` on the same clock (its own `sang` and `sangAt`: a first song, then a second 5 rounds later, never a third) | Phase 91 (IDENT-17) |
 <!-- phase90-close:skills:end -->
 
 ### Where each rule is pinned
@@ -740,3 +740,33 @@ Things to know:
 - Joiners have no UI surface: no screen lists a Joiner's abilities (RESEARCH Finding F1, orchestrator ruling), so a Joiner's states are pinned in the engine tests only.
 - Last Stand's hp gate was always a refusal (`notLowEnough`) but the menu never showed it; it is a real rung now, so the row will show it (RESEARCH Finding F4, intended).
 - A duration ability (Sidestep, Battle Roar, Riposte, Taunt, Smoke) reads `recharging` while its effect is running, with `roundsLeft` the effect's remaining rounds plus its cooldown. A separate Active state is deferred (RESEARCH Pitfall 8).
+
+### The rows (ASTATE-01..03, 05)
+
+Every ability row in a fight says one of four things, from one place: `src/browser/abilityStates.js` (`ABILITY_STATE_COPY`, `abilityStateLabel`). They are plain state labels, not flavour (94-CONTEXT "Full-word labels"); Phase 96's flavour pass leaves them alone.
+
+| State or reason | Words | Where it shows |
+| --- | --- | --- |
+| ready | READY (READY · ONCE PER FIGHT for a once-a-fight ability) | combat ABILITIES rows, the Sing row, the Hero tab in a fight |
+| recharging | READY IN n (rounds left, no plural: READY IN 1) | the same three |
+| spent | SPENT THIS FIGHT (a once-a-fight ability used, or the Bard's second song sung) | the same three |
+| unavailable, `noTarget` | NO FOE IN REACH | the same three |
+| unavailable, `tooFewFoes` | NEEDS TWO OR MORE FOES | the same three |
+| unavailable, `alreadyOn` | ALREADY ON IT | the same three |
+| unavailable, `notLowEnough` | NEEDS A QUARTER HP OR LESS | the same three |
+| unavailable, `notFought` | FIGHT FIRST (a pending fight's Hero tab) | the Hero tab |
+
+The four looks (dark theme only; the light theme is retired). Colour is never the only cue: each state also has its own edge, and unavailable has a hatch.
+
+| State | Ink token | Edge | Extra |
+| --- | --- | --- | --- |
+| ready | `--mw-ast-ready` `#cbee86` | solid | none |
+| recharging | `--mw-ast-recharging` `#eeb433` | dashed | none |
+| unavailable | `--mw-ast-unavailable` `#fc7970` | dotted | a faint diagonal hatch on the combat row (12% alpha; `test/unit/ability-state-a11y.test.js` caps it at 14%) |
+| spent | `--mw-ast-spent` `#86898c` | none (transparent) | a flat dark look with explicit colours, never opacity |
+
+The combat row contract is `{ id, label, cost, desc, enabled, state, dispatch }`: `enabled` is `state === "ready"`, `dispatch` is never nulled (every row stays tappable, and the engine's refusal names the same reason the row shows), and `state` drives the row's `data-state` and so its edge. The Hero tab's row keeps `state` as the text and gains `stateKind` in a fight only (it sets `li.dataset.state`); out of a fight the row is unchanged and shows the cooldown lengths as before.
+
+Pinned by: `test/unit/ability-state.test.js` (the engine function), `test/unit/ability-state-copy.test.js` (the words), `test/unit/ability-state-view.test.js` (the rows), `test/unit/ability-state-a11y.test.js` (contrast, greyscale and colour-blind simulation), and `test/unit/shell-ability-states.test.js` with its two declared fixtures `fighter.abilities-states` and `fighter.hero-in-combat` (the real shell's DOM).
+
+Visible changes this phase: Last Stand shows its hp gate (NEEDS A QUARTER HP OR LESS above a quarter hp); Hamstring and Mark see past a dead aimed target (ALREADY ON IT when the next live foe carries the effect); Sing reads READY IN n between songs (was AGAIN IN n) and SPENT THIS FIGHT after the second (was SUNG THIS FIGHT); a duration ability reads READY IN n while its effect runs (the Active state is deferred). Joiners are engine-pinned only: no screen lists a Joiner's abilities.
