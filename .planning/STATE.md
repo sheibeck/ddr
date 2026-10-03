@@ -5,15 +5,15 @@ milestone_name: Fit & Finish
 current_phase: 94
 current_phase_name: Ability States You Can Tell Apart
 status: executing
-stopped_at: Completed 94-03-PLAN.md
-last_updated: "2026-10-03T18:14:16.965Z"
+stopped_at: Completed 94-04-PLAN.md
+last_updated: "2026-10-03T18:24:12.147Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 94 execution started
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 29
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 ## Current Position
 
 Phase: 94 (Ability States You Can Tell Apart) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 94 execution started
-Progress: [████████░░] 78% (0 of 6 phases)
+Progress: [█████████░] 89% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -290,8 +290,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T18:14:16.926Z
-Stopped at: Completed 94-03-PLAN.md
+Last session: 2026-10-03T18:24:12.110Z
+Stopped at: Completed 94-04-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -508,6 +508,7 @@ Resume file: None
 | Phase 94 P01 | 35min | 2 tasks | 4 files |
 | Phase 94 P02 | 25min | 2 tasks | 3 files |
 | Phase 94 P03 | 20min | 2 tasks | 7 files |
+| Phase 94 P04 | 40min | 2 tasks | 14 files |
 
 ## Decisions
 
@@ -882,6 +883,7 @@ Resume file: None
 - [Phase ?]: 93.1-01: the Gauntlet of the Giant is +6 damage (size step +2 plus +4 bulk on the row's eff, { size: 1, dmg: 4 }); engine and bot change in comments only; foes +1, 50/50, price 1,200 unchanged
 - [Phase ?]: 94-01: abilityState holds the ability refusal ladder (pending rung first); useAbility and sing() read abilityState/singState; no rng, nothing serialized
 - [Phase ?]: 94-03: ability-state words in one frozen bank (src/browser/abilityStates.js); notLowEnough reads NEEDS A QUARTER HP OR LESS; Sing row uses the common words
+- [Phase ?]: 94-04: enabled is state===ready, dispatch never nulled; Hero rows gain stateKind in a fight only
 
 ### Blockers
 
