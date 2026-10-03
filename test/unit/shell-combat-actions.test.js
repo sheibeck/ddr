@@ -18,6 +18,8 @@ import path from "node:path";
 import url from "node:url";
 
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox } from "./harness/shellSandbox.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -141,6 +143,29 @@ test("CSCR-05: cbRow builds every field via textContent/className, guards a disp
   assert.equal(guardHits.length, 1, "guardTap(el, () => pickCombatRow(row)) must appear exactly once");
   assert.match(region, /el\.disabled = true/);
   assert.doesNotMatch(region, /innerHTML/);
+});
+
+test('Phase 94 (ASTATE-01): cbRow sets data-state for a row that carries a state and drops the shared off class for it', () => {
+  const region = rowRegion();
+  assert.match(region, /el\.dataset\.state = row\.state/);
+  assert.match(region, /row\.state \|\| row\.enabled/);
+});
+
+test('Phase 94 (ASTATE-01): cbRow keeps a stated row tappable, styles a state-less disabled row as before, disables a placeholder', () => {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  const cbRow = sandbox.context.cbRow;
+  const stated = cbRow({ id: 'ability-kata', label: 'KATA', cost: 'READY IN 2', desc: 'x', enabled: false, state: 'recharging', dispatch: { type: 'useAbility', key: 'kata' } }, 1);
+  assert.equal(stated.className, 'cb-row');
+  assert.equal(stated.dataset.state, 'recharging');
+  assert.ok(!stated.disabled, 'a row with a state is never disabled');
+  const plain = cbRow({ id: 'spell-x', label: 'X', cost: '1 WP', desc: 'x', enabled: false, dispatch: { type: 'castSpell', key: 'x' } }, 2);
+  assert.equal(plain.className, 'cb-row cb-row-off');
+  assert.equal(plain.dataset.state, undefined);
+  assert.ok(!plain.disabled);
+  const placeholder = cbRow({ id: 'none', label: 'NONE', cost: '', desc: '', enabled: false, dispatch: null }, 3);
+  assert.equal(placeholder.disabled, true);
+  assert.equal(placeholder.dataset.state, undefined);
 });
 
 // ─── c. Dispatch table ──────────────────────────────────────────────────────

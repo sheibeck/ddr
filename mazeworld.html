@@ -2760,8 +2760,10 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <!-- Phase 38 (ABIL-01/04) — the abilities list beside Special skills:
            one row per c.abilities catalog id, tagged by source ("special
            skill · active" for a reshaped table entry, "trick" for a rolled
-           level-pool pick), with an in-combat READY/N ROUNDS/ONCE A FIGHT ·
-           USED state or an out-of-combat cd N ROUNDS/once a fight state.
+           level-pool pick). Phase 94: in a fight each row reads the shared
+           state words (src/browser/abilityStates.js) and carries data-state
+           for its edge; out of a fight it shows the ability's own cooldown
+           length.
            Rendered by renderAbilityRows(c) (classic script, called from
            paint()); a Magic User shows the "Spells are the trick." none
            row. #s-skills above stays passives-only, byte-identical. -->
@@ -5214,11 +5216,17 @@ function pickCombatRow(row) {
 // every OTHER row stays tappable even when `enabled` is false, per CONTEXT's
 // "unavailable rows render disabled-styled but stay tappable so the engine's
 // refusal lands as a dull › log entry" rule.
+// Phase 94 (ASTATE-01): an ability or Sing row carries `state` (ready,
+// recharging, unavailable, spent; from engine/abilities.js#abilityState via the
+// view-model) and is drawn by its data-state rules instead of the shared off
+// style. It stays tappable like every other non-placeholder row. Rows without a
+// state (spells, items, social, placeholders) are unchanged.
 function cbRow(row, n) {
   const el = document.createElement("button");
-  el.className = "cb-row" + (row.enabled ? "" : " cb-row-off");
+  el.className = "cb-row" + (row.state || row.enabled ? "" : " cb-row-off");
   el.id = "cb-row-" + row.id;
   el.dataset.cbRow = String(n);
+  if (row.state) el.dataset.state = row.state;
   const head = document.createElement("div");
   head.className = "cb-row-head";
   const label = document.createElement("span");
