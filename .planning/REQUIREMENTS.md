@@ -33,6 +33,10 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 - [ ] **ITEM-08**: Using the Cloak of Regeneration heals one tick immediately, then continues the every-N-squares ticks (ruling A — one of the three — or B — a fourth — decided in discuss-phase); the tick draws from the heal-over-time stream, never the main rng; Joiners follow the same rule; item text, chip, narration + rail twin, ITEM-AUDIT row, patch notes and the fair bot's cloak model are updated; any moved fixture is declared
 
+### Gauntlet of the Giant (player report #6, added 2026-10-03)
+
+- [ ] **ITEM-09**: Using the Gauntlet of the Giant is worth its downside: its size step's damage bonus (ruled in discuss-phase, with the Enlarge potion's 2.3.0 fix as the yardstick) makes foes +1 to hit you a fair trade; the item text, chip, ITEM-AUDIT row, patch notes and the fair bot follow, Joiners get the same numbers, and any moved fixture is declared; GitHub issue #6 closes when the fix ships
+
 ### Fantasy-flavour text (todo)
 
 - [ ] **FLAVOR-01**: Spell and scroll descriptions shown to the player read as fantasy flavour, not rules text
@@ -70,6 +74,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 |-------------|-------|--------|
 | CHIP-01 | Phase 93 | Pending |
 | ITEM-08 | Phase 93 | Pending |
+| ITEM-09 | Phase 93.1 | Pending |
 | ASTATE-01 | Phase 94 | Pending |
 | ASTATE-02 | Phase 94 | Pending |
 | ASTATE-03 | Phase 94 | Pending |
@@ -91,8 +96,8 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | SHOTS-02 | Phase 98 | Pending |
 | SHOTS-03 | Phase 98 | Pending |
 
-**Coverage:** 22 requirements — mapped: 22 — unmapped: 0 (roadmap created 2026-10-03; all Pending)
+**Coverage:** 23 requirements — mapped: 23 — unmapped: 0 (roadmap created 2026-10-03; ITEM-09 added 2026-10-03 with inserted Phase 93.1; all Pending)
 
 ---
 *Requirements defined: 2026-10-03*
-*Traceability filled: 2026-10-03 (roadmap Phases 93–98)*
+*Traceability filled: 2026-10-03 (roadmap Phases 93–98, plus 93.1)*

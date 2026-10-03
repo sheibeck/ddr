@@ -16,7 +16,7 @@
 - ✅ **v2.1 Bug Fixes** — Phases 72–81, incl. 75.1–75.3 and 79.1–79.3 (shipped 2026-09-28 as Play 2.1.0 / vc11 to closed testing; override closeout: 68/68 requirements, 16/16 phases passed, audit tech_debt; UAT batch `docs/UAT-v2.1.md`, 80-05 emulator pass deferred) → `.planning/milestones/v2.1-ROADMAP.md`
 - ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track; override closeout: 35/35 requirements — SRV-09's live proof passed on release day — 5/5 phases passed, Pixel 7 batch `docs/UAT-v2.2.md` passed bar 3 upgrade-path rows) → `.planning/milestones/v2.2-ROADMAP.md`
 - ✅ **v2.3 Truth in Advertising** — Phases 87–92.4, incl. 91.1–91.2 and 92.1–92.4 (shipped 2026-10-02 as Play 2.3.0 / vc13 to closed testing; override closeout: 42/42 requirements, 12/12 phases passed, audit tech_debt — 5 SUMMARY-paperwork partials; batched Pixel 7 checklist (claude.ai artifact LMpj9qYzChoYfH6GRXCEAF, incl. Part B with Compete ON) not yet walked) → `.planning/milestones/v2.3-ROADMAP.md`
-- 🚧 **v2.4 Fit & Finish** — Phases 93–98 (started 2026-10-03; promoted from backlog 999.17, 999.18, 999.20 and three 2026-10-02 todos; 22 requirements; release as Play 2.4.0 / vc14 follows the milestone)
+- 🚧 **v2.4 Fit & Finish** — Phases 93–98, incl. 93.1 (started 2026-10-03; promoted from backlog 999.17, 999.18, 999.20 and three 2026-10-02 todos, plus the Gauntlet half of player report #6; 23 requirements; release as Play 2.4.0 / vc14 follows the milestone)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
@@ -24,6 +24,7 @@
 ### v2.4 Fit & Finish (Phases 93–98) — IN PROGRESS
 
 - [ ] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once.
+- [ ] **Phase 93.1: Gauntlet of the Giant Worth Wearing** (INSERTED) - Using the Gauntlet's size step hits hard enough to be worth foes getting +1 to hit you (player report #6).
 - [ ] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour.
 - [ ] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach.
 - [ ] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review.
@@ -123,6 +124,21 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Plans**: TBD
 **UI hint**: yes
+
+### Phase 93.1: Gauntlet of the Giant Worth Wearing (INSERTED)
+
+**Goal**: Using the Gauntlet of the Giant is worth its downside: its size step hits hard enough that foes getting +1 to hit you is a fair trade, as the Enlarge potion became in 2.3.0.
+**Depends on**: Phase 93 (sequencing only; inserted 2026-10-03 by the user's ruling on GitHub issue sheibeck/ddr#6). Source: player report #6 (2.1.0), "Enlarge potion worthless. +2 damage to get hit more often?", and the owner's comment on it, "Same thing with Gauntlet of the Giant". Phase 89 (ITEM-05) fixed Enlarge in 2.3.0: the size step's +2 plus +9 bulk is +11 damage for 50 squares, foes +1 to hit. The Gauntlet is still the bare size step: +2 damage and foes +1 to hit for 50 squares, then a 50-square cooldown (`content/treasure-tables.js`, `act: { kind: "giant", effect: 50, cd: 50 }`; price 1,200 in `engine/economy.js`; the "Enlarged" chip and its CONDITION_EXPLAIN line in `mazeworld.html`; the `docs/ITEM-AUDIT.md` row and its Phase 92 note, "its balance is a tuning read, not an audit mismatch"). Engine gate: a content and number change (the `giant` activation's payload), with no main-rng draw; any moved fixture is measured, declared and regenerated; Joiners use it in their round-1 opener (`MEMBER_COMBAT_KINDS`), and the fair bot (`tools/lib/tuning-bot.mjs`, round-1 buff list) reads the new numbers. Phase 95 rewrites the item text into flavour afterwards, so the rules text lands here first.
+**Requirements**: ITEM-09
+**Open decisions (discuss-phase)**: the Gauntlet's new numbers. For example: match Enlarge's +9 bulk (+11 in all), or a smaller bulk because the Gauntlet is reusable every 100 squares while the potion is consumed. Also whether the window or cooldown changes, and whether the 1,200 price moves.
+**Success Criteria** (what must be TRUE):
+
+  1. A hero who uses a worn Gauntlet of the Giant deals the ruled damage bonus for its window, and foes still get +1 to hit; the item text, the Enlarged chip and its explanation, the Gear, store and find cards and the ITEM-AUDIT row all state the same numbers.
+  2. A Joiner who uses the Gauntlet (its round-1 opener) gets the same numbers, and taking it off ends the effect as today.
+  3. A seeded run that never uses the Gauntlet plays out identically before and after; any fixture that moves is declared; the fair bot reads the new numbers; and the 2.4.0 patch-notes draft names the change.
+  4. GitHub issue #6 is closed with a note once the release that carries the fix ships (Enlarge was fixed in 2.3.0, the Gauntlet in 2.4.0).
+
+**Plans**: TBD
 
 ### Phase 94: Ability States You Can Tell Apart
 
@@ -746,10 +762,12 @@ Plans:
 "Remove resizability and orientation restrictions in your game to support large screen devices … We detected … `<activity android:name="com.darktierstudios.delvedierepeat.MainActivity" android:screenOrientation="PORTRAIT" />`. To improve the user experience of your game, remove these restrictions and check that your game layouts work on various screen sizes and orientations."
 
 **Context:**
+
 - `android/app/src/main/AndroidManifest.xml` sets `android:screenOrientation="portrait"` on MainActivity. That is the Phase 80 portrait lock, and the app is declared a game (`appCategory`) partly for it.
 - On Android 16+ (targetSdk 36), large screens (smallest width ≥ 600dp) ignore orientation and resizability restrictions for non-game apps. Games are exempt today, but Play now flags them as a quality issue.
 
 **Scope:**
+
 1. Remove `screenOrientation`, and any `resizeableActivity=false` or max-aspect limits. Decide what the phone experience should be: keep portrait on phones through a runtime choice, or support landscape everywhere.
 2. Responsive layouts for the maze viewport, rail, HUD, tabs and sheets in landscape and at tablet and foldable sizes. Handle multi-window and resizing, safe areas and the system bars (Phase 80 / nativeChrome).
 3. Keep state across configuration changes: rotation must not restart a run (Capacitor activity recreation and `configChanges`).
@@ -769,10 +787,12 @@ Plans:
 **Goal:** the Play Store listing and darktierstudios.com show the current game (2.3+): the Play Games names on the board, SIGN IN, the new spells and the current HUD and rail.
 
 **Where they live:**
+
 - **Play listing:** `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`), described in `store-listing/LISTING.md`.
 - **Website:** `C:/projects/darktier-studio/public/assets/delve-die-repeat/shots/*.webp`, listed in `src/pages/delve-die-repeat/index.astro` (the `ddr-shots` section, each image with alt text), plus `featured.webp`.
 
 **Scope:**
+
 1. Pick a shot list with the user: title, combat with damage lines, the leaderboard with Play Games names, the Hero tab, a store, spells and the map.
 2. Capture them on the Pixel 7 debug build. Use the dev row (debug builds only) to reach deep floors; hide the dev chip, or use normal runs.
 3. Export them to the Play size rules and to webp for the site. Update the alt text.
@@ -787,11 +807,13 @@ Plans:
 ### Phase 999.19: A Joiner's Stealth crit is logged as the hero's (bug, user 2026-10-02)
 
 **Report (Play release 2.3.0):** "When my Dwarf Samurai landed a crit strike with a katana it shows 'Unseen strike' and (stealth) in the combat rail."
+
 - The hero does NOT have the Stealth skill; the user checked the Hero tab.
 - A Thief Joiner was present (the user said "cutpurse": a Cutthroat or Cutpurse-ability Joiner).
 - It was NOT the hero's first hit of the fight.
 
 **Likely cause:** the Joiner's opening-blow Stealth crit (`memberStrike`, or a Cutthroat first-blow crit) emits `stealthStrike` without `member`, or the rail renders it as the hero's. `src/browser/narrationLines.js:1678` reads "Unseen strike — critical." when `e.member` is missing. `engine/combat.js` ~990-1003 is the hero's own Stealth branch (it requires `skill(c,"Stealth")`). **Diagnosis (gsd-debugger, 2026-10-02): NOT reproduced as a mis-attribution.**
+
 - The "(stealth)" tag comes only from the hero's own Stealth crit (combat.js:997-1001, `critBy:"stealth"`).
 - A Joiner's Stealth line is always named ("<Joiner>: unseen strike, critical.").
 - Thief Joiners can never have Stealth (THIEF_SKILLS has none).
@@ -807,6 +829,7 @@ Plans:
 Regression pins are specified in the diagnosis: a no-Stealth sweep, Joiner `member` always set, no Thief Stealth, and Plate/Katana rows.
 
 **Fix scope:**
+
 - Every Joiner crit event carries the member's name, and the Oracle and rail say whose blow it was.
 - Add a test that a hero without Stealth never gets a hero-voiced stealth line.
 - Also check the "(stealth)" crit-source tag on the rail.
@@ -822,11 +845,13 @@ Plans:
 **Ask (user, on 2.3.0):** "Differentiate an ability that is on cooldown from one that is not usable and one that is not active. Some sort of color difference."
 
 **Context:**
+
 - `src/browser/combatMenu.js` renders every unavailable ability or spell row with one disabled style. Examples: a 91.1 cooldown ("ready again N rounds after use"), a once-a-fight ability already spent, a gate such as notWielded or a single-foe-only rule, a spell with no charges.
 - Rows stay tappable; a tap lands the refusal reason in the log (see the comments around lines 8, 53, 165-188, 294).
 - Active or in-effect abilities (Taunt, Brace, Mark, buffs) are shown by chips elsewhere.
 
 **Scope:**
+
 1. Define three or four visual states, each with its own colour token plus a non-colour cue (an icon or label) for accessibility:
    - **Ready.**
    - **Recharging:** on cooldown, with "ready in N" (a round countdown).
@@ -834,6 +859,7 @@ Plans:
    - **Spent this fight:** once a fight, already used.
    
    Optionally a fifth: **Active**, the effect already running, e.g. Taunt is up.
+
 2. Engine: expose the reason category and the rounds left on each ability row's `enabled` data, if it isn't already there.
 3. Apply the same states to spells (no charges, school-gated) where it fits.
 4. Light and dark themes, readable for colour-blind players (not hue alone), with shell snapshot and a11y tests.

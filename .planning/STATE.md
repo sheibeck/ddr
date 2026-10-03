@@ -2,11 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
+current_phase: 93
+current_phase_name: "Quick Wins: Harmful Chips First & Cloak Heals on Use"
 status: planning
-last_updated: "2026-10-03T00:00:00.000Z"
+stopped_at: "RELEASE 2.3.0 SUBMITTED (2026-10-02). vc13 AAB on the closed-testing track, in review; Data safety + IARC re-read done by user; tags v2.3.0 / v2.3.0-play13 pushed; GitHub Release created; site patch notes + privacy pages deployed. Phases 88-92.4 complete (inserted 92.1-92.4 from the device pass). Live: TRANSITION rules (fixed be6716a7, smoke 8/8 + function 4/4), boardName fn, Play Games provider, rekey-deep done (22/22). DONE 2026-10-02: final rules live (plain smoke all PASS after the smoke rank-check fix 656f5e90), rekey 22/22, transition artefacts deleted (cf1c5c75, full suite 10,175/0 fail). NEXT: (2) the batched Pixel 7 checklist (artifact LMpj9qYzChoYfH6GRXCEAF) incl. Part B with Compete ON; (3) /gsd-complete-milestone v2.3 then cleanup. Deferred todo: fantasy-flavor player descriptions (next milestone)."
+last_updated: "2026-10-03T13:26:53.415Z"
 last_activity: 2026-10-03
+last_activity_desc: Roadmap created for v2.4 (Phases 93–98, 22/22 requirements mapped)
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -163,6 +167,7 @@ detail; the backlog phases are the index.
 - Phase 91.1 inserted after Phase 91: Value Review: every race, sub-class and ability accounts for its systems; weak systems, tiny bonuses, one-round effects and once-per-combat limits surfaced for user rulings, then built (user, 2026-09-29)
 - v2.4 roadmap created 2026-10-03: Phases 93–98 (22 requirements), promoted from backlog 999.17 (large screens), 999.18 (screenshots), 999.20 (ability states) and the three 2026-10-02 todos (bad chips first, cloak tick on use, fantasy-flavour text). Order: 93 quick wins (CHIP-01 view-layer; ITEM-08 is the one rule change, so the cloak's final text exists before the flavour pass) → 94 ability states (ASTATE-04 is additive engine-derived state) → 95-96 the flavour pass split in two (95 builds the two-layer text model for every domain, re-pins every v2.3 truth guard to the technical layer, and rewrites spells, scrolls, equipment, items and potions; 96 rewrites races, sub-classes, abilities and chip explanations and closes with the safety scan and narrative review) → 97 large-screen support (after the UI and text surfaces are final, so layouts, shell snapshots and the perf baseline are done once; the largest phase, splittable at the rotation-foundation / layouts seam) → 98 screenshots (last by user ruling). Open decisions for discuss-phase: 93 cloak ruling A (one of three) vs B (a fourth tick); 94 state names, colour tokens and non-colour cues; 95 where the exact numbers live in game and the data shape; 96 how a flavour blurb carries good and bad while the identity guard pins both; 97 phones portrait-only (runtime Settings preference) vs free rotation, the landscape play layout, the tablet/foldable/Chromebook layout, and whether to absorb the deferred 80-05 emulator pass; 98 the shot list. No research pass. Phase numbering continues from v2.3 (last phase 92.4).
 - Phase 91.2 inserted after Phase 91.1: Board Identity: Play Games names replace rolled handles (user 2026-09-30: unique names friends recognize, no re-roll; chose Play Games over unique rolled handles after the trade-offs; 2.2.0 clients refused until update; this milestone, before release)
+- Phase 93.1 inserted after Phase 93: Gauntlet of the Giant Worth Wearing: the unfixed half of GitHub player report #6 (Enlarge fixed in 2.3.0; the Gauntlet's +2 damage still isn't worth foes +1 to hit). User ruling 2026-10-03 while closing fixed player reports; ITEM-09.
 
 ## Deferred Items
 
