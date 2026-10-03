@@ -23,7 +23,7 @@
 
 ### v2.4 Fit & Finish (Phases 93–98) — IN PROGRESS
 
-- [ ] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once.
+- [x] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once. (completed 2026-10-03)
 - [ ] **Phase 93.1: Gauntlet of the Giant Worth Wearing** (INSERTED) - Using the Gauntlet's size step hits hard enough to be worth foes getting +1 to hit you (player report #6).
 - [ ] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour.
 - [ ] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach.
@@ -229,7 +229,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | In Progress|  |
+| 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
 | 94. Ability States You Can Tell Apart | 0/TBD | Not started | - |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 0/TBD | Not started | - |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 0/TBD | Not started | - |

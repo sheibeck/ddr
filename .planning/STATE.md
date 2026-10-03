@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 93
-current_phase_name: "Quick Wins: Harmful Chips First & Cloak Heals on Use"
-status: verifying
+current_phase: 93.1
+current_phase_name: Gauntlet of the Giant Worth Wearing
+status: planning
 stopped_at: Completed 93-03-PLAN.md
-last_updated: "2026-10-03T15:00:47.926Z"
+last_updated: "2026-10-03T15:02:13.653Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 93 execution started
+last_activity_desc: Phase 93 complete, transitioned to Phase 93.1
 progress:
   total_phases: 7
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 93 (Quick Wins: Harmful Chips First & Cloak Heals on Use) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-10-03 — Phase 93 execution started
+Phase: 93.1 — Gauntlet of the Giant Worth Wearing
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-03 — Phase 93 complete, transitioned to Phase 93.1
 Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
