@@ -1,6 +1,6 @@
 // src/browser/settings.js
 //
-// The single source of truth for the twelve persisted settings (UX-07;
+// The single source of truth for the thirteen persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field; Phase 59 DRESS-05 added `dressing`, the Set
@@ -18,9 +18,9 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All twelve fields are persisted as ONE JSON object under a single
+// All thirteen fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never twelve separate keys racing each other.
+// per settings change, never thirteen separate keys racing each other.
 //
 // Phase 67 field kept by Phase 85:
 //   - `compete` (D-01, D-02): the Compete toggle, default ON on a fresh
@@ -102,6 +102,10 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * installs keep "tap" through readSettings) and `padSide`
  * (default "right", the arrow pad's bottom corner, read only in arrow mode)
  * are appended after `volEffects`, in that order.
+ * Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): `alwaysRules`
+ * (default false) is appended after `padSide`: on, every RULES line under a
+ * flavour line shows expanded; an old blob reads false through the tolerant
+ * merge, so no migration.
  */
 export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
@@ -116,6 +120,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   volEffects: 100,
   movement: "arrows",
   padSide: "right",
+  alwaysRules: false,
 });
 
 // Allowed values per field — writeSetting() validates against these before
@@ -140,6 +145,7 @@ const ALLOWED_VALUES = {
   volEffects: isVolumeLevel,
   movement: ["tap", "arrows"],
   padSide: ["left", "right"],
+  alwaysRules: [true, false],
 };
 
 /** LEGACY_MOVEMENT — what an existing install keeps when it has no valid
@@ -186,7 +192,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full twelve-field settings object: persisted
+ * readSettings() — resolves the full thirteen-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

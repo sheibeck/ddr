@@ -48,7 +48,9 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the twelve fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
+  // Phase 95 (FLAVOR-05): Always show the rules defaults Off.
+  assert.equal(SETTINGS_DEFAULTS.alwaysRules, false);
   // Phase 78 (HUD-08) + the 2026-09-28 user ruling: Movement defaults to the
   // arrow pad for new installs, the pad to the bottom right.
   assert.equal(SETTINGS_DEFAULTS.movement, "arrows");
@@ -96,6 +98,8 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       // gets the arrow pad, 2026-09-28).
       movement: "arrows",
       padSide: "right",
+      // Phase 95 (FLAVOR-05): Always show the rules, appended.
+      alwaysRules: false,
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -165,7 +169,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     // Phase 91.2 (BOARD-31) put `nameWelcomed` in the slot the Phase 85 welcome flag and the two
     // retired Phase 67 fields used to occupy; Phase 71 (D-03) appended
     // `volMaster`, `volMusic` and `volEffects`; Phase 78 (HUD-08) appended
-    // `movement` and `padSide` — twelve keys, in order.
+    // `movement` and `padSide`; Phase 95 (FLAVOR-05) appended `alwaysRules` —
+    // thirteen keys, in order.
     assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
       "sound",
       "haptics",
@@ -179,8 +184,10 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "volEffects",
       "movement",
       "padSide",
+      // Phase 95 (FLAVOR-05): Always show the rules, appended.
+      "alwaysRules",
     ]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 12);
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 13);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -572,6 +579,29 @@ test("HUD-08: an invalid movement or padSide is rejected (the stored value is un
     }
     await flushStorage();
     assert.deepEqual(await readSettings(), current);
+  });
+});
+
+// --- Phase 95 (FLAVOR-05): Always show the rules ---------------------------
+
+test("FLAVOR-05: alwaysRules writes true/false, rejects anything else, and an old blob reads false", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    assert.equal((await readSettings()).alwaysRules, false);
+    await writeSetting("alwaysRules", true);
+    await flushStorage();
+    assert.equal((await readSettings()).alwaysRules, true);
+    const current = await readSettings();
+    for (const bad of ["yes", "true", 1, null, undefined]) {
+      assert.deepEqual(await writeSetting("alwaysRules", bad), current, `alwaysRules ${JSON.stringify(bad)} is rejected`);
+    }
+    await flushStorage();
+    assert.equal((await readSettings()).alwaysRules, true, "the stored value stays as it was");
+    await writeSetting("alwaysRules", false);
+    await flushStorage();
+    assert.equal((await readSettings()).alwaysRules, false);
+    // an old blob without the key reads false (no migration)
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L", movement: "arrows" }));
+    assert.equal((await readSettings()).alwaysRules, false);
   });
 });
 
