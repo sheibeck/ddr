@@ -130,7 +130,7 @@ Longest line: 89 characters (Stop Time); every line is at or under 90.
 
 ## Verification results
 
-- `npm test` (full): tests 10355, pass 10335, fail 0, skipped 20, duration about 449 s. (Skipped went from 40 at 95-01 to 20: the 12 flavor-layer per-domain tests for the five maps landed here are now live; the rest wait for 95-04 and the other maps.)
+- `npm test` (full): tests 10355, pass 10335, fail 0, skipped 20, duration about 449 s. (Skipped went from 40 at 95-01 to 20: the 20 flavor-layer per-domain tests (five maps, four tests each) for the maps landed here are now live; the rest wait for 95-04 and the other maps.)
 - Task 1 and Task 2 verify commands: exit 0, `node tools/voice-inventory.mjs --roll-under --hygiene --safety --count` prints `0`. `bank:SPELL_FLAVOR*` counts 41, `bank:SCROLL_FLAVOR` counts 1.
 - `node tools/voice-inventory.mjs --check-ledgers --after`: 60 ledger files, 0 errors. `node tools/narrative-review.mjs --check`: pages in sync (938 rows on 15 surfaces). `grep -c SPELL_FLAVOR docs/NARRATIVE-PASS.md`: 41.
 - `git diff cb5f77ec -- content | grep -c '^-[^-]'`: 0 (no existing content line changed). `git diff --stat cb5f77ec -- engine test/unit/fixtures/shell-snapshots` and the five audit docs: empty.
