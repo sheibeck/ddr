@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 94.1
-current_phase_name: Joiner Level Follows Depth
-status: verifying
+current_phase: 95
+current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
+status: planning
 stopped_at: Completed 94.1-01-PLAN.md
-last_updated: "2026-10-03T21:42:08.198Z"
+last_updated: "2026-10-03T21:43:16.529Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 94.1 execution started
+last_activity_desc: Phase 94.1 complete, transitioned to Phase 95
 progress:
   total_phases: 8
   completed_phases: 4
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 94.1 (Joiner Level Follows Depth) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-10-03 — Phase 94.1 execution started
+Phase: 95 — Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-03 — Phase 94.1 complete, transitioned to Phase 95
 Progress: [███████░░░] 67% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).

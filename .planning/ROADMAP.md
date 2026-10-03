@@ -26,7 +26,7 @@
 - [x] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once. (completed 2026-10-03)
 - [x] **Phase 93.1: Gauntlet of the Giant Worth Wearing** (INSERTED) - Using the Gauntlet's size step hits hard enough to be worth foes getting +1 to hit you (player report #6). (completed 2026-10-03)
 - [x] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour. (completed 2026-10-03)
-- [ ] **Phase 94.1: Joiner Level Follows Depth** (INSERTED) - A Joiner's level comes from the floor: one level per three floors, 1 to 5.
+- [x] **Phase 94.1: Joiner Level Follows Depth** (INSERTED) - A Joiner's level comes from the floor: one level per three floors, 1 to 5. (completed 2026-10-03)
 - [ ] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach.
 - [ ] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review.
 - [ ] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run.
