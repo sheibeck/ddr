@@ -348,6 +348,15 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — Joiner card eats line)"]),
     purpose: "Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do.",
   }),
+  __mzRules: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderActionArea — the combat SPELLS and ITEMS rows' RULES toggle)",
+      "mazeworld.html (classic: renderRail — the find card's RULES line)",
+      "mazeworld.html (classic: renderDropShelf and the loot card — the drop list's and loot list's RULES toggle)",
+    ]),
+    purpose: "Bridges src/browser/rulesLayer.js (the one RULES reveal component and the Always show the rules state) and src/browser/flavorText.js (the name-to-flavour lookup) so the classic-script surfaces show flavour first and the exact rules one tap away, with no second copy of either (Phase 95, FLAVOR-05).",
+  }),
   __mzSettings: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: fit — reads the current text-scale/haptics/sound settings)"]),

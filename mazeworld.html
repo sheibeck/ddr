@@ -896,8 +896,17 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    #enc-panel hurry tap lands the round. No motion: the settle render simply
    draws the actions live again. */
 #cb-act[data-locked="1"] .cb-prompt,#cb-act[data-locked="1"] .cb-sub-title{color:#8f856f}
-#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip{opacity:.45;box-shadow:none;pointer-events:none;cursor:default}
+#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip,#cb-act[data-locked="1"] .mw-rules-btn{opacity:.45;box-shadow:none;pointer-events:none;cursor:default}
 #cb-act[data-locked="1"] .cb-btn:active,#cb-act[data-locked="1"] .cb-row:active,#cb-act[data-locked="1"] .cb-chip:active{transform:none;box-shadow:none}
+/* Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): the shared RULES
+   reveal (src/browser/rulesLayer.js). The toggle is a quiet chip beside a row,
+   never inside it; the revealed rules sit full width beneath. */
+.mw-rules-btn{flex:none;min-width:48px;min-height:48px;padding:6px 8px;border:1px solid #4a4032;border-radius:0;background:transparent;box-shadow:none;color:#a8955f;font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.mw-rules-btn:active:not(:disabled){transform:none;box-shadow:none}
+.mw-rules-body[hidden]{display:none}
+.mw-rules-line{margin:4px 0 0;font-size:calc(0.75rem * var(--mw-text-scale));line-height:1.35;color:#a8a08a;overflow-wrap:anywhere}
+.mw-rules-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-items:stretch;flex:none}
+.mw-rules-wrap>.mw-rules-body{grid-column:1/-1}
 .cb-submenu{animation:mwrise .16s ease}
 .cb-sub-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb-sub-title{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));color:#e8c97a;line-height:1.7}
@@ -2348,6 +2357,16 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <div class="mw-settings-row">
         <span class="mw-settings-label">Set dressing</span>
         <div class="mw-settings-options" data-setting="dressing">
+          <button type="button" class="mw-settings-opt" data-value="true">On</button>
+          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
+        </div>
+      </div>
+      <!-- Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): Always show
+           the rules, default Off; On shows every RULES line under a flavour line
+           expanded. -->
+      <div class="mw-settings-row">
+        <span class="mw-settings-label">Always show the rules</span>
+        <div class="mw-settings-options" data-setting="alwaysRules">
           <button type="button" class="mw-settings-opt" data-value="true">On</button>
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
         </div>
@@ -7102,6 +7121,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
+  // Phase 95 (FLAVOR-05): the shared RULES reveal component and the flavour
+  // lookup, bridged onto window.__mzRules below.
+  import { setAlwaysRules, alwaysRules, mountRules, wrapRow, layerText } from "./src/browser/rulesLayer.js";
+  import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "./src/browser/flavorText.js";
   // Phase 91 (IDENT-14) — the Illusionist's teleport decision card's pure
   // view model (bridged onto window.__mzRailVM.teleportCard below) and the
   // pure answer-to-action map window.mzTeleportPick dispatches through.
@@ -7531,6 +7554,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // classic loot card reaches the shared carried-item list through
   // window.__mzCarriedList.
   window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
+  // Phase 95 (FLAVOR-05): the RULES reveal component and the name-to-flavour
+  // lookup for the classic-script surfaces (flavour first, the exact rules one
+  // tap away); no second copy of either lives in the classic script.
+  window.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll });
   window.__mzCarriedList = renderCarriedList;
   // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
   // openGearSheet/refreshGearSheet (classic) render through it.
@@ -7859,6 +7886,9 @@ window.__mzClassicBoot = async function classicBoot() {
     // call time (arrow mode turns tap-to-move off), and syncArrowPad below
     // shows or hides the opt-in pad from it on every apply.
     window.__mzSettings = settings;
+    // Phase 95 (FLAVOR-05): Always show the rules, read by the RULES component
+    // on every mount (runs at boot and on every write).
+    setAlwaysRules(settings.alwaysRules === true);
     // Phase 56 (AUD-05) — the ONE gate that makes the Settings "Sound" row
     // real: the row and its persistence already existed and nothing read
     // them until now. A flip to Off stops every in-flight voice and closes
@@ -8507,6 +8537,9 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
     // clears every prop immediately and On brings them back (once loaded).
     if (key === "dressing") window.draw?.();
+    // Phase 95 (FLAVOR-05): paint repaints the tabs, an open Gear sheet, the
+    // encounter panel and the rail, so every RULES line flips at once.
+    if (key === "alwaysRules") window.paint?.();
     // Quick task 260924-51h (R-06): this tap is itself a gesture, so Sound
     // On with the title area up opens the device and starts the theme on
     // that same tap. On Sound Off, applySfxSettings (via applySettings above)
