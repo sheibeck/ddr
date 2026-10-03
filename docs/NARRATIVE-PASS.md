@@ -10,7 +10,7 @@ Phase 79 judged every player-facing line against a four-point rubric and rewrote
 - An Oracle or rail line is one representative rendering of its builder, from a fixed synthetic event, so its numbers and names are examples. "…" stands for a value filled in at play time.
 - *(new line)* means nothing was printed there before. *(removed)* means the line is gone, and the why says what replaced it.
 - **Why** lists every plan that changed the line, in order, with its reasons.
-- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, 91-04, 91-05, 91-06, 91-07, 91-08, 91-09, 91-10, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug, r-91-10, s-91.1-02a, s-91.1-02b, s-91.1-03a, s-91.1-03b, t-91.1-05, u-92.2-01, v-92.3-01, v-92.3-02, w-93.1-01.
+- Ledgers read: 79-02, 79-02c, 79-03, 79-04, 79-05, 79-06, 79-07, 79-08, 79-09, 79-10, 79-11, 79-12, 88-01, 88-04, 89-02, 89-03, 89-05, 89-09, 90-02, 90-03, 90-04, 90-05, 90-06, 90-07, 90-08, 90-09, 90-10, 90-11, 91-02, 91-03, 91-04, 91-05, 91-06, 91-07, 91-08, 91-09, 91-10, q-260927-opf, q-260927-rsx, q-260928-frz, q-260928-tsx, q-260928-z-sq2, q-260928-z2-cos, q-260928-z3-hrs, q-260928-z4-nrf, q-260928-z5-bug, r-91-10, s-91.1-02a, s-91.1-02b, s-91.1-03a, s-91.1-03b, t-91.1-05, u-92.2-01, v-92.3-01, v-92.3-02, w-93.1-01, x-94-03.
 
 ## How to ask for changes
 
@@ -44,7 +44,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | rail (rail lines and the fight log) | 287 | 103 | 184 | 26 | 140 | 13 |
 | refusals (refusals: why the game said no) | 38 | 20 | 18 | 2 | 37 | 2 |
 | rail-cards (rail cards and decision cards) | 140 | 3 | 137 | 11 | 14 | 2 |
-| combat-screen (the combat screen and its chips) | 203 | 22 | 181 | 28 | 68 | 7 |
+| combat-screen (the combat screen and its chips) | 203 | 22 | 181 | 40 | 80 | 7 |
 | items (item, gear and store text) | 110 | 29 | 81 | 8 | 40 | 0 |
 | spells (spells, abilities and skills) | 87 | 62 | 25 | 11 | 73 | 2 |
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
@@ -54,7 +54,7 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 74 | 56 |
 | other (everything else) | 32 | 5 | 27 | 14 | 31 | 2 |
-| **Total** | **1871** | **452** | **1419** | **270** | **858** | **125** |
+| **Total** | **1871** | **452** | **1419** | **282** | **870** | **125** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -600,10 +600,22 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## combat-screen — the combat screen and its chips
 
-68 changed lines.
+80 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
+| `bank:ABILITY_STATE_COPY.ready`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | READY | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): the plain ready word every ability row, combat and Hero tab, shows when it can be used now. |
+| `bank:ABILITY_STATE_COPY.readyOnce`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | READY · ONCE PER FIGHT | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a ready once-a-fight ability keeps its existing words, now from the one shared bank. |
+| `bank:ABILITY_STATE_COPY.reason.alreadyOn`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | ALREADY ON IT | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): the existing words for an effect already running, kept, now from the shared bank. |
+| `bank:ABILITY_STATE_COPY.reason.noTarget`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NO FOE IN REACH | **x-94-03** (what happened, to whom, accurate to the engine): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a foe ability with no live foe in reach now says so on the row, so a tap agrees with the label. |
+| `bank:ABILITY_STATE_COPY.reason.notFought`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | FIGHT FIRST | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a fight-only ability tapped before any fight begins says what to do first (never shown in play, but every engine reason has words). |
+| `bank:ABILITY_STATE_COPY.reason.notInCombat`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NOT IN A FIGHT | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a combat-only ability outside a fight (never shown in play). |
+| `bank:ABILITY_STATE_COPY.reason.notLowEnough`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NEEDS A QUARTER HP OR LESS | **x-94-03** (what happened, to whom, accurate to the engine): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): Last Stand now shows its own gate on the row (a quarter of max hp), so a tap agrees with the label. |
+| `bank:ABILITY_STATE_COPY.reason.tooFewFoes`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NEEDS TWO OR MORE FOES | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): the existing words for a group ability with a lone foe, kept, now from the shared bank. |
+| `bank:ABILITY_STATE_COPY.reason.unknown`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NOT ONE OF YOURS | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a key the hero does not own; also the fallback for any reason without words (never shown in play). |
+| `bank:ABILITY_STATE_COPY.reason.wrongClass`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | NOT FOR YOU | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): the Sing row for a hero who is not a Bard (never shown in play). |
+| `bank:ABILITY_STATE_COPY.recharging`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | READY IN {n} | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): the countdown reads READY IN N, the rounds until the ability is back, replacing the bare N ROUNDS (READY IN 1, no plural). |
+| `bank:ABILITY_STATE_COPY.spent`<br>an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab | *(new line)* | SPENT THIS FIGHT | **x-94-03** (what happened, to whom): Phase 94 (ASTATE-01..03, user decision 2026-10-03 "Full-word labels"): a once-a-fight ability already used says so in full words, replacing ONCE PER FIGHT · SPENT; the Sing row uses it too. |
 | `bank:COMBAT_MENU_COPY.abilityReadyOnce`<br>the combat action grid and its submenus | *(new line)* | READY · ONCE PER FIGHT | **q-260927-opf** (what happened, to whom): User ruling 2026-09-27: the combat menu row of a once-per-fight ability says so while it is still ready, so spending it is a choice made knowingly. |
 | `bank:COMBAT_MENU_COPY.abilityTooFewFoes`<br>the combat action grid and its submenus | *(new line)* | NEEDS TWO OR MORE FOES | **q-260928-z4-nrf** (what happened, to whom): User ruling 2026-09-28: the ability menu shows Sweep disabled, with its reason, while fewer than two foes stand, the same way a spent once-per-fight ability shows ONCE PER FIGHT · SPENT. The engine refuses on the same rule. |
 | `bank:COMBAT_MENU_COPY.abilityUsedUp`<br>the combat action grid and its submenus | ONCE A FIGHT · USED | ONCE PER FIGHT · SPENT | **q-260927-opf** (naming ruling): The ruling's own words: once per fight, and spent for this fight (the refusal line reads the same). |

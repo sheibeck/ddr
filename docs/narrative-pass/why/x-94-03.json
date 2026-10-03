@@ -1,0 +1,136 @@
+[
+  {
+    "key": "bank:ABILITY_STATE_COPY.ready",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "READY",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): the plain ready word every ability row, combat and Hero tab, shows when it can be used now."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.readyOnce",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "READY · ONCE PER FIGHT",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a ready once-a-fight ability keeps its existing words, now from the one shared bank."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.recharging",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "READY IN {n}",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): the countdown reads READY IN N, the rounds until the ability is back, replacing the bare N ROUNDS (READY IN 1, no plural)."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.spent",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "SPENT THIS FIGHT",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a once-a-fight ability already used says so in full words, replacing ONCE PER FIGHT · SPENT; the Sing row uses it too."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.notFought",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "FIGHT FIRST",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a fight-only ability tapped before any fight begins says what to do first (never shown in play, but every engine reason has words)."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.unknown",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NOT ONE OF YOURS",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a key the hero does not own; also the fallback for any reason without words (never shown in play)."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.notInCombat",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NOT IN A FIGHT",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a combat-only ability outside a fight (never shown in play)."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.noTarget",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NO FOE IN REACH",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): a foe ability with no live foe in reach now says so on the row, so a tap agrees with the label."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.tooFewFoes",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NEEDS TWO OR MORE FOES",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): the existing words for a group ability with a lone foe, kept, now from the shared bank."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.alreadyOn",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "ALREADY ON IT",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): the existing words for an effect already running, kept, now from the shared bank."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.notLowEnough",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NEEDS A QUARTER HP OR LESS",
+    "reasons": [
+      "fact",
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): Last Stand now shows its own gate on the row (a quarter of max hp), so a tap agrees with the label."
+  },
+  {
+    "key": "bank:ABILITY_STATE_COPY.reason.wrongClass",
+    "surface": "combat-screen",
+    "trigger": "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab",
+    "before": "",
+    "after": "NOT FOR YOU",
+    "reasons": [
+      "fact"
+    ],
+    "why": "Phase 94 (ASTATE-01..03, user decision 2026-10-03 \"Full-word labels\"): the Sing row for a hero who is not a Bard (never shown in play)."
+  }
+]

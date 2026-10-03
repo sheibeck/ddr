@@ -30,6 +30,8 @@ import { ITEM_STATE_COPY, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { GEAR_SHEET_COPY } from "../../src/browser/gearSheet.js";
 import { ABILITY_VIEW_COPY, RATIONS_COPY } from "../../src/browser/heroTab.js";
 import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+// Phase 94 (ASTATE-01..03): the ability-state words.
+import { ABILITY_STATE_COPY } from "../../src/browser/abilityStates.js";
 import { COMBAT_PANEL_COPY } from "../../src/browser/combatPanel.js";
 import { MISS_LINES } from "../../src/browser/missLines.js";
 import {
@@ -170,6 +172,8 @@ function collectStringLeaves(obj, pathLabel = "") {
 
 test("Presentation COPY objects: every string leaf is free of a standalone wp/WP token", () => {
   const banks = {
+    // Phase 94 (ASTATE-01..03): the ability-state words.
+    ABILITY_STATE_COPY,
     // Phase 61 (STORE-02/03): STORE_ROW_COPY added to the walked copy-object list.
     RAIL_COPY, ITEM_STATE_COPY, ABILITY_VIEW_COPY, COMBAT_MENU_COPY, COMBAT_PANEL_COPY, MISS_LINES, RATIONS_COPY, USABLE_COPY, GEAR_COPY, UPGRADE_WHY_COPY, STORE_ROW_COPY, GEAR_SHEET_COPY,
     // Phase 84 (BOARD-18, BOARD-24, BOARD-25, BOARD-27): the v3 panel's own

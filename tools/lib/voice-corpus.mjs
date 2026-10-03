@@ -136,6 +136,7 @@ const bank = (module, exp, surface, trigger, extra = {}) => Object.freeze({ modu
 
 /** Every exported copy bank: one row per export. */
 export const BANK_REGISTRY = Object.freeze([
+  bank("src/browser/abilityStates.js", "ABILITY_STATE_COPY", "combat-screen", "an ability row's state words on the combat ABILITIES submenu, the Bard's SING row and the Hero tab"),
   bank("src/browser/arrowPad.js", "ARROW_PAD_COPY", "title", "the opt-in arrow pad's button names"),
   bank("src/browser/combatMenu.js", "COMBAT_MENU_COPY", "combat-screen", "the combat action grid and its submenus"),
   bank("src/browser/combatPanel.js", "COMBAT_PANEL_COPY", "combat-screen", "the combat panel header, foe cards and YOUR LOT"),
@@ -323,7 +324,7 @@ export const RAW_SURFACES = Object.freeze([
   Object.freeze({ keys: ["raw:mazeworld.html#MAP_COPY"], surface: "map" }),
   Object.freeze({ keys: ["raw:mazeworld.html#markup"], surface: "title" }),
   Object.freeze({
-    files: ["src/browser/combatMenu.js", "src/browser/combatPanel.js", "src/browser/conditionEffects.js", "src/browser/heroConditions.js", "src/browser/foeConditions.js", "src/browser/foeDetails.js", "src/browser/combatBeat.js"],
+    files: ["src/browser/abilityStates.js", "src/browser/combatMenu.js", "src/browser/combatPanel.js", "src/browser/conditionEffects.js", "src/browser/heroConditions.js", "src/browser/foeConditions.js", "src/browser/foeDetails.js", "src/browser/combatBeat.js"],
     surface: "combat-screen",
   }),
   Object.freeze({ files: ["src/browser/heroTab.js", "src/browser/gearTab.js", "src/browser/gearSheet.js", "src/browser/storeScreen.js", "src/browser/finalSheet.js"], surface: "panels" }),
@@ -371,7 +372,7 @@ export const OWNER_RULES = Object.freeze([
     ],
   }, "content rules text and engine/items.js and engine/economy.js literals"),
   rule("79-07", {
-    modules: ["src/browser/combatMenu.js", "src/browser/combatPanel.js", "src/browser/conditionEffects.js", "src/browser/heroConditions.js", "src/browser/foeConditions.js", "src/browser/foeDetails.js"],
+    modules: ["src/browser/abilityStates.js", "src/browser/combatMenu.js", "src/browser/combatPanel.js", "src/browser/conditionEffects.js", "src/browser/heroConditions.js", "src/browser/foeConditions.js", "src/browser/foeDetails.js"],
   }, "combat screen and chip copy"),
   rule("79-07", {
     modules: ["mazeworld.html"],
