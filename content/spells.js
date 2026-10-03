@@ -188,3 +188,59 @@ export const SPELLS = [
   { n: "Chameleon Tongue", lvl: 3, s: "illusion", kind: "tongue", fluency: 2, roll: "derived", niche: "answer", txt: "answer · this fight · you speak their tongue like a local and talk at once: a parley (talking your way out of the fight instead of swinging) at +4 to the roll, which even Magical foes will hear (the Walking Dead still won't); it spends the fight's one parley", combatOnly: true },
   { n: "Size of the Behemoth", lvl: 4, s: "illusion", kind: "behemoth", roll: "derived", niche: "control", txt: "control · every foe · you look enormous: each foe rolls its resist, and one that fails and is below your level flees, spoils and all; the rest cower for the fight, hitting only on a high roll (18–20 on a d20; 17–20 if you insulted them) for half damage", combatOnly: true },
 ];
+
+// Phase 95 (FLAVOR-01; CONTEXT 'Data shape and guards' and 'Tone'): the player
+// line for each of the 41 spells, keyed by spell name, in table order. A row's
+// `txt` above stays the exact rules text, pinned by the v2.3 guards and shown
+// under RULES; the flavour is keyed here, never inline on the row. Every line
+// is one sentence of about 90 characters or fewer with no number, die or
+// percentage (test/unit/flavor-layer.test.js), and is reviewed on
+// docs/narrative-pass/review.html.
+export const SPELL_FLAVOR = Object.freeze({
+  "Heal": "Closes wounds the polite way: quickly, and without asking how you got them.",
+  "Shield": "A cushion of wishful thinking that soaks up blows until it gives out.",
+  "Strength": "Lends every blow and spell a little extra conviction until the magic wears off.",
+  "Doze": "A lullaby for several foes together, undone by the first rude interruption.",
+  "Freeze": "A well-aimed bolt of winter: it stings, and what survives goes stiff and cross.",
+  "Map the Floor": "Lays out the whole floor in your mind, right up until you take a step.",
+  "Mirror Self": "A reflection that gets in the way, so most swings miss the real you.",
+  "Stun": "Dazes a foe into standing still, however rudely you poke it.",
+  "Weaken": "Takes the wind out of every foe, who swing sloppily and hit like damp towels.",
+  "Acid": "Eats at a foe round after round, with a hiss that really sets the mood.",
+  "Stupidity": "Leaves a foe too dim to resist much, and still perfectly able to hit you.",
+  "Blind": "Blinds a foe for the fight, so it flails at the scenery and rarely finds you.",
+  "Shrink": "Leaves a handful of foes pocket-sized, with pocket-sized hit points to match.",
+  "Ice": "A blizzard for the whole room, whether or not anyone dressed for it.",
+  "Earthquake": "Hurts everyone in the room, caster included, by making the ground lose its temper.",
+  "Noxious Vapor": "A cloud of dubious intent that puts foes to sleep, or something sterner.",
+  "Fireballs": "A volley of little fireballs, scattered among the foes with more enthusiasm than aim.",
+  "Petrify": "Turns a foe into garden statuary: permanent, decorative and entirely without loot.",
+  "Insane": "Loosens a foe's grip on reality, and the results are anyone's guess.",
+  "Summon": "Calls a helper out of thin air, who fights for you until they remember their errands.",
+  "Fireball": "A proper ball of fire with a foe's name on it, and no sense of proportion.",
+  "Major Heal": "Knits you back together with a firm hand and a long, disapproving look.",
+  "Bubble": "A shimmering bubble that sends the next blow home to whoever threw it, then pops.",
+  "Sense Danger": "A prickle at the back of your neck, so the next fight never gets the first word.",
+  "Turn Walking Dead": "Tells the Walking Dead to go back to bed, and the stubborn ones take it personally.",
+  "Plane Gate": "Opens a door to The Planes and shoos a few Demons or Walking Dead through it.",
+  "Sense Presence": "Your skin crawls in a helpful direction: no ambushes, and the dark stops mattering.",
+  "Lightning": "Jumps from foe to foe in a crackle of bad news, leaving each of them singed.",
+  "Regeneration": "Persuades your body to keep mending itself for the length of the fight.",
+  "Mangle": "The heaviest blow in the book, saved for a foe that has really earned it.",
+  "Death": "Ends a foe outright, and bills you in health for the privilege.",
+  "Open/Lock": "Persuades your next chest to open itself, to the visible dismay of every lockpick.",
+  "Fly": "Lifts you over walls and gaps as if they were rumours, though it is no help in a scrap.",
+  "Enchant Character": "Wraps you in a shimmer that sharpens your aim and spoils everyone else's.",
+  "Speed of Sound": "Makes you quicker than your own excuses: you swing more and always go first.",
+  "Stop Time": "Pauses every foe mid-sneer, which makes them wonderfully easy to hit, until time resumes.",
+  "Senseless": "Turns a foe's temper on its friends, and on thin air when it has none.",
+  "Duplicate Foe": "Gives a foe a twin to argue with, and it is far too busy to bother you.",
+  "Door Illusion": "Paints a door on the nearest wall and leaves through it, if the foes buy it.",
+  "Chameleon Tongue": "Lets you talk to foes in their own tongue, which improves the odds of a polite exit.",
+  "Size of the Behemoth": "Makes you loom enormously, so the smaller foes flee and the rest lose heart.",
+});
+
+// Phase 95 (FLAVOR-01; CONTEXT 'Tone'): one shared line for every scroll. A
+// scroll is a counter that casts a random spell, so no scroll has a per-spell
+// description; the line hints that the choice of spell is not the reader's.
+export const SCROLL_FLAVOR = "The scroll picks the spell and you do the reading, which seems about fair.";
