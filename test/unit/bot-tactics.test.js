@@ -27,7 +27,8 @@ import {
   BOT_DEFAULTS,
   BOT_TACTICS,
 } from "../../tools/lib/tuning-bot.mjs";
-import { DEATH_PANIC_THRESHOLD } from "../../engine/derived.js";
+import { DEATH_PANIC_THRESHOLD, expectedStrike } from "../../engine/derived.js";
+import { startEffect } from "../../engine/effects.js";
 import { SPELLS } from "../../content/index.js";
 import { maxCharges } from "../../engine/movement.js";
 import { takeFind } from "../../engine/items.js";
@@ -605,6 +606,27 @@ test("chooseCombatItem: round-1 worn buff tier walks WORN_SLOTS order and skips 
     }),
   });
   assert.deepStrictEqual(chooseCombatItem(jewelry2Fires, ctx), { action: { type: "useItem", slot: "jewelry2" }, reason: "buff" });
+});
+
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet of the Giant is
+// +6 damage (the size step's +2 and +4 bulk). The bot keeps "giant" in its
+// round-1 buff list and restates no number: its strike value is
+// expectedStrike, which reads the whole +6 through the engine.
+test("chooseCombatItem: a ready worn Gauntlet of the Giant is used at round 1 of a hard fight, and the bot's strike value reads its whole +6 (Phase 93.1, ITEM-09)", () => {
+  const ctx = makeBotContext();
+  const hard = fight("Beasts", 1, 1, { foes: [{ name: "f", alive: true, lvl: 3, wp: 20, maxWP: 20 }] });
+  // an old-shape object: the bot (and the engine) read the activation by name
+  const gauntlet = { kind: "jewel", n: "Gauntlet of the Giant", eff: { size: 1 } };
+  const state = mkState({ combat: hard, c: fighter({ worn: { jewelry1: gauntlet } }) });
+  assert.deepStrictEqual(chooseCombatItem(state, ctx), { action: { type: "useItem", slot: "jewelry1" }, reason: "buff" });
+
+  const plain = fighter({ weapon: "Club" });
+  const big = fighter({ weapon: "Club" });
+  startEffect(big, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
+  const a = expectedStrike(big, "Club");
+  const b = expectedStrike(plain, "Club", 6);
+  assert.ok(Math.abs(a - b) < 1e-9, `expectedStrike with the live Gauntlet (${a}) is the plain strike plus 6 (${b})`);
+  assert.ok(a > expectedStrike(plain, "Club"), "the live Gauntlet raises the strike value");
 });
 
 // --- chooseCombatItem: a Magic User's WIELDED staff (RULES-13, Phase 75,

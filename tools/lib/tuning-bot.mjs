@@ -1100,7 +1100,10 @@ export function chooseCombatItem(state, ctx) {
     // readyWornOfKind itself now scans WORN_SLOTS (jewelry1/jewelry2/cloak)
     // and (via skipIfActive) keeps scanning past an already-live match, so
     // this collapses to a single call — the first ready, not-yet-live buff
-    // in EITHER jewelry key or the cloak.
+    // in EITHER jewelry key or the cloak. Phase 93.1 (ITEM-09): the Gauntlet's
+    // +6 reaches the bot's strike value and every fight through the engine
+    // (expectedStrike and weaponDamage read eff(c, "dmg") and sizeDamage),
+    // so the bot restates no number.
     const buffKinds = ["haste", "critWard", "plate", "unseen", "power", "giant"];
     const buffFound = readyWornOfKind(state, ctx, buffKinds, { skipIfActive: true });
     if (buffFound) return { action: { type: "useItem", slot: buffFound.slot }, reason: "buff" };

@@ -260,15 +260,16 @@ test("weaponDamage, same scripted die, level-1 Club Soldier prof 0 magicWpn 0: T
   assert.equal(weaponDamage(soldier("Elven"), fakeRng([3])), human - 2, "Small's damage axis applies in full for Elven (only the face axis is masked)");
 });
 
-test("weaponDamage with a live Gauntlet: the item's step applies in full on top of the resolved race base — Human +2, Dwarven +5 total (V16: was +4), Elven +0 total (unchanged from Human)", () => {
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet carries +4 bulk on its one step, +6 in all (was +2): Human +6, Dwarven +9, Elven +4.
+test("weaponDamage with a live Gauntlet: the item's step and its +4 bulk apply in full on top of the resolved race base — Human +6, Dwarven +9 total, Elven +4 total (Phase 93.1; were +2, +5, +0)", () => {
   const human = weaponDamage(soldier("Human"), fakeRng([3]));
   const dwarvenNoItem = weaponDamage(soldier("Dwarven"), fakeRng([3]));
   const elvenNoItem = weaponDamage(soldier("Elven"), fakeRng([3]));
-  assert.equal(weaponDamage(withGauntlet(soldier("Human")), fakeRng([3])), human + 2);
-  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), dwarvenNoItem + 2, "the item's step stacks on top of the race's own unmasked +3, reaching Human + 5 total");
-  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), human + 5);
-  assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), elvenNoItem + 2, "the item's step applies in full despite the Elven face-axis mask (this is the damage axis, never masked for Elven)");
-  assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), human);
+  assert.equal(weaponDamage(withGauntlet(soldier("Human")), fakeRng([3])), human + 6);
+  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), dwarvenNoItem + 6, "the item's step and bulk stack on top of the race's own unmasked +3, reaching Human + 9 total");
+  assert.equal(weaponDamage(withGauntlet(soldier("Dwarven")), fakeRng([3])), human + 9);
+  assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), elvenNoItem + 6, "the item's step and bulk apply in full despite the Elven face-axis mask (this is the damage axis, never masked for Elven)");
+  assert.equal(weaponDamage(withGauntlet(soldier("Elven")), fakeRng([3])), human + 4);
 });
 
 test("floor adjacency: an Elf's damage floors at 1 while a Human's does not, at the same raw Club faces (1, 2, 3)", () => {

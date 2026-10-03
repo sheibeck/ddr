@@ -161,18 +161,19 @@ test("using Enlarge: started carries kind, left 50, step 1, sizeDmg 2, dmgTotal 
   assert.deepStrictEqual(state.c.items, []);
 });
 
-test("the Gauntlet of the Giant is unchanged: started sizeDmg 2 and dmgTotal 2, its damage delta stays 2", () => {
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet carries +4 bulk on its one size step, +6 in all (was 2).
+test("the Gauntlet of the Giant (Phase 93.1, ITEM-09): started sizeDmg 2 and dmgTotal 6, its damage delta is 6 (was 2)", () => {
   const gauntlet = { kind: "jewelry", n: "Gauntlet of the Giant", eff: { size: 1 } };
   const state = fixedState({ c: { worn: { jewelry1: gauntlet } } });
   const events = useItem(state, { slot: "jewelry1" }, fakeRng([]), []);
   const started = events.find((e) => e.type === "itemEffectStarted");
   assert.ok(started);
   assert.equal(started.sizeDmg, 2);
-  assert.equal(started.dmgTotal, 2);
+  assert.equal(started.dmgTotal, 6);
   const plain = fixedFighter();
   const big = fixedFighter();
   startEffect(big, "item:Gauntlet of the Giant", { squares: 50, cd: 50 });
-  assert.equal(weaponDamageTerms(big).bonus - weaponDamageTerms(plain).bonus, 2);
+  assert.equal(weaponDamageTerms(big).bonus - weaponDamageTerms(plain).bonus, 6);
 });
 
 test("a non-size item's started event carries no dmgTotal", () => {

@@ -441,7 +441,8 @@ const SIGNED_ROWS = [
   { id: "JEWELRY.Ring of Power.txt", text: () => row(JEWELRY, "Ring of Power"), signed: "+1 damage", engine: () => JEWELRY.find((p) => p.n === "Ring of Power").eff.dmg, value: 1 },
   // Phase 89 (ITEM-05): Enlarge is Troll-sized, +11 (the step's +2 and +9 bulk) — was "+2 damage".
   { id: "POTIONS.Enlarge.txt", text: () => potion("Enlarge"), signed: "+11 damage", engine: () => enlargeDamage(), value: 11 },
-  { id: "JEWELRY.Gauntlet of the Giant.txt", text: () => row(JEWELRY, "Gauntlet of the Giant"), signed: "+2 damage", engine: () => SIZE_DAMAGE_PER_STEP * sizeAxisStep(fixedFighter({ timers: itemTimer("Gauntlet of the Giant") }), "dmg"), value: 2 },
+  // Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet is +6 (the step's +2 and +4 bulk) — was "+2 damage".
+  { id: "JEWELRY.Gauntlet of the Giant.txt", text: () => row(JEWELRY, "Gauntlet of the Giant"), signed: "+6 damage", engine: () => gauntletDamage(), value: 6 },
   { id: "THIEF_SKILLS.Heft.txt", text: () => THIEF_SKILLS.Heft.txt, signed: "+2 damage", engine: () => weaponDamage(fixedFighter({ skills: { Heft: 1 } }), fakeRng([], 1)) - weaponDamage(fixedFighter(), fakeRng([], 1)), value: 2 },
   // Phase 91.1 plan 02 (V10): Mark no longer adds a signed +2; it adds the marker's level (a level 4 Mark here).
   { id: "ABILITIES.mark.txt", text: () => ABILITY_BY_ID.mark.txt, signed: "adds your level in damage", engine: () => markedStrike(4) - markedStrike(false), value: 4 },
@@ -450,6 +451,11 @@ const SIGNED_ROWS = [
 /** enlargeDamage() — the damage bonus a live Enlarge record adds to a Human Fighter's terms, from the engine. */
 function enlargeDamage() {
   return weaponDamageTerms(fixedFighter({ timers: itemTimer("Enlarge") })).bonus - weaponDamageTerms(fixedFighter()).bonus;
+}
+
+/** gauntletDamage() — the damage bonus a live Gauntlet of the Giant record adds to a Human Fighter's terms, from the engine. */
+function gauntletDamage() {
+  return weaponDamageTerms(fixedFighter({ timers: itemTimer("Gauntlet of the Giant") })).bonus - weaponDamageTerms(fixedFighter()).bonus;
 }
 
 /** markedStrike(marked) — the damage one fixed landed blow (a raw 2: a hit, no crit) does to a marked or unmarked foe. */

@@ -312,7 +312,8 @@ test("Cloak of Ether: while ethereal you phase through a wall/crevice with no ro
   assert.ok(events.some((e) => e.type === "phasedThrough"), "emits phasedThrough");
 });
 
-test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage only when worn AND used", () => {
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet carries +4 bulk on its one size step, +6 in all (was +2).
+test("Gauntlet of the Giant adds its size step and its bulk (+6) to weaponDamage only when worn AND used", () => {
   const plain = fixedFighter();
   const wornUnused = fixedFighter({ worn: { helm: GAUNTLET } });
   const wornUsed = fixedFighter({
@@ -321,7 +322,7 @@ test("Gauntlet of the Giant adds a flat size damage bonus to weaponDamage only w
   });
   assert.equal(weaponDamage(plain, fakeRng([4])), 5, "1 + d6=4 = 5");
   assert.equal(weaponDamage(wornUnused, fakeRng([4])), 5, "worn but UNUSED grants nothing");
-  assert.equal(weaponDamage(wornUsed, fakeRng([4])), 7, "worn AND used — 1 + d6=4 + size(2) = 7");
+  assert.equal(weaponDamage(wornUsed, fakeRng([4])), 11, "worn AND used — 1 + d6=4 + size(2) + bulk(4) = 11");
 });
 
 // --- 9. Phase 18: fire item routed through damageFoe (CANON-01 A3) --------

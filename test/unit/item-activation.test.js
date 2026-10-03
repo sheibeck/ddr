@@ -89,7 +89,8 @@ test("ACTIVATION_OF: 29 entries (9 new use-activated rows + 6 existing treasure 
   // 260918-w4n: the Ring of Power (and every other formerly-passive row) now
   // resolves to a real record instead of undefined.
   assert.deepStrictEqual(ACTIVATION_OF["Ring of Power"], { kind: "power", effect: 50, cd: 50, eff: { dmg: 1 } });
-  assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1 } });
+  // Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet carries +4 bulk on its one size step, +6 in all (was eff { size: 1 }).
+  assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1, dmg: 4 } });
   assert.deepStrictEqual(ACTIVATION_OF["Amulet of Light"], { kind: "glow", effect: 50, cd: 50, eff: { sight: 1, light: 1 } });
   assert.deepStrictEqual(ACTIVATION_OF["Anklet of Invisibility"], { kind: "unseen", effect: 50, cd: 50, eff: { foeToHit: -2 } });
   assert.deepStrictEqual(ACTIVATION_OF["Helm of Knowledge"], { kind: "tongue", effect: 50, cd: 50, eff: { tongue: 1 } });

@@ -123,8 +123,18 @@ const JEWELRY_ROWS = [
     // overhead-clearance warning (no low-clearance map tiles exist) and
     // the "shrinking back" wording (no such mechanic exists; the effect
     // simply ends).
-    n: "Gauntlet of the Giant", slot: "jewelry", eff: { size: 1 },
-    txt: "used, you are one size larger for fifty squares: +2 damage, and foes +1 to hit you; then fifty squares before it will do it again",
+    //
+    // Phase 93.1 (ITEM-09, report #6, user ruling 2026-10-03, the owner's
+    // comment "Same thing with Gauntlet of the Giant"): the step alone was a
+    // trap, as it was for Enlarge. The Gauntlet now carries +4 bulk on its
+    // activation (`eff.dmg`, the term the Ring of Power's +1 and Enlarge's +9
+    // ride), +6 in all with the step's +2 (SIZE_DAMAGE_PER_STEP): smaller than
+    // Enlarge's +11 because it recharges. The cost stays one size step (foes
+    // +1 to hit you, SIZE_FACES_PER_STEP), 50 squares on and 50 to recover,
+    // price 1,200 unchanged; the "+2 damage" in the comment above is the
+    // 2.3.0 rule.
+    n: "Gauntlet of the Giant", slot: "jewelry", eff: { size: 1, dmg: 4 },
+    txt: "used, you are one size larger for fifty squares: +6 damage, and foes +1 to hit you; then fifty squares before it will do it again",
     act: { kind: "giant", effect: 50, cd: 50 },
   },
   {

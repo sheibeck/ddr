@@ -99,10 +99,11 @@ test("JEWELRY (8)/CLOAKS (7, the dropped healing cloak removed)/STAVES (8) rows 
   assert.equal(CLOAKS.some((r) => r.n === "Cloak of Healing"), false, "the dropped healing cloak no longer exists");
 });
 
-test("JEWELRY row eff payloads are byte-identical to the pre-260918-w4n literals (only txt/act changed)", () => {
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet's eff gains +4 bulk, { size: 1, dmg: 4 }.
+test("JEWELRY row eff payloads are byte-identical to the pre-260918-w4n literals (only txt/act changed; Phase 93.1 adds the Gauntlet's +4 bulk)", () => {
   const effPins = {
     "Ring of Power": { dmg: 1 },
-    "Gauntlet of the Giant": { size: 1 },
+    "Gauntlet of the Giant": { size: 1, dmg: 4 },
     "Amulet of Light": { sight: 1, light: 1 },
     "Pendant of Fortitude": {},
     "Anklet of Invisibility": { foeToHit: -2 },
@@ -233,7 +234,8 @@ test("eff sums a key ONLY across LIVE item:<name> records — a bagged copy cont
       "item:Gauntlet of the Giant": liveRecord(50, 50),
     },
   };
-  assert.equal(eff(gauntletLive, "dmg"), 1);
+  // Phase 93.1 (ITEM-09): the Gauntlet's +4 bulk joins the Ring's +1 (was 1).
+  assert.equal(eff(gauntletLive, "dmg"), 5);
   assert.equal(eff(gauntletLive, "size"), 1);
 });
 

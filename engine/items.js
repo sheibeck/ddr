@@ -1441,8 +1441,8 @@ export const TARGETED_KINDS = new Set(["freeze", "weaken", "stone", "fire", "gas
  * step, always ±1) and `sizeDmg` (SIZE_DAMAGE_PER_STEP × that item step).
  * Phase 89 (ITEM-05): it also carries `dmgTotal`, the item's whole damage
  * bonus: `sizeDmg` plus the item's own `eff.dmg` bulk (Enlarge: 2 + 9 = 11;
- * the Gauntlet of the Giant carries no bulk, so 2). The narration reads it,
- * never a restated formula.
+ * the Gauntlet of the Giant since Phase 93.1, ITEM-09: 2 + 4 = 6). The
+ * narration reads it, never a restated formula.
  *
  * Phase 88 (ITEM-02): `slot` is the source slot the use came through (the
  * ref's `{ slot }`: cloak, jewelry1, jewelry2, or "weapon" for a wielded

@@ -979,7 +979,7 @@ export function isFlying(state) {
  *     when act.eff carries a numeric `size`, e.g. the Gauntlet of the
  *     Giant or Enlarge, dmgTotal?:<that item's whole damage bonus — the
  *     size step's plus its own eff.dmg bulk; Phase 89, ITEM-05: Enlarge 11,
- *     the Gauntlet 2>}
+ *     the Gauntlet 6 (Phase 93.1, ITEM-09: its +4 bulk)>}
  *     Phase 88 (ITEM-03): a heal-over-time item (the Cloak of Regeneration, `knit`) adds ticks:<heal ticks still owed, healTicksLeft>; Phase 93 (ITEM-08): these are the WALKING ticks still owed (an `onUse` tick is spent at the use)
  *   - strength {polarity:"good", remaining:<squares left>, cadence:"squares", source:"Strength"} — Phase 90 (SPELL-09): the Strength SPELL's live `spell:Strength` record, reported by the same generic loop as an item effect (a spell-sourced timed effect, liveItemEffects)
  *   - might  {polarity:"good"}                            — the phobia rage's flat +d10 until the day ends (engine/encounters.js insanityRage is the only writer of c.might since Phase 90) — distinct from a potion's timed "might" chip above; both may appear together
@@ -1230,8 +1230,9 @@ function liveItemChips(sheet) {
       chip.step = act.eff.size;
       chip.size = heroSize(sheet).name;
       // Phase 89 (ITEM-05): the item's whole damage bonus, the size step's
-      // plus its own `eff.dmg` bulk (Enlarge 11, the Gauntlet 2) — the same
-      // formula applyActivation's started event uses.
+      // plus its own `eff.dmg` bulk (Enlarge 11, the Gauntlet 6: Phase 93.1,
+      // ITEM-09, its +4 bulk) — the same formula applyActivation's started
+      // event uses.
       chip.dmgTotal = SIZE_DAMAGE_PER_STEP * act.eff.size + (typeof act.eff.dmg === "number" ? act.eff.dmg : 0);
     }
     out.push(chip);
@@ -2531,7 +2532,8 @@ export function weaponDamageTerms(c) {
   // (Phase 75.2, Plan 02): Enlarge is no longer a might-kind payload here —
   // it is a size step, read below through sizeDamage(c). Phase 89 (ITEM-05):
   // its +9 bulk arrives through eff(c, "dmg") (below) and its step through
-  // sizeDamage(c), +11 in all.
+  // sizeDamage(c), +11 in all. Phase 93.1 (ITEM-09): the Gauntlet of the
+  // Giant's +4 bulk arrives through the same eff(c, "dmg") term, +6 in all.
   bonus += potionMight(c);
   if (skill(c, "Heft")) bonus += 2;
   // DELIBERATE RULES CHANGE (04.1-02, 2026-09-09, RULE-02): the Master of

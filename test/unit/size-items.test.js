@@ -96,11 +96,12 @@ function enlargePotion() {
 
 // Phase 89 (ITEM-05): Enlarge's activation gains +9 bulk (`eff.dmg`) on top
 // of its one size step: before { size: 1 }, after { size: 1, dmg: 9 } (+11 in
-// all with the step's +2). The Gauntlet of the Giant is unchanged.
-test("ACTIVATION_OF.Enlarge is a +1 size step plus +9 bulk with no might; Strength is unchanged; the Gauntlet still carries eff.size 1", () => {
+// all with the step's +2). Phase 93.1 (ITEM-09, user ruling 2026-10-03): the
+// Gauntlet of the Giant carries +4 bulk on its one step, +6 in all (was eff { size: 1 }).
+test("ACTIVATION_OF.Enlarge is a +1 size step plus +9 bulk with no might; Strength is unchanged; the Gauntlet carries eff { size: 1, dmg: 4 } (Phase 93.1; was eff.size 1 alone)", () => {
   assert.deepStrictEqual(ACTIVATION_OF.Enlarge, { kind: "enlarge", effect: 50, eff: { size: 1, dmg: 9 } });
   assert.deepStrictEqual(ACTIVATION_OF.Strength, { kind: "might", effect: 25, might: 8 });
-  assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1 } });
+  assert.deepStrictEqual(ACTIVATION_OF["Gauntlet of the Giant"], { kind: "giant", effect: 50, cd: 50, eff: { size: 1, dmg: 4 } });
 });
 
 // =============================================================================
@@ -133,7 +134,8 @@ test("Strength then Enlarge: potionMight is 8 (Strength only) and the size step 
   assert.equal(sizeStepOf(state.c), 1);
 });
 
-test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +13 damage (the Gauntlet's 2 and Enlarge's 11; was +4, Phase 89), foe faces +2; a second Enlarge while the first is live leaves the step at 2", () => {
+// Phase 93.1 (ITEM-09, user ruling 2026-10-03): the Gauntlet's bulk makes the stacked total 6 + 11 = 17 (was 13).
+test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +17 damage (the Gauntlet's 6 and Enlarge's 11; was +13, Phase 93.1; +4 before Phase 89), foe faces +2; a second Enlarge while the first is live leaves the step at 2", () => {
   const humanDamage = weaponDamage(fixedFighter(), fakeRng([3]));
   const needState = fixedState({ c: fixedFighter() });
   needState.combat = { foes: [{ alive: true }] };
@@ -144,7 +146,7 @@ test("Gauntlet used and Enlarge drunk: a Human is step 2 (Huge), +13 damage (the
   useItem(state, 0, fakeRng([]), []); // drink Enlarge
   assert.equal(sizeStepOf(state.c), 2);
   assert.equal(heroSize(state.c).name, "Huge");
-  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 13);
+  assert.equal(weaponDamage(state.c, fakeRng([3])), humanDamage + 17);
   state.combat = { foes: [{ alive: true }] };
   assert.equal(foeToHitVs(state), humanNeed + 2);
 
@@ -204,6 +206,8 @@ test("itemEffectStarted for the Gauntlet on a Troll carries size Huge", () => {
   assert.equal(started.size, "Huge");
   assert.equal(started.step, 1);
   assert.equal(started.sizeDmg, 2);
+  // Phase 93.1 (ITEM-09): the whole bonus is the step's 2 plus the bulk's 4.
+  assert.equal(started.dmgTotal, 6);
 });
 
 test("itemEffectStarted for Strength carries might 8 and no size fields", () => {
