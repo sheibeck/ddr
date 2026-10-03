@@ -106,31 +106,31 @@ function cloaked({ wp, maxWP = 40, potions = 0, rations = 0 } = {}) {
   return state;
 }
 
-test("cloak: knitWindowHeal reads the item's own heal-over-time record (3 x d6 = 10.5), 0 for an item with none", () => {
-  assert.equal(knitWindowHeal(REGEN), 10.5);
+test("cloak: knitWindowHeal reads the item's own heal-over-time record (4 x d6 = 14: Phase 93, one at once), 0 for an item with none", () => {
+  assert.equal(knitWindowHeal(REGEN), 14);
   assert.equal(knitWindowHeal({ kind: "cloak", n: "Cloak of Armor" }), 0);
   assert.equal(knitWindowHeal(null), 0);
 });
 
 test("cloak: missing hp that covers the window's heal uses the cloak though the hero is above potionThreshold", () => {
   const ctx = ctxFresh();
-  // 28/40 = 0.70 >= 0.60: the old trigger would not fire; 12 missing >= 10.5.
-  const s = cloaked({ wp: 28 });
-  assert.ok(28 / 40 >= ctx.opts.potionThreshold);
+  // 26/40 = 0.65 >= 0.60: the old trigger would not fire; 14 missing >= 14.
+  const s = cloaked({ wp: 26 });
+  assert.ok(26 / 40 >= ctx.opts.potionThreshold);
   assert.deepStrictEqual(chooseFieldItem(s, ctx), { type: "useItem", slot: "cloak" });
   assert.deepStrictEqual(decideAction(s, FIRST, ctx), { type: "useItem", slot: "cloak" });
 });
 
 test("cloak: missing hp below the window's heal and above potionThreshold does not use it", () => {
   const ctx = ctxFresh();
-  // 30/40: 10 missing < 10.5, ratio 0.75 >= 0.60.
-  assert.equal(chooseFieldItem(cloaked({ wp: 30 }), ctx), null);
+  // 27/40: 13 missing < 14, ratio 0.675 >= 0.60.
+  assert.equal(chooseFieldItem(cloaked({ wp: 27 }), ctx), null);
   assert.equal(chooseFieldItem(cloaked({ wp: 40 }), ctx), null);
 });
 
 test("cloak: below potionThreshold the old trigger still fires (a small heart whose missing hp never reaches the window heal)", () => {
   const ctx = ctxFresh();
-  // 5/10: 5 missing < 10.5 but ratio 0.5 < 0.6.
+  // 5/10: 5 missing < 14 but ratio 0.5 < 0.6.
   assert.deepStrictEqual(chooseFieldItem(cloaked({ wp: 5, maxWP: 10 }), ctx), { type: "useItem", slot: "cloak" });
 });
 
@@ -155,7 +155,7 @@ test("cloak: with the hero's own knit window live the bot walks on instead of dr
   assert.deepStrictEqual(decideAction(bare, FIRST, ctxFresh()), { type: "drinkPotion" });
 });
 
-test("cloak: the window heals as the hero walks (at most three ticks), the premise of the wait", () => {
+test("cloak: the window heals as the hero walks (at most three walking ticks; the d6 at once was in the use's own events), the premise of the wait", () => {
   const s = newRun(1, [], { ...RUN_FLAGS });
   s.c.maxWP = 400;
   s.c.wp = 100;
@@ -197,10 +197,10 @@ function withParty(party) {
 
 test("cloak: a Joiner's ready worn cloak is used at the same missing-hp trigger; the potion rule (a third of its hp) is unchanged", () => {
   const ctx = ctxFresh();
-  // 28/40 = 0.70 above potionThreshold, 12 missing >= 10.5.
-  assert.deepStrictEqual(chooseMemberItem(withParty([joiner({ wp: 28 })]), ctx), { type: "memberUseItem", i: 0, slot: "cloak" });
-  // 30/40: 10 missing < 10.5 and ratio 0.75: not used.
-  assert.equal(chooseMemberItem(withParty([joiner({ wp: 30 })]), ctx), null);
+  // 26/40 = 0.65 above potionThreshold, 14 missing >= 14.
+  assert.deepStrictEqual(chooseMemberItem(withParty([joiner({ wp: 26 })]), ctx), { type: "memberUseItem", i: 0, slot: "cloak" });
+  // 27/40: 13 missing < 14 and ratio 0.675: not used.
+  assert.equal(chooseMemberItem(withParty([joiner({ wp: 27 })]), ctx), null);
   // below potionThreshold on a small heart: used by the old trigger.
   assert.deepStrictEqual(chooseMemberItem(withParty([joiner({ wp: 5, maxWP: 10 })]), ctx), { type: "memberUseItem", i: 0, slot: "cloak" });
   // the potion rule still wins at a third with a potion in hand.

@@ -159,7 +159,9 @@ const TRAPPED_PHOBIA_PANIC = 4;
 // cloak no longer exists, and the Cloak of Regeneration is use-activated.
 // Phase 88 (ITEM-03): using it starts a 30-square heal-over-time window (a d6
 // at 10, 20 and 30 squares; engine/items.js#tickHealOverTime, called from
-// move's squares tick), not an instant d6 and not an automatic per-step tick.
+// move's squares tick), not an automatic per-step tick. Phase 93 (ITEM-08, user
+// ruling B 2026-10-03): the use itself also heals a d6 at once (applyActivation,
+// the onUse tick); the three walking ticks above are unchanged.
 // isDeadEnd(f, x, y) — does (x,y) have exactly one (or zero) non-wall
 // orthogonal neighbor? MOVED to engine/phobias.js (Phase 41, TERR-04) since
 // the new phobia region model needs it too (its own leave-check for Being

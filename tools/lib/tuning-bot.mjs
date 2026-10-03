@@ -29,7 +29,7 @@
 import { newRun, applyAction } from "../../engine/engine.js";
 import { makeRng } from "../../engine/rng.js";
 import { canParley, songReady, liveFoes, fleeRefusal, parleyBlockedReason } from "../../engine/combat.js";
-import { canCast, neverFlees, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq } from "../../engine/derived.js";
+import { canCast, neverFlees, expectedStrike, armorBulk, DEATH_PANIC_THRESHOLD, inDark, itemEffectActive, activationFor, itemTimerId, WORN_SLOTS, wieldedStaff, hasTool, spellLevelSq, healTicksTotal } from "../../engine/derived.js";
 import { maxCharges, nightlyEats } from "../../engine/movement.js";
 import { rationsLeft, storeBuyRefusal } from "../../engine/economy.js";
 import { canEquipWeapon, canEquipArmor, weaponUpgradeDelta, armorUpgradeDelta, itemReady, toolIndex, TARGETED_KINDS } from "../../engine/items.js";
@@ -1147,13 +1147,15 @@ export function chooseCombatItem(state, ctx) {
  *   (2) a ready worn Cloak of Regeneration (kind "knit"), tried BEFORE a
  *       potion or camp (the caller places this call above both). Phase 92 plan
  *       01 (TUNE-10; 88-04 finding): the cloak is no longer a free instant heal.
- *       It heals a d6 at 10, 20 and 30 squares of walking (three ticks, expected
- *       `knitWindowHeal` = 10.5, read from the item's own `act.hot`), never in a
- *       fight. So it is used out of a fight once the missing hit points cover
- *       that expected heal (a use that would mostly heal air is not spent: it is
- *       fifty squares from ready again) OR the hero is below `potionThreshold`
- *       (the old trigger, kept for a small heart that can never miss 10.5), and
- *       never while a knit window is already live.
+ *       Phase 93 (ITEM-08, user ruling B 2026-10-03): it heals a d6 at once on
+ *       use, then a d6 at 10, 20 and 30 squares of walking (four ticks, expected
+ *       `knitWindowHeal` = 14, read from the item's own `act.hot` through
+ *       `healTicksTotal`); the bot never uses it in a fight. So it is used out
+ *       of a fight once the missing hit points cover that expected heal (the use
+ *       lands its first d6 at once, but a use that would mostly heal air is not
+ *       spent: it is fifty squares from ready again) OR the hero is below
+ *       `potionThreshold` (the old trigger, kept for a small heart that can never
+ *       miss 14), and never while a knit window is already live.
  * Rope/ladder stay on the existing `pendingHazard` answer (a decision the
  * engine already parked, not a timing tactic). All reads go through
  * `activationFor(it).kind` — never `it.use`. Pure, no rng.
@@ -1161,16 +1163,19 @@ export function chooseCombatItem(state, ctx) {
 /**
  * knitWindowHeal(it) — Phase 92 plan 01 (TUNE-10; 88-04): the expected hit points
  * one use of a heal-over-time item brings back over its whole window:
- * ticks x (heal.n x (heal.sides + 1) / 2 + heal.bonus), read from the item's own
- * `activationFor(it).hot` ({ every, ticks, heal { n, sides, bonus } }), never a
- * hard-coded 10/20/30 (the Cloak of Regeneration: 3 x 3.5 = 10.5). 0 for an item
- * with no (or a malformed) heal-over-time record. Pure, no rng.
+ * healTicksTotal(act) x (heal.n x (heal.sides + 1) / 2 + heal.bonus), read from the
+ * item's own `activationFor(it).hot` ({ every, ticks, onUse?, heal { n, sides,
+ * bonus } }), never a hard-coded 10/20/30. Phase 93 (ITEM-08, ruling B): the
+ * count includes the tick that lands at once on use, so the Cloak of
+ * Regeneration is 4 x 3.5 = 14 (it was three ticks before). 0 for an item with no
+ * (or a malformed) heal-over-time record. Pure, no rng.
  */
 export function knitWindowHeal(it) {
-  const hot = it ? activationFor(it)?.hot : null;
-  const h = hot && hot.heal;
-  if (!hot || !h || !(hot.ticks > 0) || !(h.n > 0) || !(h.sides > 0)) return 0;
-  return hot.ticks * ((h.n * (h.sides + 1)) / 2 + (h.bonus || 0));
+  const act = it ? activationFor(it) : null;
+  const h = act && act.hot && act.hot.heal;
+  const ticks = healTicksTotal(act);
+  if (!(ticks > 0) || !h || !(h.n > 0) || !(h.sides > 0)) return 0;
+  return ticks * ((h.n * (h.sides + 1)) / 2 + (h.bonus || 0));
 }
 
 /**
@@ -1220,7 +1225,8 @@ export function chooseFieldItem(state, ctx) {
  *       -> `{ type: "memberUseItem", i, potion: true }`;
  *   (2) else a ready worn Cloak of Regeneration (activation kind `knit`) when
  *       its missing hit points cover the window's expected heal (`knitWindowHeal`:
- *       it heals a d6 at 10, 20 and 30 squares of walking, not at once) or its HP
+ *       Phase 93 ITEM-08, a d6 at once on use and at 10, 20 and 30 squares of
+ *       walking, four ticks, 14 expected) or its HP
  *       ratio is below `ctx.opts.potionThreshold` (Phase 92 plan 01; 88-04
  *       finding), skipping an item `ctx.itemBlocked` carries and a Joiner whose own
  *       window is live -> `{ type: "memberUseItem", i, slot }`.
@@ -1532,8 +1538,9 @@ export function decideAction(state, policyRng, ctx) {
   // item and before the hero's potion and the camp gate below.
   const memberItem = chooseMemberItem(state, ctx);  if (memberItem) return memberItem;
   // Phase 92 plan 01 (TUNE-10; 88-04 finding): while the hero's own Cloak of
-  // Regeneration window is live the bot walks on and lets it heal (a d6 at 10, 20
-  // and 30 squares) instead of drinking a potion out of a fight; the camp gate
+  // Regeneration window is live the bot walks on and lets it heal (Phase 93,
+  // ITEM-08: the use's d6 landed at once, three more come at 10, 20 and 30
+  // squares) instead of drinking a potion out of a fight; the camp gate
   // below is unchanged.
   if (ratio < ctx.opts.potionThreshold && c.potions > 0 && !itemEffectActive(c, "knit")) return { type: "drinkPotion" }; // D-05
   // Phase 92 plan 01 (TUNE-10; 89-06 finding): the camp gate reads the whole party's

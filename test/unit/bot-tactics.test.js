@@ -808,7 +808,7 @@ test("chooseFieldItem: in the dark with no torch, a ready worn Amulet of Light i
 });
 
 // Phase 92 plan 01 (TUNE-10, 2026-10-01): the cloak is a heal over time (88-04), so it is also used
-// above potionThreshold once the missing hp covers its window's expected heal (10.5), and a potion
+// above potionThreshold once the missing hp covers its window's expected heal (14: Phase 93, four d6), and a potion
 // waits while its window is live; this probe's own setup (5 of 40) is below the threshold and still
 // holds. The new triggers are pinned in test/unit/bot-balance-close.test.js (the cloak: tests).
 test("chooseFieldItem: below potionThreshold, a ready worn Cloak of Regeneration is used (kind knit) — tried before a potion or camp", () => {

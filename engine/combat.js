@@ -2854,7 +2854,9 @@ export function alliesTurn(state, rng, events = []) {
  * critWard = Cloak of Strength, plate = Cloak of Armor, unseen = Anklet of
  * Invisibility, power = Ring of Power, giant = Gauntlet of the Giant) plus
  * invis (Cloak of Invisibility) and half (Pendant of Fortitude). Left out on
- * purpose: knit (Cloak of Regeneration) heals only by walking, and every
+ * purpose: knit (Cloak of Regeneration): Phase 93 (ITEM-08) its first d6 lands
+ * at once on use, which a round-1 opener at full hp would waste, and the other
+ * three heal only by walking. Also left out: every
  * MEMBER_LEADER_KINDS kind (ruling Q2: fly, ether, glow, tongue, stone stay the
  * leader's, so the Amulet of Stone is not here). Frozen; a test pins the list.
  */
