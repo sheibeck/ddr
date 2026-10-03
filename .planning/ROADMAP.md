@@ -201,10 +201,10 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every v2.3 truth guard pins the technical layer with the same rows, none dropped, and a number deliberately drifted in the technical layer still fails a test.
   4. Every spell and item plays exactly as before: no rule or number moved, and every snapshot that changed is a declared text-layer change.
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 
 - [x] 95-01-PLAN.md — the two-layer data shape: a pure name-to-flavour lookup, one keyed map per content file, and the re-pinned truth guards
-- [ ] 95-02-PLAN.md — the in-game technical layer: the shared RULES reveal component and the "Always show the rules" setting
+- [x] 95-02-PLAN.md — the in-game technical layer: the shared RULES reveal component and the "Always show the rules" setting
 - [ ] 95-03-PLAN.md — player layer batch 1: spells, the scroll, potions, tools
 - [ ] 95-04-PLAN.md — player layer batch 2: magic items, weapon types, armour types
 - [ ] 95-05-PLAN.md — the flavour on screen: Grimoire, combat SPELLS and ITEMS rows, the find card and the remaining surfaces
@@ -264,7 +264,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 |-------|----------------|--------|-----------|
 | 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
-| 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 1/5 | In Progress|  |
+| 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 2/5 | In Progress|  |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 0/TBD | Not started | - |
 | 97. Large-Screen Support | 0/TBD | Not started | - |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
