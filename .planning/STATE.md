@@ -4,17 +4,17 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 93
 current_phase_name: "Quick Wins: Harmful Chips First & Cloak Heals on Use"
-status: executing
-stopped_at: Completed 93-02-PLAN.md
-last_updated: "2026-10-03T14:47:29.645Z"
+status: verifying
+stopped_at: Completed 93-03-PLAN.md
+last_updated: "2026-10-03T15:00:47.926Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 93 execution started
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 14
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 Phase: 93 (Quick Wins: Harmful Chips First & Cloak Heals on Use) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-03 — Phase 93 execution started
-Progress: [███████░░░] 67% (0 of 6 phases)
+Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -290,8 +290,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T14:47:29.588Z
-Stopped at: Completed 93-02-PLAN.md
+Last session: 2026-10-03T15:00:47.832Z
+Stopped at: Completed 93-03-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -503,6 +503,7 @@ Resume file: None
 | Phase 88 P04 | 31 min | 3 tasks | 25 files |
 | Phase 93 P01 | 40min | 2 tasks | 7 files |
 | Phase 93 P02 | 75min | 3 tasks | 17 files |
+| Phase 93 P03 | 40min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -873,6 +874,7 @@ Resume file: None
 - [Phase ?]: 93-01: harmfulFirst partitions on engine polarity (not tone); applied in paintConditions and the hero branch of yourLotChipsFor only
 - [Phase ?]: 93-02: Cloak of Regeneration act.hot keeps ticks 3 (walking) and gains onUse true; healTicksTotal gives the of 4; instant tick uses derived stream tick key 0, so walking ticks roll unchanged
 - [Phase ?]: 93-02: ruling B fixtures measured: chargen seed 4 txt (text only), roll-high party-1 (text only), deep-14 (behaviour, bot step 10); six pins byte-identical
+- [Phase ?]: 93-03: the cloak's instant heal reuses the healTick line ('Tick 1 of 4'); start lines read itemEffectStarted.now; ITEM-AUDIT pin uses the unique title prefix because the full title contains the pin separator
 
 ### Blockers
 

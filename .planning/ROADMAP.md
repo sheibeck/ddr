@@ -122,11 +122,11 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. A Joiner who uses the cloak gets the same immediate tick and the same follow-ups, and taking the cloak off still stops any ticks left.
   4. A seeded run that never uses the cloak plays out identically before and after (the main rng does not move); any fixture that does move is declared; the fair bot plays the new cloak rule; and the ITEM-AUDIT row and the patch-notes entry say the same thing as the item.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 - [x] 93-01-PLAN.md
 - [x] 93-02-PLAN.md
-- [ ] 93-03-PLAN.md
+- [x] 93-03-PLAN.md
 
 **UI hint**: yes
 
@@ -229,7 +229,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 2/3 | In Progress|  |
+| 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | In Progress|  |
 | 94. Ability States You Can Tell Apart | 0/TBD | Not started | - |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 0/TBD | Not started | - |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 0/TBD | Not started | - |
