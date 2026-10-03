@@ -201,7 +201,13 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every v2.3 truth guard pins the technical layer with the same rows, none dropped, and a number deliberately drifted in the technical layer still fails a test.
   4. Every spell and item plays exactly as before: no rule or number moved, and every snapshot that changed is a declared text-layer change.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+- [ ] 95-01-PLAN.md — the two-layer data shape: a pure name-to-flavour lookup, one keyed map per content file, and the re-pinned truth guards
+- [ ] 95-02-PLAN.md — the in-game technical layer: the shared RULES reveal component and the "Always show the rules" setting
+- [ ] 95-03-PLAN.md — player layer batch 1: spells, the scroll, potions, tools
+- [ ] 95-04-PLAN.md — player layer batch 2: magic items, weapon types, armour types
+- [ ] 95-05-PLAN.md — the flavour on screen: Grimoire, combat SPELLS and ITEMS rows, the find card and the remaining surfaces
 **UI hint**: yes
 
 ### Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review
