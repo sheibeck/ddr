@@ -3,8 +3,9 @@
 // Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05; CONTEXT 'Data shape and guards'
 // tests one and two, and 'Tone'): the player layer is complete and number-free,
 // so rules cannot creep back into it. Table-driven over FLAVOR_DOMAINS, so
-// Phase 96 only appends a domain. Until 95-08 a domain whose map is not
-// exported yet is skipped BY NAME (95-08 makes absence a failure).
+// Phase 96 only appends a domain. Since 95-08 a domain whose map is missing
+// fails by name: the layer is complete (8 domains, 111 entries) and every
+// per-domain test runs.
 //
 // Per domain: every content key has a non-empty line, the map has no key
 // outside the content keys. Per line: no digit, no percent sign, no die token
@@ -18,7 +19,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { FLAVOR_DOMAINS } from "../../src/browser/flavorText.js";
+import { FLAVOR_DOMAINS, everyFlavorLine } from "../../src/browser/flavorText.js";
 import { SPELLS, POTIONS, TOOLS, TOOL_ORDER, BAG_ITEMS, JEWELRY, CLOAKS, STAVES, NICHE_LABELS } from "../../content/index.js";
 
 // ---------------------------------------------------------------------------
@@ -60,6 +61,18 @@ function shapeProblems(line) {
 
 const problemsOf = (line) => [...numberProblems(line), ...shapeProblems(line)];
 
+/** missingMaps(domains) — "<exportName> (<module>)" for every domain whose map is not a non-null object. */
+function missingMaps(domains) {
+  return domains.filter((d) => { const m = d.lines(); return !m || typeof m !== "object"; }).map((d) => `${d.exportName} (${d.module})`);
+}
+
+/** mapOf(d) — the domain's map, failing by name when it is missing. */
+function mapOf(d) {
+  const m = d.lines();
+  assert.ok(m && typeof m === "object", `${d.exportName} (${d.module}) is not exported: every domain must export its map (95-08)`);
+  return m;
+}
+
 // ---------------------------------------------------------------------------
 // the rules text each domain's lines must differ from
 // ---------------------------------------------------------------------------
@@ -83,6 +96,20 @@ test("the layer has eight domains covering 111 content keys", () => {
   assert.equal(FLAVOR_DOMAINS.length, 8);
   assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 111);
   for (const d of FLAVOR_DOMAINS) assert.ok(d.id && d.module && d.exportName, `${d.id}: id, module and exportName`);
+});
+
+test("the layer is complete: all 8 domains export their map, 111 entries", () => {
+  assert.equal(FLAVOR_DOMAINS.length, 8);
+  assert.deepEqual(missingMaps(FLAVOR_DOMAINS), [], "every domain must export its map (95-08)");
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 111);
+  assert.equal(everyFlavorLine().length, 111);
+});
+
+test("teeth: a domain whose map is missing is named by the completeness check", () => {
+  const spell = FLAVOR_DOMAINS.find((d) => d.id === "spell");
+  assert.deepEqual(missingMaps([{ ...spell, lines: () => undefined }]), ["SPELL_FLAVOR (content/spells.js)"]);
+  assert.deepEqual(missingMaps([{ ...spell, lines: () => null }]), ["SPELL_FLAVOR (content/spells.js)"]);
+  assert.deepEqual(missingMaps([{ ...spell, lines: () => ({}) }]), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -111,10 +138,8 @@ test("teeth: doctored lines fail the same predicates, the accepted Heal line pas
 // ---------------------------------------------------------------------------
 
 for (const d of FLAVOR_DOMAINS) {
-  const m = d.lines();
-  const skip = m ? false : `${d.exportName} (${d.module}) is not exported yet: its batch has not landed (95-08 makes absence a failure)`;
-
-  test(`${d.id}: every content key has a non-empty flavour line and there is no orphan key`, { skip }, () => {
+  test(`${d.id}: every content key has a non-empty flavour line and there is no orphan key`, () => {
+    const m = mapOf(d);
     const keys = d.keys();
     for (const k of keys) {
       assert.ok(Object.prototype.hasOwnProperty.call(m, k), `${d.exportName}: missing key "${k}"`);
@@ -126,15 +151,18 @@ for (const d of FLAVOR_DOMAINS) {
     assert.equal(Object.keys(m).length, keys.length);
   });
 
-  test(`${d.id}: no flavour line states a number, a die or a percentage`, { skip }, () => {
+  test(`${d.id}: no flavour line states a number, a die or a percentage`, () => {
+    const m = mapOf(d);
     for (const [k, line] of Object.entries(m)) assert.deepEqual(numberProblems(line), [], `${d.exportName}["${k}"]: ${line}`);
   });
 
-  test(`${d.id}: every flavour line is one tidy sentence of at most ${MAX_LEN} characters`, { skip }, () => {
+  test(`${d.id}: every flavour line is one tidy sentence of at most ${MAX_LEN} characters`, () => {
+    const m = mapOf(d);
     for (const [k, line] of Object.entries(m)) assert.deepEqual(shapeProblems(line), [], `${d.exportName}["${k}"]: ${line}`);
   });
 
-  test(`${d.id}: no flavour line repeats its rules text or opens with its niche label`, { skip }, () => {
+  test(`${d.id}: no flavour line repeats its rules text or opens with its niche label`, () => {
+    const m = mapOf(d);
     const rules = RULES_TXT[d.id];
     for (const [k, line] of Object.entries(m)) {
       if (rules && typeof rules[k] === "string") assert.notEqual(line, rules[k], `${d.exportName}["${k}"] equals its rules text`);
@@ -153,8 +181,7 @@ for (const d of FLAVOR_DOMAINS) {
 test("no two flavour lines in the whole layer are equal", () => {
   const seen = new Map();
   for (const d of FLAVOR_DOMAINS) {
-    const m = d.lines();
-    if (!m) continue;
+    const m = mapOf(d);
     for (const [k, line] of Object.entries(m)) {
       const where = `${d.id}/${k}`;
       assert.ok(!seen.has(line), `"${line}" appears at ${seen.get(line)} and ${where}`);
