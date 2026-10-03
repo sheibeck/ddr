@@ -119,6 +119,8 @@
 //     offense spells instead of "three more faces").
 // No DOM structure moved; only the strings the content tables now hold.
 //
+// Phase 95 (FLAVOR-01, FLAVOR-05), Plan 05: one declared regeneration, mu.hero: each Grimoire row's italic line now reads the spell's niche label and flavour line, followed by a RULES toggle (collapsed) and its hidden rules body holding the exact old text (txt plus the resist sentence). thief.hero (no Grimoire) and every other fixture stay byte-identical.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

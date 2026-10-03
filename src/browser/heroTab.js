@@ -54,6 +54,10 @@ import { WORN_SLOTS, activationFor, itemTimerId } from "../../engine/derived.js"
 import { MEMBER_LEADER_KINDS, TARGETED_KINDS } from "../../engine/items.js";
 import { remaining } from "../../engine/effects.js";
 import { itemStatLines, ITEM_STAT_COPY } from "./viewModels.js";
+// Phase 95 (FLAVOR-01, plan 05) — a SEPARATE import block: the Grimoire shows the spell's flavour line and mounts the
+// shared RULES toggle (the exact old text behind it).
+import { flavorOfSpell } from "./flavorText.js";
+import { mountRules } from "./rulesLayer.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -437,6 +441,8 @@ export function grimoireViewModel(state) {
         // the shell can group/badge by niche without parsing txt.
         niche: sp.niche,
         nicheLabel: NICHE_LABELS[sp.niche] ?? sp.niche,
+        // Phase 95 (FLAVOR-01): the player-layer line, looked up by name (never stored on the spell). ADDITIVE: txt and resistNote above stay byte-identical, the rules fields every guard reads.
+        flavor: flavorOfSpell(sp.n),
         combatOnly: !!sp.combatOnly,
         castable,
         disabledReason,
@@ -569,7 +575,14 @@ function renderGrimoire(doc, state, deps) {
     // niche line is already the FIRST thing the <i> renders. innerHTML
     // stays safe here because row.txt/row.name are content, not user data
     // (T-40-10, unchanged since 04-DR10).
-    info.innerHTML = `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.txt}${row.resistNote ? ` · ${row.resistNote}` : ""}</i>`;
+    // Phase 95 (FLAVOR-01, plan 05): with a flavour line the <i> reads `nicheLabel · flavour` (the niche label stays as the leading
+    // category tag, Claude's discretion named in 95-05: a category word, not a rule) and the exact old line (txt plus the resist
+    // sentence) sits behind the RULES toggle under it; with none, today's markup exactly and nothing mounted.
+    const rulesText = `${row.txt}${row.resistNote ? ` · ${row.resistNote}` : ""}`;
+    info.innerHTML = row.flavor
+      ? `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.nicheLabel} · ${row.flavor}</i>`
+      : `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${rulesText}</i>`;
+    if (row.flavor) mountRules(doc, info, { id: "grim:" + row.name, name: row.name, rules: rulesText });
     li.appendChild(info);
     if (row.combatOnly) {
       const hint = doc.createElement("span");
