@@ -31,7 +31,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Cloak of Regeneration (todo)
 
-- [ ] **ITEM-08**: Using the Cloak of Regeneration heals one tick immediately, then continues the every-N-squares ticks (ruling A — one of the three — or B — a fourth — decided in discuss-phase); the tick draws from the heal-over-time stream, never the main rng; Joiners follow the same rule; item text, chip, narration + rail twin, ITEM-AUDIT row, patch notes and the fair bot's cloak model are updated; any moved fixture is declared
+- [x] **ITEM-08**: Using the Cloak of Regeneration heals one tick immediately, then continues the every-N-squares ticks (ruling A — one of the three — or B — a fourth — decided in discuss-phase); the tick draws from the heal-over-time stream, never the main rng; Joiners follow the same rule; item text, chip, narration + rail twin, ITEM-AUDIT row, patch notes and the fair bot's cloak model are updated; any moved fixture is declared
 
 ### Gauntlet of the Giant (player report #6, added 2026-10-03)
 
@@ -73,7 +73,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CHIP-01 | Phase 93 | Complete |
-| ITEM-08 | Phase 93 | Pending |
+| ITEM-08 | Phase 93 | Complete |
 | ITEM-09 | Phase 93.1 | Pending |
 | ASTATE-01 | Phase 94 | Pending |
 | ASTATE-02 | Phase 94 | Pending |
