@@ -32,11 +32,12 @@ import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { SPELL_FLAVOR } from "../../content/spells.js";
 import { newRun } from "../../engine/state.js";
-import { rollJewel } from "../../engine/items.js";
+import { rollJewel, rollBlade, rollMailPiece, stowItem, toolItem } from "../../engine/items.js";
+import { BAG_ITEMS, BAG_ORDER } from "../../content/index.js";
 import { offerFind } from "../../engine/encounters.js";
 import { makeRng } from "../../engine/rng.js";
-import { renderGearTab, GEAR_COPY, gearWornModel } from "../../src/browser/gearTab.js";
-import { usableBy, itemStatLines, wornItemFor, bagArmorText } from "../../src/browser/viewModels.js";
+import { renderGearTab, GEAR_COPY, gearWornModel, bagUsage, renderCarriedList } from "../../src/browser/gearTab.js";
+import { usableBy, itemStatLines, wornItemFor, bagArmorText, dropShelfRows, lootCompare } from "../../src/browser/viewModels.js";
 import { storeRowLayer } from "../../src/browser/storeScreen.js";
 import { renderGearSheet, gearSheetModel, GEAR_SHEET_IDS } from "../../src/browser/gearSheet.js";
 import { scrollReadOdds } from "../../src/browser/rollOdds.js";
@@ -666,4 +667,161 @@ test("(o) Your gear sell list: each flavoured row shows its flavour with a colla
   tap(findAll(lis[0], "mw-rules-btn")[0]);
   const second = paintStore(state, first);
   assert.equal(findAll(second.sell.children[0], "mw-rules-body")[0].hidden, false, "open after a second renderEncounter");
+});
+
+// ─── Plan 07: the bag-full drop shelf and the loot card's list ────────────
+
+// bagState and findScenario are copied by value from find-card-full-bag.test.js (the drop shelf's real find card).
+function fullBagState({ seed = 7, extra = [] } = {}) {
+  const state = newRun(seed, [], { force: { cls: "Fighter" } });
+  const largest = BAG_ORDER[BAG_ORDER.length - 1];
+  stowItem(state, { ...BAG_ITEMS[largest] }, [], true);
+  const rng = makeRng(31);
+  const makers = [() => rollBlade(rng, 3, true), () => rollMailPiece(rng), () => rollJewel(rng), () => toolItem("rope"), () => rollBlade(rng, 5, false)];
+  for (const it of extra) stowItem(state, it, [], true);
+  let k = 0;
+  while (bagUsage(state.c).slots - bagUsage(state.c).have > 0) {
+    stowItem(state, makers[k++ % makers.length](), [], true);
+    assert.ok(k < 100, "the bag fills");
+  }
+  return state;
+}
+
+function findShelf(state, find) {
+  offerFind(state, find, []);
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, stubRail: false });
+  const drops = [];
+  sandbox.context.window.mzDropItem = (i) => drops.push(i);
+  sandbox.setState(state);
+  sandbox.context.window.__mzPendingNarration = null;
+  sandbox.context.renderRail();
+  const linesEl = doc.document.getElementById("mw-rail-lines");
+  const region = linesEl.children.find((el) => hasClass(el, "mw-find-drop"));
+  assert.ok(region, "the drop region is rendered");
+  return { doc, sandbox, region, drops };
+}
+
+test("(p) drop shelf (find card): a flavoured row is a RULES wrapper around the Drop button; the flavour is in the button, the body holds the stat line, the toggle never drops", () => {
+  const state = fullBagState();
+  const rows = dropShelfRows(state.c);
+  const { region, drops } = findShelf(state, rollBlade(makeRng(5), 4, true));
+  assert.equal(region.children.length, rows.length);
+  let flavoured = 0;
+  region.children.forEach((el, n) => {
+    const row = rows[n];
+    const flavor = flavorOfItem(row.it);
+    if (!flavor) {
+      assert.equal(el.tagName, "button", "an unflavoured row is the bare button, as before");
+      return;
+    }
+    flavoured++;
+    assert.ok(hasClass(el, "mw-rules-wrap"), `row ${n} is wrapped`);
+    const [button, toggle, body] = el.children;
+    assert.ok(hasClass(button, "goods"));
+    const tag = usableBy(row.it, state.c);
+    assert.equal(italicOf(button), tag ? `${flavor} ${tag}` : flavor);
+    assert.equal(findAll(button, "mw-rules-btn").length, 0, "the toggle is never inside the Drop button");
+    assert.ok(hasClass(toggle, "mw-rules-btn"));
+    assert.equal(toggle.getAttribute("aria-expanded"), "false");
+    assert.equal(body.hidden, true);
+    assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [row.stats]);
+  });
+  assert.ok(flavoured >= 3, "the fixture bag holds several flavoured items");
+
+  // A toggle tap opens the body and drops nothing; a clean tap on the button drops that row's true index.
+  const wrap = region.children.find((el) => hasClass(el, "mw-rules-wrap"));
+  tap(wrap.children[1]);
+  assert.equal(wrap.children[2].hidden, false);
+  assert.deepEqual(drops, []);
+  wrap.children[0].onclick();
+  assert.deepEqual(drops, [rows[region.children.indexOf(wrap)].i]);
+
+  clearRulesOpen();
+  setAlwaysRules(true);
+  const on = findShelf(fullBagState(), rollBlade(makeRng(5), 4, true));
+  const w2 = on.region.children.find((el) => hasClass(el, "mw-rules-wrap"));
+  assert.equal(findAll(w2, "mw-rules-btn").length, 0);
+  assert.equal(w2.children[1].hidden, false);
+});
+
+/**
+ * The loot card's list. The recording document cannot parse the card's innerHTML (the host the branch queries for #loot-list), so the sandbox cannot
+ * reach the loot branch; renderCarriedList is called directly with the SAME options object the branch passes, read from mazeworld.html's source
+ * (not retyped), evaluated with the branch's own `c` and window.__mzLootCompare.
+ */
+function lootOptions(c) {
+  const head = 'window.__mzCarriedList(wrap.querySelector("#loot-list"), S, S.pendingLoot, ';
+  const from = HTML.indexOf(head);
+  assert.ok(from >= 0, "the loot branch's options object is in mazeworld.html");
+  const start = from + head.length;
+  const end = HTML.indexOf(", tabDeps());", start);
+  const literal = HTML.slice(start, end);
+  assert.ok(literal.startsWith("{") && literal.endsWith("}") && literal.includes("adviceFor"), "the options literal");
+  const window = { __mzLootCompare: lootCompare };
+  return new Function("window", "c", "return (" + literal + ");")(window, c);
+}
+
+function paintLoot(state) {
+  const doc = createRecordingDocument();
+  const list = doc.document.createElement("ul");
+  list.id = "loot-list";
+  const deps = { guardTap: (button, fn) => { button.onclick = fn; } };
+  renderCarriedList(list, state, state.pendingLoot, lootOptions(state.c), deps);
+  return { doc, list };
+}
+
+const italicsOf = (li) => li.children.filter((n) => String(n.tagName).toLowerCase() === "i");
+
+test("(q) loot list: a flavoured row shows its flavour, the take-or-leave advice on its own line, and the exact old line behind RULES", () => {
+  const state = newRun(9, [], { force: { cls: "Fighter" } });
+  const blade = rollBlade(makeRng(5), 4, true);
+  const jewel = rollJewel(makeRng(6));
+  state.pendingLoot = [blade, jewel];
+  const { list } = paintLoot(state);
+  assert.equal(list.children.length, 2);
+
+  const [bladeLi, jewelLi] = list.children;
+  const cmp = lootCompare(state.c, blade);
+  const oldBlade = (cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line) + (cmp.usable ? ` ${cmp.usable}` : "");
+  const bladeItalics = italicsOf(bladeLi);
+  assert.equal(textOf(bladeItalics[0]), flavorOfItem(blade));
+  assert.equal(bladeItalics.length, 2, "the advice sits on its own second line");
+  assert.equal(textOf(bladeItalics[1]), [cmp.line, cmp.usable].filter(Boolean).join(" "));
+  assert.match(textOf(bladeItalics[1]), /upgrade|can't use/);
+  assert.deepEqual(findAll(bladeLi, "mw-rules-line").map(textOf), [oldBlade]);
+  assert.equal(findAll(bladeLi, "mw-rules-body")[0].hidden, true);
+
+  const jewelItalics = italicsOf(jewelLi);
+  assert.equal(textOf(jewelItalics[0]), flavorOfItem(jewel));
+  assert.equal(jewelItalics.length, 1, "a jewel has no advice, so no second line");
+  assert.deepEqual(findAll(jewelLi, "mw-rules-line").map(textOf), [jewel.txt]);
+
+  // The Take and Leave buttons are still the row's own buttons, after the toggle and body.
+  assert.ok(bladeLi.children.some((n) => n.tagName === "button" && textOf(n) === "Leave"));
+  tap(findAll(bladeLi, "mw-rules-btn")[0]);
+  assert.equal(findAll(bladeLi, "mw-rules-body")[0].hidden, false);
+});
+
+test("(r) tolerant: a bagged old-save Cloak of Healing appears on the drop shelf and the loot list exactly as before, with no toggle", () => {
+  const state = fullBagState({ extra: [OLD_CLOAK] });
+  const rows = dropShelfRows(state.c);
+  const n = rows.findIndex((r) => r.it.n === "Cloak of Healing");
+  assert.ok(n >= 0, "the old cloak is on the drop shelf");
+  for (const on of [false, true]) {
+    setAlwaysRules(on);
+    const { region } = findShelf(structuredClone(state), rollBlade(makeRng(5), 4, true));
+    const el = region.children[n];
+    assert.equal(el.tagName, "button", "bare button, no wrapper");
+    assert.equal(findAll(el, "mw-rules-btn").length, 0);
+    assert.ok(String(el.innerHTML).includes("Cloak of Healing"));
+  }
+
+  setAlwaysRules(false);
+  const loot = newRun(9, [], { force: { cls: "Fighter" } });
+  loot.pendingLoot = [OLD_CLOAK];
+  const { list } = paintLoot(loot);
+  const li = list.children[0];
+  assert.equal(findAll(li, "mw-rules-btn").length + findAll(li, "mw-rules-body").length, 0);
+  assert.equal(textOf(italicsOf(li)[0]), lootCompare(loot.c, OLD_CLOAK).line);
 });

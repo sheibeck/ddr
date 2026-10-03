@@ -353,7 +353,7 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze([
       "mazeworld.html (classic: renderActionArea — the combat SPELLS and ITEMS rows' RULES toggle)",
       "mazeworld.html (classic: renderRail — the find card's RULES line)",
-      "mazeworld.html (classic: renderDropShelf and the loot card — the drop list's and loot list's RULES toggle)",
+      "mazeworld.html (classic: renderDropShelf — the drop list's RULES toggle; the loot list's toggle comes through src/browser/gearTab.js#renderCarriedList's own import)",
     ]),
     purpose: "Bridges src/browser/rulesLayer.js (the one RULES reveal component and the Always show the rules state) and src/browser/flavorText.js (the name-to-flavour lookup) so the classic-script surfaces show flavour first and the exact rules one tap away, with no second copy of either (Phase 95, FLAVOR-05).",
   }),
@@ -446,7 +446,10 @@ export const BRIDGE = Object.freeze({
   }),
   __mzUsableBy: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — loot/find usable-by suffix; the store reaches it directly now, via src/browser/storeScreen.js's own viewModels.js import)"]),
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderEncounter — loot/find usable-by suffix; the store reaches it directly now, via src/browser/storeScreen.js's own viewModels.js import)",
+      "mazeworld.html (classic: renderDropShelf — the drop list's usable-by tag beside the flavour, Phase 95)",
+    ]),
     purpose: "Bridges the pure usable-by-class predicate so every item row's usable-by suffix (loot, find, and — indirectly, via storeScreen.js's own import — the store) reads one shared rule.",
   }),
 });

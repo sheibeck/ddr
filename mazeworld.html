@@ -260,6 +260,8 @@ ul.skills li b{font-family:var(--mono);font-size:calc(0.71875rem * var(--mw-text
 ul.skills li i{font-family:var(--body);font-style:normal;font-size:calc(0.84375rem * var(--mw-text-scale));line-height:1.35;color:var(--ink-soft)}
 ul.skills li.none{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--ink-soft);padding:2px 0 2px 8px}
 /* Phase 38 (ABIL-01/04) — the abilities list's provenance tag/state suffix. */
+/* Phase 95 (FLAVOR-02/05): a column-flex li would stretch the RULES toggle full width. */
+ul.skills li>.mw-rules-btn{align-self:flex-start}
 ul.skills li small{font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));letter-spacing:.03em;color:var(--ink-soft)}
 ul.skills li span{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--moss)}
 /* Phase 94 (ASTATE-01): the Hero tab's in-combat ability rows carry the same four edges on the left rule, 4px so dashed and dotted read. */
@@ -1119,6 +1121,11 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-find-drop .g-n{min-width:0;overflow-wrap:anywhere;font-weight:700;color:var(--ink)}
 .mw-find-drop .g-n i{font-weight:400;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin-top:3px}
 .mw-find-drop .g-c{align-self:center}
+/* Phase 95 (FLAVOR-02/05): a flavoured drop row sits in a .mw-rules-wrap (the Drop button, a RULES toggle beside it, the body beneath); the wrap carries the divider the bare button carried. */
+.mw-find-drop>.mw-rules-wrap{border-bottom:1px solid var(--rule)}
+.mw-find-drop>.mw-rules-wrap:first-child{border-top:1px solid var(--rule)}
+.mw-find-drop>.mw-rules-wrap>.goods{align-items:flex-start;border:0;padding:10px 6px}
+.mw-find-drop>.mw-rules-wrap>.mw-rules-btn{align-self:center}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
@@ -4379,9 +4386,16 @@ function renderDropShelf(shelf, entries) {
     // for armour) comes first; the old sub is the fallback for an item the
     // formatter has nothing to say about.
     const biSub = stats || (bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt);
-    row.innerHTML = `<span class="g-n">${bi.n}${biSub ? `<i>${biSub}</i>` : ""}</span><span class="g-c">Drop</span>`;
+    // Phase 95 (FLAVOR-02/05): a flavoured row shows its flavour (then its usable-by tag) in the italic slot and the exact old line sits
+    // behind a RULES toggle. The flavour and the tag are content strings, the same trust as bi.n.
+    const flavor = window.__mzRules.flavorOfItem(bi);
+    const tag = flavor ? window.__mzUsableBy(bi, S.c) : "";
+    const biLine = flavor ? (tag ? `${flavor} ${tag}` : flavor) : biSub;
+    row.innerHTML = `<span class="g-n">${bi.n}${biLine ? `<i>${biLine}</i>` : ""}</span><span class="g-c">Drop</span>`;
     row.onclick = () => { if (dropShelfDragged(shelf)) return; window.mzDropItem?.(i); };
-    shelf.appendChild(row);
+    // Phase 95: the RULES toggle sits beside the Drop button, never inside it (orchestrator ruling recorded in 95-02); the list's bounded
+    // scroll and drag guard are unchanged. An entry with no flavour is appended exactly as before.
+    shelf.appendChild(flavor ? window.__mzRules.wrap(document, row, { id: "drop:" + i + ":" + bi.n, name: bi.n, rules: biSub }) : row);
   });
 }
 
@@ -5744,6 +5758,13 @@ function renderEncounter() {
           subFor: (it) => {
             const cmp = window.__mzLootCompare(c, it);
             return (cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line) + (cmp.usable ? ` ${cmp.usable}` : "");
+          },
+          // Phase 95 (FLAVOR-02, orchestrator): the loot row shows its flavour; the take-or-leave advice (the upgrade verdict, a can't-use
+          // reason, the bag-slot comparison, the usable-by tag) stays visible on its own line; the row's exact old line sits behind RULES.
+          adviceFor: (it) => {
+            const cmp = window.__mzLootCompare(c, it);
+            const verdict = it.kind === "weapon" || it.kind === "armor" || it.kind === "bag" || cmp.legal === false ? cmp.line : "";
+            return [verdict, cmp.usable].filter(Boolean).join(" ");
           },
         }, tabDeps());
         const dropShelf = wrap.querySelector("#loot-drop-shelf");

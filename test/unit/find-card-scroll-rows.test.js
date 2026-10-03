@@ -36,6 +36,7 @@ import url from "node:url";
 
 import { dropShelfRows } from "../../src/browser/viewModels.js";
 import { bagUsage } from "../../src/browser/gearTab.js";
+import { flavorOfItem } from "../../src/browser/flavorText.js";
 import { BAG_ITEMS, BAG_ORDER } from "../../content/index.js";
 import { newRun } from "../../engine/state.js";
 import { stowItem, rollBlade, rollMailPiece, rollJewel, toolItem } from "../../engine/items.js";
@@ -209,9 +210,21 @@ test("(c) every row is still one tap target: a single <button> per item, the nam
   const { region } = r.parts();
   const rows = dropShelfRows(r.state.c);
   region.children.forEach((el, n) => {
-    assert.equal(el.tagName, "button");
-    assert.ok(el.innerHTML.startsWith(`<span class="g-n">${rows[n].name}<i>`), `row ${n}: the name first`);
-    assert.ok(el.innerHTML.includes(rows[n].stats), `row ${n}: its stat line`);
+    // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row is a div.mw-rules-wrap whose FIRST child is the one Drop button; the name and
+    // the flavour are inside that button, the stat line sits in the wrap's RULES body, and the toggle is the button's sibling, never inside it.
+    const wrapped = String(el.className).split(/\s+/).includes("mw-rules-wrap");
+    const btn = wrapped ? el.children[0] : el;
+    assert.equal(btn.tagName, "button");
+    assert.ok(btn.innerHTML.startsWith(`<span class="g-n">${rows[n].name}<i>`), `row ${n}: the name first`);
+    if (wrapped) {
+      assert.ok(String(btn.className).split(/\s+/).includes("goods"), `row ${n}: the first child is the Drop button`);
+      assert.ok(!btn.innerHTML.includes("mw-rules-btn"), `row ${n}: the toggle is never inside the button`);
+      assert.ok(btn.innerHTML.includes(flavorOfItem(rows[n].it)), `row ${n}: its flavour`);
+      const body = el.children.find((x) => String(x.className).split(/\s+/).includes("mw-rules-body"));
+      assert.deepEqual(body.children.map((p) => p.textContent), [rows[n].stats], `row ${n}: its stat line in the RULES body`);
+    } else {
+      assert.ok(btn.innerHTML.includes(rows[n].stats), `row ${n}: its stat line`);
+    }
   });
 });
 
@@ -235,19 +248,24 @@ test("(d) a drag that scrolls the list never presses a row; a clean tap afterwar
   assert.equal(typeof region.onpointerdown, "function");
   assert.equal(typeof region.onpointermove, "function");
   assert.equal(typeof region.onscroll, "function");
+  // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: the row the test presses is the Drop button inside the row's RULES wrapper.
+  const press = () => {
+    const el = region.children[3];
+    (String(el.className).split(/\s+/).includes("mw-rules-wrap") ? el.children[0] : el).onclick();
+  };
   drag(region, 80);
-  region.children[3].onclick();
+  press();
   assert.deepEqual(r.drops, [], "the click a drag leaves behind is swallowed");
   // A scroll alone (the browser took the gesture, no pointermove) also counts.
   region.onpointerdown({ clientX: 200, clientY: 600 });
   region.scrollTop += 40;
   region.onscroll();
-  region.children[3].onclick();
+  press();
   assert.deepEqual(r.drops, []);
   // A clean tap: down and up in place.
   region.onpointerdown({ clientX: 200, clientY: 600 });
   region.onpointermove({ clientX: 203, clientY: 604 });
-  region.children[3].onclick();
+  press();
   assert.deepEqual(r.drops, [dropShelfRows(r.state.c)[3].i]);
 });
 

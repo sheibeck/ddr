@@ -167,9 +167,18 @@ test("(b) the largest bag full, a weapon found: item lines first, then the bound
 
   const rows = dropShelfRows(state.c);
   assert.equal(r.region.children.length, rows.length);
-  r.region.children.forEach((rowEl, n) => {
+  r.region.children.forEach((el, n) => {
+    // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row is a div.mw-rules-wrap whose first child is the Drop button (name and
+    // flavour inside it); its stat line sits in the wrap's RULES body. A row with no flavour is the bare button, as before.
+    const wrapped = String(el.className).split(/\s+/).includes("mw-rules-wrap");
+    const rowEl = wrapped ? el.children[0] : el;
     assert.ok(rowEl.innerHTML.includes(rows[n].name), `row ${n} names ${rows[n].name}`);
-    assert.ok(rowEl.innerHTML.includes(rows[n].stats), `row ${n} carries its stat line`);
+    if (wrapped) {
+      const body = el.children.find((x) => String(x.className).split(/\s+/).includes("mw-rules-body"));
+      assert.deepEqual(body.children.map((p) => p.textContent), [rows[n].stats], `row ${n} carries its stat line in its RULES body`);
+    } else {
+      assert.ok(rowEl.innerHTML.includes(rows[n].stats), `row ${n} carries its stat line`);
+    }
     rowEl.onclick();
   });
   assert.deepEqual(r.drops, rows.map((row) => row.i), "each row drops its own item by its true index");
@@ -209,7 +218,11 @@ test("(d) after a drop the card re-renders with the found item still first and t
   // Re-pinned by quick 260928-fcs: the first line is the head's first child.
   assert.ok(String(r.linesEl.children[0].children[0].textContent).startsWith(find.n), "the found item is still first");
   assert.equal(r.region.children.length, after.length);
-  r.region.children.forEach((el, n) => assert.ok(el.innerHTML.includes(after[n].name), `row ${n} is ${after[n].name}`));
+  // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row's button is the first child of its RULES wrapper.
+  r.region.children.forEach((el, n) => {
+    const btn = String(el.className).split(/\s+/).includes("mw-rules-wrap") ? el.children[0] : el;
+    assert.ok(btn.innerHTML.includes(after[n].name), `row ${n} is ${after[n].name}`);
+  });
 });
 
 // ─── (e) CSS ────────────────────────────────────────────────────────────────
