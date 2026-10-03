@@ -35,7 +35,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Gauntlet of the Giant (player report #6, added 2026-10-03)
 
-- [ ] **ITEM-09**: Using the Gauntlet of the Giant is worth its downside: its size step's damage bonus (ruled in discuss-phase, with the Enlarge potion's 2.3.0 fix as the yardstick) makes foes +1 to hit you a fair trade; the item text, chip, ITEM-AUDIT row, patch notes and the fair bot follow, Joiners get the same numbers, and any moved fixture is declared; GitHub issue #6 closes when the fix ships
+- [x] **ITEM-09**: Using the Gauntlet of the Giant is worth its downside: its size step's damage bonus (ruled in discuss-phase, with the Enlarge potion's 2.3.0 fix as the yardstick) makes foes +1 to hit you a fair trade; the item text, chip, ITEM-AUDIT row, patch notes and the fair bot follow, Joiners get the same numbers, and any moved fixture is declared; GitHub issue #6 closes when the fix ships
 
 ### Fantasy-flavour text (todo)
 
@@ -74,7 +74,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 |-------------|-------|--------|
 | CHIP-01 | Phase 93 | Complete |
 | ITEM-08 | Phase 93 | Complete |
-| ITEM-09 | Phase 93.1 | Pending |
+| ITEM-09 | Phase 93.1 | Complete |
 | ASTATE-01 | Phase 94 | Pending |
 | ASTATE-02 | Phase 94 | Pending |
 | ASTATE-03 | Phase 94 | Pending |

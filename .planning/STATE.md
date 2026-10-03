@@ -4,17 +4,17 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 93.1
 current_phase_name: Gauntlet of the Giant Worth Wearing
-status: executing
-stopped_at: Completed 93-03-PLAN.md
-last_updated: "2026-10-03T15:32:40.721Z"
+status: verifying
+stopped_at: Completed 93.1-01-PLAN.md
+last_updated: "2026-10-03T15:50:00.139Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 93 complete, transitioned to Phase 93.1
+last_activity_desc: Phase 93.1 execution started
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 14
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+  percent: 29
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 93 — Quick Wins: Harmful Chips First & Cloak Heals on Use
+**Current focus:** Phase 93.1 — Gauntlet of the Giant Worth Wearing
 
 ## Current Position
 
-Phase: 93.1 — Gauntlet of the Giant Worth Wearing
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-03 — Phase 93 complete, transitioned to Phase 93.1
+Phase: 93.1 (Gauntlet of the Giant Worth Wearing) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-10-03 — Phase 93.1 execution started
 Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
@@ -290,8 +290,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-03T15:00:47.832Z
-Stopped at: Completed 93-03-PLAN.md
+Last session: 2026-10-03T15:50:00.102Z
+Stopped at: Completed 93.1-01-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -504,6 +504,7 @@ Resume file: None
 | Phase 93 P01 | 40min | 2 tasks | 7 files |
 | Phase 93 P02 | 75min | 3 tasks | 17 files |
 | Phase 93 P03 | 40min | 3 tasks | 11 files |
+| Phase 93.1 P01 | 70min | 3 tasks | 29 files |
 
 ## Decisions
 
@@ -875,6 +876,7 @@ Resume file: None
 - [Phase ?]: 93-02: Cloak of Regeneration act.hot keeps ticks 3 (walking) and gains onUse true; healTicksTotal gives the of 4; instant tick uses derived stream tick key 0, so walking ticks roll unchanged
 - [Phase ?]: 93-02: ruling B fixtures measured: chargen seed 4 txt (text only), roll-high party-1 (text only), deep-14 (behaviour, bot step 10); six pins byte-identical
 - [Phase ?]: 93-03: the cloak's instant heal reuses the healTick line ('Tick 1 of 4'); start lines read itemEffectStarted.now; ITEM-AUDIT pin uses the unique title prefix because the full title contains the pin separator
+- [Phase ?]: 93.1-01: the Gauntlet of the Giant is +6 damage (size step +2 plus +4 bulk on the row's eff, { size: 1, dmg: 4 }); engine and bot change in comments only; foes +1, 50/50, price 1,200 unchanged
 
 ### Blockers
 

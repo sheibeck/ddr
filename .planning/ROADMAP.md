@@ -143,7 +143,9 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. A seeded run that never uses the Gauntlet plays out identically before and after; any fixture that moves is declared; the fair bot reads the new numbers; and the 2.4.0 patch-notes draft names the change.
   4. GitHub issue #6 is closed with a note once the release that carries the fix ships (Enlarge was fixed in 2.3.0, the Gauntlet in 2.4.0).
 
-**Plans**: TBD
+**Plans**: 1/1 plans executed
+
+- [x] 93.1-01-PLAN.md
 
 ### Phase 94: Ability States You Can Tell Apart
 
