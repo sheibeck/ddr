@@ -462,7 +462,7 @@ where noted above:
 | Anklet of Invisibility (260918-w4n) | unseen | 50 | 50 | `{ foeToHit: -2 }` while live |
 | Helm of Knowledge (260918-w4n) | tongue | 50 | 50 | `{ tongue: 1 }` while live |
 | Bracelet of Flight (260918-w4n) | fly | 20 | 50 | `{ fly: 1 }` while live — mirrors the Cloak of Flying exactly |
-| Cloak of Regeneration (260918-w4n; Phase 88) | knit | 30 (heal-over-time: a d6 at 10, 20 and 30 squares, derived stream) | 50 | Phase 88 (ITEM-03), user 2026-09-30: "The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." Was 0 effect (an instant `rng.d(6)`) / 20 cd; 30 + 50 = 80 keeps the once-a-day rule |
+| Cloak of Regeneration (260918-w4n; Phase 88; Phase 93) | knit | 30 (heal-over-time: a d6 at once on use, then at 10, 20 and 30 squares, derived stream) | 50 | Phase 88 (ITEM-03), user 2026-09-30: "The cloak should be active for 30 squares, healing 1d6 every 10 squares. Then it goes on cooldown for 50 squares." Was 0 effect (an instant `rng.d(6)`) / 20 cd; 30 + 50 = 80 keeps the once-a-day rule. Phase 93 (ITEM-08), user ruling B 2026-10-03: a fourth d6 at once on use (`act.hot.onUse`); price unchanged (1,400). |
 | Cloak of Strength (260918-w4n; quick 260928-cos) | critWard (was brace) | 50 | 50 | `{ critWard: 1 }` while live: a foe's critical on the wearer lands as an ordinary hit (was `{ noCrit: 1 }`, misread as the wearer's own crit ban) |
 | Cloak of Armor (260918-w4n) | plate | 50 | 50 | `{ cloakArmor: 1 }` while live |
 
@@ -473,8 +473,11 @@ where noted above:
 `tickSquares`). For every hot row `every * ticks` equals the effect length and
 `effect + cd <= 100`. Each die comes from a derived stream keyed
 `"healTick"`, never the main stream; a 2-square water step that crosses a mark
-ticks once; there are no ticks in a fight. The Cloak of Regeneration is the
-first hot row (`every 10, ticks 3, heal 1d6`).
+ticks once; there are no walking ticks in a fight. The Cloak of Regeneration is the
+first hot row (`every 10, ticks 3, heal 1d6`). Phase 93 (ITEM-08): `act.hot.onUse: true`
+adds one tick at the use itself, in or out of a fight, from the same stream (tick key 0);
+`ticks` stays the walking count, so `every * ticks` still equals the effect length. The
+Cloak of Regeneration is `every 10, ticks 3, onUse, heal 1d6`: four d6 a use.
 
 **Charges + recharge** (STAVES rows; `effect` only where the use has its
 own duration) — source: Claude's discretion per the CONTEXT's explicit
@@ -642,7 +645,7 @@ is pure and draws nothing. One item per Joiner in round 1.
 
 **Item timers and heal-over-time (89-05).** Every Joiner's `c.timers` tick on
 every step after the hero's (water included), and its Cloak of Regeneration
-heals a d6 at 10, 20 and 30 squares from the member-keyed derived stream.
+heals a d6 at 10, 20 and 30 squares from the member-keyed derived stream. Phase 93 (ITEM-08): since then a Joiner's own cloak also heals a d6 at once on use (member-keyed stream, tick key 0).
 
 **Joiner armour soaks like the hero's (89-04).** A foe's swing or bolt on a
 Joiner goes through `engine/combat.js#applyFoeDamageToMember`, the twin of

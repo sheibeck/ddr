@@ -7818,6 +7818,8 @@ Verdicts: `plays it` (the bot path exists and was read), `fixed here (92-01)` (t
 
 Bot findings (none needs an engine change): a Thief's round-1 `opener` slot is shared by Dirty Trick, Silent Step, Hamstring and Mark and `chooseAbility` takes the first ready one in kit order, so a Silent Step is only played in round 1 when it comes first; the Joiner camp stall (see the first row) is the only stall shape the probes found and it is gone.
 
+**Phase 93 (ITEM-08, 2026-10-03):** the Cloak of Regeneration now heals a d6 at once on use, then at 10, 20 and 30 squares. `knitWindowHeal` reads `healTicksTotal` from the item's own activation: 4 x 3.5 = 14 (the trigger is now 14 missing hp, or below `potionThreshold`). The moved pins are declared in test/parity/FIXTURE-INVENTORY.md (Phase 93 plan 02). No bot pass ran (v2.4 plans none).
+
 ### Phase 92 — what this measures
 
 The milestone's balance-moving changes, measured together on one tree. The standing rule ran no bot mid-milestone, so **no per-phase split is claimed**: every number below is the sum of all of these, on top of the Phase 79.2 lock.
