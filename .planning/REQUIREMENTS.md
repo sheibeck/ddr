@@ -33,6 +33,10 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 - [x] **ITEM-08**: Using the Cloak of Regeneration heals one tick immediately, then continues the every-N-squares ticks (ruling A — one of the three — or B — a fourth — decided in discuss-phase); the tick draws from the heal-over-time stream, never the main rng; Joiners follow the same rule; item text, chip, narration + rail twin, ITEM-AUDIT row, patch notes and the fair bot's cloak model are updated; any moved fixture is declared
 
+### Joiner level (user, added 2026-10-03)
+
+- [ ] **JOIN-01**: A Joiner's level follows the floor it is met on, one level per three floors, at least 1 and at most 5 (floors 1–3 → 1, 4–6 → 2, 7–9 → 3, 10–12 → 4, 13+ → 5; exact or as a cap on today's roll, ruled in discuss-phase); its hp, abilities, Joiner lines, the fair bot and the patch notes follow, and any moved fixture is declared
+
 ### Gauntlet of the Giant (player report #6, added 2026-10-03)
 
 - [x] **ITEM-09**: Using the Gauntlet of the Giant is worth its downside: its size step's damage bonus (ruled in discuss-phase, with the Enlarge potion's 2.3.0 fix as the yardstick) makes foes +1 to hit you a fair trade; the item text, chip, ITEM-AUDIT row, patch notes and the fair bot follow, Joiners get the same numbers, and any moved fixture is declared; GitHub issue #6 closes when the fix ships
@@ -80,6 +84,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | ASTATE-03 | Phase 94 | Complete |
 | ASTATE-04 | Phase 94 | Complete |
 | ASTATE-05 | Phase 94 | Complete |
+| JOIN-01 | Phase 94.1 | Pending |
 | FLAVOR-01 | Phase 95 | Pending |
 | FLAVOR-02 | Phase 95 | Pending |
 | FLAVOR-05 | Phase 95 | Pending |
@@ -96,7 +101,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | SHOTS-02 | Phase 98 | Pending |
 | SHOTS-03 | Phase 98 | Pending |
 
-**Coverage:** 23 requirements — mapped: 23 — unmapped: 0 (roadmap created 2026-10-03; ITEM-09 added 2026-10-03 with inserted Phase 93.1; all Pending)
+**Coverage:** 24 requirements — mapped: 24 — unmapped: 0 (roadmap created 2026-10-03; ITEM-09 added 2026-10-03 with inserted Phase 93.1; JOIN-01 added 2026-10-03 with inserted Phase 94.1)
 
 ---
 *Requirements defined: 2026-10-03*

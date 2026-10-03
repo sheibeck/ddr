@@ -26,6 +26,7 @@
 - [x] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once. (completed 2026-10-03)
 - [x] **Phase 93.1: Gauntlet of the Giant Worth Wearing** (INSERTED) - Using the Gauntlet's size step hits hard enough to be worth foes getting +1 to hit you (player report #6). (completed 2026-10-03)
 - [x] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour. (completed 2026-10-03)
+- [ ] **Phase 94.1: Joiner Level Follows Depth** (INSERTED) - A Joiner's level comes from the floor: one level per three floors, 1 to 5.
 - [ ] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach.
 - [ ] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review.
 - [ ] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run.
@@ -170,6 +171,20 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] 94-05-PLAN.md
 
 **UI hint**: yes
+
+### Phase 94.1: Joiner Level Follows Depth (INSERTED)
+
+**Goal**: A Joiner you meet is about as experienced as a hero is at that depth: level 1 on floors 1–3, 2 on 4–6, 3 on 7–9, 4 on 10–12 and 5 from floor 13 (one level per three floors, at least 1, at most 5).
+**Depends on**: Phase 94 (sequencing only; inserted 2026-10-03 by the user, todo `2026-10-03-joiner-level-follows-depth`). Today `engine/encounters.js:605` rolls the level on SPELL_LEVEL_TABLE (d10), capped only at the floor depth, so a depth-4 Joiner can be level 4 while the hero is still level 1. This is an engine rule change: if the d10 draw goes away, the main rng moves for every Joiner encounter, so moved fixtures are measured, declared and regenerated (or the draw is kept and its value ignored). The Joiner's abilities (`grantLevelAbilities`), hp, `joinerMet` line, the fair bot and the patch notes follow the new level.
+**Requirements**: JOIN-01
+**Open decisions (discuss-phase)**: is the depth band the level exactly, or a cap on today's roll ("at most depth/3")? Keep or drop the d10 draw (fixture impact)? Do Joiners already in the party level up as you descend (not asked; default no)?
+**Success Criteria** (what must be TRUE):
+
+  1. A Joiner met on floors 1–3 is level 1, on 4–6 level 2, on 7–9 level 3, on 10–12 level 4, and on 13 or deeper level 5 (or at most that, per the ruling), and its hp and abilities match that level.
+  2. The joinerMet line, the Joiner card and the Company panel show that level.
+  3. A seeded run with no Joiner encounter plays out identically; every fixture that moves is declared; the fair bot reads the new levels; the 2.4.0 DRAFT patch notes name the change.
+
+**Plans**: TBD
 
 ### Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items
 

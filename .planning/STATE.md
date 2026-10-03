@@ -6,15 +6,15 @@ current_phase: 95
 current_phase_name: "Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items"
 status: planning
 stopped_at: Completed 94-05-PLAN.md
-last_updated: "2026-10-03T18:31:32.905Z"
+last_updated: "2026-10-03T20:39:13.231Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 94 complete, transitioned to Phase 95
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 3
-  total_plans: 9
+  total_plans: 14
   completed_plans: 9
-  percent: 43
+  percent: 38
 ---
 
 # Project State
@@ -168,6 +168,7 @@ detail; the backlog phases are the index.
 - v2.4 roadmap created 2026-10-03: Phases 93–98 (22 requirements), promoted from backlog 999.17 (large screens), 999.18 (screenshots), 999.20 (ability states) and the three 2026-10-02 todos (bad chips first, cloak tick on use, fantasy-flavour text). Order: 93 quick wins (CHIP-01 view-layer; ITEM-08 is the one rule change, so the cloak's final text exists before the flavour pass) → 94 ability states (ASTATE-04 is additive engine-derived state) → 95-96 the flavour pass split in two (95 builds the two-layer text model for every domain, re-pins every v2.3 truth guard to the technical layer, and rewrites spells, scrolls, equipment, items and potions; 96 rewrites races, sub-classes, abilities and chip explanations and closes with the safety scan and narrative review) → 97 large-screen support (after the UI and text surfaces are final, so layouts, shell snapshots and the perf baseline are done once; the largest phase, splittable at the rotation-foundation / layouts seam) → 98 screenshots (last by user ruling). Open decisions for discuss-phase: 93 cloak ruling A (one of three) vs B (a fourth tick); 94 state names, colour tokens and non-colour cues; 95 where the exact numbers live in game and the data shape; 96 how a flavour blurb carries good and bad while the identity guard pins both; 97 phones portrait-only (runtime Settings preference) vs free rotation, the landscape play layout, the tablet/foldable/Chromebook layout, and whether to absorb the deferred 80-05 emulator pass; 98 the shot list. No research pass. Phase numbering continues from v2.3 (last phase 92.4).
 - Phase 91.2 inserted after Phase 91.1: Board Identity: Play Games names replace rolled handles (user 2026-09-30: unique names friends recognize, no re-roll; chose Play Games over unique rolled handles after the trade-offs; 2.2.0 clients refused until update; this milestone, before release)
 - Phase 93.1 inserted after Phase 93: Gauntlet of the Giant Worth Wearing: the unfixed half of GitHub player report #6 (Enlarge fixed in 2.3.0; the Gauntlet's +2 damage still isn't worth foes +1 to hit). User ruling 2026-10-03 while closing fixed player reports; ITEM-09.
+- Phase 94.1 inserted after Phase 94: Joiner Level Follows Depth: one level per three floors, 1 to 5 (user 2026-10-03, captured as a todo and added to v2.4; JOIN-01).
 
 ## Deferred Items
 
