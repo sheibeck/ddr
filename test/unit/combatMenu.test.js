@@ -32,6 +32,8 @@ import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 // the "only additions" acceptance criterion for this file stays exact.
 import { ABILITY_BY_ID } from "../../content/index.js";
 import { startEffect, startCooldown } from "../../engine/effects.js";
+// Phase 95 (FLAVOR-01/02/05, plan 05): the rows that have flavour gain additive lead/rules/rulesId; pinned against the real lookups.
+import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "../../src/browser/flavorText.js";
 
 // Phase 37 (GEAR-03): a Poplar Staff (worn activatable), used as the fixed
 // staff literal across the "worn activatables" section below. Phase 39
@@ -439,8 +441,9 @@ test("ITEMS: potion + scroll + a carried item recharging, title and usable count
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 2 USABLE");
   assert.equal(vm.actions[2].sub, "2 usable");
   assert.deepEqual(vm.submenus.items.rows, [
-    { id: "potion", label: "POTION", cost: "2 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: true, dispatch: { type: "drinkPotion" } },
-    { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`, enabled: true, dispatch: { type: "readScroll" } },
+    // Phase 95 (FLAVOR-01/02/05): declared re-pin: the potion and scroll rows gain the additive lead/rules/rulesId (desc and every other field unchanged).
+    { id: "potion", label: "POTION", cost: "2 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: true, dispatch: { type: "drinkPotion" }, lead: flavorOf("potion", "Healing"), rules: COMBAT_MENU_COPY.potionDesc, rulesId: "combat:potion" },
+    { id: "scroll", label: "SCROLL", cost: "1 LEFT", desc: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`, enabled: true, dispatch: { type: "readScroll" }, lead: flavorOfScroll(), rules: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`, rulesId: "combat:scroll" },
     { id: "item-0", label: "PINE STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
   ]);
 });
@@ -495,11 +498,12 @@ test("ITEMS: a bagged activatable staff recharging appears after the potion row,
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
   assert.equal(vm.actions[2].sub, "1 usable");
   assert.deepEqual(vm.submenus.items.rows, [
-    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
+    // Phase 95 (FLAVOR-01/02/05): declared re-pin: the potion and worn rows gain the additive lead/rules/rulesId; the NOT WIELDED reason row gains nothing.
+    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" }, lead: flavorOf("potion", "Healing"), rules: COMBAT_MENU_COPY.potionDesc, rulesId: "combat:potion" },
     { id: "item-0", label: "POPLAR STAFF", cost: COMBAT_MENU_COPY.notWielded, desc: COMBAT_MENU_COPY.notWieldedDesc, enabled: false, dispatch: { type: "useItem", i: 0 } },
     // CMBUI-14 re-pin (Phase 77): a worn row reads `EQUIPPED · <state>`
     // (before: "READY"; after: "EQUIPPED · READY").
-    { id: "worn-jewelry1", label: "RING OF POWER", cost: `${COMBAT_MENU_COPY.equipped} · READY`, desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" } },
+    { id: "worn-jewelry1", label: "RING OF POWER", cost: `${COMBAT_MENU_COPY.equipped} · READY`, desc: "+1 damage", enabled: true, dispatch: { type: "useItem", slot: "jewelry1" }, lead: flavorOfItem({ n: "Ring of Power", kind: "jewel" }), rules: "+1 damage", rulesId: "combat:worn:jewelry1:Ring of Power" },
   ]);
 });
 
@@ -547,7 +551,8 @@ test("ITEMS: a wielded staff gets its own EQUIPPED row, dispatches by slot, and 
   assert.equal(vm.submenus.items.title, "TEST DELVER · ITEMS · 1 USABLE");
   assert.equal(vm.actions[2].sub, "1 usable");
   assert.deepEqual(vm.submenus.items.rows, [
-    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" } },
+    // Phase 95 (FLAVOR-01/02/05): declared re-pin: the potion and wielded-staff rows gain the additive lead/rules/rulesId.
+    { id: "potion", label: "POTION", cost: "0 LEFT", desc: COMBAT_MENU_COPY.potionDesc, enabled: false, dispatch: { type: "drinkPotion" }, lead: flavorOf("potion", "Healing"), rules: COMBAT_MENU_COPY.potionDesc, rulesId: "combat:potion" },
     {
       id: "worn-weapon",
       label: "BIRCH STAFF",
@@ -555,6 +560,9 @@ test("ITEMS: a wielded staff gets its own EQUIPPED row, dispatches by slot, and 
       desc: "freezes up to 2 squares of opponents indefinitely",
       enabled: true,
       dispatch: { type: "useItem", slot: "weapon" },
+      lead: flavorOfItem({ n: "Birch Staff", kind: "staff" }),
+      rules: "freezes up to 2 squares of opponents indefinitely",
+      rulesId: "combat:worn:weapon:Birch Staff",
     },
   ]);
 });
@@ -975,4 +983,80 @@ test("(Phase 90 plan 09) Door Illusion: enabled for a hero who may flee, with th
   const door = rows.find((r) => r.label === "DOOR ILLUSION");
   assert.equal(door.enabled, true);
   assert.ok(door.desc.includes("Target resists on"), "Door Illusion is cast on foes: a resist reads on the row");
+});
+
+// ─── Phase 95 (FLAVOR-01/02/05; plan 05): the flavour layer on the SPELLS and ITEMS rows ──────
+
+test("(Phase 95) a spell row's desc is the pre-phase formula byte for byte; lead opens with the niche label and rules hold the txt", () => {
+  const foe = { name: "Target", type: "Humans", lvl: 1, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 };
+  const c = { cls: "Magic User", sub: "Wizard", level: 1, grimoire: ["Heal", "Freeze"], spellsUsed: 0 };
+  const rows = combatMenuViewModel(fixedState({ c, combat: fixedCombat([foe]) })).submenus.spells.rows;
+  assert.equal(rows.length, 2);
+  for (const row of rows) {
+    const sp = SPELLS.find((s) => s.n.toUpperCase() === row.label);
+    const resistTail = spellTargetsFoe(sp) ? ` · ${GRIMOIRE_COPY.resistNote}` : "";
+    assert.ok(row.desc.startsWith(`${sp.txt || ""}${resistTail}`), `${sp.n}: desc keeps today's text`);
+    assert.ok(flavorOfSpell(sp.n).length > 0, `${sp.n} has a flavour line`);
+    assert.ok(row.lead.startsWith(`${NICHE_LABELS[sp.niche]} · ${flavorOfSpell(sp.n)}`), `${sp.n}: lead starts with its niche label and flavour`);
+    assert.equal(row.rules, `${sp.txt || ""}${resistTail}`, `${sp.n}: rules are exactly the old text without the live hint`);
+    assert.equal(row.rulesId, `combat:spell:${sp.n}`);
+    assert.equal(row.cost, `LVL ${spellLevelFor(c.sub, sp)}`, "the functional tag stays");
+  }
+  const freeze = rows.find((r) => r.label === "FREEZE");
+  assert.ok(freeze.lead.includes("Target resists on"), "the live resist hint stays visible in the lead");
+  assert.ok(!freeze.rules.includes("Target resists on"), "the live hint is not part of the rules");
+  const heal = rows.find((r) => r.label === "HEAL");
+  assert.equal(heal.lead, `${NICHE_LABELS[SPELLS.find((s) => s.n === "Heal").niche]} · ${flavorOfSpell("Heal")}`);
+});
+
+test("(Phase 95) a blocked Door Illusion row's lead starts with its blocked reason; its rules hold only the txt", () => {
+  const foe = { name: "Target", type: "Humans", lvl: 1, size: "S", intel: 10, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 };
+  const c = { cls: "Magic User", sub: "Illusionist", level: 1, grimoire: ["Door Illusion"], spellsUsed: 0 };
+  const open = combatMenuViewModel(fixedState({ c, combat: fixedCombat([foe]) })).submenus.spells.rows.find((r) => r.label === "DOOR ILLUSION");
+  assert.equal(open.blocked, undefined);
+  // A hero who never flees is refused the door (engine/combat.js#fleeRefusal): force the verdict through the sub-class the predicate reads.
+  const samurai = combatMenuViewModel(fixedState({ c: { ...c, sub: "Samurai" }, combat: fixedCombat([foe]) })).submenus.spells.rows.find((r) => r.label === "DOOR ILLUSION");
+  assert.ok(samurai, "the blocked row is still listed");
+  assert.equal(samurai.blocked, "samurai");
+  assert.ok(samurai.lead.startsWith(COMBAT_MENU_COPY.doorBlocked.samurai), samurai.lead);
+  assert.ok(samurai.desc.startsWith(COMBAT_MENU_COPY.doorBlocked.samurai), "desc keeps the blocked reason first too");
+  const sp = SPELLS.find((s) => s.n === "Door Illusion");
+  assert.equal(samurai.rules, sp.txt || "");
+  assert.equal(samurai.enabled, false);
+  assert.ok(open.lead.startsWith(`${NICHE_LABELS[sp.niche]} · `), open.lead);
+});
+
+test("(Phase 95) the NOT EQUIPPED reason row has no flavour, no rules and no rulesId; a ready carried item leads with its flavour", () => {
+  const c = {
+    potions: 0, scrolls: 0, wp: 40,
+    items: [
+      { n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" },
+      { n: "Pine Staff", kind: "staff", use: "fire", charges: 1, txt: "a bolt" },
+    ],
+    worn: { jewelry1: null, jewelry2: null, cloak: null },
+  };
+  const rows = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) })).submenus.items.rows;
+  const ring = rows.find((r) => r.id === "item-0");
+  assert.equal(ring.cost, COMBAT_MENU_COPY.notEquipped);
+  assert.equal(ring.desc, COMBAT_MENU_COPY.notEquippedDesc);
+  assert.equal(ring.rules, undefined);
+  assert.equal(ring.lead, undefined);
+  assert.equal(ring.rulesId, undefined);
+  const staff = rows.find((r) => r.id === "item-1");
+  assert.equal(staff.rules, undefined, "the NOT WIELDED reason row gets nothing either");
+  // A ready carried item (a torch-free bag potion-like activatable) leads with its flavour and keeps its old desc as the rules.
+  const ready = combatMenuViewModel(fixedState({ c: { potions: 0, scrolls: 0, wp: 40, items: [{ n: "Cloak of Speed", kind: "cloak", use: "speed", txt: "quick" }] }, combat: fixedCombat([]) })).submenus.items.rows.find((r) => r.id === "item-0");
+  assert.equal(ready.lead, flavorOfItem({ n: "Cloak of Speed", kind: "cloak" }));
+  assert.ok(ready.lead.length > 0);
+  assert.equal(ready.desc, "quick");
+  assert.equal(ready.rules, "quick");
+  assert.equal(ready.rulesId, "combat:item:0:Cloak of Speed");
+});
+
+test("(Phase 95) a ready item with no rules text to hide keeps today's row: no lead, no rules", () => {
+  const c = { potions: 0, scrolls: 0, wp: 40, items: [{ n: "Cloak of Speed", kind: "cloak", use: "speed", txt: "" }] };
+  const row = combatMenuViewModel(fixedState({ c, combat: fixedCombat([]) })).submenus.items.rows.find((r) => r.id === "item-0");
+  assert.equal(row.desc, "");
+  assert.equal(row.lead, undefined);
+  assert.equal(row.rules, undefined);
 });

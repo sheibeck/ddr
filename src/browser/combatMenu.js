@@ -22,6 +22,18 @@ import { canParley, parleyBlockedReason, fleeRefusal, singState, SONG_GAP_ROUNDS
 import { abilityState } from "../../engine/abilities.js";
 import { abilityStateLabel } from "./abilityStates.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
+// Phase 95 (FLAVOR-01/02/05, plan 05) — a SEPARATE import line: the flavour lookups the SPELLS and ITEMS rows read.
+import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "./flavorText.js";
+
+/**
+ * withFlavor(row, { lead, rules, rulesId }) — Phase 95 (FLAVOR-01/02/05; CONTEXT 'Where the exact numbers live', orchestrator
+ * rulings). The one place the layering rule is written for combat rows: the row's cost tag stays the functional tag (no new
+ * numeric tag), the desc slot shows `lead` (flavour first; a blocked reason and the live resist hint stay in it, visible), and
+ * the exact rules sit behind the RULES toggle the shell mounts beside the row. `desc` is NEVER changed here (every reader and
+ * guard still sees today's text); the three fields are ADDITIVE and appear only when there is flavour AND rules text to hide,
+ * so a row without flavour (or a reason, ability or social row, which never call this) renders exactly as before.
+ */
+const withFlavor = (row, { lead, rules, rulesId }) => (lead && rules ? { ...row, lead, rules, rulesId } : row);
 
 /** COMBAT_MENU_COPY — every literal string this module emits (voice-scanned by test/unit/combatMenu.test.js). */
 export const COMBAT_MENU_COPY = Object.freeze({
@@ -276,7 +288,14 @@ function combatMenuViewModelUnlocked(state) {
       // castRefused line, which spends no charge.
       const blockedBy = sp.kind === "tongue" ? parleyBlockedReason(state, sp.fluency) : sp.kind === "door" ? fleeRefusal(state) : null;
       const blockedLine = blockedBy ? (sp.kind === "tongue" ? COMBAT_MENU_COPY.tongueBlocked : COMBAT_MENU_COPY.doorBlocked)[blockedBy] : null;
-      return {
+      // Phase 95 (FLAVOR-01): lead = [blocked reason ·] niche label · flavour [· live resist hint]; rules = the old desc without the
+      // blocked reason and without the live hint (the spell's txt, plus the resist sentence for a foe-targeted spell it is not blocked on).
+      const spellFlavor = flavorOfSpell(sp.n);
+      const spellNiche = NICHE_LABELS[sp.niche] ?? sp.niche;
+      const foeHint = !blockedLine && spellTargetsFoe(sp) && resistHint ? ` · ${resistHint}` : "";
+      const spellLead = spellFlavor ? `${blockedLine ? `${blockedLine} · ` : ""}${spellNiche} · ${spellFlavor}${foeHint}` : "";
+      const spellRules = `${sp.txt || ""}${!blockedLine && spellTargetsFoe(sp) ? ` · ${GRIMOIRE_COPY.resistNote}` : ""}`;
+      return withFlavor({
         id: `spell-${idx}`,
         label: sp.n.toUpperCase(),
         cost: `LVL ${spellLevelFor(c.sub, sp)}`,
@@ -289,7 +308,7 @@ function combatMenuViewModelUnlocked(state) {
         enabled: charges > 0 && !blockedBy,
         ...(blockedBy ? { blocked: blockedBy } : {}),
         dispatch: { type: "castSpell", idx },
-      };
+      }, { lead: spellLead, rules: spellRules, rulesId: `combat:spell:${sp.n}` });
     });
     let noSpellRow = null;
     if (!spellRows.length) {
@@ -414,14 +433,18 @@ function combatMenuViewModelUnlocked(state) {
               enabled: false,
               dispatch: { type: "useItem", i },
             }
-          : {
-              id: `item-${i}`,
-              label: String(it.n).toUpperCase(),
-              cost: itemRowState(state, it).text,
-              desc: it.txt || "",
-              enabled: true,
-              dispatch: { type: "useItem", i },
-            },
+          : // Phase 95 (FLAVOR-02): the ready variant leads with the item's flavour; its old desc is the RULES text. The two reason rows above get nothing. The id carries the bag index so two same-named items never share a toggle or a DOM id.
+            withFlavor(
+              {
+                id: `item-${i}`,
+                label: String(it.n).toUpperCase(),
+                cost: itemRowState(state, it).text,
+                desc: it.txt || "",
+                enabled: true,
+                dispatch: { type: "useItem", i },
+              },
+              { lead: flavorOfItem(it), rules: it.txt || "", rulesId: `combat:item:${i}:${it.n}` },
+            ),
     );
   // Phase 37 (GEAR-03) + 260918-w4n: worn activatables must be worn to work
   // in the worn-slot model, so a worn cloak/jewel must be reachable from the
@@ -439,14 +462,18 @@ function combatMenuViewModelUnlocked(state) {
   };
   const wornRows = WORN_SLOTS.filter((slot) => c.worn && activationFor(c.worn[slot])).map((slot) => {
     const it = c.worn[slot];
-    return {
-      id: `worn-${slot}`,
-      label: String(it.n).toUpperCase(),
-      cost: equippedCost(it),
-      desc: it.txt || "",
-      enabled: true,
-      dispatch: { type: "useItem", slot },
-    };
+    // Phase 95 (FLAVOR-02): flavour leads, the old desc is the RULES text (id carries the slot: a worn and a bagged copy of one jewel never share a toggle).
+    return withFlavor(
+      {
+        id: `worn-${slot}`,
+        label: String(it.n).toUpperCase(),
+        cost: equippedCost(it),
+        desc: it.txt || "",
+        enabled: true,
+        dispatch: { type: "useItem", slot },
+      },
+      { lead: flavorOfItem(it), rules: it.txt || "", rulesId: `combat:worn:${slot}:${it.n}` },
+    );
   });
   // RULES-13 (Phase 75): the WIELDED staff (never in `c.items`, so it is
   // never one of `carriedRows` above) gets its own row beside `wornRows` —
@@ -456,14 +483,18 @@ function combatMenuViewModelUnlocked(state) {
   const staff = wieldedStaff(c);
   const staffRows = staff
     ? [
-        {
-          id: "worn-weapon",
-          label: String(staff.n).toUpperCase(),
-          cost: `${COMBAT_MENU_COPY.equipped} · ${itemRowState(state, staff).text}`,
-          desc: staff.txt || "",
-          enabled: true,
-          dispatch: { type: "useItem", slot: "weapon" },
-        },
+        // Phase 95 (FLAVOR-02): the wielded staff's flavour leads; its old desc is the RULES text.
+        withFlavor(
+          {
+            id: "worn-weapon",
+            label: String(staff.n).toUpperCase(),
+            cost: `${COMBAT_MENU_COPY.equipped} · ${itemRowState(state, staff).text}`,
+            desc: staff.txt || "",
+            enabled: true,
+            dispatch: { type: "useItem", slot: "weapon" },
+          },
+          { lead: flavorOfItem(staff), rules: staff.txt || "", rulesId: `combat:worn:weapon:${staff.n}` },
+        ),
       ]
     : [];
   // Phase 77 (CMBUI-14): `N USABLE` counts exactly the enabled, dispatchable
@@ -491,28 +522,39 @@ function combatMenuViewModelUnlocked(state) {
     itemRows = [{ id: "none", label: COMBAT_MENU_COPY.noItems, cost: "", desc: COMBAT_MENU_COPY.noItemsDesc, enabled: false, dispatch: null }];
   } else {
     itemRows = [
-      {
-        id: "potion",
-        label: COMBAT_MENU_COPY.potion,
-        cost: `${c.potions || 0} LEFT`,
-        desc: COMBAT_MENU_COPY.potionDesc,
-        enabled: potionEnabled,
-        dispatch: { type: "drinkPotion" },
-      },
+      // Phase 95 (FLAVOR-02): the counter row is the Healing potion; its flavour leads, its old desc is the RULES text.
+      withFlavor(
+        {
+          id: "potion",
+          label: COMBAT_MENU_COPY.potion,
+          cost: `${c.potions || 0} LEFT`,
+          desc: COMBAT_MENU_COPY.potionDesc,
+          enabled: potionEnabled,
+          dispatch: { type: "drinkPotion" },
+        },
+        { lead: flavorOf("potion", "Healing"), rules: COMBAT_MENU_COPY.potionDesc, rulesId: "combat:potion" },
+      ),
     ];
     if (hasScroll) {
       // RULES-10 (Phase 75.1, plan 75.1-07): the reader's own odds
       // (scrollReadOdds, ./rollOdds.js) are appended so they are visible
       // BEFORE a tap — the same text the Gear tab's SCROLLS row shows for
       // the same state, so the two surfaces can never disagree.
-      itemRows.push({
-        id: "scroll",
-        label: COMBAT_MENU_COPY.scroll,
-        cost: `${c.scrolls} LEFT`,
-        desc: `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`,
-        enabled: true,
-        dispatch: { type: "readScroll" },
-      });
+      // Phase 95 (FLAVOR-01): the scroll's one flavour line leads; the old desc (scrollDesc plus the reading odds) is the RULES text.
+      const scrollRulesText = `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`;
+      itemRows.push(
+        withFlavor(
+          {
+            id: "scroll",
+            label: COMBAT_MENU_COPY.scroll,
+            cost: `${c.scrolls} LEFT`,
+            desc: scrollRulesText,
+            enabled: true,
+            dispatch: { type: "readScroll" },
+          },
+          { lead: flavorOfScroll(), rules: scrollRulesText, rulesId: "combat:scroll" },
+        ),
+      );
     }
     itemRows.push(...carriedRows, ...staffRows, ...wornRows);
   }

@@ -5331,7 +5331,16 @@ function renderActionArea(host) {
     const list = document.createElement("div");
     list.className = "cb-sub-list";
     list.id = "cb-sub-list";
-    sm.rows.forEach((row, i) => list.appendChild(lockAction(cbRow(row, i + 1))));
+    // Phase 95 (FLAVOR-01/02/05, plan 05): a row with flavour carries lead/rules/rulesId (src/browser/combatMenu.js#withFlavor). The
+    // desc slot then shows the lead (flavour first; the blocked reason and the live resist hint stay in it) and the exact rules sit
+    // behind a RULES toggle that is a SIBLING of the row button, never inside it (wrap puts it beside the row). A row without flavour
+    // (reasons, abilities, SING, FLEE, PARLEY, placeholders) is appended exactly as before. The 95-02 lock rule keeps the toggle inert
+    // while a round's beats play. cbRow itself is untouched.
+    sm.rows.forEach((r, i) => {
+      const row = r.rules ? { ...r, desc: r.lead } : r;
+      const el = lockAction(cbRow(row, i + 1));
+      list.appendChild(r.rules ? window.__mzRules.wrap(document, el, { id: r.rulesId, name: r.label, rules: r.rules }) : el);
+    });
     wrap.appendChild(list);
     host.appendChild(wrap);
     guardTap(document.getElementById("cb-back"), () => { window.__mzCombatMenu = null; renderEncounter(); });
