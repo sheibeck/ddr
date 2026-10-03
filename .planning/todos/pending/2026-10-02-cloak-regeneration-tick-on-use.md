@@ -2,6 +2,7 @@
 created: 2026-10-02T13:20:00.000Z
 title: Cloak of Regeneration heals one tick on use, then every N squares
 area: content
+resolves_phase: 93
 files:
   - content/treasure-tables.js:207-213 (Cloak of Regeneration txt + act { kind: "knit", effect: 30, cd: 50, hot: { every: 10, ticks: 3, heal: 1d6 } })
   - engine/items.js:1552-1600 (tickHealOverTime), ~2140 (the `knit` case in applyActivation: "No instant heal and no main-rng draw on use")

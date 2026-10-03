@@ -2,6 +2,7 @@
 created: 2026-10-02T12:30:00.480Z
 title: Rewrite player-facing descriptions as fantasy flavor, not a manual
 area: content
+resolves_phase: 96
 files:
   - content/spells.js
   - content/flavor.js

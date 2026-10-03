@@ -2,6 +2,7 @@
 created: 2026-10-02T13:00:00.000Z
 title: Put harmful condition chips (disease, poison) first, always visible
 area: ui
+resolves_phase: 93
 files:
   - src/browser/heroConditions.js:198-215 (chip list built in conditionsOf emit order; `tone` from the condition's polarity)
   - engine/derived.js (conditionsOf emit order)
