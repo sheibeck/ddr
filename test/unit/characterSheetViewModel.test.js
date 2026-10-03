@@ -213,20 +213,24 @@ test("characterSheetViewModel(state): abilities[] out of combat reads the abilit
   ]);
 });
 
-test("characterSheetViewModel(state): abilities[] in combat reads READY / N rounds / once per fight · spent", () => {
+// Phase 94 (ASTATE-01..03): the Hero tab says the combat row's words in a fight, so it needs a live foe
+// (no foe reads NO FOE IN REACH); a ready once-a-fight row reads READY · ONCE PER FIGHT, a recharging one
+// READY IN N, a spent one SPENT THIS FIGHT.
+test("characterSheetViewModel(state): abilities[] in combat reads READY · ONCE PER FIGHT / READY IN N / SPENT THIS FIGHT", () => {
   const state = newRun(42);
   state.c.abilities = ["dirtyTrick", "silentStep", "cutpurse"];
-  state.combat = {};
+  state.combat = { foes: [{ name: "Target", type: "Beasts", lvl: 1, size: "S", intel: 1, wp: 30, maxWP: 30, alive: true, asleep: 0, sp: {}, lives: 1 }], round: 1, target: 0 };
   const readyVm = characterSheetViewModel(state);
-  assert.equal(readyVm.abilities.find((a) => a.id === "silentStep").state, "READY");
+  assert.equal(readyVm.abilities.find((a) => a.id === "silentStep").state, "READY · ONCE PER FIGHT");
+  assert.equal(readyVm.abilities.find((a) => a.id === "silentStep").stateKind, "ready");
 
   startCooldown(state.c, "ability:dirtyTrick", { rounds: 2 });
   startCooldown(state.c, "ability:silentStep", { rounds: 999 });
   startCooldown(state.c, "ability:cutpurse", { rounds: 999 });
   const vm = characterSheetViewModel(state);
-  assert.equal(vm.abilities.find((a) => a.id === "dirtyTrick").state, "2 rounds");
-  assert.equal(vm.abilities.find((a) => a.id === "silentStep").state, "once per fight · spent");
-  assert.equal(vm.abilities.find((a) => a.id === "cutpurse").state, "once per fight · spent");
+  assert.equal(vm.abilities.find((a) => a.id === "dirtyTrick").state, "READY IN 2");
+  assert.equal(vm.abilities.find((a) => a.id === "silentStep").state, "SPENT THIS FIGHT");
+  assert.equal(vm.abilities.find((a) => a.id === "cutpurse").state, "SPENT THIS FIGHT");
 });
 
 test("characterSheetViewModel(state): abilities[] is [] for a Magic User", () => {

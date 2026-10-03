@@ -16,6 +16,7 @@ import { sing } from "../../engine/combat.js";
 import { startCooldown, startEffect, tickRounds } from "../../engine/effects.js";
 import { ONCE_A_FIGHT } from "../../content/index.js";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { characterSheetViewModel, ABILITY_VIEW_COPY } from "../../src/browser/heroTab.js";
 import { ABILITY_STATE_COPY } from "../../src/browser/abilityStates.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 
@@ -75,6 +76,7 @@ function fight(cOverrides = {}, foes = [foe()], combatOverrides = {}) {
 
 const rowsOf = (s) => combatMenuViewModel(s).submenus.abilities.rows;
 const rowFor = (s, key) => rowsOf(s).find((r) => r.id === `ability-${key}`);
+const heroRows = (s) => Object.fromEntries(characterSheetViewModel(s).abilities.map((a) => [a.id, a]));
 
 /** The Task-1 Fighter: one live foe, full hp, three abilities in distinct states. */
 function fighterScenario() {
@@ -265,11 +267,57 @@ test("the Bard's own ability rows follow SING and carry state", () => {
 // The retired copy keys
 // ---------------------------------------------------------------------------
 
-test("no second wording survives: the retired COMBAT_MENU_COPY state keys are gone", () => {
+test("no second wording survives: the retired COMBAT_MENU_COPY and ABILITY_VIEW_COPY state keys are gone", () => {
   for (const k of ["abilityReady", "abilityReadyOnce", "abilityUsedUp", "abilityTooFewFoes", "abilityAlreadyOn", "abilityRound", "abilityRounds", "singReady", "singSung", "singAgain"]) {
     assert.ok(!(k in COMBAT_MENU_COPY), `COMBAT_MENU_COPY.${k} is retired`);
   }
   for (const k of ["abilitiesSub", "sing", "singDesc", "noAbilities", "noAbilitiesDesc"]) {
     assert.ok(k in COMBAT_MENU_COPY, `COMBAT_MENU_COPY.${k} stays`);
   }
+  for (const k of ["ready", "rounds", "used"]) assert.ok(!(k in ABILITY_VIEW_COPY), `ABILITY_VIEW_COPY.${k} is retired`);
+  for (const k of ["cd", "once", "tagTable", "tagPool", "noAbilitiesCaster"]) assert.ok(k in ABILITY_VIEW_COPY, `ABILITY_VIEW_COPY.${k} stays`);
+});
+
+// ---------------------------------------------------------------------------
+// The Hero tab 
+// ---------------------------------------------------------------------------
+
+test("Hero tab in a fight: each row's words equal the combat row's cost and its stateKind equals the combat row's state", () => {
+  for (const s of [fighterScenario(), thiefScenario(), fight({ abilities: ["kata", "brace"] }, [])]) {
+    const hr = heroRows(s);
+    for (const row of rowsOf(s)) {
+      if (!row.id.startsWith("ability-")) continue;
+      const key = row.id.slice("ability-".length);
+      assert.equal(hr[key].state, row.cost, `${key}: same words`);
+      assert.equal(hr[key].stateKind, row.state, `${key}: same category`);
+    }
+  }
+});
+
+test("Hero tab in a fight with no foes array entry does not throw: foe rows read NO FOE IN REACH", () => {
+  const s = fight({ abilities: ["kata", "brace"] }, []);
+  s.combat = {};
+  const hr = heroRows(s);
+  assert.equal(hr.kata.state, "NO FOE IN REACH");
+  assert.equal(hr.kata.stateKind, "unavailable");
+  assert.equal(hr.brace.state, "READY");
+});
+
+test("Hero tab out of a fight: byte-identical to today (static cd / once text, no stateKind key)", () => {
+  const s = fighterScenario();
+  s.combat = null;
+  const hr = heroRows(s);
+  assert.equal(hr.kata.state, "cd 4 rounds");
+  assert.equal(hr.deathTouch.state, "once per fight");
+  for (const a of Object.values(hr)) {
+    assert.deepEqual(Object.keys(a), ["id", "name", "description", "source", "state"], `${a.id}: no stateKind out of a fight`);
+  }
+});
+
+test("Hero tab with a pending fight reads FIGHT FIRST, the engine's own answer", () => {
+  const s = fight({ abilities: ["kata", "brace"] });
+  s.combat.pending = true;
+  const hr = heroRows(s);
+  assert.equal(hr.kata.state, "FIGHT FIRST");
+  assert.equal(hr.kata.stateKind, "unavailable");
 });

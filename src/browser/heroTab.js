@@ -27,8 +27,9 @@ import { spellClosed } from "../../engine/derived.js";
 // Phase 90 plan 11 (TEXT-01): a spell cast on a foe can be resisted; its row says so in one place (below).
 import { spellTargetsFoe } from "../../engine/derived.js";
 import { maxCharges, nightlyEats, eatsFor } from "../../engine/movement.js";
-import { abilityRoundsLeft } from "../../engine/abilities.js";
-import { isReady } from "../../engine/effects.js";
+import { abilityState } from "../../engine/abilities.js";
+// Phase 94 (ASTATE-01): the in-combat ability words are the combat menu's own, one shared module.
+import { abilityStateLabel } from "./abilityStates.js";
 import { armorDisplay } from "./viewModels.js";
 import { heroHitOdds } from "./rollOdds.js";
 // RULES-11 (Phase 75.2, Plan 03) — a SEPARATE import line (the pinned line
@@ -169,15 +170,14 @@ function quirkText(c) {
 /**
  * ABILITY_VIEW_COPY — Phase 38 (ABIL-01/04): every player-facing string the
  * Hero-tab abilities list needs beyond the catalog's own name/txt — the
- * in-combat/out-of-combat state-suffix vocabulary and the two source-
- * provenance tags. A frozen literal object like COMBAT_MENU_COPY/RAIL_COPY
+ * out-of-combat state-suffix vocabulary and the two source-provenance tags.
+ * Phase 94 (ASTATE-01): the in-combat words (READY, READY IN N, the gate
+ * reasons, SPENT THIS FIGHT) live in src/browser/abilityStates.js, shared
+ * with the combat menu. A frozen literal object like COMBAT_MENU_COPY/RAIL_COPY
  * elsewhere in this codebase.
  */
 export const ABILITY_VIEW_COPY = Object.freeze({
-  ready: "READY",
-  rounds: "{n} rounds",
-  // Quick 260927-opf: the ruling's wording, "once per fight".
-  used: "once per fight · spent",
+  // Quick 260927-opf: the ruling's wording, "once per fight" (out of a fight).
   cd: "cd {n} rounds",
   once: "once per fight",
   tagTable: "special skill · active",
@@ -186,33 +186,35 @@ export const ABILITY_VIEW_COPY = Object.freeze({
 });
 
 /**
- * abilitiesViewFor(c, inCombat) — Phase 38 (ABIL-01/04): characterSheetViewModel's
+ * abilitiesViewFor(c, state) — Phase 38 (ABIL-01/04): characterSheetViewModel's
  * `abilities[]` (Hero tab) — one `{ id, name, description, source, state }`
  * row per `c.abilities` catalog id (`source` is the catalog's own literal
  * "table" | "pool", NOT a display tag — the Hero-tab shell maps that to
- * ABILITY_VIEW_COPY.tagTable/tagPool). `state` is the ONE place the state-
- * suffix rule lives: in combat, READY / "{n} rounds" / "once a fight ·
- * used" (mirrors combatMenu.js#abilityRows' cost rule); out of combat, the
- * ability's OWN declared cooldown length ("cd {n} rounds" / "once a
- * fight") — never a live timer read, since c.timers is combat-scoped and
- * cleared every fight anyway. An id absent from the catalog (a tampered
- * save) is silently dropped. Pure, no rng.
+ * ABILITY_VIEW_COPY.tagTable/tagPool). `state` is the ONE place the state
+ * text lives. Phase 94 (ASTATE-01..04): in a fight the words and the category
+ * come from the engine (engine/abilities.js#abilityState) through the same
+ * module the combat menu reads (src/browser/abilityStates.js), so the Hero
+ * tab and the combat row say identical words; the row also carries
+ * `stateKind` (ready | recharging | unavailable | spent) for the shell's
+ * edge. A pending fight (before FIGHT!) reads FIGHT FIRST, the engine's own
+ * answer. Out of a fight the row is unchanged: the ability's OWN declared
+ * cooldown length ("cd {n} rounds" / "once per fight"), no `stateKind` —
+ * never a live timer read, since c.timers is combat-scoped and cleared every
+ * fight anyway. An id absent from the catalog (a tampered save) is silently
+ * dropped. Pure, no rng.
  */
-function abilitiesViewFor(c, inCombat) {
+function abilitiesViewFor(c, state) {
+  const inCombat = !!(state && state.combat);
   return (c.abilities || [])
     .map((key) => {
       const meta = ABILITY_BY_ID[key];
       if (!meta) return null;
-      let state;
       if (inCombat) {
-        const id = `ability:${key}`;
-        if (isReady(c, id)) state = ABILITY_VIEW_COPY.ready;
-        else if (meta.cd === "fight") state = ABILITY_VIEW_COPY.used;
-        else state = ABILITY_VIEW_COPY.rounds.replace("{n}", abilityRoundsLeft(c, key));
-      } else {
-        state = meta.cd === "fight" ? ABILITY_VIEW_COPY.once : ABILITY_VIEW_COPY.cd.replace("{n}", meta.cd);
+        const st = abilityState(state, c, key);
+        return { id: key, name: meta.name, description: meta.txt || "", source: meta.source, state: abilityStateLabel(st, meta), stateKind: st.state };
       }
-      return { id: key, name: meta.name, description: meta.txt || "", source: meta.source, state };
+      const text = meta.cd === "fight" ? ABILITY_VIEW_COPY.once : ABILITY_VIEW_COPY.cd.replace("{n}", meta.cd);
+      return { id: key, name: meta.name, description: meta.txt || "", source: meta.source, state: text };
     })
     .filter(Boolean);
 }
@@ -273,7 +275,7 @@ export function characterSheetViewModel(state) {
       })
     : [];
 
-  const abilities = abilitiesViewFor(c, !!state.combat);
+  const abilities = abilitiesViewFor(c, state);
 
   return {
     name: c.name,
@@ -490,8 +492,9 @@ function appendFooter(doc, sec, lines) {
 // s-skills block's position immediately above (special skills stays
 // passives-only, byte-identical). createElement/textContent only — T-38-11
 // (no innerHTML in this region) — reading characterSheetViewModel(state)
-// directly so the READY/N ROUNDS/ONCE A FIGHT · USED / cd N ROUNDS/once a
-// fight state-suffix rule lives in exactly one place.
+// directly so the state text lives in exactly one place. Phase 94 (ASTATE-01):
+// an in-combat row carries data-state (its stateKind) for its edge
+// (mazeworld.html ul.skills li[data-state] rules, plan 94-02).
 function renderAbilityRows(doc, state) {
   const c = state.c;
   const ul = doc.getElementById("s-abilities");
@@ -507,6 +510,7 @@ function renderAbilityRows(doc, state) {
   const rows = characterSheetViewModel(state).abilities;
   for (const row of rows) {
     const li = doc.createElement("li");
+    if (row.stateKind) li.dataset.state = row.stateKind;
     const b = doc.createElement("b");
     b.textContent = row.name;
     li.appendChild(b);

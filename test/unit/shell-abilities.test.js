@@ -106,6 +106,8 @@ test("renderAbilityRows: createElement/textContent only (no innerHTML in the reg
   assert.match(region, /Spells are the trick\./);
   assert.match(region, /row\.source === "pool" \? "trick" : "special skill · active"/);
   assert.match(region, /characterSheetViewModel\(state\)\.abilities/);
+  // Phase 94 (ASTATE-01): the in-combat row carries data-state for its edge (mazeworld.html ul.skills li[data-state], plan 94-02).
+  assert.match(region, /li\.dataset\.state = row\.stateKind/);
   assert.equal((HERO_SRC.match(/\n\s*renderAbilityRows\(doc, state\);/g) || []).length, 1, "renderAbilityRows(doc, state) is called exactly once");
 });
 
@@ -126,8 +128,9 @@ test("window.__mzAbilities is retired; characterSheetViewModel/ABILITY_BY_ID/abi
     CODE,
     /import \{ characterSheetViewModel, rationsViewModel, eatsLineFor, renderHeroTab \} from "\.\/src\/browser\/heroTab\.js";/,
   );
-  assert.match(HERO_SRC, /import \{ abilityRoundsLeft \} from "\.\.\/\.\.\/engine\/abilities\.js";/);
-  assert.match(HERO_SRC, /import \{ isReady \} from "\.\.\/\.\.\/engine\/effects\.js";/);
+  // Phase 94 (ASTATE-04): heroTab.js reads the engine's abilityState and the shared words, no longer abilityRoundsLeft / isReady.
+  assert.match(HERO_SRC, /import \{ abilityState \} from "\.\.\/\.\.\/engine\/abilities\.js";/);
+  assert.match(HERO_SRC, /import \{ abilityStateLabel \} from "\.\/abilityStates\.js";/);
 });
 
 // ─── 5. surfaceAbilityPool ───────────────────────────────────────────────────

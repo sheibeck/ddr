@@ -97,5 +97,38 @@
       "accurate"
     ],
     "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): replaced by SPENT THIS FIGHT (bank:ABILITY_STATE_COPY.spent): the Sing row and every once-a-fight ability say the same spent words."
+  },
+  {
+    "key": "bank:ABILITY_VIEW_COPY.ready",
+    "surface": "panels",
+    "trigger": "the Hero tab's ability rows",
+    "before": "READY",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY_STATE_COPY; the ready word is bank:ABILITY_STATE_COPY.ready (READY · ONCE PER FIGHT for a once-a-fight ability)."
+  },
+  {
+    "key": "bank:ABILITY_VIEW_COPY.rounds",
+    "surface": "panels",
+    "trigger": "the Hero tab's ability rows",
+    "before": "{n} rounds",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY_STATE_COPY; the countdown is READY IN {n} (bank:ABILITY_STATE_COPY.recharging)."
+  },
+  {
+    "key": "bank:ABILITY_VIEW_COPY.used",
+    "surface": "panels",
+    "trigger": "the Hero tab's ability rows",
+    "before": "once per fight · spent",
+    "after": "",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY_STATE_COPY; the spent label is SPENT THIS FIGHT (bank:ABILITY_STATE_COPY.spent)."
   }
 ]

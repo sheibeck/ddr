@@ -412,8 +412,9 @@ test("V1 V3 V4: the combat row and the Hero row say the ruled state: READY, then
   assert.equal(rows()["ability-deathTouch"], "SPENT THIS FIGHT");
   const hero = characterSheetViewModel(s);
   const byId = Object.fromEntries(hero.abilities.map((a) => [a.id, a.state]));
-  assert.equal(byId.kata, "2 rounds");
-  assert.equal(byId.deathTouch, "once per fight · spent");
+  // Phase 94 (ASTATE-02): the Hero tab says the combat row's words in a fight.
+  assert.equal(byId.kata, "READY IN 2");
+  assert.equal(byId.deathTouch, "SPENT THIS FIGHT");
   const out = characterSheetViewModel({ ...s, combat: null });
   const idle = Object.fromEntries(out.abilities.map((a) => [a.id, a.state]));
   assert.equal(idle.kata, "cd 4 rounds");

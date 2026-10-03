@@ -50,11 +50,11 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | foes (the bestiary and foe text) | 78 | 10 | 68 | 0 | 10 | 6 |
 | death (epitaphs and death) | 120 | 23 | 97 | 0 | 23 | 14 |
 | boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 4 |
-| panels (hero, gear, store and final-sheet panels) | 190 | 16 | 174 | 5 | 22 | 1 |
+| panels (hero, gear, store and final-sheet panels) | 190 | 18 | 172 | 5 | 24 | 4 |
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
 | title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 74 | 56 |
 | other (everything else) | 32 | 5 | 27 | 14 | 31 | 2 |
-| **Total** | **1871** | **456** | **1415** | **282** | **874** | **134** |
+| **Total** | **1871** | **458** | **1413** | **282** | **876** | **137** |
 
 ## blurbs — class and race blurbs, and their mechanical footers
 
@@ -877,13 +877,15 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 
 ## panels — hero, gear, store and final-sheet panels
 
-22 changed lines.
+24 changed lines.
 
 | Line and trigger | Before | After | Why |
 |---|---|---|---|
 | `bank:ABILITY_VIEW_COPY.noAbilitiesCaster`<br>the Hero tab's Abilities list for a Magic User | Spells are the trick. | No abilities. Spells are the trick. | **79-09** (what happened, to whom, the joke after the fact): The joke stood in for the fact; the empty state now says there are no abilities first, then the joke. |
 | `bank:ABILITY_VIEW_COPY.once`<br>the Hero tab's ability rows | once a fight | once per fight | **q-260927-opf** (naming ruling): One wording for the rule across the Hero tab, the combat menu and the refusal line, the ruling's own. |
-| `bank:ABILITY_VIEW_COPY.used`<br>the Hero tab's ability rows | once a fight · used | once per fight · spent | **q-260927-opf** (naming ruling): Matches the combat menu row and the refusal line ("spent for this fight"). |
+| `bank:ABILITY_VIEW_COPY.ready`<br>the Hero tab's ability rows | READY | *(removed)* | **x-94-04** (accurate to the engine): Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY\_STATE\_COPY; the ready word is bank:ABILITY\_STATE\_COPY.ready (READY · ONCE PER FIGHT for a once-a-fight ability). |
+| `bank:ABILITY_VIEW_COPY.rounds`<br>the Hero tab's ability rows | {n} rounds | *(removed)* | **x-94-04** (accurate to the engine): Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY\_STATE\_COPY; the countdown is READY IN {n} (bank:ABILITY\_STATE\_COPY.recharging). |
+| `bank:ABILITY_VIEW_COPY.used`<br>the Hero tab's ability rows | once a fight · used | *(removed)* | **q-260927-opf** (naming ruling): Matches the combat menu row and the refusal line ("spent for this fight").<br>**x-94-04** (accurate to the engine): Phase 94 (ASTATE-01, user decision 2026-10-03): the Hero tab now prints the shared ability-state words (READY, READY IN N, the reason, SPENT THIS FIGHT) in a fight, from bank:ABILITY\_STATE\_COPY; the spent label is SPENT THIS FIGHT (bank:ABILITY\_STATE\_COPY.spent). |
 | `bank:GEAR_COPY.armorRating`<br>the Gear tab | ARMOR RATING | ARMOUR RATING | **79-12** (naming ruling): House spelling: the player reads "armour" (79-12's decision by the corpus majority, 64 to 31); the line is otherwise word for word. |
 | `bank:GEAR_COPY.bagCaps`<br>GEAR\_COPY.bagCaps (a new line on the Gear tab, the store, and the loot and find cards) | *(new line)* | this bag carries up to {wilmst} wilmst and {rations} rations | **89-09** (what happened, to whom): docs/ITEM-AUDIT.md bags "fix text (89-09)": the starting small bag has no item text, so the Gear tab's bag meter now states the wilmst and rations the bag carries (BAGS, clampCarry). |
 | `bank:GEAR_COPY.bagEmptyBody`<br>the Gear tab's BAG list when no carried item takes a slot | You used it all. That was the plan, technically. | Nothing here takes a slot. Plenty of room for regret. | **79-09** (accurate to the engine, what happened, to whom, the joke after the fact): "You used it all" was wrong on turn one (and after a drop or a sale); the line now says what the empty state means, then the joke. |

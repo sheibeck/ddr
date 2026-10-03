@@ -86,5 +86,6 @@ test("the combat menu row says once per fight, ready or spent", () => {
 
 test("the Hero tab's ability rows use the same words", () => {
   assert.equal(ABILITY_VIEW_COPY.once, "once per fight");
-  assert.equal(ABILITY_VIEW_COPY.used, "once per fight · spent");
+  // Phase 94 (ASTATE-01): in a fight the Hero tab's spent words are the shared ABILITY_STATE_COPY.spent.
+  assert.equal(ABILITY_STATE_COPY.spent, "SPENT THIS FIGHT");
 });
