@@ -374,6 +374,13 @@ test("agreement (store DOM): an item row's italic segment opens with the formatt
   assert.equal(rows.length, lines.length);
   lines.forEach((line, i) => {
     const seg = texts(itemStatLines(line.effectParams.item, c)).join(" · ");
+    // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: a flavoured row leads with its flavour and the formatter's stat segment (the
+    // sheet's stats joined by ' · ') sits in the row's RULES body; a row with no flavour keeps it at the head of the italic, as before.
+    if (String(rows[i].className).includes("mw-rules-wrap")) {
+      const body = rows[i].children.find((n) => String(n.className).includes("mw-rules-body"));
+      assert.equal(body.children.map((p) => p.textContent).join(" · "), seg, `${line.n}: the RULES body holds the formatter's stats`);
+      return;
+    }
     assert.ok(rows[i].innerHTML.includes(`<i>${seg}`), `${line.n}: expected <i>${seg}…, got ${rows[i].innerHTML}`);
   });
 });
