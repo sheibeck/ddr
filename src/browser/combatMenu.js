@@ -23,7 +23,7 @@ import { abilityState } from "../../engine/abilities.js";
 import { abilityStateLabel } from "./abilityStates.js";
 import { fleeOdds, scrollReadOdds } from "./rollOdds.js";
 // Phase 95 (FLAVOR-01/02/05, plan 05) — a SEPARATE import line: the flavour lookups the SPELLS and ITEMS rows read.
-import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "./flavorText.js";
+import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfAbility } from "./flavorText.js";
 
 /**
  * withFlavor(row, { lead, rules, rulesId }) — Phase 95 (FLAVOR-01/02/05; CONTEXT 'Where the exact numbers live', orchestrator
@@ -31,7 +31,9 @@ import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "./flavorT
  * numeric tag), the desc slot shows `lead` (flavour first; a blocked reason and the live resist hint stay in it, visible), and
  * the exact rules sit behind the RULES toggle the shell mounts beside the row. `desc` is NEVER changed here (every reader and
  * guard still sees today's text); the three fields are ADDITIVE and appear only when there is flavour AND rules text to hide,
- * so a row without flavour (or a reason, ability or social row, which never call this) renders exactly as before.
+ * so a row without flavour (or a reason or social row, which never call this) renders exactly as before.
+ * Phase 96 (FLAVOR-04): the ability rows and the Bard's SING row adopt it too; the Phase 94 state label stays the cost tag
+ * (plain and exact), the description slot reads the flavour line and the ability's txt sits behind RULES.
  */
 const withFlavor = (row, { lead, rules, rulesId }) => (lead && rules ? { ...row, lead, rules, rulesId } : row);
 
@@ -167,15 +169,19 @@ function abilityRows(c, state) {
       const meta = ABILITY_BY_ID[key];
       if (!meta) return null;
       const st = abilityState(state, c, key);
-      return {
-        id: `ability-${key}`,
-        label: meta.name.toUpperCase(),
-        cost: abilityStateLabel(st, meta),
-        desc: meta.txt || "",
-        enabled: st.state === "ready",
-        state: st.state,
-        dispatch: { type: "useAbility", key },
-      };
+      return withFlavor(
+        {
+          id: `ability-${key}`,
+          label: meta.name.toUpperCase(),
+          cost: abilityStateLabel(st, meta),
+          desc: meta.txt || "",
+          enabled: st.state === "ready",
+          state: st.state,
+          dispatch: { type: "useAbility", key },
+        },
+        // Phase 96 (FLAVOR-04): flavour first; the state label above is untouched.
+        { lead: flavorOfAbility(meta.name), rules: meta.txt || "", rulesId: `combat:ability:${key}` },
+      );
     })
     .filter(Boolean);
 }
@@ -333,15 +339,19 @@ function combatMenuViewModelUnlocked(state) {
     submenus.abilities = {
       title: `${heroName} · ABILITIES`,
       rows: [
-        {
-          id: "sing",
-          label: COMBAT_MENU_COPY.sing,
-          cost: abilityStateLabel(singSt, null),
-          desc: COMBAT_MENU_COPY.singDesc,
-          enabled: singReady,
-          state: singSt.state,
-          dispatch: { type: "sing" },
-        },
+        withFlavor(
+          {
+            id: "sing",
+            label: COMBAT_MENU_COPY.sing,
+            cost: abilityStateLabel(singSt, null),
+            desc: COMBAT_MENU_COPY.singDesc,
+            enabled: singReady,
+            state: singSt.state,
+            dispatch: { type: "sing" },
+          },
+          // Phase 96 (FLAVOR-04): the Bard's Sing reads its flavour line; singDesc sits behind RULES.
+          { lead: flavorOfAbility("Sing"), rules: COMBAT_MENU_COPY.singDesc, rulesId: "combat:ability:sing" },
+        ),
         // Phase 38 (ABIL-01): the Bard keeps Sing FIRST (CONTEXT); because a
         // Bard is a Fighter it also rolls abilities, so its own rows follow.
         ...abilityRows(c, state),

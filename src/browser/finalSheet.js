@@ -24,6 +24,11 @@
 import { ROMAN } from "../../content/index.js";
 import { characterSheetViewModel, grimoireViewModel } from "./heroTab.js";
 import { gearWornModel, gearBagCardsModel } from "./gearTab.js";
+// Phase 96 (FLAVOR-04): the ability flavour lookup and the shared RULES component. Both are pure (no window, no document;
+// mountRules takes the doc). With Always show the rules on, mountRules adds only a visible body and never a button, so the
+// sheet stays control-free (HUD-03).
+import { flavorOfAbility } from "./flavorText.js";
+import { mountRules, alwaysRules } from "./rulesLayer.js";
 
 /**
  * FINAL_SHEET_COPY — every word the sheet adds of its own. The rest comes
@@ -75,8 +80,8 @@ const str = (v) => (v === undefined || v === null ? "" : String(v));
  * Returns { empty, who, stats, tricks, worn, bag, book, death }:
  *   - who: { name, lineage ("Race Sub-class"), cls, level ("LEVEL IV"), hp ("HP 0/max") }
  *   - stats: [{ key, label, value }] — characterSheetViewModel's rows, value as a string
- *   - tricks: { rows: [{ name, description }], emptyLine } — skills then abilities,
- *     name and description only (no ready or cooldown state)
+ *   - tricks: { rows: [{ name, description, flavor }], emptyLine } — skills then abilities,
+ *     name, description and flavour line only (no ready or cooldown state)
  *   - worn: [{ key, label, filled, name, value, note }] — gearWornModel's rows, in GEAR_WORN_ORDER
  *   - bag: { names, emptyLine } — gearBagCardsModel's item names
  *   - book: { spells: [{ name, level ("Lvl 1") }], emptyLine } — grimoireViewModel's rows
@@ -109,10 +114,12 @@ export function finalSheetViewModel(state) {
   }
   if (sheet) {
     vm.stats = sheet.stats.map((r) => ({ key: r.key, label: str(r.label), value: str(r.value) }));
-    vm.tricks.rows = [...(sheet.skills || []), ...(sheet.abilities || [])].map((r) => ({
-      name: str(r.name),
-      description: str(r.description),
-    }));
+    // Phase 96 (FLAVOR-04): `flavor` is additive ("" when the skill or ability has no line); name and description are unchanged.
+    // A skill row carries its own flavour (characterSheetViewModel); an ability row is looked up by name.
+    vm.tricks.rows = [
+      ...(sheet.skills || []).map((r) => ({ name: str(r.name), description: str(r.description), flavor: str(r.flavor) })),
+      ...(sheet.abilities || []).map((r) => ({ name: str(r.name), description: str(r.description), flavor: str(flavorOfAbility(str(r.name))) })),
+    ];
   }
   vm.tricks.emptyLine = vm.tricks.rows.length ? "" : FINAL_SHEET_COPY.tricksNone;
 
@@ -234,7 +241,12 @@ export function renderFinalSheet(host, vm) {
   const t = m.tricks || {};
   for (const r of t.rows || []) {
     tricks.appendChild(row(doc, r.name, ""));
-    if (r.description) tricks.appendChild(el(doc, "p", "mw-fs-note", r.description));
+    // Phase 96 (FLAVOR-04): with a flavour line the note shows it, and the exact description follows only when Always show
+    // the rules is on (a static visible body, never a control: the sheet is read-only). With none, today's description.
+    if (r.flavor) {
+      tricks.appendChild(el(doc, "p", "mw-fs-note", r.flavor));
+      if (r.description && alwaysRules()) mountRules(doc, tricks, { id: "final:trick:" + r.name, name: r.name, rules: r.description });
+    } else if (r.description) tricks.appendChild(el(doc, "p", "mw-fs-note", r.description));
   }
   if (t.emptyLine) tricks.appendChild(el(doc, "p", "mw-fs-empty", t.emptyLine));
   root.appendChild(tricks);

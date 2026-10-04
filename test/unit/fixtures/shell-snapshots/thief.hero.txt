@@ -63,9 +63,25 @@
 <div id="s-skills">
   html=""
   <li>
-    html="<b>Acute Hearing</b><i>never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is</i>"
+    <b>
+      text="Acute Hearing"
+    <i>
+      text="Nothing sneaks up on you, and trouble announces itself through the walls, if never by name."
+    <button class="mw-rules-btn" aria-controls="mw-rules-hero-skill-Acute-Hearing" aria-expanded="false" aria-label="Rules for Acute Hearing" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-hero-skill-Acute-Hearing" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is"
   <li>
-    html="<b>Night Vision</b><i>darkness costs you nothing</i>"
+    <b>
+      text="Night Vision"
+    <i>
+      text="The dark is just a room with the lights off, and it costs you nothing."
+    <button class="mw-rules-btn" aria-controls="mw-rules-hero-skill-Night-Vision" aria-expanded="false" aria-label="Rules for Night Vision" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-hero-skill-Night-Vision" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="darkness costs you nothing"
 ## #s-abilities
 <div id="s-abilities">
   <li>
@@ -74,27 +90,42 @@
     <small>
       text="special skill · active"
     <i>
-      text="sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical"
+      text="A fistful of grit and no sense of honour: the foe goes blind and hits only by fluke."
     <span>
       text="cd 4 rounds"
+    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-dirtyTrick" aria-expanded="false" aria-label="Rules for Dirty Trick" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-hero-ability-dirtyTrick" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical"
   <li>
     <b>
       text="Smoke"
     <small>
       text="special skill · active"
     <i>
-      text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it"
+      text="Gone in a puff of showmanship: foes seldom hit you, and running away finally works."
     <span>
       text="cd 3 rounds"
+    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-smoke" aria-expanded="false" aria-label="Rules for Smoke" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-hero-ability-smoke" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it"
   <li>
     <b>
       text="Poisoned Edge"
     <small>
       text="trick"
     <i>
-      text="the blade weeps: d4 + your level a round to the target for three rounds"
+      text="A little something on the blade, so the foe keeps paying for the cut long after you stop."
     <span>
       text="cd 5 rounds"
+    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-poisonedEdge" aria-expanded="false" aria-label="Rules for Poisoned Edge" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-hero-ability-poisonedEdge" class="mw-rules-body" hidden>
+      <p class="mw-rules-line">
+        text="the blade weeps: d4 + your level a round to the target for three rounds"
 ## #s-grim-count
 <div id="s-grim-count">
   text=""

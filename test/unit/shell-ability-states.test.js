@@ -19,6 +19,13 @@
 // difference here is a DOM change to declare in its SUMMARY, never a fixture
 // to regenerate silently.
 //
+// Phase 96 (FLAVOR-04), Plan 06: fighter.abilities-states is a declared regeneration: each ability row's description reads its
+// flavour line and sits in a RULES wrapper (a sibling toggle and a hidden body holding the exact txt); the state words, ids and
+// data-state are unchanged.
+//
+// Phase 96 (FLAVOR-04), Plan 06: fighter.hero-in-combat is a declared regeneration: each ability row reads its flavour line,
+// followed by a RULES toggle and the exact txt; data-state, tag and state words unchanged.
+//
 // A third test (no fixture) checks the Bard's SING row: data-state recharging
 // and READY IN N between its two songs.
 
@@ -153,6 +160,9 @@ function walk(node, out = []) {
   return out;
 }
 
+/** Phase 96 (FLAVOR-04): an ability row is now a .mw-rules-wrap whose first child is the unchanged row button; this reads the button. */
+const rowButton = (el) => (String(el.className || "").split(" ").includes("mw-rules-wrap") ? el.children[0] : el);
+
 /** The text of an element's descendants, depth-first (the recording DOM keeps
  * text as node.textContent on each element). */
 const textOf = (el) => String(el.textContent ?? "");
@@ -167,7 +177,8 @@ test("ASTATE-05: fighter.abilities-states — the combat ABILITIES submenu shows
   sandbox.context.renderEncounter();
 
   const list = doc.document.getElementById("cb-sub-list");
-  const rows = Array.from(list.children);
+  // Phase 96 (FLAVOR-04): declared re-pin: each child is a RULES wrapper; the assertions read its row button, unchanged.
+  const rows = Array.from(list.children).map(rowButton);
   assert.equal(rows.length, 5, "one row per ability");
   assert.deepEqual(rows.map((r) => r.dataset.state), STATES);
   for (const [i, row] of rows.entries()) {
@@ -206,7 +217,8 @@ test("ASTATE-01: the Bard's SING row carries data-state recharging and reads REA
   sandbox.context.window.__mzCombatMenu = { open: "abilities" };
   sandbox.context.renderEncounter();
 
-  const rows = Array.from(doc.document.getElementById("cb-sub-list").children);
+  // Phase 96 (FLAVOR-04): the SING row sits in a RULES wrapper; the assertions read its row button, unchanged.
+  const rows = Array.from(doc.document.getElementById("cb-sub-list").children).map(rowButton);
   assert.ok(rows.length >= 1, "the Sing row is listed");
   assert.equal(rows[0].dataset.state, "recharging");
   assert.ok(walk(rows[0]).some((d) => textOf(d) === "READY IN 4"), "the first row reads READY IN 4");

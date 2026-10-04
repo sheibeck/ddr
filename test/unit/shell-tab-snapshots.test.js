@@ -129,6 +129,8 @@
 //
 // Phase 96 (FLAVOR-03), Plan 05: two declared regenerations, thief.hero and mu.hero. #s-trait keeps the temperament, motive and phobia sentence and moves the race's rulebook note behind a collapsed RULES toggle; every #doss section (Race, Class, Subclass) reads its flavour line first, followed by a RULES toggle and a hidden body holding the exact old note and the unchanged mechanical footer lines. Every other fixture re-wrote the same bytes.
 //
+// Phase 96 (FLAVOR-04), Plan 06: thief.hero moves a second time: #s-skills and #s-abilities rows read their flavour line with a collapsed RULES toggle and a hidden body holding the exact old text; mu.hero (no skills, no abilities) is unchanged by this plan. Every other fixture re-wrote the same bytes.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

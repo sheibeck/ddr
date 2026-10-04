@@ -27,6 +27,8 @@ import { characterSheetViewModel, grimoireViewModel } from "../../src/browser/he
 import { gearWornModel, gearBagCardsModel, GEAR_WORN_ORDER, GEAR_COPY } from "../../src/browser/gearTab.js";
 import { FINAL_SHEET_COPY, finalSheetViewModel, renderFinalSheet } from "../../src/browser/finalSheet.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
+// Phase 96 (FLAVOR-04): the tricks-row pin below reads the real ability lookup.
+import { flavorOfAbility } from "../../src/browser/flavorText.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -124,9 +126,13 @@ test("HUD-03: skills and abilities carry name and description only, no ready or 
   die(s, "trap", null, makeRng(2), [], () => 1);
   const vm = finalSheetViewModel(s);
   const sheet = characterSheetViewModel(s);
-  const expected = [...sheet.skills, ...sheet.abilities].map((r) => ({ name: r.name, description: r.description }));
+  // Phase 96 (FLAVOR-04): declared re-pin: each row gains the additive `flavor` (a skill's own, or the ability's looked up by name).
+  const expected = [
+    ...sheet.skills.map((r) => ({ name: r.name, description: r.description, flavor: r.flavor })),
+    ...sheet.abilities.map((r) => ({ name: r.name, description: r.description, flavor: flavorOfAbility(r.name) })),
+  ];
   assert.deepStrictEqual(vm.tricks.rows, expected);
-  for (const r of vm.tricks.rows) assert.deepStrictEqual(Object.keys(r).sort(), ["description", "name"]);
+  for (const r of vm.tricks.rows) assert.deepStrictEqual(Object.keys(r).sort(), ["description", "flavor", "name"]);
   assert.ok(vm.tricks.rows.length >= 1);
 });
 
