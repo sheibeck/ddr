@@ -77,9 +77,9 @@ export function identityDomain(spec) {
 }
 
 /**
- * FLAVOR_DOMAINS — the eleven flavour domains so far, in order (eight from
- * Phase 95, then race, sub and class; 96-03 and later append ability, skill
- * and chip). Each record:
+ * FLAVOR_DOMAINS — the twelve flavour domains so far, in order (eight from
+ * Phase 95, then race, sub, class and ability; later plans append skill and
+ * chip). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
  * the live content tables) and `lines()` (the map, or undefined while the
@@ -165,6 +165,15 @@ export const FLAVOR_DOMAINS = Object.freeze([
     exportName: "CLASS_FLAVOR",
     keys: () => Object.keys(C.CLASSES),
     lines: () => asMap(C.CLASS_FLAVOR),
+  }),
+  // Phase 96 (FLAVOR-04): the 20 catalog abilities plus the Bard's Sing, which
+  // is not a catalog row (its rules text is COMBAT_MENU_COPY.singDesc).
+  Object.freeze({
+    id: "ability",
+    module: "content/abilities.js",
+    exportName: "ABILITY_FLAVOR",
+    keys: () => [...C.ABILITIES.map((a) => a.name), "Sing"],
+    lines: () => asMap(C.ABILITY_FLAVOR),
   }),
 ]);
 
@@ -268,6 +277,15 @@ export function flavorOfSpell(name) {
 /** flavorOfScroll() — the one flavour line every scroll shares, or "". */
 export function flavorOfScroll() {
   return flavorOf("scroll", "Scroll");
+}
+
+/**
+ * flavorOfAbility(name) — the flavour line for an ability: a catalog ability's
+ * `name` or the Bard's "Sing". "" for an unknown name or while the map is
+ * absent. Never throws.
+ */
+export function flavorOfAbility(name) {
+  return flavorOf("ability", name);
 }
 
 /**

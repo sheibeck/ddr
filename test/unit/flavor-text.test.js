@@ -21,16 +21,18 @@ import {
   tagsOfRecord,
   flavorOfIdentity,
   flavorTagsOf,
+  flavorOfAbility,
 } from "../../src/browser/flavorText.js";
-import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES } from "../../content/index.js";
+import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES, ABILITIES, ABILITY_FLAVOR } from "../../content/index.js";
 
 // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub (24) and class (3) added
-const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5, race: 6, sub: 24, class: 3 };
+// Phase 96 (FLAVOR-04): declared re-pin, ability (21: the 20 catalog names plus the Bard's Sing) added
+const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5, race: 6, sub: 24, class: 3, ability: 21 };
 
-test("FLAVOR_DOMAINS: eleven domains, in order, 144 unique keys", () => {
+test("FLAVOR_DOMAINS: twelve domains, in order, 165 unique keys", () => {
   assert.deepEqual(
     FLAVOR_DOMAINS.map((d) => d.id),
-    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class"],
+    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class", "ability"],
   );
   let total = 0;
   for (const d of FLAVOR_DOMAINS) {
@@ -42,7 +44,21 @@ test("FLAVOR_DOMAINS: eleven domains, in order, 144 unique keys", () => {
     total += keys.length;
   }
   assert.ok(Object.isFrozen(FLAVOR_DOMAINS));
-  assert.equal(total, 144);
+  assert.equal(total, 165);
+});
+
+test("ability domain: the keys are the 20 catalog names in table order plus Sing, and Sing alone has no catalog row", () => {
+  const d = FLAVOR_DOMAINS.find((x) => x.id === "ability");
+  assert.deepEqual(d.keys(), [...ABILITIES.map((a) => a.name), "Sing"]);
+  assert.equal(d.keys().length, 21);
+  const catalog = new Set(ABILITIES.map((a) => a.name));
+  assert.deepEqual(d.keys().filter((k) => !catalog.has(k)), ["Sing"]);
+  assert.equal(d.module, "content/abilities.js");
+  assert.equal(d.exportName, "ABILITY_FLAVOR");
+  assert.ok(Object.isFrozen(ABILITY_FLAVOR));
+  // the lookup reads the map by name, "" for anything it does not hold, and never throws
+  for (const k of d.keys()) assert.equal(flavorOfAbility(k), ABILITY_FLAVOR[k], k);
+  for (const bad of ["No Such Ability", "__proto__", "", null, undefined, 7, [], hostile()]) assert.equal(flavorOfAbility(bad), "");
 });
 
 test("FLAVOR_DOMAINS: keys() returns a fresh array every call", () => {
