@@ -28,7 +28,7 @@
 - [x] **Phase 94: Ability States You Can Tell Apart** - Every ability row reads as Ready, Recharging (ready in N), Can't use now (with its reason) or Spent this fight, by more than colour. (completed 2026-10-03)
 - [x] **Phase 94.1: Joiner Level Follows Depth** (INSERTED) - A Joiner's level comes from the floor: one level per three floors, 1 to 5. (completed 2026-10-03)
 - [x] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach. (completed 2026-10-03)
-- [ ] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review.
+- [x] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review. (completed 2026-10-04)
 - [ ] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run.
 - [ ] **Phase 98: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the current game, with real tablet and landscape shots.
 
@@ -227,7 +227,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every player text rewritten in Phases 95 and 96 passes the family-friendly safety scan and a narrative review in the house sarcastic voice, and a review page lists each text with its verdict.
   4. A walk across every screen (Gear, store, loot and find, spells, Hero, combat, chip taps, title) finds no description that still reads as a rulebook sentence, no rule or number moved, and every truth guard is still green against the technical layer.
 
-**Plans**: 12/12 plans executed
+**Plans**: 12/12 plans complete
 
 - [x] 96-12-PLAN.md
 
@@ -303,7 +303,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
-| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 12/12 | In Progress|  |
+| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 12/12 | Complete    | 2026-10-04 |
 | 97. Large-Screen Support | 0/TBD | Not started | - |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 

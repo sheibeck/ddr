@@ -98,6 +98,7 @@
 - ✓ **Ability states you can tell apart** — v2.4 Phase 94 (ASTATE-01..05): the engine's `abilityState`/`singState` drive the combat ABILITIES rows and the Hero tab: READY / READY IN N / the gate's reason / SPENT THIS FIGHT, by word, row edge and four colour-blind-checked tokens; a tap always agrees with the label (Active state deferred)
 - ✓ **Joiner level follows depth** — v2.4 Phase 94.1 (JOIN-01): the d10 Level Table roll is capped at `joinerLevelCap(depth)` = ceil(depth/3), 1..5 (never a level 5 Joiner before floor 13); a Joiner keeps the level it was met at (user 2026-10-03)
 - ✓ **Fantasy flavour, part I** — v2.4 Phase 95 (FLAVOR-01, 02, 05): 111 one-sentence flavour lines (spells, scroll, potions, tools, bags, magic items, weapon and armour types) in keyed maps beside the unchanged rules `txt`; every surface shows flavour first with a tap-to-reveal RULES line and an "Always show the rules" setting; all v2.3 truth guards untouched and a drifted number still fails
+- ✓ **Fantasy flavour, part II** — v2.4 Phase 96 (FLAVOR-03, 04, 06): race, sub-class and class blurbs tagged with a real good and bad, 21 ability lines, 21 skill lines and 47 condition-chip lines; roller, Hero tab, combat ABILITIES/SING, chip taps, UP YOUR SLEEVE and the Final Sheet lead with flavour and keep the exact rules behind RULES; three-agent review (211+14 → all 236 lines pass, 3 self-checked) on review.html; a 20-surface sweep proves no rulebook sentence is left outside RULES
 - [ ] **Fantasy-flavour player text** (v2.4 todo) — players read narrative; the exact rules stay in code, docs and the audit pins
 - ✓ **Small v2.4 todos** — v2.4 Phase 93: harmful condition chips first; the Cloak of Regeneration heals a d6 on use (ruling B); plus Phase 93.1, the Gauntlet of the Giant at +6
 
@@ -121,7 +122,7 @@
 - ✓ **Cloak of Regeneration heals on use** (todo): ruling (B), user 2026-10-03: a d6 at once, then a d6 at 10, 20 and 30 squares (4 ticks); heals in a fight too; price unchanged — Phase 93 (ITEM-08)
 - ✓ **Gauntlet of the Giant worth wearing** (GitHub player report #6, added 2026-10-03): its size step's damage bonus made worth foes +1 to hit, as Enlarge was in 2.3.0 — Phase 93.1 (ITEM-09); issue #6 closes when it ships
 - ✓ **Joiner level follows depth** (todo, user 2026-10-03): a Joiner's rolled level is capped at one per three floors (1 on floors 1–3 … 5 from 13); no re-levelling — Phase 94.1 (JOIN-01)
-- **Fantasy-flavour player text** (todo): players read narrative; the exact rules stay in code, docs and the audit pins — ✓ part I (spells, scrolls, items) Phase 95; part II (races, sub-classes, abilities, chips, review) Phase 96
+- **Fantasy-flavour player text** (todo): players read narrative; the exact rules stay in code, docs and the audit pins — ✓ part I (spells, scrolls, items) Phase 95; ✓ part II (races, sub-classes, abilities, chips, review) Phase 96
 - **Fresh store and website screenshots** (999.18): last, so the tablet and landscape shots are real
 
 **Open decisions for discuss-phase:** phones portrait-only or free rotation, and the landscape play-screen layout; where the exact numbers live in game. (Ruled: the cloak's immediate tick is a fourth tick, Phase 93.)
@@ -525,4 +526,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-03 after Phase 95 (Fantasy Flavour I)*
+*Last updated: 2026-10-04 after Phase 96 (Fantasy Flavour II)*

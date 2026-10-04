@@ -45,10 +45,10 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 - [x] **FLAVOR-01**: Spell and scroll descriptions shown to the player read as fantasy flavour, not rules text
 - [x] **FLAVOR-02**: Equipment, magic-item and potion descriptions shown to the player read as fantasy flavour
-- [ ] **FLAVOR-03**: Race and sub-class blurbs read as fantasy flavour and still convey each one's good and bad
-- [ ] **FLAVOR-04**: Ability rows and condition-chip explanations (CONDITION_EXPLAIN) read as fantasy flavour
+- [x] **FLAVOR-03**: Race and sub-class blurbs read as fantasy flavour and still convey each one's good and bad
+- [x] **FLAVOR-04**: Ability rows and condition-chip explanations (CONDITION_EXPLAIN) read as fantasy flavour
 - [x] **FLAVOR-05**: Exact rules and numbers live in a separate technical layer, reachable in game where discuss-phase decides; the v2.3 truth-in-advertising guards (item-text-engine, authored-ranges, spell-audit, skill-audit, value-identity, identity tests) re-pin to that layer with no guard lost
-- [ ] **FLAVOR-06**: All new player text passes the family-friendly safety scan and the narrative review, in the house sarcastic voice
+- [x] **FLAVOR-06**: All new player text passes the family-friendly safety scan and the narrative review, in the house sarcastic voice
 
 ### Store & website screenshots (999.18) — after the large-screen work
 
@@ -88,9 +88,9 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | FLAVOR-01 | Phase 95 | Complete |
 | FLAVOR-02 | Phase 95 | Complete |
 | FLAVOR-05 | Phase 95 | Complete |
-| FLAVOR-03 | Phase 96 | Pending |
-| FLAVOR-04 | Phase 96 | Pending |
-| FLAVOR-06 | Phase 96 | Pending |
+| FLAVOR-03 | Phase 96 | Complete |
+| FLAVOR-04 | Phase 96 | Complete |
+| FLAVOR-06 | Phase 96 | Complete |
 | SCREEN-01 | Phase 97 | Pending |
 | SCREEN-02 | Phase 97 | Pending |
 | SCREEN-03 | Phase 97 | Pending |
