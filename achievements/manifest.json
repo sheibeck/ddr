@@ -341,5 +341,12 @@
     "tier": 4,
     "file_play": "play/ach_disposable_help_t4.png",
     "file_ingame": "ingame/ach_disposable_help_t4.png"
+  },
+  {
+    "id": "ether_entombed",
+    "name": "Solid Miscalculation",
+    "tier": null,
+    "file_play": "play/ach_ether_entombed.png",
+    "file_ingame": "ingame/ach_ether_entombed.png"
   }
 ]
