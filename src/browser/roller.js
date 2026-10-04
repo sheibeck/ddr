@@ -22,6 +22,8 @@
 
 import { RACES, CLASSES } from "../../content/index.js";
 import { footerLines } from "./identityFooter.js";
+import { flavorOfIdentity } from "./flavorText.js";
+import { mountRules } from "./rulesLayer.js";
 
 // ─── frozen tables ──────────────────────────────────────────────────────
 
@@ -89,6 +91,10 @@ function pickDisplay(list, random) {
 // the roll) — each a `.mw-roller-rules-group` holding the name and one
 // paragraph per footerLines line, textContent only. An empty `sheet` (the
 // start of a roll) just clears the element.
+// Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): each group now reads name, then the
+// identity's flavour line, then one RULES toggle whose body holds exactly the
+// footer lines it printed before. An identity with no flavour line keeps the
+// old visible footer and no toggle. The toggle never rolls, commits or renders.
 function fillRules(doc, sheet) {
   const el = doc.getElementById(ROLLER_IDS.rules);
   if (!el) return;
@@ -105,11 +111,22 @@ function fillRules(doc, sheet) {
     who.className = "mw-roller-rules-who";
     who.textContent = key;
     group.appendChild(who);
-    for (const line of lines) {
-      const p = doc.createElement("p");
-      p.className = "mw-roller-rules-line";
-      p.textContent = line;
-      group.appendChild(p);
+    const flavor = flavorOfIdentity(kind, key);
+    if (flavor) {
+      // Phase 96 (FLAVOR-03): flavour leads; the exact footer sits behind RULES.
+      const f = doc.createElement("p");
+      f.className = "mw-roller-flavor-line";
+      f.textContent = flavor;
+      group.appendChild(f);
+      mountRules(doc, group, { id: "roller:" + kind + ":" + key, name: key, rules: lines, lineClass: "mw-roller-rules-line" });
+    } else {
+      // No flavour line (a name the maps do not hold): today's visible footer.
+      for (const line of lines) {
+        const p = doc.createElement("p");
+        p.className = "mw-roller-rules-line";
+        p.textContent = line;
+        group.appendChild(p);
+      }
     }
     el.appendChild(group);
   }

@@ -13,7 +13,7 @@
 // same object. Mirrors test/unit/heroTab.test.js's source-pin conventions
 // (stripJs, no-globals scan, id-containment, voice scan).
 
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -27,6 +27,8 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import * as roller from "../../src/browser/roller.js";
 import { ROLLER_IDS, ROLLER_TIMELINE, ROLLER_COPY, ROLLER_CSS, reelWordLists, createRoller } from "../../src/browser/roller.js";
 import { footerLines } from "../../src/browser/identityFooter.js";
+import { flavorOfIdentity } from "../../src/browser/flavorText.js";
+import { setAlwaysRules, clearRulesOpen } from "../../src/browser/rulesLayer.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -383,15 +385,19 @@ test("roller.js exports createRoller/reelWordLists as functions and the four fro
 
 // VOX-04 (Phase 79, Plan 03): the reveal's footer adds the one pure footer
 // module as a second import (src/browser/identityFooter.js — no DOM, no rng).
-test("roller.js reads no window/document global, no rng-cursor read, no bridge name, exactly two imports (content, the identity footer)", () => {
+// Phase 96 (FLAVOR-03): declared re-pin — two more pure imports, the flavour
+// lookup and the shared RULES component, so four in all.
+test("roller.js reads no window/document global, no rng-cursor read, no bridge name, exactly four imports (content, the identity footer, the flavour lookup, the RULES component)", () => {
   assert.doesNotMatch(ROLLER_STRIPPED, /\bwindow\./);
   assert.doesNotMatch(ROLLER_STRIPPED, /\bdocument\./);
   assert.doesNotMatch(ROLLER_STRIPPED, /rngState/);
   assert.doesNotMatch(ROLLER_STRIPPED, /__mz/);
   const importLines = ROLLER_STRIPPED.split("\n").filter((l) => l.startsWith("import "));
-  assert.equal(importLines.length, 2);
+  assert.equal(importLines.length, 4);
   assert.match(importLines[0], /from "\.\.\/\.\.\/content\/index\.js"/);
   assert.match(importLines[1], /^import \{ footerLines \} from "\.\/identityFooter\.js";$/);
+  assert.match(importLines[2], /^import \{ flavorOfIdentity \} from "\.\/flavorText\.js";$/);
+  assert.match(importLines[3], /^import \{ mountRules \} from "\.\/rulesLayer\.js";$/);
 });
 
 // ─── (9) module source pins: id containment ───────────────────────────────
@@ -554,9 +560,25 @@ test("m7: function commitRolledState(state) { occurs exactly once in the module 
 const SUMMONER_HUMAN = newRun(1, [], { force: { sub: "Summoner", race: "Human" } });
 const WARLOCK_ELVEN = newRun(2, [], { force: { sub: "Warlock", race: "Elven" } });
 
-/** rulesText(el) — [[who, ...lines], ...], one entry per footer group. */
+// Phase 96 (FLAVOR-03): declared re-pin — a group now reads [who, flavour
+// line, RULES button, rules body]; the body's paragraphs are the old footer.
+beforeEach(() => {
+  clearRulesOpen();
+  setAlwaysRules(false);
+});
+
+/** groupParts(group) — the four parts of one reveal group. */
+function groupParts(group) {
+  const [who, flavor, button, body] = group.children;
+  return { who, flavor, button, body, lines: body ? body.children.map((p) => p.textContent) : [] };
+}
+
+/** rulesText(el) — [{ who, flavor, lines }, ...], one entry per group. */
 function rulesText(el) {
-  return el.children.map((group) => group.children.map((p) => p.textContent));
+  return el.children.map((group) => {
+    const g = groupParts(group);
+    return { who: g.who.textContent, flavor: g.flavor.textContent, lines: g.lines };
+  });
 }
 
 async function rollTo(rig, state, callIdx) {
@@ -582,8 +604,15 @@ test("VOX-04: nothing shows before the reveal; the reveal shows the sub-class fo
   await rig.timers.advance(ROLLER_TIMELINE.reveal - 1);
   assert.equal(rules.children.length, 0, "still empty one tick before the reveal");
   await rig.timers.advance(1);
-  assert.deepEqual(rulesText(rules), [["Summoner", ...footerLines("sub", "Summoner")]]);
-  assert.ok(rulesText(rules)[0].some((l) => /healing spells you cast heal at half strength/.test(l)), "the half-strength healing line shows");
+  // Phase 96 (FLAVOR-03): declared re-pin — flavour first, the footer behind RULES.
+  assert.deepEqual(rulesText(rules), [
+    { who: "Summoner", flavor: flavorOfIdentity("sub", "Summoner"), lines: footerLines("sub", "Summoner") },
+  ]);
+  assert.ok(rulesText(rules)[0].lines.some((l) => /healing spells you cast heal at half strength/.test(l)), "the half-strength healing line is in the RULES body");
+  const g = groupParts(rules.children[0]);
+  assert.equal(g.button.className, "mw-rules-btn");
+  assert.equal(g.button.getAttribute("aria-expanded"), "false");
+  assert.equal(g.body.hidden, true, "the footer is collapsed until RULES is tapped");
 });
 
 test("VOX-04: a non-Human race adds its own footer; a re-roll clears and refills with the new roll's lines", async () => {
@@ -592,8 +621,8 @@ test("VOX-04: a non-Human race adds its own footer; a re-roll clears and refills
   await rig.timers.advance(ROLLER_TIMELINE.reveal);
   const rules = rig.el(ROLLER_IDS.rules);
   assert.deepEqual(rulesText(rules), [
-    ["Warlock", ...footerLines("sub", "Warlock")],
-    ["Elven", ...footerLines("race", "Elven")],
+    { who: "Warlock", flavor: flavorOfIdentity("sub", "Warlock"), lines: footerLines("sub", "Warlock") },
+    { who: "Elven", flavor: flavorOfIdentity("race", "Elven"), lines: footerLines("race", "Elven") },
   ]);
 
   const p = rig.roller.start();
@@ -603,10 +632,71 @@ test("VOX-04: a non-Human race adds its own footer; a re-roll clears and refills
   await flush();
   await p;
   await rig.timers.advance(ROLLER_TIMELINE.reveal);
-  assert.deepEqual(rulesText(rules), [["Summoner", ...footerLines("sub", "Summoner")]]);
+  assert.deepEqual(rulesText(rules), [
+    { who: "Summoner", flavor: flavorOfIdentity("sub", "Summoner"), lines: footerLines("sub", "Summoner") },
+  ]);
 });
 
 test("VOX-04: the footer reads footerLines and reaches the DOM through textContent, never innerHTML", () => {
   assert.ok((ROLLER_STRIPPED.match(/footerLines\(/g) || []).length >= 1);
   assert.doesNotMatch(ROLLER_STRIPPED, /innerHTML/);
+});
+
+// ─── Phase 96 (FLAVOR-03): the RULES toggle on the reveal ─────────────────
+
+test("Phase 96: a RULES tap opens that group's body and never rolls, commits or touches the CTA", async () => {
+  const rig = makeRig();
+  await rollTo(rig, WARLOCK_ELVEN, 0);
+  await rig.timers.advance(ROLLER_TIMELINE.reveal);
+  const rules = rig.el(ROLLER_IDS.rules);
+  const cta = rig.el(ROLLER_IDS.cta);
+  const ctaBefore = { disabled: cta.disabled, text: cta.textContent };
+  const callsBefore = rig.calls.length;
+  const g = groupParts(rules.children[0]);
+  let stopped = false;
+  g.button.onclick({ stopPropagation: () => { stopped = true; } });
+  assert.equal(stopped, true);
+  assert.equal(g.body.hidden, false, "the tapped group's footer opens");
+  assert.equal(g.button.getAttribute("aria-expanded"), "true");
+  assert.equal(groupParts(rules.children[1]).body.hidden, true, "the other group stays closed");
+  assert.equal(rig.calls.length, callsBefore, "a RULES tap never starts a roll");
+  assert.equal(rig.committed.length, 0, "a RULES tap never commits the roll");
+  assert.equal(cta.disabled, ctaBefore.disabled);
+  assert.equal(cta.textContent, ctaBefore.text);
+  g.button.onclick({});
+  assert.equal(g.body.hidden, true, "a second tap closes it again");
+});
+
+test("Phase 96: with Always show the rules on, the footer shows open with no toggle", async () => {
+  setAlwaysRules(true);
+  const rig = makeRig();
+  await rollTo(rig, WARLOCK_ELVEN, 0);
+  await rig.timers.advance(ROLLER_TIMELINE.reveal);
+  const rules = rig.el(ROLLER_IDS.rules);
+  assert.equal(rules.children.length, 2);
+  for (const [i, [kind, key]] of [["sub", "Warlock"], ["race", "Elven"]].entries()) {
+    const group = rules.children[i];
+    assert.equal(group.children.length, 3, "who, flavour line, body: no button");
+    const body = group.children[2];
+    assert.equal(body.hidden, false);
+    assert.deepEqual(body.children.map((p) => p.textContent), footerLines(kind, key));
+  }
+});
+
+test("Phase 96: an unknown sub-class or race (a tampered save) leaves no toggle and does not throw", async () => {
+  const rig = makeRig();
+  const stub = { ...sheet(SUMMONER_HUMAN), subLabel: "Mystery Sub", raceLabel: "Mystery Race" };
+  const { document } = createRecordingDocument();
+  const r = createRoller({
+    doc: document,
+    startNewRun: () => Promise.resolve(SUMMONER_HUMAN),
+    sheetFor: () => stub,
+    onCommit: () => {},
+    timers: rig.timers,
+    random: () => 0,
+  });
+  await r.start();
+  await rig.timers.advance(ROLLER_TIMELINE.reveal);
+  const rules = document.getElementById(ROLLER_IDS.rules);
+  assert.ok(rules.children.every((g) => g.children.every((c) => c.className !== "mw-rules-btn")));
 });
