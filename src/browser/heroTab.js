@@ -57,6 +57,8 @@ import { itemStatLines, ITEM_STAT_COPY } from "./viewModels.js";
 // Phase 95 (FLAVOR-01, plan 05) — a SEPARATE import block: the Grimoire shows the spell's flavour line and mounts the
 // shared RULES toggle (the exact old text behind it).
 import { flavorOfSpell, flavorOfIdentity } from "./flavorText.js";
+// Phase 96 (FLAVOR-04): the ability and passive-skill flavour lookups (a separate import line, the pinned one above stays as it was).
+import { flavorOfAbility, flavorOfSkill } from "./flavorText.js";
 import { mountRules } from "./rulesLayer.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
@@ -275,7 +277,8 @@ export function characterSheetViewModel(state) {
         const tier = c.skills[name];
         const def = skillsTable[name] || {};
         const description = tier === 2 && def.txt2 ? def.txt2 : def.txt || "";
-        return { name, description, tier };
+        // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): `flavor` is additive and "" for an active skill (its ability line covers it).
+        return { name, description, tier, flavor: flavorOfSkill(name) };
       })
     : [];
 
@@ -524,11 +527,16 @@ function renderAbilityRows(doc, state) {
     tag.textContent = row.source === "pool" ? "trick" : "special skill · active";
     li.appendChild(tag);
     const desc = doc.createElement("i");
-    desc.textContent = row.description;
+    // Phase 96 (FLAVOR-04): flavour first; the exact txt sits behind a RULES toggle after the state span. A row with no
+    // flavour (a name the lookup does not know) keeps today's text and mounts nothing. The flavour is read here by name,
+    // not carried on the abilitiesViewFor row, so that view-model's key set stays byte-identical (ability-state-view pins it).
+    const flavor = flavorOfAbility(row.name);
+    desc.textContent = flavor || row.description;
     li.appendChild(desc);
     const stateEl = doc.createElement("span");
     stateEl.textContent = row.state;
     li.appendChild(stateEl);
+    if (flavor) mountRules(doc, li, { id: "hero:ability:" + row.id, name: row.name, rules: row.description });
     ul.appendChild(li);
   }
 }
@@ -1016,7 +1024,22 @@ export function renderHeroTab(host, state, deps = {}) {
   } else for (const n of owned) {
     const s = table && table[n];
     const li = doc.createElement("li");
-    li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : ""}</i>`;
+    const shownTxt = s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : "";
+    // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): a passive skill reads its flavour line, and the exact text shown today
+    // (txt, or txt2 at level two) sits behind a RULES toggle. An active skill (its ability line covers it) or a skill the
+    // lookup does not know keeps today's markup exactly, with no toggle.
+    const skillFlavor = s ? flavorOfSkill(n) : "";
+    if (skillFlavor) {
+      const nameEl = doc.createElement("b");
+      nameEl.textContent = `${n}${c.skills[n] === 2 ? " ✦" : ""}`;
+      li.appendChild(nameEl);
+      const flavorEl = doc.createElement("i");
+      flavorEl.textContent = skillFlavor;
+      li.appendChild(flavorEl);
+      mountRules(doc, li, { id: "hero:skill:" + n, name: n, rules: shownTxt });
+    } else {
+      li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${shownTxt}</i>`;
+    }
     sk.appendChild(li);
   }
 

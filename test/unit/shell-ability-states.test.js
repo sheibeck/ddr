@@ -23,6 +23,9 @@
 // flavour line and sits in a RULES wrapper (a sibling toggle and a hidden body holding the exact txt); the state words, ids and
 // data-state are unchanged.
 //
+// Phase 96 (FLAVOR-04), Plan 06: fighter.hero-in-combat is a declared regeneration: each ability row reads its flavour line,
+// followed by a RULES toggle and the exact txt; data-state, tag and state words unchanged.
+//
 // A third test (no fixture) checks the Bard's SING row: data-state recharging
 // and READY IN N between its two songs.
 
