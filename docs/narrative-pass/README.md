@@ -238,3 +238,76 @@ Their lines are new-line ledger rows (`before` "") in
 docs/narrative-pass/why/y-95-NN.json, the `y-` prefix keeping the ledgers in plan
 order after `x-94-04`. Phase 96 registers its own banks the same way. See
 docs/TEXT-LAYERS.md.
+
+## The Phase 96 review (FLAVOR-06)
+
+Phase 79 judged lines once and kept no record of the judgement. The Phase 95
+and 96 flavour lines are reviewed one by one, and the review is recorded in
+files you can check.
+
+**The reviewed set.** Every key in docs/narrative-pass/why/y-95-*.json and
+y-96-*.json (the three RULES_COPY toggle words included), resolved to the last
+`after` in plan order, so a rewritten line is judged in its final wording.
+`node tools/flavor-review.mjs --worksheet` prints each one (add `--domain race`
+to read one domain at a time).
+
+**The five checks.** A verdict records the checks a line FAILS, never the ones
+it passes.
+
+| id | the line passes when it |
+|---|---|
+| voice | is sarcastic, deadpan, in the house voice; a plain restatement of the rule in other words fails |
+| family | is family-friendly: nothing crude, gory or adult, and the sarcasm lands on the adventurer or the trope, never a real group |
+| numberFree | states no number, die, percentage or number word, in disguise either (a duration, a count, a doubling) |
+| consistent | points the same way as its rules text, never contradicts it, never promises more than it delivers |
+| goodBad | for a tagged race or sub-class line: the wording conveys at least one tagged good and one tagged bad a player could act on (a joke with no information fails) |
+
+The same text is the frozen `REVIEW_CHECKLIST` in tools/lib/flavor-review.mjs.
+
+**The verdict files.** docs/narrative-pass/verdicts/*.json, one file per round:
+
+    { "round": 1, "reviewer": "<who>", "rows": [
+      { "key": "bank:SPELL_FLAVOR.Heal", "h": "1a2b3c4d", "verdict": "pass" },
+      { "key": "...", "h": "...", "verdict": "revise", "fails": ["voice"], "note": "one sentence: what is wrong, which way to go" } ] }
+
+- `key` is the ledger key, compared exactly.
+- `h` is the first eight hex characters of the SHA-1 of the line's UTF-8 text.
+  A verdict is tied to the exact wording it judged. When the line is rewritten
+  the old hash is stale, and both generated pages say "line changed since".
+- `verdict` is pass or revise. A revise needs at least one failed check and a
+  note specific enough for another agent to rewrite the line from it. A pass
+  lists no failed check.
+- Optional `selfChecked: true` (round 2 only: the rewriting agent checked its
+  own rewrite) and `userOwned: true` (valid only on the frozen
+  `USER_OWNED_LINES` key, `bank:SPELL_FLAVOR.Heal`, the user's own accepted
+  example: if a reviewer disagrees, the round that closes the review records a
+  pass with `userOwned: true` and the concern in the note, and the line is never
+  rewritten).
+
+**The rounds.** Round 1 covers every reviewed line. Later rounds cover only the
+lines whose latest verdict is revise. The review is CLOSED when every reviewed
+key's latest verdict is a pass whose hash equals the hash of the current line.
+
+**Who does what (the independence boundary).** An executor cannot spawn
+subagents, so "a separate reviewer" is a plan boundary. Phase 95 plans 03 and 04
+and Phase 96 plans 01 to 04 wrote the lines. Plan 96-08's executor wrote none of
+them and records round 1; it changes no content, shell or engine file (the
+diff gate against its base commit proves it). Plan 96-09's executor rewrites the
+revise lines. Plan 96-11's executor, again fresh, records round 2 and closes.
+No script ever sets a verdict: the skeleton carries `null`, which the validator
+rejects until a reviewer has judged the line.
+
+**Commands.**
+
+- `node tools/flavor-review.mjs --worksheet [--domain <id>]` prints the line, its
+  hash, its exact rules text and, for a race or sub-class, the tagged good and
+  bad entries' texts.
+- `node tools/flavor-review.mjs --skeleton --round N --reviewer "<text>" --out docs/narrative-pass/verdicts/<file>.json`
+  writes the null-verdict file (round 1: every key; later: the keys whose latest
+  verdict is revise).
+- `node tools/flavor-review.mjs --check` validates every present verdict file
+  (exit 1 on an error; exit 0 when there is none).
+- `node tools/flavor-review.mjs --closed` also requires the review to be closed.
+- `node tools/narrative-review.mjs` regenerates both pages; a row shows its
+  verdicts after its why, and a counts section lists them. With no verdict file
+  both pages are unchanged byte for byte.
