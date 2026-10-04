@@ -34,6 +34,8 @@ import { ABILITY_BY_ID } from "../../content/index.js";
 import { startEffect, startCooldown } from "../../engine/effects.js";
 // Phase 95 (FLAVOR-01/02/05, plan 05): the rows that have flavour gain additive lead/rules/rulesId; pinned against the real lookups.
 import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "../../src/browser/flavorText.js";
+// Phase 96 (FLAVOR-04): the ability rows and the Bard's SING row gain additive lead/rules/rulesId too.
+import { flavorOfAbility } from "../../src/browser/flavorText.js";
 
 // Phase 37 (GEAR-03): a Poplar Staff (worn activatable), used as the fixed
 // staff literal across the "worn activatables" section below. Phase 39
@@ -150,8 +152,10 @@ test("Bard: ABILITIES opens SING, ready vs. sung this fight", () => {
   const ready = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
   assert.deepEqual(ready.actions[1], { key: "abilities", num: 2, label: "2 · ABILITIES", sub: "SING · READY", enabled: true, accent: false, opens: "abilities" });
   // Phase 94 (ASTATE-01): every ability row carries `state` (ready | recharging | unavailable | spent).
+  // Phase 96 (FLAVOR-04): declared re-pin: the SING row gains the additive lead/rules/rulesId (cost, desc, state and dispatch unchanged).
   assert.deepEqual(ready.submenus.abilities.rows[0], {
     id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" },
+    lead: flavorOfAbility("Sing"), rules: COMBAT_MENU_COPY.singDesc, rulesId: "combat:ability:sing",
   });
 
   const sung = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, steps: 40, combat: { ...fixedCombat([]), sang: true } }));
@@ -642,8 +646,9 @@ test("Fighter with c.abilities = ['kata', 'brace']: grid sub, submenu rows; an e
   assert.deepEqual(vm.submenus.abilities.rows, [
     // Phase 91.1 plan 02 (V1, user ruling 2026-10-01): Kata is ready again after 4 rounds, so its ready row is plain READY.
     // Phase 94 (ASTATE-01): the rows gain `state: "ready"`.
-    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "kata" } },
-    { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "brace" } },
+    // Phase 96 (FLAVOR-04): declared re-pin: the rows gain the additive lead/rules/rulesId (cost, desc, state and dispatch unchanged).
+    { id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "kata" }, lead: flavorOfAbility("Kata"), rules: ABILITY_BY_ID.kata.txt, rulesId: "combat:ability:kata" },
+    { id: "ability-brace", label: "BRACE", cost: "READY", desc: ABILITY_BY_ID.brace.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "brace" }, lead: flavorOfAbility("Brace"), rules: ABILITY_BY_ID.brace.txt, rulesId: "combat:ability:brace" },
   ]);
 
   const emptyState = fixedState({ c: { cls: "Fighter", sub: "Soldier", abilities: [] }, combat: fixedCombat([]) });
@@ -696,16 +701,19 @@ test("Bard: ABILITIES rows are [sing row, ...ability rows], sing row/sub-line by
   // Phase 94 (ASTATE-01/03): one live foe for Kata; the rows gain `state: "ready"`.
   const vm = combatMenuViewModel(fixedState({ c, combat: fixedCombat([phase94Foe()]) }));
   assert.equal(vm.actions[1].sub, "SING · READY");
+  // Phase 96 (FLAVOR-04): declared re-pin: the SING row and the ability row gain the additive lead/rules/rulesId.
   assert.deepEqual(vm.submenus.abilities.rows[0], {
     id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" },
+    lead: flavorOfAbility("Sing"), rules: COMBAT_MENU_COPY.singDesc, rulesId: "combat:ability:sing",
   });
   assert.deepEqual(vm.submenus.abilities.rows[1], {
     id: "ability-kata", label: "KATA", cost: "READY", desc: ABILITY_BY_ID.kata.txt, enabled: true, state: "ready", dispatch: { type: "useAbility", key: "kata" },
+    lead: flavorOfAbility("Kata"), rules: ABILITY_BY_ID.kata.txt, rulesId: "combat:ability:kata",
   });
 
   const noAbilities = combatMenuViewModel(fixedState({ c: { sub: "Bard" }, combat: fixedCombat([]) }));
   assert.deepEqual(noAbilities.submenus.abilities.rows, [
-    { id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" } },
+    { id: "sing", label: "SING", cost: "READY", desc: COMBAT_MENU_COPY.singDesc, enabled: true, state: "ready", dispatch: { type: "sing" }, lead: flavorOfAbility("Sing"), rules: COMBAT_MENU_COPY.singDesc, rulesId: "combat:ability:sing" },
   ]);
 });
 

@@ -27,12 +27,12 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
-import { flavorOfItem, flavorOfIdentity } from "../../src/browser/flavorText.js";
+import { flavorOfItem, flavorOfIdentity, flavorOfAbility, flavorOfSkill } from "../../src/browser/flavorText.js";
 import { renderHeroTab } from "../../src/browser/heroTab.js";
 import { footerLines } from "../../src/browser/identityFooter.js";
 import { RACES, RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/index.js";
-import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
-import { SPELLS, NICHE_LABELS } from "../../content/index.js";
+import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { SPELLS, NICHE_LABELS, ABILITY_BY_ID } from "../../content/index.js";
 import { SPELL_FLAVOR } from "../../content/spells.js";
 import { newRun } from "../../engine/state.js";
 import { rollJewel, rollBlade, rollMailPiece, stowItem, toolItem } from "../../engine/items.js";
@@ -258,15 +258,88 @@ test("(c) combat ITEMS: a not-equipped reason row is not wrapped and keeps its r
   assert.equal(findAll(reason, "mw-rules-btn").length, 0);
 });
 
-test("(c) combat ABILITIES: an ability row is not wrapped", () => {
-  const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata"] });
+// Phase 96 (FLAVOR-04): declared re-pin. The ABILITIES rows (and the Bard's SING row) now carry flavour, so each is a RULES wrapper:
+// the row button keeps its id, data-state and state label in the cost slot byte for byte; its desc slot reads the flavour line; the
+// toggle is the button's sibling and the hidden body holds the ability's exact txt.
+test("(c) combat ABILITIES: an ability row is wrapped; the cost keeps its state word, the desc is the flavour, the body is the txt", () => {
+  const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata", "brace"] });
   const { list } = openMenu(state, "abilities");
-  assert.ok(list.children.length >= 1);
-  for (const el of list.children) {
-    assert.ok(!hasClass(el, "mw-rules-wrap"), "no wrapper on an ability row");
-    assert.ok(hasClass(el, "cb-row"));
+  const rows = combatMenuViewModel(state).submenus.abilities.rows;
+  assert.equal(list.children.length, 2);
+  for (const [i, wrap] of list.children.entries()) {
+    const vmRow = rows[i];
+    assert.ok(hasClass(wrap, "mw-rules-wrap"), `${vmRow.label} is wrapped`);
+    const [rowBtn, toggle, body] = wrap.children;
+    assert.equal(rowBtn.id, `cb-row-${vmRow.id}`);
+    assert.ok(hasClass(rowBtn, "cb-row"));
+    assert.equal(rowBtn.dataset.state, vmRow.state, "the data-state edge is unchanged");
+    assert.ok(hasClass(toggle, "mw-rules-btn"), "the toggle is the row button's sibling");
+    assert.equal(findAll(rowBtn, "mw-rules-btn").length, 0, "the toggle is not inside the row button");
+    assert.equal(toggle.getAttribute("aria-expanded"), "false");
+    assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), vmRow.cost, "the state label stays in the cost slot");
+    assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), "READY");
+    const desc = textOf(findAll(rowBtn, "cb-row-desc")[0]);
+    assert.equal(desc, flavorOfAbility(ABILITY_BY_ID[vmRow.id.slice("ability-".length)].name), "the desc slot reads the flavour line");
+    assert.ok(!/[0-9]/.test(desc), "the flavour line carries no digit");
+    assert.equal(textOf(findAll(body, "mw-rules-line")[0]), ABILITY_BY_ID[vmRow.id.slice("ability-".length)].txt, "the body is the ability's exact txt");
   }
-  assert.equal(findAll(list, "mw-rules-btn").length, 0);
+});
+
+test("(c) combat ABILITIES: the Bard's SING row is wrapped the same way; its body is singDesc", () => {
+  const state = fightState({ cls: "Fighter", sub: "Bard", grimoire: [], abilities: ["kata"] });
+  const { list } = openMenu(state, "abilities");
+  const sing = list.children[0];
+  assert.ok(hasClass(sing, "mw-rules-wrap"), "SING is wrapped");
+  const [rowBtn, toggle, body] = sing.children;
+  assert.equal(rowBtn.id, "cb-row-sing");
+  assert.ok(hasClass(toggle, "mw-rules-btn"));
+  assert.equal(findAll(rowBtn, "mw-rules-btn").length, 0);
+  assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), "READY");
+  assert.equal(textOf(findAll(rowBtn, "cb-row-desc")[0]), flavorOfAbility("Sing"));
+  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), COMBAT_MENU_COPY.singDesc);
+});
+
+test("(c) combat ABILITIES: a RULES tap opens the body and never uses the ability, spends a turn or touches the state; a repaint keeps it open; Always on drops the toggle", () => {
+  const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata"] });
+  const first = openMenu(state, "abilities");
+  const before = JSON.stringify(first.sandbox.context.S ?? state);
+  const wrap = first.list.children[0];
+  const [rowBtn, toggle] = wrap.children;
+  let rowTapped = 0;
+  const prev = rowBtn.onclick;
+  rowBtn.onclick = (...a) => { rowTapped++; return prev && prev(...a); };
+  tap(toggle);
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
+  assert.equal(rowTapped, 0, "the row button never hears the RULES tap");
+  assert.equal(JSON.stringify(first.sandbox.context.S ?? state), before, "no ability used, no round spent, no rng drawn");
+
+  first.sandbox.context.renderEncounter();
+  const repainted = first.doc.document.getElementById("cb-sub-list").children[0];
+  assert.equal(repainted.children[1].getAttribute("aria-expanded"), "true", "open across a repaint");
+
+  setAlwaysRules(true);
+  first.sandbox.context.renderEncounter();
+  const always = first.doc.document.getElementById("cb-sub-list").children[0];
+  assert.equal(findAll(always, "mw-rules-btn").length, 0);
+  assert.equal(findAll(always, "mw-rules-body")[0].hidden, false);
+});
+
+test("(c) combat ABILITIES: the 95-02 lock rule makes the RULES toggle inert while a round's beats play (one #cb-act[data-locked] rule covers .mw-rules-btn)", () => {
+  const lockRule = '#cb-act[data-locked="1"] .mw-rules-btn{opacity:.45;box-shadow:none;pointer-events:none';
+  assert.ok(HTML.includes(lockRule), "the lock rule that makes .mw-rules-btn pointer-inert under a locked #cb-act");
+  // Locked rendering marks the row button itself; the wrapper's toggle sits under #cb-act, so the same rule reaches it.
+  const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata"] });
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  sandbox.setState(state);
+  sandbox.context.window.__mzCombatMenu = { open: "abilities" };
+  sandbox.context.window.__mzBeat = { active: () => true, view: () => null };
+  sandbox.context.renderEncounter();
+  const act = doc.document.getElementById("cb-act");
+  assert.equal(act.getAttribute("data-locked"), "1");
+  const wrap = doc.document.getElementById("cb-sub-list").children[0];
+  assert.ok(hasClass(wrap, "mw-rules-wrap"));
+  assert.equal(wrap.children[0].getAttribute("data-locked"), "1", "the row button is locked");
 });
 
 // ─── (d) the find card ────────────────────────────────────────────────────
