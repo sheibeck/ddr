@@ -4205,7 +4205,8 @@ function memberChipsFor(i) {
     const label = conditionLabel(cn);
     const unit = cn.cadence === "rounds" ? "rds" : (CONDITION_COPY[cn.key]?.unit || "sq");
     const text = typeof cn.remaining === "number" && cn.remaining > 0 ? `${label} · ${cn.remaining} ${unit}` : label;
-    return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, tapText: () => conditionTapText(cn, label, S, { member: true }) };
+    // Phase 96 (FLAVOR-04): `flavor` leads the Company panel's chip card; tapText stays the exact text behind RULES.
+    return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, flavor: chipFlavorSpec(cn, label, true), tapText: () => conditionTapText(cn, label, S, { member: true }) };
   });
 }
 
@@ -4229,7 +4230,7 @@ function tabDeps() {
     dismissJoiner: (i) => window.mzDismissJoiner?.(i),
     memberUseItem: (i, ref) => window.mzMemberUseItem?.(i, ref),
     memberChipsFor: (i) => memberChipsFor(i),
-    railInfo: (title, text) => window.mzRailLine?.(title, text, "info", 8400, "·"),
+    railInfo: (title, text, flavor) => window.mzRailLine?.(title, text, "info", 8400, "·", null, flavor),
     castSpell: (idx) => window.mzCastSpell?.(idx),
     openGearSheet: (target, openerId) => openGearSheet(target, openerId),
     closeGearSheet: () => closeGearSheet(),
