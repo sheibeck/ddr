@@ -1,0 +1,290 @@
+[
+  {
+    "key": "bank:SUB_FLAVOR.Wizard.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Your book opens with something that hurts, and your aim is good, but you refuse to lift a weapon while a spell remains. Illusion, meanwhile, is the Illusionist's, like a family recipe.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Wizard's player line; good tagged wizard-day-one, chart-bonus-offense, bad tagged wizard-melee, chart-never; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Warlock.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Evil, and productive with it: a potion copied by night and a thrown spell that lands. The walking dead in the room grow sturdier on your account, and healing and warding come late.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Warlock's player line; good tagged warlock-potion, chart-bonus-offense, bad tagged warlock-undead, chart-gate-protection, chart-gate-healing; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Sorcerer.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Freeze and Fireball from day one, spells by the handful and a very sure aim, but now and then one simply falls out of your head. The arm is decorative, and Illusion is none of your business.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Sorcerer's player line; good tagged sorcerer-book, sorcerer-levels, chart-bonus-offense, bad tagged sorcerer-forgets, sorcerer-arm, chart-never; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Summoner.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Your Summon is in the book from the first day, and it arrives bigger and longer-lived than anyone else's. Now and then it turns up on the wrong side, and your own healing is feeble.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Summoner's player line; good tagged summoner-summon, summoner-doubled, chart-override-Summon, bad tagged summoner-backfire, chart-healmul; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Cleric.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Chain mail, a better aim than the rest of the book and healing that actually heals. The gods have ruled out fireballs, illusions and anything else fun, and the foresight comes late.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Cleric's player line; good tagged cleric-mail, cleric-hit, chart-bonus-healing, bad tagged chart-never, chart-gate-divination; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Illusionist.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Teleport squares go where you point them and the mirrors are in the book from day one. Your own swing is a rumour, warding comes late and the mirror cannot bandage anyone.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Illusionist's player line; good tagged illusionist-teleport, illusionist-book, bad tagged illusionist-d20, chart-gate-protection, chart-never; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Court Mage.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You talk Humans down, bore the occasional foe to death and shield and mend a little better than most. When a fight does start, everyone else gets there first, and special and illusion are closed.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Court Mage's player line; good tagged court-mage-boredom, court-mage-humans, chart-bonus-protection, chart-bonus-healing, bad tagged court-mage-first, chart-never; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Apprentice.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You gain experience at a ferocious rate and may even dabble in Illusion. Now and then a spell goes off in your own hands, and foresight comes late, assuming you get that far.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Apprentice's player line; good tagged apprentice-xp, apprentice-illusion, bad tagged apprentice-backfire, chart-gate-divination; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Knight.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Anything small runs before it can try, and anything large gets there first. You have been made important by the only creatures whose vote counts.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Knight's player line; good tagged knight-small, bad tagged knight-big; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Guard.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Foes miss you more often, which is as well, because your blows are feeble and never land a lucky one. You are a professional, and the profession is standing there.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Guard's player line; good tagged guard-hard, bad tagged guard-weak, guard-nocrit; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Woodsman.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Every beast in here will at least hear you out, with a bonus, and you carry a staff like an old friend. Mail and plate are out: the store won't offer it and your hands won't take it.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Woodsman's player line; good tagged woodsman-talk, bad tagged woodsman-armor; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Soldier.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Camp mends you generously and the army eventually knights you, trading your weapon for the privilege. Foes find your weak spots easily, and you never find theirs.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Soldier's player line; good tagged soldier-camp, soldier-knighted, bad tagged soldier-crit, soldier-nocrit; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Barbarian.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You swing and swing again every round, on the sound principle that a man swinging this much is learning nothing. The experience points agree, and are docked accordingly.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Barbarian's player line; good tagged barbarian-two, bad tagged barbarian-xp; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Master of Arms.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Every weapon hits harder in your hands and you hammer your own dents out each night. You never talk anyone down and you never leave a fight after it starts: no running, no clever exits.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Master of Arms's player line; good tagged moa-damage, moa-patch, bad tagged moa-parley, moa-never-leaves; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Samurai.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Plate and a magical katana, and enough clatter that you never act first. You never run either: the book uses the word suicidal and does not soften it.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Samurai's player line; good tagged samurai-kit, bad tagged samurai-never; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Bard.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You sing a different spell every time, free, and any Human will at least hear you out. Camp draws crowds, and with a Joiner along the dim ones all come for you first.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Bard's player line; good tagged bard-song, bard-humans, bad tagged bard-camp, bard-target; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Pickpocket.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Chests and monsters somehow hand over a little extra. Shopkeepers remember you all the same, charging more and paying less, and you have never been thanked.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Pickpocket's player line; good tagged pickpocket-item, bad tagged pickpocket-shops; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Pilfer.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Traps give up and chests fall open at your approach. Your hands, however, cannot leave a magic ring or staff alone, and now and then it comes apart and takes some of you with it.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Pilfer's player line; good tagged pilfer-traps, bad tagged pilfer-fumble; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Cat Burglar.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Your first strike always lands and you start knowing Dirty Trick. You also go through every door first, and every trap that catches you hurts far worse than it should.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Cat Burglar's player line; good tagged cat-burglar-first, free-skill, bad tagged cat-burglar-traps; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Cutthroat.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Your first blow always lands hard, armour or no armour, lamp or no lamp. Joiners still walk beside you, but now and then one does not reach the next floor, and nobody asks.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Cutthroat's player line; good tagged cutthroat-crit, bad tagged cutthroat-joiner; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Cloaker.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You vanish from any fight for free, right up until you land a blow, Spectres included. After that you run like everyone else, so the career is mostly encounters that never technically happened.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Cloaker's player line; good tagged cloaker-vanish, bad tagged cloaker-seen; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Ninja.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Your opening strike lands for the maximum, later ones find the weak spots, and you start with Silent Step. The silence is a tactic, but it means no fight is ever talked down.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Ninja's player line; good tagged ninja-opener, ninja-crit, free-skill, bad tagged ninja-silent; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Con Artist.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "You talk first, and most small foes decline to fight you at all. Your opening blow does nothing, since part of you is still hoping to sell them something.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Con Artist's player line; good tagged con-artist-talk, con-artist-leave, bad tagged con-artist-opener; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Acrobat.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Foes rarely land a hit, traps rarely land either, and you strike like a Fighter. You may carry nothing but a knife, and you start knowing Smoke.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Acrobat's player line; good tagged acrobat-dodge, acrobat-traps, acrobat-hit, free-skill, bad tagged acrobat-dagger; the exact SUB_NOTE text and the mechanical footer are unchanged and show under RULES."
+  }
+]
