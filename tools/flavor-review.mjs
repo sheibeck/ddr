@@ -13,7 +13,8 @@
 //   node tools/flavor-review.mjs --skeleton --round N --reviewer "<text>" --out <file>
 //        write a verdict file with one row per reviewed key { key, h, verdict:
 //        null } (round 1) or per key whose latest verdict is revise (round 2
-//        and later). Every verdict is null: the validator rejects the file
+//        and later; also any key with no verdict yet, e.g. a line added after
+//        round 1). Every verdict is null: the validator rejects the file
 //        until a reviewer has judged each line. --out must sit under
 //        docs/narrative-pass/verdicts and must not exist yet.
 //   node tools/flavor-review.mjs --check
@@ -97,7 +98,7 @@ async function main(argv) {
           if (!prior || prior.round <= v.round) latest.set(r.key, { round: v.round, verdict: r.verdict });
         }
       }
-      keep = entries.filter((e) => latest.get(e.key)?.verdict === "revise");
+      keep = entries.filter((e) => !latest.has(e.key) || latest.get(e.key).verdict === "revise");
     }
     const rows = keep.map((e) => ({ key: e.key, h: lineHash(e.line), verdict: null }));
     fs.mkdirSync(dir, { recursive: true });

@@ -1,0 +1,31 @@
+{
+  "round": 2,
+  "reviewer": "96-11 executor, fresh context, wrote none of the lines or the rewrites",
+  "rows": [
+    {"key":"bank:SPELL_FLAVOR.Bubble","h":"3a8508e3","verdict":"pass","note":"Meets the round-1 note: it has the attitude now and both halves, the bounce and the lingering cushion."},
+    {"key":"bank:SPELL_FLAVOR.Sense Presence","h":"4534654c","verdict":"pass","note":"The dark is scoped to the fight now, which is all the rule delivers."},
+    {"key":"bank:SPELL_FLAVOR.Size of the Behemoth","h":"7ffdf81a","verdict":"pass","note":"Lesser foes plus the hedge 'unless they know better' matches the below-your-level resist rule."},
+    {"key":"bank:MAGIC_ITEM_FLAVOR.Gauntlet of the Giant","h":"9efc9ddf","verdict":"pass","note":"'Slightly easier target' is honest for a +1 to hit."},
+    {"key":"bank:MAGIC_ITEM_FLAVOR.Pendant of Fortitude","h":"ef52ec0f","verdict":"pass","note":"No longer nullifies the blow. 'A bruise where a break would have been' is the upper edge of what half damage on one attack delivers, but it stays a bruise and not a miss."},
+    {"key":"bank:ARMOR_FLAVOR.Mail","h":"71c6d370","verdict":"pass","note":"The cutlery drawer gives it the attitude the plain inventory lacked."},
+    {"key":"bank:SUB_FLAVOR.Master of Arms.line","h":"3744c7b1","verdict":"pass","note":"Good: hits harder (moa-damage) and the nightly dents (moa-patch). Bad: neither talk nor walk out (moa-parley, moa-never-leaves). The joke is new and the rules phrase is no longer lifted."},
+    {"key":"bank:SUB_FLAVOR.Samurai.line","h":"950e188d","verdict":"pass","note":"The banned stem is gone from the line. Good: the kit (samurai-kit). Bad: never acts first and never runs (samurai-never). The canon SUB_NOTE rules text still says suicidal; that is the user's decision, not this review's."},
+    {"key":"bank:ABILITY_FLAVOR.Brace","h":"901e7f7a","verdict":"pass","note":"The count is gone. It names no limit, but the line is the act of bracing and RULES carries the two-blow limit; it does not contradict it."},
+    {"key":"bank:ABILITY_FLAVOR.Overhead Blow","h":"cd7d6331","verdict":"pass","note":"Has attitude now. 'A single huge swing' names the one-swing scope, not a rule number; kept."},
+    {"key":"bank:ABILITY_FLAVOR.Mark","h":"64ba44ed","verdict":"pass","note":"The glare that extracts a confession is the joke the plain restatement lacked."},
+    {"key":"bank:SKILL_FLAVOR.Cooking","h":"38e4c1b2","verdict":"pass","note":"Scoped to beasts as the rule is; skeletons are Walking Dead in the bestiary, so the aside is true."},
+    {"key":"bank:SKILL_FLAVOR.Kata","h":"86b9c432","verdict":"pass","note":"First verdict (added after round 1 by 96-12). Deadpan, number-free, and 'a breather before the encore' matches the wait before a repeat without naming it."},
+    {"key":"bank:SKILL_FLAVOR.Death Touch","h":"5589d770","verdict":"revise","fails":["consistent"],"note":"'Hurt already' contradicts the rule, which finishes anything under a fixed 15 hp: a fresh small foe qualifies and a wounded big one may not; say the foe is low or has little left, with no number."},
+    {"key":"bank:SKILL_FLAVOR.Sidestep","h":"d761eb73","verdict":"pass","note":"First verdict. 'A short while' is vague, with no unit or count; the image fits a to-hit penalty."},
+    {"key":"bank:SKILL_FLAVOR.Pommel Strike","h":"3360ef74","verdict":"pass","note":"First verdict. 'Thinking about it' is the lost turn, and it is a hit-only effect as in the rule."},
+    {"key":"bank:SKILL_FLAVOR.Battle Roar","h":"9db8627b","verdict":"pass","note":"First verdict. 'Your whole side' and 'for a moment' match the party-wide, short penalty; no number."},
+    {"key":"bank:SKILL_FLAVOR.Second Wind","h":"987ce5cb","verdict":"revise","fails":["numberFree"],"note":"'A few rounds' is a duration in disguise (a unit with a vague count, the cooldown); keep the pep-talk joke and say it needs time or a rest, with no unit."},
+    {"key":"bank:SKILL_FLAVOR.Sweep","h":"730dba8e","verdict":"pass","note":"First verdict. 'For a crowd' is the two-foe minimum and 'nobody gets the full helping' is the half damage, both without a number."},
+    {"key":"bank:SKILL_FLAVOR.Feint","h":"90c05c7c","verdict":"revise","fails":["numberFree"],"note":"'A few rounds off' is a duration in disguise (a unit with a vague count, the cooldown); keep the eyes-left joke and let the cooldown be a rest or a foe who has caught on, with no unit."},
+    {"key":"bank:SKILL_FLAVOR.Dirty Trick","h":"9606c4bf","verdict":"pass","note":"First verdict. Slapstick grit, nothing gory; 'barely see' and 'for a while' match the blind rule without a number."},
+    {"key":"bank:SKILL_FLAVOR.Smoke","h":"76cb3250","verdict":"pass","note":"First verdict. 'Foes swing at scenery' and a flee that works are both in the rule; 'for a spell' is an idiom, not a count."},
+    {"key":"bank:SKILL_FLAVOR.Silent Step","h":"255fbf29","verdict":"pass","note":"First verdict. Oblique: it never says the trick is an attack, and 'a soldier's habits' covers the Guard loosely; but it names the three spoilers the rule lists and contradicts nothing, and RULES carries the rest."},
+    {"key":"bank:CHIP_FLAVOR.unlock","h":"fabfe70b","verdict":"pass","note":"Has its own deadpan now and keeps the 'then the magic is spent' half of the rule."},
+    {"key":"bank:CHIP_FLAVOR.ability","h":"d29aacd5","verdict":"pass","note":"'Rather smug about it' is the attitude the restatement lacked; the ability still owns the fine print."}
+  ]
+}

@@ -16,8 +16,13 @@
 //   - both generated pages carry each key's review paragraph, escape the note,
 //     list the counts, are byte-identical across two generations and are
 //     byte-identical to the build with no verdict directory;
+//   - lines added AFTER round 1 (Phase 96 gap plan 96-12; plan 96-11 declared
+//     the rule, POST_ROUND1_PLANS): they have no round-1 row, an error if one
+//     is back-dated, and a first verdict in a later round; every other line
+//     still needs its round-1 row;
 //   - live: every present verdict file is valid, a round-1 file covers every
-//     live reviewed key, the committed pages are in sync and the worksheet
+//     live reviewed key except the declared post-round-1 lines (each judged in
+//     a later round), the committed pages are in sync and the worksheet
 //     resolves every live reviewed key to a domain and its rules text.
 
 import test from "node:test";
@@ -30,7 +35,7 @@ import { spawnSync } from "node:child_process";
 
 import {
   REVIEW_CHECKS, REVIEW_CHECKLIST, USER_OWNED_LINES, lineHash, reviewedLines, readVerdicts, validateVerdicts, validateClosed, worksheet,
-  VERDICT_DIR, LEDGER_DIR,
+  VERDICT_DIR, LEDGER_DIR, POST_ROUND1_PLANS,
 } from "../../tools/lib/flavor-review.mjs";
 import { buildReview, renderMarkdown, renderHtml, generate, checkPages, auditPage } from "../../tools/narrative-review.mjs";
 import { readLedgers } from "../../tools/lib/voice-checks.mjs";
@@ -84,6 +89,16 @@ test("lineHash: eight lowercase hex characters, stable, and sensitive to a singl
 });
 
 // ─── reviewedLines ─────────────────────────────────────────────────────────
+
+test("reviewedLines: each line remembers the plan that first added it, beside the plan that last set it", () => {
+  const lines = reviewedLines({ ledgers: FIX_LEDGERS });
+  const bolt = lines.find((l) => l.key === BOLT);
+  assert.equal(bolt.plan, "y-96-09");
+  assert.equal(bolt.first, "y-95-03", "a rewrite keeps the original first plan");
+  assert.equal(lines.find((l) => l.key === HUMAN).first, "y-96-01");
+  assert.deepStrictEqual([...POST_ROUND1_PLANS], ["y-96-12"], "the declared post-round-1 plans: only the 96-12 skill lines");
+  assert.ok(Object.isFrozen(POST_ROUND1_PLANS));
+});
 
 test("reviewedLines: only y-95 and y-96 keys, the last after wins, in a stable order", () => {
   const lines = reviewedLines({ ledgers: FIX_LEDGERS });
@@ -179,6 +194,30 @@ test("validateVerdicts: a round-1 file that omits a reviewed key names it; later
   assert.deepStrictEqual(errorsOf([file(2, [pass(HEAL)])]), [], "only round 1 must cover every line");
 });
 
+// A line added by a POST_ROUND1_PLANS plan after round 1 was recorded (the fixture's stand-in for the 96-12 skill lines).
+const KATA = "bank:SKILL_FLAVOR.Kata";
+const LATE_LEDGERS = [...FIX_LEDGERS, { plan: "y-96-12", rows: [ROW(KATA, "Courtyard drilling, tidily.")] }];
+const LATE_LINES = reviewedLines({ ledgers: LATE_LEDGERS });
+const hKata = lineHash("Courtyard drilling, tidily.");
+const kataPass = (extra = {}) => ({ key: KATA, h: hKata, verdict: "pass", ...extra });
+const kataRevise = (extra = {}) => ({ key: KATA, h: hKata, verdict: "revise", fails: ["voice"], note: "Too tidy; try a shrug.", ...extra });
+const lateErrors = (verdicts, opts) => validateVerdicts({ verdicts, lines: LATE_LINES }, opts);
+
+test("validateVerdicts (lines added after round 1): a first verdict in a later round covers them; round 1 alone does not", () => {
+  assert.deepStrictEqual(lateErrors([round1(), file(2, [kataPass()])]), [], "round 1 need not hold a line it never saw");
+  const alone = lateErrors([round1()]);
+  assert.ok(has(alone, /Kata: first added by y-96-12, after round 1, and no later round judges it/), alone.join("\n"));
+  assert.ok(!has(alone, /round 1 misses/), "round 1 is not blamed for a line it could not see");
+  // a back-dated round-1 row is refused: no verdict is fabricated for a line the round never saw
+  const backdated = lateErrors([file(1, [...round1().rows, kataPass()])]);
+  assert.ok(has(backdated, /Kata: has a round-1 row but was first added by y-96-12/), backdated.join("\n"));
+  // every other line still needs its round-1 row
+  const missing = lateErrors([file(1, [pass(HEAL), pass(BOLT)]), file(2, [kataPass()])]);
+  assert.ok(has(missing, /round 1 misses bank:RACE_FLAVOR\.Human\.line/), missing.join("\n"));
+  // with no round-1 file the coverage rule stays quiet, as before
+  assert.deepStrictEqual(lateErrors([file(2, [kataPass()])]), []);
+});
+
 test("validateVerdicts: userOwned is valid only on a USER_OWNED_LINES key, as a pass", () => {
   assert.deepStrictEqual([...USER_OWNED_LINES], [HEAL]);
   assert.deepStrictEqual(errorsOf([file(1, [pass(HEAL, { userOwned: true, note: "Disagree; the user's own." }), pass(BOLT), pass(HUMAN)])]), []);
@@ -211,6 +250,25 @@ test("validateClosed: a latest revise, a stale hash, an unreviewed key and a rou
   assert.ok(has(never, /Heal.*round 2 row but no earlier round revised it/), never.join("\n"));
   // a null verdict is not a review
   assert.ok(has(closedOf([file(1, [pass(HEAL), pass(BOLT), { key: HUMAN, h: h(HUMAN), verdict: null }])]).errors, /Human.*unreviewed/));
+});
+
+test("validateClosed (lines added after round 1): a first pass in round 2 closes them; a revise needs a later pass; a round-1 row or a plain round-2-only key still fails", () => {
+  const closedLate = (verdicts) => validateClosed({ verdicts, lines: LATE_LINES });
+  assert.deepStrictEqual(closedLate([round1(), file(2, [pass(BOLT), kataPass()])]).errors, [], "a first verdict in round 2 can be the closing one");
+  const fixed = closedLate([round1(), file(2, [pass(BOLT), kataRevise()]), file(3, [kataPass({ selfChecked: true })])]);
+  assert.deepStrictEqual(fixed.errors, []);
+  assert.deepStrictEqual(fixed.selfChecked, [{ key: KATA, round: 3, file: "r3.json" }]);
+  const stillRevise = closedLate([round1(), file(2, [kataRevise()])]).errors;
+  assert.ok(has(stillRevise, /Kata.*latest verdict is revise/), stillRevise.join("\n"));
+  const unreviewed = closedLate([round1()]).errors;
+  assert.ok(has(unreviewed, /Kata.*unreviewed/), unreviewed.join("\n"));
+  const stale = closedLate([round1(), file(2, [kataPass({ h: lineHash("Courtyard drilling, tidily?") })])]).errors;
+  assert.ok(has(stale, /Kata.*stale/), stale.join("\n"));
+  const backdated = closedLate([file(1, [...round1().rows, kataPass()])]).errors;
+  assert.ok(has(backdated, /Kata.*round-1 row but was first added by y-96-12/), backdated.join("\n"));
+  // the exemption is for the declared late key only: an ordinary line with just a round-2 row is still refused
+  const ordinary = closedLate([file(1, [pass(HEAL), pass(BOLT)]), file(2, [pass(HUMAN), kataPass()])]).errors;
+  assert.ok(has(ordinary, /Human.*round 2 row but no earlier round revised it/), ordinary.join("\n"));
 });
 
 test("validateClosed: a userOwned pass is accepted only for the USER_OWNED_LINES key", () => {
@@ -384,12 +442,21 @@ test("live: the reviewed set is the keys of the y-95 and y-96 ledgers", () => {
   assert.ok(liveLines.some((l) => l.key === "bank:RULES_COPY.label"), "the toggle words are reviewed too");
 });
 
-test("live: every present verdict file is valid and a round-1 file covers every reviewed key", () => {
+// Plan 96-11 (declared): a round-1 file covers every reviewed key EXCEPT the lines a POST_ROUND1_PLANS plan first added
+// after round 1 (the 96-12 active-skill lines); each of those has its first verdict in a later round, and none in round 1.
+// The rule used to read "a round-1 file covers every reviewed key"; no round-1 entry is invented for a line round 1 never saw.
+test("live: every present verdict file is valid and a round-1 file covers every reviewed key (post-round-1 lines get a first verdict later)", () => {
   assert.deepStrictEqual(validateVerdicts({ verdicts: liveVerdicts, lines: liveLines }), []);
+  const late = liveLines.filter((l) => POST_ROUND1_PLANS.includes(l.first)).map((l) => l.key);
+  assert.ok(late.length >= 11, "the eleven 96-12 skill lines are declared post-round-1");
   for (const v of liveVerdicts.filter((x) => x.round === 1)) {
     const have = new Set(v.rows.map((r) => r.key));
-    assert.deepStrictEqual(liveLines.filter((l) => !have.has(l.key)).map((l) => l.key), [], `${v.file} misses a line`);
-    assert.ok(v.rows.every((r) => r.verdict === "pass" || r.verdict === "revise"), "round 1 judged every line");
+    assert.deepStrictEqual(liveLines.filter((l) => !late.includes(l.key) && !have.has(l.key)).map((l) => l.key), [], `${v.file} misses a line`);
+    assert.deepStrictEqual(late.filter((k) => have.has(k)), [], `${v.file} holds a verdict for a line added after round 1`);
+    assert.ok(v.rows.every((r) => r.verdict === "pass" || r.verdict === "revise"), "round 1 judged every line it saw");
+  }
+  for (const k of late) {
+    assert.ok(liveVerdicts.some((v) => v.round >= 2 && v.rows.some((r) => r.key === k && (r.verdict === "pass" || r.verdict === "revise"))), `${k}: no later-round verdict`);
   }
 });
 

@@ -1,0 +1,9 @@
+{
+  "round": 3,
+  "reviewer": "96-11 executor, self-check after its own rewrite",
+  "rows": [
+    {"key":"bank:SKILL_FLAVOR.Death Touch","h":"f6731ef6","verdict":"pass","selfChecked":true,"note":"Round-2 finding (consistent) met: 'hurt already' is now 'has little left', which fits a fixed hp threshold met by a fresh small foe or a wounded big one. Automated checks green (skill domain shape and number rules, safety scan, hygiene, ledger chain). Self-judged, for the user's read."},
+    {"key":"bank:SKILL_FLAVOR.Second Wind","h":"96d40a35","verdict":"pass","selfChecked":true,"note":"Round-2 finding (numberFree) met: 'a few rounds' is gone; the cooldown is carried as 'time to become convincing again', joke kept. Automated checks green. Self-judged, for the user's read."},
+    {"key":"bank:SKILL_FLAVOR.Feint","h":"d8cad218","verdict":"pass","selfChecked":true,"note":"Round-2 finding (numberFree) met: 'a few rounds off' is gone; the cooldown is carried as the foe forgetting the last feint, eyes-left joke kept. Automated checks green. Self-judged, for the user's read."}
+  ]
+}

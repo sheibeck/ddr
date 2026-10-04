@@ -1,0 +1,35 @@
+[
+  {
+    "key": "bank:SKILL_FLAVOR.Death Touch",
+    "surface": "spells",
+    "trigger": "a special skill's flavour line (the Hero tab's special-skills list and the Final Sheet)",
+    "before": "A theatrical promise to end someone, kept only if the swing lands and the foe is hurt already.",
+    "after": "A theatrical promise to end someone, kept only if the swing lands and the foe has little left.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-2 review by 96-11): the independent reviewer marked this line revise (consistent); the executor rewrote it to agree with the rules text, which finishes anything under a fixed hp whether or not it was hurt first, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Second Wind",
+    "surface": "spells",
+    "trigger": "a special skill's flavour line (the Hero tab's special-skills list and the Final Sheet)",
+    "before": "A pep talk to yourself that happens to work, and needs a few rounds before it will again.",
+    "after": "A pep talk to yourself that happens to work, and needs time to become convincing again.",
+    "reasons": [
+      "number"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-2 review by 96-11): the independent reviewer marked this line revise (numberFree); the executor rewrote it to drop the disguised duration (a few rounds), and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Feint",
+    "surface": "spells",
+    "trigger": "a special skill's flavour line (the Hero tab's special-skills list and the Final Sheet)",
+    "before": "Eyes left, blade right: a classic that works nicely, then wants a few rounds off.",
+    "after": "Eyes left, blade right: a classic that works nicely, as soon as the foe forgets the last one.",
+    "reasons": [
+      "number"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-2 review by 96-11): the independent reviewer marked this line revise (numberFree); the executor rewrote it to drop the disguised duration (a few rounds), and the rules text is unchanged."
+  }
+]

@@ -95,13 +95,13 @@ export const SKILL_FLAVOR = Object.freeze({
   // worded apart from the twin ability line in ABILITY_FLAVOR so the two rows on one sheet never repeat each other.
   // Table order (Fighter actives, then Thief actives); same rules as the passives above.
   "Kata": "Courtyard drilling pays off in a tidy strike that wants a breather before the encore.",
-  "Death Touch": "A theatrical promise to end someone, kept only if the swing lands and the foe is hurt already.",
+  "Death Touch": "A theatrical promise to end someone, kept only if the swing lands and the foe has little left.",
   "Sidestep": "Practised footwork that has foes swinging at where you were a moment ago, for a short while.",
   "Pommel Strike": "A knock on the head with the blunt end, and a foe who is hit stands there thinking about it.",
   "Battle Roar": "Volume as a weapon: foes flinch, and their swings go wide of your whole side for a moment.",
-  "Second Wind": "A pep talk to yourself that happens to work, and needs a few rounds before it will again.",
+  "Second Wind": "A pep talk to yourself that happens to work, and needs time to become convincing again.",
   "Sweep": "Fancy broadwork for a crowd: everyone gets a taste, nobody gets the full helping.",
-  "Feint": "Eyes left, blade right: a classic that works nicely, then wants a few rounds off.",
+  "Feint": "Eyes left, blade right: a classic that works nicely, as soon as the foe forgets the last one.",
   "Dirty Trick": "Sand, a thumb and an elbow, applied to a foe's face until it can barely see for a while.",
   "Smoke": "A vanishing act with a good exit line, so foes swing at scenery and fleeing works for a spell.",
   "Silent Step": "Nobody heard that, least of all the foe; plate, gloom and a soldier's habits spoil the best of it.",

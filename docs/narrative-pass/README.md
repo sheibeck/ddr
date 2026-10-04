@@ -284,9 +284,20 @@ The same text is the frozen `REVIEW_CHECKLIST` in tools/lib/flavor-review.mjs.
   pass with `userOwned: true` and the concern in the note, and the line is never
   rewritten).
 
-**The rounds.** Round 1 covers every reviewed line. Later rounds cover only the
-lines whose latest verdict is revise. The review is CLOSED when every reviewed
-key's latest verdict is a pass whose hash equals the hash of the current line.
+**The rounds.** Round 1 covers every reviewed line it could see. Later rounds
+cover only the lines whose latest verdict is revise, and any line added after
+round 1 was recorded. The review is CLOSED when every reviewed key's latest
+verdict is a pass whose hash equals the hash of the current line.
+
+**Lines added after round 1.** Gap plan 96-12 added eleven active-skill lines
+after round 1 was recorded, so round 1 holds no verdict for them. The rule
+(declared in plan 96-11, `POST_ROUND1_PLANS` in tools/lib/flavor-review.mjs):
+every reviewed key has a verdict in round 1 or, if its first ledger row is from
+a plan listed there, a first verdict in a later round; the latest verdict must
+still be a pass at the current wording. A round-1 row for such a key is an
+error, because no verdict is ever back-dated onto a line the round never saw.
+`--skeleton --round N` (N of 2 or more) lists the keys with no verdict yet as
+well as the keys whose latest verdict is revise.
 
 **Who does what (the independence boundary).** An executor cannot spawn
 subagents, so "a separate reviewer" is a plan boundary. Phase 95 plans 03 and 04

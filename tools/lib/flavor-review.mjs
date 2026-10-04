@@ -60,10 +60,24 @@ export const REVIEW_CHECKLIST = Object.freeze({
  */
 export const USER_OWNED_LINES = Object.freeze(["bank:SPELL_FLAVOR.Heal"]);
 
+/**
+ * POST_ROUND1_PLANS — the ledger plans that added reviewed lines AFTER round 1
+ * was recorded (Phase 96 gap plan 96-12: the eleven active-skill lines). Round 1
+ * never saw these lines, so it cannot hold a verdict for them. DECLARED RULE:
+ * every reviewed key has a verdict in round 1 or, if its FIRST ledger row is
+ * from a plan listed here, a first verdict in a later round; in every case the
+ * LATEST verdict must be a pass at the current wording. A round-1 row for such a
+ * key is an error: no verdict is ever back-dated onto a line the round never saw.
+ * Add a plan here only when it adds reviewed lines after the last recorded
+ * round-1 file; the list is frozen and pinned by test/unit/flavor-review.test.js.
+ */
+export const POST_ROUND1_PLANS = Object.freeze(["y-96-12"]);
+
 const VERDICTS = Object.freeze(["pass", "revise"]);
 const ROW_FIELDS = Object.freeze(["key", "h", "verdict", "fails", "note", "selfChecked", "userOwned"]);
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const isText = (v) => typeof v === "string" && v.trim() !== "";
+const lateAdded = (l) => POST_ROUND1_PLANS.includes(l && l.first);
 
 /** lineHash(text) — the first eight lowercase hex characters of the SHA-1 of the UTF-8 text. */
 export function lineHash(text) {
@@ -74,7 +88,8 @@ export function lineHash(text) {
  * reviewedLines({ ledgers }) — [{ key, line, plan }] for every key the
  * y-95-* and y-96-* ledgers added, in code-unit key order. `line` is the last
  * `after` in plan order (a rewritten line is judged in its final wording);
- * `plan` is the plan that set it. A key whose last row removes the line
+ * `plan` is the plan that set it, `first` the plan that first added the key
+ * (POST_ROUND1_PLANS reads it). A key whose last row removes the line
  * (`after` empty) is no longer a line and is left out.
  */
 export function reviewedLines({ ledgers } = {}) {
@@ -83,7 +98,7 @@ export function reviewedLines({ ledgers } = {}) {
     if (!REVIEWED_PLAN.test(String(plan)) || !Array.isArray(rows)) continue;
     for (const r of rows) {
       if (!r || typeof r.key !== "string") continue;
-      last.set(r.key, { key: r.key, line: typeof r.after === "string" ? r.after : "", plan });
+      last.set(r.key, { key: r.key, line: typeof r.after === "string" ? r.after : "", plan, first: last.get(r.key)?.first ?? plan });
     }
   }
   return [...last.values()].filter((e) => e.line !== "").sort((a, b) => cmp(a.key, b.key));
@@ -114,8 +129,10 @@ export function readVerdicts(dir = path.join(REPO_ROOT, VERDICT_DIR)) {
  * validateVerdicts({ verdicts, lines }, { coverage }) — error strings (empty =
  * valid). `verdicts` is readVerdicts()'s shape, `lines` is reviewedLines()'s.
  * Checks the header, every row's shape, key membership, duplicate (key, round)
- * across files and, unless `coverage` is false, that a round-1 file covers
- * every reviewed line. It does NOT compare hashes with the current lines: a
+ * across files and, unless `coverage` is false and once a round-1 file exists,
+ * coverage: a round-1 file covers every reviewed line EXCEPT those first added
+ * by a POST_ROUND1_PLANS plan, and each of those has a first verdict row in a
+ * round 2 or later file (and none in round 1). It does NOT compare hashes with the current lines: a
  * verdict that outlives a rewrite is stale, not invalid (validateClosed and the
  * review page deal with staleness).
  */
@@ -162,9 +179,19 @@ export function validateVerdicts({ verdicts, lines }, { coverage = true } = {}) 
       }
     });
     if (coverage && v.round === 1) {
-      for (const l of lines ?? []) if (!inFile.has(l.key)) errors.push(`${file}: round 1 misses ${l.key}`);
+      for (const l of lines ?? []) if (!lateAdded(l) && !inFile.has(l.key)) errors.push(`${file}: round 1 misses ${l.key}`);
     }
   });
+  if (coverage && (verdicts ?? []).some((v) => v && !v.parseError && v.round === 1 && Array.isArray(v.rows))) {
+    const inRound = (pick) => new Set((verdicts ?? []).flatMap((v) => (v && !v.parseError && Array.isArray(v.rows) && pick(v.round) ? v.rows.map((r) => r && r.key) : [])));
+    const inRound1 = inRound((n) => n === 1);
+    const inLater = inRound((n) => Number.isInteger(n) && n >= 2);
+    for (const l of lines ?? []) {
+      if (!lateAdded(l)) continue;
+      if (inRound1.has(l.key)) errors.push(`${l.key}: has a round-1 row but was first added by ${l.first}, after round 1 (round 1 never saw it)`);
+      if (!inLater.has(l.key)) errors.push(`${l.key}: first added by ${l.first}, after round 1, and no later round judges it`);
+    }
+  }
   return errors;
 }
 
@@ -172,7 +199,9 @@ export function validateVerdicts({ verdicts, lines }, { coverage = true } = {}) 
  * validateClosed({ verdicts, lines }) — { errors, selfChecked }. The review is
  * closed when every reviewed key's LATEST verdict (highest round) is a pass
  * whose hash equals the hash of the current line. Also fails a round-2 or
- * later row for a key no earlier round revised. `selfChecked` lists the rows
+ * later row for a key no earlier round revised, unless the key was first added
+ * after round 1 (POST_ROUND1_PLANS) and this is its first verdict; such a key
+ * with a round-1 row fails too. `selfChecked` lists the rows
  * flagged `selfChecked: true` as { key, round, file }.
  */
 export function validateClosed({ verdicts, lines }) {
@@ -189,11 +218,14 @@ export function validateClosed({ verdicts, lines }) {
       if (r.selfChecked === true) selfChecked.push({ key: r.key, round: v.round, file: v.file });
     }
   }
-  for (const { key, line } of lines ?? []) {
+  for (const l of lines ?? []) {
+    const { key, line } = l;
     const rows = (byKey.get(key) ?? []).filter((r) => VERDICTS.includes(r.verdict)).sort((a, b) => a.round - b.round);
     if (!rows.length) { errors.push(`${key}: unreviewed (no pass or revise verdict)`); continue; }
+    if (lateAdded(l) && rows.some((r) => r.round === 1)) errors.push(`${key}: has a round-1 row but was first added by ${l.first}, after round 1`);
     rows.forEach((r) => {
-      if (r.round >= 2 && !rows.some((p) => p.round < r.round && p.verdict === "revise")) {
+      const earlier = rows.filter((p) => p.round < r.round);
+      if (r.round >= 2 && !earlier.some((p) => p.verdict === "revise") && !(lateAdded(l) && earlier.length === 0)) {
         errors.push(`${key}: round ${r.round} row but no earlier round revised it`);
       }
     });
