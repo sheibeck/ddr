@@ -169,6 +169,7 @@ detail; the backlog phases are the index.
 - Phase 91.2 inserted after Phase 91.1: Board Identity: Play Games names replace rolled handles (user 2026-09-30: unique names friends recognize, no re-roll; chose Play Games over unique rolled handles after the trade-offs; 2.2.0 clients refused until update; this milestone, before release)
 - Phase 93.1 inserted after Phase 93: Gauntlet of the Giant Worth Wearing: the unfixed half of GitHub player report #6 (Enlarge fixed in 2.3.0; the Gauntlet's +2 damage still isn't worth foes +1 to hit). User ruling 2026-10-03 while closing fixed player reports; ITEM-09.
 - Phase 94.1 inserted after Phase 94: Joiner Level Follows Depth: one level per three floors, 1 to 5 (user 2026-10-03, captured as a todo and added to v2.4; JOIN-01).
+- Build before screenshots (user 2026-10-03, during the v2.4 autonomous run): screenshots are not needed to build, so after Phase 97 (the last code phase) and BEFORE Phase 98, the run stops for the build gate: (1) debug APK built and installed on the Pixel 7 with the batched v2.4 device checklist for the user to test; (2) the 2.4.0 patch notes drafted and agreed with the user; (3) the signed release AAB (`npm run play:release`, versionCode 14) handed to the user to upload. Phase 98's shots are taken after that, on the tested build.
 
 ## Deferred Items
 
@@ -311,7 +312,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Approve the v2.4 roadmap, then /gsd-discuss-phase 93 and /gsd-plan-phase 93
+- v2.4 autonomous run (2026-10-03): plan + execute Phase 96, then discuss/plan/execute Phase 97; then the BUILD GATE before Phase 98 (debug APK + device checklist → patch notes agreed → signed AAB vc14 for the user's upload); then Phase 98 screenshots; then the milestone lifecycle.
 
 ## Performance Metrics
 
