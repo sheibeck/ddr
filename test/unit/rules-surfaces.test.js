@@ -919,6 +919,12 @@ test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets na
   const flavour = lines.filter((l) => l.startsWith("- Spell, scroll, weapon, armour"));
   assert.equal(flavour.length, 1, "exactly one flavour-layer bullet");
   for (const needle of ["→", "RULES"]) assert.ok(flavour[0].includes(needle), `the flavour bullet carries "${needle}"`);
+  // Phase 96 (plan 96-11): the identity, ability, special-skill and chip lines get their own old → new bullet, rules unchanged.
+  const identity = lines.filter((l) => l.startsWith("- Race, sub-class and class blurbs"));
+  assert.equal(identity.length, 1, "exactly one identity, ability and chip bullet");
+  for (const needle of ["→", "RULES", "ability and special-skill descriptions", "condition-chip explanations", "every rule and number unchanged"]) {
+    assert.ok(identity[0].includes(needle), `the identity bullet carries "${needle}"`);
+  }
   const setting = lines.filter((l) => l.startsWith("- Settings:"));
   assert.equal(setting.length, 1, "exactly one Settings bullet");
   for (const needle of ["→", "Always show the rules", "Off by default"]) assert.ok(setting[0].includes(needle), `the Settings bullet carries "${needle}"`);

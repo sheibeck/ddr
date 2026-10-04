@@ -322,3 +322,18 @@ rejects until a reviewer has judged the line.
 - `node tools/narrative-review.mjs` regenerates both pages; a row shows its
   verdicts after its why, and a counts section lists them. With no verdict file
   both pages are unchanged byte for byte.
+
+**How it closed.** Plan 96-08's executor recorded round 1 (211 pass, 14 revise of
+225 lines) and wrote none of the lines. Plan 96-09's executor rewrote the 14 revise
+lines and judged nothing. Gap plan 96-12 then added 11 active-skill lines after
+round 1, so they got their first verdict in round 2. Plan 96-11's executor, again
+fresh, recorded round 2 over the 14 rewrites and the 11 new lines (22 pass, 3
+revise: Death Touch, Second Wind and Feint); with no further agent to hand them to,
+it rewrote those three itself (`why/y-96-12b.json`) and recorded round 3 with
+`selfChecked: true`, the flag that tells the user these three were not seen by a
+second pair of eyes. The closed rule is pinned by
+`test/unit/flavor-review-closed.test.js`: it fails if a line is reworded after its
+verdict (by key), if a latest verdict is a revise, if a line is unreviewed, if a
+round repeats an earlier round's reviewer, if there are more selfChecked rows than
+round-2 revise rows, or if the committed pages differ from a fresh generation. The
+model document is `docs/TEXT-LAYERS.md`.
