@@ -4,7 +4,7 @@
 // tests one and two, and 'Tone'): the player layer is complete and number-free,
 // so rules cannot creep back into it. Table-driven over FLAVOR_DOMAINS, so
 // Phase 96 only appends a domain. Since 95-08 a domain whose map is missing
-// fails by name: the layer is complete (13 domains, 175 entries) and every
+// fails by name: the layer is complete (14 domains, 222 entries) and every
 // per-domain test runs.
 //
 // Per domain: every content key has a non-empty line, the map has no key
@@ -121,21 +121,23 @@ const NICHE_OF = Object.fromEntries(SPELLS.map((s) => [s.n, NICHE_LABELS[s.niche
 // the shape of the layer, pinned now (keys come from content)
 // ---------------------------------------------------------------------------
 
-test("the layer has thirteen domains covering 175 content keys", () => {
+test("the layer has fourteen domains covering 222 content keys", () => {
+  // Phase 96 (FLAVOR-04): declared re-pin, chip (42 condition keys plus 5 variant keys) added to the 175
   // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub-class (24) and class (3) added to the 111
   // Phase 96 (FLAVOR-04): declared re-pin, ability (21, the Bard's Sing included) and skill (10 passives) added to the 144
-  assert.equal(FLAVOR_DOMAINS.length, 13);
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 175);
+  assert.equal(FLAVOR_DOMAINS.length, 14);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 222);
   for (const d of FLAVOR_DOMAINS) assert.ok(d.id && d.module && d.exportName, `${d.id}: id, module and exportName`);
 });
 
-test("the layer is complete: all 13 domains export their map, 175 entries", () => {
+test("the layer is complete: all 14 domains export their map, 222 entries", () => {
+  // Phase 96 (FLAVOR-04): declared re-pin, chip (47) added to the 175
   // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub-class (24) and class (3) added to the 111
   // Phase 96 (FLAVOR-04): declared re-pin, ability (21) and skill (10) added to the 144
-  assert.equal(FLAVOR_DOMAINS.length, 13);
+  assert.equal(FLAVOR_DOMAINS.length, 14);
   assert.deepEqual(missingMaps(FLAVOR_DOMAINS), [], "every domain must export its map (95-08)");
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 175);
-  assert.equal(everyFlavorLine().length, 175);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 222);
+  assert.equal(everyFlavorLine().length, 222);
 });
 
 test("teeth: a domain whose map is missing is named by the completeness check", () => {

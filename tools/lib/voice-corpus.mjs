@@ -273,7 +273,8 @@ const nonCopy = (module, exp, reason) => Object.freeze({ module, export: exp, re
 export const NON_COPY_EXPORTS = Object.freeze([
   nonCopy("src/browser/bridge.js", "BRIDGE", "the developer registry of window.__mz* bridges; its owner, consumer and purpose notes are never rendered"),
   nonCopy("src/browser/combatPanel.js", "ENC_TYPES", "encounter family ids"),
-  nonCopy("src/browser/foeConditions.js", "FOE_CONDITIONS", "rows point at FOE_CONDITION_COPY and FOE_CONDITION_DESC; the text is walked through those banks"),
+  nonCopy("src/browser/flavorText.js", "CHIP_FLAVOR_VARIANTS", "the five CHIP_FLAVOR variant keys (ids such as haste/Speed of Sound); the sentences are walked through the CHIP_FLAVOR bank"),
+  nonCopy("src/browser/foeConditions.js", "FOE_CONDITIONS","rows point at FOE_CONDITION_COPY and FOE_CONDITION_DESC; the text is walked through those banks"),
   nonCopy("src/browser/heroConditions.js", "HERO_CONDITIONS", "the condition table: keys, fields, timers and source item names; the copy is HERO_CHIP_COPY"),
   // Phase 84, Plan 07: exported (from an already-existing module-private
   // const) so leaderboardPanel.js's controller can validate a SUB-CLASS

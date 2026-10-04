@@ -29,6 +29,7 @@
 // See docs/TEXT-LAYERS.md.
 
 import * as C from "../../content/index.js";
+import { HERO_CONDITIONS } from "./heroConditions.js";
 
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const names = (rows) => rows.map((r) => r.n);
@@ -39,6 +40,15 @@ const asMap = (m) => (m && typeof m === "object" && !Array.isArray(m) ? m : unde
 /** passiveSkillNames() — the skill names of C.FIGHTER_SKILLS then C.THIEF_SKILLS whose row has no `active` marker. */
 const passiveSkillNames = () =>
   [C.FIGHTER_SKILLS, C.THIEF_SKILLS].flatMap((table) => Object.keys(table).filter((n) => !table[n].active));
+
+/**
+ * CHIP_FLAVOR_VARIANTS — the five CHIP_FLAVOR keys beyond the HERO_CONDITIONS
+ * keys: the chip sentences that differ by kind or source in the shell
+ * (FOE_EFFECT_EXPLAIN dazed and weakened, HERO_OUT_EXPLAIN stopped, the Bubble
+ * mirror ward branch and HASTE_SPELL_EXPLAIN "Speed of Sound"). The slash keeps
+ * the ledger key scheme simple (the spell Open/Lock already uses one).
+ */
+export const CHIP_FLAVOR_VARIANTS = Object.freeze(["foeEffect/dazed", "foeEffect/weakened", "heroOut/stopped", "ward/mirror", "haste/Speed of Sound"]);
 
 /**
  * identityDomain(spec) — a frozen domain record for a content export that is a
@@ -81,9 +91,8 @@ export function identityDomain(spec) {
 }
 
 /**
- * FLAVOR_DOMAINS — the thirteen flavour domains so far, in order (eight from
- * Phase 95, then race, sub, class, ability and skill; a later plan appends
- * chip). Each record:
+ * FLAVOR_DOMAINS — the fourteen flavour domains, in order (eight from
+ * Phase 95, then race, sub, class, ability, skill and chip). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
  * the live content tables) and `lines()` (the map, or undefined while the
@@ -187,6 +196,16 @@ export const FLAVOR_DOMAINS = Object.freeze([
     exportName: "SKILL_FLAVOR",
     keys: () => passiveSkillNames(),
     lines: () => asMap(C.SKILL_FLAVOR),
+  }),
+  // Phase 96 (FLAVOR-04): a condition chip's line: the HERO_CONDITIONS keys in
+  // their emit order, then the variant keys for explanations that differ by
+  // kind or source. `keys()` returns a fresh array on every call.
+  Object.freeze({
+    id: "chip",
+    module: "content/flavor.js",
+    exportName: "CHIP_FLAVOR",
+    keys: () => [...HERO_CONDITIONS.map((e) => e.key), ...CHIP_FLAVOR_VARIANTS],
+    lines: () => asMap(C.CHIP_FLAVOR),
   }),
 ]);
 
@@ -308,6 +327,45 @@ export function flavorOfAbility(name) {
  */
 export function flavorOfSkill(name) {
   return flavorOf("skill", name);
+}
+
+/**
+ * flavorOfChip(cn) — the flavour line for a condition chip descriptor `cn`
+ * (`key`, and where relevant `kind`, `ability`, `source`, `mirror`), or "".
+ * Order: an `ability` chip with a catalog `ability` id reads that ability's own
+ * line (falling back to the chip's `ability` key line); a foeEffect with a
+ * mapped kind reads `foeEffect/<kind>`; a stopped heroOut reads
+ * `heroOut/stopped`; a mirror ward reads `ward/mirror`; a haste from "Speed of
+ * Sound" reads `haste/Speed of Sound`; any other HERO_CONDITIONS key reads its
+ * own line. An unknown key (the shell's `default` explanation has no chip line),
+ * a malformed or hostile descriptor reads "". Never throws, never mutates.
+ */
+export function flavorOfChip(cn) {
+  try {
+    if (!cn || typeof cn !== "object" || Array.isArray(cn)) return "";
+    const key = cn.key;
+    if (typeof key !== "string" || !HERO_CONDITIONS.some((e) => e.key === key)) return "";
+    if (key === "ability") {
+      const id = cn.ability;
+      if (typeof id === "string" && has(C.ABILITY_BY_ID, id)) {
+        const own = flavorOf("ability", C.ABILITY_BY_ID[id].name);
+        if (own) return own;
+      }
+      return flavorOf("chip", key);
+    }
+    let variant = "";
+    if (key === "foeEffect" && typeof cn.kind === "string") variant = `foeEffect/${cn.kind}`;
+    else if (key === "heroOut" && cn.kind === "stopped") variant = "heroOut/stopped";
+    else if (key === "ward" && cn.mirror) variant = "ward/mirror";
+    else if (key === "haste" && cn.source === "Speed of Sound") variant = "haste/Speed of Sound";
+    if (variant && CHIP_FLAVOR_VARIANTS.includes(variant)) {
+      const line = flavorOf("chip", variant);
+      if (line) return line;
+    }
+    return flavorOf("chip", key);
+  } catch {
+    return "";
+  }
 }
 
 /**
