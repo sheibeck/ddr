@@ -165,3 +165,57 @@ export const JOINER_PARTING_LINES = [
   "{name} wishes you the best. {name} has met the best. The two are not expected to overlap.",
   "{name} goes without a word, having saved several for the tavern.",
 ];
+
+/**
+ * RACE_FLAVOR and CLASS_FLAVOR — Phase 96 (FLAVOR-03; CONTEXT 'Race, sub-class
+ * and class blurbs'): the player line for each race and class.
+ *
+ * The exact RACE_NOTE, CLASS_NOTE and the mechanical footer stay where they
+ * are, pinned byte for byte by the identity guards, and show under RULES. These
+ * maps are keyed by name beside the content and never put on a row or in a
+ * save. Every line is up to two sentences and at most 200 characters, with no
+ * number, die or percentage. Each race entry is `{ line, good, bad }`: the ids
+ * are identityEntries ids from src/browser/identityFooter.js that the wording
+ * hints at (Human is the neutral yardstick and carries `neutral` alone).
+ * test/unit/identity-flavor.test.js checks every tag is a real id of the right
+ * side. Reviewed on docs/narrative-pass/review.html.
+ */
+export const RACE_FLAVOR = Object.freeze({
+  "Human": Object.freeze({
+    line: "No perks, no penalties and no excuses: the yardstick every other race is measured against, and the one the dungeon forgets first.",
+    good: Object.freeze([]),
+    bad: Object.freeze([]),
+    neutral: "human-neutral",
+  }),
+  "Elven": Object.freeze({
+    line: "Shopkeepers adore you, Humans hear you out and your aim is rude. Then anything lands a blow and you remember how little of you there is, and how easy to hit.",
+    good: Object.freeze(["elven-prices", "elven-humans", "race-to-hit"]),
+    bad: Object.freeze(["race-hp-mul", "race-foe-to-hit"]),
+  }),
+  "Dwarven": Object.freeze({
+    line: "Cheap in the shops, slow to starve, heavy of hand and kind to your armour. Everything in here swings at you as if it had been practising, which the dwarves call a fair trade.",
+    good: Object.freeze(["dwarven-prices", "race-upkeep", "race-dmg", "race-armor-wear"]),
+    bad: Object.freeze(["race-foe-strike-step"]),
+  }),
+  "Wilmsry": Object.freeze({
+    line: "Everyone wants to haggle with you, you mend like a lizard and you can talk down nearly anything. You will not take a Magic User along, and you learn so slowly that survival teaches you nothing.",
+    good: Object.freeze(["wilmsry-talk", "wilmsry-haggle", "race-heal2x"]),
+    bad: Object.freeze(["wilmsry-joiners", "race-sp-mul"]),
+  }),
+  "Fridgian": Object.freeze({
+    line: "No armour, no Samurai career and no say in who strikes first, but a hide like a boot and a habit of losing the plot and swinging again. The Game Master has notes.",
+    good: Object.freeze(["race-frenzy", "race-hide"]),
+    bad: Object.freeze(["race-no-armor", "race-no-samurai", "race-slow"]),
+  }),
+  "Troll": Object.freeze({
+    line: "Sturdy from the first step and brutal with every swing. Shops overcharge you, foes find you easy to hit and your appetite is a municipal problem.",
+    good: Object.freeze(["race-flat-hp", "race-dmg"]),
+    bad: Object.freeze(["troll-prices", "race-size-face", "race-eats"]),
+  }),
+});
+
+export const CLASS_FLAVOR = Object.freeze({
+  "Magic User": "Fragile, unarmoured by temperament and entirely in the grimoire's hands: the spells are the class, and everything else is decoration.",
+  "Fighter": "Hit points, heavy armour and a poor opinion of spellbooks: the Fighter stands in the doorway and takes it, which is the whole job description.",
+  "Thief": "Light on hit points and lighter on armour, but the only class with a full toolbox of skills. The plan is to be somewhere else when it matters, and the toolbox is how.",
+});

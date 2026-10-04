@@ -4,7 +4,7 @@
 // tests one and two, and 'Tone'): the player layer is complete and number-free,
 // so rules cannot creep back into it. Table-driven over FLAVOR_DOMAINS, so
 // Phase 96 only appends a domain. Since 95-08 a domain whose map is missing
-// fails by name: the layer is complete (8 domains, 111 entries) and every
+// fails by name: the layer is complete (10 domains, 120 entries) and every
 // per-domain test runs.
 //
 // Per domain: every content key has a non-empty line, the map has no key
@@ -115,17 +115,19 @@ const NICHE_OF = Object.fromEntries(SPELLS.map((s) => [s.n, NICHE_LABELS[s.niche
 // the shape of the layer, pinned now (keys come from content)
 // ---------------------------------------------------------------------------
 
-test("the layer has eight domains covering 111 content keys", () => {
-  assert.equal(FLAVOR_DOMAINS.length, 8);
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 111);
+test("the layer has ten domains covering 120 content keys", () => {
+  // Phase 96 (FLAVOR-03): declared re-pin, race (6) and class (3) added to the 111
+  assert.equal(FLAVOR_DOMAINS.length, 10);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 120);
   for (const d of FLAVOR_DOMAINS) assert.ok(d.id && d.module && d.exportName, `${d.id}: id, module and exportName`);
 });
 
-test("the layer is complete: all 8 domains export their map, 111 entries", () => {
-  assert.equal(FLAVOR_DOMAINS.length, 8);
+test("the layer is complete: all 10 domains export their map, 120 entries", () => {
+  // Phase 96 (FLAVOR-03): declared re-pin, race (6) and class (3) added to the 111
+  assert.equal(FLAVOR_DOMAINS.length, 10);
   assert.deepEqual(missingMaps(FLAVOR_DOMAINS), [], "every domain must export its map (95-08)");
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 111);
-  assert.equal(everyFlavorLine().length, 111);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 120);
+  assert.equal(everyFlavorLine().length, 120);
 });
 
 test("teeth: a domain whose map is missing is named by the completeness check", () => {

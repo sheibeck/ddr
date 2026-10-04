@@ -77,8 +77,9 @@ export function identityDomain(spec) {
 }
 
 /**
- * FLAVOR_DOMAINS — the flavour domains, in order (eight from Phase 95; the
- * identity domains are appended below). Each record:
+ * FLAVOR_DOMAINS — the ten flavour domains so far, in order (eight from
+ * Phase 95, then race and class; 96-02 and later append sub, ability, skill
+ * and chip). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
  * the live content tables) and `lines()` (the map, or undefined while the
@@ -141,6 +142,22 @@ export const FLAVOR_DOMAINS = Object.freeze([
     exportName: "ARMOR_FLAVOR",
     keys: () => C.ARMORS.map((a) => a.name),
     lines: () => asMap(C.ARMOR_FLAVOR),
+  }),
+  // Phase 96 (FLAVOR-03): the identity domains. A race is a tagged record; a
+  // class is a plain string with no tags (it has no identity good and bad).
+  identityDomain({
+    id: "race",
+    module: "content/flavor.js",
+    exportName: "RACE_FLAVOR",
+    keys: () => Object.keys(C.RACES),
+    read: () => C.RACE_FLAVOR,
+  }),
+  Object.freeze({
+    id: "class",
+    module: "content/flavor.js",
+    exportName: "CLASS_FLAVOR",
+    keys: () => Object.keys(C.CLASSES),
+    lines: () => asMap(C.CLASS_FLAVOR),
   }),
 ]);
 

@@ -24,12 +24,13 @@ import {
 } from "../../src/browser/flavorText.js";
 import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES } from "../../content/index.js";
 
-const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5 };
+// Phase 96 (FLAVOR-03): declared re-pin, race (6) and class (3) added
+const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5, race: 6, class: 3 };
 
-test("FLAVOR_DOMAINS: eight domains, in order, 111 unique keys", () => {
+test("FLAVOR_DOMAINS: ten domains, in order, 120 unique keys", () => {
   assert.deepEqual(
     FLAVOR_DOMAINS.map((d) => d.id),
-    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor"],
+    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "class"],
   );
   let total = 0;
   for (const d of FLAVOR_DOMAINS) {
@@ -41,7 +42,7 @@ test("FLAVOR_DOMAINS: eight domains, in order, 111 unique keys", () => {
     total += keys.length;
   }
   assert.ok(Object.isFrozen(FLAVOR_DOMAINS));
-  assert.equal(total, 111);
+  assert.equal(total, 120);
 });
 
 test("FLAVOR_DOMAINS: keys() returns a fresh array every call", () => {
