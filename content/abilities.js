@@ -109,3 +109,37 @@ export const ABILITY_POOL = Object.freeze({
  * enough to never tick down mid-fight, cleared by endCombat's existing
  * clearRoundTimers so the ability is READY again at the next fight. */
 export const ONCE_A_FIGHT = 999;
+
+// Phase 96 (FLAVOR-04; CONTEXT 'Abilities and chips'): the player line for each
+// of the 20 catalog abilities and for the Bard's Sing (which is not a catalog
+// row: its rules text is COMBAT_MENU_COPY.singDesc). Keyed by `name` here,
+// never on a row, so the frozen catalog rows and the saves that list ability
+// ids stay byte-identical. Each row's `txt` stays the exact rules text, pinned
+// by the v2.3 guards (abilities-catalog, ability-state-copy, skill-audit) and
+// shown under RULES; the Phase 94 state labels and gate reasons are not
+// touched. Every line is one sentence of at most 100 characters with no
+// number, die or percentage, and points the same way as its txt. Reviewed on
+// docs/narrative-pass/review.html.
+export const ABILITY_FLAVOR = Object.freeze({
+  "Kata": "Years of practice in one tidy motion, so the next blow lands better and bites harder.",
+  "Death Touch": "Announce the blow, then land it: the frail are finished, and the stunt is not repeated this fight.",
+  "Sidestep": "A brief lesson in not standing where the sword is going, which foes find terribly rude.",
+  "Pommel Strike": "The handle instead of the pointy bit, and a landed blow costs the foe its next move.",
+  "Battle Roar": "A bellow so unpleasant that foes aim worse at everyone on your side for a while.",
+  "Second Wind": "A deep breath, a dirty look at fate, and some of your health comes crawling back.",
+  "Sweep": "A generous arc that clips every foe in reach, but only if there is a crowd to be clipped.",
+  "Brace": "Plant your feet and clench: the next few blows that land hurt rather less than they might.",
+  "Riposte": "Defence with a grudge: for a moment, every foe that misses you gets your weapon in return.",
+  "Taunt": "Invite every foe to swing at you, and let your armour do the heavy lifting for a while.",
+  "Overhead Blow": "Everything you have behind a single swing: it hits much harder, and misses a little more.",
+  "Last Stand": "Saved for when you are nearly done for: a furious flurry from someone with nothing to lose.",
+  "Silent Step": "A strike from nowhere that hurts extra, spoiled by plate, darkness and a soldierly manner.",
+  "Feint": "A showy bluff that gets the foe's guard all wrong, so the blade lands better and bites deeper.",
+  "Dirty Trick": "A fistful of grit and no sense of honour: the foe goes blind and hits only by fluke.",
+  "Smoke": "Gone in a puff of showmanship: foes seldom hit you, and running away finally works.",
+  "Cutpurse": "A blow with a side hustle: if it lands, some of the foe's gold leaves with you.",
+  "Poisoned Edge": "A little something on the blade, so the foe keeps paying for the cut long after you stop.",
+  "Hamstring": "A sly cut behind the knee, after which the foe's blows land softer for the rest of the fight.",
+  "Mark": "Study the foe's soft spots until every strike afterwards hurts a bit more.",
+  "Sing": "Burst into song and let the tune choose the spell, free of charge and short on dignity.",
+});

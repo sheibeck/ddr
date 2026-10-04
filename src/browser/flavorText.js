@@ -36,6 +36,10 @@ const names = (rows) => rows.map((r) => r.n);
 const frozenScroll = (s) => (typeof s === "string" ? Object.freeze({ Scroll: s }) : undefined);
 const asMap = (m) => (m && typeof m === "object" && !Array.isArray(m) ? m : undefined);
 
+/** passiveSkillNames() — the skill names of C.FIGHTER_SKILLS then C.THIEF_SKILLS whose row has no `active` marker. */
+const passiveSkillNames = () =>
+  [C.FIGHTER_SKILLS, C.THIEF_SKILLS].flatMap((table) => Object.keys(table).filter((n) => !table[n].active));
+
 /**
  * identityDomain(spec) — a frozen domain record for a content export that is a
  * map of identity records `{ line, good, bad, neutral? }`. `spec` is `{ id,
@@ -77,9 +81,9 @@ export function identityDomain(spec) {
 }
 
 /**
- * FLAVOR_DOMAINS — the eleven flavour domains so far, in order (eight from
- * Phase 95, then race, sub and class; 96-03 and later append ability, skill
- * and chip). Each record:
+ * FLAVOR_DOMAINS — the thirteen flavour domains so far, in order (eight from
+ * Phase 95, then race, sub, class, ability and skill; a later plan appends
+ * chip). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
  * the live content tables) and `lines()` (the map, or undefined while the
@@ -165,6 +169,24 @@ export const FLAVOR_DOMAINS = Object.freeze([
     exportName: "CLASS_FLAVOR",
     keys: () => Object.keys(C.CLASSES),
     lines: () => asMap(C.CLASS_FLAVOR),
+  }),
+  // Phase 96 (FLAVOR-04): the 20 catalog abilities plus the Bard's Sing, which
+  // is not a catalog row (its rules text is COMBAT_MENU_COPY.singDesc).
+  Object.freeze({
+    id: "ability",
+    module: "content/abilities.js",
+    exportName: "ABILITY_FLAVOR",
+    keys: () => [...C.ABILITIES.map((a) => a.name), "Sing"],
+    lines: () => asMap(C.ABILITY_FLAVOR),
+  }),
+  // Phase 96 (FLAVOR-04): the ten passive special skills (rows with no `active`
+  // marker); an active skill is covered by its ability's line.
+  Object.freeze({
+    id: "skill",
+    module: "content/skills.js",
+    exportName: "SKILL_FLAVOR",
+    keys: () => passiveSkillNames(),
+    lines: () => asMap(C.SKILL_FLAVOR),
   }),
 ]);
 
@@ -268,6 +290,24 @@ export function flavorOfSpell(name) {
 /** flavorOfScroll() — the one flavour line every scroll shares, or "". */
 export function flavorOfScroll() {
   return flavorOf("scroll", "Scroll");
+}
+
+/**
+ * flavorOfAbility(name) — the flavour line for an ability: a catalog ability's
+ * `name` or the Bard's "Sing". "" for an unknown name or while the map is
+ * absent. Never throws.
+ */
+export function flavorOfAbility(name) {
+  return flavorOf("ability", name);
+}
+
+/**
+ * flavorOfSkill(name) — the flavour line for a passive special skill, keyed by
+ * the skill name. "" for an active skill (its ability line covers it), an
+ * unknown name, or while the map is absent. Never throws.
+ */
+export function flavorOfSkill(name) {
+  return flavorOf("skill", name);
 }
 
 /**

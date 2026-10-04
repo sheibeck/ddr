@@ -4,7 +4,7 @@
 // tests one and two, and 'Tone'): the player layer is complete and number-free,
 // so rules cannot creep back into it. Table-driven over FLAVOR_DOMAINS, so
 // Phase 96 only appends a domain. Since 95-08 a domain whose map is missing
-// fails by name: the layer is complete (11 domains, 144 entries) and every
+// fails by name: the layer is complete (13 domains, 175 entries) and every
 // per-domain test runs.
 //
 // Per domain: every content key has a non-empty line, the map has no key
@@ -25,8 +25,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { FLAVOR_DOMAINS, everyFlavorLine } from "../../src/browser/flavorText.js";
-import { SPELLS, POTIONS, TOOLS, TOOL_ORDER, BAG_ITEMS, JEWELRY, CLOAKS, STAVES, NICHE_LABELS } from "../../content/index.js";
+import { SPELLS, POTIONS, TOOLS, TOOL_ORDER, BAG_ITEMS, JEWELRY, CLOAKS, STAVES, NICHE_LABELS, ABILITIES, FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/index.js";
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/flavor.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 
 // ---------------------------------------------------------------------------
 // the predicates
@@ -108,6 +109,11 @@ const RULES_TXT = {
   race: RACE_NOTE,
   sub: SUB_NOTE,
   class: CLASS_NOTE,
+  // Phase 96 (FLAVOR-04): an ability's catalog txt, and the Bard's Sing row's
+  // rules text (it has no catalog row)
+  ability: { ...Object.fromEntries(ABILITIES.map((a) => [a.name, a.txt])), Sing: COMBAT_MENU_COPY.singDesc },
+  // Phase 96 (FLAVOR-04): a passive skill's rules text (the level-2 txt2 of Locks and Sewing is checked too, below)
+  skill: Object.fromEntries([...Object.entries(FIGHTER_SKILLS), ...Object.entries(THIEF_SKILLS)].map(([n, r]) => [n, r.txt])),
 };
 const NICHE_OF = Object.fromEntries(SPELLS.map((s) => [s.n, NICHE_LABELS[s.niche]]));
 
@@ -115,19 +121,21 @@ const NICHE_OF = Object.fromEntries(SPELLS.map((s) => [s.n, NICHE_LABELS[s.niche
 // the shape of the layer, pinned now (keys come from content)
 // ---------------------------------------------------------------------------
 
-test("the layer has eleven domains covering 144 content keys", () => {
+test("the layer has thirteen domains covering 175 content keys", () => {
   // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub-class (24) and class (3) added to the 111
-  assert.equal(FLAVOR_DOMAINS.length, 11);
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 144);
+  // Phase 96 (FLAVOR-04): declared re-pin, ability (21, the Bard's Sing included) and skill (10 passives) added to the 144
+  assert.equal(FLAVOR_DOMAINS.length, 13);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + d.keys().length, 0), 175);
   for (const d of FLAVOR_DOMAINS) assert.ok(d.id && d.module && d.exportName, `${d.id}: id, module and exportName`);
 });
 
-test("the layer is complete: all 11 domains export their map, 144 entries", () => {
+test("the layer is complete: all 13 domains export their map, 175 entries", () => {
   // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub-class (24) and class (3) added to the 111
-  assert.equal(FLAVOR_DOMAINS.length, 11);
+  // Phase 96 (FLAVOR-04): declared re-pin, ability (21) and skill (10) added to the 144
+  assert.equal(FLAVOR_DOMAINS.length, 13);
   assert.deepEqual(missingMaps(FLAVOR_DOMAINS), [], "every domain must export its map (95-08)");
-  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 144);
-  assert.equal(everyFlavorLine().length, 144);
+  assert.equal(FLAVOR_DOMAINS.reduce((n, d) => n + Object.keys(d.lines()).length, 0), 175);
+  assert.equal(everyFlavorLine().length, 175);
 });
 
 test("teeth: a domain whose map is missing is named by the completeness check", () => {
@@ -219,6 +227,13 @@ for (const d of FLAVOR_DOMAINS) {
     }
   });
 }
+
+test("skill: no passive-skill line repeats its level-2 rules text (txt2) either", () => {
+  const m = mapOf(FLAVOR_DOMAINS.find((d) => d.id === "skill"));
+  for (const [n, r] of [...Object.entries(FIGHTER_SKILLS), ...Object.entries(THIEF_SKILLS)]) {
+    if (typeof r.txt2 === "string" && m[n]) assert.notEqual(m[n], r.txt2, `SKILL_FLAVOR["${n}"] equals its txt2`);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // across the whole layer

@@ -1,0 +1,348 @@
+[
+  {
+    "key": "bank:ABILITY_FLAVOR.Kata",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Years of practice in one tidy motion, so the next blow lands better and bites harder.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Kata's player line; its exact rules text is unchanged in content:ABILITIES.kata.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Death Touch",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Announce the blow, then land it: the frail are finished, and the stunt is not repeated this fight.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Death Touch's player line; its exact rules text is unchanged in content:ABILITIES.deathTouch.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Sidestep",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A brief lesson in not standing where the sword is going, which foes find terribly rude.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Sidestep's player line; its exact rules text is unchanged in content:ABILITIES.sidestep.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Pommel Strike",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "The handle instead of the pointy bit, and a landed blow costs the foe its next move.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Pommel Strike's player line; its exact rules text is unchanged in content:ABILITIES.pommelStrike.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Battle Roar",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A bellow so unpleasant that foes aim worse at everyone on your side for a while.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Battle Roar's player line; its exact rules text is unchanged in content:ABILITIES.battleRoar.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Second Wind",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A deep breath, a dirty look at fate, and some of your health comes crawling back.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Second Wind's player line; its exact rules text is unchanged in content:ABILITIES.secondWind.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Sweep",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A generous arc that clips every foe in reach, but only if there is a crowd to be clipped.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Sweep's player line; its exact rules text is unchanged in content:ABILITIES.sweep.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Brace",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Plant your feet and clench: the next few blows that land hurt rather less than they might.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Brace's player line; its exact rules text is unchanged in content:ABILITIES.brace.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Riposte",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Defence with a grudge: for a moment, every foe that misses you gets your weapon in return.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Riposte's player line; its exact rules text is unchanged in content:ABILITIES.riposte.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Taunt",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Invite every foe to swing at you, and let your armour do the heavy lifting for a while.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Taunt's player line; its exact rules text is unchanged in content:ABILITIES.taunt.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Overhead Blow",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Everything you have behind a single swing: it hits much harder, and misses a little more.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Overhead Blow's player line; its exact rules text is unchanged in content:ABILITIES.overheadBlow.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Last Stand",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Saved for when you are nearly done for: a furious flurry from someone with nothing to lose.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Last Stand's player line; its exact rules text is unchanged in content:ABILITIES.lastStand.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Silent Step",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A strike from nowhere that hurts extra, spoiled by plate, darkness and a soldierly manner.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Silent Step's player line; its exact rules text is unchanged in content:ABILITIES.silentStep.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Feint",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A showy bluff that gets the foe's guard all wrong, so the blade lands better and bites deeper.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Feint's player line; its exact rules text is unchanged in content:ABILITIES.feint.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Dirty Trick",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A fistful of grit and no sense of honour: the foe goes blind and hits only by fluke.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Dirty Trick's player line; its exact rules text is unchanged in content:ABILITIES.dirtyTrick.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Smoke",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Gone in a puff of showmanship: foes seldom hit you, and running away finally works.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Smoke's player line; its exact rules text is unchanged in content:ABILITIES.smoke.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Cutpurse",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A blow with a side hustle: if it lands, some of the foe's gold leaves with you.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Cutpurse's player line; its exact rules text is unchanged in content:ABILITIES.cutpurse.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Poisoned Edge",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A little something on the blade, so the foe keeps paying for the cut long after you stop.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Poisoned Edge's player line; its exact rules text is unchanged in content:ABILITIES.poisonedEdge.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Hamstring",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "A sly cut behind the knee, after which the foe's blows land softer for the rest of the fight.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Hamstring's player line; its exact rules text is unchanged in content:ABILITIES.hamstring.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Mark",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Study the foe's soft spots until every strike afterwards hurts a bit more.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Mark's player line; its exact rules text is unchanged in content:ABILITIES.mark.txt and shows under RULES."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Sing",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "",
+    "after": "Burst into song and let the tune choose the spell, free of charge and short on dignity.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): Sing's player line; its exact rules text is unchanged in COMBAT_MENU_COPY.singDesc and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Stealth",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Your first blow of a fight is often a nasty surprise, as long as you left the plate at home.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Stealth's player line; its exact rules text is unchanged in content:FIGHTER_SKILLS.Stealth.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Hardiness",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Every wound, trap and bolt hurts a little less, and you stopped being impressed long ago.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Hardiness's player line; its exact rules text is unchanged in content:FIGHTER_SKILLS.Hardiness.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Ambidextrous",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Both hands pitch in on every strike, so each blow arrives with an encore.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Ambidextrous's player line; its exact rules text is unchanged in content:FIGHTER_SKILLS.Ambidextrous.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Cooking",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Whatever you kill, you can eat, and you do: a little health back and a ration for later.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Cooking's player line; its exact rules text is unchanged in content:FIGHTER_SKILLS.Cooking.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Runes/Signs",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Scrolls always do as they are told, and now and then they even survive the reading.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Runes/Signs's player line; its exact rules text is unchanged in content:FIGHTER_SKILLS.Runes/Signs.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Locks",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Chests surrender to patience, picks and brains, but a botched attempt loses the whole thing.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Locks's player line; its exact rules text is unchanged in content:THIEF_SKILLS.Locks.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Sewing",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "A needle, thread and a rest after a decent meal put your armour back in shape, within reason.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Sewing's player line; its exact rules text is unchanged in content:THIEF_SKILLS.Sewing.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Night Vision",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "The dark is just a room with the lights off, and it costs you nothing.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Night Vision's player line; its exact rules text is unchanged in content:THIEF_SKILLS.Night Vision.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Heft",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Extra muscle behind each swing, mail on your back and a kinder bill for upkeep.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Heft's player line; its exact rules text is unchanged in content:THIEF_SKILLS.Heft.txt and shows under RULES."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Acute Hearing",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "",
+    "after": "Nothing sneaks up on you, and trouble announces itself through the walls, if never by name.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips: Special skills'): Acute Hearing's player line; its exact rules text is unchanged in content:THIEF_SKILLS.Acute Hearing.txt and shows under RULES."
+  }
+]

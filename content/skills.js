@@ -67,3 +67,26 @@ export const THIEF_SKILLS = {
   "Smoke": { cost: 4, active: "smoke", txt: "gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it" },
   "Silent Step": { cost: 6, active: "silentStep", txt: "nobody heard that: your next attack never misses and doubles its damage, any round; once per fight; heavy armour, the dark (without a light), a Guard or a Soldier keep the hit and lose the doubling" },
 };
+
+// Phase 96 (FLAVOR-04; CONTEXT 'Abilities and chips: Special skills'): the
+// player line for each PASSIVE special skill (a row with no `active` marker).
+// The ten table-skill actives get no second line: their ability description
+// (ABILITY_FLAVOR in content/abilities.js) already covers them. Keyed by the
+// skill name here, never on a row, so every row's `txt` and `txt2` stay the
+// exact rules text, pinned by the v2.3 guards (skill-audit, abilities-catalog)
+// and shown under RULES. Locks and Sewing have a second rules text for the
+// level-2 tier; one line covers both. Every line is one sentence of at most
+// 100 characters with no number, die or percentage. Reviewed on
+// docs/narrative-pass/review.html.
+export const SKILL_FLAVOR = Object.freeze({
+  "Stealth": "Your first blow of a fight is often a nasty surprise, as long as you left the plate at home.",
+  "Hardiness": "Every wound, trap and bolt hurts a little less, and you stopped being impressed long ago.",
+  "Ambidextrous": "Both hands pitch in on every strike, so each blow arrives with an encore.",
+  "Cooking": "Whatever you kill, you can eat, and you do: a little health back and a ration for later.",
+  "Runes/Signs": "Scrolls always do as they are told, and now and then they even survive the reading.",
+  "Locks": "Chests surrender to patience, picks and brains, but a botched attempt loses the whole thing.",
+  "Sewing": "A needle, thread and a rest after a decent meal put your armour back in shape, within reason.",
+  "Night Vision": "The dark is just a room with the lights off, and it costs you nothing.",
+  "Heft": "Extra muscle behind each swing, mail on your back and a kinder bill for upkeep.",
+  "Acute Hearing": "Nothing sneaks up on you, and trouble announces itself through the walls, if never by name.",
+});
