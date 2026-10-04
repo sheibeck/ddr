@@ -22,17 +22,18 @@ import {
   flavorOfIdentity,
   flavorTagsOf,
   flavorOfAbility,
+  flavorOfSkill,
 } from "../../src/browser/flavorText.js";
-import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES, ABILITIES, ABILITY_FLAVOR } from "../../content/index.js";
+import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES, ABILITIES, ABILITY_FLAVOR, FIGHTER_SKILLS, THIEF_SKILLS, SKILL_FLAVOR } from "../../content/index.js";
 
 // Phase 96 (FLAVOR-03): declared re-pin, race (6), sub (24) and class (3) added
-// Phase 96 (FLAVOR-04): declared re-pin, ability (21: the 20 catalog names plus the Bard's Sing) added
-const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5, race: 6, sub: 24, class: 3, ability: 21 };
+// Phase 96 (FLAVOR-04): declared re-pin, ability (21: the 20 catalog names plus the Bard's Sing) and skill (10 passives) added
+const COUNTS = { spell: 41, scroll: 1, potion: 10, tool: 4, bag: 3, magic: 23, weapon: 24, armor: 5, race: 6, sub: 24, class: 3, ability: 21, skill: 10 };
 
-test("FLAVOR_DOMAINS: twelve domains, in order, 165 unique keys", () => {
+test("FLAVOR_DOMAINS: thirteen domains, in order, 175 unique keys", () => {
   assert.deepEqual(
     FLAVOR_DOMAINS.map((d) => d.id),
-    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class", "ability"],
+    ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class", "ability", "skill"],
   );
   let total = 0;
   for (const d of FLAVOR_DOMAINS) {
@@ -44,7 +45,24 @@ test("FLAVOR_DOMAINS: twelve domains, in order, 165 unique keys", () => {
     total += keys.length;
   }
   assert.ok(Object.isFrozen(FLAVOR_DOMAINS));
-  assert.equal(total, 165);
+  assert.equal(total, 175);
+});
+
+test("skill domain: the keys are exactly the rows with no `active` marker, and no key is an ability twin", () => {
+  const d = FLAVOR_DOMAINS.find((x) => x.id === "skill");
+  const passives = [...Object.entries(FIGHTER_SKILLS), ...Object.entries(THIEF_SKILLS)].filter(([, r]) => !r.active).map(([n]) => n);
+  assert.deepEqual(d.keys(), passives);
+  assert.equal(d.keys().length, 10);
+  assert.deepEqual(d.keys(), ["Stealth", "Hardiness", "Ambidextrous", "Cooking", "Runes/Signs", "Locks", "Sewing", "Night Vision", "Heft", "Acute Hearing"]);
+  const twins = new Set([...Object.entries(FIGHTER_SKILLS), ...Object.entries(THIEF_SKILLS)].filter(([, r]) => r.active).map(([n]) => n));
+  assert.ok(twins.size > 0 && d.keys().every((k) => !twins.has(k)), "no key is an active skill's name");
+  assert.deepEqual(Object.keys(SKILL_FLAVOR), passives);
+  assert.ok(Object.isFrozen(SKILL_FLAVOR));
+  assert.equal(d.module, "content/skills.js");
+  assert.equal(d.exportName, "SKILL_FLAVOR");
+  // an active skill reads "" (its ability line covers it), as does anything unknown; never throws
+  for (const k of d.keys()) assert.equal(flavorOfSkill(k), SKILL_FLAVOR[k], k);
+  for (const bad of [...twins, "No Such Skill", "__proto__", "", null, undefined, 7, [], hostile()]) assert.equal(flavorOfSkill(bad), "");
 });
 
 test("ability domain: the keys are the 20 catalog names in table order plus Sing, and Sing alone has no catalog row", () => {
