@@ -356,3 +356,69 @@ export const SUB_FLAVOR = Object.freeze({
     bad: Object.freeze(["acrobat-dagger"]),
   }),
 });
+
+/**
+ * CHIP_FLAVOR — Phase 96 (FLAVOR-04; CONTEXT 'Abilities and chips: Condition
+ * chips'): the player line a condition chip's tap card leads with.
+ *
+ * The exact CONDITION_EXPLAIN text, the measured effect lead and the "how long,
+ * from where" tail stay in the shell (mazeworld.html) and show under RULES; this
+ * map is keyed by chip key beside the content and never put on a row or in a
+ * save. The first 42 keys are the HERO_CONDITIONS keys in their emit order; the
+ * last five are variant keys for the explanations that differ by kind or source
+ * (a dazed or weakened foe effect, a stopped heroOut, an armed Bubble mirror, a
+ * Speed of Sound haste). An ability chip uses its ability's own line instead
+ * (flavorOfChip). Every line is one sentence of at most 100 characters, with no
+ * number, die or percentage, and points the way its explanation does: a harmful
+ * chip still says something is wrong, a timed buff does not read as lasting.
+ * Reviewed on docs/narrative-pass/review.html.
+ */
+export const CHIP_FLAVOR = Object.freeze({
+  "haste": "Quick enough that the rest of the round looks like it is wading through porridge.",
+  "invis": "The foes are attacking a spot you just left, and cannot work out why it keeps happening.",
+  "acute": "Your aim has sharpened into something faintly unfair, and the maze has noticed.",
+  "ether": "Walls are optional for now, so choose where you stand before the rock starts caring again.",
+  "enlarge": "Grown well past your size by magic, which is wonderful for swinging and awful for hiding.",
+  "giant": "A giant's gauntlet lends you stature: bigger blows, and a bigger thing for the foes to aim at.",
+  "glow": "You glow like a nightlight with ambitions, so the dark has no say in how you swing.",
+  "unseen": "Foes can only just make you out, which spoils their aim a little and their mood a lot.",
+  "tongue": "You speak every tongue the maze has, which helps whenever the foes can be talked to at all.",
+  "critWard": "Luck worn like armour: the foe's very best swing lands as merely a rude one.",
+  "plate": "Your cloak does a fair impression of plate armour, without the clanking or the repair bills.",
+  "power": "A ring's idea of generosity: every swing lands with a little extra on it.",
+  "lit": "A lit torch in your fist, so the dark can wait its turn to ruin your aim.",
+  "knit": "The cloak is slowly stitching you back together, provided you keep walking and stop dawdling.",
+  "flight": "Off the ground and above the problem, for exactly as long as the magic holds up.",
+  "strength": "Muscle on loan, and every strike and spell that connects gets to spend it.",
+  "unlock": "The next locked chest gives in at a touch, and then the magic is spent.",
+  "enchant": "A charm over you: you swing true, they swing wild, and nobody gets a lucky strike.",
+  "ability": "One of your tricks is still running, with the particulars on the ability itself.",
+  "might": "Strong in a way you did not plan, whether from a potion or a temper, so hit something.",
+  "ward": "Borrowed hit points stand between you and the blows, right up until they run dry.",
+  "mirror": "A flickering second you, so foes swing at the wrong one and mostly hit the air.",
+  "senses": "Every living thing nearby tickles your nerves, so darkness and ambushes matter far less.",
+  "regen": "Your body has decided to heal as you go, for this fight at least, and asked no permission.",
+  "foresight": "A twinge of warning means you get the first move when trouble next turns up.",
+  "reveal": "The whole floor lies open to you, but only while you stand still and keep staring.",
+  "braced": "Ready for the next hit and almost looking forward to it, which takes much of the sting out.",
+  "halfNext": "Your pendant is lined up to soften the next blow that lands, and fully expects credit.",
+  "nightVision": "Born with eyes for it, you treat the dark as scenery and fight in it without complaint.",
+  "itemCooldown": "The item is sulking after its last use and will come round if you keep walking.",
+  "staffCharges": "The staff is topping up its magic, slowly, and does not care to be hurried.",
+  "affliction": "Something nasty in the blood nibbles at you with every step, though never quite finishes the job.",
+  "foeEffect": "Something nasty a foe did to you is hanging about, though it will not stay long.",
+  "darkness": "The dark has closed in, so you see hardly a thing and swing worse until a light or time ends it.",
+  "fearArmed": "Something out there rattled you, and the next fight will open with your knees knocking.",
+  "afraid": "Fear has got into your hands: blows go astray and land weakly until your nerve returns.",
+  "heroOut": "Out of action, with nothing able to wake you early, and the foes entirely at their leisure.",
+  "heroBlind": "Your sight has packed up, and only the luckiest swings find anything to hit.",
+  "heroShrunk": "Shrunk by a scroll gone wrong, your blows land with all the force of a stern letter.",
+  "fightDark": "Swinging in the gloom is mostly guesswork, so blows land less often and never spectacularly.",
+  "insulted": "Rude things were said, and now every foe aims at you with unusual enthusiasm.",
+  "selfDot": "A scroll gone wrong is still burning, and it will keep at you each round until it tires.",
+  "foeEffect/dazed": "Your head is full of bells, so swings go wide until the ringing stops.",
+  "foeEffect/weakened": "Your arms have turned to wet rope, and blows land feebly until it passes.",
+  "heroOut/stopped": "Time stopped around you, and you with it, which the foes find very convenient.",
+  "ward/mirror": "A polished bubble waits to send the next blow back to its sender, with padding afterwards.",
+  "haste/Speed of Sound": "You move ahead of your own sound, swinging first and often, and the din arrives afterwards.",
+});
