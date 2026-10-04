@@ -228,17 +228,36 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. A walk across every screen (Gear, store, loot and find, spells, Hero, combat, chip taps, title) finds no description that still reads as a rulebook sentence, no rule or number moved, and every truth guard is still green against the technical layer.
 
 **Plans**: 0/11 plans executed
+**Wave 1**
 
 - [ ] 96-01-PLAN.md — the identity record shape (line plus tagged good and bad), the 200-character two-sentence rule, the tag guard, and the 6 race and 3 class lines
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 96-02-PLAN.md — the 24 sub-class lines, each tagged with a real good and a real bad, and the sub domain
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 96-03-PLAN.md — the 21 ability lines (the Bard's Sing included) and the 10 passive-skill lines, and their domains
-- [ ] 96-04-PLAN.md — the 47 condition-chip lines, the chip resolver and the coverage test against the shell's explanations
 - [ ] 96-05-PLAN.md — identity on screen: the roller reveal, the Hero dossier and the trait line, flavour first with RULES
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 96-04-PLAN.md — the 47 condition-chip lines, the chip resolver and the coverage test against the shell's explanations
 - [ ] 96-06-PLAN.md — abilities on screen: the combat ABILITIES rows and SING, the Hero ability and skill lists, the Final Sheet's tricks
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 96-07-PLAN.md — chips on screen: the HUD, YOUR LOT and Company tap cards with RULES, and the UP YOUR SLEEVE card
 - [ ] 96-08-PLAN.md — the FLAVOR-06 review mechanism (verdict files, worksheet, page extension) and the fresh-reviewer round 1
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 96-09-PLAN.md — rewrite every line the reviewer marked revise, chained in the ledger
 - [ ] 96-10-PLAN.md — the surface sweep: flavour number-free, no rulebook sentence left, each RULES body the unchanged text
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 96-11-PLAN.md — the independent round-2 re-review, the closed-review test, drift proofs, the final docs and the phase gate
 
 **UI hint**: yes

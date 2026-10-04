@@ -4,9 +4,9 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 96
 current_phase_name: "Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review"
-status: planning
+status: executing
 stopped_at: Completed 95-08-PLAN.md
-last_updated: "2026-10-03T23:52:46.009Z"
+last_updated: "2026-10-04T04:08:45.365Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 95 complete, transitioned to Phase 96
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 Phase: 96 — Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-10-03 — Phase 95 complete, transitioned to Phase 96
 Progress: [██████████] 100% (0 of 6 phases)
 
