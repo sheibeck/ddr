@@ -33,8 +33,9 @@ NAMES = {
     "class_thief": "Thief", "tourist": "Tourist", "survivor": "Survivor",
     "hoarder": "Hoarder", "party_animal": "Party Animal",
     "human_shields": "Human Shields", "disposable_help": "Disposable Help",
+    "ether_entombed": "Solid Miscalculation",
 }
-assert len(NAMES) == 29
+assert len(NAMES) == 30
 PALETTES = {
     1: ((103, 53, 28), (201, 118, 56), (249, 174, 91)),
     2: ((65, 80, 91), (157, 184, 193), (241, 247, 239)),
@@ -168,7 +169,7 @@ def main():
             rows.append({"id":id,"name":name,"tier":tier,
                          "file_play":f"play/{stem}.png",
                          "file_ingame":f"ingame/{stem}.png"})
-    assert len(rows)==49
+    assert len(rows)==50
     (ROOT/"manifest.json").write_text(json.dumps(rows,indent=2)+"\n")
     contact_sheet(rows)
     print(f"Built {len(rows)} icons from {len(NAMES)} source illustrations")

@@ -1,12 +1,14 @@
 # Mazeworld achievement icons
 
-The `play/` folder contains 49 opaque 512 × 512 icons for Play Console.
-The `ingame/` folder contains 49 transparent 144 × 144 icons.
-The `master/` folder contains 49 transparent 1254 × 1254 composites.
-The 29 individual original illustrations are in `sources/` and the four
+The `play/` folder contains 50 opaque 512 × 512 icons for Play Console.
+The `ingame/` folder contains 50 transparent 144 × 144 icons.
+The `master/` folder contains 50 transparent 1254 × 1254 composites.
+The 30 individual original illustrations are in `sources/` and the four
 transparent tier overlays are in `frames/`.
 
-`contact_sheet.png` previews every export. `manifest.json` maps each icon to
+`contact_sheet.png` previews the first 49 exports. It predates Solid
+Miscalculation (`ach_ether_entombed`, added 2026-10-04) and shows it after the
+next rebuild. `manifest.json` maps each icon to
 its achievement, name, tier and export paths. The optional achievement ideas
 were excluded.
 

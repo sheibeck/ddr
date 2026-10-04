@@ -47,7 +47,9 @@ Many achievements come in tiers (for example, die 50 / 100 / 200 / 500 times). *
 3. **Composite** each tier file with a script (Pillow or ImageMagick): base art, scaled to about 80%, layered under the frame. Draw the numerals as pixel art or composite them in code. **Never let the image model render text or numerals.** The numerals are there so tiers aren't told apart by color alone.
 4. Achievements that aren't tiered get **no frame**, only the base art.
 
-## The icon list (REQUIRED: 29 base pictures → 49 icon files)
+## The icon list (REQUIRED: 30 base pictures → 50 icon files)
+
+> 2026-10-04: the user added `ether_entombed` (Solid Miscalculation) by hand; its four files are in `achievements/` and it is in `build_achievements.py`.
 
 Each row gives the id, the display name, what unlocks it, and a visual concept. Treat the concept as a starting point and make it funny.
 
@@ -73,6 +75,7 @@ Each row gives the id, the display name, what unlocks it, and a visual concept. 
 |---|---|---|---|---|
 | `frequent_flier` | Frequent Flier | Die 50 / 100 / 200 / 500 times across all runs | **4** | A tombstone wearing a winged "frequent flier" pin, or a stack of tombstones with a loyalty-card punch-card leaning on it. |
 | `special_snowflake` | Special Snowflake | Die on floor 1 | none | A single ornate snowflake resting on a tiny tombstone, shimmering, very pleased with itself. |
+| `ether_entombed` | Solid Miscalculation | Die entombed: a Cloak of Ether runs out, or comes off, while you stand inside rock | none | A violet ethereal cloak with a skull clasp, caught fast in a sandstone wall (user art, 2026-10-04). |
 
 ### Body counts: kill 100 of each monster group (6 base pictures, no tiers for now)
 
@@ -117,18 +120,18 @@ Draw a **portrait bust** of each race wearing the same bronze "floor 5" medallio
 | `human_shields` | Human Shields | X of your Joiners have died in your service | **4** | A row of dented shields with little name tags, the front one visibly worried. |
 | `disposable_help` | Disposable Help | X of your summons have died | **4** | A summoning circle with a tiny "out to lunch, permanently" puff of smoke. |
 
-**Required count check:** 29 base pictures + 4 tier frames → **49** files in each output folder (depth ×3, unicorn, fully_dressed, naked_ambition, teetotaler, read_the_label, frequent_flier ×4, special_snowflake, kills ×6, races ×6, classes ×3, tourist, survivor ×4, hoarder ×4, party_animal ×4, human_shields ×4, disposable_help ×4).
+**Required count check:** 30 base pictures + 4 tier frames → **50** files in each output folder (depth ×3, unicorn, fully_dressed, naked_ambition, teetotaler, read_the_label, frequent_flier ×4, special_snowflake, ether_entombed, kills ×6, races ×6, classes ×3, tourist, survivor ×4, hoarder ×4, party_animal ×4, human_shields ×4, disposable_help ×4).
 
 ## OPTIONAL set (skip unless told "include optional")
 
 These are proposed but not approved. If included, use the same rules (tiered = 4 frames):
 
-- **Not tiered:** `well_rounded` (die of every cause) · `just_one_more_bite` (died from overeating) · `friendly_fire` (your own spell backfired) · `read_the_fine_print` (killed by your own summon) · `buried_talent` (entombed) · `poor_aim` (teleported into trouble) · `cant_take_it_with_you` (died rich) · `saving_it_for_later` (died holding an unused healing potion) · `speedrun` (died in the first few steps) · `diplomatic_incident` (insulted a foe mid-negotiation) · `riveting_company` (a foe got bored and left) · `its_not_you_its_me` (dismissed a Joiner) · `fairy_godmother` (faerie blessing) · `fairy_godmugger` (faerie curse) · `just_a_flesh_wound` (won a fight on 1 HP)
+- **Not tiered:** `well_rounded` (die of every cause) · `just_one_more_bite` (died from overeating) · `friendly_fire` (your own spell backfired) · `read_the_fine_print` (killed by your own summon) · ~~`buried_talent` (entombed)~~ (now required as `ether_entombed`, since entombment has one cause) · `poor_aim` (teleported into trouble) · `cant_take_it_with_you` (died rich) · `saving_it_for_later` (died holding an unused healing potion) · `speedrun` (died in the first few steps) · `diplomatic_incident` (insulted a foe mid-negotiation) · `riveting_company` (a foe got bored and left) · `its_not_you_its_me` (dismissed a Joiner) · `fairy_godmother` (faerie blessing) · `fairy_godmugger` (faerie curse) · `just_a_flesh_wound` (won a fight on 1 HP)
 - **Tiered ×4:** `tactical_retreat` (fled X times) · `tripwire_connoisseur` (sprang X traps) · `bomb_squad` (disarmed X traps) · `get_off_my_lawn` (turned X undead) · `cartographer` (fully mapped X floors) · `collected_neuroses` (gained X phobias) · `fashion_victim` (X armor pieces destroyed) · `retail_therapy` (spent X coin at the store)
 
 ## Deliverables
 
-1. The `achievements/master/`, `play/` and `ingame/` folders, **49 files each**, named exactly as above.
+1. The `achievements/master/`, `play/` and `ingame/` folders, **50 files each**, named exactly as above.
 2. `achievements/frames/`: the 4 tier-frame overlays (transparent, 1254 px).
 3. The compositing/export script you used, so tiers can be regenerated when thresholds change.
 4. `achievements/contact_sheet.png`: every icon from `ingame/` in a labeled grid, with the tiers of each achievement side by side.
@@ -136,7 +139,7 @@ These are proposed but not approved. If included, use the same rules (tiered = 4
 
 ## Self-check before you finish
 
-- [ ] 49 files in each output folder, and the names match the list exactly.
+- [ ] 50 files in each output folder, and the names match the list exactly.
 - [ ] The whole set looks like one family: same outline weight, light direction and palette as the test icon.
 - [ ] Each icon is recognizable at 64 px, and nothing important sits outside the 85% circle.
 - [ ] Tiers are told apart by frame **and** numeral, and all tiers of one achievement use identical base art.

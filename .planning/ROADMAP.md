@@ -626,6 +626,7 @@ Plans:
 
 - **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*.
 - **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*.
+- **Solid Miscalculation (user, 2026-10-04, icon done):** die entombed, when a Cloak of Ether runs out or comes off while you stand inside rock. Its id is `ether_entombed`, and it is not tiered. The `entombed` death cause has one home, `engine/movement.js#resolveEtherEnd`, so this is the brainstorm's *Buried Talent* under the user's name. The user drew the art and added it to `achievements/`.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
@@ -636,7 +637,7 @@ Plans:
     - *Just One More Bite* (gorge)
     - *Friendly Fire* (your own spell backfires; also `backfireSelfDamage`)
     - *Read the Fine Print* (killed by your own summon; also `summonBackfired`)
-    - *Buried Talent* (entombed)
+    - ~~*Buried Talent* (entombed)~~: taken by the user's *Solid Miscalculation* (2026-10-04)
     - *Poor Aim* (teleported into trouble)
 - **Dying with regrets:**
   - *You Can't Take It With You:* die with X coin unspent.
@@ -701,36 +702,37 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Party Animal (X Joiners) | TBD | ~4 | 1 |
 | Human Shields (fallen Joiners) | TBD | ~4 | 1 |
 | Disposable Help (fallen summons) | TBD | ~4 | 1 |
-| **Total** | | **49** (44 at 3 tiers) | **29** |
+| Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
+| **Total** | | **50** (45 at 3 tiers) | **30** |
 
 *The Claude brainstorm (not yet agreed):*
 
 | Group | Achievements | Icon files | Pictures |
 |---|---|---|---|
-| Death causes | Well-Rounded, Just One More Bite, Friendly Fire, Read the Fine Print, Buried Talent, Poor Aim | 6 | 6 |
+| Death causes | Well-Rounded, Just One More Bite, Friendly Fire, Read the Fine Print, Poor Aim (Buried Talent moved to the user's list) | 5 | 5 |
 | Dying with regrets | You Can't Take It With You, Saving It For Later, Speedrun | 3 | 3 |
 | Tiered counters | Tactical Retreat Enthusiast, Tripwire Connoisseur, Bomb Squad, Get Off My Lawn, Cartographer | 20 (4 tiers) | 5 |
 | Social disasters | Diplomatic Incident, Riveting Company, It's Not You It's Me, one for `joinerMurdered` | 4 | 4 |
 | Collectors | Collected Neuroses, Fashion Victim, Retail Therapy (tiered) | 12 (4 tiers) | 3 |
 | Faerie | Fairy Godmother, Fairy Godmugger | 2 | 2 |
 | Clutch | Just a Flesh Wound | 1 | 1 |
-| **Total** | | **48** (40 at 3 tiers) | **24** |
+| **Total** | | **47** (39 at 3 tiers) | **23** |
 
 *Scenarios:*
 
 | What ships | Icon files | Pictures |
 |---|---|---|
-| User's list as written | 44–49 | 29 |
-| User's list, kill counts tiered ×4 | ~67 | 29 |
+| User's list as written | 45–50 | 30 |
+| User's list, kill counts tiered ×4 | ~68 | 30 |
 | User's list + full brainstorm | ~84–97 | 53 |
 | Tier frames (made once, reused) | — | +4 |
 
-Minimum art job: **29 pictures + 4 tier frames**, exported as about **49 icon files**. The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
+Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
 
 *Decisions that move the counts:*
 
 - **Tier counts** for Survivor, Hoarder, Party Animal, Human Shields, Disposable Help and the kill counts. Each extra tier adds one icon file per track, but no new picture.
-- **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (29 pictures become 22).
+- **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
 **Constraints:** offline-first (no network needed to earn an achievement); no new runtime SDK beyond the existing Play Games plugin; family-friendly copy; needs a signed-in Pixel 7 check (unlock toast plus the Play Games popup), batched into the milestone-close checklist.
