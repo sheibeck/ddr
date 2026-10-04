@@ -50,7 +50,12 @@
   text="4 carried"
 ## #s-trait
 <div id="s-trait">
-  html="<b>Leader</b>, driven by <b>status</b>, afraid of <b>bats and rats</b>. No advantages, no penalties. The dungeon's default."
+  html="<b>Leader</b>, driven by <b>status</b>, afraid of <b>bats and rats</b>."
+  <button class="mw-rules-btn" aria-controls="mw-rules-hero-trait" aria-expanded="false" aria-label="Rules for Human" type="button" type="button" onclick>
+    text="RULES ▸"
+  <div id="mw-rules-hero-trait" class="mw-rules-body" hidden>
+    <p class="mw-rules-line">
+      text="No advantages, no penalties. The dungeon's default."
 ## #s-vp
 <div id="s-vp">
   text="none"
@@ -160,17 +165,47 @@
 <div id="doss">
   html=""
   <section>
-    html="<h3>Race</h3><p class=\"who\">Human</p><p>No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable.</p>"
-    <p class="doss-rules">
-      text="No advantages and no disadvantages: every other race is measured against this one."
+    <h3>
+      text="Race"
+    <p class="who">
+      text="Human"
+    <p>
+      text="No perks, no penalties and no excuses: the yardstick every other race is measured against, and the one the dungeon forgets first."
+    <button class="mw-rules-btn" aria-controls="mw-rules-doss-race" aria-expanded="false" aria-label="Rules for Human" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-doss-race" class="mw-rules-body" hidden>
+      <p class="mw-rules-line doss-rules">
+        text="No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable."
+      <p class="mw-rules-line doss-rules">
+        text="No advantages and no disadvantages: every other race is measured against this one."
   <section>
-    html="<h3>Class</h3><p class=\"who\">Magic User</p><p>Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make.</p>"
+    <h3>
+      text="Class"
+    <p class="who">
+      text="Magic User"
+    <p>
+      text="Fragile, unarmoured by temperament and entirely in the grimoire's hands: the spells are the class, and everything else is decoration."
+    <button class="mw-rules-btn" aria-controls="mw-rules-doss-class" aria-expanded="false" aria-label="Rules for Magic User" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-doss-class" class="mw-rules-body" hidden>
+      <p class="mw-rules-line doss-rules">
+        text="Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make."
   <section>
-    html="<h3>Subclass</h3><p class=\"who\">Wizard</p><p>Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy.</p>"
-    <p class="doss-rules">
-      text="Good: always starts with a level 1 direct-damage spell it can cast on day one; +3 to hit with thrown offense spells."
-    <p class="doss-rules">
-      text="Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells."
+    <h3>
+      text="Subclass"
+    <p class="who">
+      text="Wizard"
+    <p>
+      text="Your book opens with something that hurts, and your aim is good, but you refuse to lift a weapon while a spell remains. Illusion, meanwhile, is the Illusionist's, like a family recipe."
+    <button class="mw-rules-btn" aria-controls="mw-rules-doss-sub" aria-expanded="false" aria-label="Rules for Wizard" type="button" type="button" onclick>
+      text="RULES ▸"
+    <div id="mw-rules-doss-sub" class="mw-rules-body" hidden>
+      <p class="mw-rules-line doss-rules">
+        text="Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy."
+      <p class="mw-rules-line doss-rules">
+        text="Good: always starts with a level 1 direct-damage spell it can cast on day one; +3 to hit with thrown offense spells."
+      <p class="mw-rules-line doss-rules">
+        text="Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells."
 ## #hero-party
 <div id="hero-party">
 ## #hero-party-list
