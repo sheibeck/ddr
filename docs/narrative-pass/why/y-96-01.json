@@ -1,0 +1,110 @@
+[
+  {
+    "key": "bank:RACE_FLAVOR.Human.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "No perks, no penalties and no excuses: the yardstick every other race is measured against, and the one the dungeon forgets first.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Human's player line; Human is the neutral yardstick (tag human-neutral, no good or bad); the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:RACE_FLAVOR.Elven.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Shopkeepers adore you, Humans hear you out and your aim is rude. Then anything lands a blow and you remember how little of you there is, and how easy to hit.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Elven's player line; it hints at the good ids elven-prices, elven-humans, race-to-hit and the bad ids race-hp-mul, race-foe-to-hit; the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:RACE_FLAVOR.Dwarven.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Cheap in the shops, slow to starve, heavy of hand and kind to your armour. Everything in here swings at you as if it had been practising, which the dwarves call a fair trade.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Dwarven's player line; it hints at the good ids dwarven-prices, race-upkeep, race-dmg, race-armor-wear and the bad ids race-foe-strike-step; the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:RACE_FLAVOR.Wilmsry.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Everyone wants to haggle with you, you mend like a lizard and you can talk down nearly anything. You will not take a Magic User along, and you learn so slowly that survival teaches you nothing.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Wilmsry's player line; it hints at the good ids wilmsry-talk, wilmsry-haggle, race-heal2x and the bad ids wilmsry-joiners, race-sp-mul; the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:RACE_FLAVOR.Fridgian.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "No armour, no Samurai career and no say in who strikes first, but a hide like a boot and a habit of losing the plot and swinging again. The Game Master has notes.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Fridgian's player line; it hints at the good ids race-frenzy, race-hide and the bad ids race-no-armor, race-no-samurai, race-slow; the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:RACE_FLAVOR.Troll.line",
+    "surface": "blurbs",
+    "trigger": "a race's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "",
+    "after": "Sturdy from the first step and brutal with every swing. Shops overcharge you, foes find you easy to hit and your appetite is a municipal problem.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): Troll's player line; it hints at the good ids race-flat-hp, race-dmg and the bad ids troll-prices, race-size-face, race-eats; the exact RACE_NOTE text and the mechanical footer are unchanged and show under RULES."
+  },
+  {
+    "key": "bank:CLASS_FLAVOR.Magic User",
+    "surface": "blurbs",
+    "trigger": "a class's flavour blurb (the Hero tab dossier)",
+    "before": "",
+    "after": "Fragile, unarmoured by temperament and entirely in the grimoire's hands: the spells are the class, and everything else is decoration.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): the Magic User class line, untagged because a class has no identity good and bad; the exact CLASS_NOTE text is unchanged and shows under RULES."
+  },
+  {
+    "key": "bank:CLASS_FLAVOR.Fighter",
+    "surface": "blurbs",
+    "trigger": "a class's flavour blurb (the Hero tab dossier)",
+    "before": "",
+    "after": "Hit points, heavy armour and a poor opinion of spellbooks: the Fighter stands in the doorway and takes it, which is the whole job description.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): the Fighter class line, untagged because a class has no identity good and bad; the exact CLASS_NOTE text is unchanged and shows under RULES."
+  },
+  {
+    "key": "bank:CLASS_FLAVOR.Thief",
+    "surface": "blurbs",
+    "trigger": "a class's flavour blurb (the Hero tab dossier)",
+    "before": "",
+    "after": "Light on hit points and lighter on armour, but the only class with a full toolbox of skills. The plan is to be somewhere else when it matters, and the toolbox is how.",
+    "reasons": [
+      "joke",
+      "identity"
+    ],
+    "why": "Phase 96 (FLAVOR-03, CONTEXT 'Race, sub-class and class blurbs'): the Thief class line, untagged because a class has no identity good and bad; the exact CLASS_NOTE text is unchanged and shows under RULES."
+  }
+]
