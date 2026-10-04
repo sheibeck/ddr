@@ -29,6 +29,11 @@ import { setIdentityDials } from "./harness/identityDials.js";
 import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
 import { flavorOfItem, flavorOfIdentity, flavorOfAbility, flavorOfSkill } from "../../src/browser/flavorText.js";
 import { renderHeroTab } from "../../src/browser/heroTab.js";
+// Phase 96 (FLAVOR-04): the ability and skill surface cases read the Hero view model, the skill tables and the Final Sheet.
+import { characterSheetViewModel } from "../../src/browser/heroTab.js";
+import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/index.js";
+import { die } from "../../engine/death.js";
+import { finalSheetViewModel, renderFinalSheet } from "../../src/browser/finalSheet.js";
 import { footerLines } from "../../src/browser/identityFooter.js";
 import { RACES, RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/index.js";
 import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
@@ -1014,4 +1019,171 @@ test("(u) tolerant: a sub-class with no flavour line renders its section as befo
   assert.equal(sub.children.filter((el) => hasClass(el, "mw-rules-btn") || hasClass(el, "mw-rules-body")).length, 0);
   assert.ok(sectionParts(secs[0]).button, "the known race still has its toggle");
   assert.equal(String(view.document.getElementById("doss-who").textContent), `${view.state.c.race} Mystery Sub`);
+});
+
+// ─── Phase 96 (FLAVOR-04): the Hero ability and skill lists, and the Final Sheet's tricks ───
+//
+// The Hero tab's ability and passive-skill lists follow the one rule: the flavour leads, the exact txt sits behind RULES, the state
+// span and data-state are untouched, Always on shows the body with no toggle, an opened body survives a repaint. The read-only Final
+// Sheet shows the flavour and, only with Always on, the exact text as a static body with no control of any kind.
+
+const abilityLis = (document) => document.getElementById("s-abilities").children;
+const skillLis = (document) => document.getElementById("s-skills").children;
+const lisChild = (li, tag) => li.children.find((el) => String(el.tagName).toLowerCase() === tag);
+
+test("(v) Hero abilities: each row reads its flavour line with no digit, a collapsed RULES toggle and the exact txt; the state span is unchanged", () => {
+  for (const sub of ["Soldier", "Cat Burglar"]) {
+    const view = paintHero(sub, "Wilmsry");
+    const rows = characterSheetViewModel(view.state).abilities;
+    const lis = abilityLis(view.document);
+    assert.ok(rows.length >= 1 && lis.length === rows.length, `${sub}: one list item per ability`);
+    rows.forEach((row, i) => {
+      const li = lis[i];
+      const flavor = flavorOfAbility(row.name);
+      assert.ok(flavor, `${row.name} has a flavour line`);
+      assert.equal(textOf(lisChild(li, "i")), flavor, `${row.name}: the italic line is the flavour`);
+      assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/, `${row.name}: no digit in the flavour line`);
+      assert.equal(textOf(lisChild(li, "span")), row.state, `${row.name}: the state span is unchanged`);
+      const button = li.children.find((el) => hasClass(el, "mw-rules-btn"));
+      const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
+      assert.ok(button && body, `${row.name}: a RULES toggle and body`);
+      assert.equal(button.getAttribute("aria-expanded"), "false");
+      assert.equal(body.hidden, true);
+      assert.deepEqual(bodyLines(body), [ABILITY_BY_ID[row.id].txt], `${row.name}: the body is the ability's exact txt`);
+    });
+  }
+});
+
+test("(v) Hero abilities: in a fight the row keeps its data-state and state words; a tap opens one body without acting; a repaint keeps it open; Always on drops the toggle", () => {
+  const view = paintHero("Soldier", "Wilmsry");
+  view.state.combat = { foes: [foe()], type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you", pending: false };
+  view.repaint();
+  const rows = characterSheetViewModel(view.state).abilities;
+  const lis = abilityLis(view.document);
+  rows.forEach((row, i) => {
+    assert.equal(lis[i].dataset.state, row.stateKind, `${row.name}: data-state unchanged`);
+    assert.equal(textOf(lisChild(lis[i], "span")), row.state, `${row.name}: state words unchanged`);
+  });
+
+  const before = JSON.stringify(view.state);
+  const toggle = lis[0].children.find((el) => hasClass(el, "mw-rules-btn"));
+  tap(toggle);
+  assert.equal(lis[0].children.find((el) => hasClass(el, "mw-rules-body")).hidden, false, "the tapped body opens");
+  assert.equal(JSON.stringify(view.state), before, "a RULES tap never uses an ability or touches the game state");
+
+  view.repaint();
+  const after = abilityLis(view.document);
+  assert.equal(after[0].children.find((el) => hasClass(el, "mw-rules-body")).hidden, false, "the opened body survives a repaint");
+  assert.equal(after[1].children.find((el) => hasClass(el, "mw-rules-body")).hidden, true, "the other body stays closed");
+
+  setAlwaysRules(true);
+  view.repaint();
+  for (const li of abilityLis(view.document)) {
+    assert.equal(li.children.find((el) => hasClass(el, "mw-rules-btn")), undefined, "no toggle with Always on");
+    assert.equal(li.children.find((el) => hasClass(el, "mw-rules-body")).hidden, false);
+  }
+});
+
+test("(w) Hero skills: a passive row shows the skill flavour and a RULES body equal to txt (txt2 at level two); a Magic User and an empty list render as before", () => {
+  const fighter = paintHero("Soldier", "Wilmsry");
+  const owned = Object.keys(fighter.state.c.skills);
+  assert.ok(owned.length >= 1);
+  skillLis(fighter.document).forEach((li, i) => {
+    const name = owned[i];
+    assert.equal(textOf(lisChild(li, "i")), flavorOfSkill(name), `${name}: the italic line is the skill flavour`);
+    assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/);
+    const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
+    assert.ok(li.children.find((el) => hasClass(el, "mw-rules-btn")), `${name}: a RULES toggle`);
+    assert.equal(body.hidden, true);
+    assert.deepEqual(bodyLines(body), [FIGHTER_SKILLS[name].txt], `${name}: the body is the exact txt`);
+  });
+
+  const thief = paintHero("Cat Burglar", "Wilmsry");
+  thief.state.c.skills = { Locks: 2, Sewing: 1 };
+  thief.repaint();
+  const [locks, sewing] = skillLis(thief.document);
+  assert.equal(textOf(lisChild(locks, "b")), "Locks ✦", "level two keeps its mark");
+  assert.deepEqual(bodyLines(locks.children.find((el) => hasClass(el, "mw-rules-body"))), [THIEF_SKILLS.Locks.txt2], "level two shows txt2");
+  assert.deepEqual(bodyLines(sewing.children.find((el) => hasClass(el, "mw-rules-body"))), [THIEF_SKILLS.Sewing.txt], "level one shows txt");
+
+  const mu = newRun(1, [], { force: { cls: "Magic User" } });
+  const muDoc = createRecordingDocument().document;
+  renderHeroTab(muDoc.getElementById("screen-hero"), mu, {});
+  assert.equal(textOf(skillLis(muDoc)[0]), "A Magic User has spells instead.");
+  fighter.state.c.skills = {};
+  fighter.repaint();
+  assert.equal(textOf(skillLis(fighter.document)[0]), "No skills bought.");
+  assert.equal(findAll(fighter.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
+});
+
+function deadSheet(cls) {
+  const state = newRun(3, [], { force: { cls } });
+  if (cls === "Fighter") state.c.abilities = ["secondWind", "taunt"];
+  die(state, "trap", null, makeRng(2), [], () => 1);
+  const vm = finalSheetViewModel(state);
+  const { document } = createRecordingDocument();
+  const host = document.createElement("div");
+  renderFinalSheet(host, vm);
+  return { vm, host };
+}
+
+test("(x) Final Sheet: the flavour shows, no control exists and no rules text is present with the setting off", () => {
+  for (const cls of ["Fighter", "Thief"]) {
+    const { vm, host } = deadSheet(cls);
+    const withFlavor = vm.tricks.rows.filter((r) => r.flavor);
+    assert.ok(withFlavor.length >= 1, `${cls}: at least one trick has a flavour line`);
+    const all = walk(host);
+    const texts = all.map(textOf);
+    for (const r of withFlavor) {
+      assert.ok(texts.includes(r.flavor), `${cls}: ${r.name} shows its flavour`);
+      assert.ok(!texts.includes(r.description), `${cls}: ${r.name}'s exact text is absent with the setting off`);
+    }
+    for (const n of all) {
+      assert.notEqual(n.tagName, "button");
+      assert.equal(n.onclick, null);
+    }
+    assert.equal(findAll(host, "mw-rules-body").length, 0);
+    assert.equal(findAll(host, "mw-rules-btn").length, 0);
+  }
+});
+
+test("(x) Final Sheet: with Always on each flavoured row's exact text follows in a visible .mw-rules-body (final:trick:<name>) and there is still no button", () => {
+  setAlwaysRules(true);
+  for (const cls of ["Fighter", "Thief"]) {
+    const { vm, host } = deadSheet(cls);
+    const withFlavor = vm.tricks.rows.filter((r) => r.flavor && r.description);
+    assert.ok(withFlavor.length >= 1);
+    const all = walk(host);
+    for (const r of withFlavor) {
+      const id = "mw-rules-final-trick-" + r.name.replace(/[^A-Za-z0-9_-]/g, "-");
+      const body = all.find((n) => hasClass(n, "mw-rules-body") && n.id === id);
+      assert.ok(body, `${cls}: ${r.name} has a body ${id}`);
+      assert.equal(body.hidden, false, "the body is visible");
+      assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [r.description]);
+    }
+    for (const n of all) {
+      assert.notEqual(n.tagName, "button");
+      assert.equal(n.onclick, null);
+    }
+    assert.equal(findAll(host, "mw-rules-btn").length, 0, `${cls}: still no RULES button`);
+  }
+});
+
+test("(y) tolerant: an ability id absent from the catalog is dropped, and a skill with no flavour renders its txt with no toggle", () => {
+  const fighter = paintHero("Soldier", "Wilmsry");
+  fighter.state.c.abilities = ["noSuchAbility", "taunt"];
+  assert.doesNotThrow(() => fighter.repaint());
+  const lis = abilityLis(fighter.document);
+  assert.equal(lis.length, 1, "the unknown id is silently dropped");
+  assert.equal(textOf(lisChild(lis[0], "b")), ABILITY_BY_ID.taunt.name);
+
+  const thief = paintHero("Cat Burglar", "Wilmsry");
+  const noFlavor = Object.keys(THIEF_SKILLS).find((k) => !flavorOfSkill(k));
+  assert.ok(noFlavor, "an active thief skill carries no skill flavour");
+  thief.state.c.skills = { [noFlavor]: 1, "Mystery Skill": 1 };
+  assert.doesNotThrow(() => thief.repaint());
+  const [active, mystery] = skillLis(thief.document);
+  assert.equal(String(active.innerHTML), "<b>" + noFlavor + "</b><i>" + THIEF_SKILLS[noFlavor].txt + "</i>", "today's markup for an active skill");
+  assert.equal(String(mystery.innerHTML), "<b>Mystery Skill</b><i></i>", "today's markup for an unknown skill");
+  assert.equal(findAll(thief.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
 });
