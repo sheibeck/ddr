@@ -227,7 +227,10 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every player text rewritten in Phases 95 and 96 passes the family-friendly safety scan and a narrative review in the house sarcastic voice, and a review page lists each text with its verdict.
   4. A walk across every screen (Gear, store, loot and find, spells, Hero, combat, chip taps, title) finds no description that still reads as a rulebook sentence, no rule or number moved, and every truth guard is still green against the technical layer.
 
-**Plans**: 8/11 plans executed
+**Plans**: 10/12 plans executed
+
+- [ ] 96-12-PLAN.md
+
 **Wave 1**
 
 - [x] 96-01-PLAN.md — the identity record shape (line plus tagged good and bad), the 200-character two-sentence rule, the tag guard, and the 6 race and 3 class lines
@@ -253,8 +256,8 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 96-09-PLAN.md — rewrite every line the reviewer marked revise, chained in the ledger
-- [ ] 96-10-PLAN.md — the surface sweep: flavour number-free, no rulebook sentence left, each RULES body the unchanged text
+- [x] 96-09-PLAN.md — rewrite every line the reviewer marked revise, chained in the ledger
+- [x] 96-10-PLAN.md — the surface sweep: flavour number-free, no rulebook sentence left, each RULES body the unchanged text
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -300,7 +303,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
-| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 8/11 | In Progress|  |
+| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 10/12 | In Progress|  |
 | 97. Large-Screen Support | 0/TBD | Not started | - |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
