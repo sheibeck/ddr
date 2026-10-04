@@ -28,7 +28,8 @@ import { gearWornModel, gearBagCardsModel, GEAR_WORN_ORDER, GEAR_COPY } from "..
 import { FINAL_SHEET_COPY, finalSheetViewModel, renderFinalSheet } from "../../src/browser/finalSheet.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 // Phase 96 (FLAVOR-04): the tricks-row pin below reads the real ability lookup.
-import { flavorOfAbility } from "../../src/browser/flavorText.js";
+import { flavorOfAbility, flavorOfItem } from "../../src/browser/flavorText.js";
+import { setAlwaysRules } from "../../src/browser/rulesLayer.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -162,6 +163,93 @@ test("HUD-03: the bag lists its item names; the book lists its spells with level
   );
   assert.equal(vm.book.spells.length, 3);
   assert.equal(vm.book.emptyLine, "");
+});
+
+// Phase 96 (FLAVOR-04), plan 96-12: the worn and bag notes read the item's Phase 95 flavour line; the exact rules note is the
+// view model's `note` (the HUD-03 pin above reads it unedited) and renders only as a static body with Always show the rules on.
+const classOf = (n) => String(n.className || "");
+const bodiesOf = (host) => { const out = []; walk(host, (n) => { if (n.nodeType !== 3 && classOf(n).includes("mw-rules-body")) out.push(n); }); return out; };
+
+test("96-12: a worn ring and cloak and the bag items carry their Phase 95 flavour line; note stays the exact rules text", () => {
+  const s = deadMagicUser();
+  const vm = finalSheetViewModel(s);
+  const worn = gearWornModel(s).rows;
+  for (const key of ["jewelry1", "cloak"]) {
+    const row = vm.worn.find((r) => r.key === key);
+    assert.equal(row.flavor, flavorOfItem(s.c.worn[key]), `${key}: the flavour is the item's line`);
+    assert.ok(row.flavor, `${key}: has a line`);
+    assert.equal(row.note, worn.find((r) => r.key === key).rules, `${key}: note is the exact rules text`);
+    assert.doesNotMatch(row.flavor, /[0-9]/);
+  }
+  for (const key of ["jewelry2", "armor"]) assert.equal(vm.worn.find((r) => r.key === key).flavor, "", `${key}: no flavour (empty slot or live wear state)`);
+  assert.deepStrictEqual(vm.bag.items.map((i) => i.name), vm.bag.names);
+  const cards = gearBagCardsModel(s);
+  vm.bag.items.forEach((it, n) => {
+    assert.equal(it.flavor, flavorOfItem(s.c.items[cards[n].i]), `bag ${n}: the flavour is the item's line`);
+    assert.equal(it.rules, it.flavor ? cards[n].rules : "", `bag ${n}: rules are the card's exact text`);
+  });
+  assert.ok(vm.bag.items.some((i) => i.flavor), "at least one bag item has a line");
+});
+
+test("96-12: with Always off the sheet shows the flavour and none of the rules text; with Always on each flavoured row gets a static body, still no control", () => {
+  const s = deadMagicUser();
+  const vm = finalSheetViewModel(s);
+  const flavoured = vm.worn.filter((r) => r.filled && r.flavor);
+  const bagFlavoured = vm.bag.items.filter((i) => i.flavor);
+  assert.ok(flavoured.length >= 2 && bagFlavoured.length >= 1);
+
+  setAlwaysRules(false);
+  const off = renderInto(vm);
+  const offTexts = textsOf(off.host);
+  for (const r of flavoured) {
+    assert.ok(offTexts.includes(r.flavor), `${r.key}: flavour shown`);
+    assert.ok(!offTexts.includes(r.note), `${r.key}: the rules note is absent with the setting off`);
+  }
+  for (const i of bagFlavoured) assert.ok(offTexts.includes(i.flavor) && !offTexts.includes(i.rules));
+  assert.equal(bodiesOf(off.host).length, 0, "no body with the setting off");
+
+  setAlwaysRules(true);
+  try {
+    const on = renderInto(vm);
+    const onTexts = textsOf(on.host);
+    const bodies = bodiesOf(on.host);
+    for (const r of flavoured) {
+      const body = bodies.find((b) => b.id === "mw-rules-final-worn-" + r.key);
+      assert.ok(body, `${r.key}: has a final:worn body`);
+      assert.equal(body.hidden, false);
+      assert.ok(onTexts.includes(r.note), `${r.key}: the exact note shows`);
+    }
+    vm.bag.items.forEach((i, n) => {
+      if (!i.flavor || !i.rules) return; // the fixture's bare Rope carries no txt, so it has nothing to show under RULES
+      const body = bodies.find((b) => b.id === "mw-rules-final-bag-" + n);
+      assert.ok(body, `bag ${n}: has a final:bag body`);
+      assert.equal(body.hidden, false);
+      assert.ok(onTexts.includes(i.rules));
+    });
+    walk(on.host, (n) => {
+      if (n.nodeType === 3) return;
+      assert.notEqual(n.tagName, "button");
+      assert.equal(n.onclick, null);
+    });
+    assert.equal(on.listeners.length, 0);
+  } finally {
+    setAlwaysRules(false);
+  }
+});
+
+test("96-12: an item with no flavour line keeps today's note (worn) and name line (bag)", () => {
+  const s = deadMagicUser();
+  s.c.worn.jewelry1 = { kind: "jewel", n: "Mystery Trinket", txt: "does a mysterious thing" };
+  s.c.items.push({ kind: "tool", n: "Mystery Gadget", tool: "noSuchTool", txt: "also mysterious" });
+  const vm = finalSheetViewModel(s);
+  const ring = vm.worn.find((r) => r.key === "jewelry1");
+  assert.equal(ring.flavor, "");
+  const { host } = renderInto(vm);
+  const texts = textsOf(host);
+  assert.ok(texts.includes("does a mysterious thing"), "the unknown ring's own note still shows");
+  assert.ok(texts.includes("Mystery Gadget"));
+  const gadget = vm.bag.items.find((i) => i.name === "Mystery Gadget");
+  assert.deepStrictEqual(gadget, { name: "Mystery Gadget", flavor: "", rules: "" });
 });
 
 test("HUD-03: how it ended carries the epitaph, the cause, depth 4, day 3 and the squares", () => {

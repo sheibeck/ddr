@@ -991,7 +991,7 @@ const finalSection = (host, key) => {
 };
 
 probe("Final Sheet tricks", {
-  // The surface is the WHAT THEY COULD DO section; the worn and bag sections are other surfaces (see the todo test below).
+  // The surface is the WHAT THEY COULD DO section; the worn and bag sections are other surfaces (the worn and bag sections have their own test below).
   paint: () => ["Fighter", "Thief"].map((cls) => finalSection(deadSheet(cls).host, "tricks")),
   expect: () => {
     const flavours = [];
@@ -1009,10 +1009,11 @@ probe("Final Sheet tricks", {
   },
 });
 
-// A finding, not a probe: the Final Sheet's worn and bag sections still print the worn items' own rules text as notes. They are not in
-// the Surfaces table (Phase 95 dressed the Gear tab and the store, 96-06 dressed the tricks only), so no plan owned them. This stays a
-// todo test so the gap shows in every run and goes green by itself the day those notes are dressed; see 96-10-SUMMARY.md.
-test("Final Sheet worn and bag sections carry no rules sentence outside a RULES body", { todo: "Final Sheet worn notes still read the item's rules text; no plan dressed them" }, () => {
+// The first finding of 96-10, closed by 96-12: the Final Sheet's worn and bag sections used to print the worn items' own rules text as
+// notes (they are not in the Surfaces table; Phase 95 dressed the Gear tab and the store, 96-06 the tricks only). They now read the item's
+// flavour line, and the exact note follows only with Always show the rules on. This is an ordinary test (the todo flag is gone, no
+// assertion loosened).
+test("Final Sheet worn and bag sections carry no rules sentence outside a RULES body", () => {
   const problems = [];
   for (const cls of ["Fighter", "Thief"]) {
     const { host } = deadSheet(cls);

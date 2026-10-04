@@ -26,8 +26,8 @@ import { characterSheetViewModel, grimoireViewModel } from "./heroTab.js";
 import { gearWornModel, gearBagCardsModel } from "./gearTab.js";
 // Phase 96 (FLAVOR-04): the ability flavour lookup and the shared RULES component. Both are pure (no window, no document;
 // mountRules takes the doc). With Always show the rules on, mountRules adds only a visible body and never a button, so the
-// sheet stays control-free (HUD-03).
-import { flavorOfAbility } from "./flavorText.js";
+// sheet stays control-free (HUD-03). Plan 96-12 adds flavorOfItem for the worn and bag notes.
+import { flavorOfAbility, flavorOfItem } from "./flavorText.js";
 import { mountRules, alwaysRules } from "./rulesLayer.js";
 
 /**
@@ -66,7 +66,7 @@ function emptyModel() {
     stats: [],
     tricks: { rows: [], emptyLine: "" },
     worn: [],
-    bag: { names: [], emptyLine: "" },
+    bag: { names: [], items: [], emptyLine: "" },
     book: { spells: [], emptyLine: "" },
     death: { epitaph: "", cause: "", facts: [] },
   };
@@ -82,8 +82,10 @@ const str = (v) => (v === undefined || v === null ? "" : String(v));
  *   - stats: [{ key, label, value }] — characterSheetViewModel's rows, value as a string
  *   - tricks: { rows: [{ name, description, flavor }], emptyLine } — skills then abilities,
  *     name, description and flavour line only (no ready or cooldown state)
- *   - worn: [{ key, label, filled, name, value, note }] — gearWornModel's rows, in GEAR_WORN_ORDER
- *   - bag: { names, emptyLine } — gearBagCardsModel's item names
+ *   - worn: [{ key, label, filled, name, value, note, flavor }] — gearWornModel's rows, in GEAR_WORN_ORDER; "note" stays the
+ *     exact rules note, "flavor" (96-12, additive) is the item's Phase 95 line ("" for armour, an empty slot or an unknown item)
+ *   - bag: { names, items, emptyLine } — gearBagCardsModel's item names; "items" (96-12, additive) is [{ name, flavor, rules }]
+ *     in the same order, "rules" being the card's exact text (only read when "flavor" is non-empty)
  *   - book: { spells: [{ name, level ("Lvl 1") }], emptyLine } — grimoireViewModel's rows
  *   - death: { epitaph, cause, facts: [{ key, label, value }] } — depth, day, squares
  *
@@ -131,15 +133,27 @@ export function finalSheetViewModel(state) {
       name: str(r.name),
       value: str(r.value),
       note: str(r.note),
+      // Phase 96 (FLAVOR-04), plan 96-12: gearWornModel leads a flavoured row with its Phase 95 line (a worn row passes no tag),
+      // and keeps the exact note as its rules. "note" itself is untouched (the HUD-03 pin reads it).
+      flavor: str(r.lead),
     }));
   } catch {
     vm.worn = [];
   }
 
   try {
-    vm.bag.names = gearBagCardsModel(state).map((card) => str(card.name));
+    const cards = gearBagCardsModel(state);
+    vm.bag.names = cards.map((card) => str(card.name));
+    // Phase 96 (FLAVOR-04), plan 96-12: the item's own flavour line (looked up by name, so no usable-by tag rides along), and the
+    // card's exact text as its rules. An item with no flavour line has neither.
+    const held = Array.isArray(c.items) ? c.items : [];
+    vm.bag.items = cards.map((card) => {
+      const flavor = str(flavorOfItem(held[card.i]));
+      return { name: str(card.name), flavor, rules: flavor ? str(card.rules) : "" };
+    });
   } catch {
     vm.bag.names = [];
+    vm.bag.items = [];
   }
   vm.bag.emptyLine = vm.bag.names.length ? "" : FINAL_SHEET_COPY.bagEmpty;
 
@@ -256,13 +270,29 @@ export function renderFinalSheet(host, vm) {
     const r = row(doc, w.label, w.name);
     if (w.value) r.appendChild(el(doc, "span", "mw-fs-v", w.value));
     worn.appendChild(r);
-    if (w.note) worn.appendChild(el(doc, "p", w.filled ? "mw-fs-note" : "mw-fs-empty", w.note));
+    // Phase 96 (FLAVOR-04), plan 96-12: a filled row with a flavour line shows it as the note; the exact rules note follows
+    // only when Always show the rules is on, as a static visible body (the tricks pattern: no button, no handler). No
+    // flavour (armour, an empty slot) keeps today's note.
+    if (w.filled && w.flavor) {
+      worn.appendChild(el(doc, "p", "mw-fs-note", w.flavor));
+      if (w.note && alwaysRules()) mountRules(doc, worn, { id: "final:worn:" + w.key, name: w.name, rules: w.note });
+    } else if (w.note) worn.appendChild(el(doc, "p", w.filled ? "mw-fs-note" : "mw-fs-empty", w.note));
   }
   root.appendChild(worn);
 
   const bag = section(doc, FINAL_SHEET_COPY.bag, "bag");
   const b = m.bag || {};
-  for (const name of b.names || []) if (name) bag.appendChild(el(doc, "p", "mw-fs-line", name));
+  // Phase 96 (FLAVOR-04), plan 96-12: each bag item keeps its name line; one with a flavour line gets it as a note, and the exact
+  // card text follows only with Always show the rules on (static, no control), id final:bag:<n> by position.
+  const bagItems = Array.isArray(b.items) && b.items.length ? b.items : (b.names || []).map((name) => ({ name, flavor: "", rules: "" }));
+  bagItems.forEach((it, n) => {
+    if (!it || !it.name) return;
+    bag.appendChild(el(doc, "p", "mw-fs-line", it.name));
+    if (it.flavor) {
+      bag.appendChild(el(doc, "p", "mw-fs-note", it.flavor));
+      if (it.rules && alwaysRules()) mountRules(doc, bag, { id: "final:bag:" + n, name: it.name, rules: it.rules });
+    }
+  });
   if (b.emptyLine) bag.appendChild(el(doc, "p", "mw-fs-empty", b.emptyLine));
   root.appendChild(bag);
 
