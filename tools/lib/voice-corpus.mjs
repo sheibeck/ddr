@@ -200,7 +200,7 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/flavor.js", "SUB_FLAVOR", "blurbs", "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)", { pick: ["line"] }),
   bank("content/flavor.js", "CLASS_FLAVOR", "blurbs", "a class's flavour blurb (the Hero tab dossier)"),
   bank("content/abilities.js", "ABILITY_FLAVOR", "spells", "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)"),
-  bank("content/skills.js", "SKILL_FLAVOR", "spells", "a passive special skill's flavour line (the Hero tab and the Final Sheet)"),
+  bank("content/skills.js", "SKILL_FLAVOR", "spells", "a special skill's flavour line (the Hero tab's special-skills list and the Final Sheet)"),
   bank("content/flavor.js", "CHIP_FLAVOR", "combat-screen", "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)"),
   bank("content/flavor.js", "JOINER_EXIT_LINES", "oracle", "a Joiner swapped out of a full party"),
   bank("content/flavor.js", "JOINER_MURDER_LINES", "oracle", "the Cutthroat's per-descent murder line"),
