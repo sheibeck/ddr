@@ -127,6 +127,8 @@
 //
 // Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05), Plan 07: two declared regenerations, thief-store.store and mu-store.store. Every stock row that sells a flavoured item, and the Sealed scroll, now shows the flavour first in its italic line (then the usable-by tag, the count, the compare line and the reason as before) and sits in a .mw-rules-wrap with a sibling RULES toggle and a hidden body holding the row's exact old stat line (the Sealed scroll's: GEAR_COPY.scrollDesc and the reading odds); food, rations and repair rows are unchanged; the Your gear sell list's flavoured rows show the flavour with a RULES toggle and the old line in its hidden body. Every other fixture re-wrote the same bytes.
 //
+// Phase 96 (FLAVOR-03), Plan 05: two declared regenerations, thief.hero and mu.hero. #s-trait keeps the temperament, motive and phobia sentence and moves the race's rulebook note behind a collapsed RULES toggle; every #doss section (Race, Class, Subclass) reads its flavour line first, followed by a RULES toggle and a hidden body holding the exact old note and the unchanged mechanical footer lines. Every other fixture re-wrote the same bytes.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a

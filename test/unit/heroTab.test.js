@@ -17,6 +17,8 @@ import { stripJs } from "../../tools/ident-sweep.mjs";
 import { BANNED } from "../../content/safety-wordlist.js";
 import * as heroTab from "../../src/browser/heroTab.js";
 import { footerLines } from "../../src/browser/identityFooter.js";
+import { RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/index.js";
+import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { newRun } from "../../engine/state.js";
 
@@ -217,13 +219,28 @@ test("paintConditions( is still called from paint() (the HUD condition strip sta
 
 // ─── (12) VOX-04 (Phase 79, Plan 03): the dossier's identity footer ──────
 
+// Phase 96 (FLAVOR-03): declared re-pin — each section now holds its flavour
+// line, then a RULES toggle whose body is [the old note, ...the unchanged
+// footer lines]. renderDossier reads the footer lines from inside that body
+// (everything after the first line) and returns the first line as the note.
 function renderDossier(sub, race) {
+  clearRulesOpen();
+  setAlwaysRules(false);
   const { document } = createRecordingDocument();
   const state = newRun(1, [], { force: { sub, race } });
   heroTab.renderHeroTab(document.getElementById("screen-hero"), state, {});
   const [raceSec, classSec, subSec] = document.getElementById("doss").children;
-  const rules = (sec) => sec.children.filter((el) => el.className === "doss-rules").map((el) => el.textContent);
-  return { race: rules(raceSec), cls: rules(classSec), sub: rules(subSec) };
+  const body = (sec) => sec.children.find((el) => el.className === "mw-rules-body");
+  const lines = (sec) => body(sec).children.filter((el) => /\bdoss-rules\b/.test(el.className)).map((el) => el.textContent);
+  const footer = (sec) => lines(sec).slice(1);
+  const note = (sec) => lines(sec)[0];
+  return {
+    race: footer(raceSec),
+    cls: footer(classSec),
+    sub: footer(subSec),
+    notes: { race: note(raceSec), cls: note(classSec), sub: note(subSec) },
+    bodies: { race: lines(raceSec), cls: lines(classSec), sub: lines(subSec) },
+  };
 }
 
 test("VOX-04: a level-1 Human Summoner's dossier shows the neutral race line and the Summoner footer (half-strength healing), and the Class section none", () => {
@@ -233,6 +250,12 @@ test("VOX-04: a level-1 Human Summoner's dossier shows the neutral race line and
   assert.deepEqual(d.cls, []);
   assert.deepEqual(d.sub, footerLines("sub", "Summoner"));
   assert.ok(d.sub.some((l) => /healing spells you cast heal at half strength/.test(l)));
+  // Phase 96 (FLAVOR-03): the old note leads the body; the neutral Human line is its last line.
+  assert.equal(d.notes.race, RACE_NOTE.Human);
+  assert.equal(d.notes.cls, CLASS_NOTE["Magic User"]);
+  assert.equal(d.notes.sub, SUB_NOTE.Summoner);
+  assert.equal(d.bodies.race.at(-1), footerLines("race", "Human").at(-1));
+  assert.deepEqual(d.bodies.cls, [CLASS_NOTE["Magic User"]]);
 });
 
 test("VOX-04: a non-Human race's section carries its Good and Bad lines", () => {
@@ -241,6 +264,8 @@ test("VOX-04: a non-Human race's section carries its Good and Bad lines", () => 
   assert.match(d.race[0], /^Good: /);
   assert.match(d.race[1], /^Bad: /);
   assert.deepEqual(d.sub, footerLines("sub", "Knight"));
+  assert.deepEqual(d.bodies.race, [RACE_NOTE.Troll, ...footerLines("race", "Troll")]);
+  assert.deepEqual(d.bodies.sub, [SUB_NOTE.Knight, ...footerLines("sub", "Knight")]);
 });
 
 test("VOX-04: the dossier footer is built with createElement + textContent from footerLines (no innerHTML in the footer)", () => {

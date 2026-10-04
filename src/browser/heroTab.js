@@ -56,7 +56,7 @@ import { remaining } from "../../engine/effects.js";
 import { itemStatLines, ITEM_STAT_COPY } from "./viewModels.js";
 // Phase 95 (FLAVOR-01, plan 05) — a SEPARATE import block: the Grimoire shows the spell's flavour line and mounts the
 // shared RULES toggle (the exact old text behind it).
-import { flavorOfSpell } from "./flavorText.js";
+import { flavorOfSpell, flavorOfIdentity } from "./flavorText.js";
 import { mountRules } from "./rulesLayer.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
@@ -985,8 +985,19 @@ export function renderHeroTab(host, state, deps = {}) {
   doc.getElementById("s-rations").textContent = rv.line;
   doc.getElementById("s-rations-n").textContent = rv.carriedText;
 
-  doc.getElementById("s-trait").innerHTML =
-    `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>. ${R.note}`;
+  // Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): the race's RACES note is a
+  // number-bearing rulebook sentence that repeats the dossier. With a flavour
+  // line for the race it moves behind a RULES toggle. The planner's flagged
+  // discretion: the user did not name the trait line, ROADMAP criterion 4 walks
+  // the Hero screen for rulebook sentences.
+  const traitEl = doc.getElementById("s-trait");
+  const traitSentence = `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>.`;
+  if (flavorOfIdentity("race", c.race)) {
+    traitEl.innerHTML = traitSentence;
+    mountRules(doc, traitEl, { id: "hero:trait", name: c.race, rules: R.note });
+  } else {
+    traitEl.innerHTML = `${traitSentence} ${R.note}`;
+  }
 
   // special skills
   const sk = doc.getElementById("s-skills");
@@ -1018,14 +1029,33 @@ export function renderHeroTab(host, state, deps = {}) {
   // VOX-04 (Phase 79, Plan 03): the Race and Subclass notes each end with
   // the mechanical footer (identityFooter.js#footerLines); the Class note
   // carries none (VOX-04 names sub-classes and races).
-  for (const [label, who, text, footer] of [
-    ["Race", c.race, RACE_NOTE[c.race], footerLines("race", c.race)],
-    ["Class", c.cls, CLASS_NOTE[c.cls], []],
-    ["Subclass", c.sub, SUB_NOTE[c.sub], footerLines("sub", c.sub)]
+  for (const [label, kind, who, text, footer] of [
+    ["Race", "race", c.race, RACE_NOTE[c.race], footerLines("race", c.race)],
+    ["Class", "class", c.cls, CLASS_NOTE[c.cls], []],
+    ["Subclass", "sub", c.sub, SUB_NOTE[c.sub], footerLines("sub", c.sub)]
   ]) {
     const sec = doc.createElement("section");
-    sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
-    appendFooter(doc, sec, footer);
+    // Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): flavour first; today's note and
+    // the unchanged footer lines sit behind one RULES toggle. No flavour line (a
+    // name a tampered save could hold) keeps today's markup exactly. The nodes
+    // are built with createElement + textContent, never innerHTML.
+    const flavor = flavorOfIdentity(kind, who);
+    if (flavor) {
+      const h = doc.createElement("h3");
+      h.textContent = label;
+      const w = doc.createElement("p");
+      w.className = "who";
+      w.textContent = who;
+      const f = doc.createElement("p");
+      f.textContent = flavor;
+      sec.appendChild(h);
+      sec.appendChild(w);
+      sec.appendChild(f);
+      mountRules(doc, sec, { id: "doss:" + kind, name: who, rules: [text || "", ...footer], lineClass: "doss-rules" });
+    } else {
+      sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
+      appendFooter(doc, sec, footer);
+    }
     doss.appendChild(sec);
   }
 
