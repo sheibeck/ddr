@@ -45,6 +45,6 @@ export const ARMOR_FLAVOR = Object.freeze({
   "Cloth": "Soft and light enough for any adventurer, and it stops about as much as a stern look.",
   "Leather": "Supple hide that creaks, smells faintly of cow and turns the odd glancing blow.",
   "Studded": "Leather with metal studs added for confidence, and a little extra weight to go with it.",
-  "Mail": "A jingling shirt of linked rings: sturdy, heavy and best left to fighters.",
+  "Mail": "A shirt of linked rings that jingles like a cutlery drawer: sturdy, heavy and best left to fighters.",
   "Plate": "Gleaming metal head to toe: superb protection and all the grace of a falling wardrobe.",
 });

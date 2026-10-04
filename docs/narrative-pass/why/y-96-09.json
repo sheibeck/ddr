@@ -1,0 +1,165 @@
+[
+  {
+    "key": "bank:SPELL_FLAVOR.Bubble",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "A shimmering bubble that sends the next blow home to whoever threw it, then pops.",
+    "after": "Returns the next blow to sender with its compliments, then lingers as a soft cushion for the round.",
+    "reasons": [
+      "joke",
+      "natural",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice, consistent); the rewrite gave it the house attitude and made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Sense Presence",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "Your skin crawls in a helpful direction: no ambushes, and the dark stops mattering.",
+    "after": "Your skin crawls in a helpful direction: no ambushes, and fighting in the dark stops being a chore.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent); the rewrite made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SPELL_FLAVOR.Size of the Behemoth",
+    "surface": "spells",
+    "trigger": "a spell's flavour line (the Grimoire and the combat SPELLS menu)",
+    "before": "Makes you loom enormously, so the smaller foes flee and the rest lose heart.",
+    "after": "Makes you loom enormously, so lesser foes flee unless they know better, and the rest lose heart.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent); the rewrite made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:MAGIC_ITEM_FLAVOR.Gauntlet of the Giant",
+    "surface": "items",
+    "trigger": "a jewel's, cloak's or staff's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "A glove with ambitions: you grow, hit harder, and become far easier to aim at.",
+    "after": "A glove with ambitions: you grow, hit harder, and become a slightly easier target.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent); the rewrite made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:MAGIC_ITEM_FLAVOR.Pendant of Fortitude",
+    "surface": "items",
+    "trigger": "a jewel's, cloak's or staff's flavour line (Gear, store, loot and find cards, combat ITEMS menu)",
+    "before": "Softens a blow into a mere insult, though it wants a long rest between favours.",
+    "after": "Takes the edge off a blow, a bruise where a break would have been, but wants a long rest after.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent); the rewrite made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:ARMOR_FLAVOR.Mail",
+    "surface": "items",
+    "trigger": "an armour type's flavour line (Gear, store, loot and find cards)",
+    "before": "A jingling shirt of linked rings: sturdy, heavy and best left to fighters.",
+    "after": "A shirt of linked rings that jingles like a cutlery drawer: sturdy, heavy and best left to fighters.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Master of Arms.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "Every weapon hits harder in your hands and you hammer your own dents out each night. You never talk anyone down and you never leave a fight after it starts: no running, no clever exits.",
+    "after": "Every weapon hits harder in your hands and you hammer your own dents out each night. You can neither talk nor walk your way out of a fight, so you have learned to enjoy them.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SUB_FLAVOR.Samurai.line",
+    "surface": "blurbs",
+    "trigger": "a sub-class's flavour blurb (the roller reveal and the Hero tab dossier)",
+    "before": "Plate and a magical katana, and enough clatter that you never act first. You never run either: the book uses the word suicidal and does not soften it.",
+    "after": "Plate and a magical katana, and enough clatter that you never act first. You never run either: the book has strong words for that and declines to soften them.",
+    "reasons": [
+      "hygiene"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (family); the rewrite removed the banned word, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Brace",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "Plant your feet and clench: the next few blows that land hurt rather less than they might.",
+    "after": "Plant your feet and clench: the hits that land hurt rather less than they might.",
+    "reasons": [
+      "accurate",
+      "number"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent, numberFree); the rewrite made it agree with the rules text and dropped the disguised count, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Overhead Blow",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "Everything you have behind a single swing: it hits much harder, and misses a little more.",
+    "after": "Subtlety is for other people: a single huge swing that hits much harder and misses a little more.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:ABILITY_FLAVOR.Mark",
+    "surface": "spells",
+    "trigger": "an ability's flavour line (the combat ABILITIES submenu and SING row, the Hero tab, the UP YOUR SLEEVE card, the Final Sheet and an ability chip's tap card)",
+    "before": "Study the foe's soft spots until every strike afterwards hurts a bit more.",
+    "after": "Glare at the foe until it confesses its soft spots, after which every strike hurts it a bit more.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:SKILL_FLAVOR.Cooking",
+    "surface": "spells",
+    "trigger": "a passive special skill's flavour line (the Hero tab and the Final Sheet)",
+    "before": "Whatever you kill, you can eat, and you do: a little health back and a ration for later.",
+    "after": "Every beast you kill is dinner, for a little health and a ration later; skeletons are not a meal.",
+    "reasons": [
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (consistent); the rewrite made it agree with the rules text, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.unlock",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "The next locked chest gives in at a touch, and then the magic is spent.",
+    "after": "The next locked chest swings open as if it had always meant to, and then the magic is spent.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.ability",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "One of your tricks is still running, with the particulars on the ability itself.",
+    "after": "One of your tricks is still going and rather smug about it; the ability has the fine print.",
+    "reasons": [
+      "joke",
+      "natural"
+    ],
+    "why": "Phase 96 (FLAVOR-06, the round-1 review): the reviewer marked this line revise (voice); the rewrite gave it the house attitude, and the rules text is unchanged."
+  }
+]

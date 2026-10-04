@@ -82,7 +82,7 @@ export const SKILL_FLAVOR = Object.freeze({
   "Stealth": "Your first blow of a fight is often a nasty surprise, as long as you left the plate at home.",
   "Hardiness": "Every wound, trap and bolt hurts a little less, and you stopped being impressed long ago.",
   "Ambidextrous": "Both hands pitch in on every strike, so each blow arrives with an encore.",
-  "Cooking": "Whatever you kill, you can eat, and you do: a little health back and a ration for later.",
+  "Cooking": "Every beast you kill is dinner, for a little health and a ration later; skeletons are not a meal.",
   "Runes/Signs": "Scrolls always do as they are told, and now and then they even survive the reading.",
   "Locks": "Chests surrender to patience, picks and brains, but a botched attempt loses the whole thing.",
   "Sewing": "A needle, thread and a rest after a decent meal put your armour back in shape, within reason.",
