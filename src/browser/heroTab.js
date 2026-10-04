@@ -277,7 +277,7 @@ export function characterSheetViewModel(state) {
         const tier = c.skills[name];
         const def = skillsTable[name] || {};
         const description = tier === 2 && def.txt2 ? def.txt2 : def.txt || "";
-        // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): `flavor` is additive and "" for an active skill (its ability line covers it).
+        // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): `flavor` is additive and "" only for a skill the lookup does not know (96-12: the active skills carry a line too).
         return { name, description, tier, flavor: flavorOfSkill(name) };
       })
     : [];
@@ -1027,9 +1027,9 @@ export function renderHeroTab(host, state, deps = {}) {
     const s = table && table[n];
     const li = doc.createElement("li");
     const shownTxt = s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : "";
-    // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): a passive skill reads its flavour line, and the exact text shown today
-    // (txt, or txt2 at level two) sits behind a RULES toggle. An active skill (its ability line covers it) or a skill the
-    // lookup does not know keeps today's markup exactly, with no toggle.
+    // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): a skill reads its flavour line, and the exact text shown today
+    // (txt, or txt2 at level two) sits behind a RULES toggle. Since 96-12 that holds for the active skills too; only a skill
+    // the lookup does not know (a tampered save) keeps today's markup exactly, with no toggle.
     const skillFlavor = s ? flavorOfSkill(n) : "";
     if (skillFlavor) {
       const nameEl = doc.createElement("b");

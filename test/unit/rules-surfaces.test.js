@@ -1169,6 +1169,9 @@ test("(x) Final Sheet: with Always on each flavoured row's exact text follows in
   }
 });
 
+// Phase 96 (FLAVOR-04), plan 96-12: declared re-pin. Case (y) used to pin "active rows keep today's markup" (an active skill
+// had no skill flavour, so its row printed the rules text in the open). Every active skill now has a line, so that half of
+// the case moves to the new case below; case (y) keeps the tolerant half (an unknown ability id, an unknown skill name).
 test("(y) tolerant: an ability id absent from the catalog is dropped, and a skill with no flavour renders its txt with no toggle", () => {
   const fighter = paintHero("Soldier", "Wilmsry");
   fighter.state.c.abilities = ["noSuchAbility", "taunt"];
@@ -1178,14 +1181,34 @@ test("(y) tolerant: an ability id absent from the catalog is dropped, and a skil
   assert.equal(textOf(lisChild(lis[0], "b")), ABILITY_BY_ID.taunt.name);
 
   const thief = paintHero("Cat Burglar", "Wilmsry");
-  const noFlavor = Object.keys(THIEF_SKILLS).find((k) => !flavorOfSkill(k));
-  assert.ok(noFlavor, "an active thief skill carries no skill flavour");
-  thief.state.c.skills = { [noFlavor]: 1, "Mystery Skill": 1 };
+  thief.state.c.skills = { "Mystery Skill": 1 };
   assert.doesNotThrow(() => thief.repaint());
-  const [active, mystery] = skillLis(thief.document);
-  assert.equal(String(active.innerHTML), "<b>" + noFlavor + "</b><i>" + THIEF_SKILLS[noFlavor].txt + "</i>", "today's markup for an active skill");
+  const [mystery] = skillLis(thief.document);
+  assert.equal(flavorOfSkill("Mystery Skill"), "", "an unknown skill has no line");
   assert.equal(String(mystery.innerHTML), "<b>Mystery Skill</b><i></i>", "today's markup for an unknown skill");
   assert.equal(findAll(thief.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
+});
+
+// Phase 96 (FLAVOR-04), plan 96-12: an ACTIVE special skill reads like a passive one: its own flavour line, the exact txt
+// behind a RULES toggle (the Hero special-skills list), and on the Final Sheet the line alone, the exact text only with Always on.
+test("(y2) Hero skills: a bought active skill shows its skill flavour and a RULES body equal to its txt, for every active skill", () => {
+  for (const [sub, table] of [["Soldier", FIGHTER_SKILLS], ["Cat Burglar", THIEF_SKILLS]]) {
+    const active = Object.keys(table).filter((k) => table[k].active);
+    assert.ok(active.length >= 4, `${sub}: the table has active skills`);
+    const view = paintHero(sub, "Wilmsry");
+    view.state.c.skills = Object.fromEntries(active.map((k) => [k, 1]));
+    assert.doesNotThrow(() => view.repaint());
+    skillLis(view.document).forEach((li, i) => {
+      const name = active[i];
+      assert.ok(flavorOfSkill(name), `${name}: has a skill line`);
+      assert.equal(textOf(lisChild(li, "i")), flavorOfSkill(name), `${name}: the italic line is the skill flavour`);
+      assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/);
+      assert.ok(li.children.find((el) => hasClass(el, "mw-rules-btn")), `${name}: a RULES toggle`);
+      const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
+      assert.equal(body.hidden, true, `${name}: the body starts closed`);
+      assert.deepEqual(bodyLines(body), [table[name].txt], `${name}: the body is the exact txt`);
+    });
+  }
 });
 
 // ─── Phase 96 (FLAVOR-04): the chip tap cards and the UP YOUR SLEEVE card ───

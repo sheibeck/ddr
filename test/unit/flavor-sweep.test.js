@@ -1021,10 +1021,10 @@ test("Final Sheet worn and bag sections carry no rules sentence outside a RULES 
   assert.deepEqual(problems, []);
 });
 
-// A second finding: a bought ACTIVE skill (Kata, Smoke, ...) has no skill flavour line of its own (its twin ability carries the line), and
-// 96-06 deliberately renders such a row as today's markup, so the Hero tab's special-skills list prints the skill's rules text in the open.
-// The probe above sweeps the passive skills, which are dressed; this todo keeps the active rows visible until a plan dresses them.
-test("Hero special-skills list shows no rules sentence for a bought active skill", { todo: "an active skill row keeps today's markup (96-06, case (y)); its rules text is outside any RULES body" }, () => {
+// The second finding of 96-10, closed by 96-12: a bought ACTIVE skill (Kata, Smoke, ...) used to have no skill flavour line, so the Hero tab's
+// special-skills list printed its rules text in the open. Every active skill now has a line and its exact text sits behind RULES; this is an
+// ordinary test (the todo flag is gone, no assertion loosened).
+test("Hero special-skills list shows no rules sentence for a bought active skill", () => {
   const problems = [];
   for (const [sub, table] of [["Soldier", FIGHTER_SKILLS], ["Cat Burglar", THIEF_SKILLS]]) {
     const active = Object.keys(table).filter((name) => table[name].active);

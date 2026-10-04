@@ -41,6 +41,10 @@ const asMap = (m) => (m && typeof m === "object" && !Array.isArray(m) ? m : unde
 const passiveSkillNames = () =>
   [C.FIGHTER_SKILLS, C.THIEF_SKILLS].flatMap((table) => Object.keys(table).filter((n) => !table[n].active));
 
+/** activeSkillNames() — the same tables, rows that carry an `active` marker (96-12: they have a skill line of their own). */
+const activeSkillNames = () =>
+  [C.FIGHTER_SKILLS, C.THIEF_SKILLS].flatMap((table) => Object.keys(table).filter((n) => table[n].active));
+
 /**
  * CHIP_FLAVOR_VARIANTS — the five CHIP_FLAVOR keys beyond the HERO_CONDITIONS
  * keys: the chip sentences that differ by kind or source in the shell
@@ -189,12 +193,13 @@ export const FLAVOR_DOMAINS = Object.freeze([
     lines: () => asMap(C.ABILITY_FLAVOR),
   }),
   // Phase 96 (FLAVOR-04): the ten passive special skills (rows with no `active`
-  // marker); an active skill is covered by its ability's line.
+  // marker), then (96-12 gap closure) the eleven active ones, so every skill row
+  // reads a line of its own on the Hero tab and the Final Sheet.
   Object.freeze({
     id: "skill",
     module: "content/skills.js",
     exportName: "SKILL_FLAVOR",
-    keys: () => passiveSkillNames(),
+    keys: () => [...passiveSkillNames(), ...activeSkillNames()],
     lines: () => asMap(C.SKILL_FLAVOR),
   }),
   // Phase 96 (FLAVOR-04): a condition chip's line: the HERO_CONDITIONS keys in
@@ -321,9 +326,9 @@ export function flavorOfAbility(name) {
 }
 
 /**
- * flavorOfSkill(name) — the flavour line for a passive special skill, keyed by
- * the skill name. "" for an active skill (its ability line covers it), an
- * unknown name, or while the map is absent. Never throws.
+ * flavorOfSkill(name) — the flavour line for a special skill (passive or, since
+ * 96-12, active), keyed by the skill name. "" for an unknown name or while the
+ * map is absent. Never throws.
  */
 export function flavorOfSkill(name) {
   return flavorOf("skill", name);
