@@ -39,15 +39,22 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 import { clearRulesOpen, setAlwaysRules, mountRules } from "../../src/browser/rulesLayer.js";
-import { flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOf } from "../../src/browser/flavorText.js";
-import { GRIMOIRE_COPY } from "../../src/browser/heroTab.js";
+import { flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOf, flavorOfChip, flavorOfIdentity, flavorOfAbility, flavorOfSkill } from "../../src/browser/flavorText.js";
+import { GRIMOIRE_COPY, renderHeroTab, characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { footerLines, identityFooter } from "../../src/browser/identityFooter.js";
-import { combatMenuViewModel, COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
+import { COMBAT_MENU_COPY } from "../../src/browser/combatMenu.js";
 import {
-  SPELLS, NICHE_LABELS, POTIONS, TOOLS, BAG_ITEMS, BAG_ORDER, JEWELRY, CLOAKS, STAVES, ABILITIES,
+  SPELLS, POTIONS, TOOLS, BAG_ITEMS, BAG_ORDER, JEWELRY, CLOAKS, STAVES, ABILITIES, ABILITY_BY_ID,
   FIGHTER_SKILLS, THIEF_SKILLS, RACES, RACE_NOTE, CLASS_NOTE, SUB_NOTE,
 } from "../../content/index.js";
-import { SPELL_FLAVOR, SCROLL_FLAVOR } from "../../content/spells.js";
+import { SCROLL_FLAVOR } from "../../content/spells.js";
+import { createFakeClock } from "./harness/fakeClock.js";
+import { railPush, railLineCard, conditionCard, abilityPoolCard, abilityPoolFlavor } from "../../src/browser/rail.js";
+import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
+import { applyAction } from "../../engine/engine.js";
+import { die } from "../../engine/death.js";
+import { finalSheetViewModel, renderFinalSheet } from "../../src/browser/finalSheet.js";
+import { createRoller, ROLLER_IDS, ROLLER_TIMELINE } from "../../src/browser/roller.js";
 import { WEAPON_FLAVOR } from "../../content/weapons.js";
 import { ARMOR_FLAVOR } from "../../content/armors.js";
 import { POTION_FLAVOR } from "../../content/potions.js";
@@ -470,9 +477,6 @@ test("teeth: a probe that paints nothing, names no flavour or expects no body is
 
 // ─── shared setup, copied by value from rules-surfaces.test.js ────────────
 
-const tap = (button) => button.onclick({ stopPropagation() {} });
-void tap;
-
 function foe(overrides = {}) {
   return { name: "Cave Rat", type: "Beasts", lvl: 1, size: "S", intel: 10, wp: 40, maxWP: 40, alive: true, asleep: 0, sp: {}, lives: 1, ...overrides };
 }
@@ -802,7 +806,514 @@ probe("Drop shelf", {
 
 // ─── Test 3: the surfaces ─────────────────────────────────────────────────
 
-// <<probes-96>>
+// ─── the seven Phase 96 surfaces ──────────────────────────────────────────
+//
+// Setup is copied by value from roller.test.js (the roller rig), rules-surfaces.test.js (the Hero, Final Sheet and chip cases),
+// status-chit-combat.test.js (the chip rig) and shell-company-items.test.js (the Company panel chip). The chip cards are driven
+// through the REAL classic paint and the REAL renderRail; the module script's two entry points (window.mzRailLine,
+// window.mzConditionCard) are not in the sandbox, so the rig installs mirrors of their bodies built on the real railLineCard and
+// conditionCard with the trailing flavour argument (the source pins in rules-surfaces.test.js hold the module's real bodies to
+// that shape).
+
+// ─── Roller reveal ────────────────────────────────────────────────────────
+
+function makeFakeTimers() {
+  let now = 0;
+  let nextId = 1;
+  const timers = new Map();
+  const setTimeout_ = (fn, ms) => { const id = nextId++; timers.set(id, { at: now + ms, fn, every: null }); return id; };
+  const setInterval_ = (fn, ms) => { const id = nextId++; timers.set(id, { at: now + ms, fn, every: ms }); return id; };
+  const clear = (id) => { timers.delete(id); };
+  async function advance(ms) {
+    const target = now + ms;
+    for (;;) {
+      let next = null;
+      for (const [id, t] of timers) if (t.at <= target && (!next || t.at < next[1].at)) next = [id, t];
+      if (!next) break;
+      const [id, t] = next;
+      now = t.at;
+      if (t.every != null) t.at = now + t.every;
+      else timers.delete(id);
+      t.fn();
+      await Promise.resolve();
+    }
+    now = target;
+  }
+  return { setTimeout: setTimeout_, clearTimeout: clear, setInterval: setInterval_, clearInterval: clear, now: () => now, advance };
+}
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+/** Rolls `state` through a real createRoller on fake timers to its reveal and returns the reveal's RULES column. */
+async function paintRollerReveal(state) {
+  const { document } = createRecordingDocument();
+  let resolveRoll;
+  const startNewRun = () => new Promise((resolve) => { resolveRoll = resolve; });
+  const timers = makeFakeTimers();
+  const roller = createRoller({ doc: document, startNewRun, sheetFor: characterSheetViewModel, onCommit: () => {}, timers, random: () => 0 });
+  const started = roller.start();
+  await flush();
+  resolveRoll(state);
+  await flush();
+  await started;
+  await timers.advance(ROLLER_TIMELINE.reveal);
+  return document.getElementById(ROLLER_IDS.rules);
+}
+
+const WARLOCK_ELVEN = () => newRun(2, [], { force: { sub: "Warlock", race: "Elven" } });
+const SUMMONER_HUMAN = () => newRun(1, [], { force: { sub: "Summoner", race: "Human" } });
+
+probe("Roller reveal", {
+  paint: async () => [await paintRollerReveal(WARLOCK_ELVEN()), await paintRollerReveal(SUMMONER_HUMAN())],
+  expect: () => ({
+    // A group per rolled sub-class, then a non-Human race: flavour first, the unchanged footer lines in the RULES body.
+    flavours: [["sub", "Warlock"], ["race", "Elven"], ["sub", "Summoner"]].map(([kind, key]) => flavorOfIdentity(kind, key)),
+    bodies: [...footerLines("sub", "Warlock"), ...footerLines("race", "Elven"), ...footerLines("sub", "Summoner")],
+    extraRules: [],
+  }),
+});
+
+// ─── Hero dossier and trait line; Hero abilities and skills ───────────────
+
+function paintHero(sub, race, mutate = null) {
+  const { document } = createRecordingDocument();
+  const state = newRun(1, [], { force: { sub, race } });
+  if (mutate) mutate(state);
+  renderHeroTab(document.getElementById("screen-hero"), state, {});
+  return { document, state };
+}
+
+probe("Hero dossier and trait line", {
+  paint: () => {
+    const roots = [];
+    for (const [sub, race] of [["Cat Burglar", "Wilmsry"], ["Wizard", "Elven"]]) {
+      const { document } = paintHero(sub, race);
+      roots.push(document.getElementById("doss"), document.getElementById("s-trait"));
+    }
+    return roots;
+  },
+  expect: () => {
+    const flavours = [];
+    const bodies = [];
+    for (const [sub, race] of [["Cat Burglar", "Wilmsry"], ["Wizard", "Elven"]]) {
+      const c = newRun(1, [], { force: { sub, race } }).c;
+      flavours.push(flavorOfIdentity("race", c.race), flavorOfIdentity("class", c.cls), flavorOfIdentity("sub", c.sub));
+      bodies.push(
+        RACE_NOTE[c.race], ...footerLines("race", c.race),
+        CLASS_NOTE[c.cls],
+        SUB_NOTE[c.sub], ...footerLines("sub", c.sub),
+        RACES[c.race].note, // the trait line's RULES body holds the race note alone
+      );
+    }
+    return { flavours, bodies, extraRules: [] };
+  },
+});
+
+/** The passive skills a Hero tab shows with a flavour line, in the order the sheet owns them: [name, level, table]. */
+function passiveSkillRows(c) {
+  const table = c.cls === "Thief" ? THIEF_SKILLS : FIGHTER_SKILLS;
+  return Object.entries(c.skills || {}).filter(([name]) => flavorOfSkill(name)).map(([name, level]) => [name, level, table]);
+}
+
+const HERO_AB_STATES = [["Soldier", null], ["Cat Burglar", { Locks: 2, Sewing: 1 }]];
+
+probe("Hero abilities and skills", {
+  paint: () => {
+    const roots = [];
+    for (const [sub, skills] of HERO_AB_STATES) {
+      const { document } = paintHero(sub, "Wilmsry", skills ? (s) => { s.c.skills = skills; } : null);
+      roots.push(document.getElementById("s-abilities"), document.getElementById("s-skills"));
+    }
+    return roots;
+  },
+  expect: () => {
+    const flavours = [];
+    const bodies = [];
+    for (const [sub, skills] of HERO_AB_STATES) {
+      const state = newRun(1, [], { force: { sub, race: "Wilmsry" } });
+      if (skills) state.c.skills = skills;
+      const abilities = characterSheetViewModel(state).abilities;
+      assert.ok(abilities.length >= 1, `${sub}: the Hero tab lists abilities`);
+      for (const row of abilities) {
+        flavours.push(flavorOfAbility(row.name));
+        bodies.push(ABILITY_BY_ID[row.id].txt);
+      }
+      const passive = passiveSkillRows(state.c);
+      assert.ok(passive.length >= 1, `${sub}: the Hero tab lists passive skills`);
+      for (const [name, level, table] of passive) {
+        flavours.push(flavorOfSkill(name));
+        bodies.push(level >= 2 && table[name].txt2 ? table[name].txt2 : table[name].txt);
+      }
+    }
+    return { flavours, bodies, extraRules: [] };
+  },
+});
+
+// ─── Combat ABILITIES rows and SING ───────────────────────────────────────
+
+const ABILITY_FIGHTS = [
+  { cOverrides: { cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata", "brace"] }, rows: ["kata", "brace"], sing: false },
+  { cOverrides: { cls: "Thief", sub: "Cat Burglar", grimoire: [], abilities: ["smoke", "hamstring"] }, rows: ["smoke", "hamstring"], sing: false },
+  { cOverrides: { cls: "Thief", sub: "Bard", grimoire: [], abilities: ["smoke"] }, rows: ["smoke"], sing: true },
+];
+
+probe("Combat ABILITIES rows and SING", {
+  paint: () => ABILITY_FIGHTS.map((f) => openMenu(fightState(f.cOverrides), "abilities").list),
+  expect: () => {
+    const flavours = [];
+    const bodies = [];
+    for (const f of ABILITY_FIGHTS) {
+      if (f.sing) { flavours.push(flavorOfAbility("Sing")); bodies.push(COMBAT_MENU_COPY.singDesc); }
+      for (const id of f.rows) { flavours.push(flavorOfAbility(ABILITY_BY_ID[id].name)); bodies.push(ABILITY_BY_ID[id].txt); }
+    }
+    return { flavours, bodies, extraRules: [] };
+  },
+});
+
+// ─── Final Sheet tricks ───────────────────────────────────────────────────
+
+function deadSheet(cls) {
+  const state = newRun(3, [], { force: { cls } });
+  if (cls === "Fighter") state.c.abilities = ["secondWind", "taunt"];
+  die(state, "trap", null, makeRng(2), [], () => 1);
+  const vm = finalSheetViewModel(state);
+  const { document } = createRecordingDocument();
+  const host = document.createElement("div");
+  renderFinalSheet(host, vm);
+  return { vm, host };
+}
+
+/** One data-sec section of a painted Final Sheet (who, death, stats, tricks, worn, bag, book). */
+const finalSection = (host, key) => {
+  const found = elementsUnder(host).find((e) => e.dataset && e.dataset.sec === key);
+  assert.ok(found, `the Final Sheet has a ${key} section`);
+  return found;
+};
+
+probe("Final Sheet tricks", {
+  // The surface is the WHAT THEY COULD DO section; the worn and bag sections are other surfaces (see the todo test below).
+  paint: () => ["Fighter", "Thief"].map((cls) => finalSection(deadSheet(cls).host, "tricks")),
+  expect: () => {
+    const flavours = [];
+    const bodies = [];
+    for (const cls of ["Fighter", "Thief"]) {
+      for (const row of deadSheet(cls).vm.tricks.rows) {
+        if (!row.flavor) continue;
+        // The row's exact text must be an unchanged content sentence, not whatever the view model happens to hold.
+        assert.ok(BASE_INDEX.has(norm(row.description)), `${cls}: ${row.name}'s description is a content rules sentence`);
+        flavours.push(row.flavor);
+        bodies.push(row.description);
+      }
+    }
+    return { flavours, bodies, extraRules: [], openers: true };
+  },
+});
+
+// A finding, not a probe: the Final Sheet's worn and bag sections still print the worn items' own rules text as notes. They are not in
+// the Surfaces table (Phase 95 dressed the Gear tab and the store, 96-06 dressed the tricks only), so no plan owned them. This stays a
+// todo test so the gap shows in every run and goes green by itself the day those notes are dressed; see 96-10-SUMMARY.md.
+test("Final Sheet worn and bag sections carry no rules sentence outside a RULES body", { todo: "Final Sheet worn notes still read the item's rules text; no plan dressed them" }, () => {
+  const problems = [];
+  for (const cls of ["Fighter", "Thief"]) {
+    const { host } = deadSheet(cls);
+    for (const key of ["worn", "bag"]) problems.push(...assertS2(visibleText(finalSection(host, key)), BASE_INDEX).map((p) => `${cls} / ${key}: ${p}`));
+  }
+  assert.deepEqual(problems, []);
+});
+
+// A second finding: a bought ACTIVE skill (Kata, Smoke, ...) has no skill flavour line of its own (its twin ability carries the line), and
+// 96-06 deliberately renders such a row as today's markup, so the Hero tab's special-skills list prints the skill's rules text in the open.
+// The probe above sweeps the passive skills, which are dressed; this todo keeps the active rows visible until a plan dresses them.
+test("Hero special-skills list shows no rules sentence for a bought active skill", { todo: "an active skill row keeps today's markup (96-06, case (y)); its rules text is outside any RULES body" }, () => {
+  const problems = [];
+  for (const [sub, table] of [["Soldier", FIGHTER_SKILLS], ["Cat Burglar", THIEF_SKILLS]]) {
+    const active = Object.keys(table).filter((name) => table[name].active);
+    assert.ok(active.length >= 1, `${sub}: the skill table has active skills`);
+    const { document } = paintHero(sub, "Wilmsry", (s) => { s.c.skills = Object.fromEntries(active.map((name) => [name, 1])); });
+    problems.push(...assertS2(visibleText(document.getElementById("s-skills")), BASE_INDEX).map((p) => `${sub}: ${p}`));
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ─── Chip tap cards, and UP YOUR SLEEVE ───────────────────────────────────
+
+function chipState() {
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark: false, seen: true, feat: null })));
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: {
+      cls: "Fighter", sub: "Soldier", race: "Human", level: 3, sp: 0, maxWP: 55, wp: 55, skills: {}, vp: 0,
+      weapon: "Sword", prof: 2, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+      temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x", potions: 1, rations: 6, gold: 50, scrolls: 0,
+      haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null, items: [], grimoire: [], spellsUsed: 0, kills: 0,
+      might: 0, ward: null, regen: false, mirror: 0, foresight: false, name: "Test Delver", darkFor: 0, timers: {},
+    },
+    floor: { g, px: 1, py: 1, depth: 2 },
+    day: 1, steps: 0, combat: null, store: null, beats: null, party: [], dead: false, deathNote: "", epitaph: "",
+  };
+}
+
+const chipFoe = (name, extra = {}) => ({ name, type: "Beasts", lvl: 2, size: "S", intel: 4, wp: 10, maxWP: 10, alive: true, asleep: 0, sp: { dmg: { n: 1, sides: 6, bonus: 2 }, note: "+2 damage" }, lives: 1, ...extra });
+
+function chipFightState({ afraid = 2 } = {}) {
+  const s = chipState();
+  s.combat = { foes: [chipFoe("Wolf"), chipFoe("Cave Bear", { size: "L", wp: 25, maxWP: 25 })], type: "Beasts", round: 2, target: 1, spellOpen: false, tracked: false, first: "you", afraid };
+  return s;
+}
+
+function chipRig() {
+  const clock = createFakeClock({ start: 100000 });
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, stubRail: false, clock, reducedMotion: true });
+  const w = sandbox.context.window;
+  w.mzRailLine = (title, line, tone, hold, icon, iconKey = null, flavor = null) => {
+    w.__mzRail = railPush(w.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey, flavor));
+    w.renderRail?.();
+  };
+  w.mzConditionCard = (title, text, flavor = null) => {
+    const live = w.__mzState?.get?.();
+    if (!live || !(live.combat || w.__mzBeat?.active?.())) return;
+    w.__mzRail = railPush(w.__mzRail, conditionCard(title, text, flavor));
+    w.renderRail?.();
+  };
+  const chip = (key) => doc.document.getElementById("mm-conditions").children.find((c) => c.className === "mw-cond" && c.dataset.key === key);
+  const descriptor = (key) => w.__mzConditionsOf(w.__mzState.get()).find((cn) => cn.key === key);
+  const show = (state) => { w.__mzState.set(state); sandbox.paint(); };
+  const railLines = () => { sandbox.context.renderRail(); return doc.document.getElementById("mw-rail-lines"); };
+  const press = (el) => { clock.advance(ARM_DELAY_MS + 10); el.onclick(); };
+  return { clock, doc, sandbox, w, ctx: sandbox.context, chip, descriptor, show, railLines, press };
+}
+
+/** The explanation sentences the chip tap text is built from; when the key has one, the exact text must still contain it. */
+function assertExplains(exact, key) {
+  const sentence = shellTables().CONDITION_EXPLAIN[key];
+  if (sentence) assert.ok(exact.includes(sentence), `the ${key} tap text keeps its CONDITION_EXPLAIN sentence`);
+}
+
+/** Paints one chip card per entry of `cases` (each case builds its own rig and returns { r, lead, exact, key }) and collects the expectation. */
+let chipExpect = { flavours: [], bodies: [], extraRules: [] };
+function paintChipCards(cases) {
+  chipExpect = { flavours: [], bodies: [], extraRules: [] };
+  return cases.map((build) => {
+    const { r, lead, exact, key } = build();
+    assert.ok(lead, `the ${key} chip has a flavour line`);
+    if (key) assertExplains(exact, key);
+    chipExpect.flavours.push(lead);
+    chipExpect.bodies.push(exact);
+    chipExpect.extraRules.push(exact);
+    return r.railLines();
+  });
+}
+
+/** A HUD or combat chip: shows `state`, taps the chip `key` and returns the rig and the card's expectation. */
+function tapChip(state, key) {
+  const r = chipRig();
+  r.show(state);
+  const cn = r.descriptor(key);
+  assert.ok(cn, `the ${key} chip was enumerated`);
+  const label = r.ctx.conditionLabel(cn);
+  const lead = flavorOfChip(cn);
+  const exact = r.ctx.conditionTapText(cn, label, state);
+  r.press(r.chip(key));
+  return { r, lead, exact, key };
+}
+
+/** `state` with the hero's fields overridden (a copy; the base is a fresh literal each call). */
+const withC = (state, over) => ({ ...state, c: { ...state.c, ...over } });
+
+const chipProbe = (variant, cases) => PROBES.push({
+  covers: "Chip tap cards",
+  variant,
+  paint: () => paintChipCards(cases),
+  expect: () => chipExpect,
+});
+
+chipProbe("HUD strip out of a fight", [
+  () => tapChip(withC(chipState(), { darkFor: 9 }), "darkness"),
+  () => tapChip(withC(chipState(), { might: 2 }), "might"),
+  () => tapChip(withC(chipState(), { senses: true }), "senses"),
+]);
+
+chipProbe("combat condition card", [
+  () => tapChip(withC(chipFightState(), { might: 2 }), "afraid"),
+  () => tapChip(withC(chipFightState(), { might: 2 }), "might"),
+]);
+
+function lotHero(overrides = {}) {
+  return {
+    cls: "Thief", sub: "Burglar", race: "Human", level: 3, sp: 0, maxWP: 200, wp: 200, skills: {}, vp: 0,
+    weapon: "Sword", prof: 2, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x", potions: 1, rations: 6, gold: 50, scrolls: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null, items: [], grimoire: [], spellsUsed: 0, kills: 0,
+    might: 0, ward: null, regen: false, mirror: 0, foresight: false, name: "Test Delver", darkFor: 0, abilities: ["smoke"], timers: {},
+    ...overrides,
+  };
+}
+
+function lotFightState({ c = {}, party = [], combat = {} } = {}) {
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark: false, seen: true, feat: null })));
+  return {
+    version: 1, seed: 1, rngState: 5, c: lotHero(c), floor: { g, px: 1, py: 1, depth: 1 },
+    day: 1, steps: 0, store: null, beats: null, party, dead: false, deathNote: "", epitaph: "",
+    combat: {
+      foes: [{ name: "Stone Ox", type: "Beasts", lvl: 1, size: "S", intel: 1, wp: 900, maxWP: 900, alive: true, asleep: 0, sp: {}, lives: 1 }],
+      type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you", ...combat,
+    },
+  };
+}
+
+/** YOUR LOT on a fresh rig: the hero has used Smoke, and a Joiner has a Sidestep chip; returns the rig, the state and the chip rows. */
+function lotRig() {
+  const r = chipRig();
+  for (const name of ["mzAttack", "mzCastSpell", "mzSing", "mzDrinkPotion", "mzReadScroll", "mzUseAbility", "mzUseItem", "mzFlee", "mzParley", "mzLoseTurn", "mzFight"]) r.w[name] = () => {};
+  const used = applyAction(lotFightState(), { type: "useAbility", key: "smoke" }).state;
+  const state = lotFightState({
+    c: used.c,
+    party: [{ name: "Joiner", cls: "Fighter", sub: "Soldier", lvl: 1, wp: 30, maxWP: 30, status: "ok", timers: { "ability:sidestep": { cadence: "rounds", left: 1, phase: "effect", cd: 4 } } }],
+    combat: { allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30 }] },
+  });
+  state.rngState = used.rngState;
+  r.w.__mzState.set(state);
+  r.ctx.renderEncounter();
+  const cards = Array.from(r.doc.document.getElementById("enc-body").querySelectorAll(".cb-lot-card"));
+  assert.ok(cards.length >= 2, "hero and member cards");
+  const chipsOf = (card) => card.children.find((el) => el.className === "cb-lot-chips").children.filter((el) => el.className === "cb-lot-chip");
+  return { r, state, heroChip: chipsOf(cards[0])[0], memberChip: chipsOf(cards[1])[0] };
+}
+
+chipProbe("YOUR LOT hero and Joiner", [
+  () => {
+    const { r, state, heroChip } = lotRig();
+    const cn = r.w.__mzConditionsOf(state).find((x) => x.key === "ability" && x.ability === "smoke");
+    const exact = r.ctx.conditionTapText(cn, "Smoke", state, { member: false });
+    assert.ok(exact.includes(ABILITY_BY_ID.smoke.txt[0].toUpperCase() + ABILITY_BY_ID.smoke.txt.slice(1)), "the hero's chip body holds the ability's own txt");
+    r.press(heroChip);
+    return { r, lead: flavorOfAbility("Smoke"), exact };
+  },
+  () => {
+    const { r, state, memberChip } = lotRig();
+    const cn = r.w.__mzMemberConditionsOf(state, 0).find((x) => x.key === "ability");
+    const exact = r.ctx.conditionTapText(cn, "Sidestep", state, { member: true });
+    assert.ok(exact.includes(ABILITY_BY_ID.sidestep.txt[0].toUpperCase() + ABILITY_BY_ID.sidestep.txt.slice(1)), "the Joiner's chip body holds the ability's own txt");
+    r.press(memberChip);
+    return { r, lead: flavorOfAbility("Sidestep"), exact };
+  },
+]);
+
+chipProbe("Company panel", [
+  () => {
+    // The Hero tab's Company panel: a Joiner whose next-blow pendant chip is up, painted by the real paint() outside a fight.
+    const r = chipRig();
+    const state = newRun(1, [], { force: { cls: "Fighter", sub: "Soldier" } });
+    state.party = [{
+      name: "Joiner", cls: "Fighter", sub: "Soldier", race: "Human", lvl: 1, level: 1, wp: 30, maxWP: 30, status: "ok", weapon: "Club",
+      armor: "Leather", ar: 6, armorWP: 10, armorMax: 12, potions: 0, halfNext: true, worn: {}, timers: {},
+    }];
+    r.w.__mzState.set(state);
+    r.sandbox.setState(state);
+    r.sandbox.paint();
+    const rows = elementsUnder(r.doc.document.getElementById("hero-party-list")).filter((el) => el.className === "mw-party-chips");
+    assert.equal(rows.length, 1, "the Company panel draws the Joiner's chip row");
+    const cn = r.w.__mzMemberConditionsOf(state, 0)[0];
+    assert.equal(cn.key, "halfNext");
+    const exact = r.ctx.conditionTapText(cn, r.ctx.conditionLabel(cn), state, { member: true });
+    r.press(rows[0].children[0]);
+    return { r, lead: flavorOfChip(cn), exact };
+  },
+]);
+
+probe("UP YOUR SLEEVE card", {
+  paint: () => {
+    const roots = [];
+    chipExpect = { flavours: [], bodies: [], extraRules: [] };
+    for (const cls of ["Fighter", "Thief"]) {
+      const r = chipRig();
+      const state = newRun(9, [], { force: { cls } });
+      r.w.__mzState.set(state);
+      r.sandbox.setState(state);
+      r.w.__mzPendingNarration = null;
+      // The mirror of the module script's surfaceAbilityPool (rules-surfaces.test.js pins it to its source).
+      const card = abilityPoolCard(state.c);
+      const flavor = abilityPoolFlavor(state.c);
+      assert.ok(card && flavor, `${cls}: a fresh run raises the UP YOUR SLEEVE card`);
+      r.w.mzRailLine(card.title, card.line, card.tone, card.hold, card.icon, null, flavor);
+      const meta = ABILITY_BY_ID[state.c.abilities.find((a) => ABILITY_BY_ID[a] && ABILITY_BY_ID[a].source === "pool")];
+      assert.equal(card.line, newTrickLine(meta), `${cls}: the card's own line is the unchanged "New trick" sentence`);
+      chipExpect.flavours.push(`New trick: ${meta.name} — ${flavorOfAbility(meta.name)}`);
+      chipExpect.bodies.push(newTrickLine(meta));
+      chipExpect.extraRules.push(newTrickLine(meta));
+      roots.push(r.railLines());
+    }
+    return roots;
+  },
+  expect: () => chipExpect,
+});
+
+// ─── the coverage test: the sweep is tied to the model document ───────────
+
+const PHASE_96_SURFACES = [
+  "Roller reveal", "Hero dossier and trait line", "Combat ABILITIES rows and SING", "Hero abilities and skills",
+  "Final Sheet tricks", "Chip tap cards", "UP YOUR SLEEVE card",
+];
+// A surface that needs several states to be seen may carry several probes under one name; the count is declared, not open.
+const DECLARED_MULTI_STATE = { "Chip tap cards": 4 };
+
+/** The first column of every data row of the Surfaces table in docs/TEXT-LAYERS.md. */
+function surfaceTableRows(markdown) {
+  const at = markdown.indexOf("### Surfaces");
+  assert.ok(at >= 0, "docs/TEXT-LAYERS.md has a Surfaces section");
+  const names = [];
+  let inTable = false;
+  for (const line of markdown.slice(at).split("\n").slice(1)) {
+    if (!line.startsWith("|")) {
+      if (inTable) break;
+      continue;
+    }
+    inTable = true;
+    const first = line.split("|")[1].trim();
+    if (first === "Surface" || /^-+$/.test(first)) continue;
+    names.push(first);
+  }
+  return names;
+}
+
+/** The table rows (or required names) that no probe covers. */
+const unprobed = (names, probes) => names.filter((name) => !probes.some((p) => p.covers === name));
+
+test("coverage: every row of the Surfaces table in docs/TEXT-LAYERS.md has a probe", () => {
+  const rows = surfaceTableRows(LAYERS_DOC);
+  assert.ok(rows.length >= 13, `the Surfaces table lists its surfaces (${rows.length} rows)`);
+  assert.deepEqual(unprobed(rows, PROBES), [], "a surface in the table has no probe in this file");
+  // The converse: a probe for a surface the table does not know is stale (a renamed row), unless it is one of the Phase 96 names.
+  const known = new Set([...rows, ...PHASE_96_SURFACES]);
+  assert.deepEqual([...new Set(PROBES.map((p) => p.covers))].filter((name) => !known.has(name)), [], "a probe covers a name that is in neither the table nor the Phase 96 list");
+});
+
+test("coverage: the seven Phase 96 surfaces each have a probe, whether or not the table lists them yet", () => {
+  assert.equal(PHASE_96_SURFACES.length, 7);
+  assert.deepEqual(unprobed(PHASE_96_SURFACES, PROBES), []);
+});
+
+test("coverage: no two probes share a name unless they are the declared multi-state surface, and all 20 surfaces are probed", () => {
+  const counts = new Map();
+  for (const p of PROBES) counts.set(p.covers, (counts.get(p.covers) || 0) + 1);
+  for (const [name, n] of counts) assert.equal(n, DECLARED_MULTI_STATE[name] ?? 1, `${name}: ${n} probe(s)`);
+  for (const name of Object.keys(DECLARED_MULTI_STATE)) assert.ok(counts.has(name), `${name} is probed`);
+  assert.equal(counts.size, 20, "13 Phase 95 surfaces plus the 7 Phase 96 surfaces");
+  const variants = PROBES.filter((p) => p.covers === "Chip tap cards").map((p) => p.variant);
+  assert.deepEqual(variants, ["HUD strip out of a fight", "combat condition card", "YOUR LOT hero and Joiner", "Company panel"]);
+});
+
+test("coverage teeth: a table row with no probe is reported, and the table parser reads a made-up row", () => {
+  const tableEnd = LAYERS_DOC.indexOf("\n\n### Deliberately plain");
+  assert.ok(tableEnd > 0, "the Surfaces table is followed by the Deliberately plain section");
+  const doc = `${LAYERS_DOC.slice(0, tableEnd)}\n| A surface added later | \`x.js\` | a | b | c | \`z:\` |\n\n### Deliberately plain\n`;
+  const rows = surfaceTableRows(doc);
+  assert.ok(rows.includes("A surface added later"), "the parser reads the new row");
+  assert.deepEqual(unprobed(rows, PROBES), ["A surface added later"], "a surface added without a probe fails");
+  assert.ok(rows.includes("Grimoire") && rows.includes("Drop shelf"), "the first and last Phase 95 rows are read");
+  assert.ok(!rows.includes("Surface") && !rows.some((r) => /^-+$/.test(r)), "the header and divider are not rows");
+});
 
 // ─── the runner loop ──────────────────────────────────────────────────────
 
