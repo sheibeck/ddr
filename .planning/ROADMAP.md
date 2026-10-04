@@ -227,7 +227,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every player text rewritten in Phases 95 and 96 passes the family-friendly safety scan and a narrative review in the house sarcastic voice, and a review page lists each text with its verdict.
   4. A walk across every screen (Gear, store, loot and find, spells, Hero, combat, chip taps, title) finds no description that still reads as a rulebook sentence, no rule or number moved, and every truth guard is still green against the technical layer.
 
-**Plans**: 4/11 plans executed
+**Plans**: 6/11 plans executed
 **Wave 1**
 
 - [x] 96-01-PLAN.md — the identity record shape (line plus tagged good and bad), the 200-character two-sentence rule, the tag guard, and the 6 race and 3 class lines
@@ -243,8 +243,8 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 96-04-PLAN.md — the 47 condition-chip lines, the chip resolver and the coverage test against the shell's explanations
-- [ ] 96-06-PLAN.md — abilities on screen: the combat ABILITIES rows and SING, the Hero ability and skill lists, the Final Sheet's tricks
+- [x] 96-04-PLAN.md — the 47 condition-chip lines, the chip resolver and the coverage test against the shell's explanations
+- [x] 96-06-PLAN.md — abilities on screen: the combat ABILITIES rows and SING, the Hero ability and skill lists, the Final Sheet's tricks
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -300,7 +300,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 93. Quick Wins: Harmful Chips First & Cloak Heals on Use | 3/3 | Complete    | 2026-10-03 |
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
-| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 4/11 | In Progress|  |
+| 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 6/11 | In Progress|  |
 | 97. Large-Screen Support | 0/TBD | Not started | - |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
