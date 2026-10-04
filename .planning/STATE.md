@@ -5,15 +5,15 @@ milestone_name: Fit & Finish
 current_phase: 96
 current_phase_name: "Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review"
 status: executing
-stopped_at: Completed 96-02-PLAN.md
-last_updated: "2026-10-04T05:22:34.264Z"
+stopped_at: Completed 96-12-PLAN.md
+last_updated: "2026-10-04T05:31:23.435Z"
 last_activity: 2026-10-04
 last_activity_desc: Phase 96 execution started
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 30
-  completed_plans: 28
+  completed_plans: 29
   percent: 63
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 Phase: 96 (Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review) — EXECUTING
 Plan: 11 of 11
-Status: Ready to execute
+Status: Ready to execute (96-11 remains: round-2 review of the 11 new SKILL_FLAVOR lines, closed-review test, final docs, gate)
 Last activity: 2026-10-04 — Phase 96 execution started
-Progress: [███████░░░] 69% (0 of 6 phases)
+Progress: [██████████] 97% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
 
@@ -292,8 +292,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-04T04:23:43.682Z
-Stopped at: Completed 96-02-PLAN.md
+Last session: 2026-10-04T05:31:23.384Z
+Stopped at: Completed 96-12-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -523,6 +523,7 @@ Resume file: None
 | Phase 95 P08 | 50min | 3 tasks | 4 files |
 | Phase 96 P01 | 25min | 3 tasks | 10 files |
 | Phase 96 P02 | 20min | 3 tasks | 9 files |
+| Phase 96 P12 | 40min | 3 tasks | 13 files |
 
 ## Decisions
 
