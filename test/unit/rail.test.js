@@ -676,3 +676,26 @@ test("Phase 96 FLAVOR-04: conditionCard passes the flavour through, keeps kind \
   assert.equal(card.lines[0].rulesName, "Afraid");
   assert.deepEqual(conditionCard("AFRAID", "exact"), conditionCard("AFRAID", "exact", null));
 });
+
+// ─── Phase 96 (FLAVOR-04): abilityPoolFlavor — the UP YOUR SLEEVE lead ────
+
+test("Phase 96 FLAVOR-04: abilityPoolFlavor leads with the pool ability's flavour and keeps abilityPoolCard unedited", async () => {
+  const { abilityPoolFlavor } = railNS;
+  const { flavorOfAbility } = await import("../../src/browser/flavorText.js");
+  const c = { cls: "Fighter", abilities: ["kata", "brace"] };
+  const f = abilityPoolFlavor(c);
+  const own = flavorOfAbility("Brace");
+  assert.ok(own, "Brace has a flavour line");
+  assert.deepEqual(f, { line: "New trick: Brace — " + own, id: "pool:brace", name: "Brace" });
+  assert.equal(/[0-9]/.test(f.line), false, "the lead carries no digit");
+  assert.equal(abilityPoolCard(c).line, "New trick: Brace — halve the next two blows that land on you", "the exact card is unchanged");
+});
+
+test("Phase 96 FLAVOR-04: abilityPoolFlavor is null for a Magic User, a table-only list, a catalog-less id, bad input", () => {
+  const { abilityPoolFlavor } = railNS;
+  assert.equal(abilityPoolFlavor({ cls: "Magic User", abilities: [] }), null);
+  assert.equal(abilityPoolFlavor({ cls: "Fighter", abilities: ["kata"] }), null);
+  assert.equal(abilityPoolFlavor({ cls: "Fighter", abilities: ["nope-not-an-ability"] }), null);
+  assert.equal(abilityPoolFlavor({ cls: "Fighter" }), null);
+  for (const bad of [null, undefined, "x", 7, [], { abilities: "brace" }]) assert.equal(abilityPoolFlavor(bad), null);
+});

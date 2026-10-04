@@ -525,8 +525,9 @@ test('(q) 2026-09-17 UAT ruling (actual icons): renderRail renders an <img> from
 
   assert.equal((CODE.match(/^function featureIconSrc\(key\)/gm) || []).length, 1);
   assert.equal((CODE.match(/^const FEATURE_ICON_PATH = Object\.freeze\(\{ dir: "\.\/icons\/optimized\/", ext: "\.png" \}\);/gm) || []).length, 1);
-  assert.equal((CODE.match(/window\.mzRailLine = \(title, line, tone, hold, icon, iconKey = null\) =>/g) || []).length, 1);
-  assert.equal((CODE.match(/railLineCard\(title, line, tone, hold, icon, iconKey\)/g) || []).length, 1);
+  // Phase 96 (FLAVOR-04): declared re-pin — the entry point gains the trailing `flavor = null` after iconKey and forwards both to railLineCard.
+  assert.equal((CODE.match(/window\.mzRailLine = \(title, line, tone, hold, icon, iconKey = null, flavor = null\) =>/g) || []).length, 1);
+  assert.equal((CODE.match(/railLineCard\(title, line, tone, hold, icon, iconKey, flavor\)/g) || []).length, 1);
 
   assert.match(HTML, /^\.mw-rail-icon img\{width:26px;height:26px;object-fit:contain;display:block\}$/m);
 });

@@ -1187,3 +1187,418 @@ test("(y) tolerant: an ability id absent from the catalog is dropped, and a skil
   assert.equal(String(mystery.innerHTML), "<b>Mystery Skill</b><i></i>", "today's markup for an unknown skill");
   assert.equal(findAll(thief.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
 });
+
+// ─── Phase 96 (FLAVOR-04): the chip tap cards and the UP YOUR SLEEVE card ───
+//
+// The chip cards are driven through the REAL classic paint (paintConditions on
+// the HUD strip, renderYourLot in a fight) and the REAL renderRail; the module
+// script's entry points (window.mzRailLine, window.mzConditionCard) are not in
+// the sandbox, so this rig installs mirrors of their bodies built on the real
+// railLineCard and conditionCard with the trailing flavour argument (the source
+// pins hold the module's real bodies to that shape). The rig is copied by value
+// from status-chit-combat.test.js and your-lot-chips.test.js.
+
+import { createFakeClock } from "./harness/fakeClock.js";
+import { railPush, railLineCard, conditionCard, abilityPoolCard, abilityPoolFlavor, RAIL_HOLD } from "../../src/browser/rail.js";
+import { ARM_DELAY_MS } from "../../src/browser/inputGuards.js";
+import { flavorOf, flavorOfChip } from "../../src/browser/flavorText.js";
+import { applyAction } from "../../engine/engine.js";
+import { vignetteFor, waiverFor } from "../../src/browser/darknessView.js";
+import { inDark, revealRadius, mapViewRadius, darkWaiver } from "../../engine/derived.js";
+
+function chipState() {
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark: false, seen: true, feat: null })));
+  return {
+    version: 1, seed: 1, rngState: 1,
+    c: {
+      cls: "Fighter", sub: "Soldier", race: "Human", level: 3, sp: 0, maxWP: 55, wp: 55, skills: {}, vp: 0,
+      weapon: "Sword", prof: 2, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+      temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x", potions: 1, rations: 6, gold: 50, scrolls: 0,
+      haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null, items: [], grimoire: [], spellsUsed: 0, kills: 0,
+      might: 0, ward: null, regen: false, mirror: 0, foresight: false, name: "Test Delver", darkFor: 0, timers: {},
+    },
+    floor: { g, px: 1, py: 1, depth: 2 },
+    day: 1, steps: 0, combat: null, store: null, beats: null, party: [], dead: false, deathNote: "", epitaph: "",
+  };
+}
+
+const chipFoe = (name, extra = {}) => ({ name, type: "Beasts", lvl: 2, size: "S", intel: 4, wp: 10, maxWP: 10, alive: true, asleep: 0, sp: { dmg: { n: 1, sides: 6, bonus: 2 }, note: "+2 damage" }, lives: 1, ...extra });
+
+function chipFightState({ afraid = 2 } = {}) {
+  const s = chipState();
+  s.combat = { foes: [chipFoe("Wolf"), chipFoe("Cave Bear", { size: "L", wp: 25, maxWP: 25 })], type: "Beasts", round: 2, target: 1, spellOpen: false, tracked: false, first: "you", afraid };
+  return s;
+}
+
+function chipRig({ reducedMotion = true } = {}) {
+  const clock = createFakeClock({ start: 100000 });
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc, stubRail: false, clock, reducedMotion });
+  const w = sandbox.context.window;
+  w.mzRailLine = (title, line, tone, hold, icon, iconKey = null, flavor = null) => {
+    w.__mzRail = railPush(w.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey, flavor));
+    w.renderRail?.();
+  };
+  w.mzConditionCard = (title, text, flavor = null) => {
+    const live = w.__mzState?.get?.();
+    if (!live || !(live.combat || w.__mzBeat?.active?.())) return;
+    w.__mzRail = railPush(w.__mzRail, conditionCard(title, text, flavor));
+    w.renderRail?.();
+  };
+  const railEl = () => doc.document.getElementById("mw-rail");
+  const chip = (key) => doc.document.getElementById("mm-conditions").children.find((c) => c.className === "mw-cond" && c.dataset.key === key);
+  const descriptor = (key) => w.__mzConditionsOf(w.__mzState.get()).find((cn) => cn.key === key);
+  const show = (state) => { w.__mzState.set(state); sandbox.paint(); };
+  return { clock, doc, sandbox, w, ctx: sandbox.context, railEl, chip, descriptor, show, renderRail: () => sandbox.context.renderRail() };
+}
+
+/** The rail's typed lead lines, its RULES toggles and its RULES body, read off the real #mw-rail-lines. */
+function readRailCard(r) {
+  const lines = r.doc.document.getElementById("mw-rail-lines");
+  return {
+    leads: lines.children.filter((el) => hasClass(el, "mw-rail-line")),
+    toggles: lines.children.filter((el) => hasClass(el, "mw-rules-btn")),
+    body: lines.children.find((el) => hasClass(el, "mw-rules-body")),
+  };
+}
+
+const noDigit = (s) => !/[0-9]/.test(String(s));
+
+/** Assert the raised card leads with `lead`, holds `exact` behind a collapsed RULES toggle outside the typed lines. */
+function assertFlavourFirstCard(r, { lead, exact, kind }) {
+  const card = r.w.__mzRail.card;
+  assert.equal(card.kind, kind);
+  assert.equal(card.lines.length, 1);
+  assert.equal(card.lines[0].text, lead);
+  assert.equal(card.lines[0].rules, exact);
+  assert.equal(noDigit(lead), true, `the lead carries no digit: ${lead}`);
+  r.renderRail();
+  const { leads, toggles, body } = readRailCard(r);
+  assert.deepEqual(leads.map(textOf), [lead]);
+  assert.equal(toggles.length, 1, "one RULES toggle outside the typed lines");
+  assert.equal(toggles[0].getAttribute("aria-expanded"), "false");
+  assert.equal(body.hidden, true);
+  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), exact);
+  return card;
+}
+
+/** A RULES tap opens the body, never dismisses the card, and a repaint keeps it open; Always on drops the toggle. */
+function assertRulesTapStaysPut(r) {
+  const seq = r.w.__mzRail.card.seq;
+  const stateJson = JSON.stringify(r.w.__mzState.get());
+  const toggle = readRailCard(r).toggles[0];
+  tap(toggle);
+  assert.equal(r.w.__mzRail.card?.seq, seq, "the RULES tap leaves the card up");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  // The rail's own body-tap handler returns early for a RULES tap, even after the arm window.
+  r.railEl().onclick({ target: { closest: (sel) => (sel === ".mw-rules-btn" ? toggle : null) } });
+  assert.equal(r.w.__mzRail.card?.seq, seq, "the rail handler never dismisses on a RULES tap");
+  r.renderRail();
+  const again = readRailCard(r);
+  assert.equal(again.toggles[0].getAttribute("aria-expanded"), "true", "a repaint keeps the body open");
+  assert.equal(again.body.hidden, false);
+  assert.equal(JSON.stringify(r.w.__mzState.get()), stateJson, "nothing in the state changed");
+
+  clearRulesOpen();
+  setAlwaysRules(true);
+  r.renderRail();
+  const always = readRailCard(r);
+  assert.equal(always.toggles.length, 0, "Always show the rules drops the toggle");
+  assert.equal(always.body.hidden, false);
+}
+
+test("(z1) HUD strip out of a fight: a harmful and two helpful chips lead with flavour; the whole tap text sits behind RULES", () => {
+  const cases = [
+    ["darkness", (s) => { s.c.darkFor = 9; }],
+    ["might", (s) => { s.c.might = 2; }],
+    ["senses", (s) => { s.c.senses = true; }],
+  ];
+  for (const [key, setup] of cases) {
+    const r = chipRig();
+    const s = chipState();
+    setup(s);
+    r.show(s);
+    const cn = r.descriptor(key);
+    const label = r.ctx.conditionLabel(cn);
+    const lead = flavorOfChip(cn);
+    assert.ok(lead, `${key} has a flavour line`);
+    const exact = r.ctx.conditionTapText(cn, label, s);
+    const el = r.chip(key);
+    assert.ok(el, `the ${key} chip`);
+    assert.ok(textOf(el).startsWith(label), "the chip label is untouched");
+    assert.ok(!textOf(el).includes(lead), "the flavour is on the card, never on the chip");
+    r.clock.advance(ARM_DELAY_MS + 10);
+    el.onclick();
+    assertFlavourFirstCard(r, { lead, exact, kind: undefined });
+    assert.equal(r.w.__mzRail.card.title, label.toUpperCase());
+    assertRulesTapStaysPut(r);
+    clearRulesOpen();
+    setAlwaysRules(false);
+  }
+});
+
+test("(z1) HUD strip: the measured effect, the explanation and the how-long tail all stay in the RULES body, byte for byte", () => {
+  const r = chipRig();
+  const s = chipState();
+  s.c.might = 2;
+  r.show(s);
+  const cn = r.descriptor("might");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  r.chip("might").onclick();
+  const exact = r.w.__mzRail.card.lines[0].rules;
+  assert.equal(exact, `${r.ctx.explainCondition(cn, "Strong")} Until the day ends, from your fear.`);
+  assert.equal(exact, r.ctx.conditionTapText(cn, "Strong", s));
+});
+
+test("(z2) in a fight: the combat condition card leads with flavour and holds the exact text behind RULES; a RULES tap never aims or dismisses", () => {
+  const r = chipRig();
+  const s = chipFightState();
+  s.c.might = 2;
+  r.show(s);
+  const target = s.combat.target;
+  for (const key of ["afraid", "might"]) {
+    const cn = r.descriptor(key);
+    const label = r.ctx.conditionLabel(cn);
+    const lead = flavorOfChip(cn);
+    assert.ok(lead, `${key} has a flavour line`);
+    const exact = r.ctx.conditionTapText(cn, label, s);
+    r.clock.advance(ARM_DELAY_MS + 10);
+    r.chip(key).onclick();
+    assertFlavourFirstCard(r, { lead, exact, kind: "cond" });
+    assert.equal(r.railEl().hidden, false);
+    assert.equal(r.railEl().dataset.over, "combat");
+    assertRulesTapStaysPut(r);
+    assert.equal(s.combat.target, target, "the aim is unchanged");
+    clearRulesOpen();
+    setAlwaysRules(false);
+  }
+  // The harmful chip's lead still says something is wrong.
+  assert.match(flavorOfChip(r.descriptor("afraid")), /Fear|fear|nerve/);
+});
+
+function lotRig() {
+  const r = chipRig();
+  r.dispatched = [];
+  for (const name of ["mzAttack", "mzCastSpell", "mzSing", "mzDrinkPotion", "mzReadScroll", "mzUseAbility", "mzUseItem", "mzFlee", "mzParley", "mzLoseTurn", "mzFight"]) {
+    r.w[name] = (...args) => { r.dispatched.push({ name, args }); };
+  }
+  return r;
+}
+
+function lotHero(overrides = {}) {
+  return {
+    cls: "Thief", sub: "Burglar", race: "Human", level: 3, sp: 0, maxWP: 200, wp: 200, skills: {}, vp: 0,
+    weapon: "Sword", prof: 2, magicWpn: 0, armor: "Nothing", ar: 0, armorMin: 0, armorWP: 0, armorMax: 0, patches: 0,
+    temperament: "Grim", motive: "Money", phobia: "Spiders", phobiaType: "x", potions: 1, rations: 6, gold: 50, scrolls: 0,
+    haste: 0, invis: 0, ether: 0, acute: 0, affliction: null, joiner: null, items: [], grimoire: [], spellsUsed: 0, kills: 0,
+    might: 0, ward: null, regen: false, mirror: 0, foresight: false, name: "Test Delver", darkFor: 0, abilities: ["smoke"], timers: {},
+    ...overrides,
+  };
+}
+
+function lotFightState({ c = {}, party = [], combat = {} } = {}) {
+  const g = [0, 1, 2].map(() => [0, 1, 2].map(() => ({ wall: false, dark: false, seen: true, feat: null })));
+  return {
+    version: 1, seed: 1, rngState: 5, c: lotHero(c), floor: { g, px: 1, py: 1, depth: 1 },
+    day: 1, steps: 0, store: null, beats: null, party, dead: false, deathNote: "", epitaph: "",
+    combat: {
+      foes: [{ name: "Stone Ox", type: "Beasts", lvl: 1, size: "S", intel: 1, wp: 900, maxWP: 900, alive: true, asleep: 0, sp: {}, lives: 1 }],
+      type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you", ...combat,
+    },
+  };
+}
+
+function lotCardsOf(r) {
+  return Array.from(r.doc.document.getElementById("enc-body").querySelectorAll(".cb-lot-card"));
+}
+
+function lotChipsOf(card) {
+  const row = card.children.find((el) => el.className === "cb-lot-chips");
+  return row ? row.children.filter((el) => el.className === "cb-lot-chip") : [];
+}
+
+test("(z3) YOUR LOT: the hero's Smoke chip and a Joiner's Sidestep chip raise the flavour-first card; the member wording sits in the body only", () => {
+  const r = lotRig();
+  const used = applyAction(lotFightState(), { type: "useAbility", key: "smoke" }).state;
+  const state = lotFightState({
+    c: used.c,
+    party: [{ name: "Joiner", cls: "Fighter", sub: "Soldier", lvl: 1, wp: 30, maxWP: 30, status: "ok", timers: { "ability:sidestep": { cadence: "rounds", left: 1, phase: "effect", cd: 4 } } }],
+    combat: { allies: [{ partyIdx: 0, name: "Joiner", lvl: 1, wp: 30, maxWP: 30 }] },
+  });
+  state.rngState = used.rngState;
+  r.w.__mzState.set(state);
+  r.ctx.renderEncounter();
+  const cards = lotCardsOf(r);
+  assert.ok(cards.length >= 2, "hero and member cards");
+
+  // The hero's chip.
+  const heroChip = lotChipsOf(cards[0])[0];
+  assert.equal(textOf(heroChip), "Smoke · 2", "the chip label and count are untouched");
+  const heroCn = r.w.__mzConditionsOf(state).find((cn) => cn.key === "ability" && cn.ability === "smoke");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  heroChip.onclick();
+  const heroLead = flavorOfAbility("Smoke");
+  assert.ok(heroLead);
+  const heroExact = r.ctx.conditionTapText(heroCn, "Smoke", state, { member: false });
+  assertFlavourFirstCard(r, { lead: heroLead, exact: heroExact, kind: "cond" });
+  assert.match(heroExact, /from your Smoke\.$/);
+  assertRulesTapStaysPut(r);
+
+  // The Joiner's chip: "their" belongs to the body.
+  clearRulesOpen();
+  setAlwaysRules(false);
+  const memberChip = lotChipsOf(cards[1])[0];
+  assert.equal(textOf(memberChip), "Sidestep · 1");
+  const memberCn = r.w.__mzMemberConditionsOf(state, 0).find((cn) => cn.key === "ability");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  memberChip.onclick();
+  const memberLead = flavorOfAbility("Sidestep");
+  assert.ok(memberLead);
+  const memberExact = r.ctx.conditionTapText(memberCn, "Sidestep", state, { member: true });
+  assertFlavourFirstCard(r, { lead: memberLead, exact: memberExact, kind: "cond" });
+  assert.match(memberExact, /from their Sidestep\.$/);
+  assert.doesNotMatch(memberLead, /their/, "the member wording is inside the body only");
+  assert.deepEqual(r.dispatched, [], "a chip tap never dispatches");
+});
+
+test("(z4) an ability chip leads with that ability's own flavour line; its body carries the ability's txt sentence", () => {
+  const r = lotRig();
+  const used = applyAction(lotFightState(), { type: "useAbility", key: "smoke" }).state;
+  r.w.__mzState.set(used);
+  r.ctx.renderEncounter();
+  const cn = r.w.__mzConditionsOf(used).find((x) => x.key === "ability" && x.ability === "smoke");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  lotChipsOf(lotCardsOf(r)[0])[0].onclick();
+  const card = r.w.__mzRail.card;
+  assert.equal(card.lines[0].text, flavorOfAbility(ABILITY_BY_ID.smoke.name));
+  const txt = ABILITY_BY_ID.smoke.txt;
+  assert.ok(card.lines[0].rules.includes(txt[0].toUpperCase() + txt.slice(1)), "the ability's own txt sentence is in the body");
+  assert.equal(card.lines[0].rules, r.ctx.conditionTapText(cn, "Smoke", used));
+});
+
+test("(z5) a darkness waiver keeps the waiver-led sentence in the body; dazed, weakened and a mirror Bubble lead with their own lines", () => {
+  // Darkness with Night Vision holding it back.
+  const dark = chipRig();
+  const ds = chipState();
+  ds.c.darkFor = 9;
+  ds.c.skills = { "Night Vision": 1 };
+  // The waiver reads the engine's one answer through the module script's bridge (darkness-vignette.test.js#darknessBridge).
+  dark.w.__mzDarkness = { inDark, revealRadius, mapViewRadius, darkWaiver, vignetteFor, waiverFor };
+  dark.show(ds);
+  const dcn = dark.descriptor("darkness");
+  dark.clock.advance(ARM_DELAY_MS + 10);
+  dark.chip("darkness").onclick();
+  const dcard = dark.w.__mzRail.card;
+  assert.equal(dcard.lines[0].text, flavorOf("chip", "darkness"));
+  assert.ok(dcard.lines[0].rules.startsWith("The dark is on you, but "), dcard.lines[0].rules);
+  assert.equal(dcard.lines[0].rules, dark.ctx.conditionTapText(dcn, dark.ctx.conditionLabel(dcn), ds));
+
+  // The kind-specific foe effects.
+  for (const [kind, key] of [["dazed", "foeEffect/dazed"], ["weakened", "foeEffect/weakened"]]) {
+    const r = chipRig();
+    const s = chipFightState({ afraid: 0 });
+    s.c.foeEffect = { kind, rounds: 2 };
+    r.show(s);
+    const cn = r.descriptor("foeEffect");
+    r.clock.advance(ARM_DELAY_MS + 10);
+    r.chip("foeEffect").onclick();
+    const card = r.w.__mzRail.card;
+    assert.equal(card.lines[0].text, flavorOf("chip", key), kind);
+    assert.equal(card.lines[0].rules, r.ctx.conditionTapText(cn, r.ctx.conditionLabel(cn), s));
+  }
+
+  // An armed Bubble mirror.
+  const m = chipRig();
+  const ms = chipFightState({ afraid: 0 });
+  ms.c.ward = { pool: 0, rounds: null, name: "Bubble", mirror: true };
+  m.show(ms);
+  const mcn = m.descriptor("ward");
+  assert.equal(mcn.mirror, true);
+  m.clock.advance(ARM_DELAY_MS + 10);
+  m.chip("ward").onclick();
+  assert.equal(m.w.__mzRail.card.lines[0].text, flavorOf("chip", "ward/mirror"));
+  assert.equal(m.w.__mzRail.card.lines[0].rules, m.ctx.conditionTapText(mcn, m.ctx.conditionLabel(mcn), ms));
+});
+
+test("(z6) tolerant: a chip descriptor with an unknown key raises today's card with no toggle and no throw", () => {
+  const r = chipRig();
+  const s = chipState();
+  s.c.might = 2;
+  const real = r.w.__mzConditionsOf;
+  r.w.__mzConditionsOf = (st) => [...real(st), { key: "mysteryBrew", polarity: "good" }];
+  assert.doesNotThrow(() => r.show(s));
+  const cn = r.descriptor("mysteryBrew");
+  assert.ok(cn, "the unknown chip was enumerated");
+  assert.equal(flavorOfChip(cn), "");
+  const el = r.chip("mysteryBrew");
+  assert.ok(el, "the unknown chip drew");
+  r.clock.advance(ARM_DELAY_MS + 10);
+  el.onclick();
+  const card = r.w.__mzRail.card;
+  assert.equal(card.lines[0].text, r.ctx.conditionTapText(cn, r.ctx.conditionLabel(cn), s), "today's card text");
+  assert.equal("rules" in card.lines[0], false, "no rules property, no toggle");
+  r.renderRail();
+  const { toggles, body } = readRailCard(r);
+  assert.equal(toggles.length, 0);
+  assert.equal(body, undefined);
+});
+
+test("(z6) the entry points forward the flavour spec to the real card builders", () => {
+  assert.match(HTML, /window\.mzRailLine = \(title, line, tone, hold, icon, iconKey = null, flavor = null\) => \{\n\s+window\.__mzRail = railPush\(window\.__mzRail, railLineCard\(title, line, tone, hold, icon, iconKey, flavor\)\);/);
+  assert.match(HTML, /window\.mzConditionCard = \(title, text, flavor = null\) => \{/);
+  assert.match(HTML, /conditionCard\(title, text, flavor\)/);
+  assert.match(HTML, /railInfo: \(title, text, flavor\) => window\.mzRailLine\?\.\(title, text, "info", 8400, "·", null, flavor\)/);
+});
+
+function poolCard(r, state) {
+  // The mirror of the module script's surfaceAbilityPool (pinned to its source below).
+  const card = abilityPoolCard(state.c);
+  if (!card) return null;
+  const flavor = abilityPoolFlavor(state.c);
+  r.w.mzRailLine(card.title, card.line, card.tone, card.hold, card.icon, null, flavor);
+  return { card, flavor };
+}
+
+test("(z7) UP YOUR SLEEVE: a fresh Fighter and Thief read 'New trick: <name> — <flavour>' with the exact old line behind RULES; a Magic User raises no card", () => {
+  for (const cls of ["Fighter", "Thief"]) {
+    const r = chipRig();
+    const state = newRun(9, [], { force: { cls } });
+    r.w.__mzState.set(state);
+    r.sandbox.setState(state);
+    r.w.__mzPendingNarration = null;
+    const { card, flavor } = poolCard(r, state);
+    const id = state.c.abilities.find((a) => ABILITY_BY_ID[a] && ABILITY_BY_ID[a].source === "pool");
+    const meta = ABILITY_BY_ID[id];
+    const own = flavorOfAbility(meta.name);
+    assert.ok(own, `${meta.name} has a flavour line`);
+    const lead = `New trick: ${meta.name} — ${own}`;
+    assert.equal(flavor.line, lead);
+    assert.equal(card.title, "UP YOUR SLEEVE");
+    assert.equal(card.hold, RAIL_HOLD.level);
+    const raised = r.w.__mzRail.card;
+    assert.equal(raised.lines[0].text, lead);
+    assert.equal(raised.lines[0].rules, `New trick: ${meta.name} — ${meta.txt}`, "the exact old line, behind RULES");
+    assert.equal(noDigit(lead), true, lead);
+    r.renderRail();
+    const read = readRailCard(r);
+    assert.deepEqual(read.leads.map(textOf), [lead]);
+    assert.equal(read.toggles.length, 1);
+    assert.equal(read.toggles[0].getAttribute("aria-expanded"), "false");
+    assert.equal(textOf(findAll(read.body, "mw-rules-line")[0]), raised.lines[0].rules);
+    assertRulesTapStaysPut(r);
+    clearRulesOpen();
+    setAlwaysRules(false);
+  }
+  const mu = newRun(9, [], { force: { cls: "Magic User" } });
+  assert.equal(abilityPoolCard(mu.c), null);
+  assert.equal(abilityPoolFlavor(mu.c), null);
+});
+
+test("(z7) surfaceAbilityPool forwards abilityPoolFlavor to the rail and logs the flavour line, the old line when there is none", () => {
+  const start = HTML.indexOf("function surfaceAbilityPool(state) {");
+  assert.ok(start > 0);
+  const region = HTML.slice(start, HTML.indexOf("\n  }", start));
+  assert.match(region, /const flavor = abilityPoolFlavor\(state\.c\);/);
+  assert.match(region, /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, card\.icon, null, flavor\);/);
+  assert.match(region, /window\.logLine\?\.\(flavor \? flavor\.line : card\.line\);/);
+});

@@ -7190,7 +7190,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard, abilityPoolFlavor } from "./src/browser/rail.js";
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
@@ -9845,8 +9845,10 @@ window.__mzClassicBoot = async function classicBoot() {
   function surfaceAbilityPool(state) {
     const card = abilityPoolCard(state.c);
     if (!card) return;
-    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon);
-    window.logLine?.(card.line);
+    // Phase 96 (FLAVOR-04): the card leads with "New trick: <name> — <flavour>" and the exact line sits behind RULES; the Oracle log line is the flavour line too (no flavour: today's line).
+    const flavor = abilityPoolFlavor(state.c);
+    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon, null, flavor);
+    window.logLine?.(flavor ? flavor.line : card.line);
   }
 
   // ---- 04-DR3: character-roll screen ("THE TABLES DECIDE") ----

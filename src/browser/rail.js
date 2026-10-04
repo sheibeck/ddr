@@ -41,6 +41,8 @@ import { rangeText } from "./rollRange.js";
 // name/txt for the level-1 pool-pick narration; pure content data, same
 // discipline as eventNarration.js's existing content/flavor.js import.
 import { ABILITY_BY_ID } from "../../content/index.js";
+// Phase 96 (FLAVOR-04): abilityPoolFlavor (below) reads the ability's own flavour line.
+import { flavorOfAbility } from "./flavorText.js";
 
 /** RAIL_TONES — the five tones every rail card and legend row speaks. */
 export const RAIL_TONES = Object.freeze(["info", "good", "bad", "odd", "dull"]);
@@ -696,6 +698,31 @@ export function abilityPoolCard(c) {
     hold: RAIL_HOLD.level,
     icon: "★",
   };
+}
+
+/**
+ * abilityPoolFlavor(c) — Phase 96 (FLAVOR-04): the flavour spec for the same
+ * ability abilityPoolCard picks (the FIRST pool-source id in `c.abilities`):
+ * `{ line, id, name }` where `line` is RAIL_COPY.abilityPool.line filled with
+ * the ability's name and its FLAVOUR line (not its rules txt), `id` is
+ * "pool:<ability id>" and `name` the ability's name. The exact abilityPoolCard
+ * line is then the card's second argument, behind RULES. null for a missing or
+ * invalid `c`, an empty or table-only list, or an ability with no flavour line.
+ * Pure; never throws.
+ */
+export function abilityPoolFlavor(c) {
+  try {
+    if (!c || !Array.isArray(c.abilities)) return null;
+    const key = c.abilities.find((id) => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].source === "pool");
+    if (!key) return null;
+    const meta = ABILITY_BY_ID[key];
+    const flavour = flavorOfAbility(meta.name);
+    if (!flavour) return null;
+    const { line } = RAIL_COPY.abilityPool;
+    return { line: line.replace("{name}", meta.name).replace("{txt}", flavour), id: "pool:" + key, name: meta.name };
+  } catch {
+    return null;
+  }
 }
 
 /** emptyRail() — the rail's zero state: no card up, no decision pending. */
