@@ -17,6 +17,14 @@
 // gets flavour with no save change, and an item this lookup cannot resolve
 // reads "" (the surface then shows its rules text as it does today).
 //
+// Phase 96 (FLAVOR-03; CONTEXT 'Good and bad are guarded by tags') appends the
+// identity and ability domains: race, sub, class, ability, skill and chip. An
+// identity domain's content export is a map of records `{ line, good, bad }`
+// (race, sub-class) or plain strings (class): `lines()` still returns a plain
+// `{ key: string }` map so every shared scan runs unchanged, and `tags()`
+// returns the raw record map the tag guard reads (the ids are
+// identityEntries ids from src/browser/identityFooter.js).
+//
 // Pure: no window or document, no rng, never throws, never mutates.
 // See docs/TEXT-LAYERS.md.
 
@@ -29,11 +37,53 @@ const frozenScroll = (s) => (typeof s === "string" ? Object.freeze({ Scroll: s }
 const asMap = (m) => (m && typeof m === "object" && !Array.isArray(m) ? m : undefined);
 
 /**
- * FLAVOR_DOMAINS — the eight flavour domains, in order. Each record:
+ * identityDomain(spec) — a frozen domain record for a content export that is a
+ * map of identity records `{ line, good, bad, neutral? }`. `spec` is `{ id,
+ * module, exportName, keys, read }`, `read()` giving the raw export (or
+ * undefined while it is absent). `lines()` builds a FRESH plain `{ key: line }`
+ * map of the records' `line` strings (undefined while the export is absent, not
+ * an object or an array); `tags()` returns the raw record map (undefined when
+ * absent). Pure; never throws on a hostile export.
+ */
+export function identityDomain(spec) {
+  const raw = () => {
+    try {
+      return asMap(spec.read());
+    } catch {
+      return undefined;
+    }
+  };
+  return Object.freeze({
+    id: spec.id,
+    module: spec.module,
+    exportName: spec.exportName,
+    keys: spec.keys,
+    lines: () => {
+      try {
+        const m = raw();
+        if (!m) return undefined;
+        const out = {};
+        for (const k of Object.keys(m)) {
+          const r = m[k];
+          out[k] = r && typeof r === "object" && !Array.isArray(r) ? r.line : r;
+        }
+        return out;
+      } catch {
+        return undefined;
+      }
+    },
+    tags: raw,
+  });
+}
+
+/**
+ * FLAVOR_DOMAINS — the flavour domains, in order (eight from Phase 95; the
+ * identity domains are appended below). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
  * the live content tables) and `lines()` (the map, or undefined while the
- * export is absent). Phase 96 appends its domains here.
+ * export is absent). An identity domain also has `tags()`. Phase 96 appends
+ * race, sub, class, ability, skill and chip.
  */
 export const FLAVOR_DOMAINS = Object.freeze([
   Object.freeze({
@@ -95,6 +145,25 @@ export const FLAVOR_DOMAINS = Object.freeze([
 ]);
 
 const str = (v) => (typeof v === "string" && v ? v : null);
+
+const EMPTY_TAGS = Object.freeze({ good: Object.freeze([]), bad: Object.freeze([]), neutral: "" });
+
+/** idList(v) — a frozen copy of the string ids in `v` (a non-array reads as none). */
+const idList = (v) => Object.freeze(Array.isArray(v) ? v.filter((x) => typeof x === "string" && x) : []);
+
+/**
+ * tagsOfRecord(record) — the frozen `{ good, bad, neutral }` of one identity
+ * record (id arrays; `neutral` an id or ""). A non-record reads all-empty.
+ * Never throws, never mutates.
+ */
+export function tagsOfRecord(record) {
+  try {
+    if (!record || typeof record !== "object" || Array.isArray(record)) return EMPTY_TAGS;
+    return Object.freeze({ good: idList(record.good), bad: idList(record.bad), neutral: str(record.neutral) || "" });
+  } catch {
+    return EMPTY_TAGS;
+  }
+}
 
 /**
  * flavorKeyOf(it) — `{ domain, key }` for an engine item, or `null`. Mirrors
@@ -175,6 +244,35 @@ export function flavorOfSpell(name) {
 /** flavorOfScroll() — the one flavour line every scroll shares, or "". */
 export function flavorOfScroll() {
   return flavorOf("scroll", "Scroll");
+}
+
+/**
+ * flavorOfIdentity(kind, key) — the flavour line for an identity: kind "race",
+ * "sub" or "class", key the race, sub-class or class name. "" for an unknown
+ * kind or key, or while the map is absent. Never throws.
+ */
+export function flavorOfIdentity(kind, key) {
+  if (kind !== "race" && kind !== "sub" && kind !== "class") return "";
+  return flavorOf(kind, key);
+}
+
+/**
+ * flavorTagsOf(kind, key) — the frozen `{ good, bad, neutral }` identity ids
+ * the line of a race or sub-class hints at. All-empty for an unknown kind or
+ * key, for a class (plain strings, no tags) and while the map is absent.
+ * Never throws, never mutates.
+ */
+export function flavorTagsOf(kind, key) {
+  try {
+    if (kind !== "race" && kind !== "sub") return EMPTY_TAGS;
+    const d = FLAVOR_DOMAINS.find((x) => x.id === kind);
+    if (!d || typeof d.tags !== "function" || typeof key !== "string") return EMPTY_TAGS;
+    const m = d.tags();
+    if (!m || !has(m, key)) return EMPTY_TAGS;
+    return tagsOfRecord(m[key]);
+  } catch {
+    return EMPTY_TAGS;
+  }
 }
 
 /**

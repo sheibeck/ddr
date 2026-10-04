@@ -13,6 +13,11 @@
 // at most 100 characters; unique across the whole layer; never equal to its
 // own rules text; a spell line never starts with its niche label.
 //
+// Phase 96 (FLAVOR-03; CONTEXT 'Shape'): the identity domains (race, sub,
+// class) get their own shape rule: one or two sentences, at most 200
+// characters, NFC and no astral character. The number rule is unchanged and
+// strict for every domain. Every other domain keeps the one-sentence rule.
+//
 // The number-word list is a per-file copy of WORD_NUM in
 // test/unit/item-text-engine.test.js (never imported across tests).
 
@@ -21,6 +26,7 @@ import assert from "node:assert/strict";
 
 import { FLAVOR_DOMAINS, everyFlavorLine } from "../../src/browser/flavorText.js";
 import { SPELLS, POTIONS, TOOLS, TOOL_ORDER, BAG_ITEMS, JEWELRY, CLOAKS, STAVES, NICHE_LABELS } from "../../content/index.js";
+import { RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/flavor.js";
 
 // ---------------------------------------------------------------------------
 // the predicates
@@ -35,6 +41,13 @@ const WORD_NUM = [
 const NUMBER_WORD_RE = new RegExp(`\\b(?:${WORD_NUM.join("|")})\\b`, "i");
 const DIE_RE = /\bd\d/i;
 const MAX_LEN = 100;
+// The per-domain shape rule (TEXT-LAYERS.md step 4). The length unit is the
+// JavaScript string length (UTF-16 code units); for the identity rule the NFC
+// and no-astral checks make that equal to the character count.
+const DEFAULT_RULE = Object.freeze({ max: MAX_LEN, minMarks: 1, maxMarks: 1, encoding: false });
+const IDENTITY_RULE = Object.freeze({ max: 200, minMarks: 1, maxMarks: 2, encoding: true });
+const RULE_OF = { race: IDENTITY_RULE, sub: IDENTITY_RULE, class: IDENTITY_RULE };
+const ruleOf = (id) => RULE_OF[id] || DEFAULT_RULE;
 
 /** numberProblems(line) — the reasons `line` states a number, a die or a percentage. */
 function numberProblems(line) {
@@ -47,19 +60,25 @@ function numberProblems(line) {
   return out;
 }
 
-/** shapeProblems(line) — one sentence, bounded, tidy. */
-function shapeProblems(line) {
+/** shapeProblems(line, rule) — the sentence count and length of `rule`, tidy. */
+function shapeProblems(line, rule = DEFAULT_RULE) {
   const out = [];
   if (typeof line !== "string" || !line) return ["not a non-empty string"];
-  if (line.length > MAX_LEN) out.push(`longer than ${MAX_LEN} (${line.length})`);
+  if (line.length > rule.max) out.push(`longer than ${rule.max} (${line.length})`);
   const marks = (line.match(/[.!?]/g) || []).length;
-  if (marks !== 1 || !/[.!?]$/.test(line)) out.push("not exactly one sentence ending the line");
+  if (marks < rule.minMarks || marks > rule.maxMarks || !/[.!?]$/.test(line)) {
+    out.push(rule.maxMarks === 1 ? "not exactly one sentence ending the line" : `not ${rule.minMarks} to ${rule.maxMarks} sentences ending the line`);
+  }
+  if (rule.encoding) {
+    if (line !== line.normalize("NFC")) out.push("not NFC");
+    if ([...line].length !== line.length) out.push("astral character");
+  }
   if (line !== line.trim()) out.push("leading or trailing space");
   if (/ {2}/.test(line)) out.push("doubled space");
   return out;
 }
 
-const problemsOf = (line) => [...numberProblems(line), ...shapeProblems(line)];
+const problemsOf = (line, rule = DEFAULT_RULE) => [...numberProblems(line), ...shapeProblems(line, rule)];
 
 /** missingMaps(domains) — "<exportName> (<module>)" for every domain whose map is not a non-null object. */
 function missingMaps(domains) {
@@ -85,6 +104,10 @@ const RULES_TXT = {
   tool: { ...Object.fromEntries(TOOL_ORDER.map((k) => [TOOLS[k].n, TOOLS[k].txt])), Lockpicks: LOCKPICKS_TXT },
   bag: byN(Object.values(BAG_ITEMS)),
   magic: byN([...JEWELRY, ...CLOAKS, ...STAVES]),
+  // Phase 96 (FLAVOR-03): the identity notes a blurb must differ from
+  race: RACE_NOTE,
+  sub: SUB_NOTE,
+  class: CLASS_NOTE,
 };
 const NICHE_OF = Object.fromEntries(SPELLS.map((s) => [s.n, NICHE_LABELS[s.niche]]));
 
@@ -133,6 +156,26 @@ test("teeth: doctored lines fail the same predicates, the accepted Heal line pas
   assert.deepEqual(problemsOf("Closes wounds the polite way: quickly, and without asking how you got them."), []);
 });
 
+test("teeth: the identity rule allows two sentences and 200 units, nothing else changes", () => {
+  const two = `${"A tall tale told at length, ".repeat(3)}ends here. And then a second sentence closes the line, which is rather the point.`;
+  assert.ok(two.length > 100 && two.length <= 200, `fixture length ${two.length}`);
+  assert.deepEqual(shapeProblems(two, IDENTITY_RULE), [], "a two-sentence line passes the identity rule");
+  assert.ok(shapeProblems(two, DEFAULT_RULE).length > 0, "and fails the default rule");
+  assert.ok(shapeProblems(`${"x".repeat(200)}.`, IDENTITY_RULE).some((p) => p.includes("longer than 200")), "201 units fails");
+  assert.deepEqual(shapeProblems(`${"x".repeat(199)}.`, IDENTITY_RULE), [], "200 units passes");
+  assert.ok(shapeProblems("One. Two. Three.", IDENTITY_RULE).length > 0, "three sentences fail");
+  assert.ok(shapeProblems("Cafe\u0301 is a decomposed accent.", IDENTITY_RULE).includes("not NFC"), "a decomposed accent fails");
+  assert.ok(shapeProblems("A grin \u{1F600} is astral.", IDENTITY_RULE).includes("astral character"), "an astral character fails");
+  assert.deepEqual(shapeProblems("Caf\u00e9 is composed.", IDENTITY_RULE), [], "a composed accent passes");
+  // the default rule is exactly Phase 95's
+  assert.deepEqual(shapeProblems("Closes wounds the polite way.", DEFAULT_RULE), []);
+  assert.deepEqual([RULE_OF.race, RULE_OF.sub, RULE_OF.class].map((r) => r.max), [200, 200, 200]);
+  assert.equal(ruleOf("spell"), DEFAULT_RULE);
+  assert.equal(ruleOf("race"), IDENTITY_RULE);
+  // numbers stay strict in an identity line
+  assert.ok(numberProblems("Hits for two.").length > 0);
+});
+
 // ---------------------------------------------------------------------------
 // per domain: complete, no orphans, every line number-free and one sentence
 // ---------------------------------------------------------------------------
@@ -156,9 +199,9 @@ for (const d of FLAVOR_DOMAINS) {
     for (const [k, line] of Object.entries(m)) assert.deepEqual(numberProblems(line), [], `${d.exportName}["${k}"]: ${line}`);
   });
 
-  test(`${d.id}: every flavour line is one tidy sentence of at most ${MAX_LEN} characters`, () => {
+  test(`${d.id}: every flavour line is tidy and within its domain's sentence and length rule (${ruleOf(d.id).max} max)`, () => {
     const m = mapOf(d);
-    for (const [k, line] of Object.entries(m)) assert.deepEqual(shapeProblems(line), [], `${d.exportName}["${k}"]: ${line}`);
+    for (const [k, line] of Object.entries(m)) assert.deepEqual(shapeProblems(line, ruleOf(d.id)), [], `${d.exportName}["${k}"]: ${line}`);
   });
 
   test(`${d.id}: no flavour line repeats its rules text or opens with its niche label`, () => {

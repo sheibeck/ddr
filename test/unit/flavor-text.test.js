@@ -17,6 +17,10 @@ import {
   flavorOfSpell,
   flavorOfScroll,
   everyFlavorLine,
+  identityDomain,
+  tagsOfRecord,
+  flavorOfIdentity,
+  flavorTagsOf,
 } from "../../src/browser/flavorText.js";
 import { POTIONS, SPELLS, TOOLS, BAG_ITEMS, WEAPONS, ARMORS, JEWELRY, CLOAKS, STAVES } from "../../content/index.js";
 
@@ -125,4 +129,72 @@ test("everyFlavorLine is frozen and lists [domain, key, line] triples", () => {
   }
   const expected = FLAVOR_DOMAINS.reduce((n, d) => n + (d.lines() ? Object.keys(d.lines()).length : 0), 0);
   assert.equal(all.length, expected);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 96 (FLAVOR-03): identity records, exercised through a local fake export
+// so no real domain is needed
+// ---------------------------------------------------------------------------
+
+const hostile = () => new Proxy({}, { get() { throw new Error("boom"); }, has() { throw new Error("boom"); }, ownKeys() { throw new Error("boom"); } });
+
+test("identityDomain: lines() is a fresh plain string map built from the records' line", () => {
+  const fake = { Elven: { line: "A thin line.", good: ["a"], bad: ["b"] }, Human: { line: "A plain line.", good: [], bad: [], neutral: "human-neutral" } };
+  const d = identityDomain({ id: "race", module: "content/flavor.js", exportName: "RACE_FLAVOR", keys: () => Object.keys(fake), read: () => fake });
+  assert.ok(Object.isFrozen(d));
+  assert.deepEqual(d.lines(), { Elven: "A thin line.", Human: "A plain line." });
+  assert.notEqual(d.lines(), d.lines(), "lines() is fresh every call");
+  d.lines().Elven = "mutated";
+  assert.equal(d.lines().Elven, "A thin line.");
+  assert.equal(d.tags(), fake, "tags() hands back the raw record map");
+});
+
+test("identityDomain: absent, non-object, array and hostile exports read undefined", () => {
+  const proxied = identityDomain({ id: "race", module: "m", exportName: "X", keys: () => [], read: () => hostile() });
+  assert.equal(proxied.lines(), undefined, "a throwing map reads undefined, never throws");
+  for (const bad of [undefined, null, "x", 7, []]) {
+    const d = identityDomain({ id: "race", module: "m", exportName: "X", keys: () => [], read: () => bad });
+    assert.equal(d.lines(), undefined);
+    assert.equal(d.tags(), undefined);
+  }
+  const thrower = identityDomain({ id: "race", module: "m", exportName: "X", keys: () => [], read: () => { throw new Error("boom"); } });
+  assert.equal(thrower.lines(), undefined);
+  assert.equal(thrower.tags(), undefined);
+});
+
+test("tagsOfRecord: frozen id arrays; a non-record reads all-empty and never throws", () => {
+  const t = tagsOfRecord({ line: "x", good: ["g1", "g2"], bad: ["b1"], neutral: "" });
+  assert.deepEqual(t, { good: ["g1", "g2"], bad: ["b1"], neutral: "" });
+  assert.ok(Object.isFrozen(t) && Object.isFrozen(t.good) && Object.isFrozen(t.bad));
+  assert.equal(tagsOfRecord({ neutral: "human-neutral" }).neutral, "human-neutral");
+  const empty = { good: [], bad: [], neutral: "" };
+  for (const c of [null, undefined, "x", 7, [], hostile(), { good: "no", bad: 3 }]) assert.deepEqual(tagsOfRecord(c), empty);
+  assert.deepEqual(tagsOfRecord({ good: ["a", 7, "", null, "b"] }).good, ["a", "b"]);
+  const rec = Object.freeze({ line: "x", good: Object.freeze(["g"]), bad: Object.freeze(["b"]) });
+  const before = JSON.stringify(rec);
+  tagsOfRecord(rec);
+  assert.equal(JSON.stringify(rec), before, "never mutates");
+});
+
+test("flavorOfIdentity and flavorTagsOf: unknown kind, unknown key and hostile input read empty", () => {
+  const empty = { good: [], bad: [], neutral: "" };
+  for (const kind of ["nope", "spell", "", null, undefined, 7, hostile()]) {
+    assert.equal(flavorOfIdentity(kind, "Elven"), "");
+    assert.deepEqual(flavorTagsOf(kind, "Elven"), empty);
+  }
+  for (const key of ["No Such Race", "__proto__", "constructor", "", null, undefined, 7, [], hostile()]) {
+    assert.equal(flavorOfIdentity("race", key), "");
+    assert.deepEqual(flavorTagsOf("race", key), empty);
+    assert.equal(flavorOfIdentity("sub", key), "");
+    assert.deepEqual(flavorTagsOf("sub", key), empty);
+    assert.equal(flavorOfIdentity("class", key), "");
+  }
+  assert.deepEqual(flavorTagsOf("class", "Fighter"), empty, "a class has no tags");
+});
+
+test("flavorTagsOf: the empty result is frozen and not mutable", () => {
+  const t = flavorTagsOf("race", "No Such Race");
+  assert.ok(Object.isFrozen(t) && Object.isFrozen(t.good) && Object.isFrozen(t.bad));
+  assert.throws(() => { "use strict"; t.good.push("x"); }, TypeError);
+  assert.deepEqual(flavorTagsOf("race", "No Such Race"), { good: [], bad: [], neutral: "" });
 });
