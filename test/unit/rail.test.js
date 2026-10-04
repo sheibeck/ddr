@@ -643,3 +643,36 @@ test("Phase 71 D-16: conditionCard is the plain line card plus kind \"cond\"; pu
     assert.deepEqual(r, railLineCard(t, l, "info", RAIL_HOLD.default, "·"));
   }
 });
+
+// ─── Phase 96 (FLAVOR-04): the optional flavour spec ──────────────────────
+
+test("Phase 96 FLAVOR-04: railLineCard with no flavour, an empty line or a non-string line is today's card", () => {
+  const plain = railLineCard("SMOKE", "exact text", "info", 8400, "·");
+  assert.deepEqual(railLineCard("SMOKE", "exact text", "info", 8400, "·", null, null), plain);
+  assert.deepEqual(railLineCard("SMOKE", "exact text", "info", 8400, "·", null, undefined), plain);
+  assert.deepEqual(railLineCard("SMOKE", "exact text", "info", 8400, "·", null, { line: "", id: "x", name: "N" }), plain);
+  assert.deepEqual(railLineCard("SMOKE", "exact text", "info", 8400, "·", null, { line: 7, id: "x", name: "N" }), plain);
+  assert.deepEqual(railLineCard("SMOKE", "exact text", "info", 8400, "·", null, "flv"), plain);
+  assert.equal("rules" in plain.lines[0], false, "no flavour, no rules property");
+});
+
+test("Phase 96 FLAVOR-04: railLineCard with a flavour leads with it and carries the exact line on rules", () => {
+  const exact = "Three more rounds, from your Smoke.";
+  const card = railLineCard("SMOKE", exact, "info", 8400, "·", null, { line: "flv", id: "chip:ability:smoke", name: "Smoke" });
+  assert.deepEqual(card.lines, [{ text: "flv", roll: null, rules: exact, rulesId: "chip:ability:smoke", rulesName: "Smoke" }]);
+  const { lines, ...rest } = card;
+  const { lines: plainLines, ...plainRest } = railLineCard("SMOKE", exact, "info", 8400, "·");
+  assert.deepEqual(rest, plainRest, "every other field equals today's");
+});
+
+test("Phase 96 FLAVOR-04: conditionCard passes the flavour through, keeps kind \"cond\", and isCombatCard still sees it", () => {
+  const { conditionCard, isCombatCard } = railNS;
+  const card = conditionCard("AFRAID", "exact", { line: "flv", id: "chip:afraid", name: "Afraid" });
+  assert.equal(card.kind, "cond");
+  assert.equal(isCombatCard(card), true);
+  assert.equal(card.lines[0].text, "flv");
+  assert.equal(card.lines[0].rules, "exact");
+  assert.equal(card.lines[0].rulesId, "chip:afraid");
+  assert.equal(card.lines[0].rulesName, "Afraid");
+  assert.deepEqual(conditionCard("AFRAID", "exact"), conditionCard("AFRAID", "exact", null));
+});
