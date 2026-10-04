@@ -219,3 +219,100 @@ export const CLASS_FLAVOR = Object.freeze({
   "Fighter": "Hit points, heavy armour and a poor opinion of spellbooks: the Fighter stands in the doorway and takes it, which is the whole job description.",
   "Thief": "Light on hit points and lighter on armour, but the only class with a full toolbox of skills. The plan is to be somewhere else when it matters, and the toolbox is how.",
 });
+
+/**
+ * SUB_FLAVOR — Phase 96 (FLAVOR-03; CONTEXT 'Race, sub-class and class
+ * blurbs'): the player line for each of the 24 sub-classes, in CLASSES order.
+ *
+ * Same contract as RACE_FLAVOR: the exact SUB_NOTE and the mechanical footer
+ * stay where they are, pinned byte for byte by the identity guards, and show
+ * under RULES. This map is keyed by sub-class name beside the content and never
+ * put on a row or in a save. Every line is up to two sentences and at most 200
+ * characters, with no number, die or percentage. Each entry is
+ * `{ line, good, bad }`: the ids are identityEntries ids (authored traits, the
+ * generated Magic User chart lines and the free skill) that the wording hints
+ * at. test/unit/identity-flavor.test.js checks every tag is a real id of the
+ * right side. Reviewed on docs/narrative-pass/review.html.
+ */
+export const SUB_FLAVOR = Object.freeze({
+  "Wizard": Object.freeze({
+    line: "Your book opens with something that hurts, and your aim is good, but you refuse to lift a weapon while a spell remains. Illusion, meanwhile, is the Illusionist's, like a family recipe.",
+    good: Object.freeze(["wizard-day-one","chart-bonus-offense"]),
+    bad: Object.freeze(["wizard-melee","chart-never"]),
+  }),
+  "Warlock": Object.freeze({
+    line: "Evil, and productive with it: a potion copied by night and a thrown spell that lands. The walking dead in the room grow sturdier on your account, and healing and warding come late.",
+    good: Object.freeze(["warlock-potion","chart-bonus-offense"]),
+    bad: Object.freeze(["warlock-undead","chart-gate-protection","chart-gate-healing"]),
+  }),
+  "Sorcerer": Object.freeze({
+    line: "Freeze and Fireball from day one, spells by the handful and a very sure aim, but now and then one simply falls out of your head. The arm is decorative, and Illusion is none of your business.",
+    good: Object.freeze(["sorcerer-book","sorcerer-levels","chart-bonus-offense"]),
+    bad: Object.freeze(["sorcerer-forgets","sorcerer-arm","chart-never"]),
+  }),
+  "Summoner": Object.freeze({
+    line: "Your Summon is in the book from the first day, and it arrives bigger and longer-lived than anyone else's. Now and then it turns up on the wrong side, and your own healing is feeble.",
+    good: Object.freeze(["summoner-summon","summoner-doubled","chart-override-Summon"]),
+    bad: Object.freeze(["summoner-backfire","chart-healmul"]),
+  }),
+  "Cleric": Object.freeze({
+    line: "Chain mail, a better aim than the rest of the book and healing that actually heals. The gods have ruled out fireballs, illusions and anything else fun, and the foresight comes late.",
+    good: Object.freeze(["cleric-mail","cleric-hit","chart-bonus-healing"]),
+    bad: Object.freeze(["chart-never","chart-gate-divination"]),
+  }),
+  "Illusionist": Object.freeze({
+    line: "Teleport squares go where you point them and the mirrors are in the book from day one. Your own swing is a rumour, warding comes late and the mirror cannot bandage anyone.",
+    good: Object.freeze(["illusionist-teleport","illusionist-book"]),
+    bad: Object.freeze(["illusionist-d20","chart-gate-protection","chart-never"]),
+  }),
+  "Court Mage": Object.freeze({
+    line: "You talk Humans down, bore the occasional foe to death and shield and mend a little better than most. When a fight does start, everyone else gets there first, and special and illusion are closed.",
+    good: Object.freeze(["court-mage-boredom","court-mage-humans","chart-bonus-protection","chart-bonus-healing"]),
+    bad: Object.freeze(["court-mage-first","chart-never"]),
+  }),
+  "Apprentice": Object.freeze({
+    line: "You gain experience at a ferocious rate and may even dabble in Illusion. Now and then a spell goes off in your own hands, and foresight comes late, assuming you get that far.",
+    good: Object.freeze(["apprentice-xp","apprentice-illusion"]),
+    bad: Object.freeze(["apprentice-backfire","chart-gate-divination"]),
+  }),
+  "Knight": Object.freeze({
+    line: "Anything small runs before it can try, and anything large gets there first. You have been made important by the only creatures whose vote counts.",
+    good: Object.freeze(["knight-small"]),
+    bad: Object.freeze(["knight-big"]),
+  }),
+  "Guard": Object.freeze({
+    line: "Foes miss you more often, which is as well, because your blows are feeble and never land a lucky one. You are a professional, and the profession is standing there.",
+    good: Object.freeze(["guard-hard"]),
+    bad: Object.freeze(["guard-weak","guard-nocrit"]),
+  }),
+  "Woodsman": Object.freeze({
+    line: "Every beast in here will at least hear you out, with a bonus, and you carry a staff like an old friend. Mail and plate are out: the store won't offer it and your hands won't take it.",
+    good: Object.freeze(["woodsman-talk"]),
+    bad: Object.freeze(["woodsman-armor"]),
+  }),
+  "Soldier": Object.freeze({
+    line: "Camp mends you generously and the army eventually knights you, trading your weapon for the privilege. Foes find your weak spots easily, and you never find theirs.",
+    good: Object.freeze(["soldier-camp","soldier-knighted"]),
+    bad: Object.freeze(["soldier-crit","soldier-nocrit"]),
+  }),
+  "Barbarian": Object.freeze({
+    line: "You swing and swing again every round, on the sound principle that a man swinging this much is learning nothing. The experience points agree, and are docked accordingly.",
+    good: Object.freeze(["barbarian-two"]),
+    bad: Object.freeze(["barbarian-xp"]),
+  }),
+  "Master of Arms": Object.freeze({
+    line: "Every weapon hits harder in your hands and you hammer your own dents out each night. You never talk anyone down and you never leave a fight after it starts: no running, no clever exits.",
+    good: Object.freeze(["moa-damage","moa-patch"]),
+    bad: Object.freeze(["moa-parley","moa-never-leaves"]),
+  }),
+  "Samurai": Object.freeze({
+    line: "Plate and a magical katana, and enough clatter that you never act first. You never run either: the book uses the word suicidal and does not soften it.",
+    good: Object.freeze(["samurai-kit"]),
+    bad: Object.freeze(["samurai-never"]),
+  }),
+  "Bard": Object.freeze({
+    line: "You sing a different spell every time, free, and any Human will at least hear you out. Camp draws crowds, and with a Joiner along the dim ones all come for you first.",
+    good: Object.freeze(["bard-song","bard-humans"]),
+    bad: Object.freeze(["bard-camp","bard-target"]),
+  }),
+});
