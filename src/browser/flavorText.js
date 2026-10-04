@@ -77,8 +77,8 @@ export function identityDomain(spec) {
 }
 
 /**
- * FLAVOR_DOMAINS — the ten flavour domains so far, in order (eight from
- * Phase 95, then race and class; 96-02 and later append sub, ability, skill
+ * FLAVOR_DOMAINS — the eleven flavour domains so far, in order (eight from
+ * Phase 95, then race, sub and class; 96-03 and later append ability, skill
  * and chip). Each record:
  * `id`, `module` (the content file that exports the map), `exportName`,
  * `keys()` (a fresh array of the content keys the map must cover, read from
@@ -151,6 +151,13 @@ export const FLAVOR_DOMAINS = Object.freeze([
     exportName: "RACE_FLAVOR",
     keys: () => Object.keys(C.RACES),
     read: () => C.RACE_FLAVOR,
+  }),
+  identityDomain({
+    id: "sub",
+    module: "content/flavor.js",
+    exportName: "SUB_FLAVOR",
+    keys: () => Object.values(C.CLASSES).flatMap((c) => c.subs),
+    read: () => C.SUB_FLAVOR,
   }),
   Object.freeze({
     id: "class",

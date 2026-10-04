@@ -315,4 +315,44 @@ export const SUB_FLAVOR = Object.freeze({
     good: Object.freeze(["bard-song","bard-humans"]),
     bad: Object.freeze(["bard-camp","bard-target"]),
   }),
+  "Pickpocket": Object.freeze({
+    line: "Chests and monsters somehow hand over a little extra. Shopkeepers remember you all the same, charging more and paying less, and you have never been thanked.",
+    good: Object.freeze(["pickpocket-item"]),
+    bad: Object.freeze(["pickpocket-shops"]),
+  }),
+  "Pilfer": Object.freeze({
+    line: "Traps give up and chests fall open at your approach. Your hands, however, cannot leave a magic ring or staff alone, and now and then it comes apart and takes some of you with it.",
+    good: Object.freeze(["pilfer-traps"]),
+    bad: Object.freeze(["pilfer-fumble"]),
+  }),
+  "Cat Burglar": Object.freeze({
+    line: "Your first strike always lands and you start knowing Dirty Trick. You also go through every door first, and every trap that catches you hurts far worse than it should.",
+    good: Object.freeze(["cat-burglar-first","free-skill"]),
+    bad: Object.freeze(["cat-burglar-traps"]),
+  }),
+  "Cutthroat": Object.freeze({
+    line: "Your first blow always lands hard, armour or no armour, lamp or no lamp. Joiners still walk beside you, but now and then one does not reach the next floor, and nobody asks.",
+    good: Object.freeze(["cutthroat-crit"]),
+    bad: Object.freeze(["cutthroat-joiner"]),
+  }),
+  "Cloaker": Object.freeze({
+    line: "You vanish from any fight for free, right up until you land a blow, Spectres included. After that you run like everyone else, so the career is mostly encounters that never technically happened.",
+    good: Object.freeze(["cloaker-vanish"]),
+    bad: Object.freeze(["cloaker-seen"]),
+  }),
+  "Ninja": Object.freeze({
+    line: "Your opening strike lands for the maximum, later ones find the weak spots, and you start with Silent Step. The silence is a tactic, but it means no fight is ever talked down.",
+    good: Object.freeze(["ninja-opener","ninja-crit","free-skill"]),
+    bad: Object.freeze(["ninja-silent"]),
+  }),
+  "Con Artist": Object.freeze({
+    line: "You talk first, and most small foes decline to fight you at all. Your opening blow does nothing, since part of you is still hoping to sell them something.",
+    good: Object.freeze(["con-artist-talk","con-artist-leave"]),
+    bad: Object.freeze(["con-artist-opener"]),
+  }),
+  "Acrobat": Object.freeze({
+    line: "Foes rarely land a hit, traps rarely land either, and you strike like a Fighter. You may carry nothing but a knife, and you start knowing Smoke.",
+    good: Object.freeze(["acrobat-dodge","acrobat-traps","acrobat-hit","free-skill"]),
+    bad: Object.freeze(["acrobat-dagger"]),
+  }),
 });

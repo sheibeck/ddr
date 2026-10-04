@@ -11,7 +11,7 @@
 // least one real good and one real bad entry (Human alone is neutral).
 //
 // The live loop runs for every FLAVOR_DOMAINS record with a `tags` function
-// (race now, sub in 96-02).
+// (race and sub).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -150,7 +150,7 @@ test("teeth: malformed records fail", () => {
 });
 
 // ---------------------------------------------------------------------------
-// the live loop: every domain with tags() (race now, sub in 96-02)
+// the live loop: every domain with tags() (race and sub)
 // ---------------------------------------------------------------------------
 
 for (const d of FLAVOR_DOMAINS.filter((x) => typeof x.tags === "function")) {
@@ -161,3 +161,12 @@ for (const d of FLAVOR_DOMAINS.filter((x) => typeof x.tags === "function")) {
     for (const k of d.keys()) assert.deepEqual(tagProblems(d.id, k, m[k]), [], `${d.exportName}["${k}"]`);
   });
 }
+
+test("the live loop covers both the race and the sub domains, so the tag guard cannot stop covering sub-classes", () => {
+  const ids = new Set(FLAVOR_DOMAINS.filter((x) => typeof x.tags === "function").map((x) => x.id));
+  assert.ok(ids.has("race"), "race exposes tags()");
+  assert.ok(ids.has("sub"), "sub exposes tags()");
+  // the class domain is plain strings with no identity good and bad: it stays out of the guard
+  assert.ok(!ids.has("class"));
+  assert.equal(FLAVOR_DOMAINS.find((x) => x.id === "sub").keys().length, 24);
+});
