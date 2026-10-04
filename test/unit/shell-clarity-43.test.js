@@ -100,7 +100,9 @@ function heroPaintRegion() {
   return sliceBetween(
     HERO_SRC,
     'doc.getElementById("s-cost").textContent = upkeep(c) + " hp/day";',
-    'doc.getElementById("s-trait").innerHTML =',
+    // Phase 96 (FLAVOR-03): declared re-pin. 96-05 moved the trait line behind
+    // a RULES toggle, so the region now ends where the trait element is read.
+    'const traitEl = doc.getElementById("s-trait");',
   );
 }
 
