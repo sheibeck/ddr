@@ -219,11 +219,11 @@ export const SPELL_FLAVOR = Object.freeze({
   "Summon": "Calls a helper out of thin air, who fights for you until they remember their errands.",
   "Fireball": "A proper ball of fire with a foe's name on it, and no sense of proportion.",
   "Major Heal": "Knits you back together with a firm hand and a long, disapproving look.",
-  "Bubble": "A shimmering bubble that sends the next blow home to whoever threw it, then pops.",
+  "Bubble": "Returns the next blow to sender with its compliments, then lingers as a soft cushion for the round.",
   "Sense Danger": "A prickle at the back of your neck, so the next fight never gets the first word.",
   "Turn Walking Dead": "Tells the Walking Dead to go back to bed, and the stubborn ones take it personally.",
   "Plane Gate": "Opens a door to The Planes and shoos a few Demons or Walking Dead through it.",
-  "Sense Presence": "Your skin crawls in a helpful direction: no ambushes, and the dark stops mattering.",
+  "Sense Presence": "Your skin crawls in a helpful direction: no ambushes, and fighting in the dark stops being a chore.",
   "Lightning": "Jumps from foe to foe in a crackle of bad news, leaving each of them singed.",
   "Regeneration": "Persuades your body to keep mending itself for the length of the fight.",
   "Mangle": "The heaviest blow in the book, saved for a foe that has really earned it.",
@@ -237,7 +237,7 @@ export const SPELL_FLAVOR = Object.freeze({
   "Duplicate Foe": "Gives a foe a twin to argue with, and it is far too busy to bother you.",
   "Door Illusion": "Paints a door on the nearest wall and leaves through it, if the foes buy it.",
   "Chameleon Tongue": "Lets you talk to foes in their own tongue, which improves the odds of a polite exit.",
-  "Size of the Behemoth": "Makes you loom enormously, so the smaller foes flee and the rest lose heart.",
+  "Size of the Behemoth": "Makes you loom enormously, so lesser foes flee unless they know better, and the rest lose heart.",
 });
 
 // Phase 95 (FLAVOR-01; CONTEXT 'Tone'): one shared line for every scroll. A

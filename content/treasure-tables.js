@@ -445,9 +445,9 @@ export const MISC_MAGIC = ["Cloak", "Potion", "Scroll", "Grimoire", "Potion", "S
 // docs/narrative-pass/review.html.
 export const MAGIC_ITEM_FLAVOR = Object.freeze({
   "Ring of Power": "Puts a little extra spite into every swing for a while, then needs a lie-down.",
-  "Gauntlet of the Giant": "A glove with ambitions: you grow, hit harder, and become far easier to aim at.",
+  "Gauntlet of the Giant": "A glove with ambitions: you grow, hit harder, and become a slightly easier target.",
   "Amulet of Light": "A pocket sunrise: the dark backs off for a good while, then the amulet holds a grudge.",
-  "Pendant of Fortitude": "Softens a blow into a mere insult, though it wants a long rest between favours.",
+  "Pendant of Fortitude": "Takes the edge off a blow, a bruise where a break would have been, but wants a long rest after.",
   "Anklet of Invisibility": "Makes you a little easy to overlook, so foes aim badly until the effect lapses.",
   "Helm of Knowledge": "Lends you the gift of the gab, so Humans, Demons and Beasts may let you finish talking.",
   "Bracelet of Flight": "A bangle that waives gravity for a short flight, then reinstates it without warning.",
