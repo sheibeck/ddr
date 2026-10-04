@@ -27,7 +27,10 @@ import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
 import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
-import { flavorOfItem } from "../../src/browser/flavorText.js";
+import { flavorOfItem, flavorOfIdentity } from "../../src/browser/flavorText.js";
+import { renderHeroTab } from "../../src/browser/heroTab.js";
+import { footerLines } from "../../src/browser/identityFooter.js";
+import { RACES, RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/index.js";
 import { combatMenuViewModel } from "../../src/browser/combatMenu.js";
 import { SPELLS, NICHE_LABELS } from "../../content/index.js";
 import { SPELL_FLAVOR } from "../../content/spells.js";
@@ -841,4 +844,101 @@ test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets na
   const setting = lines.filter((l) => l.startsWith("- Settings:"));
   assert.equal(setting.length, 1, "exactly one Settings bullet");
   for (const needle of ["→", "Always show the rules", "Off by default"]) assert.ok(setting[0].includes(needle), `the Settings bullet carries "${needle}"`);
+});
+
+// ─── Phase 96 (FLAVOR-03): the Hero dossier and trait line ────────────────
+//
+// The dossier (Race, Class, Subclass) and the trait line follow the one rule:
+// the flavour leads, today's note and the unchanged footer sit behind RULES,
+// Always on shows them open with no toggle, an opened body survives a repaint,
+// and an identity with no flavour line renders as today. Extended by 96-06 and
+// 96-07.
+
+function paintHero(sub, race) {
+  const { document } = createRecordingDocument();
+  const state = newRun(1, [], { force: { sub, race } });
+  const host = document.getElementById("screen-hero");
+  renderHeroTab(host, state, {});
+  return { document, host, state, repaint: () => renderHeroTab(host, state, {}) };
+}
+
+const dossSections = (document) => document.getElementById("doss").children;
+const sectionParts = (sec) => ({
+  flavor: sec.children[2],
+  button: sec.children.find((el) => hasClass(el, "mw-rules-btn")),
+  body: sec.children.find((el) => hasClass(el, "mw-rules-body")),
+});
+const bodyLines = (body) => body.children.map((p) => textOf(p));
+
+test("(s) Dossier: each section leads with a digit-free flavour line; the note and footer sit behind a collapsed RULES body", () => {
+  const { document, state } = paintHero("Cat Burglar", "Wilmsry");
+  const c = state.c;
+  const expected = [
+    ["race", c.race, [RACE_NOTE[c.race], ...footerLines("race", c.race)]],
+    ["class", c.cls, [CLASS_NOTE[c.cls]]],
+    ["sub", c.sub, [SUB_NOTE[c.sub], ...footerLines("sub", c.sub)]],
+  ];
+  const secs = dossSections(document);
+  assert.equal(secs.length, 3);
+  expected.forEach(([kind, key, lines], i) => {
+    const { flavor, button, body } = sectionParts(secs[i]);
+    assert.equal(textOf(flavor), flavorOfIdentity(kind, key), `${kind}: the visible paragraph is the flavour line`);
+    assert.doesNotMatch(textOf(flavor), /\d/, `${kind}: the flavour line carries no digit`);
+    assert.ok(button, `${kind}: a RULES button`);
+    assert.equal(button.getAttribute("aria-expanded"), "false");
+    assert.equal(body.hidden, true);
+    assert.deepEqual(bodyLines(body), lines, `${kind}: the body is the old note then the unchanged footer`);
+  });
+});
+
+test("(s) Dossier: a tap opens one body without acting, a repaint keeps it open, and Always on shows every body with no toggle", () => {
+  const view = paintHero("Cat Burglar", "Wilmsry");
+  const before = JSON.stringify(view.state);
+  const raceSec = dossSections(view.document)[0];
+  tap(sectionParts(raceSec).button);
+  assert.equal(sectionParts(raceSec).body.hidden, false, "the tapped body opens");
+  assert.equal(JSON.stringify(view.state), before, "a RULES tap never touches the game state");
+
+  view.repaint();
+  const after = dossSections(view.document);
+  assert.equal(sectionParts(after[0]).body.hidden, false, "the opened body survives a repaint");
+  assert.equal(sectionParts(after[1]).body.hidden, true, "the other bodies stay closed");
+  assert.equal(sectionParts(after[0]).button.getAttribute("aria-expanded"), "true");
+
+  setAlwaysRules(true);
+  view.repaint();
+  for (const sec of dossSections(view.document)) {
+    const { button, body } = sectionParts(sec);
+    assert.equal(button, undefined, "no toggle with Always on");
+    assert.equal(body.hidden, false);
+  }
+});
+
+test("(t) Trait line: the sentence keeps temperament, motive and phobia; the race note sits alone behind a RULES toggle", () => {
+  const { document, state } = paintHero("Cat Burglar", "Wilmsry");
+  const c = state.c;
+  const trait = document.getElementById("s-trait");
+  const visible = String(trait.innerHTML).replace(/<[^>]+>/g, "");
+  assert.equal(visible, `${c.temperament}, driven by ${c.motive.toLowerCase()}, afraid of ${c.phobia.toLowerCase()}.`);
+  assert.doesNotMatch(visible, /\d/, "no number in the visible trait line");
+  assert.ok(!String(trait.innerHTML).includes(RACES[c.race].note), "the race note is not in the visible markup");
+  const button = trait.children.find((el) => hasClass(el, "mw-rules-btn"));
+  const body = trait.children.find((el) => hasClass(el, "mw-rules-body"));
+  assert.ok(button && body, "a RULES toggle and body");
+  assert.equal(button.getAttribute("aria-expanded"), "false");
+  assert.equal(body.hidden, true);
+  assert.deepEqual(bodyLines(body), [RACES[c.race].note], "the toggle holds exactly the race note");
+});
+
+test("(u) tolerant: a sub-class with no flavour line renders its section as before, with no toggle and no throw", () => {
+  const view = paintHero("Cat Burglar", "Wilmsry");
+  view.state.c.sub = "Mystery Sub";
+  assert.doesNotThrow(() => view.repaint());
+  const secs = dossSections(view.document);
+  assert.equal(secs.length, 3);
+  const sub = secs[2];
+  assert.equal(String(sub.innerHTML), `<h3>Subclass</h3><p class="who">Mystery Sub</p><p></p>`, "today's markup, nothing more");
+  assert.equal(sub.children.filter((el) => hasClass(el, "mw-rules-btn") || hasClass(el, "mw-rules-body")).length, 0);
+  assert.ok(sectionParts(secs[0]).button, "the known race still has its toggle");
+  assert.equal(String(view.document.getElementById("doss-who").textContent), `${view.state.c.race} Mystery Sub`);
 });
