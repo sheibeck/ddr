@@ -1,0 +1,534 @@
+[
+  {
+    "key": "bank:CHIP_FLAVOR.haste",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Quick enough that the rest of the round looks like it is wading through porridge.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the haste chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.haste and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.invis",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The foes are attacking a spot you just left, and cannot work out why it keeps happening.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the invis chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.invis and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.acute",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your aim has sharpened into something faintly unfair, and the maze has noticed.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the acute chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.acute and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.ether",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Walls are optional for now, so choose where you stand before the rock starts caring again.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the ether chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.ether and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.enlarge",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Grown well past your size by magic, which is wonderful for swinging and awful for hiding.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the enlarge chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.enlarge and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.giant",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A giant's gauntlet lends you stature: bigger blows, and a bigger thing for the foes to aim at.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the giant chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.giant and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.glow",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "You glow like a nightlight with ambitions, so the dark has no say in how you swing.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the glow chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.glow and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.unseen",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Foes can only just make you out, which spoils their aim a little and their mood a lot.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the unseen chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.unseen and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.tongue",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "You speak every tongue the maze has, which helps whenever the foes can be talked to at all.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the tongue chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.tongue and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.critWard",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Luck worn like armour: the foe's very best swing lands as merely a rude one.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the critWard chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.critWard and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.plate",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your cloak does a fair impression of plate armour, without the clanking or the repair bills.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the plate chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.plate and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.power",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A ring's idea of generosity: every swing lands with a little extra on it.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the power chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.power and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.lit",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A lit torch in your fist, so the dark can wait its turn to ruin your aim.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the lit chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.lit and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.knit",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The cloak is slowly stitching you back together, provided you keep walking and stop dawdling.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the knit chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.knit and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.flight",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Off the ground and above the problem, for exactly as long as the magic holds up.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the flight chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.flight and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.strength",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Muscle on loan, and every strike and spell that connects gets to spend it.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the strength chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.strength and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.unlock",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The next locked chest gives in at a touch, and then the magic is spent.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the unlock chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.unlock and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.enchant",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A charm over you: you swing true, they swing wild, and nobody gets a lucky strike.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the enchant chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.enchant and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.ability",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "One of your tricks is still running, with the particulars on the ability itself.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the ability chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.ability and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.might",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Strong in a way you did not plan, whether from a potion or a temper, so hit something.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the might chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.might and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.ward",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Borrowed hit points stand between you and the blows, right up until they run dry.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the ward chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.ward and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.mirror",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A flickering second you, so foes swing at the wrong one and mostly hit the air.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the mirror chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.mirror and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.senses",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Every living thing nearby tickles your nerves, so darkness and ambushes matter far less.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the senses chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.senses and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.regen",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your body has decided to heal as you go, for this fight at least, and asked no permission.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the regen chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.regen and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.foresight",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A twinge of warning means you get the first move when trouble next turns up.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the foresight chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.foresight and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.reveal",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The whole floor lies open to you, but only while you stand still and keep staring.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the reveal chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.reveal and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.braced",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Ready for the next hit and almost looking forward to it, which takes much of the sting out.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the braced chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.braced and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.halfNext",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your pendant is lined up to soften the next blow that lands, and fully expects credit.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the halfNext chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.halfNext and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.nightVision",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Born with eyes for it, you treat the dark as scenery and fight in it without complaint.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the nightVision chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.nightVision and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.itemCooldown",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The item is sulking after its last use and will come round if you keep walking.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the itemCooldown chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.itemCooldown and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.staffCharges",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The staff is topping up its magic, slowly, and does not care to be hurried.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the staffCharges chip's player line; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.staffCharges and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.affliction",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Something nasty in the blood nibbles at you with every step, though never quite finishes the job.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the affliction chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.affliction and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.foeEffect",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Something nasty a foe did to you is hanging about, though it will not stay long.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the foeEffect chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.foeEffect and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.darkness",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "The dark has closed in, so you see hardly a thing and swing worse until a light or time ends it.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the darkness chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.darkness and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.fearArmed",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Something out there rattled you, and the next fight will open with your knees knocking.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the fearArmed chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.fearArmed and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.afraid",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Fear has got into your hands: blows go astray and land weakly until your nerve returns.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the afraid chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.afraid and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.heroOut",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Out of action, with nothing able to wake you early, and the foes entirely at their leisure.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the heroOut chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.heroOut and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.heroBlind",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your sight has packed up, and only the luckiest swings find anything to hit.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the heroBlind chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.heroBlind and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.heroShrunk",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Shrunk by a scroll gone wrong, your blows land with all the force of a stern letter.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the heroShrunk chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.heroShrunk and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.fightDark",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Swinging in the gloom is mostly guesswork, so blows land less often and never spectacularly.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the fightDark chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.fightDark and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.insulted",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Rude things were said, and now every foe aims at you with unusual enthusiasm.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the insulted chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.insulted and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.selfDot",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A scroll gone wrong is still burning, and it will keep at you each round until it tires.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the selfDot chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html CONDITION_EXPLAIN.selfDot and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.foeEffect/dazed",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your head is full of bells, so swings go wide until the ringing stops.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the foeEffect/dazed chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html FOE_EFFECT_EXPLAIN.dazed and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.foeEffect/weakened",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Your arms have turned to wet rope, and blows land feebly until it passes.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the foeEffect/weakened chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html FOE_EFFECT_EXPLAIN.weakened and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.heroOut/stopped",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "Time stopped around you, and you with it, which the foes find very convenient.",
+    "reasons": [
+      "joke",
+      "accurate"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the heroOut/stopped chip's player line and the line still says something is wrong; its exact explanation is unchanged in mazeworld.html HERO_OUT_EXPLAIN.stopped and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.ward/mirror",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "A polished bubble waits to send the next blow back to its sender, with padding afterwards.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the ward/mirror chip's player line; its exact explanation is unchanged in mazeworld.html explainCondition's Bubble-mirror ward branch and shows under RULES."
+  },
+  {
+    "key": "bank:CHIP_FLAVOR.haste/Speed of Sound",
+    "surface": "combat-screen",
+    "trigger": "a condition chip's flavour line (the tap card on the HUD strip, in YOUR LOT and on the Company panel)",
+    "before": "",
+    "after": "You move ahead of your own sound, swinging first and often, and the din arrives afterwards.",
+    "reasons": [
+      "joke"
+    ],
+    "why": "Phase 96 (FLAVOR-04, CONTEXT 'Abilities and chips'): the haste/Speed of Sound chip's player line; its exact explanation is unchanged in mazeworld.html HASTE_SPELL_EXPLAIN[\"Speed of Sound\"] and shows under RULES."
+  }
+]
