@@ -206,11 +206,29 @@ test("Bridge: window.mzMemberUseItem dispatches memberUseItem through dispatchWi
 test("tabDeps forwards memberUseItem, memberChipsFor and railInfo; chips read memberConditionsOf through conditionLabel and conditionTapText", () => {
   assert.equal((CODE.match(/memberUseItem: \(i, ref\) => window\.mzMemberUseItem\?\.\(i, ref\),/g) || []).length, 1);
   assert.equal((CODE.match(/memberChipsFor: \(i\) => memberChipsFor\(i\),/g) || []).length, 1);
-  assert.equal((CODE.match(/railInfo: \(title, text\) => window\.mzRailLine\?\.\(title, text, "info", 8400, "·"\),/g) || []).length, 1);
+  // Phase 96 (FLAVOR-04): declared re-pin — railInfo forwards a trailing flavour spec (as the rail line's flavor argument, after a null iconKey).
+  assert.equal((CODE.match(/railInfo: \(title, text, flavor\) => window\.mzRailLine\?\.\(title, text, "info", 8400, "·", null, flavor\),/g) || []).length, 1);
   const region = sliceBetween(CODE, "function memberChipsFor(i) {", "\n}\n");
   assert.match(region, /window\.__mzMemberConditionsOf\?\.\(S, i\)/);
   assert.match(region, /conditionLabel\(cn\)/);
   assert.match(region, /conditionTapText\(cn, label, S, \{ member: true \}\)/);
+  // Phase 96 (FLAVOR-04): the member entry carries the chip's flavour spec (the member form of the id).
+  assert.match(region, /flavor: chipFlavorSpec\(cn, label, true\)/);
+});
+
+test("Phase 96 FLAVOR-04: a chip with a flavour spec hands (title, text, flavor) to deps.railInfo; a chip without one hands undefined", () => {
+  const tapped = [];
+  const spec = { line: "Luck worn like armour.", id: "chip:critWard:member", name: "Crit-proof" };
+  const chips = [
+    { text: "Crit-proof · 30 sq", tone: "good", label: "Crit-proof", flavor: spec, tapText: () => "No crits land on them." },
+    { text: "Odd", tone: "good", label: "Odd", tapText: () => "Plain." },
+  ];
+  const { card } = scene(sheet(), { deps: { memberChipsFor: () => chips, railInfo: (...args) => tapped.push(args) } });
+  const row = byClass(card, "mw-party-chips")[0];
+  row.children[0].onclick();
+  row.children[1].onclick();
+  assert.deepEqual(tapped[0], ["CRIT-PROOF", "No crits land on them.", spec]);
+  assert.deepEqual(tapped[1], ["ODD", "Plain.", undefined]);
 });
 
 test("CSS: the new Company item rules exist once each, with no transition, animation or aria-disabled token", () => {

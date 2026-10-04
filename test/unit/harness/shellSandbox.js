@@ -51,7 +51,7 @@ import { bagUsage, renderGearTab, renderCarriedList } from "../../../src/browser
 // Phase 95 (FLAVOR-05): the RULES reveal component and the flavour lookup,
 // wired onto w.__mzRules exactly as the module script does.
 import { mountRules, wrapRow, layerText, alwaysRules } from "../../../src/browser/rulesLayer.js";
-import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "../../../src/browser/flavorText.js";
+import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip } from "../../../src/browser/flavorText.js";
 // Phase 74 (ROLL-02/03), plan 74-07 — wired below as window.__mzConditionEffect,
 // the module script's own bridge target.
 import { conditionEffectText } from "../../../src/browser/conditionEffects.js";
@@ -216,7 +216,7 @@ function wireBridges(context, { dressing = null } = {}) {
   // module script bridges them.
   w.__mzDropShelfItems = dropShelfRows;
   // Phase 95 (FLAVOR-05): the module script's RULES bridge, name for name.
-  w.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll });
+  w.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip });
   w.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
   w.__mzCarriedList = renderCarriedList;
   // Phase 63 (GSCR-07..10, GRULE-02) — the REAL sheet renderer, mirroring

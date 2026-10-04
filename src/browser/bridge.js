@@ -354,6 +354,7 @@ export const BRIDGE = Object.freeze({
       "mazeworld.html (classic: renderActionArea — the combat SPELLS and ITEMS rows' RULES toggle)",
       "mazeworld.html (classic: renderRail — the find card's RULES line)",
       "mazeworld.html (classic: renderDropShelf — the drop list's RULES toggle; the loot list's toggle comes through src/browser/gearTab.js#renderCarriedList's own import)",
+      "mazeworld.html (classic: chipFlavorSpec — flavorOfChip leads the condition-chip tap cards on the HUD strip, YOUR LOT and the Company panel, Phase 96 FLAVOR-04)",
     ]),
     purpose: "Bridges src/browser/rulesLayer.js (the one RULES reveal component and the Always show the rules state) and src/browser/flavorText.js (the name-to-flavour lookup) so the classic-script surfaces show flavour first and the exact rules one tap away, with no second copy of either (Phase 95, FLAVOR-05).",
   }),

@@ -191,7 +191,8 @@ test("CONDITION_TONE/CONDITION_EXPLAIN carry the three new item-driven chip keys
   // explainCondition(cn, label) inline — re-pinned to the new call site;
   // explainCondition(cn, label) itself is still asserted present two lines
   // above this pin, and is still exactly what non-darkness chips reach.
-  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)/);
+  // Phase 96 (FLAVOR-04): declared re-pin — the call gains the trailing `null, chipFlavor` (iconKey, flavour spec); the exact explainText still rides second.
+  assert.match(CODE, /window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·", null, chipFlavor\)/);
 });
 
 // ─── 6. Hero tab: engine-routed to-hit/strike-die ─────────────────────────

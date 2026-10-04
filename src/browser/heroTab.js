@@ -760,7 +760,9 @@ function armourLineFor(armour) {
  * appendCompanyChips(doc, card, deps, idx) — Phase 89 (ITEM-07, plan 07): the
  * Joiner's live item effects as chips, the same ones (labels, tones, tap text)
  * YOUR LOT and the hero's HUD strip read; deps.memberChipsFor(idx) returns
- * `{ text, tone, label, tapText }` entries from the engine's memberConditionsOf
+ * `{ text, tone, label, tapText, flavor }` entries (Phase 96, FLAVOR-04: `flavor`
+ * is the optional `{ line, id, name }` spec the rail card leads with, the exact
+ * tapText then riding behind RULES; absent means today's card) from the engine's memberConditionsOf
  * (mazeworld.html owns the labels). A tap raises the chip's text through
  * deps.railInfo (the rail is the one feedback surface), never in the panel.
  * No chips, or no deps seam, draws nothing.
@@ -777,7 +779,7 @@ function appendCompanyChips(doc, card, deps, idx) {
     btn.dataset.tone = ch.tone === "bad" ? "bad" : "good";
     btn.textContent = String(ch.text ?? "");
     btn.onclick = () => {
-      if (typeof deps.railInfo === "function" && typeof ch.tapText === "function") deps.railInfo(String(ch.label ?? ch.text ?? "").toUpperCase(), ch.tapText());
+      if (typeof deps.railInfo === "function" && typeof ch.tapText === "function") deps.railInfo(String(ch.label ?? ch.text ?? "").toUpperCase(), ch.tapText(), ch.flavor);
     };
     row.appendChild(btn);
   }

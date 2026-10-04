@@ -416,7 +416,8 @@ function sliceFrom(source, startMarker, len = 1200) {
 
 test("pins: the chip is wired through guardInfoTap with both branches and condArmed; the out-of-combat literal is unchanged", () => {
   const region = fnRegion("function paintConditions(c)");
-  assert.match(region, /guardInfoTap\(btn, \(\) => \(combatScreenUp\(\)\s*\?\s*window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText\)\s*:\s*window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)\), condArmed\);/);
+  // Phase 96 (FLAVOR-04): declared re-pin — both calls gain the trailing chipFlavor spec (the rail line also an explicit null iconKey); explainText stays the second argument.
+  assert.match(region, /guardInfoTap\(btn, \(\) => \(combatScreenUp\(\)\s*\?\s*window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText, chipFlavor\)\s*:\s*window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·", null, chipFlavor\)\), condArmed\);/);
   assert.doesNotMatch(region, /guardTap\(btn/);
   assert.match(region, /condArmedAt = Date\.now\(\);/);
   assert.match(region, /armEncounterButtons\(\);/, "the key gate keeps its re-arm");
@@ -455,14 +456,15 @@ test("pins: the module imports conditionCard/isCombatCard, bridges isCombatCard,
   assert.match(imp[1], /\bconditionCard\b/);
   assert.match(imp[1], /\bisCombatCard\b/);
   assert.match(CODE, /window\.__mzRailVM = \{[^}]*\bisCombatCard\b[^}]*\};/);
-  const region = sliceFrom(CODE, "window.mzConditionCard = (title, text) => {", 600);
+  // Phase 96 (FLAVOR-04): declared re-pin — the entry point takes a trailing `flavor = null` and forwards it to conditionCard.
+  const region = sliceFrom(CODE, "window.mzConditionCard = (title, text, flavor = null) => {", 600);
   const body = region.slice(0, region.indexOf("\n  };") + 5);
   assert.match(body, /if \(!dungeonVisible\(\)\) return;/);
   assert.match(body, /live\.combat \|\| window\.__mzBeat\?\.active\?\.\(\)/);
-  assert.match(body, /window\.__mzRail = railPush\(window\.__mzRail, conditionCard\(title, text\)\);/);
+  assert.match(body, /window\.__mzRail = railPush\(window\.__mzRail, conditionCard\(title, text, flavor\)\);/);
   assert.match(body, /window\.renderRail\?\.\(\);/);
   assert.doesNotMatch(body, /\.target\s*=|dispatch|hurry/, "an inspection never acts");
-  assert.ok(CODE.indexOf("window.mzConditionCard = (title, text) => {") > CODE.indexOf("window.mzInspectFoe = (i) => {"), "beside mzInspectFoe");
+  assert.ok(CODE.indexOf("window.mzConditionCard = (title, text, flavor = null) => {") > CODE.indexOf("window.mzInspectFoe = (i) => {"), "beside mzInspectFoe");
 });
 
 test("pins: the sandbox harness mirrors isCombatCard on __mzRailVM", () => {

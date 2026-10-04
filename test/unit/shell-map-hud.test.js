@@ -401,8 +401,9 @@ test("(f) paintConditions: createElement(button), data-tone from CONDITION_TONE 
   // condArmed) and two branches: the combat-legal condition card while the
   // combat screen is up, else the unchanged typed line card.
   assert.match(region, /guardInfoTap\(btn, \(\) => \(combatScreenUp\(\)/);
-  assert.match(region, /\? window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText\)/);
-  assert.match(region, /: window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·"\)\), condArmed\);/);
+  // Phase 96 (FLAVOR-04): declared re-pin — both calls gain the trailing chipFlavor spec; explainText stays the second argument.
+  assert.match(region, /\? window\.mzConditionCard\?\.\(label\.toUpperCase\(\), explainText, chipFlavor\)/);
+  assert.match(region, /: window\.mzRailLine\?\.\(label\.toUpperCase\(\), explainText, "info", 8400, "·", null, chipFlavor\)\), condArmed\);/);
   // Phase 39 (GEAR-02/GEAR-05), Plan 05: the tap explanation routes
   // through explainCondition(cn, label) — the item-sourced-chip-aware
   // wrapper around the plain CONDITION_EXPLAIN[cn.key] fallback.

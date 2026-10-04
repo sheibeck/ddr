@@ -4002,6 +4002,26 @@ function conditionTapText(cn, label, state, opts = {}) {
   return (effectLead ? `${effectLead}. ` : "") + body + (when ? ` ${sentenceCase(when)}` : "");
 }
 
+/**
+ * chipFlavorSpec(cn, label, member) — Phase 96 (FLAVOR-04): the flavour spec a
+ * chip tap card leads with, `{ line, id, name }`, or null when the chip has no
+ * flavour line. The line is window.__mzRules.flavorOfChip(cn); the exact
+ * conditionTapText stays the card's second argument and rides behind RULES
+ * (rail.js#railLineCard puts it on the line's `rules` property, the 95-05
+ * reuse point). Fail-open: a missing bridge, an unknown key or a throwing
+ * descriptor all read null, so the card is today's card with no toggle.
+ */
+function chipFlavorSpec(cn, label, member) {
+  try {
+    const line = window.__mzRules?.flavorOfChip?.(cn);
+    if (typeof line !== "string" || !line) return null;
+    const id = "chip:" + [cn.key, cn.ability || cn.kind, cn.source || cn.item, member ? "member" : ""].filter(Boolean).join(":");
+    return { line, id, name: String(label || cn.key || "") };
+  } catch {
+    return null;
+  }
+}
+
 // Render the unified good/bad condition-chip strip from conditionsOf(S). Reads
 // the shared engine helper (bridged) so the active SET is single-sourced; maps
 // each descriptor to a guarded chip button. Hides the whole strip when nothing
@@ -4112,9 +4132,12 @@ function paintConditions(c) {
     // same sentence goes on the combat-legal condition card (the rail is
     // otherwise hidden in a fight); anywhere else it is the unchanged typed
     // line card. The chip's own guard (condArmed) keeps it readable mid-round.
+    // Phase 96 (FLAVOR-04): the chip's flavour line leads the card and the
+    // exact explainText sits behind RULES (the trailing flavour argument).
+    const chipFlavor = chipFlavorSpec(cn, label, false);
     guardInfoTap(btn, () => (combatScreenUp()
-      ? window.mzConditionCard?.(label.toUpperCase(), explainText)
-      : window.mzRailLine?.(label.toUpperCase(), explainText, "info", 8400, "·")), condArmed);
+      ? window.mzConditionCard?.(label.toUpperCase(), explainText, chipFlavor)
+      : window.mzRailLine?.(label.toUpperCase(), explainText, "info", 8400, "·", null, chipFlavor)), condArmed);
   }
   // Key-gated: only re-arm when the chip SET actually changed, not on every
   // repaint after a step — armEncounterButtons() is cheap but pointless
@@ -4182,7 +4205,8 @@ function memberChipsFor(i) {
     const label = conditionLabel(cn);
     const unit = cn.cadence === "rounds" ? "rds" : (CONDITION_COPY[cn.key]?.unit || "sq");
     const text = typeof cn.remaining === "number" && cn.remaining > 0 ? `${label} · ${cn.remaining} ${unit}` : label;
-    return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, tapText: () => conditionTapText(cn, label, S, { member: true }) };
+    // Phase 96 (FLAVOR-04): `flavor` leads the Company panel's chip card; tapText stays the exact text behind RULES.
+    return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, flavor: chipFlavorSpec(cn, label, true), tapText: () => conditionTapText(cn, label, S, { member: true }) };
   });
 }
 
@@ -4206,7 +4230,7 @@ function tabDeps() {
     dismissJoiner: (i) => window.mzDismissJoiner?.(i),
     memberUseItem: (i, ref) => window.mzMemberUseItem?.(i, ref),
     memberChipsFor: (i) => memberChipsFor(i),
-    railInfo: (title, text) => window.mzRailLine?.(title, text, "info", 8400, "·"),
+    railInfo: (title, text, flavor) => window.mzRailLine?.(title, text, "info", 8400, "·", null, flavor),
     castSpell: (idx) => window.mzCastSpell?.(idx),
     openGearSheet: (target, openerId) => openGearSheet(target, openerId),
     closeGearSheet: () => closeGearSheet(),
@@ -5140,7 +5164,8 @@ function renderYourLot(host, vm) {
         btn.dataset.tone = chip.tone === "bad" ? "bad" : "good";
         btn.dataset.key = chip.cn?.key || "";
         btn.textContent = chip.text;
-        guardInfoTap(btn, () => window.mzConditionCard?.(chip.label.toUpperCase(), chip.tapText()), lotChipArmed);
+        // Phase 96 (FLAVOR-04): flavour leads the card; the exact tap text rides behind RULES.
+        guardInfoTap(btn, () => window.mzConditionCard?.(chip.label.toUpperCase(), chip.tapText(), chip.flavor), lotChipArmed);
         row.appendChild(btn);
       }
       el.appendChild(row);
@@ -5190,7 +5215,8 @@ function yourLotChipsFor(V, ref) {
   // Phase 93 (CHIP-01): the hero's card puts harmful chips first; a Joiner's card keeps today's order.
   return HC.lotChips(member ? (conds || []) : (HC.harmfulFirst?.(conds || []) ?? conds ?? [])).map((ch) => {
     const label = conditionLabel(ch.cn);
-    return { text: HC.chipText(label, ch), tone: ch.tone, label, cn: ch.cn, tapText: () => conditionTapText(ch.cn, label, V, { member }) };
+    // Phase 96 (FLAVOR-04): `flavor` is the chip card's lead (chipFlavorSpec); tapText stays the exact text behind RULES.
+    return { text: HC.chipText(label, ch), tone: ch.tone, label, cn: ch.cn, flavor: chipFlavorSpec(ch.cn, label, member), tapText: () => conditionTapText(ch.cn, label, V, { member }) };
   });
 }
 
@@ -7164,14 +7190,14 @@ window.__mzClassicBoot = async function classicBoot() {
   // fightLog.js, folding the same linesForAction output into one bottom
   // card per dispatch (rail.js's own doc comment: "one dispatch, two
   // destinations — rail or fight log").
-  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard } from "./src/browser/rail.js";
+  import { railCardFor, railPush, railClear, railLineCard, emptyRail, railAnnouncement, RAIL_COPY, holdForCard, railDismissKind, conditionCard, isCombatCard, wornReconcileCard, abilityPoolCard, abilityPoolFlavor } from "./src/browser/rail.js";
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
   // Phase 95 (FLAVOR-05): the shared RULES reveal component and the flavour
   // lookup, bridged onto window.__mzRules below.
   import { setAlwaysRules, alwaysRules, mountRules, wrapRow, layerText } from "./src/browser/rulesLayer.js";
-  import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll } from "./src/browser/flavorText.js";
+  import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip } from "./src/browser/flavorText.js";
   // Phase 91 (IDENT-14) — the Illusionist's teleport decision card's pure
   // view model (bridged onto window.__mzRailVM.teleportCard below) and the
   // pure answer-to-action map window.mzTeleportPick dispatches through.
@@ -7604,7 +7630,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 95 (FLAVOR-05): the RULES reveal component and the name-to-flavour
   // lookup for the classic-script surfaces (flavour first, the exact rules one
   // tap away); no second copy of either lives in the classic script.
-  window.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll });
+  window.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip });
   window.__mzCarriedList = renderCarriedList;
   // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
   // openGearSheet/refreshGearSheet (classic) render through it.
@@ -7728,8 +7754,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
-  window.mzRailLine = (title, line, tone, hold, icon, iconKey = null) => {
-    window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey));
+  // Phase 96 (FLAVOR-04): a trailing `flavor` spec { line, id, name } leads the card with the flavour and puts `line` behind RULES.
+  window.mzRailLine = (title, line, tone, hold, icon, iconKey = null, flavor = null) => {
+    window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey, flavor));
     window.renderRail?.();
   };
 
@@ -7762,11 +7789,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // aim, never a skip. A no-op while the title, the roller or the
   // title-opened panel is up, with no state, or with neither a fight nor a
   // round still playing.
-  window.mzConditionCard = (title, text) => {
+  // Phase 96 (FLAVOR-04): the trailing `flavor` spec leads the card; `text` is the exact tap text behind RULES.
+  window.mzConditionCard = (title, text, flavor = null) => {
     if (!dungeonVisible()) return;
     const live = window.__mzState?.get?.();
     if (!live || !(live.combat || window.__mzBeat?.active?.())) return;
-    window.__mzRail = railPush(window.__mzRail, conditionCard(title, text));
+    window.__mzRail = railPush(window.__mzRail, conditionCard(title, text, flavor));
     window.renderRail?.();
   };
 
@@ -9817,8 +9845,10 @@ window.__mzClassicBoot = async function classicBoot() {
   function surfaceAbilityPool(state) {
     const card = abilityPoolCard(state.c);
     if (!card) return;
-    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon);
-    window.logLine?.(card.line);
+    // Phase 96 (FLAVOR-04): the card leads with "New trick: <name> — <flavour>" and the exact line sits behind RULES; the Oracle log line is the flavour line too (no flavour: today's line).
+    const flavor = abilityPoolFlavor(state.c);
+    window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon, null, flavor);
+    window.logLine?.(flavor ? flavor.line : card.line);
   }
 
   // ---- 04-DR3: character-roll screen ("THE TABLES DECIDE") ----

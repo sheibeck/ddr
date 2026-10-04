@@ -41,6 +41,8 @@ import { rangeText } from "./rollRange.js";
 // name/txt for the level-1 pool-pick narration; pure content data, same
 // discipline as eventNarration.js's existing content/flavor.js import.
 import { ABILITY_BY_ID } from "../../content/index.js";
+// Phase 96 (FLAVOR-04): abilityPoolFlavor (below) reads the ability's own flavour line.
+import { flavorOfAbility } from "./flavorText.js";
 
 /** RAIL_TONES — the five tones every rail card and legend row speaks. */
 export const RAIL_TONES = Object.freeze(["info", "good", "bad", "odd", "dull"]);
@@ -562,14 +564,30 @@ export function railCardFor(type, events, folded, ctx = {}) {
 }
 
 /**
- * railLineCard(title, line, tone, hold, icon = "·", iconKey = null) — a
+ * railLineCard(title, line, tone, hold, icon = "·", iconKey = null, flavor = null) — a
  * one-line card built directly (no fold pipeline involved) for shell call
  * sites that need to inject an idle/inspect/obstacle card verbatim (Plans
  * 02-04). `iconKey` (2026-09-17 UAT) is an optional trailing PNG key
  * (icons/optimized/<key>.png) for the hold-inspect card — null when the
  * inspected square has no tile identity worth an icon.
  */
-export function railLineCard(title, line, tone, hold, icon = "·", iconKey = null) {
+export function railLineCard(title, line, tone, hold, icon = "·", iconKey = null, flavor = null) {
+  // Phase 96 (FLAVOR-04): an optional trailing flavour spec `{ line, id, name }`.
+  // With a non-empty string `line` the card leads with the flavour and the exact
+  // `line` argument rides on the line's `rules` property (the 95-05 reuse point:
+  // renderRail mounts it behind a RULES toggle, never types or announces it).
+  // Anything else leaves the card byte-identical to the five-argument card.
+  const lead = flavor && typeof flavor === "object" && typeof flavor.line === "string" ? flavor.line : "";
+  if (lead) {
+    return {
+      icon,
+      iconKey,
+      title,
+      lines: [{ text: lead, roll: null, rules: line, rulesId: flavor.id, rulesName: flavor.name }],
+      tone,
+      hold,
+    };
+  }
   return { icon, iconKey, title, lines: [{ text: line, roll: null }], tone, hold };
 }
 
@@ -598,14 +616,15 @@ export function isCombatCard(card) {
 }
 
 /**
- * conditionCard(title, line) — Phase 71 (D-16, R-28): the hero status-chit
+ * conditionCard(title, line, flavor = null) — Phase 71 (D-16, R-28): the hero status-chit
  * card for the combat screen. It is exactly the chip's out-of-combat line
  * card (railLineCard with tone "info", the default hold and the "·" icon)
  * plus `kind: "cond"`, so the text is the same sentence from the same
  * source; only the kind lets it show over the fight. Pure.
  */
-export function conditionCard(title, line) {
-  return { ...railLineCard(title, line, "info", RAIL_HOLD.default, "·"), kind: "cond" };
+export function conditionCard(title, line, flavor = null) {
+  // Phase 96 (FLAVOR-04): the optional flavour spec is forwarded to railLineCard.
+  return { ...railLineCard(title, line, "info", RAIL_HOLD.default, "·", null, flavor), kind: "cond" };
 }
 
 // COUNT_WORDS — Phase 37 (GEAR-04): the small-number words wornReconcileCard
@@ -679,6 +698,31 @@ export function abilityPoolCard(c) {
     hold: RAIL_HOLD.level,
     icon: "★",
   };
+}
+
+/**
+ * abilityPoolFlavor(c) — Phase 96 (FLAVOR-04): the flavour spec for the same
+ * ability abilityPoolCard picks (the FIRST pool-source id in `c.abilities`):
+ * `{ line, id, name }` where `line` is RAIL_COPY.abilityPool.line filled with
+ * the ability's name and its FLAVOUR line (not its rules txt), `id` is
+ * "pool:<ability id>" and `name` the ability's name. The exact abilityPoolCard
+ * line is then the card's second argument, behind RULES. null for a missing or
+ * invalid `c`, an empty or table-only list, or an ability with no flavour line.
+ * Pure; never throws.
+ */
+export function abilityPoolFlavor(c) {
+  try {
+    if (!c || !Array.isArray(c.abilities)) return null;
+    const key = c.abilities.find((id) => ABILITY_BY_ID[id] && ABILITY_BY_ID[id].source === "pool");
+    if (!key) return null;
+    const meta = ABILITY_BY_ID[key];
+    const flavour = flavorOfAbility(meta.name);
+    if (!flavour) return null;
+    const { line } = RAIL_COPY.abilityPool;
+    return { line: line.replace("{name}", meta.name).replace("{txt}", flavour), id: "pool:" + key, name: meta.name };
+  } catch {
+    return null;
+  }
 }
 
 /** emptyRail() — the rail's zero state: no card up, no decision pending. */

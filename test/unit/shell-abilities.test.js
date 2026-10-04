@@ -139,9 +139,11 @@ test("surfaceAbilityPool(state) builds the pool card via rail.js#abilityPoolCard
   assert.equal((CODE.match(/function surfaceAbilityPool\(state\) \{/g) || []).length, 1);
   const region = sliceBetween(CODE, "function surfaceAbilityPool(state) {", "\n  }");
   assert.match(region, /abilityPoolCard\(state\.c\)/);
-  assert.match(region, /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, card\.icon\)/);
-  assert.match(region, /window\.logLine\?\.\(card\.line\)/);
-  assert.match(CODE, /wornReconcileCard, abilityPoolCard \} from "\.\/src\/browser\/rail\.js";/);
+  // Phase 96 (FLAVOR-04): declared re-pin — the rail line gains the trailing `null, flavor` (abilityPoolFlavor(state.c): flavour first, the exact card line behind RULES) and the log line is the flavour line when there is one; the import gains abilityPoolFlavor.
+  assert.match(region, /abilityPoolFlavor\(state\.c\)/);
+  assert.match(region, /window\.mzRailLine\?\.\(card\.title, card\.line, card\.tone, card\.hold, card\.icon, null, flavor\)/);
+  assert.match(region, /window\.logLine\?\.\(flavor \? flavor\.line : card\.line\)/);
+  assert.match(CODE, /wornReconcileCard, abilityPoolCard, abilityPoolFlavor \} from "\.\/src\/browser\/rail\.js";/);
 });
 
 test("surfaceAbilityPool(state) is the LAST statement of commitRolledState, and is also called from window.mzDevStartAtDepth", () => {
