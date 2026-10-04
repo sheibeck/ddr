@@ -312,7 +312,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- v2.4 autonomous run (2026-10-03): plan + execute Phase 96, then discuss/plan/execute Phase 97; then the BUILD GATE before Phase 98 (debug APK + device checklist → patch notes agreed → signed AAB vc14 for the user's upload); then Phase 98 screenshots; then the milestone lifecycle.
+- v2.4 autonomous run: Phase 96 DONE (2026-10-04, 09e2e039). RESUME HERE: Phase 97 smart discuss is mid-way — Areas 1–3 accepted, Area 4 still to ask; everything (decisions, Area 4 table, scout code facts) is in `.planning/phases/97-large-screen-support/97-DISCUSS-CHECKPOINT.md`. Re-run `/gsd-autonomous`, ask only Area 4, write 97-CONTEXT.md from the checkpoint (delete the checkpoint in that commit), then plan (Opus planner, no research) and execute 97. Then the BUILD GATE before Phase 98 (debug APK + device checklist → patch notes agreed → signed AAB vc14 for the user's upload); then Phase 98 screenshots; then the milestone lifecycle.
+- Run conventions this run: sequential executors on master for single-plan waves; parallel worktree executors (isolation=worktree, background) for multi-plan waves with no file overlap, merged by hand with `git merge --no-ff` + worktree remove + branch -D, tracking via `roadmap.update-plan-progress` + `state.advance-plan`; executors run targeted tests only, the orchestrator runs the full `npm test` once at phase close; every commit plain `git commit` with the two trailers; stall watches via scratchpad `stallwatch.sh` / `wtwatch.sh` Monitors.
 
 ## Performance Metrics
 
