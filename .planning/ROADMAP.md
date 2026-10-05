@@ -425,7 +425,7 @@ Plans:
 - **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
 - **Hoarder (tiered):** gain X coin. Tiers 1,000 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
-- **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. The tier thresholds are decided at planning.
+- **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. Tiers 10 / 25 / 50 / 100 (user, 2026-10-05).
 
 - **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
 - **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
@@ -502,7 +502,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Special Snowflake | 1 | 1 | 1 |
 | Survivor (10 / 25 / 50 / 100 days) | 4 | 4 | 1 |
 | Hoarder (1,000 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
-| Party Animal (X Joiners) | TBD | ~4 | 1 |
+| Party Animal (10 / 25 / 50 / 100 Joiners) | 4 | 4 | 1 |
 | Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
@@ -534,7 +534,7 @@ Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon fi
 
 *Decisions that move the counts:*
 
-- **Tier counts** for Party Animal. Each extra tier adds one icon file per track, but no new picture.
+- ~~**Tier counts**~~ settled (user, 2026-10-05): every tiered track has its four thresholds.
 - **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
