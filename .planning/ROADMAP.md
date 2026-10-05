@@ -423,7 +423,7 @@ Plans:
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
 - **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
-- **Hoarder (tiered):** gain X coin. Tiers 2,500 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run, and the measure is the most coin held at one time (user, 2026-10-05): it unlocks the moment the hero's coin on hand reaches the threshold, so spending never counts against it.
+- **Hoarder (tiered):** gain X coin. Tiers 2,000 / 5,000 / 8,000 / 10,000 coin (user, 2026-10-05): each tier is a full bag (small / medium / large / enormous, the `content/bags.js` wilmst caps), so a tier is reachable only with that bag or bigger. Counts a single run, and the measure is the most coin held at one time (user, 2026-10-05): it unlocks the moment the hero's coin on hand reaches the threshold, so spending never counts against it.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. Tiers 10 / 25 / 50 / 100 (user, 2026-10-05).
 
@@ -506,7 +506,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Tourist (all 24 sub-classes) | 1 | 1 | 1 |
 | Special Snowflake | 1 | 1 | 1 |
 | Survivor (10 / 25 / 50 / 100 days) | 4 | 4 | 1 |
-| Hoarder (2,500 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
+| Hoarder (2,000 / 5,000 / 8,000 / 10,000 coin) | 4 | 4 | 1 |
 | Party Animal (10 / 25 / 50 / 100 Joiners) | 4 | 4 | 1 |
 | Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
