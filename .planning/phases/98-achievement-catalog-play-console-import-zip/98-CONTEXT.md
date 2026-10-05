@@ -34,21 +34,21 @@ Google's rules, checked 2026-10-05 at developer.android.com/games/pgs/achievemen
 - a game can have at most **2,000** points;
 - Play awards XP of 100 × points.
 
-**Total: 1,110 points, which leaves 890 for the future brainstorm set.**
+**Total: 1,200 points, which leaves 800 for the future brainstorm set** (quick 261005-opm, user 2026-10-05) (was 1,110 and 890).
 
 | Group | Achievements | Points | Subtotal |
 |---|---|---|---|
 | Tiered tracks (13 × 4 tiers = 52) | Frequent Flier; Body Count: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead; Survivor; Hoarder; Party Animal; Human Shields; Silver Tongue; Still Standing | I 5 · II 10 · III 15 · IV 25 (55 per track) | 715 |
 | Depth ladder | floors 5 / 10 / 15 | 10 / 20 / 30 | 60 |
 | Unicorn! | floor 20 | 100 | 100 |
-| Races | Human, Elven, Dwarven, Wilmsry, Fridgian, Troll to floor 5 | 10 each | 60 |
-| Classes | Magic User, Fighter, Thief to floor 5 | 10 each | 30 |
+| Races | Human, Elven, Dwarven, Wilmsry, Fridgian, Troll to floor 10 | 20 each | 120 |
+| Classes | Magic User, Fighter, Thief to floor 10 | 20 each | 60 |
 | Tourist | all 24 sub-classes | 30 | 30 |
 | Run feats | Fully Dressed 10 · Teetotaler 15 · Chicken 15 · Naked Ambition 25 | | 65 |
 | Deaths and oddities | Special Snowflake, Read the Label, Fatal Misstep, Gravity Wins, Empty Calories 5 each · Solid Miscalculation 10 · Terminal Condition 15 | | 50 |
-| **Total** | **77** | | **1,110** |
+| **Total** | **77** | | **1,200** |
 
-Count check: 52 + 3 + 1 + 6 + 3 + 1 + 4 + 7 = 77. Headroom: 2,000 − 1,110 = 890.
+Count check: 52 + 3 + 1 + 6 + 3 + 1 + 4 + 7 = 77. Headroom: 2,000 − 1,200 = 800. The races and classes moved from floor 5 at 10 points to floor 10 at 20 points (quick 261005-opm, user 2026-10-05).
 
 ### Types (ACH-05: Play cannot change a type or an initial state once published)
 - **Incremental, 57 entries:**
@@ -149,7 +149,7 @@ Block sizes: 6 + 4 + 10 + 14 + 13 + 24 + 6 = 77.
 |---|---|
 | Depth ladder | Reach floor 5 / 10 / 15 (`state.floor.depth`) in a run |
 | Unicorn! | Reach floor 20 |
-| Races and classes | Reach floor 5 with that race, or with that parent class |
+| Races and classes | Reach floor 10 with that race, or with that parent class (quick 261005-opm, user 2026-10-05) |
 | Tourist | Start a delve with each of the 24 sub-classes; depth doesn't matter |
 | Survivor | Live 10 / 25 / 50 / 100 days in one run (`state.day`) |
 | Hoarder | Hold 2000 / 5000 / 8000 / 10000 wilmst at once in one run. These are the bag caps for small, medium, large and the largest bag. Spending never counts against it |
@@ -257,7 +257,7 @@ Block sizes: 6 + 4 + 10 + 14 + 13 + 24 + 6 = 77.
 ## Deferred Ideas
 
 - **Disposable Help (fallen summons).** Dropped. Revisit only if summons ever become killable, which is a rules change. The source picture stays in `achievements/sources/`.
-- **The brainstorm set** (Well-Rounded, Friendly Fire, Bomb Squad and the rest, in backlog 999.12) stays future work: new art, a later import, and the 890-point headroom.
+- **The brainstorm set** (Well-Rounded, Friendly Fire, Bomb Squad and the rest, in backlog 999.12) stays future work: new art, a later import, and the 800-point headroom.
 - **Decisions for later phases:** how increments are sent (Phase 101), the toast and list shape (Phase 100), and the stats record's shape (Phase 99).
 
 </deferred>

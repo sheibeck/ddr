@@ -17,8 +17,8 @@ The catalog is the source of truth for the in-game text. Play holds a **frozen c
 description from the moment you import. The in-game unlock line never goes to Play, so it can be
 reworded at any time.
 
-The numbers to expect: 77 achievements, 1110 points, 57 incremental, 8 hidden (20 standard, 69
-revealed from the start). That leaves 890 points of Play's 2000-point cap for a later set.
+The numbers to expect: 77 achievements, 1200 points, 57 incremental, 8 hidden (20 standard, 69
+revealed from the start). That leaves 800 points of Play's 2000-point cap for a later set.
 
 ## Rebuild the zip
 
@@ -73,7 +73,7 @@ If the import is refused, see "If the import is refused" below.
 
 Before publishing, look at the draft list in Play Console:
 
-- It shows 77 achievements, 1110 points, 57 incremental and 8 hidden. Count them. If the count is
+- It shows 77 achievements, 1200 points, 57 incremental and 8 hidden. Count them. If the count is
   off, you have a partial or doubled import: fix the drafts, do not publish.
 - Every icon shows.
 - The list is in the order of `docs/ACHIEVEMENTS-COPY.md`.
