@@ -100,6 +100,7 @@
 - ✓ **Fantasy flavour, part I** — v2.4 Phase 95 (FLAVOR-01, 02, 05): 111 one-sentence flavour lines (spells, scroll, potions, tools, bags, magic items, weapon and armour types) in keyed maps beside the unchanged rules `txt`; every surface shows flavour first with a tap-to-reveal RULES line and an "Always show the rules" setting; all v2.3 truth guards untouched and a drifted number still fails
 - ✓ **Fantasy flavour, part II** — v2.4 Phase 96 (FLAVOR-03, 04, 06): race, sub-class and class blurbs tagged with a real good and bad, 21 ability lines, 21 skill lines and 47 condition-chip lines; roller, Hero tab, combat ABILITIES/SING, chip taps, UP YOUR SLEEVE and the Final Sheet lead with flavour and keep the exact rules behind RULES; three-agent review (211+14 → all 236 lines pass, 3 self-checked) on review.html; a 20-surface sweep proves no rulebook sentence is left outside RULES
 - ✓ **Large-screen support** — v2.4 Phase 97 (SCREEN-01..06): manifest orientation lock removed (appCategory game and configChanges kept); phones get Settings > Screen Portrait/Rotate (default Portrait), tablets/foldables/Chromebooks follow the device; window size classes (short = landscape side-rail with a right-hand panel, medium = widened stack with 640 px columns, expanded = map plus a persistent pane) replace the 480 px letterbox; window-scaled cells, dvh and side insets; `npm run layout:check` (12 profiles × 15 scenes, rotate keeps fight/store)
+- ✓ **Flavour only** — v2.4 Phase 97.1 (FLAVOR-07, user 2026-10-04 "remove rules entirely"): every RULES toggle and the Always show the rules setting retired; players see only flavour lines (Gear sheets keep numeric stat rows); exact rules text stays in code/models for the guards; flavour-only guard test
 - [ ] **Fantasy-flavour player text** (v2.4 todo) — players read narrative; the exact rules stay in code, docs and the audit pins
 - ✓ **Small v2.4 todos** — v2.4 Phase 93: harmful condition chips first; the Cloak of Regeneration heals a d6 on use (ruling B); plus Phase 93.1, the Gauntlet of the Giant at +6
 
@@ -527,4 +528,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-04 after Phase 97 (Large-Screen Support)*
+*Last updated: 2026-10-04 after Phase 97.1 (Flavour Only)*
