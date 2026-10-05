@@ -44,3 +44,6 @@ boards-export*
 
 # Claude Code agent worktrees (parallel executors)
 .claude/worktrees/
+
+# Phase 97: tools/layout-check.mjs screenshots (never committed)
+tools/layout-check-output/

@@ -2151,6 +2151,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
    by side. */
 @media (max-width: 599.98px) and (min-height: 480px) {
   .doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}
+  /* Found by tools/layout-check.mjs on a 360 px phone (the Rations counter was
+     cut by 17 px): the band 2 gaps ease from 8 and 10 px at 412 px down to
+     2 and 6 px, so the four counters and the menu button fit a narrow phone. */
+  .mw-hud-band2{gap:clamp(6px, calc((100vw - 340px) / 7), 10px)}
+  .mw-hud-counters{gap:clamp(2px, calc((100vw - 332px) / 10), 8px)}
 }
 
 /* ---- The side layouts (Phase 97, SCREEN-03/06): a phone on its side (short)
@@ -2196,7 +2201,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   :root{--mw-side-w:45%}
   .mw-hud{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ident band2" "track track";align-items:center}
   .mw-hud-identity{grid-area:ident;padding-top:calc(6px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-bottom:6px;padding-right:8px}
-  .mw-hud-band2{grid-area:band2;padding-top:calc(4px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-bottom:4px;padding-left:0}
+  .mw-hud-band2{grid-area:band2;padding-top:calc(7px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-bottom:4px;padding-left:0}
   .mw-hud-wptrack{grid-area:track}
   .mw-cond-strip{padding-top:4px;padding-bottom:5px}
   .mw-hud-menu{max-height:calc(100vh - 64px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));max-height:calc(100dvh - 64px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
