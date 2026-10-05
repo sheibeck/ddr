@@ -36,7 +36,7 @@ The manifest no longer restricts orientation, and the runtime lock is a pure, id
 
 - `android/app/src/main/AndroidManifest.xml`: removed `android:screenOrientation="portrait"` from `.MainActivity`. Kept `android:appCategory="game"`, the exact `configChanges` list and `launchMode="singleTask"`. Rewrote the comment block above `<application>`.
 - `src/browser/nativeChrome.js`: added `PHONE_SMALLEST_WIDTH_LIMIT`, pure `decideOrientationLock({ screenPref, smallestWidth })`, and `syncOrientationLock()` (idempotent, never throws, returns null before registration). `registerNativeChrome` takes `getScreenPref` and `getSmallestWidth` and applies the rule through `syncOrientationLock`; the plugin resolution line and the CR-03 ordering are untouched. `__resetNativeChromeRegistrationForTests` also resets the orientation state.
-- `test/unit/screen-orientation.test.js` (new, 15 tests): every behavior bullet, written red first.
+- `test/unit/screen-orientation.test.js` (new, 16 tests): every behavior bullet, written red first.
 - `test/unit/android-large-screen.test.js` rewritten: manifest pins (game category, no orientation/resizability/aspect/layout, configChanges and singleTask intact), the single-lock-site pin in nativeChrome, and the large-screen behaviour check. The three `mw-letterbox` tests were removed (successors are 97-03's job).
 
 The shell wiring (Settings row, getters, resync on resize) is 97-03.
