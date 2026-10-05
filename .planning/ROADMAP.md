@@ -24,7 +24,7 @@
 
 ### 🚧 v2.5 Achievements (In Progress)
 
-- [ ] **Phase 98: Achievement Catalog & Play Console Import Zip** - All 77 achievements exist as one finished catalog in the house voice, and a tool builds the validated Play Console import zip for the user to import as a draft.
+- [x] **Phase 98: Achievement Catalog & Play Console Import Zip** - All 77 achievements exist as one finished catalog in the house voice, and a tool builds the validated Play Console import zip for the user to import as a draft. (completed 2026-10-05)
 - [ ] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned.
 - [ ] **Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List** - An unlock is a toast with a sarcastic line, and a list opened from ☰ shows every achievement locked, unlocked, in progress or hidden, in every layout class.
 - [ ] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file.
@@ -51,7 +51,7 @@
   4. One command builds the import zip (`AchievementsMetadata.csv` and `AchievementsIconsMappings.csv` with no header rows, plus the 77 PNGs flat with unique file names, in the in-game list order), and a validator test checks the built zip against Google's rules (no subdirectories, only CSV and PNG, each file under 1 MB, at most 403 files, 7 values per metadata row and 2 per mapping row, `True`/`False` and `Hidden`/`Revealed` spelt exactly, steps only on incremental rows, every row's icon present and exactly 512 × 512) and fails when a rule is broken.
   5. `docs/ACHIEVEMENTS.md` covers rebuilding the zip, importing it in Play Console, testing with tester accounts, publishing and fetching the IDs file with Get resources, and the built zip is handed to the user for the draft import.
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -137,7 +137,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 98. Achievement Catalog & Play Console Import Zip | 0/3 | Planned | - |
+| 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
 | 99. Engine Facts & Lifetime Stats Tracker | 0/TBD | Not started | - |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
 | 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
