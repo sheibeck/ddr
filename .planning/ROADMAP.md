@@ -21,7 +21,7 @@
 
 ## Phases
 
-### v2.4 Fit & Finish (Phases 93–98) — IN PROGRESS
+### v2.4 Fit & Finish (Phases 93–97.1) — IN PROGRESS
 
 - [x] **Phase 93: Quick Wins: Harmful Chips First & Cloak Heals on Use** - Harmful condition chips always sit at the far left, and using the Cloak of Regeneration heals at once. (completed 2026-10-03)
 - [x] **Phase 93.1: Gauntlet of the Giant Worth Wearing** (INSERTED) - Using the Gauntlet's size step hits hard enough to be worth foes getting +1 to hit you (player report #6). (completed 2026-10-03)
@@ -31,7 +31,6 @@
 - [x] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review. (completed 2026-10-04)
 - [x] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run. (completed 2026-10-04)
 - [x] **Phase 97.1: Flavour Only** (INSERTED) - Players see only the flavour lines: every RULES toggle and the Always show the rules setting are retired; the exact rules text stays in code for the guards. (completed 2026-10-05)
-- [ ] **Phase 98: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the current game, with real tablet and landscape shots.
 
 **Sequencing:** SHOTS is last (user): after large-screen support so the tablet and landscape shots are real, and after the flavour text so the shots show the final words. The two quick wins go first: the cloak's final text feeds the flavour pass, and the chip strip is in its final order before the other UI work. Ability states (94) and the flavour text (95–96) land before large-screen support (97), so the landscape and tablet layouts are designed once against the final rows, the details surface and the real text lengths, and one refreshed set of shell snapshots and one perf baseline describe the final UI. Engine bytes move only in Phase 93 (ITEM-08, a derived-stream tick with declared fixtures) and Phase 94 (ASTATE-04, additive derived state, zero draws); the rest is shell, content, Android manifest and tooling. No bot pass is planned (no balance change beyond the cloak tick; the fair bot's cloak model is updated in Phase 93).
 
@@ -315,20 +314,6 @@ Plans:
 
 - [ ] TBD (run /gsd-plan-phase 97.1 to break down)
 
-### Phase 98: Fresh Store & Website Screenshots
-
-**Goal**: The Play listing and darktierstudios.com show the game as it now is: the final flavour text, the ability states, the board with Play Games names, and real tablet and landscape shots.
-**Depends on**: Phase 97 (the tablet and landscape shots are real) and Phases 95–96 (the shots show the final text). The last phase of the milestone, by the user's ruling. Shots come from the Pixel 7 debug build and the emulator profiles for the 7" and 10" tablets; the dev row (debug builds only) can reach deep floors, but its chip stays out of frame. Uploading the exported shots in Play Console is the user's step.
-**Requirements**: SHOTS-01, SHOTS-02, SHOTS-03
-**Open decisions (discuss-phase)**: the shot list, agreed with the user (candidates: title, combat with damage lines and ability states, the leaderboard with Play Games names, the Hero tab, a store, spells, the map), and which landscape shots earn a place.
-**Success Criteria** (what must be TRUE):
-
-  1. An agreed shot list is captured on the current build for the phone, the 7" tablet, the 10" tablet and, where it fits, landscape, with no dev chip or debug UI in frame and the final flavour text and ability states visible.
-  2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots, exported to Play's size rules, and `store-listing/LISTING.md` describes them.
-  3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live.
-
-**Plans**: TBD
-
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -338,7 +323,6 @@ Plans:
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 12/12 | Complete    | 2026-10-04 |
 | 97. Large-Screen Support | 7/7 | Complete    | 2026-10-04 |
-| 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 ## Deferred / Not This Milestone
 
@@ -892,9 +876,27 @@ Plans:
 
 - [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.18: Updated screenshots for the store listing and the website (PROMOTED → Phase 98)
+### Phase 999.18: Updated screenshots for the store listing and the website (DEFERRED from v2.4 — next milestone)
 
-> **Promoted 2026-10-03 into milestone v2.4** as SHOTS-01..03 (Phase 98, the last phase, after large-screen support and the flavour text). Kept here for its planning context until v2.4 closes. Not a runnable backlog item, do not queue it.
+> **Deferred 2026-10-05 (user):** v2.4 closed after the 2.4.0 release without Phase 98, so the user could move to the next milestone (achievements). Take it up in the next milestone. The v2.4 Phase 98 spec (SHOTS-01..03) is kept below.
+
+<details><summary>v2.4 Phase 98 spec (removed from v2.4)</summary>
+
+#### Fresh Store & Website Screenshots (was v2.4 Phase 98)
+
+**Goal**: The Play listing and darktierstudios.com show the game as it now is: the final flavour text, the ability states, the board with Play Games names, and real tablet and landscape shots.
+**Depends on**: Phase 97 (the tablet and landscape shots are real) and Phases 95–96 (the shots show the final text). The last phase of the milestone, by the user's ruling. Shots come from the Pixel 7 debug build and the emulator profiles for the 7" and 10" tablets; the dev row (debug builds only) can reach deep floors, but its chip stays out of frame. Uploading the exported shots in Play Console is the user's step.
+**Requirements**: SHOTS-01, SHOTS-02, SHOTS-03
+**Open decisions (discuss-phase)**: the shot list, agreed with the user (candidates: title, combat with damage lines and ability states, the leaderboard with Play Games names, the Hero tab, a store, spells, the map), and which landscape shots earn a place.
+**Success Criteria** (what must be TRUE):
+
+  1. An agreed shot list is captured on the current build for the phone, the 7" tablet, the 10" tablet and, where it fits, landscape, with no dev chip or debug UI in frame and the final flavour text and ability states visible.
+  2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots, exported to Play's size rules, and `store-listing/LISTING.md` describes them.
+  3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live.
+
+**Plans**: TBD
+
+</details>
 
 **Goal:** the Play Store listing and darktierstudios.com show the current game (2.3+): the Play Games names on the board, SIGN IN, the new spells and the current HUD and rail.
 

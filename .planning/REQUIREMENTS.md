@@ -99,9 +99,9 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | SCREEN-04 | Phase 97 | Complete |
 | SCREEN-05 | Phase 97 | Complete |
 | SCREEN-06 | Phase 97 | Complete |
-| SHOTS-01 | Phase 98 | Pending |
-| SHOTS-02 | Phase 98 | Pending |
-| SHOTS-03 | Phase 98 | Pending |
+| SHOTS-01 | Deferred (next milestone, backlog 999.18) | Deferred |
+| SHOTS-02 | Deferred (next milestone, backlog 999.18) | Deferred |
+| SHOTS-03 | Deferred (next milestone, backlog 999.18) | Deferred |
 
 **Coverage:** 24 requirements — mapped: 24 — unmapped: 0 (roadmap created 2026-10-03; ITEM-09 added 2026-10-03 with inserted Phase 93.1; JOIN-01 added 2026-10-03 with inserted Phase 94.1)
 
