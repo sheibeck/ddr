@@ -143,3 +143,117 @@ export function achievementSummaryCard(idsOrEntries) {
     achievementIds: Object.freeze(entries.map((e) => e.id)),
   });
 }
+
+// ---------------------------------------------------------------------------
+// The pending queue and the drain gate
+//
+// The adapter hands the shell an unlock payload whenever an action earns
+// something. The shell enqueues the ids here and asks `bannerNext` for a card
+// each time the rail may take one. The queue only dedupes what is PENDING: it
+// is the Phase 99 tracker that guarantees an unlock fires once, so an id that
+// was already shown and cleared is never offered again by the tracker.
+// Everything returned is frozen and the inputs are never mutated.
+// ---------------------------------------------------------------------------
+
+const EMPTY_QUEUE = Object.freeze({ pending: Object.freeze([]) });
+
+/** emptyBannerQueue() — the frozen zero queue: nothing pending. */
+export function emptyBannerQueue() {
+  return EMPTY_QUEUE;
+}
+
+function pendingOf(queue) {
+  if (!queue || typeof queue !== "object" || !Array.isArray(queue.pending)) return null;
+  return queue.pending;
+}
+
+function makeQueue(ids) {
+  return Object.freeze({ pending: Object.freeze(ids) });
+}
+
+/**
+ * bannerEnqueue(queue, unlocks) — a frozen queue holding the old pending ids
+ * plus every `unlocks[i].id` that is a catalog id and not already pending,
+ * in catalog list order. Only the `unlocks` array is read: a reveal never
+ * reaches this function, so a secret can never be named before it is earned.
+ * Returns the very same queue object when nothing is added; a null or
+ * malformed queue reads as the empty queue.
+ */
+export function bannerEnqueue(queue, unlocks) {
+  const base = pendingOf(queue);
+  const have = new Set(base ? base.filter((id) => typeof id === "string" && BY_ID.has(id)) : []);
+  const before = have.size;
+  if (Array.isArray(unlocks)) {
+    for (const item of unlocks) {
+      if (item && typeof item === "object" && typeof item.id === "string" && BY_ID.has(item.id)) have.add(item.id);
+    }
+  }
+  if (have.size === before) return base ? queue : EMPTY_QUEUE;
+  return makeQueue([...have].sort((a, b) => RANK.get(a) - RANK.get(b)));
+}
+
+function isTrue(v) {
+  return v === true;
+}
+
+/**
+ * earnedStripView(ids) — the death screen's Earned strip: null when no id
+ * resolves, otherwise a frozen { label, items: [{ id, name, iconSrc }] } in
+ * catalog list order (duplicates collapse to one).
+ */
+export function earnedStripView(ids) {
+  if (!Array.isArray(ids)) return null;
+  const seen = new Set();
+  const entries = [];
+  for (const id of ids) {
+    const entry = resolve(id);
+    if (entry && !seen.has(entry.id)) {
+      seen.add(entry.id);
+      entries.push(entry);
+    }
+  }
+  if (entries.length === 0) return null;
+  entries.sort(inListOrder);
+  return Object.freeze({
+    label: ACHIEVEMENT_CARD_COPY.strip.label,
+    items: Object.freeze(
+      entries.map((e) => Object.freeze({ id: e.id, name: e.name, iconSrc: achievementIconSrc(e) })),
+    ),
+  });
+}
+
+/**
+ * bannerNext(queue, ctx) — what may be shown now. Returns a frozen
+ * { queue, card, strip }. ctx fields are booleans and only a strict `true`
+ * counts for each: `ready` (a hero is loaded and the dungeon is visible),
+ * `fighting`, `dead`, `fade` (the stairs fade), `decision` (a decision is
+ * pending) and `railBusy` (a rail card is up). A missing or non-object ctx has
+ * `ready` false, which blocks: the safe default is to show nothing. A store or
+ * loot screen is NOT a blocker, so the card behaves there as the rail does.
+ *
+ * Rules, in this order:
+ *   1. dead: no card; the strip holds everything pending; the queue empties
+ *      (this wins over every other flag, a fight still showing included);
+ *   2. not ready, or fighting, fade, decision or railBusy, or nothing
+ *      pending: no card, no strip, the same queue object;
+ *   3. more than ACHIEVEMENT_COLLAPSE_OVER pending: one summary card, the
+ *      queue empties;
+ *   4. otherwise: the first pending id as a card, the rest stay queued.
+ */
+export function bannerNext(queue, ctx) {
+  const pending = pendingOf(queue);
+  const ids = pending ? pending.filter((id) => typeof id === "string" && BY_ID.has(id)) : [];
+  const c = ctx && typeof ctx === "object" ? ctx : {};
+  const same = pending ? queue : EMPTY_QUEUE;
+
+  if (isTrue(c.dead)) {
+    return Object.freeze({ queue: EMPTY_QUEUE, card: null, strip: earnedStripView(ids) });
+  }
+  if (!isTrue(c.ready) || isTrue(c.fighting) || isTrue(c.fade) || isTrue(c.decision) || isTrue(c.railBusy) || ids.length === 0) {
+    return Object.freeze({ queue: same, card: null, strip: null });
+  }
+  if (ids.length > ACHIEVEMENT_COLLAPSE_OVER) {
+    return Object.freeze({ queue: EMPTY_QUEUE, card: achievementSummaryCard(ids), strip: null });
+  }
+  return Object.freeze({ queue: makeQueue(ids.slice(1)), card: achievementCardFor(ids[0]), strip: null });
+}
