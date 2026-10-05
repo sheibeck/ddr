@@ -441,34 +441,6 @@
     "file_ingame": "ingame/ach_human_shields_t4.png"
   },
   {
-    "id": "disposable_help",
-    "name": "Disposable Help",
-    "tier": 1,
-    "file_play": "play/ach_disposable_help_t1.png",
-    "file_ingame": "ingame/ach_disposable_help_t1.png"
-  },
-  {
-    "id": "disposable_help",
-    "name": "Disposable Help",
-    "tier": 2,
-    "file_play": "play/ach_disposable_help_t2.png",
-    "file_ingame": "ingame/ach_disposable_help_t2.png"
-  },
-  {
-    "id": "disposable_help",
-    "name": "Disposable Help",
-    "tier": 3,
-    "file_play": "play/ach_disposable_help_t3.png",
-    "file_ingame": "ingame/ach_disposable_help_t3.png"
-  },
-  {
-    "id": "disposable_help",
-    "name": "Disposable Help",
-    "tier": 4,
-    "file_play": "play/ach_disposable_help_t4.png",
-    "file_ingame": "ingame/ach_disposable_help_t4.png"
-  },
-  {
     "id": "ether_entombed",
     "name": "Solid Miscalculation",
     "tier": null,

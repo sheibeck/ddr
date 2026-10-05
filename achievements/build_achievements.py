@@ -18,10 +18,12 @@ ROOT = Path(__file__).resolve().parent
 SIZE = 1254
 TIERS = {"depth": 3, "frequent_flier": 4, "survivor": 4,
          "hoarder": 4, "party_animal": 4, "human_shields": 4,
-         "disposable_help": 4, "parlay": 4,
+         "parlay": 4,
          "kills_beasts": 4, "kills_demons": 4, "kills_humans": 4,
          "kills_lair_beasts": 4, "kills_magical": 4,
          "kills_walking_dead": 4, "trap_survivor": 4}
+# The fallen-summons achievement was dropped in Phase 98 because summons cannot die;
+# its source picture stays in sources/ unused.
 NAMES = {
     "depth": "Depth", "unicorn": "Unicorn!", "fully_dressed": "Fully Dressed",
     "naked_ambition": "Naked Ambition", "teetotaler": "Teetotaler",
@@ -35,7 +37,7 @@ NAMES = {
     "class_magic_user": "Magic User", "class_fighter": "Fighter",
     "class_thief": "Thief", "tourist": "Tourist", "survivor": "Survivor",
     "hoarder": "Hoarder", "party_animal": "Party Animal",
-    "human_shields": "Human Shields", "disposable_help": "Disposable Help",
+    "human_shields": "Human Shields",
     "ether_entombed": "Solid Miscalculation",
     "death_falling": "Gravity Wins", "death_disease": "Terminal Condition",
     "death_starvation": "Empty Calories", "parlay": "Silver Tongue",
