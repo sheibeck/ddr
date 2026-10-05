@@ -48,7 +48,9 @@ test("readSettings(): unset store yields full defaults", async () => {
   });
 });
 
-test("SETTINGS_DEFAULTS: the thirteen fields' defaults", () => {
+test("SETTINGS_DEFAULTS: the fourteen fields' defaults", () => {
+  // Phase 97 (SCREEN-02): declared re-pin — screen appended (title says fourteen).
+  assert.equal(SETTINGS_DEFAULTS.screen, "portrait");
   // Phase 95 (FLAVOR-05): Always show the rules defaults Off.
   assert.equal(SETTINGS_DEFAULTS.alwaysRules, false);
   // Phase 78 (HUD-08) + the 2026-09-28 user ruling: Movement defaults to the
@@ -100,6 +102,8 @@ test("writeSetting/readSettings: each of the 5 fields round-trips through window
       padSide: "right",
       // Phase 95 (FLAVOR-05): Always show the rules, appended.
       alwaysRules: false,
+      // Phase 97 (SCREEN-02): declared re-pin — screen appended
+      screen: "portrait",
     });
 
     // Persisted as ONE JSON blob under a single versioned key, not raw
@@ -169,8 +173,8 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
     // Phase 91.2 (BOARD-31) put `nameWelcomed` in the slot the Phase 85 welcome flag and the two
     // retired Phase 67 fields used to occupy; Phase 71 (D-03) appended
     // `volMaster`, `volMusic` and `volEffects`; Phase 78 (HUD-08) appended
-    // `movement` and `padSide`; Phase 95 (FLAVOR-05) appended `alwaysRules` —
-    // thirteen keys, in order.
+    // `movement` and `padSide`; Phase 95 (FLAVOR-05) appended `alwaysRules`;
+    // Phase 97 (SCREEN-02) appended `screen` — fourteen keys, in order.
     assert.deepEqual(Object.keys(SETTINGS_DEFAULTS), [
       "sound",
       "haptics",
@@ -186,8 +190,11 @@ test("Phase 33 (UIF-05): a stored handed-layout key is ignored silently", async 
       "padSide",
       // Phase 95 (FLAVOR-05): Always show the rules, appended.
       "alwaysRules",
+      // Phase 97 (SCREEN-02): declared re-pin — screen appended
+      "screen",
     ]);
-    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 13);
+    // Phase 97 (SCREEN-02): declared re-pin — screen appended (fourteen keys)
+    assert.equal(Object.keys(SETTINGS_DEFAULTS).length, 14);
     assert.equal(Object.keys(SETTINGS_DEFAULTS).includes("handedness"), false);
 
     // writeSetting rejects the now-unknown key as a no-op: the returned
@@ -602,6 +609,42 @@ test("FLAVOR-05: alwaysRules writes true/false, rejects anything else, and an ol
     // an old blob without the key reads false (no migration)
     store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L", movement: "arrows" }));
     assert.equal((await readSettings()).alwaysRules, false);
+  });
+});
+
+// --- Phase 97 (SCREEN-02): Screen, Portrait / Rotate ------------------------
+
+test("SCREEN-02: screen round-trips portrait and rotate", async () => {
+  await withFakeLocalStorage(async () => {
+    assert.equal((await readSettings()).screen, "portrait");
+    await writeSetting("screen", "rotate");
+    await flushStorage();
+    assert.equal((await readSettings()).screen, "rotate");
+    await writeSetting("screen", "portrait");
+    await flushStorage();
+    assert.equal((await readSettings()).screen, "portrait");
+  });
+});
+
+test("SCREEN-02: an invalid screen value is a no-op returning the current settings", async () => {
+  await withFakeLocalStorage(async () => {
+    await writeSetting("screen", "rotate");
+    await flushStorage();
+    const current = await readSettings();
+    for (const bad of ["sideways", true, false, 1, null, undefined, "ROTATE"]) {
+      assert.deepEqual(await writeSetting("screen", bad), current, `screen ${JSON.stringify(bad)} is rejected`);
+    }
+    await flushStorage();
+    assert.equal((await readSettings()).screen, "rotate", "the stored value stays as it was");
+  });
+});
+
+test("SCREEN-02: an old blob without screen, or a tampered one, reads portrait", async () => {
+  await withFakeLocalStorage(async (_ls, store) => {
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L", movement: "arrows" }));
+    assert.equal((await readSettings()).screen, "portrait");
+    store.set(SETTINGS_STORAGE_KEY, JSON.stringify({ textSize: "L", movement: "arrows", screen: "upside-down" }));
+    assert.equal((await readSettings()).screen, "portrait");
   });
 });
 

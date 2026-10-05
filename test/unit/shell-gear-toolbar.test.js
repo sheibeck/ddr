@@ -218,7 +218,8 @@ test("UIF-05: the camp button's onclick wiring and short-state read stay singula
   assert.equal((CODE.match(/const campBtn = document\.getElementById\("btn-camp"\);/g) || []).length, 1);
 });
 
-test("UIF-05: settings.js has no trace of handedness and exposes exactly 13 fields, in order", async () => {
+test("UIF-05: settings.js has no trace of handedness and exposes exactly 14 fields, in order", async () => {
+  // Phase 97 (SCREEN-02): declared re-pin — screen appended (13 -> 14 fields).
   const settingsPath = path.join(REPO_ROOT, "src", "browser", "settings.js");
   const settingsSrc = fs.readFileSync(settingsPath, "utf8");
   assert.doesNotMatch(settingsSrc, /handedness/i);
@@ -247,5 +248,7 @@ test("UIF-05: settings.js has no trace of handedness and exposes exactly 13 fiel
     "padSide",
     // Phase 95 (FLAVOR-05): Always show the rules, appended.
     "alwaysRules",
+    // Phase 97 (SCREEN-02): declared re-pin — screen appended
+    "screen",
   ]);
 });
