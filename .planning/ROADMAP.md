@@ -303,6 +303,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   2. Settings has no Always show the rules row, and the setting key is gone from defaults and allowed values. An old saved settings blob still loads.
   3. Every surface still shows its flavour line where it showed one before, and surfaces with no flavour line keep today's text.
   4. The guard tests still pin every rules number to the engine; only their path to the text changes, with no guard lost. docs/TEXT-LAYERS.md, the 2.4.0 patch notes and the UAT checklist say flavour-only.
+
 **Plans:** 0 plans
 
 Plans:
