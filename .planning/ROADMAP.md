@@ -29,7 +29,7 @@
 - [x] **Phase 94.1: Joiner Level Follows Depth** (INSERTED) - A Joiner's level comes from the floor: one level per three floors, 1 to 5. (completed 2026-10-03)
 - [x] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach. (completed 2026-10-03)
 - [x] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review. (completed 2026-10-04)
-- [ ] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run.
+- [x] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run. (completed 2026-10-04)
 - [ ] **Phase 98: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the current game, with real tablet and landscape shots.
 
 **Sequencing:** SHOTS is last (user): after large-screen support so the tablet and landscape shots are real, and after the flavour text so the shots show the final words. The two quick wins go first: the cloak's final text feeds the flavour pass, and the chip strip is in its final order before the other UI work. Ability states (94) and the flavour text (95–96) land before large-screen support (97), so the landscape and tablet layouts are designed once against the final rows, the details surface and the real text lengths, and one refreshed set of shell snapshots and one perf baseline describe the final UI. Engine bytes move only in Phase 93 (ITEM-08, a derived-stream tick with declared fixtures) and Phase 94 (ASTATE-04, additive derived state, zero draws); the rest is shell, content, Android manifest and tooling. No bot pass is planned (no balance change beyond the cloak tick; the fair bot's cloak model is updated in Phase 93).
@@ -313,7 +313,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 12/12 | Complete    | 2026-10-04 |
-| 97. Large-Screen Support | 7/7 | In Progress|  |
+| 97. Large-Screen Support | 7/7 | Complete    | 2026-10-04 |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 ## Deferred / Not This Milestone

@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 97
-status: executing
+current_phase: 98
+current_phase_name: Fresh Store & Website Screenshots
+status: planning
 stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-05T01:23:58.336Z"
+last_updated: "2026-10-05T02:45:13.454Z"
 last_activity: 2026-10-04
-last_activity_desc: Phase 97 execution started
+last_activity_desc: Phase 97 complete, transitioned to Phase 98
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 37
-  completed_plans: 30
-  percent: 75
-current_phase_name: Large-Screen Support
+  completed_plans: 37
+  percent: 88
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 97 — EXECUTING
-Plan: 1 of ?
-Status: Executing Phase 97
-Last activity: 2026-10-04 — Phase 97 execution started
+Phase: 98 — Fresh Store & Website Screenshots
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-04 — Phase 97 complete, transitioned to Phase 98
 Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).

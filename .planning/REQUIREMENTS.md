@@ -10,12 +10,12 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 
 ### Large screens (999.17)
 
-- [ ] **SCREEN-01**: The app installs and runs with no orientation, resizability or max-aspect restriction in the manifest (Play's large-screen notice on 2.3.0 clears)
-- [ ] **SCREEN-02**: On a phone, the player gets the rotation behaviour ruled in discuss-phase (portrait-only as a runtime preference, or free rotation)
-- [ ] **SCREEN-03**: The player can play a full run in landscape — maze viewport, rail, HUD, tabs and sheets all fit and stay usable
-- [ ] **SCREEN-04**: On a 10" tablet, a foldable (folded and unfolded) and a Chromebook-sized window, the layout uses the space sensibly (not a stretched phone column)
-- [ ] **SCREEN-05**: Rotation, fold/unfold, resizing and multi-window never restart or lose a run, a combat or an open store
-- [ ] **SCREEN-06**: Safe areas and system bars are correct in every orientation; shell snapshots and the perf baseline are updated
+- [x] **SCREEN-01**: The app installs and runs with no orientation, resizability or max-aspect restriction in the manifest (Play's large-screen notice on 2.3.0 clears)
+- [x] **SCREEN-02**: On a phone, the player gets the rotation behaviour ruled in discuss-phase (portrait-only as a runtime preference, or free rotation)
+- [x] **SCREEN-03**: The player can play a full run in landscape — maze viewport, rail, HUD, tabs and sheets all fit and stay usable
+- [x] **SCREEN-04**: On a 10" tablet, a foldable (folded and unfolded) and a Chromebook-sized window, the layout uses the space sensibly (not a stretched phone column)
+- [x] **SCREEN-05**: Rotation, fold/unfold, resizing and multi-window never restart or lose a run, a combat or an open store
+- [x] **SCREEN-06**: Safe areas and system bars are correct in every orientation; shell snapshots and the perf baseline are updated
 
 ### Ability states (999.20)
 
@@ -91,12 +91,12 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 | FLAVOR-03 | Phase 96 | Complete |
 | FLAVOR-04 | Phase 96 | Complete |
 | FLAVOR-06 | Phase 96 | Complete |
-| SCREEN-01 | Phase 97 | Pending |
-| SCREEN-02 | Phase 97 | Pending |
-| SCREEN-03 | Phase 97 | Pending |
-| SCREEN-04 | Phase 97 | Pending |
-| SCREEN-05 | Phase 97 | Pending |
-| SCREEN-06 | Phase 97 | Pending |
+| SCREEN-01 | Phase 97 | Complete |
+| SCREEN-02 | Phase 97 | Complete |
+| SCREEN-03 | Phase 97 | Complete |
+| SCREEN-04 | Phase 97 | Complete |
+| SCREEN-05 | Phase 97 | Complete |
+| SCREEN-06 | Phase 97 | Complete |
 | SHOTS-01 | Phase 98 | Pending |
 | SHOTS-02 | Phase 98 | Pending |
 | SHOTS-03 | Phase 98 | Pending |
