@@ -13,23 +13,31 @@
 //       and states no digit, percent sign, die token or number word;
 //   S2  no rules sentence (from an index built out of the content tables, the
 //       footers, the shell's explanation tables and the surface's own stat
-//       lines) occurs in the visible text outside a RULES body;
-//   S3  the RULES bodies on the surface equal, line for line, the unchanged
-//       rules text computed from the content tables, never from the DOM;
-//   S4  with Always show the rules off every body has a toggle that controls
-//       it and starts hidden (the opener surfaces, which carry no toggle by
-//       design, have no body at all); with it on there is no toggle and every
-//       body is visible.
+//       lines) occurs in the visible text;
+//   S3  no rules body is on the surface (no class mw-rules-body, mw-rules-line
+//       or mw-rules-wrap, no id starting mw-rules-);
+//   S4  no rules control is on the surface (no class mw-rules-btn, no
+//       aria-controls naming a mw-rules- id, no visible RULES followed by an
+//       arrow).
+//
+// Phase 97.1 (FLAVOR-07): declared re-pin. S3 and S4 used to pin the RULES body
+// and its toggle (and were run with "Always show the rules" off and on); the
+// control and the setting are retired, so they now fail if either one comes
+// back on any surface. S2's index now also holds every sentence the old probes
+// expected inside a RULES body (each probe's extraRules), so the exact text is
+// proven to be drawn nowhere. The Gear sheet is the one place numbers stay: its
+// numeric stat rows are declared in the probe's `shown` list, must be visible
+// (S5) and are exempt from S2 by exact string only.
 //
 // Adding a surface means adding one probe below: the coverage test ties the
 // probes to the Surfaces table in docs/TEXT-LAYERS.md, so a surface listed there
 // without a probe fails. The sweep reads and paints only. The second half of
-// criterion 4 (a person reading every screen on a phone, Always show the rules
-// off and on) is the milestone's Pixel 7 checklist, not this file.
+// criterion 4 (a person reading every screen on a phone) is the milestone's
+// Pixel 7 checklist, not this file.
 //
 // Every helper here is a per-file copy; nothing is imported across tests.
 
-import test, { beforeEach } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -38,7 +46,6 @@ import url from "node:url";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
-import { clearRulesOpen, setAlwaysRules, mountRules } from "../../src/browser/rulesLayer.js";
 import { flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOf, flavorOfChip, flavorOfIdentity, flavorOfAbility, flavorOfSkill } from "../../src/browser/flavorText.js";
 import { GRIMOIRE_COPY, renderHeroTab, characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { footerLines, identityFooter } from "../../src/browser/identityFooter.js";
@@ -74,11 +81,6 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..", "..");
 const HTML = fs.readFileSync(path.join(ROOT, "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
 const LAYERS_DOC = fs.readFileSync(path.join(ROOT, "docs", "TEXT-LAYERS.md"), "utf8").replace(/\r\n/g, "\n");
-
-beforeEach(() => {
-  clearRulesOpen();
-  setAlwaysRules(false);
-});
 
 // ─── text helpers ─────────────────────────────────────────────────────────
 
@@ -124,8 +126,9 @@ function elementsUnder(root, out = []) {
 
 /**
  * visibleText(root) — what a player reads: each element's own text (the tag-stripped innerHTML for elements the code fills that way,
- * its text for elements filled with textContent) plus the recursion over children; a `.mw-rules-body` is skipped entirely and so is
- * any descendant with `hidden` set. Returned whitespace-normalised.
+ * its text for elements filled with textContent) plus the recursion over children; any descendant with `hidden` set is skipped.
+ * Returned whitespace-normalised.
+ * Phase 97.1 (FLAVOR-07): declared re-pin. A `.mw-rules-body` is no longer skipped: a rules body that comes back is read as visible text.
  */
 function visibleText(root) {
   const parts = [];
@@ -133,7 +136,6 @@ function visibleText(root) {
     if (!el) return;
     if (el.nodeType === 3) { parts.push(el.textContent); return; }
     if (!isRoot && el.hidden === true) return;
-    if (hasClass(el, "mw-rules-body")) return;
     const content = el._content;
     if (content && content.kind === "html") parts.push(stripTags(content.value));
     else if (content && content.kind === "text") parts.push(content.value);
@@ -143,13 +145,17 @@ function visibleText(root) {
   return norm(parts.join(" "));
 }
 
-const bodiesUnder = (root) => elementsUnder(root).filter((el) => hasClass(el, "mw-rules-body"));
-const buttonsUnder = (root) => elementsUnder(root).filter((el) => hasClass(el, "mw-rules-btn"));
+// Phase 97.1 (FLAVOR-07): declared re-pin. The finders below replace bodiesUnder, buttonsUnder and rulesLinesUnder. The Gear sheet's
+// `mw-gsheet-note` and `mw-gsheet-stat` rows are stat rows, not a rules body or control: neither finder may ever match them (the
+// classes they look for all start with mw-rules-, which no stat row carries).
 
-/** The `.mw-rules-line` texts of every RULES body under `root`, in document order. */
-function rulesLinesUnder(root) {
-  return bodiesUnder(root).flatMap((body) => elementsUnder(body).filter((el) => hasClass(el, "mw-rules-line")).map((p) => norm(p.textContent)));
-}
+/** Elements that are a rules body: a class mw-rules-body, mw-rules-line or mw-rules-wrap, or an id starting mw-rules-. */
+const rulesBodiesUnder = (root) => elementsUnder(root).filter((el) =>
+  hasClass(el, "mw-rules-body") || hasClass(el, "mw-rules-line") || hasClass(el, "mw-rules-wrap") || String(el.id || "").startsWith("mw-rules-"));
+
+/** Elements that are a rules control: the class mw-rules-btn, or an aria-controls naming a mw-rules- id. */
+const rulesControlsUnder = (root) => elementsUnder(root).filter((el) =>
+  hasClass(el, "mw-rules-btn") || String(typeof el.getAttribute === "function" ? el.getAttribute("aria-controls") ?? "" : "").startsWith("mw-rules-"));
 
 // ─── the rules-text index ─────────────────────────────────────────────────
 
@@ -183,7 +189,7 @@ function lockpicksText() {
   return line.effectParams.item.txt;
 }
 
-/** The "New trick" line the UP YOUR SLEEVE card carries behind RULES, for an ability row. */
+/** The "New trick" line the UP YOUR SLEEVE card model carries as its exact text (drawn nowhere), for an ability row. */
 const newTrickLine = (ability) => `New trick: ${ability.name} — ${ability.txt}`;
 
 /** buildRulesIndex() — every rules sentence the layers hide, as a normalised Set (at least twelve characters each). */
@@ -224,13 +230,18 @@ function buildRulesIndex() {
 
 const BASE_INDEX = buildRulesIndex();
 
-/** The base index plus a probe's own rules strings (the stat lines of the items it paints). */
-function indexWith(extra = []) {
+/**
+ * The base index plus a probe's own rules strings (the rules text of the items it paints), minus every string of `allowed`: a
+ * sentence the surface is allowed to draw (the Gear sheet's numeric stat rows) is not reported. The exemption is by exact
+ * normalised string, never by class or position.
+ */
+function indexWith(extra = [], allowed = []) {
   const out = new Set(BASE_INDEX);
   for (const s of extra) {
     const n = norm(s);
     if (n.length >= 12) out.add(n);
   }
+  for (const s of allowed) out.delete(norm(s));
   return out;
 }
 
@@ -256,47 +267,25 @@ function assertS2(text, index) {
   return out;
 }
 
-/** S3 — the RULES bodies' lines equal the unchanged rules text, line for line. */
-function assertS3(expected, actual) {
-  const want = expected.map(norm);
-  const got = actual.map(norm);
-  const out = [];
-  if (want.length !== got.length) out.push(`S3: ${got.length} body lines on the surface, ${want.length} expected`);
-  for (let i = 0; i < Math.max(want.length, got.length); i++) {
-    if (want[i] !== got[i]) out.push(`S3: body line ${i} is ${JSON.stringify(got[i])}, expected ${JSON.stringify(want[i])}`);
-  }
-  return out;
+/** S3 — no rules body is on the surface under `root`. Phase 97.1 (FLAVOR-07): declared re-pin; was: the bodies' lines equal the rules text. */
+function assertS3(root) {
+  return rulesBodiesUnder(root).map((el) => `S3: a rules body is on the surface (${el.id ? `id ${el.id}` : `class ${el.className}`})`);
 }
 
 /**
- * S4 — the toggle contract under `root`. Always off: an opener surface has no body and no toggle; any other has, for every body, a
- * toggle whose aria-controls names it, the body hidden and the toggle collapsed, and no toggle without a body. Always on: no toggle,
- * and every body visible.
+ * S4 — no rules control is on the surface under `root`, and the visible `text` does not read RULES followed by an arrow.
+ * Phase 97.1 (FLAVOR-07): declared re-pin; was: the toggle contract with Always off and on.
  */
-function assertS4(root, always, openers = false) {
-  const out = [];
-  const bodies = bodiesUnder(root);
-  const buttons = buttonsUnder(root);
-  if (always) {
-    if (buttons.length) out.push(`S4: ${buttons.length} RULES toggle(s) with Always show the rules on`);
-    for (const body of bodies) if (body.hidden !== false) out.push(`S4: body ${body.id || "(no id)"} is not visible with Always show the rules on`);
-    return out;
-  }
-  if (openers) {
-    if (bodies.length) out.push(`S4: an opener surface carries ${bodies.length} RULES body(ies)`);
-    if (buttons.length) out.push(`S4: an opener surface carries ${buttons.length} RULES toggle(s)`);
-    return out;
-  }
-  for (const body of bodies) {
-    const own = buttons.filter((b) => b.getAttribute("aria-controls") === body.id && body.id);
-    if (own.length !== 1) out.push(`S4: body ${body.id || "(no id)"} has ${own.length} controlling toggles, expected 1`);
-    else if (own[0].getAttribute("aria-expanded") !== "false") out.push(`S4: toggle for ${body.id} starts expanded`);
-    if (body.hidden !== true) out.push(`S4: body ${body.id || "(no id)"} does not start hidden`);
-  }
-  for (const button of buttons) {
-    if (!bodies.some((b) => b.id && b.id === button.getAttribute("aria-controls"))) out.push(`S4: a toggle controls no body (${button.getAttribute("aria-controls")})`);
-  }
+function assertS4(root, text) {
+  const out = rulesControlsUnder(root).map((el) => `S4: a RULES control is on the surface (${el.id ? `id ${el.id}` : `class ${el.className}`})`);
+  if (/RULES\s*[▸▾]/.test(norm(text))) out.push("S4: a RULES control is on the surface (the visible text reads RULES with an arrow)");
   return out;
+}
+
+/** S5 — every string of `shown` (the numeric stat rows the surface keeps) occurs in the visible text. */
+function assertShown(shown, text) {
+  const seen = norm(text);
+  return shown.filter((s) => !seen.includes(norm(s))).map((s) => `S5: a stat row the surface must show is not visible: "${s}"`);
 }
 
 // ─── the probe table and its runner ────────────────────────────────────────
@@ -304,33 +293,33 @@ function assertS4(root, always, openers = false) {
 const PROBES = [];
 
 /**
- * probe(covers, { variant, paint, expect }) — one surface state. `paint()` (sync or async) paints with the current Always setting and
- * returns the painted root elements; `expect()` returns { flavours, bodies, extraRules, openers? } computed from the lookups and the
- * content tables. A surface with several states (a weapon and an armour, a harmful and a helpful chip) paints them all inside one probe.
+ * probe(covers, { variant, paint, expect }) — one surface state. `paint()` (sync or async) paints and returns the painted root
+ * elements; `expect()` returns { flavours, extraRules, shown? } computed from the lookups and the content tables: the flavour lines
+ * that must be visible, the rules sentences that must NOT be (the text that used to sit in a RULES body, plus the item's own rules
+ * text), and the numeric stat rows the surface keeps (default none). A surface with several states (a weapon and an armour, a harmful
+ * and a helpful chip) paints them all inside one probe.
  */
 function probe(covers, spec) {
   PROBES.push({ covers, variant: "", ...spec });
 }
 
-/** sweepProbe(p) — runs S1 to S4 with Always off and on and returns every problem found. */
+/** sweepProbe(p) — runs S1 to S5 once and returns every problem found. Phase 97.1 (FLAVOR-07): declared re-pin; was: S1 to S4 with Always off and on. */
 async function sweepProbe(p) {
   const problems = [];
-  for (const always of [false, true]) {
-    clearRulesOpen();
-    setAlwaysRules(always);
-    const roots = await p.paint();
-    const exp = p.expect();
-    const tag = (list) => list.map((s) => `[${p.covers}${p.variant ? ` / ${p.variant}` : ""}, Always ${always ? "on" : "off"}] ${s}`);
-    // The vacuity guards: a probe must name flavour lines and rules bodies, and must paint something.
-    if (!Array.isArray(roots) || !roots.length) problems.push(...tag(["the probe painted no root"]));
-    if (!exp.flavours.length) problems.push(...tag(["vacuous: the probe expects no flavour line"]));
-    if (!exp.bodies.length) problems.push(...tag(["vacuous: the probe expects no RULES body"]));
-    const text = roots.map(visibleText).join(" ");
-    const lines = roots.flatMap(rulesLinesUnder);
-    problems.push(...tag(assertS1(exp.flavours, text)));
-    problems.push(...tag(assertS2(text, indexWith(exp.extraRules))));
-    problems.push(...tag(assertS3(exp.openers && !always ? [] : exp.bodies, lines)));
-    for (const root of roots) problems.push(...tag(assertS4(root, always, !!exp.openers)));
+  const roots = await p.paint();
+  const exp = p.expect();
+  const shown = exp.shown ?? [];
+  const tag = (list) => list.map((s) => `[${p.covers}${p.variant ? ` / ${p.variant}` : ""}] ${s}`);
+  // The vacuity guards: a probe must name flavour lines, and must paint something.
+  if (!Array.isArray(roots) || !roots.length) problems.push(...tag(["the probe painted no root"]));
+  if (!exp.flavours.length) problems.push(...tag(["vacuous: the probe expects no flavour line"]));
+  const text = roots.map(visibleText).join(" ");
+  problems.push(...tag(assertS1(exp.flavours, text)));
+  problems.push(...tag(assertShown(shown, text)));
+  problems.push(...tag(assertS2(text, indexWith(exp.extraRules, shown))));
+  for (const root of roots) {
+    problems.push(...tag(assertS3(root)));
+    problems.push(...tag(assertS4(root, visibleText(root))));
   }
   return problems;
 }
@@ -357,40 +346,66 @@ test("index: the rules index is built from the content tables and the shell tabl
 
 // ─── Test 2: the teeth ────────────────────────────────────────────────────
 
-/** A tiny surface: one flavour slot, then the real RULES pair for `rules` (mountRules), in a recording document. */
-function fragment({ flavor, rules, id = "teeth:one" }) {
+// Phase 97.1 (FLAVOR-07): declared re-pin. The fragment no longer uses the retired component: it is hand-built. A root div holds a flavour
+// paragraph; `withBody` adds a `div.mw-rules-body#mw-rules-teeth-one` holding a `p.mw-rules-line` of the rules text, and `withButton`
+// adds a `button.mw-rules-btn` whose aria-controls names that id and whose text reads "RULES ▸".
+function fragment({ flavor, rules = "", withBody = false, withButton = false }) {
   const { document } = createRecordingDocument();
   const root = document.createElement("div");
   const slot = document.createElement("p");
   slot.textContent = flavor;
   root.appendChild(slot);
-  const mounted = mountRules(document, root, { id, name: "the fragment", rules });
-  return { document, root, slot, mounted };
+  let body = null;
+  let button = null;
+  if (withBody) {
+    body = document.createElement("div");
+    body.className = "mw-rules-body";
+    body.id = "mw-rules-teeth-one";
+    const line = document.createElement("p");
+    line.className = "mw-rules-line";
+    line.textContent = rules;
+    body.appendChild(line);
+    root.appendChild(body);
+  }
+  if (withButton) {
+    button = document.createElement("button");
+    button.className = "mw-rules-btn";
+    button.setAttribute("aria-controls", "mw-rules-teeth-one");
+    button.textContent = "RULES ▸";
+    root.appendChild(button);
+  }
+  return { document, root, slot, body, button };
+}
+
+/** A hand-built stat row, shaped like the Gear sheet's: p.mw-gsheet-note.mw-gsheet-stat. */
+function statRow(document, text) {
+  const row = document.createElement("p");
+  row.className = "mw-gsheet-note mw-gsheet-stat";
+  row.textContent = text;
+  return row;
 }
 
 const HEAL_TXT = SPELLS.find((s) => s.n === "Heal").txt;
+const GLOW = "A warm and slightly smug glow.";
 
-test("teeth: a clean fragment passes S1, S2, S3 and S4, Always off and on", () => {
-  for (const always of [false, true]) {
-    clearRulesOpen();
-    setAlwaysRules(always);
-    const { root } = fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT] });
-    const text = visibleText(root);
-    assert.deepEqual(assertS1(["A warm and slightly smug glow."], text), []);
-    assert.deepEqual(assertS2(text, BASE_INDEX), []);
-    assert.deepEqual(assertS3([HEAL_TXT], rulesLinesUnder(root)), []);
-    assert.deepEqual(assertS4(root, always, false), []);
-  }
+test("teeth: a clean fragment passes S1 to S5", () => {
+  const { root } = fragment({ flavor: GLOW });
+  const text = visibleText(root);
+  assert.deepEqual(assertS1([GLOW], text), []);
+  assert.deepEqual(assertS2(text, BASE_INDEX), []);
+  assert.deepEqual(assertS3(root), []);
+  assert.deepEqual(assertS4(root, text), []);
+  assert.deepEqual(assertShown([], text), []);
 });
 
-test("teeth: S2 fails when the flavour slot holds a rules sentence, and passes once it sits in a RULES body", () => {
-  const { root, slot } = fragment({ flavor: HEAL_TXT, rules: [HEAL_TXT] });
+test("teeth: S2 fails when the flavour slot holds a rules sentence, and a rules body's text is read as visible", () => {
+  const { root, slot } = fragment({ flavor: HEAL_TXT });
   assert.equal(slot.textContent, HEAL_TXT);
   const problems = assertS2(visibleText(root), BASE_INDEX);
   assert.ok(problems.length >= 1 && problems[0].startsWith("S2:"), problems.join("\n"));
-  // The same sentence inside the body is invisible to the sweep.
-  const ok = fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT] });
-  assert.deepEqual(assertS2(visibleText(ok.root), BASE_INDEX), []);
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: the same sentence inside a RULES body was invisible to the sweep. A body is read now.
+  const inBody = fragment({ flavor: GLOW, rules: HEAL_TXT, withBody: true });
+  assert.ok(assertS2(visibleText(inBody.root), BASE_INDEX).length >= 1, "a rules body that comes back is read as visible text");
   // A rules sentence set through innerHTML is read too, tags stripped.
   const { document } = createRecordingDocument();
   const html = document.createElement("div");
@@ -398,15 +413,22 @@ test("teeth: S2 fails when the flavour slot holds a rules sentence, and passes o
   assert.ok(assertS2(visibleText(html), BASE_INDEX).length >= 1, "an innerHTML flavour slot is swept");
 });
 
-test("teeth: S3 fails when a body line has one digit changed, and when a line is missing or extra", () => {
-  const { root } = fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT] });
-  const lines = rulesLinesUnder(root);
-  assert.deepEqual(assertS3([HEAL_TXT], lines), []);
-  const changed = HEAL_TXT.replace(/\d+/, (d) => String(Number(d) + 1));
-  assert.notEqual(changed, HEAL_TXT, "the doctored line really differs");
-  assert.ok(assertS3([changed], lines).length >= 1, "a changed digit fails S3");
-  assert.ok(assertS3([HEAL_TXT, HEAL_TXT], lines).length >= 1, "a missing line fails S3");
-  assert.ok(assertS3([], lines).length >= 1, "an extra line fails S3");
+test("teeth: S3 fails when a rules body is present (class or id), and passes when it is not", () => {
+  const clean = fragment({ flavor: GLOW });
+  assert.deepEqual(assertS3(clean.root), []);
+  const withBody = fragment({ flavor: GLOW, rules: HEAL_TXT, withBody: true });
+  const problems = assertS3(withBody.root);
+  assert.ok(problems.length >= 2 && problems.every((p) => p.startsWith("S3:")), "the body and its line both count");
+  // A lone mw-rules-line, a lone mw-rules-wrap and an id-only match each fail.
+  for (const [cls, id] of [["mw-rules-line", ""], ["mw-rules-wrap", ""], ["", "mw-rules-orphan"]]) {
+    const { document } = createRecordingDocument();
+    const root = document.createElement("div");
+    const el = document.createElement("div");
+    if (cls) el.className = cls;
+    if (id) el.id = id;
+    root.appendChild(el);
+    assert.equal(assertS3(root).length, 1, `${cls || `id ${id}`} alone fails S3`);
+  }
 });
 
 test("teeth: S1 fails on a digit, a number word, a percent sign, a die token and an absent flavour line", () => {
@@ -420,58 +442,117 @@ test("teeth: S1 fails on a digit, a number word, a percent sign, a die token and
   assert.deepEqual(assertS1(["No one is ever ready."], "No one is ever ready."), [], "'no one' is idiom, not a number word");
 });
 
-test("teeth: S4 fails for an orphan body with no controlling toggle, a body that starts open, and a toggle left on with Always on", () => {
+test("teeth: S4 fails for a rules button, for an aria-controls on a mw-rules id, and for the text RULES with an arrow, and passes for a plain button", () => {
+  const withButton = fragment({ flavor: GLOW, rules: HEAL_TXT, withBody: true, withButton: true });
+  assert.ok(assertS4(withButton.root, visibleText(withButton.root)).some((p) => p.startsWith("S4:")), "a mw-rules-btn fails S4");
+
+  // An aria-controls on a mw-rules- id fails even without the class.
   const { document } = createRecordingDocument();
-  const orphan = document.createElement("div");
-  const body = document.createElement("div");
-  body.className = "mw-rules-body";
-  body.id = "mw-rules-orphan";
-  body.hidden = true;
-  orphan.appendChild(body);
-  assert.ok(assertS4(orphan, false, false).some((p) => p.includes("controlling toggles")), "an orphan body fails S4");
+  const root = document.createElement("div");
+  const controls = document.createElement("button");
+  controls.setAttribute("aria-controls", "mw-rules-elsewhere");
+  controls.textContent = "More";
+  root.appendChild(controls);
+  assert.equal(assertS4(root, visibleText(root)).length, 1, "an aria-controls naming a mw-rules id fails S4");
 
-  // A toggle that names some other id controls nothing.
-  const wrong = document.createElement("button");
-  wrong.className = "mw-rules-btn";
-  wrong.setAttribute("aria-controls", "mw-rules-elsewhere");
-  wrong.setAttribute("aria-expanded", "false");
-  orphan.appendChild(wrong);
-  assert.ok(assertS4(orphan, false, false).length >= 2, "the wrong toggle neither controls the body nor controls a body");
+  // The visible text RULES followed by either arrow fails.
+  for (const arrow of ["▸", "▾"]) {
+    const plain = document.createElement("div");
+    const label = document.createElement("span");
+    label.textContent = `RULES ${arrow}`;
+    plain.appendChild(label);
+    assert.equal(assertS4(plain, visibleText(plain)).length, 1, `the text RULES ${arrow} fails S4`);
+  }
 
-  // A real pair that starts open fails; the same pair passes closed.
-  clearRulesOpen();
-  setAlwaysRules(false);
-  const real = fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT] });
-  assert.deepEqual(assertS4(real.root, false, false), []);
-  bodiesUnder(real.root)[0].hidden = false;
-  assert.ok(assertS4(real.root, false, false).some((p) => p.includes("does not start hidden")));
-  // An opener surface must carry neither a body nor a toggle.
-  assert.ok(assertS4(real.root, false, true).length >= 1);
-
-  // Always on: a leftover toggle fails, and so does a hidden body.
-  assert.ok(assertS4(real.root, true, false).some((p) => p.includes("toggle")), "a toggle with Always on fails S4");
-  setAlwaysRules(true);
-  const on = fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT], id: "teeth:two" });
-  assert.deepEqual(assertS4(on.root, true, false), []);
-  bodiesUnder(on.root)[0].hidden = true;
-  assert.ok(assertS4(on.root, true, false).some((p) => p.includes("not visible")));
+  // A plain button, and the word RULES without an arrow, pass.
+  const ok = document.createElement("div");
+  const button = document.createElement("button");
+  button.textContent = "Take";
+  ok.appendChild(button);
+  assert.deepEqual(assertS4(ok, visibleText(ok)), []);
+  assert.deepEqual(assertS4(ok, "House RULES apply"), []);
 });
 
-test("teeth: a probe that paints nothing, names no flavour or expects no body is reported, not passed", async () => {
-  const nothing = { covers: "teeth", variant: "", paint: () => [], expect: () => ({ flavours: [], bodies: [], extraRules: [] }) };
+test("teeth: a probe that paints nothing or names no flavour is reported, a hand-built body goes red on S3 through the real sweepProbe, and a clean fragment is green", async () => {
+  const nothing = { covers: "teeth", variant: "", paint: () => [], expect: () => ({ flavours: [], extraRules: [] }) };
   const problems = await sweepProbe(nothing);
   assert.ok(problems.some((p) => p.includes("painted no root")));
   assert.ok(problems.some((p) => p.includes("expects no flavour line")));
-  assert.ok(problems.some((p) => p.includes("expects no RULES body")));
-  // A probe whose expected body is doctored goes red on S3 through the real runner.
-  const doctored = {
+  // A probe whose fragment carries a hand-built rules body goes red on S3 (and on S2, because the body's text is read).
+  const bodied = {
     covers: "teeth", variant: "",
-    paint: () => [fragment({ flavor: "A warm and slightly smug glow.", rules: [HEAL_TXT] }).root],
-    expect: () => ({ flavours: ["A warm and slightly smug glow."], bodies: [HEAL_TXT.replace(/\d+/, "99")], extraRules: [] }),
+    paint: () => [fragment({ flavor: GLOW, rules: HEAL_TXT, withBody: true }).root],
+    expect: () => ({ flavours: [GLOW], extraRules: [HEAL_TXT] }),
   };
-  assert.ok((await sweepProbe(doctored)).some((p) => p.includes("S3:")));
-  // And the same probe with the true body is green.
-  const honest = { ...doctored, expect: () => ({ flavours: ["A warm and slightly smug glow."], bodies: [HEAL_TXT], extraRules: [] }) };
+  const red = await sweepProbe(bodied);
+  assert.ok(red.some((p) => p.includes("S3:")), red.join("\n"));
+  // And the clean fragment's probe is green.
+  const clean = {
+    covers: "teeth", variant: "",
+    paint: () => [fragment({ flavor: GLOW }).root],
+    expect: () => ({ flavours: [GLOW], extraRules: [HEAL_TXT] }),
+  };
+  assert.deepEqual(await sweepProbe(clean), []);
+});
+
+test("teeth: a stat row is never a rules body or control; assertShown needs the declared rows visible; the S2 exemption is by exact string only", () => {
+  const { document } = createRecordingDocument();
+  const root = document.createElement("div");
+  const slot = document.createElement("p");
+  slot.textContent = GLOW;
+  root.appendChild(slot);
+  root.appendChild(statRow(document, "Damage d8 · +1 to hit"));
+  root.appendChild(statRow(document, "AR 10 · 18/18 hp"));
+  const text = visibleText(root);
+  assert.deepEqual(assertS3(root), [], "a stat row is no rules body");
+  assert.deepEqual(assertS4(root, text), [], "a stat row is no rules control");
+
+  assert.deepEqual(assertShown(["Damage d8 · +1 to hit", "AR 10 · 18/18 hp"], text), [], "both declared rows are visible");
+  const missing = assertShown(["Damage d8 · +1 to hit", "Bulk -2 on climb, leap and flee"], text);
+  assert.equal(missing.length, 1, "a declared row that is not drawn fails");
+  assert.ok(missing[0].startsWith("S5:"));
+
+  // A stat row whose text is an index sentence fails S2 unless it is declared; a different index sentence still fails.
+  const kata = FIGHTER_SKILLS.Kata.txt;
+  const lookalike = document.createElement("div");
+  lookalike.appendChild(statRow(document, HEAL_TXT));
+  lookalike.appendChild(statRow(document, kata));
+  const lookText = visibleText(lookalike);
+  assert.ok(assertS2(lookText, BASE_INDEX).length >= 2, "undeclared, both sentences fail S2");
+  const exempt = assertS2(lookText, indexWith([], [HEAL_TXT]));
+  assert.equal(exempt.length, 1, "declaring the Heal sentence exempts that string alone");
+  assert.ok(exempt[0].includes(norm(kata)), "the other index sentence in the same fragment still fails");
+});
+
+test("teeth: an item's effect sentence drawn as a stat-row-shaped element fails S2 when it sits in extraRules and not in shown (by string, never by class)", async () => {
+  const numeric = "Damage d8 · +1 to hit";
+  const regress = {
+    covers: "teeth", variant: "",
+    paint: () => {
+      const { document } = createRecordingDocument();
+      const root = document.createElement("div");
+      const slot = document.createElement("p");
+      slot.textContent = GLOW;
+      root.appendChild(slot);
+      root.appendChild(statRow(document, numeric));
+      root.appendChild(statRow(document, ANKLET.txt)); // the effect row coming back on the Gear sheet
+      return [root];
+    },
+    expect: () => ({ flavours: [GLOW], extraRules: [ANKLET.txt], shown: [numeric] }),
+  };
+  const red = await sweepProbe(regress);
+  assert.ok(red.some((p) => p.includes("S2:") && p.includes(norm(ANKLET.txt))), red.join("\n"));
+  assert.ok(!red.some((p) => p.includes("S5:") || p.includes("S3:") || p.includes("S4:")), "only S2 is red: the numeric row is shown and a stat row is no body");
+  // The same probe without the regression is green.
+  const honest = { ...regress, paint: () => {
+    const { document } = createRecordingDocument();
+    const root = document.createElement("div");
+    const slot = document.createElement("p");
+    slot.textContent = GLOW;
+    root.appendChild(slot);
+    root.appendChild(statRow(document, numeric));
+    return [root];
+  } };
   assert.deepEqual(await sweepProbe(honest), []);
 });
 
@@ -613,8 +694,8 @@ probe("Grimoire", {
   },
   expect: () => ({
     flavours: ["Heal", "Doze"].map((n) => flavorOfSpell(n)),
-    bodies: inListOrder(["Heal", "Doze"]).map((sp) => (sp.n === "Heal" ? sp.txt : resisted(sp))),
-    extraRules: [],
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies` (the RULES body lines); the same sentences must now be drawn nowhere.
+    extraRules: inListOrder(["Heal", "Doze"]).map((sp) => (sp.n === "Heal" ? sp.txt : resisted(sp))),
   }),
 });
 
@@ -622,12 +703,12 @@ probe("Combat SPELLS rows", {
   paint: () => [openMenu(fightState(), "spells").list],
   expect: () => ({
     flavours: ["Heal", "Freeze"].map((n) => flavorOfSpell(n)),
-    bodies: inListOrder(["Heal", "Freeze"]).map((sp) => (sp.n === "Heal" ? sp.txt : resisted(sp))),
-    extraRules: [],
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies`; the same sentences must now be drawn nowhere.
+    extraRules: inListOrder(["Heal", "Freeze"]).map((sp) => (sp.n === "Heal" ? sp.txt : resisted(sp))),
   }),
 });
 
-/** The same fight, with a Ring of Power worn: its row is an item row (flavour leads, the ring's txt behind RULES). */
+/** The same fight, with a Ring of Power worn: its row is an item row (the flavour leads, the ring's txt is drawn nowhere). */
 const ringFightState = () => fightState({ grimoire: [], worn: { jewelry1: RING, jewelry2: null, cloak: null } });
 
 probe("Combat ITEMS rows (items, potion counter, scroll)", {
@@ -636,8 +717,8 @@ probe("Combat ITEMS rows (items, potion counter, scroll)", {
     const counter = [COMBAT_MENU_COPY.potionDesc, `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(fightState())}`];
     return {
       flavours: [flavorOf("potion", "Healing"), flavorOfScroll(), MAGIC_ITEM_FLAVOR["Ring of Power"]],
-      bodies: [...counter, ...counter, RING.txt],
-      extraRules: [RING.txt],
+      // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies: [...counter, ...counter, RING.txt]`, folded in here.
+      extraRules: [...counter, RING.txt],
     };
   },
 });
@@ -654,7 +735,7 @@ probe("Find card", {
     const mail = rollMailPiece(makeRng(7));
     return {
       flavours: [jewel, blade, mail].map((it) => flavorOfItem(it)),
-      bodies: [jewel.txt, blade.txt, bagArmorText(mail)],
+      // Phase 97.1 (FLAVOR-07): declared re-pin. Was also `bodies` with the same strings.
       extraRules: [jewel.txt, blade.txt, bagArmorText(mail)],
     };
   },
@@ -664,9 +745,8 @@ probe("Gear WORN rows", {
   paint: () => [paintGear({ c: gearChar({ worn: { jewelry1: RING } }) }).document.getElementById("gear-worn")],
   expect: () => ({
     flavours: [MAGIC_ITEM_FLAVOR["Ring of Power"], WEAPON_FLAVOR["Long Sword"]],
-    bodies: [GEAR_COPY.weaponMundane, RING.txt], // the WORN list runs weapon, armour, cloak, jewelry
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies` and `openers`; the strings are in extraRules (drawn nowhere).
     extraRules: [RING.txt, GEAR_COPY.weaponMundane, GEAR_COPY.weaponMagic],
-    openers: true,
   }),
 });
 
@@ -680,9 +760,8 @@ probe("Gear BAG cards", {
     const usable = usableBy(studded, gearChar());
     return {
       flavours: [MAGIC_ITEM_FLAVOR["Anklet of Invisibility"], ARMOR_FLAVOR.Studded],
-      bodies: [ANKLET.txt, usable ? `AR 10 · 18/18 hp ${usable}` : "AR 10 · 18/18 hp"],
+      // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies` and `openers`; the strings are in extraRules (drawn nowhere).
       extraRules: [ANKLET.txt, usable ? `AR 10 · 18/18 hp ${usable}` : "AR 10 · 18/18 hp"],
-      openers: true,
     };
   },
 });
@@ -691,8 +770,8 @@ probe("Gear CONSUMABLES", {
   paint: () => [paintGear({ c: gearChar({ scrolls: 2 }) }).document.getElementById("gear-cons")],
   expect: () => ({
     flavours: [POTION_FLAVOR.Healing, SCROLL_FLAVOR],
-    bodies: [GEAR_COPY.healingDesc, `${GEAR_COPY.scrollDesc} ${scrollReadOdds({ c: gearChar({ scrolls: 2 }) })}`],
-    extraRules: [],
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies`; the same sentences must now be drawn nowhere.
+    extraRules: [GEAR_COPY.healingDesc, `${GEAR_COPY.scrollDesc} ${scrollReadOdds({ c: gearChar({ scrolls: 2 }) })}`],
   }),
 });
 
@@ -704,27 +783,35 @@ function paintGearSheet(state, target) {
   return ["title", "note", "stats", "actions"].map((id) => doc.document.getElementById(GEAR_SHEET_IDS[id]));
 }
 
+// Phase 97.1 (FLAVOR-07): declared re-pin. User rulings: numbers yes, rulebook sentences no. The sheet shows the flavour in the note and its
+// numeric stat rows (damage, to-hit, AR, wear, usable-by) as plain p.mw-gsheet-note.mw-gsheet-stat rows. The item's own txt sentence (the
+// effect row) and the old weapon voice line are rules text: they are in extraRules and must be absent. The numeric rows are `shown`: each
+// must be visible (S5) and is exempt from S2 by exact string, so S3 and S4 (which key only on the mw-rules classes) never trip on a stat row.
 probe("Gear sheet", {
   paint: () => [
     ...paintGearSheet({ c: gearChar({ items: [ANKLET] }) }, { from: "bag", i: 0, n: "Anklet of Invisibility" }),
     ...paintGearSheet({ c: gearChar() }, { from: "worn", slot: "weapon" }),
+    ...paintGearSheet({ c: gearChar() }, { from: "worn", slot: "armor" }),
   ],
   expect: () => {
     const bag = { c: gearChar({ items: [ANKLET] }) };
     const worn = { c: gearChar() };
-    const anklet = itemStatLines(ANKLET, bag.c).map((l) => l.text);
-    const weapon = itemStatLines(wornItemFor(worn.c, "weapon"), worn.c).map((l) => l.text);
+    const rows = [
+      ...itemStatLines(ANKLET, bag.c),
+      ...itemStatLines(wornItemFor(worn.c, "weapon"), worn.c),
+      ...itemStatLines(wornItemFor(worn.c, "armor"), worn.c),
+    ];
     return {
       flavours: [MAGIC_ITEM_FLAVOR["Anklet of Invisibility"], WEAPON_FLAVOR["Long Sword"]],
-      bodies: [...anklet, GEAR_COPY.weaponMundane, ...weapon],
-      extraRules: [...anklet, GEAR_COPY.weaponMundane, ...weapon],
+      shown: rows.filter((l) => l.key !== "effect").map((l) => l.text),
+      extraRules: [...rows.filter((l) => l.key === "effect").map((l) => l.text), GEAR_COPY.weaponMundane, GEAR_COPY.weaponMagic],
     };
   },
 });
 
 /**
- * What a store shelf must show: for every stock line carrying an item, its flavour and (when the old italic stat text is not empty)
- * that exact text as the RULES body; the Sealed scroll's flavour and its scroll rules with the reader's odds.
+ * What a store shelf must show: for every stock line carrying an item, its flavour; and must not show (when the old italic stat text is
+ * not empty) that exact text; the Sealed scroll's flavour and (not shown) its scroll rules with the reader's odds.
  */
 function storeExpect(state) {
   const c = state.c;
@@ -746,7 +833,8 @@ function storeExpect(state) {
     flavours.push(flavor);
     if (old) bodies.push(old);
   }
-  return { flavours, bodies, extraRules: bodies };
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was { flavours, bodies, extraRules: bodies }; the strings are extraRules only now.
+  return { flavours, extraRules: bodies };
 }
 
 probe("Store stock rows", {
@@ -775,7 +863,8 @@ probe("Your gear sell list", {
       flavours.push(flavor);
       bodies.push(it.kind === "armor" ? bagArmorText(it) : (it.txt ?? ""));
     }
-    return { flavours, bodies, extraRules: bodies };
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was { flavours, bodies, extraRules: bodies }.
+    return { flavours, extraRules: bodies };
   },
 });
 
@@ -791,7 +880,8 @@ probe("Loot list", {
     const jewel = rollJewel(makeRng(6));
     const cmp = lootCompare(state.c, blade);
     const oldBlade = (cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line) + (cmp.usable ? ` ${cmp.usable}` : "");
-    return { flavours: [flavorOfItem(blade), flavorOfItem(jewel)], bodies: [oldBlade, jewel.txt], extraRules: [oldBlade, jewel.txt] };
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was also `bodies` with the same strings.
+    return { flavours: [flavorOfItem(blade), flavorOfItem(jewel)], extraRules: [oldBlade, jewel.txt] };
   },
 });
 
@@ -800,7 +890,8 @@ probe("Drop shelf", {
   expect: () => {
     const rows = dropShelfRows(fullBagState().c).filter((row) => flavorOfItem(row.it));
     assert.ok(rows.length >= 3, "the fixture bag holds several flavoured items");
-    return { flavours: rows.map((row) => flavorOfItem(row.it)), bodies: rows.map((row) => row.stats), extraRules: rows.map((row) => row.stats) };
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was also `bodies` with the same strings.
+    return { flavours: rows.map((row) => flavorOfItem(row.it)), extraRules: rows.map((row) => row.stats) };
   },
 });
 
@@ -844,7 +935,7 @@ function makeFakeTimers() {
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-/** Rolls `state` through a real createRoller on fake timers to its reveal and returns the reveal's RULES column. */
+/** Rolls `state` through a real createRoller on fake timers to its reveal and returns the reveal's container. */
 async function paintRollerReveal(state) {
   const { document } = createRecordingDocument();
   let resolveRoll;
@@ -866,10 +957,10 @@ const SUMMONER_HUMAN = () => newRun(1, [], { force: { sub: "Summoner", race: "Hu
 probe("Roller reveal", {
   paint: async () => [await paintRollerReveal(WARLOCK_ELVEN()), await paintRollerReveal(SUMMONER_HUMAN())],
   expect: () => ({
-    // A group per rolled sub-class, then a non-Human race: flavour first, the unchanged footer lines in the RULES body.
+    // A group per rolled sub-class, then a non-Human race: the flavour shows, the unchanged footer lines are drawn nowhere.
     flavours: [["sub", "Warlock"], ["race", "Elven"], ["sub", "Summoner"]].map(([kind, key]) => flavorOfIdentity(kind, key)),
-    bodies: [...footerLines("sub", "Warlock"), ...footerLines("race", "Elven"), ...footerLines("sub", "Summoner")],
-    extraRules: [],
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies` (the footer lines in the RULES body), folded in here.
+    extraRules: [...footerLines("sub", "Warlock"), ...footerLines("race", "Elven"), ...footerLines("sub", "Summoner")],
   }),
 });
 
@@ -894,18 +985,19 @@ probe("Hero dossier and trait line", {
   },
   expect: () => {
     const flavours = [];
-    const bodies = [];
+    const extraRules = [];
     for (const [sub, race] of [["Cat Burglar", "Wilmsry"], ["Wizard", "Elven"]]) {
       const c = newRun(1, [], { force: { sub, race } }).c;
       flavours.push(flavorOfIdentity("race", c.race), flavorOfIdentity("class", c.cls), flavorOfIdentity("sub", c.sub));
-      bodies.push(
+      // Phase 97.1 (FLAVOR-07): declared re-pin. Was `bodies`; the notes, footers and the race note must now be drawn nowhere.
+      extraRules.push(
         RACE_NOTE[c.race], ...footerLines("race", c.race),
         CLASS_NOTE[c.cls],
         SUB_NOTE[c.sub], ...footerLines("sub", c.sub),
-        RACES[c.race].note, // the trait line's RULES body holds the race note alone
+        RACES[c.race].note,
       );
     }
-    return { flavours, bodies, extraRules: [] };
+    return { flavours, extraRules };
   },
 });
 
@@ -928,7 +1020,7 @@ probe("Hero abilities and skills", {
   },
   expect: () => {
     const flavours = [];
-    const bodies = [];
+    const bodies = []; // Phase 97.1 (FLAVOR-07): declared re-pin. These are the exact texts; they are returned as extraRules (drawn nowhere).
     for (const [sub, skills] of HERO_AB_STATES) {
       const state = newRun(1, [], { force: { sub, race: "Wilmsry" } });
       if (skills) state.c.skills = skills;
@@ -945,7 +1037,7 @@ probe("Hero abilities and skills", {
         bodies.push(level >= 2 && table[name].txt2 ? table[name].txt2 : table[name].txt);
       }
     }
-    return { flavours, bodies, extraRules: [] };
+    return { flavours, extraRules: bodies };
   },
 });
 
@@ -961,12 +1053,12 @@ probe("Combat ABILITIES rows and SING", {
   paint: () => ABILITY_FIGHTS.map((f) => openMenu(fightState(f.cOverrides), "abilities").list),
   expect: () => {
     const flavours = [];
-    const bodies = [];
+    const bodies = []; // Phase 97.1 (FLAVOR-07): declared re-pin. The exact texts, returned as extraRules (drawn nowhere).
     for (const f of ABILITY_FIGHTS) {
       if (f.sing) { flavours.push(flavorOfAbility("Sing")); bodies.push(COMBAT_MENU_COPY.singDesc); }
       for (const id of f.rows) { flavours.push(flavorOfAbility(ABILITY_BY_ID[id].name)); bodies.push(ABILITY_BY_ID[id].txt); }
     }
-    return { flavours, bodies, extraRules: [] };
+    return { flavours, extraRules: bodies };
   },
 });
 
@@ -995,7 +1087,7 @@ probe("Final Sheet tricks", {
   paint: () => ["Fighter", "Thief"].map((cls) => finalSection(deadSheet(cls).host, "tricks")),
   expect: () => {
     const flavours = [];
-    const bodies = [];
+    const bodies = []; // Phase 97.1 (FLAVOR-07): declared re-pin. The exact texts, returned as extraRules (drawn nowhere); `openers` is gone.
     for (const cls of ["Fighter", "Thief"]) {
       for (const row of deadSheet(cls).vm.tricks.rows) {
         if (!row.flavor) continue;
@@ -1005,15 +1097,15 @@ probe("Final Sheet tricks", {
         bodies.push(row.description);
       }
     }
-    return { flavours, bodies, extraRules: [], openers: true };
+    return { flavours, extraRules: bodies };
   },
 });
 
 // The first finding of 96-10, closed by 96-12: the Final Sheet's worn and bag sections used to print the worn items' own rules text as
 // notes (they are not in the Surfaces table; Phase 95 dressed the Gear tab and the store, 96-06 the tricks only). They now read the item's
-// flavour line, and the exact note follows only with Always show the rules on. This is an ordinary test (the todo flag is gone, no
-// assertion loosened).
-test("Final Sheet worn and bag sections carry no rules sentence outside a RULES body", () => {
+// flavour line, and the exact note is drawn nowhere (Phase 97.1, FLAVOR-07: declared re-pin; was: only with Always show the rules on).
+// This is an ordinary test (the todo flag is gone, no assertion loosened).
+test("Final Sheet worn and bag sections carry no rules sentence", () => {
   const problems = [];
   for (const cls of ["Fighter", "Thief"]) {
     const { host } = deadSheet(cls);
@@ -1023,7 +1115,7 @@ test("Final Sheet worn and bag sections carry no rules sentence outside a RULES 
 });
 
 // The second finding of 96-10, closed by 96-12: a bought ACTIVE skill (Kata, Smoke, ...) used to have no skill flavour line, so the Hero tab's
-// special-skills list printed its rules text in the open. Every active skill now has a line and its exact text sits behind RULES; this is an
+// special-skills list printed its rules text in the open. Every active skill now has a line and its exact text is drawn nowhere; this is an
 // ordinary test (the todo flag is gone, no assertion loosened).
 test("Hero special-skills list shows no rules sentence for a bought active skill", () => {
   const problems = [];
@@ -1092,15 +1184,15 @@ function assertExplains(exact, key) {
 }
 
 /** Paints one chip card per entry of `cases` (each case builds its own rig and returns { r, lead, exact, key }) and collects the expectation. */
-let chipExpect = { flavours: [], bodies: [], extraRules: [] };
+let chipExpect = { flavours: [], extraRules: [] };
 function paintChipCards(cases) {
-  chipExpect = { flavours: [], bodies: [], extraRules: [] };
+  chipExpect = { flavours: [], extraRules: [] };
   return cases.map((build) => {
     const { r, lead, exact, key } = build();
     assert.ok(lead, `the ${key} chip has a flavour line`);
     if (key) assertExplains(exact, key);
     chipExpect.flavours.push(lead);
-    chipExpect.bodies.push(exact);
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was `chipExpect.bodies` and extraRules; the exact text is extraRules only now.
     chipExpect.extraRules.push(exact);
     return r.railLines();
   });
@@ -1226,7 +1318,7 @@ chipProbe("Company panel", [
 probe("UP YOUR SLEEVE card", {
   paint: () => {
     const roots = [];
-    chipExpect = { flavours: [], bodies: [], extraRules: [] };
+    chipExpect = { flavours: [], extraRules: [] };
     for (const cls of ["Fighter", "Thief"]) {
       const r = chipRig();
       const state = newRun(9, [], { force: { cls } });
@@ -1241,8 +1333,7 @@ probe("UP YOUR SLEEVE card", {
       const meta = ABILITY_BY_ID[state.c.abilities.find((a) => ABILITY_BY_ID[a] && ABILITY_BY_ID[a].source === "pool")];
       assert.equal(card.line, newTrickLine(meta), `${cls}: the card's own line is the unchanged "New trick" sentence`);
       chipExpect.flavours.push(`New trick: ${meta.name} — ${flavorOfAbility(meta.name)}`);
-      chipExpect.bodies.push(newTrickLine(meta));
-      chipExpect.extraRules.push(newTrickLine(meta));
+      chipExpect.extraRules.push(newTrickLine(meta)); // Phase 97.1 (FLAVOR-07): declared re-pin. Was also pushed to `bodies`.
       roots.push(r.railLines());
     }
     return roots;
@@ -1319,7 +1410,8 @@ test("coverage teeth: a table row with no probe is reported, and the table parse
 // ─── the runner loop ──────────────────────────────────────────────────────
 
 for (const p of PROBES) {
-  test(`surface ${p.covers}${p.variant ? ` (${p.variant})` : ""}: S1 to S4 hold with Always show the rules off and on`, async () => {
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: S1 to S4 hold with Always show the rules off and on.
+  test(`surface ${p.covers}${p.variant ? ` (${p.variant})` : ""}: S1 to S4 hold`, async () => {
     const problems = await sweepProbe(p);
     assert.deepEqual(problems, []);
   });
