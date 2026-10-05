@@ -6,7 +6,7 @@ current_phase: 98
 current_phase_name: Fresh Store & Website Screenshots
 status: planning
 stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-05T02:56:17.261Z"
+last_updated: "2026-10-05T03:01:44.857Z"
 last_activity: 2026-10-04
 last_activity_desc: Phase 97 complete, transitioned to Phase 98
 progress:
@@ -171,6 +171,7 @@ detail; the backlog phases are the index.
 - Phase 94.1 inserted after Phase 94: Joiner Level Follows Depth: one level per three floors, 1 to 5 (user 2026-10-03, captured as a todo and added to v2.4; JOIN-01).
 - Build before screenshots (user 2026-10-03, during the v2.4 autonomous run): screenshots are not needed to build, so after Phase 97 (the last code phase) and BEFORE Phase 98, the run stops for the build gate: (1) debug APK built and installed on the Pixel 7 with the batched v2.4 device checklist for the user to test; (2) the 2.4.0 patch notes drafted and agreed with the user; (3) the signed release AAB (`npm run play:release`, versionCode 14) handed to the user to upload. Phase 98's shots are taken after that, on the tested build.
 - Phase 97.1 inserted after Phase 97: Flavour Only (user 2026-10-04): retire every RULES toggle and the Always show the rules setting; players see only the flavour lines; the exact rules text stays in code for the guard tests but is shown nowhere (URGENT)
+- Phase 999.12 scheduled: Achievements (999.12) are the next milestone after v2.4 (user 2026-10-04); 2.4.0 ships first
 
 ## Deferred Items
 

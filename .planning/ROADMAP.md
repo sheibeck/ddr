@@ -630,6 +630,7 @@ Plans:
 ### Phase 999.12: Achievements track (BACKLOG — promote as its own milestone)
 
 **Goal:** [Captured 2026-09-25, user] Add an achievements track to the game. Every achievement name and unlock line is written in the game's sarcastic, family-friendly voice. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`), not folded into a bug-fix milestone.
+**Scheduled (user, 2026-10-04):** the next milestone after v2.4. 2.4.0 ships first, then `/gsd-new-milestone` starts achievements, aimed at 2.5.0.
 **Note (2026-09-28):** v2.2 removes Play Games entirely, so achievements become a local list unless Play Games is re-added for them.
 **Requirements:** TBD
 **Plans:** 0 plans
