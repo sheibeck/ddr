@@ -54,12 +54,10 @@ import { WORN_SLOTS, activationFor, itemTimerId } from "../../engine/derived.js"
 import { MEMBER_LEADER_KINDS, TARGETED_KINDS } from "../../engine/items.js";
 import { remaining } from "../../engine/effects.js";
 import { itemStatLines, ITEM_STAT_COPY } from "./viewModels.js";
-// Phase 95 (FLAVOR-01, plan 05) — a SEPARATE import block: the Grimoire shows the spell's flavour line and mounts the
-// shared RULES toggle (the exact old text behind it).
+// Phase 95 (FLAVOR-01, plan 05) — a SEPARATE import block: the Grimoire shows the spell's flavour line.
 import { flavorOfSpell, flavorOfIdentity } from "./flavorText.js";
 // Phase 96 (FLAVOR-04): the ability and passive-skill flavour lookups (a separate import line, the pinned one above stays as it was).
 import { flavorOfAbility, flavorOfSkill } from "./flavorText.js";
-import { mountRules } from "./rulesLayer.js";
 
 // Task 2 — module-private: the same clamp(v, lo, hi) one-liner the classic
 // script keeps for the HUD's own wp readout (mazeworld.html's copy stays,
@@ -527,8 +525,8 @@ function renderAbilityRows(doc, state) {
     tag.textContent = row.source === "pool" ? "trick" : "special skill · active";
     li.appendChild(tag);
     const desc = doc.createElement("i");
-    // Phase 96 (FLAVOR-04): flavour first; the exact txt sits behind a RULES toggle after the state span. A row with no
-    // flavour (a name the lookup does not know) keeps today's text and mounts nothing. The flavour is read here by name,
+    // Phase 97.1 (FLAVOR-07): the flavour line alone; the exact txt stays on the row as description for the guards and is not
+    // drawn. A row with no flavour (a name the lookup does not know) keeps today's text. The flavour is read here by name,
     // not carried on the abilitiesViewFor row, so that view-model's key set stays byte-identical (ability-state-view pins it).
     const flavor = flavorOfAbility(row.name);
     desc.textContent = flavor || row.description;
@@ -536,7 +534,6 @@ function renderAbilityRows(doc, state) {
     const stateEl = doc.createElement("span");
     stateEl.textContent = row.state;
     li.appendChild(stateEl);
-    if (flavor) mountRules(doc, li, { id: "hero:ability:" + row.id, name: row.name, rules: row.description });
     ul.appendChild(li);
   }
 }
@@ -584,13 +581,12 @@ function renderGrimoire(doc, state, deps) {
     // stays safe here because row.txt/row.name are content, not user data
     // (T-40-10, unchanged since 04-DR10).
     // Phase 95 (FLAVOR-01, plan 05): with a flavour line the <i> reads `nicheLabel · flavour` (the niche label stays as the leading
-    // category tag, Claude's discretion named in 95-05: a category word, not a rule) and the exact old line (txt plus the resist
-    // sentence) sits behind the RULES toggle under it; with none, today's markup exactly and nothing mounted.
+    // category tag, Claude's discretion named in 95-05: a category word, not a rule); the exact old line (txt plus the resist
+    // sentence) is not drawn (Phase 97.1, FLAVOR-07); with no flavour, today's markup exactly.
     const rulesText = `${row.txt}${row.resistNote ? ` · ${row.resistNote}` : ""}`;
     info.innerHTML = row.flavor
       ? `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${row.nicheLabel} · ${row.flavor}</i>`
       : `<b><span class="grim-lvl">L${row.lvl}</span>${row.name}</b><i>${rulesText}</i>`;
-    if (row.flavor) mountRules(doc, info, { id: "grim:" + row.name, name: row.name, rules: rulesText });
     li.appendChild(info);
     if (row.combatOnly) {
       const hint = doc.createElement("span");
@@ -762,7 +758,7 @@ function armourLineFor(armour) {
  * YOUR LOT and the hero's HUD strip read; deps.memberChipsFor(idx) returns
  * `{ text, tone, label, tapText, flavor }` entries (Phase 96, FLAVOR-04: `flavor`
  * is the optional `{ line, id, name }` spec the rail card leads with, the exact
- * tapText then riding behind RULES; absent means today's card) from the engine's memberConditionsOf
+ * tapText not drawn when it is set; absent means today's card) from the engine's memberConditionsOf
  * (mazeworld.html owns the labels). A tap raises the chip's text through
  * deps.railInfo (the rail is the one feedback surface), never in the panel.
  * No chips, or no deps seam, draws nothing.
@@ -995,16 +991,14 @@ export function renderHeroTab(host, state, deps = {}) {
   doc.getElementById("s-rations").textContent = rv.line;
   doc.getElementById("s-rations-n").textContent = rv.carriedText;
 
-  // Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): the race's RACES note is a
-  // number-bearing rulebook sentence that repeats the dossier. With a flavour
-  // line for the race it moves behind a RULES toggle. The planner's flagged
-  // discretion: the user did not name the trait line, ROADMAP criterion 4 walks
-  // the Hero screen for rulebook sentences.
+  // Phase 97.1 (FLAVOR-07): the race's RACES note is a number-bearing rulebook
+  // sentence that repeats the dossier. With a flavour line for the race the
+  // trait line is the temperament sentence alone and the note is not drawn; a
+  // race with no flavour line keeps the note.
   const traitEl = doc.getElementById("s-trait");
   const traitSentence = `<b>${c.temperament}</b>, driven by <b>${c.motive.toLowerCase()}</b>, afraid of <b>${c.phobia.toLowerCase()}</b>.`;
   if (flavorOfIdentity("race", c.race)) {
     traitEl.innerHTML = traitSentence;
-    mountRules(doc, traitEl, { id: "hero:trait", name: c.race, rules: R.note });
   } else {
     traitEl.innerHTML = `${traitSentence} ${R.note}`;
   }
@@ -1027,9 +1021,9 @@ export function renderHeroTab(host, state, deps = {}) {
     const s = table && table[n];
     const li = doc.createElement("li");
     const shownTxt = s ? (c.skills[n] === 2 && s.txt2 ? s.txt2 : s.txt) : "";
-    // Phase 96 (FLAVOR-04; CONTEXT 'Special skills'): a skill reads its flavour line, and the exact text shown today
-    // (txt, or txt2 at level two) sits behind a RULES toggle. Since 96-12 that holds for the active skills too; only a skill
-    // the lookup does not know (a tampered save) keeps today's markup exactly, with no toggle.
+    // Phase 97.1 (FLAVOR-07): a skill reads its flavour line alone; the exact text (txt, or txt2 at level two) is not drawn.
+    // Since 96-12 that holds for the active skills too; only a skill the lookup does not know (a tampered save) keeps
+    // today's markup exactly.
     const skillFlavor = s ? flavorOfSkill(n) : "";
     if (skillFlavor) {
       const nameEl = doc.createElement("b");
@@ -1038,7 +1032,6 @@ export function renderHeroTab(host, state, deps = {}) {
       const flavorEl = doc.createElement("i");
       flavorEl.textContent = skillFlavor;
       li.appendChild(flavorEl);
-      mountRules(doc, li, { id: "hero:skill:" + n, name: n, rules: shownTxt });
     } else {
       li.innerHTML = `<b>${n}${c.skills[n] === 2 ? " ✦" : ""}</b><i>${shownTxt}</i>`;
     }
@@ -1060,10 +1053,10 @@ export function renderHeroTab(host, state, deps = {}) {
     ["Subclass", "sub", c.sub, SUB_NOTE[c.sub], footerLines("sub", c.sub)]
   ]) {
     const sec = doc.createElement("section");
-    // Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): flavour first; today's note and
-    // the unchanged footer lines sit behind one RULES toggle. No flavour line (a
-    // name a tampered save could hold) keeps today's markup exactly. The nodes
-    // are built with createElement + textContent, never innerHTML.
+    // Phase 97.1 (FLAVOR-07): the flavour line alone; today's note and the
+    // footer lines are not drawn. No flavour line (a name a tampered save could
+    // hold) keeps today's markup exactly. The nodes are built with
+    // createElement + textContent, never innerHTML.
     const flavor = flavorOfIdentity(kind, who);
     if (flavor) {
       const h = doc.createElement("h3");
@@ -1076,7 +1069,6 @@ export function renderHeroTab(host, state, deps = {}) {
       sec.appendChild(h);
       sec.appendChild(w);
       sec.appendChild(f);
-      mountRules(doc, sec, { id: "doss:" + kind, name: who, rules: [text || "", ...footer], lineClass: "doss-rules" });
     } else {
       sec.innerHTML = `<h3>${label}</h3><p class="who">${who}</p><p>${text || ""}</p>`;
       appendFooter(doc, sec, footer);

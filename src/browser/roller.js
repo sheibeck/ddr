@@ -23,7 +23,6 @@
 import { RACES, CLASSES } from "../../content/index.js";
 import { footerLines } from "./identityFooter.js";
 import { flavorOfIdentity } from "./flavorText.js";
-import { mountRules } from "./rulesLayer.js";
 
 // ─── frozen tables ──────────────────────────────────────────────────────
 
@@ -91,10 +90,9 @@ function pickDisplay(list, random) {
 // the roll) — each a `.mw-roller-rules-group` holding the name and one
 // paragraph per footerLines line, textContent only. An empty `sheet` (the
 // start of a roll) just clears the element.
-// Phase 96 (FLAVOR-03; CONTEXT 'Surfaces'): each group now reads name, then the
-// identity's flavour line, then one RULES toggle whose body holds exactly the
-// footer lines it printed before. An identity with no flavour line keeps the
-// old visible footer and no toggle. The toggle never rolls, commits or renders.
+// Phase 97.1 (FLAVOR-07): a group is the name and the identity's flavour line.
+// An identity with no flavour line keeps the visible footer lines, so nothing
+// goes blank. The exact footer text is not drawn for a flavoured identity.
 function fillRules(doc, sheet) {
   const el = doc.getElementById(ROLLER_IDS.rules);
   if (!el) return;
@@ -113,12 +111,11 @@ function fillRules(doc, sheet) {
     group.appendChild(who);
     const flavor = flavorOfIdentity(kind, key);
     if (flavor) {
-      // Phase 96 (FLAVOR-03): flavour leads; the exact footer sits behind RULES.
+      // Phase 97.1 (FLAVOR-07): the flavour line alone.
       const f = doc.createElement("p");
       f.className = "mw-roller-flavor-line";
       f.textContent = flavor;
       group.appendChild(f);
-      mountRules(doc, group, { id: "roller:" + kind + ":" + key, name: key, rules: lines, lineClass: "mw-roller-rules-line" });
     } else {
       // No flavour line (a name the maps do not hold): today's visible footer.
       for (const line of lines) {

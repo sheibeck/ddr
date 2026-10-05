@@ -18,7 +18,7 @@ import { BANNED } from "../../content/safety-wordlist.js";
 import * as heroTab from "../../src/browser/heroTab.js";
 import { footerLines } from "../../src/browser/identityFooter.js";
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE } from "../../content/index.js";
-import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
+import { flavorOfIdentity } from "../../src/browser/flavorText.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { newRun } from "../../engine/state.js";
 
@@ -219,53 +219,53 @@ test("paintConditions( is still called from paint() (the HUD condition strip sta
 
 // ─── (12) VOX-04 (Phase 79, Plan 03): the dossier's identity footer ──────
 
-// Phase 96 (FLAVOR-03): declared re-pin — each section now holds its flavour
-// line, then a RULES toggle whose body is [the old note, ...the unchanged
-// footer lines]. renderDossier reads the footer lines from inside that body
-// (everything after the first line) and returns the first line as the note.
+// Phase 97.1 (FLAVOR-07): declared re-pin — each known identity's section is
+// now [h3, p.who, p(flavour)] and nothing else: no RULES toggle, no body, no
+// footer lines. renderDossier returns each section's children and its text.
+// The footer and note guards read the model (footerLines, RACE_NOTE and the
+// rest), not the DOM.
 function renderDossier(sub, race) {
-  clearRulesOpen();
-  setAlwaysRules(false);
   const { document } = createRecordingDocument();
   const state = newRun(1, [], { force: { sub, race } });
   heroTab.renderHeroTab(document.getElementById("screen-hero"), state, {});
   const [raceSec, classSec, subSec] = document.getElementById("doss").children;
-  const body = (sec) => sec.children.find((el) => el.className === "mw-rules-body");
-  const lines = (sec) => body(sec).children.filter((el) => /\bdoss-rules\b/.test(el.className)).map((el) => el.textContent);
-  const footer = (sec) => lines(sec).slice(1);
-  const note = (sec) => lines(sec)[0];
-  return {
-    race: footer(raceSec),
-    cls: footer(classSec),
-    sub: footer(subSec),
-    notes: { race: note(raceSec), cls: note(classSec), sub: note(subSec) },
-    bodies: { race: lines(raceSec), cls: lines(classSec), sub: lines(subSec) },
-  };
+  const allText = (el) => [el.textContent, ...el.children.map(allText)].join(" ");
+  const hasRules = (el) => el.children.some((c) => String(c.className || "").startsWith("mw-rules") || hasRules(c));
+  const pack = (sec) => ({ children: sec.children, flavor: sec.children[2] && sec.children[2].textContent, text: allText(sec), hasRules: hasRules(sec) });
+  return { race: pack(raceSec), cls: pack(classSec), sub: pack(subSec) };
 }
 
-test("VOX-04: a level-1 Human Summoner's dossier shows the neutral race line and the Summoner footer (half-strength healing), and the Class section none", () => {
+test("VOX-04: a level-1 Human Summoner's dossier shows the flavour line only; the half-strength healing guard reads the model", () => {
   const d = renderDossier("Summoner", "Human");
-  assert.deepEqual(d.race, footerLines("race", "Human"));
-  assert.equal(d.race.length, 1);
-  assert.deepEqual(d.cls, []);
-  assert.deepEqual(d.sub, footerLines("sub", "Summoner"));
-  assert.ok(d.sub.some((l) => /healing spells you cast heal at half strength/.test(l)));
-  // Phase 96 (FLAVOR-03): the old note leads the body; the neutral Human line is its last line.
-  assert.equal(d.notes.race, RACE_NOTE.Human);
-  assert.equal(d.notes.cls, CLASS_NOTE["Magic User"]);
-  assert.equal(d.notes.sub, SUB_NOTE.Summoner);
-  assert.equal(d.bodies.race.at(-1), footerLines("race", "Human").at(-1));
-  assert.deepEqual(d.bodies.cls, [CLASS_NOTE["Magic User"]]);
+  // Phase 97.1 (FLAVOR-07): declared re-pin — three children, the flavour line third, no rules element.
+  for (const [sec, kind, who] of [[d.race, "race", "Human"], [d.cls, "class", "Magic User"], [d.sub, "sub", "Summoner"]]) {
+    assert.equal(sec.children.length, 3, kind + " section has three children");
+    assert.equal(sec.flavor, flavorOfIdentity(kind, who));
+    assert.equal(sec.hasRules, false);
+  }
+  // Phase 97.1 (FLAVOR-07): declared re-pin — the footer guards are model-side.
+  assert.equal(footerLines("race", "Human").length, 1);
+  assert.ok(footerLines("sub", "Summoner").some((l) => /healing spells you cast heal at half strength/.test(l)));
+  for (const line of [...footerLines("race", "Human"), ...footerLines("sub", "Summoner")]) {
+    assert.ok(!d.race.text.includes(line) && !d.sub.text.includes(line), "footer line not rendered: " + line);
+  }
+  for (const [sec, note] of [[d.race, RACE_NOTE.Human], [d.cls, CLASS_NOTE["Magic User"]], [d.sub, SUB_NOTE.Summoner]]) {
+    assert.ok(!sec.text.includes(note), "the rules note is not rendered");
+  }
 });
 
-test("VOX-04: a non-Human race's section carries its Good and Bad lines", () => {
+test("VOX-04: a non-Human race's Good and Bad lines stay on the model and are not drawn in its section", () => {
   const d = renderDossier("Knight", "Troll");
-  assert.deepEqual(d.race, footerLines("race", "Troll"));
-  assert.match(d.race[0], /^Good: /);
-  assert.match(d.race[1], /^Bad: /);
-  assert.deepEqual(d.sub, footerLines("sub", "Knight"));
-  assert.deepEqual(d.bodies.race, [RACE_NOTE.Troll, ...footerLines("race", "Troll")]);
-  assert.deepEqual(d.bodies.sub, [SUB_NOTE.Knight, ...footerLines("sub", "Knight")]);
+  // Phase 97.1 (FLAVOR-07): declared re-pin — Good and Bad are asserted on footerLines, absence on the DOM.
+  const raceLines = footerLines("race", "Troll");
+  assert.match(raceLines[0], /^Good: /);
+  assert.match(raceLines[1], /^Bad: /);
+  assert.equal(d.race.children.length, 3);
+  assert.equal(d.race.flavor, flavorOfIdentity("race", "Troll"));
+  assert.equal(d.sub.flavor, flavorOfIdentity("sub", "Knight"));
+  for (const line of raceLines) assert.ok(!d.race.text.includes(line), "race footer line not rendered");
+  for (const line of footerLines("sub", "Knight")) assert.ok(!d.sub.text.includes(line), "sub footer line not rendered");
+  assert.ok(!d.race.text.includes(RACE_NOTE.Troll) && !d.sub.text.includes(SUB_NOTE.Knight));
 });
 
 test("VOX-04: the dossier footer is built with createElement + textContent from footerLines (no innerHTML in the footer)", () => {
