@@ -418,23 +418,23 @@ Plans:
 - **Teetotaler:** reach 5 without drinking a single healing potion.
 - **Frequent flier (tiered):** die 50, 100, 200 and 500 times, counted across all runs.
 - **Read the label:** drink the Death potion (`content/potions.js:45`, `eff: "death"`, *"your dead!"*).
-- **Body counts (tiered):** kills of each monster group, tiers 50 / 100 / 200 / 500 (user, 2026-10-05). The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
+- **Body counts (tiered):** kills of each monster group, counted across all runs, tiers 50 / 100 / 200 / 500 (user, 2026-10-05). The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
 - **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
 - **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
-- **Hoarder (tiered):** gain X coin. Tiers 1,000 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run (user, 2026-10-05). Still open: coin earned during the run, or coin held at one time.
+- **Hoarder (tiered):** gain X coin. Tiers 2,500 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run (user, 2026-10-05). Still open: coin earned during the run, or coin held at one time.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. Tiers 10 / 25 / 50 / 100 (user, 2026-10-05).
 
 - **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
-- **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
+- **Fallen summons (tiered, user):** X of your summons have died, counted across all runs. Name idea: *Disposable Help*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
 - **Solid Miscalculation (user, 2026-10-04, icon done):** die entombed, when a Cloak of Ether runs out or comes off while you stand inside rock. Its id is `ether_entombed`, and it is not tiered. The `entombed` death cause has one home, `engine/movement.js#resolveEtherEnd`, so this is the brainstorm's *Buried Talent* under the user's name. The user drew the art and added it to `achievements/`.
 - **Gravity Wins (user, 2026-10-05, icon done):** die after a failed climb or leap check (user, 2026-10-05). Id `death_falling`, not tiered. Death causes `fall` (failed climb) and `gorge` (failed leap), both from `engine/movement.js` (the `fellClimbing` / `fellInGorge` hurt).
 - **Terminal Condition (user, 2026-10-05, icon done):** die from the Disease ailment's damage (user, 2026-10-05). Id `death_disease`, not tiered. **Blocker:** ailment damage cannot kill today. Every tick (`engine/movement.js` affliction loop) and the first hit (`engine/encounters.js` catchAffliction) are clamped to leave at least 1 HP, a deliberate rule ("never itself the killing blow"), so there is no `disease` death cause and the achievement is unreachable. Needs a user ruling at the milestone discussion: let Disease (or every ailment) kill with a new death cause (an engine rule change that moves fixtures), or re-scope the achievement.
 - **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
 - **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers: 10 / 25 / 50 / 100 (user, 2026-10-05), counted across all delves.
-- **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times, counted across all runs (user, 2026-10-05). Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
+- **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times in a single run (user, 2026-10-05; was all runs earlier the same day). Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
@@ -506,14 +506,14 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Tourist (all 24 sub-classes) | 1 | 1 | 1 |
 | Special Snowflake | 1 | 1 | 1 |
 | Survivor (10 / 25 / 50 / 100 days) | 4 | 4 | 1 |
-| Hoarder (1,000 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
+| Hoarder (2,500 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
 | Party Animal (10 / 25 / 50 / 100 Joiners) | 4 | 4 | 1 |
 | Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
 | Gravity Wins, Terminal Condition, Empty Calories (added 2026-10-05) | 1 each | 3 | 3 |
 | Silver Tongue (successful parleys, 10 / 25 / 50 / 100; added 2026-10-05) | 4 | 4 | 1 |
-| Chicken (flee 10 times; added 2026-10-05) | 1 | 1 | 1 |
+| Chicken (flee 10 times in one run; added 2026-10-05) | 1 | 1 | 1 |
 | **Total** | | **76** | **35** |
 
 *The Claude brainstorm (not yet agreed):*
