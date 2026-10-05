@@ -98,6 +98,7 @@ Last activity: 2026-10-05 — Phase 98 complete, transitioned to Phase 99
 | 260924-g8m | v2.0: flight/ether over water uses the dry footstep (audioCtx.onWater gated on moveCost > 1); UAT M34 updated | 2026-09-24 | 65c1a6f | [260924-g8m-keep-flight-over-water-silent](./quick/260924-g8m-keep-flight-over-water-silent/) |
 | 18 | Add achievement + icon inventory to 999.12 backlog item | 2026-09-25 | f5cec79 | — |
 | 19 | Save 999.12 icon-generation brief (ICON-BRIEF.md) | 2026-09-25 | 4b65770 | — |
+| 261005-opm | Race and class achievements to floor 10 at 20 points each (catalog 1,110 -> 1,200 points, headroom 800); copy, docs, zip and Phase 98 records updated | 2026-10-05 | 7bdcb24e, 6c77b9d7 | [261005-opm-race-class-floor-10](./quick/261005-opm-race-class-floor-10/) |
 
 ### Pending Todos
 
