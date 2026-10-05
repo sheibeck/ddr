@@ -422,8 +422,8 @@ Plans:
 - **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
-- **Survivor (tiered):** live for X days in a single run. Tier thresholds are decided at planning, calibrated from bot/sim day counts.
-- **Hoarder (tiered):** gain X coin. Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
+- **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
+- **Hoarder (tiered):** gain X coin. Tiers 1,000 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. The tier thresholds are decided at planning.
 
@@ -500,8 +500,8 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Every class: Magic User, Fighter, Thief | — | 3 | 3 |
 | Tourist (all 24 sub-classes) | 1 | 1 | 1 |
 | Special Snowflake | 1 | 1 | 1 |
-| Survivor (X days) | TBD | ~4 | 1 |
-| Hoarder (X coin) | TBD | ~4 | 1 |
+| Survivor (10 / 25 / 50 / 100 days) | 4 | 4 | 1 |
+| Hoarder (1,000 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
 | Party Animal (X Joiners) | TBD | ~4 | 1 |
 | Human Shields (fallen Joiners) | TBD | ~4 | 1 |
 | Disposable Help (fallen summons) | TBD | ~4 | 1 |
@@ -534,7 +534,7 @@ Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon fi
 
 *Decisions that move the counts:*
 
-- **Tier counts** for Survivor, Hoarder, Party Animal, Human Shields, Disposable Help and the kill counts. Each extra tier adds one icon file per track, but no new picture.
+- **Tier counts** for Party Animal, Human Shields, Disposable Help and the kill counts. Each extra tier adds one icon file per track, but no new picture.
 - **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
