@@ -91,7 +91,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 99-03-PLAN.md — the engine-adapter hooks (boot load, dispatch fold, run start for Tourist, the unlock listener), persistence and relaunch proofs, the bot-isolation import walk, and the SHELL-MODULES.md contract
+- [x] 99-03-PLAN.md — the engine-adapter hooks (boot load, dispatch fold, run start for Tourist, the unlock listener), persistence and relaunch proofs, the bot-isolation import walk, and the SHELL-MODULES.md contract
 
 ### Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List
 
