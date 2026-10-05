@@ -29,11 +29,12 @@ import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfAbility 
  * withFlavor(row, { lead, rules, rulesId }) — Phase 95 (FLAVOR-01/02/05; CONTEXT 'Where the exact numbers live', orchestrator
  * rulings). The one place the layering rule is written for combat rows: the row's cost tag stays the functional tag (no new
  * numeric tag), the desc slot shows `lead` (flavour first; a blocked reason and the live resist hint stay in it, visible), and
- * the exact rules sit behind the RULES toggle the shell mounts beside the row. `desc` is NEVER changed here (every reader and
- * guard still sees today's text); the three fields are ADDITIVE and appear only when there is flavour AND rules text to hide,
+ * the exact rules ride on the row as `rules` for the guards; no renderer draws them (Phase 97.1 retired the RULES control).
+ * `desc` is NEVER changed here (every reader and
+ * guard still sees today's text); the three fields are ADDITIVE and appear only when there is flavour AND rules text to carry,
  * so a row without flavour (or a reason or social row, which never call this) renders exactly as before.
  * Phase 96 (FLAVOR-04): the ability rows and the Bard's SING row adopt it too; the Phase 94 state label stays the cost tag
- * (plain and exact), the description slot reads the flavour line and the ability's txt sits behind RULES.
+ * (plain and exact), the description slot reads the flavour line and the ability's txt rides on the row as `rules`.
  */
 const withFlavor = (row, { lead, rules, rulesId }) => (lead && rules ? { ...row, lead, rules, rulesId } : row);
 
@@ -349,7 +350,7 @@ function combatMenuViewModelUnlocked(state) {
             state: singSt.state,
             dispatch: { type: "sing" },
           },
-          // Phase 96 (FLAVOR-04): the Bard's Sing reads its flavour line; singDesc sits behind RULES.
+          // Phase 96 (FLAVOR-04): the Bard's Sing reads its flavour line; singDesc rides on the row as `rules`, drawn nowhere.
           { lead: flavorOfAbility("Sing"), rules: COMBAT_MENU_COPY.singDesc, rulesId: "combat:ability:sing" },
         ),
         // Phase 38 (ABIL-01): the Bard keeps Sing FIRST (CONTEXT); because a
@@ -443,7 +444,7 @@ function combatMenuViewModelUnlocked(state) {
               enabled: false,
               dispatch: { type: "useItem", i },
             }
-          : // Phase 95 (FLAVOR-02): the ready variant leads with the item's flavour; its old desc is the RULES text. The two reason rows above get nothing. The id carries the bag index so two same-named items never share a toggle or a DOM id.
+          : // Phase 95 (FLAVOR-02): the ready variant leads with the item's flavour; its old desc rides on the row as `rules` (drawn nowhere). The two reason rows above get nothing. The id carries the bag index so two same-named items never share an id.
             withFlavor(
               {
                 id: `item-${i}`,
@@ -472,7 +473,7 @@ function combatMenuViewModelUnlocked(state) {
   };
   const wornRows = WORN_SLOTS.filter((slot) => c.worn && activationFor(c.worn[slot])).map((slot) => {
     const it = c.worn[slot];
-    // Phase 95 (FLAVOR-02): flavour leads, the old desc is the RULES text (id carries the slot: a worn and a bagged copy of one jewel never share a toggle).
+    // Phase 95 (FLAVOR-02): flavour leads, the old desc rides on the row as `rules`, drawn nowhere (id carries the slot: a worn and a bagged copy of one jewel never share an id).
     return withFlavor(
       {
         id: `worn-${slot}`,
@@ -493,7 +494,7 @@ function combatMenuViewModelUnlocked(state) {
   const staff = wieldedStaff(c);
   const staffRows = staff
     ? [
-        // Phase 95 (FLAVOR-02): the wielded staff's flavour leads; its old desc is the RULES text.
+        // Phase 95 (FLAVOR-02): the wielded staff's flavour leads; its old desc rides on the row as `rules`, drawn nowhere.
         withFlavor(
           {
             id: "worn-weapon",
@@ -532,7 +533,7 @@ function combatMenuViewModelUnlocked(state) {
     itemRows = [{ id: "none", label: COMBAT_MENU_COPY.noItems, cost: "", desc: COMBAT_MENU_COPY.noItemsDesc, enabled: false, dispatch: null }];
   } else {
     itemRows = [
-      // Phase 95 (FLAVOR-02): the counter row is the Healing potion; its flavour leads, its old desc is the RULES text.
+      // Phase 95 (FLAVOR-02): the counter row is the Healing potion; its flavour leads, its old desc rides on the row as `rules`, drawn nowhere.
       withFlavor(
         {
           id: "potion",
@@ -550,7 +551,7 @@ function combatMenuViewModelUnlocked(state) {
       // (scrollReadOdds, ./rollOdds.js) are appended so they are visible
       // BEFORE a tap — the same text the Gear tab's SCROLLS row shows for
       // the same state, so the two surfaces can never disagree.
-      // Phase 95 (FLAVOR-01): the scroll's one flavour line leads; the old desc (scrollDesc plus the reading odds) is the RULES text.
+      // Phase 95 (FLAVOR-01): the scroll's one flavour line leads; the old desc (scrollDesc plus the reading odds) rides on the row as `rules`, drawn nowhere.
       const scrollRulesText = `${COMBAT_MENU_COPY.scrollDesc} ${scrollReadOdds(state)}`;
       itemRows.push(
         withFlavor(

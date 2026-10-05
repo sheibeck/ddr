@@ -574,8 +574,8 @@ export function railCardFor(type, events, folded, ctx = {}) {
 export function railLineCard(title, line, tone, hold, icon = "·", iconKey = null, flavor = null) {
   // Phase 96 (FLAVOR-04): an optional trailing flavour spec `{ line, id, name }`.
   // With a non-empty string `line` the card leads with the flavour and the exact
-  // `line` argument rides on the line's `rules` property (the 95-05 reuse point:
-  // renderRail mounts it behind a RULES toggle, never types or announces it).
+  // `line` argument rides on the line's `rules` property for the guards (Phase 97.1:
+  // no renderer draws it, and it is never typed or announced).
   // Anything else leaves the card byte-identical to the five-argument card.
   const lead = flavor && typeof flavor === "object" && typeof flavor.line === "string" ? flavor.line : "";
   if (lead) {
@@ -706,7 +706,7 @@ export function abilityPoolCard(c) {
  * `{ line, id, name }` where `line` is RAIL_COPY.abilityPool.line filled with
  * the ability's name and its FLAVOUR line (not its rules txt), `id` is
  * "pool:<ability id>" and `name` the ability's name. The exact abilityPoolCard
- * line is then the card's second argument, behind RULES. null for a missing or
+ * line is then the card's second argument, carried as `rules` and drawn nowhere. null for a missing or
  * invalid `c`, an empty or table-only list, or an ability with no flavour line.
  * Pure; never throws.
  */

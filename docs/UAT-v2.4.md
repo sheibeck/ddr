@@ -38,14 +38,14 @@
 | 1.2 | Use a worn Cloak of Regeneration while hurt. HP rises at once ("Tick 1 of 4", rail "(1/4)"), then ticks 2–4 come at 10, 20 and 30 squares. The chip counts 3, 2, 1. The start line says a d6 now, then 3 more while walking. | open |
 | 1.3 | Use the cloak mid-fight from ITEMS: HP rises at once, the fight goes on, and no more ticks come until you walk. At full HP it says "Nothing left to knit." and the chip still shows 3. | open |
 | 1.4 | Use a Joiner's cloak from the Company panel: that Joiner heals at once, by name. | open |
-| 1.5 | The cloak's Gear card, store line and find card all read "a d6 hp back at once, and again every ten squares you walk, three more times". | open |
+| 1.5 | The cloak's Gear card, store line and find card show its flavour line only, with no RULES control (row 1.2 covers the start line that states the d6). | open |
 
 ## 2. Phase 93.1: Gauntlet of the Giant (3)
 
 | # | Check | Result |
 |---|-------|--------|
-| 2.1 | Wear and use the Gauntlet: the Oracle and rail say +6 damage and foes +1 to hit you, and the Enlarged chip's card says the same. | open |
-| 2.2 | The Gear card, a store's Gauntlet line and a found Gauntlet each read +6 damage, foes +1 to hit you. | open |
+| 2.1 | Wear and use the Gauntlet: the Oracle and rail say +6 damage and foes +1 to hit you; the Enlarged chip's card shows its flavour line. | open |
+| 2.2 | The Gear card, a store's Gauntlet line and a found Gauntlet each show the Gauntlet's flavour line and no RULES control. | open |
 | 2.3 | With the Gauntlet live, the Hero tab's DAMAGE line rises by 6. The SIZE row still shows the step's +2, as it does for Enlarge. | open |
 
 ## 3. Phase 94: Ability states you can tell apart (5)
@@ -73,39 +73,37 @@
 
 | # | Check | Result |
 |---|-------|--------|
-| 5.1 | At text size L, with Always show the rules OFF then ON, each of these shows flavour first, and RULES reveals the exact old text: the Grimoire, the combat SPELLS and ITEMS rows, the find card, the Gear tab (WORN, BAG, CONSUMABLES), the Gear sheet, the store, the sell list, the loot card and the bag-full drop shelf. | open |
+| 5.1 | At text size L, each of these shows its flavour line with no RULES control and no rules sentence (the Gear sheet also keeps its numeric stat rows, as plain rows under the flavour line): the Grimoire, the combat SPELLS and ITEMS rows, the find card, the Gear tab (WORN, BAG, CONSUMABLES), the Gear sheet (the flavour line in the note, then the item's numeric stat rows such as AR, hp and dice as plain rows; a jewel has none), the store, the sell list, the loot card and the bag-full drop shelf. | open |
 | 5.2 | Drop shelf at large text: a long flavour line plus the usable-by tag may clip at the two-line clamp. | open |
-| 5.3 | *Decision:* read the 114 Phase 95 lines in `docs/narrative-pass/review.html` and confirm or overrule them. | open |
+| 5.3 | *Decision:* read the 111 Phase 95 lines in `docs/narrative-pass/review.html` and confirm or overrule them. | open |
 | 5.4 | *Decision:* confirm or overrule the discretion calls in 95-08-SUMMARY items 19–26: | open |
 | | - the niche label comes before the flavour | |
 | | - the armour WORN row keeps its wear note | |
 | | - the weapon voice line gives way to the type flavour | |
 | | - jewel and cloak candidates read as flavour | |
-| | - the Sealed scroll's RULES | |
 | | - the loot advice line | |
-| | - a RULES body that repeats a usable-by tag | |
 | | - the 2.4.0 Headline stays unchanged | |
 
-## 6. Phase 96: Fantasy flavour II, races, sub-classes, abilities and chips (12)
+## 6. Phase 96: Fantasy flavour II, races, sub-classes, abilities and chips (13)
 
 | # | Check | Result |
 |---|-------|--------|
-| 6.1 | Roller reveal at text size L: flavour comes first, with a RULES chip per group. DESCEND stays reachable, and RULES never rolls or commits. Check with Always show the rules on and off. | open |
-| 6.2 | Hero tab: the dossier and trait-line RULES, and the ability and special-skill lists, Off then On. Opened dossier bodies use the mono footer style. | open |
-| 6.3 | Combat ABILITIES and SING at text size L in the 206 px list: flavour and RULES fit, the four state words still read apart, and a RULES tap never uses the ability. | open |
-| 6.4 | Chip taps on the HUD strip, the combat condition card, YOUR LOT and the Company panel: flavour comes first, harmful chips read as trouble, RULES opens the exact old text, and the hold time is readable. | open |
+| 6.1 | Roller reveal at text size L: each group shows its name and flavour line only. DESCEND stays reachable. | open |
+| 6.2 | Hero tab: the dossier, the trait line, and the ability and special-skill lists show flavour only. | open |
+| 6.3 | Combat ABILITIES and SING at text size L in the 206 px list: the flavour line fits and the four state words still read apart. | open |
+| 6.4 | Chip taps on the HUD strip, the combat condition card, YOUR LOT and the Company panel: flavour comes first, harmful chips read as trouble, and the hold time is readable. | open |
 | 6.5 | The UP YOUR SLEEVE card on a fresh Fighter and a fresh Thief. The Oracle log shows the flavour line. | open |
-| 6.6 | Final Sheet after a death: the tricks, worn and bag sections, Off and On. Bag notes fit at the largest text size. | open |
-| 6.7 | Buy an active skill (Kata, Smoke) and read its Hero row, Off then On. | open |
+| 6.6 | Final Sheet after a death: the tricks, worn and bag sections. Bag notes fit at the largest text size. | open |
+| 6.7 | Buy an active skill (Kata, Smoke) and read its Hero row. | open |
 | 6.8 | Screen walk for any rulebook sentence left: Gear, the store, loot and find, the drop shelf, the Grimoire, combat SPELLS, ITEMS and ABILITIES, Hero, chips, the title and the roller. | open |
-| 6.9 | Read the Phase 96 lines: https://claude.ai/artifact/EXJPDVF9RwJCtLFR8na3zG, or all 236 Phase 95 and 96 lines in `docs/narrative-pass/review.html`. Include the 3 self-checked rows: Death Touch, Second Wind and Feint. | open |
+| 6.9 | Read the Phase 96 lines: https://claude.ai/artifact/EXJPDVF9RwJCtLFR8na3zG, or all 233 Phase 95 and 96 lines in `docs/narrative-pass/review.html`. Include the 3 self-checked rows: Death Touch, Second Wind and Feint. | open |
 | 6.10 | *Decision:* the discretion calls. | open |
-| | - the trait-line race note sits behind RULES | |
-| | - the Final Sheet shows flavour only, with the exact text only when Always is on | |
+| | - the Final Sheet shows flavour only | |
 | | - the UP YOUR SLEEVE card and its Oracle line | |
 | | - blurbs use no number words at all | |
 | 6.11 | *Decision:* the canon Samurai SUB_NOTE still contains "suicidal", which the safety wordlist bans. Edit the canon text or keep it. Play content-rating answers may care. | open |
 | 6.12 | *Decision:* pick one standard for vague counts. Round 2 failed "a few rounds", while round 1 passed "a few Demons" on the Plane Gate line. | open |
+| 6.13 | Screen walk for a RULES control: no screen says RULES or offers a tap to reveal rules (roller, Hero, Gear and its sheet, store, sell list, loot, find, drop shelf, Grimoire, combat menus, chip taps, UP YOUR SLEEVE, Final Sheet), and Settings has no "Always show the rules" row. | open |
 
 ## 7. Phase 97: Large-screen support (8)
 

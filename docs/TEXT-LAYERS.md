@@ -3,7 +3,8 @@
 Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05) built the model; Phase 96 (FLAVOR-03,
 FLAVOR-04, FLAVOR-06) reused it unchanged for races, sub-classes, classes,
 abilities, special skills and condition chips, and added the recorded review.
-"Players see narrative, code sees technical."
+"Players see narrative, code sees technical." Phase 97.1 (FLAVOR-07) then retired
+the RULES control, so players see only the flavour line.
 
 ## The two layers
 
@@ -13,8 +14,8 @@ a weapon's die and to-hit shift or an armour's AR and hp), the identity notes an
 footers (`RACE_NOTE`, `SUB_NOTE`, `CLASS_NOTE` and the generated good and bad
 lines), `CONDITION_EXPLAIN` and the other chip explain tables, and the existing
 rules copy such as `GEAR_COPY.healingDesc` and `COMBAT_MENU_COPY.potionDesc`. All
-of it is unchanged and still pinned by the v2.3 truth guards. It sits one tap away
-behind a RULES toggle.
+of it is unchanged and still pinned by the v2.3 truth guards. It is code-only: the
+guards read it, the view models still carry it as `rules`, and no screen shows it.
 
 **The player layer** is one short flavour line per entry: the fourteen `*_FLAVOR`
 maps (eight from Phase 95, six from Phase 96), read through
@@ -97,7 +98,7 @@ The per-domain shape rule (`test/unit/flavor-layer.test.js`):
 Every domain is number-free by the same check, identity lines included: no digit,
 percent sign, die or number word ("one" alone is allowed, so "no one" stays legal);
 the identity rule relaxes only the sentence count and the length. The numbers stay
-in the rules layer, one tap away.
+in the rules layer, which no screen shows.
 
 ## The lookup
 
@@ -133,15 +134,16 @@ descriptor. `everyFlavorLine()` lists every `[domain, key, line]` for the scans.
   every race and sub-class.
 - `test/unit/chip-flavor.test.js` (96-04): every `HERO_CONDITIONS` key and every
   variant key has a line, and each variant reads where it should.
-- `test/unit/rules-layer.test.js` (95-02): the RULES component, the open set,
-  Always mode, wrapRow's sibling placement and RULES_COPY's safety.
-- `test/unit/rules-surfaces.test.js` (95-05 to 96-12): one rule on every surface,
-  Always mode, repaint survival, tolerant load of an old save, and the 2.4.0 notes.
-- `test/unit/flavor-sweep.test.js` (96-10, 96-12): paints all 20 description
+- `test/unit/rules-surfaces.test.js` (95-05 to 97.1-03): flavour on every surface,
+  no rules control or body, the exact text still on the model, a row with no
+  flavour keeps today's text, and the 2.4.0 notes.
+- `test/unit/flavor-sweep.test.js` (96-10 to 97.1-03): paints all 20 description
   surfaces through the real shell code and proves the flavour states no number, no
-  rulebook sentence is left outside a RULES body, each RULES body equals the
-  unchanged rules text and the toggle contract holds, with Always off and on. A
+  rules sentence is visible, and no rules body or control exists (S1 to S4). A
   surface added to the Surfaces table below without a probe fails by name.
+- `test/unit/flavour-only.test.js` (97.1-04): the retired machinery and the Always
+  setting stay out of the shipped source, the docs make no promise of either, and
+  the exact rules data stays in code.
 - `test/unit/flavor-drift.test.js`: the fail-first proof. In a temp mirror of the
   tree one number is drifted and the real guard file must exit non-zero naming the
   expected failing test. Five mutations: Heal's "d10 hp" to "d12 hp"
@@ -195,7 +197,7 @@ The writer's checklist, per line:
 - keep a spell's flavour distinguishable from its same-level sibling (Doze vs
   Stun, Fireball vs Fireballs vs Lightning), so a player can still choose at a
   glance;
-- do not restate a rule the toggle hides: a joke that says "doubles" or "for a
+- do not restate a rule the line leaves out: a joke that says "doubles" or "for a
   day" is a leak the number test will miss in prose;
 - a race or sub-class line conveys at least one tagged good and one tagged bad;
 - agree with the rules text: never promise more than the rule delivers (a +1 to
@@ -204,10 +206,11 @@ The writer's checklist, per line:
 
 ## Voice tooling
 
-Each `*_FLAVOR` export and `src/browser/rulesLayer.js#RULES_COPY` is a registered
-bank in `tools/lib/voice-corpus.mjs`. `FLAVOR_DOMAINS` is a non-copy row. The
+Each `*_FLAVOR` export is a registered bank in `tools/lib/voice-corpus.mjs`. The
+three toggle words Phase 95 registered were retired with the control and erased
+from the ledger and the verdicts in Phase 97.1. `FLAVOR_DOMAINS` is a non-copy row. The
 flavour lines are new-line ledger rows (`before` is `""`) in
-`docs/narrative-pass/why/y-95-NN.json` (114 lines) and `y-96-NN.json` (122 lines:
+`docs/narrative-pass/why/y-95-NN.json` (111 lines) and `y-96-NN.json` (122 lines:
 `y-96-01` to `y-96-04` hold 111, `y-96-12` holds the 11 active-skill lines), the
 `y-` prefix keeping them in plan order after `x-94-04`. A line the review sent
 back is a chained rewrite row (`before` is the previous `after`) in `y-96-09`
@@ -221,7 +224,7 @@ shows each text with its recorded verdict.
 ## The review (FLAVOR-06)
 
 Phase 79 judged lines once and kept no record. Every Phase 95 and 96 flavour line
-(236 in all) is reviewed against five checks (voice, family, numberFree,
+(233 in all) is reviewed against five checks (voice, family, numberFree,
 consistent, goodBad), in verdict files under `docs/narrative-pass/verdicts/` tied to
 the exact wording each verdict judged. The method, the file format, the round rules,
 the commands and the independence boundary are in `docs/narrative-pass/README.md`
@@ -250,77 +253,54 @@ reworded after its verdict fails by key.
    recorded round-1 file, a first verdict in a later round declared through
    `POST_ROUND1_PLANS` in `tools/lib/flavor-review.mjs`).
 
-## The RULES surface
+## Flavour only (Phase 97.1)
 
-The exact rules are one tap away on every surface that shows flavour, or always
-shown when the player turns on the Always show the rules setting. The component is
-`src/browser/rulesLayer.js`; the surfaces below call it.
-
-### The component
-
-`src/browser/rulesLayer.js` exports `RULES_COPY`, `setAlwaysRules`, `alwaysRules`,
-`rulesOpen`, `toggleRulesOpen`, `clearRulesOpen`, `layerText`, `mountRules` and
-`wrapRow`. The classic script in `mazeworld.html` reaches it through the frozen
-`window.__mzRules` (`mount`, `wrap`, `layer`, `always`, `flavorOf`, `flavorOfItem`,
-`flavorOfSpell`, `flavorOfScroll`, `flavorOfChip`).
-
-- A reveal is an inspection, not a decision: a plain `onclick` that flips the DOM in
-  place. Never `guardTap`, never a render, never a dispatch.
-- Which bodies are open lives in a module-level set keyed by the surface id, never on
-  game state, so a repaint keeps a body open and a save never holds it.
-- `RULES_COPY` holds the three words the toggle uses: `RULES ▸` (closed), `RULES ▾`
-  (open) and `Rules for {name}` (the aria-label).
-
-### The setting
-
-`alwaysRules` is the thirteenth field of the Settings object, default `false`, with a
-Settings row after Set dressing (Always show the rules). `applySettings` calls
-`setAlwaysRules`, and a change repaints through `window.paint`. With it on, every body
-shows open and no toggle is drawn; with it off, bodies start closed and a tapped
-one stays open across a repaint.
+The RULES control and the always-show-the-rules setting were retired (user ruling
+2026-10-04, "Remove rules entirely"). Every surface shows the flavour line, a row
+with no flavour line keeps today's text, and the exact rules text stays in code
+(the content tables, `RACE_NOTE`, `SUB_NOTE`, `CLASS_NOTE`, the identity footers,
+`CONDITION_EXPLAIN`, the view models' `rules` fields) for the guards.
 
 ### The rule every surface follows
 
 - The flavour line plus the slot's functional tags shows first (the cost tag, a
   blocked reason, a live resist hint, the usable-by tag, the stock count, the compare
   line, an ability's state word).
-- A RULES body holds exactly the text that slot printed before the phase that
-  dressed it, so the v2.3 wording stays reachable and every guard keeps pinning it.
 - A row with no flavour, such as an old save's removed item, renders as it did
   before. Nothing throws and nothing is hidden.
-- `mountRules` goes under a content block (a card, a list entry). `wrapRow` goes
-  beside an action row's button in a `.mw-rules-wrap` grid, never inside the button,
-  so a toggle tap can never buy, drop or use.
-- A row that opens a sheet (Gear WORN rows and BAG cards) shows flavour only and
-  carries no toggle: its rules sit in the sheet, and statically on the row when
-  Always is on.
-- The Final Sheet is read-only by the HUD-03 ruling: it shows flavour only, and the
-  exact text appears (a static body, no button, no handler) only when Always is on.
+- A worn row or a bag card opens the Gear sheet; it shows flavour only.
+- The Final Sheet is read-only by the HUD-03 ruling: it shows flavour only.
+- The Gear sheet shows the flavour line in its note slot and then the item's numeric
+  stat rows (AR, wear, damage, to-hit, crit, charges, usable-by: every
+  `itemStatLines` row except the effect row) as plain rows, with no control. The old
+  note sentence that used to head the hidden body, such as a weapon's voice line, and
+  the effect row, which is the item's own `txt` sentence, are not drawn, so a
+  jewel's sheet is its flavour line and its actions.
 
 ### Surfaces
 
-| Surface | Renderer | Shows first | Stays visible | RULES (where and what) | Id prefix |
-| --- | --- | --- | --- | --- | --- |
-| Grimoire | `heroTab.js#renderGrimoire` | niche label, then the spell's flavour | level badge, locked state | `mountRules` under the italic line: the old whole line | `grim:` |
-| Combat SPELLS rows | `combatMenu.js` (`withFlavor`), `renderActionArea` | niche label and flavour as `lead` | cost tag, blocked reason (first), live resist hint | `wrapRow` beside the row: the spell's `txt` | `combat:spell:` |
-| Combat ITEMS rows (items, potion counter, scroll) | `combatMenu.js`, `renderActionArea` | the item, potion or scroll flavour | state, charges, recharge, reason rows | `wrapRow` beside the row: the item's `txt`, `potionDesc` or the scroll rules | `combat:item:`, `combat:worn:`, `combat:potion`, `combat:scroll` |
-| Find card | `mazeworld.html#renderRail` | item name and flavour, then the usable-by tag | compare and fit lines | the rail line's `rules` property, mounted outside the typed lines | `find:` |
-| Gear WORN rows | `gearTab.js#gearWornModel`, `renderGearTab` | the worn item's flavour (the weapon type's for a weapon) | the armour row's live wear note, empty rows | opener row: none; static under the flavour when Always is on; the rest in the sheet | `gear:worn:` |
-| Gear BAG cards | `gearTab.js#gearBagCardsModel`, `renderGearTab` | flavour plus the usable-by tag | bag meter, state | opener card: none; static when Always is on; the rest in the sheet | `gear:bag:` |
-| Gear CONSUMABLES | `gearTab.js#gearConsumablesModel` | potion or scroll flavour | the count, USE or READ button | its own toggle after the description: `healingDesc`, the potion `txt` or the scroll rules and odds | `gear:cons:` |
-| Gear sheet | `gearSheet.js` | flavour in the note slot (a jewel or cloak candidate reads its flavour) | the title, the actions, the compare line of a weapon or armour candidate | `mountRules` around the stats: the old note and every stat text | `gsheet:` |
-| Store stock rows | `storeScreen.js#storeRowLayer` | flavour plus the usable-by tag | price, stock count, compare line, refusal reason | `wrapRow` beside BUY: the exact old stat line | `store:` |
-| Sealed scroll | `storeScreen.js#storeRowLayer` | the scroll flavour | price | `wrapRow` beside BUY: `scrollDesc` plus the reader's odds | `store:` |
-| Your gear sell list | `gearTab.js#renderCarriedList` | the item's flavour | the Sell and Drop buttons | a toggle under the italic: the old sub line | `sell-list:` |
-| Loot list | `gearTab.js#renderCarriedList` (`opts.adviceFor`) | flavour, then an advice line | the verdict (upgrade, can't use, bag comparison), the usable-by tag, TAKE ALL and LEAVE ALL | a toggle under the lines: the old sub line | `loot-list:` |
-| Drop shelf | `mazeworld.html#renderDropShelf` | flavour inside the Drop button | the usable-by tag, the bounded scrolling list | `window.__mzRules.wrap` beside Drop: the old sub line | `drop:` |
-| Roller reveal | `roller.js` (`fillRules`) | the sub-class and each non-Human race group: its name, then its flavour line | the name; Human adds no group; an identity with no flavour keeps today's visible footer lines | a RULES button and hidden body per group: exactly `footerLines(kind, key)` (the old note and the generated good and bad lines) | `roller:sub:`, `roller:race:` |
-| Hero dossier and trait line | `heroTab.js#renderDossier`, the `#s-trait` line | the Race, Class and Subclass sections: heading, name, then the flavour paragraph; the trait line keeps temperament, motive and phobia | the heading and name; an identity with no flavour keeps today's markup | `mountRules` after the flavour: `[note, ...footerLines]` (class: `CLASS_NOTE`); the race's `RACES[...].note` behind a RULES toggle on the trait line | `doss:race`, `doss:class`, `doss:sub`, `hero:trait` |
-| Combat ABILITIES rows and SING | `combatMenu.js` (`abilityRows`, SING row, `withFlavor`), `renderActionArea` | the ability's flavour as the row's description | the Phase 94 state word (READY, READY IN N, SPENT THIS FIGHT, the gate reasons), its colour and edge, the row's id and `data-state` | `wrapRow` beside the row: the ability's `txt` (SING: `COMBAT_MENU_COPY.singDesc`) | `combat:ability:<key>`, `combat:ability:sing` |
-| Hero abilities and skills | `heroTab.js#renderAbilityRows` and the special-skills list | the ability's or skill's flavour in the italic (a bought active skill reads its own skill line) | the state span; a row with no flavour keeps today's markup | `mountRules` after the state: the exact `txt` (a skill at level two: `txt2`) | `hero:ability:`, `hero:skill:` |
-| Final Sheet tricks | `finalSheet.js` (tricks, worn and bag sections) | the flavour in the note: each trick, each worn item and each bag item with a flavour line | the names; the armour row's wear note; an empty slot's empty line; an item with no flavour keeps today's note | none (read-only by the HUD-03 ruling); a static body, no button, only when Always is on | `final:trick:`, `final:worn:`, `final:bag:` |
-| Chip tap cards | `rail.js` (`railLineCard`, `conditionCard`), `mazeworld.html#chipFlavorSpec`, `paintConditions`, `renderYourLot`, `heroTab.js` (the Company panel) | the chip's flavour as the card's first line (HUD strip, combat condition card, YOUR LOT hero and Joiner, Company panel) | the title and icon; a chip with no flavour keeps today's card | the rail line's `rules` property: the whole old tap text (`conditionTapText`) behind the shared RULES toggle; a tap never dismisses, acts or changes state | `chip:` |
-| UP YOUR SLEEVE card | `rail.js#abilityPoolFlavor`, `mazeworld.html#surfaceAbilityPool` | "New trick: name - flavour" for the ability the pool card picks | the first-paint card itself; a Magic User, a table-only list or an unknown id keeps today's card | the rail line's `rules` property: the old whole line (`New trick: name - txt`) | `pool:` |
+| Surface | Renderer | Shows | Stays visible | Not shown (the rules text kept in code) |
+| --- | --- | --- | --- | --- |
+| Grimoire | `heroTab.js#renderGrimoire` | niche label, then the spell's flavour | level badge, locked state | the old whole line |
+| Combat SPELLS rows | `combatMenu.js` (`withFlavor`), `renderActionArea` | niche label and flavour as `lead` | cost tag, blocked reason (first), live resist hint | the spell's `txt` |
+| Combat ITEMS rows (items, potion counter, scroll) | `combatMenu.js`, `renderActionArea` | the item, potion or scroll flavour | state, charges, recharge, reason rows | the item's `txt`, `potionDesc` or the scroll rules |
+| Find card | `mazeworld.html#renderRail` | item name and flavour, then the usable-by tag | compare and fit lines | the rail line's `rules` property |
+| Gear WORN rows | `gearTab.js#gearWornModel`, `renderGearTab` | the worn item's flavour (the weapon type's for a weapon) | the armour row's live wear note, empty rows | the rest of the old text; the numeric stat rows are on the Gear sheet the row opens |
+| Gear BAG cards | `gearTab.js#gearBagCardsModel`, `renderGearTab` | flavour plus the usable-by tag | bag meter, state | the rest of the old text; the numeric stat rows are on the Gear sheet the card opens |
+| Gear CONSUMABLES | `gearTab.js#gearConsumablesModel` | potion or scroll flavour | the count, USE or READ button | `healingDesc`, the potion `txt` or the scroll rules and odds |
+| Gear sheet | `gearSheet.js` | flavour in the note slot (a jewel or cloak candidate reads its flavour), then the item's numeric stat rows as plain rows | the title, the actions, the compare line of a weapon or armour candidate | the old note sentence that headed the stats, such as a weapon's voice line, and the effect row, which is the item's own `txt` sentence |
+| Store stock rows | `storeScreen.js#storeRowLayer` | flavour plus the usable-by tag | price, stock count, compare line, refusal reason | the exact old stat line |
+| Sealed scroll | `storeScreen.js#storeRowLayer` | the scroll flavour | price | `scrollDesc` plus the reader's odds |
+| Your gear sell list | `gearTab.js#renderCarriedList` | the item's flavour | the Sell and Drop buttons | the old sub line |
+| Loot list | `gearTab.js#renderCarriedList` (`opts.adviceFor`) | flavour, then an advice line | the verdict (upgrade, can't use, bag comparison), the usable-by tag, TAKE ALL and LEAVE ALL | the old sub line |
+| Drop shelf | `mazeworld.html#renderDropShelf` | flavour inside the Drop button | the usable-by tag, the bounded scrolling list | the old sub line |
+| Roller reveal | `roller.js` | the sub-class and each non-Human race group: its name, then its flavour line | the name; Human adds no group; an identity with no flavour keeps today's visible footer lines | exactly `footerLines(kind, key)` (the old note and the generated good and bad lines) |
+| Hero dossier and trait line | `heroTab.js#renderDossier`, the `#s-trait` line | the Race, Class and Subclass sections: heading, name, then the flavour paragraph; the trait line keeps temperament, motive and phobia | the heading and name; an identity with no flavour keeps today's markup | `[note, ...footerLines]` (class: `CLASS_NOTE`) and the race's `RACES[...].note` |
+| Combat ABILITIES rows and SING | `combatMenu.js` (`abilityRows`, SING row, `withFlavor`), `renderActionArea` | the ability's flavour as the row's description | the Phase 94 state word (READY, READY IN N, SPENT THIS FIGHT, the gate reasons), its colour and edge, the row's id and `data-state` | the ability's `txt` (SING: `COMBAT_MENU_COPY.singDesc`) |
+| Hero abilities and skills | `heroTab.js#renderAbilityRows` and the special-skills list | the ability's or skill's flavour in the italic (a bought active skill reads its own skill line) | the state span; a row with no flavour keeps today's markup | the exact `txt` (a skill at level two: `txt2`) |
+| Final Sheet tricks | `finalSheet.js` (tricks, worn and bag sections) | the flavour in the note: each trick, each worn item and each bag item with a flavour line | the names; the armour row's wear note; an empty slot's empty line; an item with no flavour keeps today's note | the exact text (read-only by the HUD-03 ruling) |
+| Chip tap cards | `rail.js` (`railLineCard`, `conditionCard`), `mazeworld.html#chipFlavorSpec`, `paintConditions`, `renderYourLot`, `heroTab.js` (the Company panel) | the chip's flavour as the card's first line (HUD strip, combat condition card, YOUR LOT hero and Joiner, Company panel) | the title and icon; a chip with no flavour keeps today's card | the rail line's `rules` property: the whole old tap text (`conditionTapText`) |
+| UP YOUR SLEEVE card | `rail.js#abilityPoolFlavor`, `mazeworld.html#surfaceAbilityPool` | "New trick: name - flavour" for the ability the pool card picks | the first-paint card itself; a Magic User, a table-only list or an unknown id keeps today's card | the rail line's `rules` property: the old whole line (`New trick: name - txt`) |
 
 ### Deliberately plain
 
@@ -335,15 +315,11 @@ These keep their text with no flavour layer:
 - The Gear kit rows and the armour WORN row's wear note: live state, not prose.
 - All narration: the Oracle, the rail and the fight log.
 
-### What Phase 96 did
+### What Phases 95 to 97.1 did
 
-- `layerText` and `mountRules` for the Hero dossier blurbs and footers: the blurb is
-  the flavour, the footer is the rules (96-05).
-- `wrapRow` for the combat ABILITIES rows and SING, beside the button, exactly as the
-  SPELLS rows do (96-06).
-- The rail line's `rules` property for the chip tap card and the UP YOUR SLEEVE card
-  (96-07).
-- The same Always show the rules switch; no new setting was needed.
-- Two surfaces the 96-10 sweep found still printing rulebook sentences, the Hero
-  special-skills list for a bought active skill and the Final Sheet's worn and bag
-  notes, were dressed in the 96-12 gap plan.
+Phase 95 built the layer: the flavour maps and a shared reveal component that put the
+exact rules text one tap behind every flavour line, with a Settings switch to show it
+always. Phase 96 reused that component for races, sub-classes, classes, abilities,
+special skills and condition chips, and closed the recorded review. Phase 97.1 retired
+the control and the switch and kept the data: the rules text lives on in the content
+tables, the view models' `rules` fields and the guards, and no screen draws it.

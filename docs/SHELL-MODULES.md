@@ -782,23 +782,15 @@ The `TAP A LINE FOR ITS DICE` hint shows only when some row has a roll.
 There is no dice-mode setting (DR18 retired it), so this is the mock's
 "on tap" mode.
 
-### The RULES layer (Phase 95)
+### The flavour layer (Phase 95, narrowed in Phase 97.1)
 
-`src/browser/rulesLayer.js` is the one RULES surface (FLAVOR-05): it holds the toggle
-button, the revealed rules body, the module-level set of open ids and the "Always show
-the rules" state, and `src/browser/flavorText.js` is the pure name-to-flavour lookup
-(items never carry flavour). The classic-script surfaces reach both through
-`window.__mzRules`, so neither is copied. The layering rule: the flavour line leads, the
-exact rules text sits behind a RULES toggle, functional tags (usable-by, worn, charges)
-stay visible, and a row with no flavour renders exactly as it did before.
-
-Two placements. `mountRules(doc, host, spec)` appends the toggle and its body inside a
-content block (a card, a find card, a list entry). `wrapRow(doc, rowEl, spec)` is for an
-action row: the toggle is a sibling beside the row's own button, never inside it, in a
-`.mw-rules-wrap` grid, with the body full width beneath. The toggle is an inspection, not
-a decision: a plain onclick that flips the DOM in place and never renders or dispatches.
-The Settings switch `alwaysRules` (default Off) renders every body open with no toggle,
-and flipping it repaints every open surface. See `docs/TEXT-LAYERS.md`.
+`src/browser/flavorText.js` is the pure name-to-flavour lookup (items never carry
+flavour). The classic script reaches `flavorOfItem` and `flavorOfChip` through
+`window.__mzFlavor`, so the lookup is not copied. The layering rule: the flavour line
+leads, functional tags (usable-by, worn, charges) stay visible, and a row with no
+flavour renders exactly as it did before. The exact rules text stays in code and on the
+view models' `rules` field for the guards, and is drawn nowhere. See
+`docs/TEXT-LAYERS.md`.
 
 ## What stays shared
 
