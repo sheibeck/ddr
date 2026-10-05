@@ -18,9 +18,9 @@
 
 | # | Step | Result |
 |---|------|--------|
-| 0.1 | Agree `docs/patch-notes/2.4.0.md` with Claude, including the new "Screens" bullet, and delete its DRAFT paragraph. (user + Claude) | open |
-| 0.2 | Release build: `npm run play:release` bumps to 2.4.0 / versionCode 14 and builds the signed AAB. The user uploads it to Play. (Claude builds, user uploads) | open |
-| 0.3 | Merged manifest of the release build (`aapt2 dump xmltree`): no `screenOrientation` on MainActivity, `appCategory="game"` kept, `configChanges` intact. (Claude, at 0.2) | open |
+| 0.1 | Agree `docs/patch-notes/2.4.0.md` with Claude, including the new "Screens" bullet, and delete its DRAFT paragraph. (user + Claude) | passed (the user approved the notes 2026-10-05; DRAFT line removed in a8587781) |
+| 0.2 | Release build: `npm run play:release` bumps to 2.4.0 / versionCode 14 and builds the signed AAB. The user uploads it to Play. (Claude builds, user uploads) | built 2026-10-05 from a8587781: 2.4.0 / vc14, signed with the upload key, sha256 f7222c00…d734d3, archived with mapping.txt at C:/Users/Dell/android_releases/2.4.0-vc14/; awaiting the user upload |
+| 0.3 | Merged manifest of the release build (`aapt2 dump xmltree`): no `screenOrientation` on MainActivity, `appCategory="game"` kept, `configChanges` intact. (Claude, at 0.2) | passed (merged release manifest: no screenOrientation, no resizeableActivity or maxAspectRatio, appCategory game, configChanges intact, versionCode 14 / 2.4.0) |
 | 0.4 | After the upload, Play's large-screen notice ("orientation and resizability restrictions") no longer fires. (user, Play Console) | open |
 | 0.5 | Refresh `docs/PERF-BASELINE.md` on the Pixel 7: portrait and landscape step timings. (Claude, phone connected) | open |
 | 0.6 | AVD pass, which absorbs the cancelled 80-05 profiles. Run it on the debug APK. In every profile there must be no restart, the run, fight and store must be kept, and the HUD and side panels must stay clear of the bars and the cutout. (Claude) | open |
