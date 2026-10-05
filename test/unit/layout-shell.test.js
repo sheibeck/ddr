@@ -13,7 +13,7 @@ import path from "node:path";
 import url from "node:url";
 
 import { stripJs, stripHtml } from "../../tools/ident-sweep.mjs";
-import { LAYOUT_MEDIA } from "../../src/browser/layoutClass.js";
+import { LAYOUT_MEDIA, LAYOUT_SIDE_WIDTH, LAYOUT_READABLE_MAX_PX } from "../../src/browser/layoutClass.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
@@ -114,7 +114,15 @@ test("(h) the dvh group holds the six twins; vh survives only as the six base fa
   const group = sliceBetween(LAYOUT_CSS, "@supports (height: 100dvh) {", "\n}");
   const squash = (s) => s.replace(/\s+/g, " ");
   for (const rule of DVH_RULES) assert.ok(squash(group).includes(squash(rule)), `dvh twin missing: ${rule}`);
-  const outside = ALL_CSS.replace(group, "");
+  // Phase 97 (SCREEN-03): declared re-pin — the SHORT group (97-04) carries two
+  // vh-fallback + dvh pairs of its own (the ☰ dropdown and the sheet panel),
+  // each vh declaration immediately followed by its dvh twin; they are checked
+  // here and taken out of the scan below.
+  const shortGroup = mediaGroup(ALL_CSS, LAYOUT_MEDIA.short);
+  assert.deepEqual([...shortGroup.matchAll(/(?<![\w-])\d*\.?\d+dvh\b/g)].map((m) => m[0]), ["100dvh", "100dvh"]);
+  assert.deepEqual([...shortGroup.matchAll(/(?<![\w-])\d*\.?\d+vh\b/g)].map((m) => m[0]), ["100vh", "100vh"]);
+  assert.equal([...shortGroup.matchAll(/max-height:calc\(100vh - ([^;]*)\);max-height:calc\(100dvh - \1\)/g)].length, 2, "each vh fallback is followed by its dvh twin");
+  const outside = ALL_CSS.replace(group, "").replace(shortGroup, "");
   assert.doesNotMatch(outside, /(?<![\w-])\d*\.?\d+dvh/, "dvh appears only inside the @supports group");
   const vhLengths = [...outside.matchAll(/(?<![\w-])\d*\.?\d+vh\b/g)].map((m) => m[0]);
   assert.deepEqual(vhLengths.sort(), ["100vh", "100vh", "34vh", "40vh", "44vh", "78vh"]);
@@ -283,4 +291,51 @@ test("(q2) the SIDE group sits after the global rules, and after the compact not
   const sideAt = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.side}{`);
   assert.ok(sideAt > LAYOUT_CSS.indexOf("  .mw-roller-screen{padding-left:"), "after the side-inset rules");
   assert.ok(sideAt > LAYOUT_CSS.indexOf("@supports (height: 100dvh) {"), "after the dvh group");
+});
+
+// ─── (r) the SHORT block (SCREEN-03) ─────────────────────────────────────────
+
+test("(r) exactly one SHORT media group (LAYOUT_MEDIA.short), after the side group, holding the landscape-only rules", () => {
+  assert.equal(count(LAYOUT_CSS, `@media ${LAYOUT_MEDIA.short}{`), 1);
+  assert.ok(LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`) > LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.side}{`), "the short block follows the side block");
+  const short = mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.short);
+  const has = (rule) => assert.ok(short.includes(`  ${rule}\n`), `short rule missing: ${rule}`);
+  // 1. the side-panel width equals LAYOUT_SIDE_WIDTH.short
+  has(`:root{--mw-side-w:${LAYOUT_SIDE_WIDTH.short}}`);
+  assert.equal(LAYOUT_SIDE_WIDTH.short, "45%");
+  // 2. the one-row HUD
+  has('.mw-hud{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ident band2" "track track";align-items:center}');
+  has(`.mw-hud-identity{grid-area:ident;padding-top:calc(6px + ${T_INSET});padding-bottom:6px;padding-right:8px}`);
+  has(`.mw-hud-band2{grid-area:band2;padding-top:calc(4px + ${T_INSET});padding-bottom:4px;padding-left:0}`);
+  has(".mw-hud-wptrack{grid-area:track}");
+  has(".mw-cond-strip{padding-top:4px;padding-bottom:5px}");
+  // 3. the dropdown fits the short window
+  has(`.mw-hud-menu{max-height:calc(100vh - 64px - ${T_INSET} - ${B_INSET});max-height:calc(100dvh - 64px - ${T_INSET} - ${B_INSET})}`);
+  // 4. the centred columns: the readable width is the shared constant
+  assert.equal(LAYOUT_READABLE_MAX_PX, 640);
+  has(`#screen-oracle,#screen-dead{max-width:${LAYOUT_READABLE_MAX_PX}px;margin-left:auto;margin-right:auto;width:100%}`);
+  has("#screen-hero,#screen-gear{max-width:960px;margin-left:auto;margin-right:auto}");
+  // 5. Hero in two columns
+  has("#screen-hero{column-width:300px;column-count:2;column-gap:14px}");
+  has("#screen-hero > .panel{break-inside:avoid;margin:0 0 14px}");
+  // 6. Gear: worn left, the rest right
+  has("#screen-gear{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;align-items:start}");
+  has("#screen-gear .mw-gear-stats{grid-column:1 / -1}");
+  has("#gear-worn-sec{grid-column:1;grid-row:2 / span 3}");
+  has("#gear-bag-sec,#gear-cons-sec,#gear-kit-sec{grid-column:2}");
+  has("#gear-bag-sec{margin-top:0}");
+  // 7. sheets centred at the readable width, allowed the full height
+  has(`.mw-legend-panel{max-width:${LAYOUT_READABLE_MAX_PX}px;margin-left:auto;margin-right:auto;max-height:calc(100vh - ${T_INSET});max-height:calc(100dvh - ${T_INSET})}`);
+  // 8. combat that fits
+  has(".cb-head{padding:7px 12px 6px}");
+  has(".cb-sum-body{height:44px}");
+  has(".cb-act{padding:7px 10px 10px}");
+  for (const line of short.split("\n").filter((l) => l.trim() !== "")) assert.match(line, /^ {2}\S/, `unindented short rule: ${line.slice(0, 60)}`);
+});
+
+test("(r2) the base rules the short block overrides are untouched: the hud-menu, the legend panel and the combat panel keep their base declarations", () => {
+  // The short rules sit only inside the media group; the line-start base rules still read as before.
+  assert.ok(ALL_CSS.includes(".cb-sum-body{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;margin-top:7px;height:78px;"));
+  assert.ok(ALL_CSS.includes(".cb-act{flex:none;border-top:3px solid #3a3226;background:#1b170f;padding:10px 12px 26px}"));
+  assert.ok(ALL_CSS.includes(".cb-head{flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 14px 9px;"));
 });

@@ -2186,6 +2186,34 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   #mw-camp-sheet .mw-legend-scrim{background:rgba(8,7,5,.35)}
   #mw-camp-sheet .mw-legend-panel{width:var(--mw-side-w, 45%);max-width:none;max-height:none;height:100%;margin:0;overflow-y:auto;border-top:0;border-left:3px solid #6b5c3c;padding-top:calc(18px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-right:calc(18px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
 }
+
+/* ---- The short window (Phase 97, SCREEN-03): a phone on its side, under 480
+   px tall. Adds to the side block above: the side panel is 45% wide, the HUD
+   is one row, Hero and Gear flow into two columns, the other tabs and the
+   sheets are centred columns at most 640 px wide (a readable line), and the
+   combat panel is trimmed so its actions fit about 320 px of stage height. */
+@media (max-height: 479.98px){
+  :root{--mw-side-w:45%}
+  .mw-hud{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ident band2" "track track";align-items:center}
+  .mw-hud-identity{grid-area:ident;padding-top:calc(6px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-bottom:6px;padding-right:8px}
+  .mw-hud-band2{grid-area:band2;padding-top:calc(4px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-bottom:4px;padding-left:0}
+  .mw-hud-wptrack{grid-area:track}
+  .mw-cond-strip{padding-top:4px;padding-bottom:5px}
+  .mw-hud-menu{max-height:calc(100vh - 64px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));max-height:calc(100dvh - 64px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+  #screen-oracle,#screen-dead{max-width:640px;margin-left:auto;margin-right:auto;width:100%}
+  #screen-hero,#screen-gear{max-width:960px;margin-left:auto;margin-right:auto}
+  #screen-hero{column-width:300px;column-count:2;column-gap:14px}
+  #screen-hero > .panel{break-inside:avoid;margin:0 0 14px}
+  #screen-gear{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;align-items:start}
+  #screen-gear .mw-gear-stats{grid-column:1 / -1}
+  #gear-worn-sec{grid-column:1;grid-row:2 / span 3}
+  #gear-bag-sec,#gear-cons-sec,#gear-kit-sec{grid-column:2}
+  #gear-bag-sec{margin-top:0}
+  .mw-legend-panel{max-width:640px;margin-left:auto;margin-right:auto;max-height:calc(100vh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));max-height:calc(100dvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))}
+  .cb-head{padding:7px 12px 6px}
+  .cb-sum-body{height:44px}
+  .cb-act{padding:7px 10px 10px}
+}
 /* END mw-layout */
 </style>
 </head>
