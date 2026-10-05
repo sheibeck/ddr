@@ -51,11 +51,6 @@
 ## #s-trait
 <div id="s-trait">
   html="<b>Leader</b>, driven by <b>knowledge</b>, afraid of <b>being trapped</b>."
-  <button class="mw-rules-btn" aria-controls="mw-rules-hero-trait" aria-expanded="false" aria-label="Rules for Wilmsry" type="button" type="button" onclick>
-    text="RULES ▸"
-  <div id="mw-rules-hero-trait" class="mw-rules-body" hidden>
-    <p class="mw-rules-line">
-      text="Heals twice as much (rest, potions, own healing spells) and gets half the experience; can always parley (talking a fight down) with anything but Magical foes and the Walking Dead, at +4 on every parley roll; store prices 30% off; refuses to take Magic Users on as Joiners."
 ## #s-vp
 <div id="s-vp">
   text="12 of 12 points spent"
@@ -67,21 +62,11 @@
       text="Acute Hearing"
     <i>
       text="Nothing sneaks up on you, and trouble announces itself through the walls, if never by name."
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-skill-Acute-Hearing" aria-expanded="false" aria-label="Rules for Acute Hearing" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-skill-Acute-Hearing" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="never surprised; hears an encounter up to three squares away, walls or no walls, without learning what it is"
   <li>
     <b>
       text="Night Vision"
     <i>
       text="The dark is just a room with the lights off, and it costs you nothing."
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-skill-Night-Vision" aria-expanded="false" aria-label="Rules for Night Vision" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-skill-Night-Vision" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="darkness costs you nothing"
 ## #s-abilities
 <div id="s-abilities">
   <li>
@@ -93,11 +78,6 @@
       text="A fistful of grit and no sense of honour: the foe goes blind and hits only by fluke."
     <span>
       text="cd 4 rounds"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-dirtyTrick" aria-expanded="false" aria-label="Rules for Dirty Trick" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-dirtyTrick" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="sand, thumb, elbow: the target is blinded for two rounds, so it hits only on its best roll (20 on a d20) and never lands a critical"
   <li>
     <b>
       text="Smoke"
@@ -107,11 +87,6 @@
       text="Gone in a puff of showmanship: foes seldom hit you, and running away finally works."
     <span>
       text="cd 3 rounds"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-smoke" aria-expanded="false" aria-label="Rules for Smoke" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-smoke" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="gone: for two rounds foes hit you only on their best roll (20 on a d20; 19–20 if you insulted them), and a flee during it just works; ready again 6 rounds after you use it"
   <li>
     <b>
       text="Poisoned Edge"
@@ -121,11 +96,6 @@
       text="A little something on the blade, so the foe keeps paying for the cut long after you stop."
     <span>
       text="cd 5 rounds"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-poisonedEdge" aria-expanded="false" aria-label="Rules for Poisoned Edge" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-poisonedEdge" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="the blade weeps: d4 + your level a round to the target for three rounds"
 ## #s-grim-count
 <div id="s-grim-count">
   text=""
@@ -147,15 +117,6 @@
       text="Wilmsry"
     <p>
       text="Everyone wants to haggle with you, you mend like a lizard and you can talk down nearly anything. You will not take a Magic User along, and you learn so slowly that survival teaches you nothing."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-race" aria-expanded="false" aria-label="Rules for Wilmsry" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-race" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="You heal twice as fast (rest, potions and your own healing spells) and learn half as quickly, so you will survive a great deal and understand almost none of it. You can always parley, which is talking a fight down, with anything but Magical foes and the Walking Dead, at +4 on every parley roll, and shops take 30% off for you: everyone wants to bargain with a Wilmsry. Magic Users despise you on sight, and you return the favour: you will not take a Magic User on as a Joiner, which most Wilmsry take as proof they are doing something right."
-      <p class="mw-rules-line doss-rules">
-        text="Good: can always parley with anything but Magical foes and the Walking Dead; +4 on every parley roll; store prices 30% off; rest, potions and your own healing spells heal twice as much."
-      <p class="mw-rules-line doss-rules">
-        text="Bad: you refuse to take Magic User Joiners on; half the experience from every kill."
   <section>
     <h3>
       text="Class"
@@ -163,11 +124,6 @@
       text="Thief"
     <p>
       text="Light on hit points and lighter on armour, but the only class with a full toolbox of skills. The plan is to be somewhere else when it matters, and the toolbox is how."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-class" aria-expanded="false" aria-label="Rules for Thief" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-class" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="Fifty Hit Points, studded leather at the very best (mail, if you learn Heft), and an opening strike that lands twice as hard as it ought to. Twelve value points of special skills, more than anyone else gets. A thief's plan is to be elsewhere by round three, and thieves are excellent at plans. A scroll is still an intelligence roll that can backfire, no matter how many locks you've picked."
   <section>
     <h3>
       text="Subclass"
@@ -175,15 +131,6 @@
       text="Cat Burglar"
     <p>
       text="Your first strike always lands and you start knowing Dirty Trick. You also go through every door first, and every trap that catches you hurts far worse than it should."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-sub" aria-expanded="false" aria-label="Rules for Cat Burglar" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-sub" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="Your first strike of any fight always lands. You also go through every door first and take the full weight of whatever waits behind it: every trap that catches you deals double damage. These two facts are related. You start knowing Dirty Trick for free, which is the only perk anyone has ever mentioned."
-      <p class="mw-rules-line doss-rules">
-        text="Good: your first strike of every fight always lands; starts with the Dirty Trick skill for free."
-      <p class="mw-rules-line doss-rules">
-        text="Bad: every trap that catches you deals double damage."
 ## #hero-party
 <div id="hero-party" hidden>
 ## #hero-party-list

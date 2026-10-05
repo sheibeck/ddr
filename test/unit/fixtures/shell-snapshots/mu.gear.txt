@@ -129,11 +129,6 @@
           text="×2"
       <div class="mw-gear-desc">
         text="A reassuring swig that tops you up, and tastes exactly like medicine."
-      <button class="mw-rules-btn" aria-controls="mw-rules-gear-cons-heal" aria-expanded="false" aria-label="Rules for HEALING POTION" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-gear-cons-heal" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="Heals 7–25 hp (double for a Wilmsry). Stays corked at full health."
     <button class="mw-gear-cons-btn" disabled>
       text="USE"
   <li class="mw-gear-card mw-gear-cons" data-key="scroll">
@@ -145,11 +140,6 @@
           text="×1"
       <div class="mw-gear-desc">
         text="The scroll picks the spell and you do the reading, which seems about fair."
-      <button class="mw-rules-btn" aria-controls="mw-rules-gear-cons-scroll" aria-expanded="false" aria-label="Rules for SCROLLS" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-gear-cons-scroll" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="A random spell, read aloud. No refunds. Reads without fail (Magic User)."
     <button class="mw-gear-cons-btn" onclick>
       text="READ"
 ## #gear-kit-head

@@ -51,11 +51,6 @@
 ## #s-trait
 <div id="s-trait">
   html="<b>Leader</b>, driven by <b>status</b>, afraid of <b>bats and rats</b>."
-  <button class="mw-rules-btn" aria-controls="mw-rules-hero-trait" aria-expanded="false" aria-label="Rules for Human" type="button" type="button" onclick>
-    text="RULES ▸"
-  <div id="mw-rules-hero-trait" class="mw-rules-body" hidden>
-    <p class="mw-rules-line">
-      text="No advantages, no penalties. The dungeon's default."
 ## #s-vp
 <div id="s-vp">
   text="none"
@@ -77,61 +72,31 @@
   <li class="grim-locked">
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Doze</b><i>control · A lullaby for several foes together, undone by the first rude interruption.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Doze" aria-expanded="false" aria-label="Rules for Doze" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Doze" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="control · d4 foes, your target first · asleep d4 rounds each; a hit wakes the sleeper it lands on, because a nap is not armour · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does"
     <span class="grim-hint">
       text="Combat only"
   <li class="grim-locked">
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Freeze</b><i>burst · A well-aimed bolt of winter: it stings, and what survives goes stiff and cross.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Freeze" aria-expanded="false" aria-label="Rules for Freeze" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Freeze" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="burst · one foe · hits on 5–10 (d10) before bonuses, for d6 + your level² damage; unless it resists, a survivor is frozen for d4 rounds, then it is just cold and angry · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does"
     <span class="grim-hint">
       text="Combat only"
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Heal</b><i>healing · Closes wounds the polite way: quickly, and without asking how you got them.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Heal" aria-expanded="false" aria-label="Rules for Heal" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Heal" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="healing · you · d10 hp"
     <button class="small" onclick>
       text="Cast"
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Map the Floor</b><i>sight · Lays out the whole floor in your mind, right up until you take a step.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Map-the-Floor" aria-expanded="false" aria-label="Rules for Map the Floor" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Map-the-Floor" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="sight · the whole floor · shown until you take a step, then your focus breaks"
     <button class="small" onclick>
       text="Cast"
   <li class="grim-locked">
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L1</span>Stun</b><i>control · Dazes a foe into standing still, however rudely you poke it.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Stun" aria-expanded="false" aria-label="Rules for Stun" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Stun" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="control · one foe · held for d4 rounds, and hitting it does not end it: it was never asleep, only stunned · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does"
     <span class="grim-hint">
       text="Combat only"
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L2</span>Fly</b><i>utility · Lifts you over walls and gaps as if they were rumours, though it is no help in a scrap.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Fly" aria-expanded="false" aria-label="Rules for Fly" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Fly" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="utility · you · flight for 30 squares, +10 squares per school bonus point: walls to climb and crevices to leap are just scenery, and water costs one square; useless in a fight, where everything can reach you anyway"
     <button class="small" disabled title="Needs level 2" onclick>
       text="Cast"
     <span class="grim-hint">
@@ -139,11 +104,6 @@
   <li>
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L2</span>Summon</b><i>summon · Calls a helper out of thin air, who fights for you until they remember their errands.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Summon" aria-expanded="false" aria-label="Rules for Summon" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Summon" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="summon · one ally · fights beside you d4+2 rounds"
     <button class="small" disabled title="Needs level 2" onclick>
       text="Cast"
     <span class="grim-hint">
@@ -151,11 +111,6 @@
   <li class="grim-locked">
     <div class="grim-info">
       html="<b><span class=\"grim-lvl\">L4</span>Earthquake</b><i>multi-target · Hurts everyone in the room, caster included, by making the ground lose its temper.</i>"
-      <button class="mw-rules-btn" aria-controls="mw-rules-grim-Earthquake" aria-expanded="false" aria-label="Rules for Earthquake" type="button" type="button" onclick>
-        text="RULES ▸"
-      <div id="mw-rules-grim-Earthquake" class="mw-rules-body" hidden>
-        <p class="mw-rules-line">
-          text="multi-target · every foe and you · 3d10+8 + your level² damage to each foe; you get half the 3d10+8 unless warded, because the floor does not take sides · a foe may resist this on its intelligence, and the deeper the floor, the likelier it does"
     <span class="grim-hint">
       text="Combat only"
 ## #doss-who
@@ -171,13 +126,6 @@
       text="Human"
     <p>
       text="No perks, no penalties and no excuses: the yardstick every other race is measured against, and the one the dungeon forgets first."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-race" aria-expanded="false" aria-label="Rules for Human" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-race" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="No advantages, no penalties, no excuses. The dungeon keeps humans around the way a kitchen keeps salt — everything else is measured against them. You will die in a manner the Game Master considers statistically unremarkable."
-      <p class="mw-rules-line doss-rules">
-        text="No advantages and no disadvantages: every other race is measured against this one."
   <section>
     <h3>
       text="Class"
@@ -185,11 +133,6 @@
       text="Magic User"
     <p>
       text="Fragile, unarmoured by temperament and entirely in the grimoire's hands: the spells are the class, and everything else is decoration."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-class" aria-expanded="false" aria-label="Rules for Magic User" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-class" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="Thirty-six to forty-nine Hit Points, depending on what the d10 pities you with, a staff you cannot really use, and a hit only on 18–20 on the d20 at skill level I, so seventeen swings in twenty are decorative. Everything you are is in the grimoire. No special skills: the book's position is that spells ought to be enough. Every scroll reads for you without fail — the one roll in the whole dungeon you never have to make."
   <section>
     <h3>
       text="Subclass"
@@ -197,15 +140,6 @@
       text="Wizard"
     <p>
       text="Your book opens with something that hurts, and your aim is good, but you refuse to lift a weapon while a spell remains. Illusion, meanwhile, is the Illusionist's, like a family recipe."
-    <button class="mw-rules-btn" aria-controls="mw-rules-doss-sub" aria-expanded="false" aria-label="Rules for Wizard" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-doss-sub" class="mw-rules-body" hidden>
-      <p class="mw-rules-line doss-rules">
-        text="Offense, protection, healing, divination and special, and never Illusion, which the Illusionist keeps for itself like a family recipe. Your thrown offense spells land at +3 to hit. Your book always opens with something that hurts, and you will not raise a hand while an attack spell is left in it; once the book cannot hurt anything, the staff will do. There is only one of you, which the other wizards consider a mercy."
-      <p class="mw-rules-line doss-rules">
-        text="Good: always starts with a level 1 direct-damage spell it can cast on day one; +3 to hit with thrown offense spells."
-      <p class="mw-rules-line doss-rules">
-        text="Bad: won't swing a weapon while a castable attack spell and a charge remain; never learns illusion spells."
 ## #hero-party
 <div id="hero-party">
 ## #hero-party-list

@@ -9,11 +9,6 @@
       text="Years of practice in one tidy motion, so the next blow lands better and bites harder."
     <span>
       text="READY"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-kata" aria-expanded="false" aria-label="Rules for Kata" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-kata" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it"
   <li data-state="recharging">
     <b>
       text="Pommel Strike"
@@ -23,11 +18,6 @@
       text="The handle instead of the pointy bit, and a landed blow costs the foe its next move."
     <span>
       text="READY IN 3"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-pommelStrike" aria-expanded="false" aria-label="Rules for Pommel Strike" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-pommelStrike" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn"
   <li data-state="spent">
     <b>
       text="Death Touch"
@@ -37,11 +27,6 @@
       text="Announce the blow, then land it: the frail are finished, and the stunt is not repeated this fight."
     <span>
       text="SPENT THIS FIGHT"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-deathTouch" aria-expanded="false" aria-label="Rules for Death Touch" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-deathTouch" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight"
   <li data-state="unavailable">
     <b>
       text="Sweep"
@@ -51,11 +36,6 @@
       text="A generous arc that clips every foe in reach, but only if there is a crowd to be clipped."
     <span>
       text="NEEDS TWO OR MORE FOES"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-sweep" aria-expanded="false" aria-label="Rules for Sweep" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-sweep" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="one wide arc: every living foe takes half damage; needs two or more foes"
   <li data-state="unavailable">
     <b>
       text="Last Stand"
@@ -65,8 +45,3 @@
       text="Saved for when you are nearly done for: a furious flurry from someone with nothing to lose."
     <span>
       text="NEEDS A QUARTER HP OR LESS"
-    <button class="mw-rules-btn" aria-controls="mw-rules-hero-ability-lastStand" aria-expanded="false" aria-label="Rules for Last Stand" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-hero-ability-lastStand" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="under a quarter hp: three attacks this round; ready again 4 rounds after you use it"

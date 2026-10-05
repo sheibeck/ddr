@@ -11,80 +11,26 @@
     html="<span class=\"g-n\">Bread (+5 hp)</span>\n        <span class=\"g-c\">11 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Meat (+15 hp)</span>\n        <span class=\"g-c\">18 wm</span>"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Healing potion<i>A reassuring swig that tops you up, and tastes exactly like medicine.</i></span>\n        <span class=\"g-c\">105 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-3-Healing-potion" aria-expanded="false" aria-label="Rules for Healing potion" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-3-Healing-potion" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="+d10+2 hp"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Strength potion<i>Bottled biceps: blows and spells land harder until the effect wears off.</i></span>\n        <span class=\"g-c\">70 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-4-Strength-potion" aria-expanded="false" aria-label="Rules for Strength potion" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-4-Strength-potion" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="+8 damage to blows and spells, 25 squares"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Enlarge potion<i>Swells you up big and heavy-handed, though it also makes you a better target.</i></span>\n        <span class=\"g-c\">105 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-5-Enlarge-potion" aria-expanded="false" aria-label="Rules for Enlarge potion" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-5-Enlarge-potion" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="one size larger for fifty squares: +11 damage, and foes +1 to hit you"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Cure Poison potion<i>Clears out poison, politely but firmly, and leaves a taste behind as a reminder.</i></span>\n        <span class=\"g-c\">70 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-6-Cure-Poison-potion" aria-expanded="false" aria-label="Rules for Cure Poison potion" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-6-Cure-Poison-potion" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="cures poison"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Set of lockpicks<i>Thin bits of metal and good intentions, for locks that need persuading.</i></span>\n        <span class=\"g-c\">315 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-7-Set-of-lockpicks" aria-expanded="false" aria-label="Rules for Set of lockpicks" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-7-Set-of-lockpicks" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="6–10 on d10 against any lock"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Flail<i>A weighty ball on a chain: hard to aim, impossible to ignore, and rude on arrival. (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.7 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-8-Flail" aria-expanded="false" aria-label="Rules for Flail" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-8-Flail" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="d10+2 · −1 to hit · (usable by Fighters, Thieves)"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Spear<i>The original point-first argument: long reach, simple manners and few moving parts. · d8 vs your d6/2 · −1 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.4 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-9-Spear" aria-expanded="false" aria-label="Rules for Spear" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-9-Spear" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="d8"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Warded leather<i>Supple hide that creaks, smells faintly of cow and turns the odd glancing blow. (usable by Fighters, Thieves) · AR 7 vs your AR 6 · upgrade</i></span>\n        <span class=\"g-c\">700 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-10-Warded-leather" aria-expanded="false" aria-label="Rules for Warded leather" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-10-Warded-leather" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="AR 7 · 25/25 hp · enchanted · (usable by Fighters, Thieves)"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Healing potion<i>A reassuring swig that tops you up, and tastes exactly like medicine.</i></span>\n        <span class=\"g-c\">105 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Strength potion<i>Bottled biceps: blows and spells land harder until the effect wears off.</i></span>\n        <span class=\"g-c\">70 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Enlarge potion<i>Swells you up big and heavy-handed, though it also makes you a better target.</i></span>\n        <span class=\"g-c\">105 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Cure Poison potion<i>Clears out poison, politely but firmly, and leaves a taste behind as a reminder.</i></span>\n        <span class=\"g-c\">70 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Set of lockpicks<i>Thin bits of metal and good intentions, for locks that need persuading.</i></span>\n        <span class=\"g-c\">315 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Flail<i>A weighty ball on a chain: hard to aim, impossible to ignore, and rude on arrival. (usable by Fighters, Thieves) · d10+2 vs your d6/2 · −2 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.7 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">175 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Spear<i>The original point-first argument: long reach, simple manners and few moving parts. · d8 vs your d6/2 · −1 to hit, worse than your Dagger · crits on 20 vs your 19–20 · 1.4 vs 1.0 average damage a swing · upgrade</i></span>\n        <span class=\"g-c\">105 wm</span>"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Warded leather<i>Supple hide that creaks, smells faintly of cow and turns the odd glancing blow. (usable by Fighters, Thieves) · AR 7 vs your AR 6 · upgrade</i></span>\n        <span class=\"g-c\">700 wm</span>"
   <button class="goods" onclick>
     html="<span class=\"g-n\">Rations (+1 ration)<i>3 left</i></span>\n        <span class=\"g-c\">21 wm</span>"
-  <div class="mw-rules-wrap">
-    <button class="goods" disabled onclick>
-      html="<span class=\"g-n\">Torch<i>Pushes the dark back for a good stretch, then burns out without apology. · bag full — sell or drop something first</i></span>\n        <span class=\"g-c\">18 wm</span>"
-    <button class="mw-rules-btn" aria-controls="mw-rules-store-12-Torch" aria-expanded="false" aria-label="Rules for Torch" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-store-12-Torch" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="lights the dark once, and keeps it off for forty squares"
+  <button class="goods" disabled onclick>
+    html="<span class=\"g-n\">Torch<i>Pushes the dark back for a good stretch, then burns out without apology. · bag full — sell or drop something first</i></span>\n        <span class=\"g-c\">18 wm</span>"
 ## #sell-head
 <div id="sell-head">
 ## #sell-list
@@ -95,11 +41,6 @@
       text="Wakazashi"
     <i>
       text="The katana's little sibling, quick and keen, and happy to share a cramped corridor."
-    <button class="mw-rules-btn" aria-controls="mw-rules-sell-list-0-Wakazashi" aria-expanded="false" aria-label="Rules for Wakazashi" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-sell-list-0-Wakazashi" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="d6+1"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 175 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
@@ -109,11 +50,6 @@
       text="Warded studded"
     <i>
       text="Leather with metal studs added for confidence, and a little extra weight to go with it."
-    <button class="mw-rules-btn" aria-controls="mw-rules-sell-list-1-Warded-studded" aria-expanded="false" aria-label="Rules for Warded studded" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-sell-list-1-Warded-studded" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="AR 11 · 28/28 hp"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 750 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
@@ -123,11 +59,6 @@
       text="Anklet of Invisibility · READY"
     <i>
       text="Makes you a little easy to overlook, so foes aim badly until the effect lapses."
-    <button class="mw-rules-btn" aria-controls="mw-rules-sell-list-2-Anklet-of-Invisibility" aria-expanded="false" aria-label="Rules for Anklet of Invisibility" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-sell-list-2-Anklet-of-Invisibility" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 750 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
@@ -137,11 +68,6 @@
       text="Rope"
     <i>
       text="Gets you across a crevice with some dignity, and is used up for the favour."
-    <button class="mw-rules-btn" aria-controls="mw-rules-sell-list-3-Rope" aria-expanded="false" aria-label="Rules for Rope" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-sell-list-3-Rope" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="the honest way across a crevice. Once."
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 30 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
@@ -151,11 +77,6 @@
       text="Healing potion"
     <i>
       text="A reassuring swig that tops you up, and tastes exactly like medicine."
-    <button class="mw-rules-btn" aria-controls="mw-rules-sell-list-4-Healing-potion" aria-expanded="false" aria-label="Rules for Healing potion" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-sell-list-4-Healing-potion" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="+d10+2 hp"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>
       text="Sell · 75 wm"
     <button class="small" style="alignSelf:flex-start;marginRight:6px;marginTop:4px;" onclick>

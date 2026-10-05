@@ -8,12 +8,7 @@
 <div id="mw-gear-sheet-note">
   text="Makes you a little easy to overlook, so foes aim badly until the effect lapses."
 ## #mw-gear-sheet-stats
-<div id="mw-gear-sheet-stats" class="mw-gsheet-stats">
-  <button class="mw-rules-btn" aria-controls="mw-rules-gsheet-bag-Anklet-of-Invisibility" aria-expanded="false" aria-label="Rules for Anklet of Invisibility" type="button" type="button" onclick>
-    text="RULES ▸"
-  <div id="mw-rules-gsheet-bag-Anklet-of-Invisibility" class="mw-rules-body" hidden>
-    <p class="mw-rules-line mw-gsheet-note mw-gsheet-stat">
-      text="used, for fifty squares foes are −2 to hit you; then fifty squares back in plain sight"
+<div id="mw-gear-sheet-stats" class="mw-gsheet-stats" hidden>
 ## #mw-gear-sheet-why
 <div id="mw-gear-sheet-why" hidden>
   text=""

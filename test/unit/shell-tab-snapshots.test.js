@@ -131,6 +131,8 @@
 //
 // Phase 96 (FLAVOR-04), Plan 06: thief.hero moves a second time: #s-skills and #s-abilities rows read their flavour line with a collapsed RULES toggle and a hidden body holding the exact old text; mu.hero (no skills, no abilities) is unchanged by this plan. Every other fixture re-wrote the same bytes.
 //
+// Phase 97.1 (FLAVOR-07), Plan 01: eight declared regenerations: thief.hero, mu.hero, thief.gear, mu.gear, thief.gear-sheet-bag, thief.gear-sheet-worn, thief-store.store and mu-store.store. Every flavoured surface lost its RULES toggle and hidden body and shows the flavour line only (the store shelf rows are bare buttons again, with no .mw-rules-wrap); the two Gear sheet fixtures lose their toggle, hidden body and effect line (a jewel's only stat row is its txt sentence), leaving the stats container empty and hidden. A flavoured item's numeric stat rows are drawn as plain rows. Every other fixture re-wrote the same bytes.
+//
 // Fixtures are captured ONCE, before a later plan carves a single line out
 // of the three render bodies — a diff after a carve means the carve moved
 // the rendered DOM, never that the fixture needs updating. Regenerating a
