@@ -77,12 +77,40 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| ACH-01 | Phase 98 | Pending |
+| ACH-02 | Phase 98 | Pending |
+| ACH-03 | Phase 98 | Pending |
+| ACH-04 | Phase 98 | Pending |
+| ACH-05 | Phase 98 | Pending |
+| TRACK-01 | Phase 99 | Pending |
+| TRACK-02 | Phase 99 | Pending |
+| TRACK-03 | Phase 99 | Pending |
+| TRACK-04 | Phase 99 | Pending |
+| TRACK-05 | Phase 99 | Pending |
+| AUI-01 | Phase 100 | Pending |
+| AUI-02 | Phase 100 | Pending |
+| AUI-03 | Phase 100 | Pending |
+| AUI-04 | Phase 101 | Pending |
+| PGS-07 | Phase 101 | Pending |
+| PGS-08 | Phase 101 | Pending |
+| PGS-09 | Phase 101 | Pending |
+| PGS-10 | Phase 101 | Pending |
+| PGS-11 | Phase 101 | Pending |
+| ZIP-01 | Phase 98 | Pending |
+| ZIP-02 | Phase 98 | Pending |
+| ZIP-03 | Phase 98 | Pending |
+| SHOTS-01 | Phase 102 | Pending |
+| SHOTS-02 | Phase 102 | Pending |
+| SHOTS-03 | Phase 102 | Pending |
+| COMP-05 | Phase 101 | Pending |
 
 **Coverage:**
 - v2.5 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26 ✓
+- Unmapped: 0
+
+By phase: Phase 98 has 8 (ACH-01..05, ZIP-01..03), Phase 99 has 5 (TRACK-01..05), Phase 100 has 3 (AUI-01..03), Phase 101 has 7 (PGS-07..11, AUI-04, COMP-05), Phase 102 has 3 (SHOTS-01..03).
 
 ---
 *Requirements defined: 2026-10-05*
-*Last updated: 2026-10-05 after milestone v2.5 definition*
+*Last updated: 2026-10-05 after roadmap creation (traceability mapped to Phases 98–102)*

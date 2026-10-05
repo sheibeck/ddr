@@ -17,9 +17,118 @@
 - ✅ **v2.2 Our Own Leaderboards** — Phases 82–86 (shipped 2026-09-29 as Play 2.2.0 / vc12 to the testing track; override closeout: 35/35 requirements — SRV-09's live proof passed on release day — 5/5 phases passed, Pixel 7 batch `docs/UAT-v2.2.md` passed bar 3 upgrade-path rows) → `.planning/milestones/v2.2-ROADMAP.md`
 - ✅ **v2.3 Truth in Advertising** — Phases 87–92.4, incl. 91.1–91.2 and 92.1–92.4 (shipped 2026-10-02 as Play 2.3.0 / vc13 to closed testing; override closeout: 42/42 requirements, 12/12 phases passed, audit tech_debt — 5 SUMMARY-paperwork partials; batched Pixel 7 checklist (claude.ai artifact LMpj9qYzChoYfH6GRXCEAF, incl. Part B with Compete ON) not yet walked) → `.planning/milestones/v2.3-ROADMAP.md`
 - ✅ **v2.4 Fit & Finish** — Phases 93–97.1, incl. 93.1, 94.1 and 97.1 (shipped 2026-10-05 as Play 2.4.0 / vc14, signed AAB for the user upload; override closeout: 22/22 requirements, 8/8 phases passed, audit tech_debt; Phase 98 screenshots deferred to the next milestone; Pixel 7 batch `docs/UAT-v2.4.md` open) → `.planning/milestones/v2.4-ROADMAP.md`
+- 🚧 **v2.5 Achievements** — Phases 98–102 (in progress; aimed at Play 2.5.0 / vc15)
 - 📋 **v1.0 launch tail** — first-run tutorial (UX-06, rebuilt on the v1.6 modular shell) + Google Play production launch (STR-01..04, STR-06)
 
 ## Phases
+
+### 🚧 v2.5 Achievements (In Progress)
+
+- [ ] **Phase 98: Achievement Catalog & Play Console Import Zip** - All 81 achievements exist as one finished catalog in the house voice, and a tool builds the validated Play Console import zip for the user to import as a draft.
+- [ ] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned.
+- [ ] **Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List** - An unlock is a toast with a sarcastic line, and a list opened from ☰ shows every achievement locked, unlocked, in progress or hidden, in every layout class.
+- [ ] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file.
+- [ ] **Phase 102: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the game as it now is, achievements list included.
+
+**Sequencing:** the catalog goes first because its copy freezes at the Phase 98 close and the zip it yields is the user's one step in Play Console, which can run in parallel with everything after it. The tracker (99) evaluates the catalog's triggers, the toast and list (100) need the tracker's unlock stream, and the Play mirror (101) needs that stream, the ☰ list it hangs a Play row on, and the IDs file the user hands back after importing the zip. Screenshots (102) are last by the user's ruling (2026-10-05), so they show the achievements list on the final build. Engine bytes move only in Phase 99 (additive event facts, zero rng draws, any moved fixture declared); the rest is content, shell, in-repo Android plugin code and tooling. No bot balance pass is planned: v2.5 changes no game rule, and the tuning bot earns no achievements.
+
+**After the milestone (not requirements, not a phase):** per `docs/RELEASING.md`: patch notes agreed with the user first (one md feeds the in-game sheet, the GitHub Release, Play's What's new and the darktierstudios.com page), one batched Pixel 7 checklist (`docs/UAT-v2.5.md`, including the signed-in toast plus Play popup check), then the release build last (`npm run play:release`, versionCode 15), the user's Play upload, tags, the GitHub Release and the darktierstudios.com deploy. Publishing the draft achievements in Play Console (per `docs/ACHIEVEMENTS.md`) and uploading the new listing screenshots are the user's steps.
+
+#### Phase Details
+
+### Phase 98: Achievement Catalog & Play Console Import Zip
+
+**Goal**: All 81 of the user's achievements exist as one finished catalog in the house voice, and a repo tool turns it into a Play Console import zip, checked against Google's rules, that the user can import as a draft.
+**Depends on**: None
+**Context**: First phase of v2.5. The icons are already built in `achievements/` (81 opaque 512 × 512 `play/` PNGs, 81 transparent 144 × 144 `ingame/` PNGs, and `manifest.json` mapping each to its id, name, tier and paths). One catalog content module is the single source for the tracker (Phase 99), the list (Phase 100), the Play mirror (Phase 101) and the zip. Each entry has a stable id, name, description, trigger, threshold, tier, points, initial state (Hidden or Revealed), type (standard or incremental) and icon. **The catalog copy is frozen at this phase's close:** Play achievements imported as drafts must be hand-edited in Play Console (or deleted and re-imported before publishing) if the copy changes later; initial state and type can never change once published, and a published achievement cannot be deleted. The phase ends by handing the user the zip to import as a draft (Grow users > Play Games Services > Setup and management > Achievements > Import achievements, then Save as draft); that import is a user step and does not block the later phases. The engine and the shell are untouched.
+**Requirements**: ACH-01, ACH-02, ACH-03, ACH-04, ACH-05, ZIP-01, ZIP-02, ZIP-03
+**Open decisions (discuss-phase; `/gsd-discuss-phase` strongly recommended)**: (1) the points scheme and the headroom left under the 2,000-point cap for the brainstorm set (5–200 per achievement, steps of 5); (2) which achievements start Hidden and which unlock reveals each one, including the hint chains (Fully Dressed hints at Naked Ambition, per the user's design principle); (3) standard vs incremental per track: lifetime counters are incremental, one-offs are standard, and the single-run tracks (Survivor days, Hoarder coin held at once) may suit a setSteps-at-least incremental; Hoarder's top tier sits exactly on Play's 10,000-step cap; (4) tier naming: each tier I–IV needs its own unique name, with no commas; (5) the list order, shared by the zip and the in-game list; (6) one line or two: whether an achievement's description doubles as the in-game toast and hint line, or the catalog carries a separate sarcastic unlock line (the description is Play copy and freezes); (7) the definition rulings the copy depends on (the Phase 99 open questions on fallen summons, Joiner kills in body counts, Human Shields, Teetotaler and Joiner potions, and Chicken's flee sites), settled enough here that every description is true before it freezes.
+**Success Criteria** (what must be TRUE):
+
+  1. One catalog module defines all 81 achievements with every field above, and each entry resolves to exactly one built icon in `achievements/manifest.json` (81 entries, no icon missing and none unused); a test pins the count and the field shapes.
+  2. Every name and description reads in the house voice, passes the voice safety scan and the narrative review, and fits Play's import rules: no commas, a name of at most 100 characters and unique (each tier I–IV has its own name), a description of at most 500.
+  3. The points are each 5–200 in steps of 5 and total within the 2,000-point cap with the ruled headroom; incremental steps are 1–10,000; the hint chains are fixed (Fully Dressed's line points at Naked Ambition) and every Hidden achievement has a ruled revealer; initial state and type are final in the catalog.
+  4. One command builds the import zip (`AchievementsMetadata.csv` and `AchievementsIconsMappings.csv` with no header rows, plus the 81 PNGs flat with unique file names, in the in-game list order), and a validator test checks the built zip against Google's rules (no subdirectories, only CSV and PNG, each file under 1 MB, at most 403 files, 7 values per metadata row and 2 per mapping row, `True`/`False` and `Hidden`/`Revealed` spelt exactly, steps only on incremental rows, every row's icon present and exactly 512 × 512) and fails when a rule is broken.
+  5. `docs/ACHIEVEMENTS.md` covers rebuilding the zip, importing it in Play Console, testing with tester accounts, publishing and fetching the IDs file with Get resources, and the built zip is handed to the user for the draft import.
+
+**Plans**: TBD
+
+### Phase 99: Engine Facts & Lifetime Stats Tracker
+
+**Goal**: Every achievement unlocks the moment its condition is met, and the lifetime counts behind them survive relaunch, app updates and a crash mid-run.
+**Depends on**: Phase 98
+**Context**: The catalog's triggers and thresholds are what the tracker evaluates. This is the milestone's only phase that moves engine bytes, and only additively: new event fields or events carrying facts the engine already knows (for example a kill's monster group, a Joiner's death, a summon's end, a healing potion drunk, a trap survived, an ailment that leaves the hero on exactly 1 HP, the equipment worn at the first step), with zero rng draws. The engine gate applies: every new event type gets an `EVENT_NARRATION` entry, new serialized fields are carved out of the three `*Comparable()` functions, `test/parity/prototype-master.js.txt` is never edited, and any parity fixture that moves is measured, declared and regenerated. The lifetime stats record lives in `@capacitor/preferences` (the `src/browser/storage.js` pattern), apart from the run save, with tolerant load and no legacy paths; it also keeps each unlock's date, the lifetime counts and the best single-run values (days, coin, depth) that the list's progress and Play's setSteps-at-least will need. The tracker is a pure shell module (events and state in, stats and unlocks out) that the tuning bot never calls.
+**Requirements**: TRACK-01, TRACK-02, TRACK-03, TRACK-04, TRACK-05
+**Open decisions (discuss-phase)**: (1) what counts as a "fallen summon" for Disposable Help: the engine has no summon death, because summons expire via `allyDeparted`, vanish at fight end, or are unmade by a scroll fumble's `fumbleOnSide` (`who: "ally"`); (2) whether Joiner kills count toward the body counts (`foeKilled` carries `name` only, so the group is a BESTIARY lookup or a new additive field); (3) whether a Joiner's `memberDowned` and `joinerMurdered` both count for Human Shields; (4) whether a Joiner's potions break Teetotaler; (5) which `fled` sites count for Chicken (door, cloaker, tracked, smoke, escaped in `engine/combat.js`). The wording-affecting rulings are made in Phase 98's discuss-phase so the copy can freeze; here they fix the engine mechanics. Also: the stats record's key and shape, and where the event fold hooks into the shell's engine adapter.
+**Success Criteria** (what must be TRUE):
+
+  1. A run played through the engine surfaces every fact the 81 achievements need as additive event fields or events; a seeded run plays out identically before and after (zero rng draws), every new event has its narration entry, and any parity fixture that moves is declared and regenerated.
+  2. The lifetime stats record lives in `@capacitor/preferences`, separate from the run save; a fresh 2.5.0 install starts every count at zero (no credit from the graveyard or bests history); a missing, corrupt or older-shape record loads tolerantly; and the record survives relaunch, an app update and a crash mid-run.
+  3. Fed the events and state of a run, the tracker unlocks each achievement the moment its condition is met: lifetime counters across all runs (deaths, kills by group, Joiners, fallen Joiners, fallen summons, parleys, traps survived, the Terminal Condition flags), single-run conditions within one run (depth, each race and class to floor 5, Survivor days, Hoarder coin held at once, Chicken's 10 flees, Naked Ambition, Teetotaler, Fully Dressed), death achievements on the death that earns them, and Tourist across all delves started; all proven headless with no DOM.
+  4. An unlock fires exactly once, never re-locks, and is saved with its date the moment it is earned, not when the run ends: killing the app right after an unlock and relaunching leaves it unlocked and does not fire it again.
+  5. The tuning bot's runs earn no achievements and never touch the stats record.
+
+**Plans**: TBD
+
+### Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List
+
+**Goal**: A player sees an achievement the moment they earn it, and can browse all 81 from ☰: unlocked, locked, in progress or still secret.
+**Depends on**: Phase 98, Phase 99
+**Context**: Phase 98 supplies the names, lines, icons and list order; Phase 99 supplies the unlock stream and the lifetime counts that feed progress. Shell-only, no engine bytes. An unlock is a minor event, so it is a toast, never a card (user rule: a dismissible card is for decisions and big updates; minor events are toast-only with the narrative line; toasts linger about twice as long and tap to dismiss). The ☰ menu (`src/browser/hudMenu.js`) already carries the account rows. The list works in every layout class from v2.4 Phase 97 (short, compact, medium, expanded; `src/browser/layoutClass.js`, checked by `npm run layout:check`) and uses the `achievements/ingame/` 144 × 144 PNG icons.
+**Requirements**: AUI-01, AUI-02, AUI-03
+**Open decisions (discuss-phase)**: the ☰ row's place and label; the list's shape (one row per achievement, or one row per track with a tier ladder and the next rung's progress, since 81 rows is long); how a hidden achievement reads as a teaser and what its hint reveal shows; progress for single-run tracks (best so far or the current run); what the toast carries (name, icon, the sarcastic line) and how several unlocks at once stack.
+**Success Criteria** (what must be TRUE):
+
+  1. Earning an achievement shows a toast, not a card, carrying its name and its sarcastic line; it lingers and a tap dismisses it, and an unlock in the middle of a fight, a store or the death screen never blocks input or steals the screen.
+  2. Several unlocks at once (one kill can cross a tier on two tracks) stack under the toast rules: each stays readable and none is lost.
+  3. ☰ opens an achievements list showing every achievement with its icon: unlocked ones with when they were earned, locked ones greyed, counters with their progress (for example 37 / 50), and hidden ones as a teaser until they unlock or their hint reveals them.
+  4. The list fits and scrolls in the phone portrait, landscape and tablet layout classes, follows the shell's sheet conventions, closes with Android back, reads row by row under TalkBack (name, state, progress), and respects reduced motion.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 101: Play Games Achievements Mirror
+
+**Goal**: With Compete ON and signed in, achievements also unlock in Play Games, with Play's popup and XP, and nothing about Play can break, delay or leak from the in-game achievements.
+**Depends on**: Phase 98, Phase 99, Phase 100
+**Research flag**: yes, this phase needs research before planning (`gsd-phase-researcher`): the PGS v2 `AchievementsClient` on Android via Capacitor (unlock, increment and setStepsImmediate vs the non-immediate calls, reveal, `getAchievementsIntent` launched from a plugin, offline behaviour), the "Get resources" Android XML resource file (its format, how resource names derive from achievement names, how a catalog id maps to one), tester-account testing of draft achievements, and the Data safety implications.
+**Context**: Phase 99 supplies the unlock, progress and reveal stream; Phase 100's ☰ list is where Play's own screen opens from, and the in-game toast and list stay the source of truth; Phase 98's zip is what the user imports. Extends the in-repo native plugin `android/app/src/main/java/com/darktierstudios/delvedierepeat/PlayIdentityPlugin.java` (`play-services-games-v2` 22.1.0 is already a dependency) with unlock, increment-or-setSteps, reveal and show-achievements calls, behind a durable queue. The Phase 92.1 privacy gate holds: the Play Games SDK starts only while Compete is ON. IDs come from the resource file Play Console generates after the import, looked up by name natively and never hard-coded in the JS; without the file, Play sync is a no-op. **Human checkpoint:** the user imports the Phase 98 zip, then hands back the Get resources file. If it is not available by the end of this phase, the phase lands the mechanism with a test fixture and the real file is wired at the milestone close, before the device round; PGS-11's full-coverage proof then runs against the real file at that point.
+**Requirements**: PGS-07, PGS-08, PGS-09, PGS-10, PGS-11, AUI-04, COMP-05
+**Open decisions (discuss-phase, after research)**: which incremental tracks use increment and which setSteps-at-least (follows the Phase 98 type ruling); immediate vs non-immediate calls; when the queue flushes (sign-in, Compete turned ON, app foreground); how the queue dedupes so a resend never double-counts; how the ☰ row for Play's own screen appears and disappears with Compete and sign-in state.
+**Success Criteria** (what must be TRUE):
+
+  1. With Compete ON and signed in, an unlock shows Play's own unlock popup and earns XP, incremental progress and reveals reach Play, and ☰ also opens Play Games' own achievements screen.
+  2. Unlocks, progress and reveals earned with Compete OFF, signed out or offline wait in a durable queue that survives relaunch and sync the next time Compete is ON and the player is signed in; re-sending never double-counts.
+  3. With Compete OFF the Play Games SDK never starts and makes zero network calls (the Phase 92.1 gate, proven by test), and a Play failure (signed out, a refused call, offline, a missing ID) never blocks or breaks the in-game toast, list or unlock.
+  4. Play's achievement IDs are read by name from the Get resources file, never hard-coded in the JS; until that file is in the build, Play sync is a no-op and the in-game achievements still work; once it is, a test proves every catalog id resolves to a Play ID, and a signed-in Pixel 7 check (the toast plus Play's unlock popup) is a row in the milestone-close device checklist.
+  5. The Data safety answers in `store-listing/LISTING.md` and the privacy pages have been checked for achievement progress sent to Play Games with Compete ON, and updated where needed (submitting the Data safety form stays the user's step).
+
+**Plans**: TBD
+
+### Phase 102: Fresh Store & Website Screenshots
+
+**Goal**: The Play listing and darktierstudios.com show the game as it now is: the final flavour text, the ability states, the achievements list, and real tablet and landscape shots.
+**Depends on**: Phase 100, Phase 101
+**Context**: The achievements list (Phase 100) exists to be shown and, by the user's ruling (2026-10-05), this is the last phase of the milestone, so the shots come from the final build. The spec is the deferred v2.4 Phase 98 (backlog 999.18), now also showing the achievements list. Shots come from the Pixel 7 debug build and the emulator profiles for the 7" and 10" tablets; the dev row (debug builds only) can reach deep floors, but its chip stays out of frame. The website lives in `C:/projects/darktier-studio` (`public/assets/delve-die-repeat/shots/*.webp`, the `ddr-shots` section of `src/pages/delve-die-repeat/index.astro`, and `featured.webp`). The website deploy and the Play Console upload are the user's calls (checkpoints).
+**Requirements**: SHOTS-01, SHOTS-02, SHOTS-03
+**Open decisions (discuss-phase)**: the shot list, agreed with the user (candidates: title, combat with damage lines and ability states, the leaderboard with Play Games names, the Hero tab, a store, spells, the map, the achievements list); which landscape shots earn a place; how the achievements list is populated for its shot (earned in play, or a debug-only seed that never ships).
+**Success Criteria** (what must be TRUE):
+
+  1. An agreed shot list is captured on the current build for the phone, the 7" tablet, the 10" tablet and, where it fits, landscape, with no dev chip or debug UI in frame; the final flavour text, the ability states and the achievements list are visible.
+  2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots exported to Play's size rules, and `store-listing/LISTING.md` describes them.
+  3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live (the deploy is the user's call).
+
+**Plans**: TBD
+
+#### Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 98. Achievement Catalog & Play Console Import Zip | 0/TBD | Not started | - |
+| 99. Engine Facts & Lifetime Stats Tracker | 0/TBD | Not started | - |
+| 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
+| 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
+| 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 <details>
 <summary>✅ v2.4 Fit & Finish (Phases 93–97.1) — SHIPPED 2026-10-05</summary>
@@ -402,7 +511,7 @@ Plans:
 
 - [ ] TBD (promote with /gsd-new-milestone when ready — user wants this as its own milestone)
 
-### Phase 999.12: Achievements track (BACKLOG — promote as its own milestone)
+### Phase 999.12: Achievements track (PROMOTED → v2.5 Phases 98–101)
 
 **Goal:** [Captured 2026-09-25, user] Add an achievements track to the game. Every achievement name and unlock line is written in the game's sarcastic, family-friendly voice. **The user wants this promoted as its own milestone** (via `/gsd-new-milestone`), not folded into a bug-fix milestone.
 **Scheduled (user, 2026-10-04):** the next milestone after v2.4. 2.4.0 ships first, then `/gsd-new-milestone` starts achievements, aimed at 2.5.0.
@@ -673,7 +782,7 @@ Plans:
 
 - [ ] TBD (promote at the start of the next milestone via /gsd-review-backlog or /gsd-new-milestone)
 
-### Phase 999.18: Updated screenshots for the store listing and the website (DEFERRED from v2.4 — next milestone)
+### Phase 999.18: Updated screenshots for the store listing and the website (PROMOTED → v2.5 Phase 102)
 
 > **Deferred 2026-10-05 (user):** v2.4 closed after the 2.4.0 release without Phase 98, so the user could move to the next milestone (achievements). Take it up in the next milestone. The v2.4 Phase 98 spec (SHOTS-01..03) is kept below.
 
