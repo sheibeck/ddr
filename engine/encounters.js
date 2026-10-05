@@ -805,7 +805,9 @@ export function catchAffliction(state, rng, events = []) {
   c.affliction = { kind: a.kind, loss: a.loss, per: a.per, left: rng.d(20) }; // roll:amount
   const first = Math.min(rollDice(rng, a.loss), Math.max(0, c.wp - 1));
   c.wp -= first;
-  events.push({ type: "afflictionCaught", kind: a.kind, first });
+  // Phase 99 (TRACK-01) additive: `wp` is the hero's HP right after this hit,
+  // for Terminal Condition. c.wp already holds the post-hit value. Zero draws.
+  events.push({ type: "afflictionCaught", kind: a.kind, first, wp: c.wp });
   return events;
 }
 

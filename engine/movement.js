@@ -531,7 +531,10 @@ export function move(state, dir, rng, events = [], now = Date.now, opts = {}) {
         c.affliction = null;
         events.push({ type: "afflictionPassed", kind: af.kind });
       } else {
-        events.push({ type: "afflictionTick", kind: af.kind, loss: l });
+        // Phase 99 (TRACK-01) additive: `wp` is the hero's HP right after this
+        // tick, for Terminal Condition. c.wp already holds the post-hit value.
+        // Zero draws.
+        events.push({ type: "afflictionTick", kind: af.kind, loss: l, wp: c.wp });
         if (--af.left <= 0) {
           c.affliction = null;
           events.push({ type: "afflictionPassed", kind: af.kind });
