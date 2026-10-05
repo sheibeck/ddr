@@ -2,14 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Achievements
+current_phase: 98
 status: planning
-last_updated: "2026-10-05T17:01:33.796Z"
+stopped_at: Completed 98-01-PLAN.md
+last_updated: "2026-10-05T19:28:10.216Z"
 last_activity: 2026-10-05
+last_activity_desc: Milestone v2.5 started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -288,8 +291,8 @@ Items acknowledged and deferred at milestone close on 2026-09-16 (v1.4 override 
 
 ## Session Continuity
 
-Last session: 2026-10-04T05:54:25.531Z
-Stopped at: Completed 96-11-PLAN.md
+Last session: 2026-10-05T19:28:10.181Z
+Stopped at: Completed 98-01-PLAN.md
 
 - v2.4 roadmap created 2026-10-03 (Phases 93–98, 22/22 requirements mapped, files uncommitted until the user approves). NEXT: /gsd-discuss-phase 93 (the cloak's A-or-B ruling), then /gsd-plan-phase 93. Standing rule: after every update batch, ask whether to push a Play internal-testing build.
 
@@ -521,6 +524,7 @@ Resume file: None
 | Phase 96 P02 | 20min | 3 tasks | 9 files |
 | Phase 96 P12 | 40min | 3 tasks | 13 files |
 | Phase 96 P11 | 21min | 3 tasks | 21 files |
+| Phase 98 P01 | 25min | 3 tasks | 22 files |
 
 ## Decisions
 
@@ -908,6 +912,7 @@ Resume file: None
 - [Phase ?]: Phase 96-01: identity flavour is a { line, good, bad } record map with a lines() string adapter; tags are identityEntries ids; identity domains use the 200-character two-sentence rule; CLASS_FLAVOR keyed by the 3 live classes
 - [Phase ?]: 96-02: SUB_FLAVOR records ordered by CLASSES table, not SUB_NOTE key order; chart ids tagged only where wording hints at them
 - [Phase ?]: 96-11: lines added after a recorded review round get a first verdict in a later round (POST_ROUND1_PLANS), never a back-dated round-1 row; the 3 self-fixed skill lines are selfChecked for the user's read
+- [Phase ?]: Phase 98-01: listOrder is 10 x position; ACHIEVEMENTS registered on panels surface picking name/description/line
 
 ### Blockers
 

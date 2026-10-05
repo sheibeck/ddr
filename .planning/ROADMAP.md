@@ -56,7 +56,7 @@
 Plans:
 **Wave 1**
 
-- [ ] 98-01-PLAN.md — the catalog structure (77 entries: ids, triggers, points, types, Hidden set, reveal pairs, list order, icons), the Disposable Help icon trim, and the voice-tool registration
+- [x] 98-01-PLAN.md — the catalog structure (77 entries: ids, triggers, points, types, Hidden set, reveal pairs, list order, icons), the Disposable Help icon trim, and the voice-tool registration
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
