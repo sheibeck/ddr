@@ -112,7 +112,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 100-01-PLAN.md — the pure banner core: the listener fan-out (`achievementEvents`, so Phase 101 subscribes beside the banner), the unlock rail card and the many-at-once card, the pending queue with its drain gate (held in a fight, collapsed past three, none lost) and the Earned strip view, with the card copy registered in the voice tooling
+- [x] 100-01-PLAN.md — the pure banner core: the listener fan-out (`achievementEvents`, so Phase 101 subscribes beside the banner), the unlock rail card and the many-at-once card, the pending queue with its drain gate (held in a fight, collapsed past three, none lost) and the Earned strip view, with the card copy registered in the voice tooling
 
 **Wave 2** *(blocked on Wave 1 completion; 100-01 and 100-02 touch disjoint modules but both edit the two voice-registration files, so they run in order)*
 
