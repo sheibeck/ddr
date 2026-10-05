@@ -2314,6 +2314,17 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <button type="button" class="mw-settings-opt" data-value="right">Bottom right</button>
         </div>
       </div>
+      <!-- Phase 97 (SCREEN-02): Screen picks Portrait (the default) or Rotate.
+           Phones only: the row stays hidden on a tablet, an unfolded foldable
+           or a Chromebook, which always turn with the device
+           (renderSettingsSheet sets `hidden`). -->
+      <div class="mw-settings-row" id="mw-screen-row" hidden>
+        <span class="mw-settings-label">Screen</span>
+        <div class="mw-settings-options" data-setting="screen">
+          <button type="button" class="mw-settings-opt" data-value="portrait">Portrait</button>
+          <button type="button" class="mw-settings-opt" data-value="rotate">Rotate</button>
+        </div>
+      </div>
       <!-- VOX-05 (Phase 79, plan 79-10): this row was "Confirm before quit",
            but it only arms the ☰ ABANDON THIS CHARACTER row; SAVE & QUIT
            never asks, and the back button always asks once. -->
@@ -7290,7 +7301,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { setRunRecordedListener } from "./src/browser/engineAdapter.js";
   import { placementOutcome } from "./src/browser/placement.js";
   import { SEASON } from "./content/season.js";
-  import { registerNativeChrome } from "./src/browser/nativeChrome.js";
+  import { registerNativeChrome, PHONE_SMALLEST_WIDTH_LIMIT, syncOrientationLock } from "./src/browser/nativeChrome.js";
   import { GAME_NAME } from "./src/browser/gameName.js";
   import { readSettings, writeSetting, effectiveTextScale, shouldConfirmQuit } from "./src/browser/settings.js";
   // Phase 79.3 (BUG-01/02, D-03, D-10, D-12): the report sheet's client and
@@ -8052,6 +8063,16 @@ window.__mzClassicBoot = async function classicBoot() {
     if (railEl) new ResizeObserver(() => syncArrowPad()).observe(railEl);
   }
 
+  // Phase 97 (SCREEN-02): the device's smallest screen side in CSS px (NaN
+  // when the screen object is unavailable), and the phone test built on it.
+  // An unknown size counts as a phone, matching decideOrientationLock.
+  function smallestScreenWidth() {
+    return Math.min(Number(window.screen?.width), Number(window.screen?.height));
+  }
+  function isPhoneDevice() {
+    return !(smallestScreenWidth() >= PHONE_SMALLEST_WIDTH_LIMIT);
+  }
+
   // 04-DR9: highlights the currently-selected option in each Settings-sheet
   // row (gold `.active`) from currentSettings — called once when the sheet
   // opens and again after every write so the just-tapped option immediately
@@ -8075,6 +8096,11 @@ window.__mzClassicBoot = async function classicBoot() {
     // while Movement is ARROWS — the volume rows' `hidden` pattern.
     const padRow = document.getElementById("mw-pad-side-row");
     if (padRow) padRow.hidden = currentSettings.movement !== "arrows";
+    // Phase 97 (SCREEN-02): the Screen row (Portrait / Rotate) shows on a
+    // phone only; a tablet, an unfolded foldable or a Chromebook always turns
+    // with the device, so the row has nothing to offer there.
+    const screenRow = document.getElementById("mw-screen-row");
+    if (screenRow) screenRow.hidden = !isPhoneDevice();
     document.querySelectorAll("#mw-vol-rows [data-vol]").forEach((input) => {
       const saved = currentSettings[input.dataset.vol];
       const level = Number.isInteger(saved) && saved >= 0 && saved <= 100 ? saved : 100;
@@ -8609,6 +8635,10 @@ window.__mzClassicBoot = async function classicBoot() {
       syncArrowPad();
       window.mzKeepPartyInView?.();
     }
+    // Phase 97 (SCREEN-02): a Screen write applies the phone orientation rule
+    // at once (Portrait locks, Rotate unlocks). Not awaited: it never throws
+    // and is a no-op in the browser dev loop.
+    if (key === "screen") syncOrientationLock();
     // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
     // clears every prop immediately and On brings them back (once loaded).
     if (key === "dressing") window.draw?.();
@@ -10479,6 +10509,10 @@ window.__mzClassicBoot = async function classicBoot() {
       // area is still up and Sound is on.
       onBackground: () => setAppActive(false),
       onForeground: () => setAppActive(true),
+      // Phase 97 (SCREEN-02): the phone-only portrait lock reads the saved
+      // Screen choice and the device's smallest width at every sync.
+      getScreenPref: () => window.__mzSettings?.screen,
+      getSmallestWidth: () => smallestScreenWidth(),
       getGameContext: () => ({
         // Phase 35 (ruling 3): a pending rail decision (a Joiner, a find,
         // Phase 78's wall/crevice card, the dark card's torch offer) is
