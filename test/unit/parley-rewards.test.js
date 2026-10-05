@@ -283,26 +283,26 @@ test("Chameleon Tongue's parley is this parley: it pays full experience and spoi
 
 const KILL_GOLDEN = [
   { seed: 1, sub: "Soldier", race: "Human", depth: 1, type: "Beasts", lvl: 1,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":5},{\"type\":\"lootDropped\",\"name\":\"Amulet of Stone\",\"kind\":\"jewel\",\"roll\":18,\"atLeast\":18,\"dieN\":20},{\"type\":\"cooked\",\"wp\":0,\"rations\":1}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":5,\"group\":\"Beasts\"},{\"type\":\"lootDropped\",\"name\":\"Amulet of Stone\",\"kind\":\"jewel\",\"roll\":18,\"atLeast\":18,\"dieN\":20},{\"type\":\"cooked\",\"wp\":0,\"rations\":1}]",
     gold: 50, sp: 5, rngState: -63940196, loot: ["Amulet of Stone"], rations: 7 },
   { seed: 2, sub: "Knight", race: "Human", depth: 3, type: "Humans", lvl: 3,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":45},{\"type\":\"goldGained\",\"amount\":22,\"why\":\"off the body\"}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":45,\"group\":\"Humans\"},{\"type\":\"goldGained\",\"amount\":22,\"why\":\"off the body\"}]",
     gold: 72, sp: 45, rngState: 1199731145, loot: [], rations: 6 },
   // Phase 91 plan 08 (IDENT-18, audit Q1 B): this one entry MOVED and was re-recorded alone. A
   // Pickpocket's extra gold take is retired, so the kill loses its `goldGained why "pickpocket"`
   // beat (83) and the three main-rng draws behind it: before gold 143 / cursor -1895506007 /
   // off-the-body coin 93; after gold 60 / cursor 1199731146 / coin 10 (the purse alone).
   { seed: 3, sub: "Pickpocket", race: "Human", depth: 4, type: "Demons", lvl: 4,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":60},{\"type\":\"goldGained\",\"amount\":10,\"why\":\"off the body\"}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":60,\"group\":\"Demons\"},{\"type\":\"goldGained\",\"amount\":10,\"why\":\"off the body\"}]",
     gold: 60, sp: 60, rngState: 1199731146, loot: [], rations: 5 },
   { seed: 4, sub: "Soldier", race: "Wilmsry", depth: 6, type: "Lair Beasts", lvl: 5,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":25},{\"type\":\"goldGained\",\"amount\":5,\"why\":\"off the body\"},{\"type\":\"cooked\",\"wp\":0,\"rations\":1}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":25,\"group\":\"Lair Beasts\"},{\"type\":\"goldGained\",\"amount\":5,\"why\":\"off the body\"},{\"type\":\"cooked\",\"wp\":0,\"rations\":1}]",
     gold: 55, sp: 25, rngState: -1263670336, loot: [], rations: 7 },
   { seed: 5, sub: "Barbarian", race: "Troll", depth: 2, type: "Magical", lvl: 2,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":15},{\"type\":\"goldGained\",\"amount\":11,\"why\":\"off the body\"}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":15,\"group\":\"Magical\"},{\"type\":\"goldGained\",\"amount\":11,\"why\":\"off the body\"}]",
     gold: 61, sp: 15, rngState: 1199731148, loot: [], rations: 6 },
   { seed: 6, sub: "Master of Arms", race: "Dwarven", depth: 8, type: "Walking Dead", lvl: 6,
-    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":90},{\"type\":\"goldGained\",\"amount\":11,\"why\":\"off the body\"}]",
+    events: "[{\"type\":\"foeKilled\",\"name\":\"Target\",\"spGained\":90,\"group\":\"Walking Dead\"},{\"type\":\"goldGained\",\"amount\":11,\"why\":\"off the body\"}]",
     gold: 61, sp: 90, rngState: 1199731149, loot: [], rations: 6 },
 ];
 

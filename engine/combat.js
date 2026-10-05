@@ -1247,7 +1247,11 @@ export function killFoe(state, f, rng, events = [], opts = {}) {
   // identity (1) is a no-op here.
   const spGained = heroSpFor(heroShare);
   c.sp += spGained;
-  events.push({ type: "foeKilled", name: f.name, spGained });
+  // Phase 99 (TRACK-01) additive: `group` is the BESTIARY family the foe was
+  // drawn from, for the Body Count achievements. It is read from the foe's own
+  // type, so a summoned reinforcement reports its own family rather than the
+  // fight's. Zero draws.
+  events.push({ type: "foeKilled", name: f.name, spGained, group: f.type });
 
   // Phase 90 plan 04 (Q2 A): a kill with no spoils (Petrify) stops here, after
   // the experience and before the coin, treasure, bag and cooking steps.
