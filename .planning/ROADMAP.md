@@ -427,8 +427,8 @@ Plans:
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. The tier thresholds are decided at planning.
 
-- **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*.
-- **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*.
+- **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
+- **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
 - **Solid Miscalculation (user, 2026-10-04, icon done):** die entombed, when a Cloak of Ether runs out or comes off while you stand inside rock. Its id is `ether_entombed`, and it is not tiered. The `entombed` death cause has one home, `engine/movement.js#resolveEtherEnd`, so this is the brainstorm's *Buried Talent* under the user's name. The user drew the art and added it to `achievements/`.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
@@ -503,8 +503,8 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Survivor (10 / 25 / 50 / 100 days) | 4 | 4 | 1 |
 | Hoarder (1,000 / 5,000 / 10,000 / 20,000 coin) | 4 | 4 | 1 |
 | Party Animal (X Joiners) | TBD | ~4 | 1 |
-| Human Shields (fallen Joiners) | TBD | ~4 | 1 |
-| Disposable Help (fallen summons) | TBD | ~4 | 1 |
+| Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
+| Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
 | **Total** | | **50** (45 at 3 tiers) | **30** |
 
@@ -534,7 +534,7 @@ Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon fi
 
 *Decisions that move the counts:*
 
-- **Tier counts** for Party Animal, Human Shields, Disposable Help and the kill counts. Each extra tier adds one icon file per track, but no new picture.
+- **Tier counts** for Party Animal and the kill counts. Each extra tier adds one icon file per track, but no new picture.
 - **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
