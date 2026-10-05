@@ -21,7 +21,7 @@ TIERS = {"depth": 3, "frequent_flier": 4, "survivor": 4,
          "disposable_help": 4, "parlay": 4,
          "kills_beasts": 4, "kills_demons": 4, "kills_humans": 4,
          "kills_lair_beasts": 4, "kills_magical": 4,
-         "kills_walking_dead": 4}
+         "kills_walking_dead": 4, "trap_survivor": 4}
 NAMES = {
     "depth": "Depth", "unicorn": "Unicorn!", "fully_dressed": "Fully Dressed",
     "naked_ambition": "Naked Ambition", "teetotaler": "Teetotaler",
@@ -39,7 +39,8 @@ NAMES = {
     "ether_entombed": "Solid Miscalculation",
     "death_falling": "Gravity Wins", "death_disease": "Terminal Condition",
     "death_starvation": "Empty Calories", "parlay": "Silver Tongue",
-    "chicken": "Chicken",
+    "chicken": "Chicken", "death_trap": "Fatal Misstep",
+    "trap_survivor": "Still Standing",
 }
 assert set(TIERS) <= set(NAMES)
 # One export per untiered achievement, one per tier of a tiered one.

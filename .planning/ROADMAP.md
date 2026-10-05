@@ -435,8 +435,8 @@ Plans:
 - **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
 - **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers: 10 / 25 / 50 / 100 (user, 2026-10-05), counted across all delves.
 - **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times in a single run (user, 2026-10-05; was all runs earlier the same day). Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
-- **Fatal Misstep (user, 2026-10-05, icon in progress):** die to a trap. A one-time achievement, not tiered. Death cause `trap` (`engine/encounters.js`, a trap's own damage; the poison arrow trap's hit counts). Id `death_trap`.
-- **Still Standing (user, 2026-10-05, icon in progress):** set off a trap and live. Tiers 10 / 25 / 50 / 100, counted across all runs. Counts each `trapSprung` that does not end in a `trap` death. Id `trap_survivor`; tiers I–IV use the bronze / silver / gold / mythic frames. It replaces the brainstorm's *Tripwire Connoisseur*.
+- **Fatal Misstep (user, 2026-10-05, icon done):** die to a trap. A one-time achievement, not tiered. Death cause `trap` (`engine/encounters.js`, a trap's own damage; the poison arrow trap's hit counts). Id `death_trap`.
+- **Still Standing (user, 2026-10-05, icons done):** set off a trap and live. Tiers 10 / 25 / 50 / 100, counted across all runs. Counts each `trapSprung` that does not end in a `trap` death. Id `trap_survivor`; tiers I–IV use the bronze / silver / gold / mythic frames. It replaces the brainstorm's *Tripwire Connoisseur*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
@@ -516,7 +516,9 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Gravity Wins, Terminal Condition, Empty Calories (added 2026-10-05) | 1 each | 3 | 3 |
 | Silver Tongue (successful parleys, 10 / 25 / 50 / 100; added 2026-10-05) | 4 | 4 | 1 |
 | Chicken (flee 10 times in one run; added 2026-10-05) | 1 | 1 | 1 |
-| **Total** | | **76** | **35** |
+| Fatal Misstep (trap death; added 2026-10-05) | 1 | 1 | 1 |
+| Still Standing (survive 10 / 25 / 50 / 100 traps; added 2026-10-05) | 4 | 4 | 1 |
+| **Total** | | **81** | **37** |
 
 *The Claude brainstorm (not yet agreed):*
 
@@ -540,7 +542,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | User's list + full brainstorm | ~84–97 | 53 |
 | Tier frames (made once, reused) | — | +4 |
 
-Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). Tiering the body counts (2026-10-05) raised this to 68: the 18 kill-tier files reuse the 6 drawn pictures, composited with the tier frames. Gravity Wins, Terminal Condition, Empty Calories, Silver Tongue (4 tiers) and Chicken (all user-drawn, 2026-10-05) bring it to **76 icon files from 35 pictures**, all built and in `achievements/` (`python achievements/build_achievements.py`). The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
+Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). Tiering the body counts (2026-10-05) raised this to 68: the 18 kill-tier files reuse the 6 drawn pictures, composited with the tier frames. Gravity Wins, Terminal Condition, Empty Calories, Silver Tongue (4 tiers) and Chicken (all user-drawn, 2026-10-05) brought it to 76; Fatal Misstep and Still Standing (4 tiers) bring it to **81 icon files from 37 pictures**, all built and in `achievements/` (`python achievements/build_achievements.py`). The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
 
 *Decisions that move the counts:*
 

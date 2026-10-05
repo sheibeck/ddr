@@ -530,5 +530,40 @@
     "tier": null,
     "file_play": "play/ach_chicken.png",
     "file_ingame": "ingame/ach_chicken.png"
+  },
+  {
+    "id": "death_trap",
+    "name": "Fatal Misstep",
+    "tier": null,
+    "file_play": "play/ach_death_trap.png",
+    "file_ingame": "ingame/ach_death_trap.png"
+  },
+  {
+    "id": "trap_survivor",
+    "name": "Still Standing",
+    "tier": 1,
+    "file_play": "play/ach_trap_survivor_t1.png",
+    "file_ingame": "ingame/ach_trap_survivor_t1.png"
+  },
+  {
+    "id": "trap_survivor",
+    "name": "Still Standing",
+    "tier": 2,
+    "file_play": "play/ach_trap_survivor_t2.png",
+    "file_ingame": "ingame/ach_trap_survivor_t2.png"
+  },
+  {
+    "id": "trap_survivor",
+    "name": "Still Standing",
+    "tier": 3,
+    "file_play": "play/ach_trap_survivor_t3.png",
+    "file_ingame": "ingame/ach_trap_survivor_t3.png"
+  },
+  {
+    "id": "trap_survivor",
+    "name": "Still Standing",
+    "tier": 4,
+    "file_play": "play/ach_trap_survivor_t4.png",
+    "file_ingame": "ingame/ach_trap_survivor_t4.png"
   }
 ]
