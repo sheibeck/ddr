@@ -792,6 +792,71 @@ flavour renders exactly as it did before. The exact rules text stays in code and
 view models' `rules` field for the guards, and is drawn nowhere. See
 `docs/TEXT-LAYERS.md`.
 
+### Achievements tracker (Phase 99)
+
+The 77 catalog achievements (`content/achievements.js`) unlock in play through three
+pieces: a durable record, a pure tracker and the engine adapter's hooks. There is no UI
+in this phase; Phase 100 shows the unlock banner and the list, Phase 101 mirrors to Play.
+
+**The record** is one value under `ddr.achievements.v1`, written through
+`src/browser/storage.js` (Preferences on device, localStorage in the browser) and kept
+apart from the run save `ddr.delve.v1`. Its fields: `v` (1), `counters` (deaths, excluding
+abandons; joinersAccepted, joinersFallen, parleysWon, trapsSurvived), `kills` (per
+BESTIARY group), `bests` (single-run depth, days, wilmstHeld, fleesWon, and depth per race
+and per parent class), `flags` (the Disease and Poison "left on 1 HP" pair),
+`subClassesDelved`, `unlocked` (id to the date it was earned), `revealed` (Hidden ids) and
+`run` (the current run's progress, tagged to that run). A missing, corrupt or older-shape
+value loads as all zeros, a v1 record with one bad field keeps its valid fields and
+unlocks, and there is no credit from the graveyard or the bests history.
+
+**The modules.** `src/browser/achievementRecord.js` owns the shape and the tolerant load
+(`ACHIEVEMENTS_KEY`, `emptyRecord`, `sanitizeRecord`, `parseRecord`, `serializeRecord`).
+`src/browser/achievementTracker.js` is pure (no DOM, no storage, no clock): `beginRun`
+(a run starts: Tourist and the run reset), `foldAction` (one dispatched action's events and
+the states either side), `progressFor(record, entry)` (the list's "37 / 50" reading) and
+`runTagOf`. Both folds return `{ record, unlocks, reveals, progress, changed }`.
+
+**The adapter** (`src/browser/engineAdapter.js`) exports three functions:
+
+| Export | What it does |
+|--------|--------------|
+| `loadAchievements()` | Reads the record (never rejects; `boot()` awaits it). A dispatch before the load queues behind a tracked load, so it can never overwrite what is stored |
+| `getAchievementRecord()` | The current deep-frozen record, or `null` before the first load. Replaced, never mutated, on every change |
+| `setAchievementListener(fn)` | Registers the one listener (a non-function unregisters it) |
+
+The listener is called synchronously inside `dispatch()` / `startNewRun()`, once per action
+that produced anything, with a frozen payload, in catalog list order:
+
+```
+{ unlocks: [{ id, at }], reveals: [id], progress: [{ id, value, steps }] }
+```
+
+`at` is the unlock date in epoch milliseconds, `reveals` are Hidden ids newly revealed
+(unlocking a Hidden entry directly also reveals it; a revealer's unlock reveals its
+target), and `progress` lists the incremental entries whose clamped value moved. A
+listener that throws or rejects is swallowed, and with no listener the record still updates
+and is still saved. Phase 100 reads the payload for the unlock banner and the record for
+dates and progress on the list; Phase 101 reads the same payload for the Play mirror's
+durable queue.
+
+**Rules the hooks keep**
+
+- `dispatch()` folds every real action's raw engine events; `startNewRun()` calls `beginRun`.
+  A changed record is written once per action, in the same write that carries any unlock
+  it earned, so a kill and relaunch keeps the unlock with its original date and it never
+  fires again.
+- The fold has its own try/catch: a tracker or storage failure never reaches `dispatch()`'s
+  fail-closed recovery, never replaces a run and never changes the death flow.
+- Only real runs count. A dev start-at-depth run earns nothing and writes nothing; the
+  tuning bot drives the engine directly and `test/unit/achievements-bot-isolation.test.js`
+  proves nothing under `tools/` can reach the tracker, the record module or the adapter;
+  `boot()`'s pre-title fallback run and `dispatch()`'s fail-closed recovery run record
+  nothing for Tourist (only `startNewRun()` does, abandoned delves included).
+- A run resumed from a save made before the record existed (no matching run tag) counts
+  from then on, but can never earn Naked Ambition or Teetotaler.
+- The record never leaves the device in this phase: no network call, no analytics, no Play
+  call. Phase 101 adds the Compete-gated mirror.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
