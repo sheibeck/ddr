@@ -107,7 +107,29 @@ Plans:
   3. ☰ opens an achievements list showing every achievement with its icon: unlocked ones with when they were earned, locked ones greyed, counters with their progress (for example 37 / 50), and hidden ones as a teaser until they unlock or their hint reveals them.
   4. The list fits and scrolls in the phone portrait, landscape and tablet layout classes, follows the shell's sheet conventions, closes with Android back, reads row by row under TalkBack (name, state, progress), and respects reduced motion.
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 100-01-PLAN.md — the pure banner core: the listener fan-out (`achievementEvents`, so Phase 101 subscribes beside the banner), the unlock rail card and the many-at-once card, the pending queue with its drain gate (held in a fight, collapsed past three, none lost) and the Earned strip view, with the card copy registered in the voice tooling
+
+**Wave 2** *(blocked on Wave 1 completion; 100-01 and 100-02 touch disjoint modules but both edit the two voice-registration files, so they run in order)*
+
+- [ ] 100-02-PLAN.md — the pure list core: the copy bank, the 7 blocks and 35 track rows, dates and unit-bearing progress, the view model (ladders, rungs, secrets that leak nothing) and the TalkBack-ordered DOM renderer
+
+**Wave 3** *(blocked on Wave 2 completion; 100-03, 100-04 and 100-05 all edit `mazeworld.html`, so they run in order)*
+
+- [ ] 100-03-PLAN.md — the ☰ ACHIEVEMENTS row (with its count) and the sheet: markup, CSS, expand, Android back, with the declared ☰ pin updates
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 100-04-PLAN.md — the unlock banner on the screen: listener registration before boot, the rail drain hook and icon path, the summary-card tap that opens the list, the Earned strip on the death panel, and the `__mzAchBanner` bridge
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 100-05-PLAN.md — the icons in the web bundle, the layout check extended to the sheet, the card and the strip in every class and at every size boundary (run and fixed), reduced-motion and accessibility pins, and the SHELL-MODULES.md sections with the Phase 101 contract
+
 **UI hint**: yes
 
 ### Phase 101: Play Games Achievements Mirror
@@ -149,7 +171,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
 | 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
-| 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
+| 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/5 | Planned | - |
 | 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
 | 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
