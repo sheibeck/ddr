@@ -139,9 +139,9 @@ test("chip copy: the Regenerating explanation says the first d6 came the moment 
   assert.doesNotMatch(explain, /\bWP\b/);
 });
 
-test("patch notes: 2.4.0 is a DRAFT that validates, and its cloak bullet states the same rule", () => {
+test("patch notes: 2.4.0 is agreed (no DRAFT line), validates, and its cloak bullet states the same rule", () => {
   const md = read("docs/patch-notes/2.4.0.md");
-  assert.ok(md.includes("**DRAFT, not yet agreed.**"));
+  assert.ok(!md.includes("**DRAFT, not yet agreed.**")); // release-2.4.0: declared re-pin (the user agreed the notes 2026-10-05)
   assert.deepEqual(validatePatchNotes(md, "2.4.0"), []);
   const bullet = notesCloakBullet(md);
   assert.match(bullet, /a d6 at once/);

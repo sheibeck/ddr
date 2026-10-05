@@ -477,9 +477,9 @@ test("meetJoiner reads the cap from joinerLevelCap(state.floor.depth): the lvl l
   assert.equal(src.split(line).length - 1, 1, "the capped lvl line appears exactly once");
 });
 
-test("patch notes: 2.4.0 is a DRAFT that validates, and its Joiners bullet states one level per three floors, old → new", () => {
+test("patch notes: 2.4.0 is agreed (no DRAFT line), validates, and its Joiners bullet states one level per three floors, old → new", () => {
   const md = fs.readFileSync(path.join(REPO_ROOT, "docs", "patch-notes", "2.4.0.md"), "utf8").replace(/\r\n/g, "\n");
-  assert.match(md, /\*\*DRAFT, not yet agreed\.\*\*/, "2.4.0 stays a DRAFT");
+  assert.ok(!md.includes("**DRAFT, not yet agreed.**"), "2.4.0 is agreed"); // release-2.4.0: declared re-pin (the user agreed the notes 2026-10-05)
   assert.deepStrictEqual(validatePatchNotes(md, "2.4.0"), []);
   const start = md.indexOf("## Monsters & difficulty\n");
   assert.ok(start !== -1, "the Monsters & difficulty category is present");

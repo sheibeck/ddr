@@ -327,9 +327,9 @@ test("docs: the ITEM-AUDIT row's Text cell is the item text, its verdict is the 
   assert.ok(rulings && rulings.includes("ITEM-09 (2026-10-03, Phase 93.1)"), "## Rulings carries the dated ITEM-09 entry");
 });
 
-test("patch notes: 2.4.0 is a DRAFT that validates, and its Gauntlet bullet states +6 damage and foes +1 to hit you", () => {
+test("patch notes: 2.4.0 is agreed (no DRAFT line), validates, and its Gauntlet bullet states +6 damage and foes +1 to hit you", () => {
   const md = read("docs/patch-notes/2.4.0.md");
-  assert.ok(md.includes("**DRAFT, not yet agreed.**"));
+  assert.ok(!md.includes("**DRAFT, not yet agreed.**")); // release-2.4.0: declared re-pin (the user agreed the notes 2026-10-05)
   assert.deepEqual(validatePatchNotes(md, "2.4.0"), []);
   const bullet = notesGauntletBullet(md);
   assert.match(bullet, /\+6 damage/);

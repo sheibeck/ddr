@@ -801,9 +801,9 @@ test("(r) tolerant: a bagged old-save Cloak of Healing appears on the drop shelf
 
 // Phase 97.1 (FLAVOR-07): declared re-pin. The 2.4.0 DRAFT no longer names a RULES tap or the Always switch; it says the exact rules sit
 // behind the scenes, in the voice, and still validates.
-test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets say the exact rules sit behind the scenes, old → new", () => {
+test("patch notes: 2.4.0 is agreed (no DRAFT line), validates, and its Interface bullets say the exact rules sit behind the scenes, old → new", () => {
   const md = fs.readFileSync(path.join(__dirname, "..", "..", "docs", "patch-notes", "2.4.0.md"), "utf8").replace(/\r\n/g, "\n");
-  assert.match(md, /\*\*DRAFT, not yet agreed\.\*\*/, "2.4.0 stays a DRAFT");
+  assert.ok(!md.includes("**DRAFT, not yet agreed.**"), "2.4.0 is agreed"); // release-2.4.0: declared re-pin (the user agreed the notes 2026-10-05)
   assert.deepStrictEqual(validatePatchNotes(md, "2.4.0"), []);
   const start = md.indexOf("## Interface\n");
   assert.ok(start !== -1, "the Interface category is present");
