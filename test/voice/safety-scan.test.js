@@ -100,6 +100,8 @@ import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER
 import { SPELLS } from "../../content/spells.js";
 // Phase 98 (ACH-02): the achievement catalog's name / description / line copy joins the same walk.
 import { ACHIEVEMENTS } from "../../content/achievements.js";
+// Phase 100 (AUI-01): the unlock banner's chrome copy (card titles, the many-at-once lead and hint, the Earned strip label).
+import { ACHIEVEMENT_CARD_COPY } from "../../src/browser/achievementCard.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
 import { ABILITIES } from "../../content/abilities.js";
@@ -481,6 +483,16 @@ function collectAuthoredStrings() {
     push(`ACHIEVEMENTS.${a.id}.description`, a.description);
     push(`ACHIEVEMENTS.${a.id}.line`, a.line);
   }
+  // Phase 100 (AUI-01): the unlock banner's chrome copy, same recursive string-leaf
+  // walk. Labels start with ACHIEVEMENT_CARD_COPY. so the Phase 98 count of
+  // ACHIEVEMENTS.* labels stays exact.
+  (function walkAchievementCardCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkAchievementCardCopy(v, label);
+    }
+  })(ACHIEVEMENT_CARD_COPY, "ACHIEVEMENT_CARD_COPY");
 
   return out;
 }
@@ -514,6 +526,16 @@ test("Phase 98: the achievement catalog's 231 name / description / line strings 
   }
   assert.ok(have.has("ACHIEVEMENTS.special_snowflake.line"));
   assert.ok(have.has("ACHIEVEMENTS.kills_walking_dead_t4.description"));
+});
+
+test("Phase 100: the unlock banner's chrome copy is in the authored-string walk", () => {
+  const labels = new Set(collectAuthoredStrings().map(([label]) => label));
+  for (const l of [
+    "ACHIEVEMENT_CARD_COPY.title", "ACHIEVEMENT_CARD_COPY.many.title", "ACHIEVEMENT_CARD_COPY.many.lead",
+    "ACHIEVEMENT_CARD_COPY.many.hint", "ACHIEVEMENT_CARD_COPY.strip.label",
+  ]) {
+    assert.ok(labels.has(l), `missing ${l}`);
+  }
 });
 
 // ─── Meta-test A: the allowlist is COMPLETE (no false positives) ────────────
