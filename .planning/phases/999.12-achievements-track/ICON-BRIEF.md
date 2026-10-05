@@ -77,7 +77,7 @@ Each row gives the id, the display name, what unlocks it, and a visual concept. 
 | `special_snowflake` | Special Snowflake | Die on floor 1 | none | A single ornate snowflake resting on a tiny tombstone, shimmering, very pleased with itself. |
 | `ether_entombed` | Solid Miscalculation | Die entombed: a Cloak of Ether runs out, or comes off, while you stand inside rock | none | A violet ethereal cloak with a skull clasp, caught fast in a sandstone wall (user art, 2026-10-04). |
 
-### Body counts: kill 100 of each monster group (6 base pictures, no tiers for now)
+### Body counts: kills of each monster group (6 base pictures, tiered ×4 at 50 / 100 / 200 / 500, user 2026-10-05)
 
 | id | Name | Visual concept (the group's real monsters, for flavor) |
 |---|---|---|

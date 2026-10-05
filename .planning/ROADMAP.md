@@ -418,7 +418,7 @@ Plans:
 - **Teetotaler:** reach 5 without drinking a single healing potion.
 - **Frequent flier (tiered):** die 50, 100, 200 and 500 times, counted across all runs.
 - **Read the label:** drink the Death potion (`content/potions.js:45`, `eff: "death"`, *"your dead!"*).
-- **Body counts:** kill 100 Walking Dead, and one "kill 100" for each monster group. The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
+- **Body counts (tiered):** kills of each monster group, tiers 50 / 100 / 200 / 500 (user, 2026-10-05). The groups are the `content/bestiary.js` `BESTIARY` keys: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead.
 - **Every race:** reach 5 with each race in `content/races.js`: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll.
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
@@ -495,7 +495,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Teetotaler | 1 | 1 | 1 |
 | Frequent Flier (die 50/100/200/500) | 4 | 4 | 1 |
 | Read the Label (Death potion) | 1 | 1 | 1 |
-| Body counts: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead | 1 each (100 kills) | 6 | 6 |
+| Body counts: Beasts, Demons, Humans, Lair Beasts, Magical, Walking Dead | 4 each (50 / 100 / 200 / 500 kills) | 24 | 6 |
 | Every race: Human, Elven, Dwarven, Wilmsry, Fridgian, Troll | — | 6 | 6 |
 | Every class: Magic User, Fighter, Thief | — | 3 | 3 |
 | Tourist (all 24 sub-classes) | 1 | 1 | 1 |
@@ -506,7 +506,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
-| **Total** | | **50** (45 at 3 tiers) | **30** |
+| **Total** | | **68** | **30** |
 
 *The Claude brainstorm (not yet agreed):*
 
@@ -530,11 +530,11 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | User's list + full brainstorm | ~84–97 | 53 |
 | Tier frames (made once, reused) | — | +4 |
 
-Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
+Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). Tiering the body counts (2026-10-05) raises this to **68**: the 18 extra kill-tier files reuse the 6 drawn pictures and are composited with the tier frames by `achievements/build_achievements.py`, so no new art is needed. The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
 
 *Decisions that move the counts:*
 
-- **Tier counts** for Party Animal and the kill counts. Each extra tier adds one icon file per track, but no new picture.
+- **Tier counts** for Party Animal. Each extra tier adds one icon file per track, but no new picture.
 - **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
