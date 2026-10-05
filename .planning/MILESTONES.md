@@ -1,5 +1,36 @@
 # Milestones
 
+## v2.4 Fit & Finish (Shipped: 2026-10-05; Play 2.4.0 / vc14 built and signed, tags `v2.4.0` / `v2.4.0-play14`, user upload)
+
+**Release (2026-10-05):** the user agreed the patch notes (new headline: screens and flavour). The signed AAB was built from a8587781 and archived at `C:/Users/Dell/android_releases/2.4.0-vc14/` with `mapping.txt`. The merged manifest carries no orientation or resizability restriction. GitHub Release v2.4.0 is published and the darktierstudios.com patch notes are deployed.
+
+**Closeout type:** override_closeout (known overrides: the batched Pixel 7 checklist `docs/UAT-v2.4.md`, AVD pass and perf baseline are not yet walked; audit `tech_debt`; Phase 98 screenshots deferred to the next milestone by the user)
+**Phases:** 8 (93–97.1, incl. the inserted 93.1, 94.1 and 97.1) · **Plans:** 41
+**Timeline:** 2026-10-03 → 2026-10-05 (3 days, 239 commits since `v2.3`; 301 files changed, +37,736 / −1,853)
+**Tests:** 10,624 at the 97.1 close (10,616 pass, 0 fail, 8 skipped), plus the release-bump re-pins (a8587781)
+**Delivered:** the game fits every Android screen and talks like a storyteller, not a rulebook. Landscape phones, tablets, foldables and Chromebook windows get real layouts. Every description is a flavour line in the house voice. The Cloak heals on use, the Gauntlet earns its downside, ability rows tell their state apart, and Joiners match the floor.
+
+**Key accomplishments:**
+
+1. **Quick wins.** Harmful chips sit first. The Cloak of Regeneration heals a d6 at once. The Gauntlet of the Giant is +6 damage for foes +1 to hit you (player report #6). (Phases 93, 93.1)
+2. **Ability states.** Each ability row reads READY, READY IN N, its reason, or SPENT THIS FIGHT. Each state has its own colour and edge, so they read apart without colour too. (Phase 94)
+3. **Joiner level follows depth.** It is one level per three floors, 1 to 5, and the rng cursor is unchanged. (Phase 94.1)
+4. **Fantasy flavour.** 233 reviewed player lines cover spells, scrolls, items, races, sub-classes, classes, abilities, skills and chips. Three independent review rounds and a 20-surface sweep back them. In 97.1 the user then retired the RULES layer, so players see flavour only. Gear sheets keep their numeric stat rows, and the exact rules stay in code for the truth guards. (Phases 95, 96, 97.1)
+5. **Large screens.**
+   - The manifest orientation lock is gone. Phones get a Portrait/Rotate setting.
+   - Window size classes give a landscape side-rail with a right-hand panel, a widened medium stack, and an expanded two-pane map plus pane. Cells scale with the window, and the layout uses `dvh` and side insets.
+   - `npm run layout:check` covers 12 profiles × 15 scenes, and a rotation keeps the fight or store. (Phase 97)
+
+### Known Gaps (carried forward)
+
+| Req / item | Gap | Where it lands |
+|-----|-----|----------------|
+| UAT | `docs/UAT-v2.4.md`: the Pixel 7 device round, AVD pass (0.6), perf baseline (0.5), Play large-screen notice (0.4) and decision rows | The user's Pixel 7 sessions; findings become quick tasks |
+| SHOTS-01..03 | Fresh store and website screenshots (Phase 98) deferred by the user | Next milestone (backlog 999.18) |
+| Samurai SUB_NOTE | The canon text still contains "suicidal"; no longer shown to players since 97.1 | User decision (UAT 6.11) |
+
+**Archived:** `milestones/v2.4-ROADMAP.md`, `milestones/v2.4-REQUIREMENTS.md`, `milestones/v2.4-MILESTONE-AUDIT.md`, `milestones/v2.4-phases/`
+
 ## v2.3 Truth in Advertising (Shipped: 2026-10-02; Play 2.3.0 / vc13 submitted to closed testing, tags `v2.3.0` / `v2.3.0-play13`)
 
 **Release (2026-10-02):** transition rules (fix be6716a7) then the final rules live, plain smoke all PASS, rekey 22/22, transition artefacts deleted (cf1c5c75); Data safety and IARC re-read by the user; GitHub Release created; darktierstudios.com patch notes and privacy pages deployed.

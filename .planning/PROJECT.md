@@ -113,23 +113,17 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v2.4 Fit & Finish
+## Next Milestone: Achievements (backlog 999.12, aimed at 2.5.0)
 
-**Goal:** the game works on every screen size, shows its state at a glance, and tells its story in fantasy voice instead of rulebook text.
+Chosen by the user on 2026-10-04: achievements are the next milestone, after 2.4.0 ships. Start it with `/gsd-new-milestone`. The icon set is drawn: 50 icons from 30 pictures, including the user's Solid Miscalculation. The open decisions are in the ROADMAP 999.12 entry. The deferred v2.4 Phase 98 screenshots (backlog 999.18, SHOTS-01..03) can join it.
 
-**Target features:**
-- **Large-screen support** (backlog 999.17): drop the portrait lock Play flagged on the 2.3.0 upload; responsive landscape, tablet, foldable and Chromebook layouts; rotation and resizing never restart a run
-- ✓ **Ability states you can tell apart** (999.20): READY / READY IN N / the gate's reason / SPENT THIS FIGHT, each with a word, an edge style and a colour-blind-checked colour; dark theme only (user 2026-10-03) — Phase 94 (ASTATE-01..05)
-- ✓ **Harmful condition chips first** (todo): every engine-bad chip leads the HUD strip and the hero's YOUR LOT card; Joiner and foe rows unchanged — Phase 93 (CHIP-01)
-- ✓ **Cloak of Regeneration heals on use** (todo): ruling (B), user 2026-10-03: a d6 at once, then a d6 at 10, 20 and 30 squares (4 ticks); heals in a fight too; price unchanged — Phase 93 (ITEM-08)
-- ✓ **Gauntlet of the Giant worth wearing** (GitHub player report #6, added 2026-10-03): its size step's damage bonus made worth foes +1 to hit, as Enlarge was in 2.3.0 — Phase 93.1 (ITEM-09); issue #6 closes when it ships
-- ✓ **Joiner level follows depth** (todo, user 2026-10-03): a Joiner's rolled level is capped at one per three floors (1 on floors 1–3 … 5 from 13); no re-levelling — Phase 94.1 (JOIN-01)
-- **Fantasy-flavour player text** (todo): players read narrative; the exact rules stay in code, docs and the audit pins — ✓ part I (spells, scrolls, items) Phase 95; ✓ part II (races, sub-classes, abilities, chips, review) Phase 96
-- **Fresh store and website screenshots** (999.18): last, so the tablet and landscape shots are real
+## Last Milestone: v2.4 Fit & Finish (shipped 2026-10-05 as Play 2.4.0 / vc14, signed AAB for the user upload)
 
-**Open decisions for discuss-phase:** phones portrait-only or free rotation, and the landscape play-screen layout; where the exact numbers live in game. (Ruled: the cloak's immediate tick is a fourth tick, Phase 93.)
+This milestone ran Phases 93–97 plus the inserted 93.1, 94.1 and 97.1. 22/22 requirements and 8/8 phases passed. The audit is `tech_debt` because the device round (`docs/UAT-v2.4.md`) is still open. The user deferred Phase 98 (screenshots) to the next milestone.
 
-**Not this milestone:** 999.19 (a Joiner's Stealth crit, not reproduced; needs the user's save) and 999.12 (achievements, its own milestone).
+**Goal (met):** the game works on every screen size, shows its state at a glance, and tells its story in fantasy voice. In 97.1 the user went further: players see flavour only, with no RULES layer.
+
+**Released 2026-10-05:** tags `v2.4.0` / `v2.4.0-play14`, the GitHub Release and the darktierstudios.com patch notes. The signed AAB is archived at `C:/Users/Dell/android_releases/2.4.0-vc14/` for the user's Play upload.
 
 ## Last Milestone: v2.3 Truth in Advertising (shipped 2026-10-02 as Play 2.3.0 / vc13 to closed testing)
 
@@ -370,6 +364,10 @@ Scoped with the user on 2026-09-23, briefly parked, then started the same day. I
 - **Fidelity**: The prototype's rules are **canon**; deviations must be deliberate design decisions, not accidental regressions.
 - **Rules engine**: Must remain **decoupled from UI and fully serializable** (multiplayer-ready), mirroring the prototype's existing `S`-state / `act()` design.
 - **Performance / feel**: Must feel responsive and native-quality on mid-range phones; sessions target **5–10 minutes**.
+
+## Current State (2026-10-05, v2.4 Fit & Finish shipped; next milestone: achievements)
+
+**Release 2.4.0 / versionCode 14:** the signed AAB is built and archived, and the user uploads it to Play. Tags, the GitHub Release and the website notes are live. The debug APK from 37656385 is on the Pixel 7 for the v2.4 device round (`docs/UAT-v2.4.md`). Tests stood at 10,624 at the 97.1 close, with 0 failures. Next: `/gsd-new-milestone` for achievements.
 
 ## Current State (2026-10-02, v2.3 Truth in Advertising shipped; v2.4 Fit & Finish started)
 

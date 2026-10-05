@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
-current_phase: 98
-current_phase_name: Fresh Store & Website Screenshots
-status: planning
+status: Awaiting next milestone
 stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-05T11:14:07.780Z"
+last_updated: "2026-10-05T11:19:34.548Z"
 last_activity: 2026-10-05
-last_activity_desc: Phase 97.1 complete, transitioned to Phase 98
+last_activity_desc: Milestone v2.4 completed and archived
 progress:
-  total_phases: 9
+  total_phases: 8
   completed_phases: 8
   total_plans: 41
   completed_plans: 41
-  percent: 89
+  percent: 100
+current_phase: 98
+current_phase_name: Fresh Store & Website Screenshots
 ---
 
 # Project State
@@ -28,13 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 98 — Fresh Store & Website Screenshots
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-05 — Phase 97.1 complete, transitioned to Phase 98
-Progress: [██████████] 100% (0 of 6 phases)
-
-Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
+Phase: Milestone v2.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-05 — Milestone v2.4 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -315,8 +312,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- v2.4 autonomous run: Phase 96 DONE (2026-10-04, 09e2e039). RESUME HERE: Phase 97 smart discuss is mid-way — Areas 1–3 accepted, Area 4 still to ask; everything (decisions, Area 4 table, scout code facts) is in `.planning/phases/97-large-screen-support/97-DISCUSS-CHECKPOINT.md`. Re-run `/gsd-autonomous`, ask only Area 4, write 97-CONTEXT.md from the checkpoint (delete the checkpoint in that commit), then plan (Opus planner, no research) and execute 97. Then the BUILD GATE before Phase 98 (debug APK + device checklist → patch notes agreed → signed AAB vc14 for the user's upload); then Phase 98 screenshots; then the milestone lifecycle.
-- Run conventions this run: sequential executors on master for single-plan waves; parallel worktree executors (isolation=worktree, background) for multi-plan waves with no file overlap, merged by hand with `git merge --no-ff` + worktree remove + branch -D, tracking via `roadmap.update-plan-progress` + `state.advance-plan`; executors run targeted tests only, the orchestrator runs the full `npm test` once at phase close; every commit plain `git commit` with the two trailers; stall watches via scratchpad `stallwatch.sh` / `wtwatch.sh` Monitors.
+- Start the next milestone with /gsd-new-milestone
 
 ## Performance Metrics
 
