@@ -4,9 +4,9 @@ milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 97
 current_phase_name: Large-Screen Support
-status: planning
+status: executing
 stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-04T05:59:25.502Z"
+last_updated: "2026-10-05T01:23:31.324Z"
 last_activity: 2026-10-04
 last_activity_desc: Phase 96 complete, transitioned to Phase 97
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 Phase: 97 — Large-Screen Support
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-10-04 — Phase 96 complete, transitioned to Phase 97
 Progress: [██████████] 100% (0 of 6 phases)
 
