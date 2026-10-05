@@ -4,9 +4,9 @@ milestone: v2.5
 milestone_name: Achievements
 current_phase: 100
 current_phase_name: "In-Game Achievements: Unlock Toasts & the ☰ List"
-status: planning
+status: executing
 stopped_at: Completed-99-03-PLAN.md
-last_updated: "2026-10-05T22:48:37.938Z"
+last_updated: "2026-10-05T23:41:27.953Z"
 last_activity: 2026-10-05
 last_activity_desc: Phase 99 complete, transitioned to Phase 100
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 Phase: 100 — In-Game Achievements: Unlock Toasts & the ☰ List
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-10-05 — Phase 99 complete, transitioned to Phase 100
 
 ## Ground Truth (durable facts every session needs)
