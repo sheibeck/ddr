@@ -60,7 +60,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 98-02-PLAN.md — the copy: all 77 names, descriptions and lines in the house voice, with the copy contract test (the strongest-writer plan)
+- [x] 98-02-PLAN.md — the copy: all 77 names, descriptions and lines in the house voice, with the copy contract test (the strongest-writer plan)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 

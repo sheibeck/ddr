@@ -11,7 +11,7 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 ### Catalog (999.12)
 
 - [x] **ACH-01**: One content catalog defines all 77 achievements from the user's list (backlog 999.12: depth, Unicorn!, Fully Dressed, Naked Ambition, Teetotaler, Frequent Flier, Read the Label, six body counts, six races, three classes, Tourist, Special Snowflake, Survivor, Hoarder, Party Animal, Human Shields, Solid Miscalculation, Gravity Wins, Terminal Condition, Empty Calories, Silver Tongue, Chicken, Fatal Misstep, Still Standing). Each entry has a stable id, name, description, trigger, threshold, tier, points, initial state (Hidden or Revealed), type (standard or incremental) and its built icon in `achievements/` (`manifest.json`)
-- [ ] **ACH-02**: Every name and description is in the house voice (sarcastic, family-friendly), passes the voice safety scan and the narrative review, and fits Play's import rules: no commas, name at most 100 characters and unique (each tier I–IV has its own name), description at most 500 characters
+- [x] **ACH-02**: Every name and description is in the house voice (sarcastic, family-friendly), passes the voice safety scan and the narrative review, and fits Play's import rules: no commas, name at most 100 characters and unique (each tier I–IV has its own name), description at most 500 characters
 - [x] **ACH-03**: Points follow a scheme ruled in discuss-phase: each 5–200 in steps of 5, the total within Play's 2,000-point game cap with the headroom the user rules for later achievements; incremental steps are 1–10,000
 - [x] **ACH-04**: Hints chain the achievements: an obvious one's line points at a hidden one (Fully Dressed hints at Naked Ambition, per the user's design principle). Which achievements start Hidden, and which unlock reveals each one, are ruled before the import and fixed in the catalog
 - [x] **ACH-05**: Each achievement's initial state and type are final before the zip is built, since Play cannot change either once published, and a published achievement cannot be deleted
@@ -79,7 +79,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ACH-01 | Phase 98 | Complete |
-| ACH-02 | Phase 98 | Pending |
+| ACH-02 | Phase 98 | Complete |
 | ACH-03 | Phase 98 | Complete |
 | ACH-04 | Phase 98 | Complete |
 | ACH-05 | Phase 98 | Complete |
