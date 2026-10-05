@@ -14,6 +14,8 @@ import url from "node:url";
 import vm from "node:vm";
 
 import { newRun } from "../../engine/state.js";
+import { die } from "../../engine/death.js";
+import { makeRng } from "../../engine/rng.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox } from "./harness/shellSandbox.js";
 
@@ -499,4 +501,18 @@ test("(v) renderEncounter computes encStarting right after hasActiveEncounter(),
   assert.ok(render.includes('if (encStarting && window.__mzLayout?.mapStaysUp?.() && mwActiveTab !== "maze" && window.__mzShowTab) window.__mzShowTab("maze");'));
   assert.ok(render.indexOf("encWasActive = active;") < render.indexOf("window.__mzLayout?.mapStaysUp?.()"), "the switch follows the encWasActive bookkeeping");
   assert.ok(render.indexOf('setAttribute("data-panel-up"') < render.indexOf("window.__mzLayout?.mapStaysUp?.()"), "the switch follows the data-panel-up line");
+});
+
+test("(u5) expanded, a death that starts while GEAR fills the pane: the MAP tab comes forward and the death card is up (no double switch)", () => {
+  const r = sandboxBoot();
+  r.w.__mzLayout = { mapStaysUp: () => true, railBeside: () => true };
+  r.w.__mzShowTab("gear");
+  r.calls.length = 0;
+  const s = newRun(11, [], { force: { cls: "Fighter" } });
+  die(s, "combat", "a rat", makeRng(4), [], () => 1);
+  r.sandbox.setState(s);
+  r.sandbox.renderEncounter();
+  assert.equal(r.read("mwActiveTab"), "maze");
+  assert.equal(r.doc.document.getElementById("enc-panel").hidden, false);
+  assert.equal(r.calls.filter((n) => n === "maze").length, 1, "one switch to MAP");
 });
