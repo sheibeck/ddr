@@ -81,7 +81,17 @@ Plans:
   4. An unlock fires exactly once, never re-locks, and is saved with its date the moment it is earned, not when the run ends: killing the app right after an unlock and relaunching leaves it unlocked and does not fire it again.
   5. The tuning bot's runs earn no achievements and never touch the stats record.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1** *(99-01 and 99-02 touch disjoint files and can run in parallel)*
+
+- [ ] 99-01-PLAN.md — the two engine facts (`foeKilled.group`, the hero's HP after an ailment hit on `afflictionCaught` / `afflictionTick`), zero draws, parity byte-identical with zero fixtures moved
+- [ ] 99-02-PLAN.md — the lifetime stats record (`ddr.achievements.v1`, tolerant load) and the pure headless tracker, with tests driving all 77 triggers and every counting ruling
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 99-03-PLAN.md — the engine-adapter hooks (boot load, dispatch fold, run start for Tourist, the unlock listener), persistence and relaunch proofs, the bot-isolation import walk, and the SHELL-MODULES.md contract
 
 ### Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List
 
@@ -138,7 +148,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
-| 99. Engine Facts & Lifetime Stats Tracker | 0/TBD | Not started | - |
+| 99. Engine Facts & Lifetime Stats Tracker | 0/3 | Planned | - |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
 | 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
 | 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
