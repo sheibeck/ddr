@@ -201,7 +201,8 @@ test("mzCenterMap call-site count is 5 (boot, 2 new-run paths, stepWith's telepo
   // centres only a teleport.
   assert.equal(centerMatches.length, 5);
   const keepInViewMatches = CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || [];
-  assert.equal(keepInViewMatches.length, 12);
+  // Phase 97 (SCREEN-05): declared re-pin 12 -> 13, the ResizeObserver on #mw-maze-viewport that keeps the party in view across any reflow.
+  assert.equal(keepInViewMatches.length, 13);
 });
 
 // Phase 58 (MOTION-01, D-02/D-03): anchorCamOnParty — used by every snap

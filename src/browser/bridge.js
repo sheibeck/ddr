@@ -80,7 +80,7 @@ export const BRIDGE = Object.freeze({
   }),
   __mzCanvasSizing: Object.freeze({
     owner: "mazeworld.html (module)",
-    consumers: Object.freeze(["mazeworld.html (classic: fit — canvas backing size + cell size for text scale)"]),
+    consumers: Object.freeze(["mazeworld.html (classic: fit — canvas backing size, cell size for text scale, and the window cell scale with its cap)"]),
     purpose: "Bridges the pure canvas-backing/cell-size math so the map canvas resizes identically to the engine's own text-scale settings model.",
   }),
   __mzCarriedList: Object.freeze({
@@ -238,6 +238,14 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — encArmed/encounterSettled/armEncounterButtons)"]),
     purpose: "Bridges the pure arm-delay/dismiss-settle predicates so the encounter overlay's double-tap and stale-dismiss guards read one shared clock rule.",
+  }),
+  __mzLayout: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (module: syncArrowPad — the pad's card rule, 97-04)",
+      "mazeworld.html (classic: showTab, renderEncounter, panelScreenUp — the expanded two panes, 97-05)",
+    ]),
+    purpose: "Bridges the window size class (src/browser/layoutClass.js: short, compact, medium, expanded), read through the same LAYOUT_MEDIA strings the CSS uses, so JS only changes behaviour where the layout needs it (Phase 97).",
   }),
   __mzLootCompare: Object.freeze({
     owner: "mazeworld.html (module)",

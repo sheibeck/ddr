@@ -268,9 +268,10 @@ test("(f) pointermove sub-region never recenters or keeps in view (no per-tick r
 // site, the same pattern for the REPORT A BUG sheet. Phase 79.3 (NOTES-02,
 // D-21): closeNotesSheet() is the 12th site, the same pattern for the PATCH
 // NOTES sheet.
-test("(f) camera call sites: mzCenterMap is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 12 (Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write; Phase 79.3: the report sheet's close and the notes sheet's close)", () => {
+test("(f) camera call sites: mzCenterMap is 5 (boot, 2 new-run paths, stepWith's teleported branch, the stairs fade's dark point — Phase 44 dropped the callerless window.newGame/engineNewRun override) and mzKeepPartyInView at 13 (Phase 97 SCREEN-05: the map viewport ResizeObserver; Phase 67: the account sheet's close; Phase 78 HUD-08: the arrow pad's place changing and a Movement/Pad settings write; Phase 79.3: the report sheet's close and the notes sheet's close)", () => {
   assert.equal((CODE.match(/window\.mzCenterMap\?\.\(\)/g) || []).length, 5);
-  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 12);
+  // Phase 97 (SCREEN-05): declared re-pin 12 -> 13, the ResizeObserver on #mw-maze-viewport that keeps the party in view across any reflow.
+  assert.equal((CODE.match(/window\.mzKeepPartyInView\?\.\(\)/g) || []).length, 13);
 });
 
 // ─── (g) the stair-down gate ─────────────────────────────────────────────────

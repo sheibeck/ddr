@@ -3198,7 +3198,12 @@ function fit() {
   const textSize = (settings && settings.textSize) || "M";
   // DR13: base cell from text-scale, then apply the live pinch `zoom` factor.
   const baseCell = sizing ? sizing.cellSizeForTextScale(textSize) : 28;
-  CELL = Math.max(6, Math.round(baseCell * zoom));
+  // Phase 97 (D-Area3 "Map scale on big screens"): the window's shorter side
+  // scales the cells on top of the text size and the pinch zoom, capped at
+  // 1.5x and 144 px. A phone's cells are unchanged; a rotation keeps the
+  // scale (shorter side), a fold changes it.
+  const winScale = sizing && sizing.cellScaleForWindow ? sizing.cellScaleForWindow(window.innerWidth, window.innerHeight) : 1;
+  CELL = sizing && sizing.cellPxFor ? sizing.cellPxFor(baseCell, zoom, winScale) : Math.max(6, Math.round(baseCell * zoom));
   const cssPx = CELL * GW;
   const dpr = window.devicePixelRatio || 1;
   const backing = sizing ? sizing.computeCanvasBacking(cssPx, dpr) : { backing: cssPx * dpr, style: cssPx };
@@ -7362,7 +7367,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 32 (CMBUI-04/05) — the pure tap-safety timing guards, bridged
   // below for renderEncounter/window.move.
   import { ARM_DELAY_MS, DISMISS_SETTLE_MS, isArmed, isSettled } from "./src/browser/inputGuards.js";
-  import { computeCanvasBacking, cellSizeForTextScale } from "./src/browser/canvasSizing.js";
+  import { computeCanvasBacking, cellSizeForTextScale, cellScaleForWindow, cellPxFor } from "./src/browser/canvasSizing.js";
+  // Phase 97 (SCREEN-03..05): the size classes, one constant source shared
+  // with the CSS (the mw-layout block uses these exact media strings).
+  import { LAYOUT_MEDIA, currentLayoutClass, railBesideMap, mapStaysUp } from "./src/browser/layoutClass.js";
   import { preloadIcons, featureKeyForCell, drawFeatureIcon, PLAYER_MARKER_ICON } from "./src/browser/icons.js";
   // Phase 59 (ANIM-01/02) — the party marker's idle/step timing schedule,
   // canvas-lockstep placement math and art-fallback choice, plus the
@@ -9221,7 +9229,46 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 35 (MAP-02) — tapStep()/inspectAt() (classic script) read the
   // dominant-axis step resolver and hold-inspect cards through this bridge.
   window.__mzTapStep = { resolveStep, inspectCell, HOLD_MS, TAP_MAX_TRAVEL_PX, DIR_VECTORS };
-  window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale };
+  window.__mzCanvasSizing = { computeCanvasBacking, cellSizeForTextScale, cellScaleForWindow, cellPxFor };
+  // Phase 97 (SCREEN-03..05): the layout watcher. The CSS decides the layout
+  // through media queries; this reads the same LAYOUT_MEDIA strings through
+  // matchMedia so script only changes behaviour where the layout needs it.
+  // html[data-mw-layout] mirrors the class; a missing matchMedia reads
+  // "compact" (today's layout).
+  let layoutCls = currentLayoutClass((q) => window.matchMedia?.(q));
+  function syncLayout() {
+    const next = currentLayoutClass((q) => window.matchMedia?.(q));
+    document.documentElement.dataset.mwLayout = next;
+    if (next !== layoutCls) {
+      layoutCls = next;
+      // 97-04 makes the arrow pad read the class.
+      window.mzSyncArrowPad?.();
+    }
+    // Idempotent: a fold or unfold that crosses the phone line re-locks or
+    // unlocks the orientation on the spot.
+    syncOrientationLock();
+  }
+  window.__mzLayout = Object.freeze({
+    current: () => layoutCls,
+    railBeside: () => railBesideMap(layoutCls),
+    mapStaysUp: () => mapStaysUp(layoutCls),
+  });
+  syncLayout();
+  for (const q of [LAYOUT_MEDIA.short, LAYOUT_MEDIA.medium, LAYOUT_MEDIA.expanded]) {
+    window.matchMedia?.(q)?.addEventListener?.("change", syncLayout);
+  }
+  if (typeof ResizeObserver === "function") {
+    // The root element's box changes on every rotation, fold and window
+    // resize (no second window resize listener: the classic one refits the
+    // canvas and re-renders the encounter).
+    new ResizeObserver(() => syncLayout()).observe(document.documentElement);
+    // Any change to the map's box (a rotation, a fold, a window resize, the
+    // condition strip, and from 97-04 a side panel opening) keeps the party
+    // in view. keepPartyInView already guards a hidden map (0x0 rect) and a
+    // missing state, and only moves the camera.
+    const mazeVp = document.getElementById("mw-maze-viewport");
+    if (mazeVp) new ResizeObserver(() => window.mzKeepPartyInView?.()).observe(mazeVp);
+  }
   // Phase 59 (ANIM-01): PLAYER_MARKER_ICON is no longer read here — draw()
   // no longer paints the party; this module imports PLAYER_MARKER_ICON
   // directly for the art-fallback check just below instead.

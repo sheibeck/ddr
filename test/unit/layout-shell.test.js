@@ -156,3 +156,38 @@ test("(j) the dead desk grid, the vitals strip and the 1080/700 queries are gone
   assert.equal(count(HTML, "(max-width:1080px)"), 0);
   assert.equal(count(HTML, "(max-width:700px)"), 0);
 });
+
+// ─── (k)-(m) the layout watcher, keep-in-view, window-scaled cells ──────────
+
+test("(k) the module imports layoutClass.js, assigns window.__mzLayout once, and syncs the class, the lock and the observers", () => {
+  assert.match(CODE, /import \{ LAYOUT_MEDIA, currentLayoutClass, railBesideMap, mapStaysUp \} from "\.\/src\/browser\/layoutClass\.js";/);
+  assert.equal(count(CODE, "window.__mzLayout ="), 1);
+  const bridge = sliceBetween(CODE, "window.__mzLayout = Object.freeze({", "});");
+  assert.match(bridge, /current: \(\) => layoutCls,/);
+  assert.match(bridge, /railBeside: \(\) => railBesideMap\(layoutCls\),/);
+  assert.match(bridge, /mapStaysUp: \(\) => mapStaysUp\(layoutCls\),/);
+  const sync = sliceBetween(CODE, "function syncLayout() {", "window.__mzLayout =");
+  assert.match(sync, /document\.documentElement\.dataset\.mwLayout = next;/);
+  assert.match(sync, /syncOrientationLock\(\);\s*\}\s*$/, "syncOrientationLock runs last");
+  assert.match(sync, /window\.mzSyncArrowPad\?\.\(\)/);
+  const watch = sliceBetween(CODE, "syncLayout();\n", "mazeVp) new ResizeObserver");
+  assert.match(watch, /\[LAYOUT_MEDIA\.short, LAYOUT_MEDIA\.medium, LAYOUT_MEDIA\.expanded\]/);
+  assert.match(watch, /window\.matchMedia\?\.\(q\)\?\.addEventListener\?\.\("change", syncLayout\)/);
+  assert.match(watch, /typeof ResizeObserver === "function"/);
+  assert.match(watch, /new ResizeObserver\(\(\) => syncLayout\(\)\)\.observe\(document\.documentElement\)/);
+  assert.match(CODE, /document\.getElementById\("mw-maze-viewport"\);\s*if \(mazeVp\) new ResizeObserver\(\(\) => window\.mzKeepPartyInView\?\.\(\)\)\.observe\(mazeVp\);/);
+});
+
+test("(l) fit() sizes cells through cellScaleForWindow / cellPxFor on the canvasSizing bridge, keeping the old math as the fallback", () => {
+  const fit = sliceBetween(CODE, "function fit() {", "function positionCanvas()");
+  assert.match(fit, /sizing\.cellScaleForWindow\(window\.innerWidth, window\.innerHeight\)/);
+  assert.match(fit, /sizing\.cellPxFor\(baseCell, zoom, winScale\)/);
+  assert.match(fit, /Math\.max\(6, Math\.round\(baseCell \* zoom\)\)/);
+  assert.match(CODE, /window\.__mzCanvasSizing = \{ computeCanvasBacking, cellSizeForTextScale, cellScaleForWindow, cellPxFor \};/);
+  assert.match(CODE, /import \{ computeCanvasBacking, cellSizeForTextScale, cellScaleForWindow, cellPxFor \} from "\.\/src\/browser\/canvasSizing\.js";/);
+});
+
+test("(m) the classic resize listener is the only window resize listener, byte-identical", () => {
+  assert.equal(count(CODE, 'addEventListener("resize"'), 1);
+  assert.ok(CODE.includes('addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });'));
+});
