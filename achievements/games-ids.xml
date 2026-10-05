@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--Google Play game services IDs. Save this file as res/values/games-ids.xml in your project.-->
+<resources>
+  <!--app_id-->
+  <string name="app_id" translatable="false">517177834262</string>
+  <!--package_name-->
+  <string name="package_name" translatable="false">com.darktierstudios.delvedierepeat</string>
+  <!--achievement Downward Mobility I-->
+  <string name="achievement_downward_mobility_i" translatable="false">CgkIlvbN0YYPEAIQQQ</string>
+  <!--achievement Downward Mobility II-->
+  <string name="achievement_downward_mobility_ii" translatable="false">CgkIlvbN0YYPEAIQQg</string>
+  <!--achievement Downward Mobility III-->
+  <string name="achievement_downward_mobility_iii" translatable="false">CgkIlvbN0YYPEAIQTQ</string>
+  <!--achievement Unicorn!-->
+  <string name="achievement_unicorn" translatable="false">CgkIlvbN0YYPEAIQIg</string>
+  <!--achievement Gravity Wins-->
+  <string name="achievement_gravity_wins" translatable="false">CgkIlvbN0YYPEAIQUQ</string>
+  <!--achievement Solid Miscalculation-->
+  <string name="achievement_solid_miscalculation" translatable="false">CgkIlvbN0YYPEAIQPw</string>
+  <!--achievement Fully Dressed-->
+  <string name="achievement_fully_dressed" translatable="false">CgkIlvbN0YYPEAIQSQ</string>
+  <!--achievement Naked Ambition-->
+  <string name="achievement_naked_ambition" translatable="false">CgkIlvbN0YYPEAIQMw</string>
+  <!--achievement Teetotaler-->
+  <string name="achievement_teetotaler" translatable="false">CgkIlvbN0YYPEAIQLg</string>
+  <!--achievement Read the Label-->
+  <string name="achievement_read_the_label" translatable="false">CgkIlvbN0YYPEAIQGw</string>
+  <!--achievement Human Error-->
+  <string name="achievement_human_error" translatable="false">CgkIlvbN0YYPEAIQUA</string>
+  <!--achievement Elf Preservation-->
+  <string name="achievement_elf_preservation" translatable="false">CgkIlvbN0YYPEAIQCg</string>
+  <!--achievement Dwarfing Expectations-->
+  <string name="achievement_dwarfing_expectations" translatable="false">CgkIlvbN0YYPEAIQFA</string>
+  <!--achievement Wilmsry Loves Company-->
+  <string name="achievement_wilmsry_loves_company" translatable="false">CgkIlvbN0YYPEAIQDQ</string>
+  <!--achievement Fridge Benefits-->
+  <string name="achievement_fridge_benefits" translatable="false">CgkIlvbN0YYPEAIQJQ</string>
+  <!--achievement Troll Model-->
+  <string name="achievement_troll_model" translatable="false">CgkIlvbN0YYPEAIQRw</string>
+  <!--achievement Power User-->
+  <string name="achievement_power_user" translatable="false">CgkIlvbN0YYPEAIQNQ</string>
+  <!--achievement Fighting Chance-->
+  <string name="achievement_fighting_chance" translatable="false">CgkIlvbN0YYPEAIQOQ</string>
+  <!--achievement Honour Among Thieves-->
+  <string name="achievement_honour_among_thieves" translatable="false">CgkIlvbN0YYPEAIQMA</string>
+  <!--achievement Tourist-->
+  <string name="achievement_tourist" translatable="false">CgkIlvbN0YYPEAIQEA</string>
+  <!--achievement Survivor I-->
+  <string name="achievement_survivor_i" translatable="false">CgkIlvbN0YYPEAIQPg</string>
+  <!--achievement Survivor II-->
+  <string name="achievement_survivor_ii" translatable="false">CgkIlvbN0YYPEAIQUw</string>
+  <!--achievement Survivor III-->
+  <string name="achievement_survivor_iii" translatable="false">CgkIlvbN0YYPEAIQDw</string>
+  <!--achievement Survivor IV-->
+  <string name="achievement_survivor_iv" translatable="false">CgkIlvbN0YYPEAIQPQ</string>
+  <!--achievement Empty Calories-->
+  <string name="achievement_empty_calories" translatable="false">CgkIlvbN0YYPEAIQNA</string>
+  <!--achievement Hoarder I-->
+  <string name="achievement_hoarder_i" translatable="false">CgkIlvbN0YYPEAIQKA</string>
+  <!--achievement Hoarder II-->
+  <string name="achievement_hoarder_ii" translatable="false">CgkIlvbN0YYPEAIQJg</string>
+  <!--achievement Hoarder III-->
+  <string name="achievement_hoarder_iii" translatable="false">CgkIlvbN0YYPEAIQVA</string>
+  <!--achievement Hoarder IV-->
+  <string name="achievement_hoarder_iv" translatable="false">CgkIlvbN0YYPEAIQGg</string>
+  <!--achievement Still Standing I-->
+  <string name="achievement_still_standing_i" translatable="false">CgkIlvbN0YYPEAIQCQ</string>
+  <!--achievement Still Standing II-->
+  <string name="achievement_still_standing_ii" translatable="false">CgkIlvbN0YYPEAIQEQ</string>
+  <!--achievement Still Standing III-->
+  <string name="achievement_still_standing_iii" translatable="false">CgkIlvbN0YYPEAIQQw</string>
+  <!--achievement Still Standing IV-->
+  <string name="achievement_still_standing_iv" translatable="false">CgkIlvbN0YYPEAIQQA</string>
+  <!--achievement Fatal Misstep-->
+  <string name="achievement_fatal_misstep" translatable="false">CgkIlvbN0YYPEAIQNw</string>
+  <!--achievement Party Animal I-->
+  <string name="achievement_party_animal_i" translatable="false">CgkIlvbN0YYPEAIQKw</string>
+  <!--achievement Party Animal II-->
+  <string name="achievement_party_animal_ii" translatable="false">CgkIlvbN0YYPEAIQFg</string>
+  <!--achievement Party Animal III-->
+  <string name="achievement_party_animal_iii" translatable="false">CgkIlvbN0YYPEAIQOw</string>
+  <!--achievement Party Animal IV-->
+  <string name="achievement_party_animal_iv" translatable="false">CgkIlvbN0YYPEAIQDg</string>
+  <!--achievement Human Shields I-->
+  <string name="achievement_human_shields_i" translatable="false">CgkIlvbN0YYPEAIQNg</string>
+  <!--achievement Human Shields II-->
+  <string name="achievement_human_shields_ii" translatable="false">CgkIlvbN0YYPEAIQTg</string>
+  <!--achievement Human Shields III-->
+  <string name="achievement_human_shields_iii" translatable="false">CgkIlvbN0YYPEAIQTw</string>
+  <!--achievement Human Shields IV-->
+  <string name="achievement_human_shields_iv" translatable="false">CgkIlvbN0YYPEAIQRA</string>
+  <!--achievement Silver Tongue I-->
+  <string name="achievement_silver_tongue_i" translatable="false">CgkIlvbN0YYPEAIQSA</string>
+  <!--achievement Silver Tongue II-->
+  <string name="achievement_silver_tongue_ii" translatable="false">CgkIlvbN0YYPEAIQIQ</string>
+  <!--achievement Silver Tongue III-->
+  <string name="achievement_silver_tongue_iii" translatable="false">CgkIlvbN0YYPEAIQCw</string>
+  <!--achievement Silver Tongue IV-->
+  <string name="achievement_silver_tongue_iv" translatable="false">CgkIlvbN0YYPEAIQJw</string>
+  <!--achievement Chicken-->
+  <string name="achievement_chicken" translatable="false">CgkIlvbN0YYPEAIQLQ</string>
+  <!--achievement Body Count: Beasts I-->
+  <string name="achievement_body_count_beasts_i" translatable="false">CgkIlvbN0YYPEAIQDA</string>
+  <!--achievement Body Count: Beasts II-->
+  <string name="achievement_body_count_beasts_ii" translatable="false">CgkIlvbN0YYPEAIQMQ</string>
+  <!--achievement Body Count: Beasts III-->
+  <string name="achievement_body_count_beasts_iii" translatable="false">CgkIlvbN0YYPEAIQGQ</string>
+  <!--achievement Body Count: Beasts IV-->
+  <string name="achievement_body_count_beasts_iv" translatable="false">CgkIlvbN0YYPEAIQVQ</string>
+  <!--achievement Body Count: Demons I-->
+  <string name="achievement_body_count_demons_i" translatable="false">CgkIlvbN0YYPEAIQFQ</string>
+  <!--achievement Body Count: Demons II-->
+  <string name="achievement_body_count_demons_ii" translatable="false">CgkIlvbN0YYPEAIQHw</string>
+  <!--achievement Body Count: Demons III-->
+  <string name="achievement_body_count_demons_iii" translatable="false">CgkIlvbN0YYPEAIQOg</string>
+  <!--achievement Body Count: Demons IV-->
+  <string name="achievement_body_count_demons_iv" translatable="false">CgkIlvbN0YYPEAIQHA</string>
+  <!--achievement Body Count: Humans I-->
+  <string name="achievement_body_count_humans_i" translatable="false">CgkIlvbN0YYPEAIQSg</string>
+  <!--achievement Body Count: Humans II-->
+  <string name="achievement_body_count_humans_ii" translatable="false">CgkIlvbN0YYPEAIQIA</string>
+  <!--achievement Body Count: Humans III-->
+  <string name="achievement_body_count_humans_iii" translatable="false">CgkIlvbN0YYPEAIQIw</string>
+  <!--achievement Body Count: Humans IV-->
+  <string name="achievement_body_count_humans_iv" translatable="false">CgkIlvbN0YYPEAIQLA</string>
+  <!--achievement Body Count: Lair Beasts I-->
+  <string name="achievement_body_count_lair_beasts_i" translatable="false">CgkIlvbN0YYPEAIQSw</string>
+  <!--achievement Body Count: Lair Beasts II-->
+  <string name="achievement_body_count_lair_beasts_ii" translatable="false">CgkIlvbN0YYPEAIQGA</string>
+  <!--achievement Body Count: Lair Beasts III-->
+  <string name="achievement_body_count_lair_beasts_iii" translatable="false">CgkIlvbN0YYPEAIQMg</string>
+  <!--achievement Body Count: Lair Beasts IV-->
+  <string name="achievement_body_count_lair_beasts_iv" translatable="false">CgkIlvbN0YYPEAIQEg</string>
+  <!--achievement Body Count: Magical I-->
+  <string name="achievement_body_count_magical_i" translatable="false">CgkIlvbN0YYPEAIQJA</string>
+  <!--achievement Body Count: Magical II-->
+  <string name="achievement_body_count_magical_ii" translatable="false">CgkIlvbN0YYPEAIQKQ</string>
+  <!--achievement Body Count: Magical III-->
+  <string name="achievement_body_count_magical_iii" translatable="false">CgkIlvbN0YYPEAIQHQ</string>
+  <!--achievement Body Count: Magical IV-->
+  <string name="achievement_body_count_magical_iv" translatable="false">CgkIlvbN0YYPEAIQLw</string>
+  <!--achievement Body Count: Walking Dead I-->
+  <string name="achievement_body_count_walking_dead_i" translatable="false">CgkIlvbN0YYPEAIQHg</string>
+  <!--achievement Body Count: Walking Dead II-->
+  <string name="achievement_body_count_walking_dead_ii" translatable="false">CgkIlvbN0YYPEAIQRg</string>
+  <!--achievement Body Count: Walking Dead III-->
+  <string name="achievement_body_count_walking_dead_iii" translatable="false">CgkIlvbN0YYPEAIQKg</string>
+  <!--achievement Body Count: Walking Dead IV-->
+  <string name="achievement_body_count_walking_dead_iv" translatable="false">CgkIlvbN0YYPEAIQOA</string>
+  <!--achievement Frequent Flier I-->
+  <string name="achievement_frequent_flier_i" translatable="false">CgkIlvbN0YYPEAIQPA</string>
+  <!--achievement Frequent Flier II-->
+  <string name="achievement_frequent_flier_ii" translatable="false">CgkIlvbN0YYPEAIQEw</string>
+  <!--achievement Frequent Flier III-->
+  <string name="achievement_frequent_flier_iii" translatable="false">CgkIlvbN0YYPEAIQTA</string>
+  <!--achievement Frequent Flier IV-->
+  <string name="achievement_frequent_flier_iv" translatable="false">CgkIlvbN0YYPEAIQFw</string>
+  <!--achievement Terminal Condition-->
+  <string name="achievement_terminal_condition" translatable="false">CgkIlvbN0YYPEAIQRQ</string>
+  <!--achievement Special Snowflake-->
+  <string name="achievement_special_snowflake" translatable="false">CgkIlvbN0YYPEAIQUg</string>
+  <!--leaderboard DEEPEST, Season 1-->
+  <string name="leaderboard_deepest_season_1" translatable="false">CgkIlvbN0YYPEAIQAg</string>
+  <!--leaderboard LEANEST, Season 1-->
+  <string name="leaderboard_leanest_season_1" translatable="false">CgkIlvbN0YYPEAIQAw</string>
+  <!--leaderboard LONGEST, Season 1-->
+  <string name="leaderboard_longest_season_1" translatable="false">CgkIlvbN0YYPEAIQBA</string>
+  <!--leaderboard BUTCHERY, Season 1-->
+  <string name="leaderboard_butchery_season_1" translatable="false">CgkIlvbN0YYPEAIQBQ</string>
+  <!--leaderboard PURSE, Season 1-->
+  <string name="leaderboard_purse_season_1" translatable="false">CgkIlvbN0YYPEAIQBg</string>
+</resources>
