@@ -430,6 +430,11 @@ Plans:
 - **Fallen Joiners (tiered, user):** X Joiners have died in your service, counted across all delves. Name idea: *Human Shields*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
 - **Fallen summons (tiered, user):** X of your summons have died. Name idea: *Disposable Help*. Tiers 5 / 10 / 25 / 50 (user, 2026-10-05).
 - **Solid Miscalculation (user, 2026-10-04, icon done):** die entombed, when a Cloak of Ether runs out or comes off while you stand inside rock. Its id is `ether_entombed`, and it is not tiered. The `entombed` death cause has one home, `engine/movement.js#resolveEtherEnd`, so this is the brainstorm's *Buried Talent* under the user's name. The user drew the art and added it to `achievements/`.
+- **Gravity Wins (user, 2026-10-05, icon done):** die from a fall. Id `death_falling`, not tiered. The engine has no `fall` death cause; the failed climb or leap hurt (`engine/movement.js`, `LEAP_FALL` and the `CLIMB_TABLE` falls) is the likely source. Map it at planning.
+- **Terminal Condition (user, 2026-10-05, icon done):** die of disease. Id `death_disease`, not tiered. The engine has no `disease` death cause; the Disease affliction's ticks are the likely source. Map it at planning.
+- **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
+- **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers. Tier counts TBD.
+- **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times. Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
@@ -447,7 +452,7 @@ Plans:
   - *Saving It For Later:* die holding an undrunk healing potion.
   - *Speedrun:* die within your first N steps.
 - **Tiered event counters:**
-  - *Tactical Retreat Enthusiast:* flee X times (`fled`).
+  - ~~*Tactical Retreat Enthusiast:* flee X times (`fled`).~~ Replaced by the user's *Chicken* (2026-10-05).
   - *Tripwire Connoisseur:* spring X traps (`trapSprung`).
   - *Bomb Squad:* disarm X traps (`trapDisarmed`).
   - *Get Off My Lawn:* turn X Walking Dead (`walkingDeadTurned`).
@@ -506,7 +511,10 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Human Shields (fallen Joiners, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
-| **Total** | | **68** | **30** |
+| Gravity Wins, Terminal Condition, Empty Calories (added 2026-10-05) | 1 each | 3 | 3 |
+| Silver Tongue (successful parleys; added 2026-10-05) | 4 | 4 | 1 |
+| Chicken (flee 10 times; added 2026-10-05) | 1 | 1 | 1 |
+| **Total** | | **76** | **35** |
 
 *The Claude brainstorm (not yet agreed):*
 
@@ -514,7 +522,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 |---|---|---|---|
 | Death causes | Well-Rounded, Just One More Bite, Friendly Fire, Read the Fine Print, Poor Aim (Buried Talent moved to the user's list) | 5 | 5 |
 | Dying with regrets | You Can't Take It With You, Saving It For Later, Speedrun | 3 | 3 |
-| Tiered counters | Tactical Retreat Enthusiast, Tripwire Connoisseur, Bomb Squad, Get Off My Lawn, Cartographer | 20 (4 tiers) | 5 |
+| Tiered counters | ~~Tactical Retreat Enthusiast~~ (now Chicken), Tripwire Connoisseur, Bomb Squad, Get Off My Lawn, Cartographer | 20 (4 tiers) | 5 |
 | Social disasters | Diplomatic Incident, Riveting Company, It's Not You It's Me, one for `joinerMurdered` | 4 | 4 |
 | Collectors | Collected Neuroses, Fashion Victim, Retail Therapy (tiered) | 12 (4 tiers) | 3 |
 | Faerie | Fairy Godmother, Fairy Godmugger | 2 | 2 |
@@ -530,7 +538,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | User's list + full brainstorm | ~84–97 | 53 |
 | Tier frames (made once, reused) | — | +4 |
 
-Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). Tiering the body counts (2026-10-05) raises this to **68**: the 18 extra kill-tier files reuse the 6 drawn pictures and are composited with the tier frames by `achievements/build_achievements.py`, so no new art is needed. The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
+Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon files** (all 50 are drawn: the original 49 plus Solid Miscalculation, 2026-10-04). Tiering the body counts (2026-10-05) raised this to 68: the 18 kill-tier files reuse the 6 drawn pictures, composited with the tier frames. Gravity Wins, Terminal Condition, Empty Calories, Silver Tongue (4 tiers) and Chicken (all user-drawn, 2026-10-05) bring it to **76 icon files from 35 pictures**, all built and in `achievements/` (`python achievements/build_achievements.py`). The hand-off prompt for an image-generation agent is `.planning/phases/999.12-achievements-track/ICON-BRIEF.md`.
 
 *Decisions that move the counts:*
 

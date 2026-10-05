@@ -18,7 +18,10 @@ ROOT = Path(__file__).resolve().parent
 SIZE = 1254
 TIERS = {"depth": 3, "frequent_flier": 4, "survivor": 4,
          "hoarder": 4, "party_animal": 4, "human_shields": 4,
-         "disposable_help": 4}
+         "disposable_help": 4, "parlay": 4,
+         "kills_beasts": 4, "kills_demons": 4, "kills_humans": 4,
+         "kills_lair_beasts": 4, "kills_magical": 4,
+         "kills_walking_dead": 4}
 NAMES = {
     "depth": "Depth", "unicorn": "Unicorn!", "fully_dressed": "Fully Dressed",
     "naked_ambition": "Naked Ambition", "teetotaler": "Teetotaler",
@@ -34,8 +37,14 @@ NAMES = {
     "hoarder": "Hoarder", "party_animal": "Party Animal",
     "human_shields": "Human Shields", "disposable_help": "Disposable Help",
     "ether_entombed": "Solid Miscalculation",
+    "death_falling": "Gravity Wins", "death_disease": "Terminal Condition",
+    "death_starvation": "Empty Calories", "parlay": "Silver Tongue",
+    "chicken": "Chicken",
 }
-assert len(NAMES) == 30
+assert set(TIERS) <= set(NAMES)
+# One export per untiered achievement, one per tier of a tiered one.
+EXPECTED = sum(TIERS.get(id, 1) for id in NAMES)
+EXPORT_DIRS = ("master", "play", "ingame")
 PALETTES = {
     1: ((103, 53, 28), (201, 118, 56), (249, 174, 91)),
     2: ((65, 80, 91), (157, 184, 193), (241, 247, 239)),
@@ -133,7 +142,15 @@ def contact_sheet(rows):
     nrows=math.ceil(len(rows)/cols)
     sheet=Image.new("RGB",(cols*tile+2*margin,nrows*(tile+label_h)+2*margin),(37,30,25))
     d=ImageDraw.Draw(sheet)
-    font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",12)
+    font=None
+    for name in ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                 "DejaVuSans.ttf", "arial.ttf", "Arial.ttf"):
+        try:
+            font=ImageFont.truetype(name,12)
+            break
+        except OSError:
+            pass
+    font=font or ImageFont.load_default()
     for i,entry in enumerate(rows):
         x=margin+(i%cols)*tile; y=margin+(i//cols)*(tile+label_h)
         im=Image.open(ROOT/entry["file_ingame"]).convert("RGBA")
@@ -169,8 +186,16 @@ def main():
             rows.append({"id":id,"name":name,"tier":tier,
                          "file_play":f"play/{stem}.png",
                          "file_ingame":f"ingame/{stem}.png"})
-    assert len(rows)==50
-    (ROOT/"manifest.json").write_text(json.dumps(rows,indent=2)+"\n")
+    assert len(rows)==EXPECTED
+    # Drop exports no achievement produces any more (e.g. an untiered icon
+    # whose achievement became tiered).
+    keep={f"{r['file_play'].split('/')[-1]}" for r in rows}
+    for sub in EXPORT_DIRS:
+        for old in (ROOT/sub).glob("ach_*.png"):
+            if old.name not in keep:
+                old.unlink()
+    (ROOT/"manifest.json").write_text(json.dumps(rows,indent=2)+"\n",
+                                      encoding="utf-8",newline="\n")
     contact_sheet(rows)
     print(f"Built {len(rows)} icons from {len(NAMES)} source illustrations")
 
