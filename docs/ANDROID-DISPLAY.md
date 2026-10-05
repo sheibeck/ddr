@@ -2,7 +2,8 @@
 
 This doc records the Phase 80 (Android Release Build & Tooling) decisions for how the app
 behaves on modern Android displays: edge-to-edge rendering, deprecated window APIs, and
-large-screen (tablet / foldable / Chromebook) layout. It exists to close the three warnings
+large-screen (tablet / foldable / Chromebook) layout. Phase 97 (Large-Screen Support) later
+replaced the large-screen decision. It exists to close the three warnings
 Play Console's pre-launch report raised against the 1.9.0 / vc8 build, quoted verbatim below
 (`.planning/ROADMAP.md` backlog 999.9).
 
@@ -21,114 +22,128 @@ Play Console's pre-launch report raised against the 1.9.0 / vc8 build, quoted ve
 
 **Which section owns which warning:**
 
-- Warning 3 (display configurations / orientation) — this plan (80-03), in "Large screens
-  (DROID-03)" below.
+- Warning 3 (display configurations / orientation) — Phase 80 (80-03) first, superseded by
+  Phase 97 (SCREEN-01..06) in "Large screens (DROID-03, SCREEN-01..06)" below.
 - Warnings 1 and 2 (edge-to-edge default, deprecated window APIs) — the edge-to-edge and
   audit sections 80-04 adds after the one release build this milestone makes.
-- The emulator tablet/foldable pass and the Pixel 7 verification results — the verification
-  section 80-05 adds after that build is installed.
+- The emulator tablet/foldable pass and the Pixel 7 verification results — absorbed by Phase
+  97: the layout check runs in-repo (`npm run layout:check`), and the emulator pass runs at
+  the v2.4 build gate.
 
 This doc is written incrementally: each plan writes only the sections it owns, and later
 plans append rather than pre-declaring empty headings.
 
-## Large screens (DROID-03)
+## Large screens (DROID-03, SCREEN-01..06)
 
-**Decision:** one centred 480 CSS px portrait column over `#080705` gutters (with a thin
-rule down each side) on anything wider than a phone. Phones (480 CSS px and narrower) are
-completely unchanged — no column, no gutters, no containing-block change. There is no
-landscape layout and no second layout mode; the app stays a single portrait experience
-everywhere.
+**Decision (Phase 97, user rulings 2026-10-04):** the manifest carries no orientation,
+resizability or aspect-ratio restriction, and the layout follows the window, not the device.
+`android/app/src/main/AndroidManifest.xml` has no `android:screenOrientation`, no
+`resizeableActivity="false"`, no `maxAspectRatio` and no `<layout>` element (a test pins all
+four). That is why Play's large-screen notice clears: the notice is about restrictions, and
+the restrictions are gone.
 
-**The mechanism, corrected:** Android 16 (targetSdk 36) ignores orientation, resizability
-and aspect-ratio restrictions on displays with smallest width >= 600dp — apps are made to
-fill the entire display window regardless of a locked orientation or aspect ratio — **except
-apps declared as games** via the manifest's `android:appCategory="game"` attribute, which are
-exempt from that ignore-rule and keep their orientation lock honoured. This app now declares
-that category on `<application>` in `android/app/src/main/AndroidManifest.xml`, so both the
-manifest's `android:screenOrientation="portrait"` (on `.MainActivity`) and the JS-side
-`ScreenOrientation.lock({ orientation: "portrait" })` in `src/browser/nativeChrome.js` stay
-honoured on tablets, foldables and Chromebooks, exactly as they already are on phones.
+- `android:appCategory="game"` stays on `<application>`. It is the honest category for the
+  app. It no longer carries an orientation lock, because there is no lock for it to protect.
+- `android:configChanges` stays exactly as it was, ten entries:
+  `orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density`.
+  Rotation, fold, unfold, resize and multi-window therefore never recreate the activity or
+  the WebView. The run, a fight, an open store, the active tab, the camera and an open sheet
+  all survive, because the DOM and the module variables that hold them are never torn down.
+  The saved state (`S`, written on every dispatch and flushed on pause) is the second net for
+  the cases where Android kills the process anyway.
 
-This is a correction from the phase's own context-gathering: `80-CONTEXT.md` originally
-described the opposite reading — "declare the app a game… and let large screens rotate and
-resize around the column, Android 16 ignores orientation locks there anyway." Research
-against the current, authoritative Android developer documentation
-(`developer.android.com/about/versions/16/behavior-changes-16` and
-`developer.android.com/develop/adaptive-apps/guides/app-orientation-aspect-ratio-resizability`)
-found the exemption runs the other way: declaring the game category is what keeps the lock
-in force. The corrected reading is recorded in `80-03-PLAN.md`'s own "Research correction"
-section and here.
+**Phones choose, everything else follows.** Settings, Screen has two options: Portrait (the
+default) and Rotate. It applies only when `Math.min(screen.width, screen.height)` is below
+600 CSS px (`PHONE_SMALLEST_WIDTH_LIMIT`, `decideOrientationLock` and `syncOrientationLock`
+in `src/browser/nativeChrome.js`). Portrait locks the screen at runtime with
+`ScreenOrientation.lock`; Rotate unlocks it. The decision is re-applied when the setting
+changes and on every layout sync, so folding a foldable re-locks its cover screen and
+unfolding releases it. Tablets, unfolded foldables and Chromebooks always follow the device;
+they never get the lock and never show the Settings row.
 
-**Why the column still matters:** the game-category declaration only prevents *rotation and
-resizing* — it says nothing about the *width* of the portrait window itself. A tablet,
-unfolded foldable or Chromebook window in portrait is commonly 700-1200 CSS px wide, versus a
-phone's roughly 360-430px. Nothing in the orientation-lock mechanism narrows that window back
-down to a phone-shaped column, so without a deliberate layout decision the shell would simply
-stretch every panel, sheet and HUD element across the full width. The letterboxed column is
-the fix for that width problem, independent of (and unaffected by) the orientation fix.
+**Window size classes.** `src/browser/layoutClass.js` is the one source. The stylesheet
+uses the exact `LAYOUT_MEDIA` strings; script reads the same strings through `matchMedia`
+and publishes the result as `window.__mzLayout` and `html[data-mw-layout]`, so CSS and JS
+cannot disagree. Classes are evaluated in the order of this table, and a screen that is both
+short and wide is short.
 
-**How it is built:** a single delimited style block, `<style id="mw-letterbox">` in
-`mazeworld.html`, inserted as the last `<style>` element in `<head>` with `BEGIN`/`END`
-marker comments so future gameplay-phase edits to the file's other style blocks merge around
-it cleanly. Its one rule, gated behind `@media (min-width:481px)` so phones are never
-affected:
+| Class | Rule | Layout |
+|---|---|---|
+| short | height under 480 | The landscape layout, a phone on its side. A navigation rail down the left edge, a one-row HUD across the top, and the map filling the rest. A right-hand panel (about 45% wide, scrolling) holds the rail card, a fight, the store, loot, the stairs, the death card or Make Camp, and takes width only while one of them is up. Hero, Gear, the Oracle, Dead, the leaderboards and the sheets sit in a centred column of at most 640 px at full height; Hero and Gear flow into two columns. |
+| compact | under 600 wide | Today's phone portrait stack: two-band HUD, the map, the rail card over its bottom, the tab bar along the bottom. Unchanged apart from `dvh`. |
+| medium | 600 to 839 wide | The compact stack, widened. The map fills the width with scaled cells; Hero, Gear, the Oracle, Dead, the sheets, the encounter content and the rail card centre at 640 px. The tab bar stays along the bottom. |
+| expanded | 840 or more wide and 480 or more tall | Two panes. The map stays on the left on every tab. A persistent right pane (`clamp(360px, 40%, 560px)`) holds Hero, Gear, the Oracle or Dead; on the map tab it holds the rail card or the fight, store or encounter panel. Tabs sit in the left navigation rail. A fight that starts while the pane shows something else switches to the map tab once, so the fight takes the pane. |
 
-```css
-@media (min-width:481px){
-  :root{background:#080705}
-  html>body{max-width:480px;margin:0 auto;contain:layout;box-shadow:0 0 0 1px var(--rule),0 0 40px rgba(0,0,0,.6)}
-}
-```
+The thresholds are written 479.98, 599.98 and 839.98 in the `max-*` queries because a
+fractional CSS pixel size (a 2.625 density phone reports 411.43 px wide) must never fall
+between two classes. The only gap is the 0.02 px sliver under each whole-number threshold,
+which no real screen reports; compact is the default there.
 
-- `contain:layout` on `html>body` makes `body` the containing block for every
-  `position:fixed` descendant with `inset:0` — the title screen, the roller screen, the five
-  bottom sheets (MARKS legend, Settings, Account, Camp, Gear, Fight-so-far) and the HUD menu
-  scrim. Because the containing block is `body` rather than the viewport, every one of those
-  overlays (and any fixed overlay a later phase adds) automatically resolves inside the
-  480px column with zero per-overlay CSS.
-- `:root` and `html>body` (rather than a lone `body{...}` rule folded into an existing block)
-  are used because these selectors win regardless of where the file's other `<style>` blocks
-  set `body`'s own margin or background — a later edit elsewhere in the file cannot silently
-  reorder this rule out of effect.
-- Every `vw`-based measurement already existing in the file (`.mw-hud-menu`'s
-  `min(288px, calc(100vw - 40px))` width, two font-size `clamp()` calls, and the map's
-  `min(62vw, 420px)` intended "big map" sizing) resolves to values comfortably inside 480px
-  regardless of viewport, so none needed a change.
-- Taps need no change: `src/browser/controls.js#screenToCell` already computes pointer
-  coordinates relative to `.mw-maze-viewport`'s own `getBoundingClientRect()`, and that
-  viewport is a normal in-flow child of `#app`, so it is carried into the column by the same
-  `html>body` constraint with no separate rule.
+**The map scales with the window.** Cells grow with the window's shorter side:
+`1 + (shorter - 412) / 800`, capped at 1.5x, and the cell itself is capped at 144 px, today's
+largest phone cell (`cellScaleForWindow`, `cellPxFor`, `CELL_MAX_PX` in
+`src/browser/canvasSizing.js`). A tablet shows the same explored maze, larger and easier to
+tap. Fog still limits what is seen, so difficulty does not move. Phones are unchanged to the
+pixel. Taps need no change: `screenToCell` already measures the viewport's own rectangle.
 
-**Play's warning 3 — verdict:** addressed. Android's own developer documentation states
-games are exempt from the large-screen ignore-rule the warning describes, and this app now
-declares that exemption. Community reports corroborate that declaring `android:appCategory`
-is the documented, intended way to both keep the orientation lock and clear this specific
-warning. The verdict is **confirmed** once the next Play pre-launch report runs against a
-build carrying this manifest change (80-05 records the result); until then this section's
-reasoning is the "consciously accepted" fallback if the warning persists.
+**The letterbox column is retired.** Phase 80 held every wide window to one 480 px portrait
+column over dark gutters (`<style id="mw-letterbox">`, with `contain:layout` on `body` to
+trap the fixed overlays). It went because the size-class layouts use the screen the player
+actually has. `body` no longer carries `contain:layout` or a `max-width`; the title, roller,
+sheets and overlays size against the window and centre their own panels at the readable
+width. The layout rules live in one delimited block, `<style id="mw-layout">`, in
+`mazeworld.html`: global rules, the compact notes, then the side group (short and expanded),
+the short group, the medium group and the expanded group, in that source order, every rule
+indented two spaces.
 
-**How to check it:** `node tools/letterbox-check.mjs --shots <dir>` — a dependency-free
-headless-Chrome CDP driver that measures `#app`, `.mw-maze-viewport` and every
-`position:fixed` overlay across five viewports (phone 412x915, phone-max 480x1000 — both
-full-width; tablet 800x1280, foldable 700x840, chromebook 1280x800 — all three centred to the
-480px column) and exits non-zero on any mismatch. 80-04 re-runs it against the final
-milestone code to confirm later gameplay-phase overlays still land inside the column.
-The screenshots below were captured by that tool at this plan's HEAD, showing the column
-against real 480x1000/phone-max layout math on the tablet/foldable/chromebook widths
-(phone-max exists to pin the boundary in the measurement, not for a screenshot pair):
+**Units and insets.** The app height and the five window-sized maxima (the HUD menu, the
+legend panel, the Oracle log, the find shelf and the report text) use `dvh`, with a `vh`
+declaration before it as the fallback for WebViews that predate the unit, so the Android
+navigation and URL bars never leave a gap or a clipped control. All four safe-area insets
+are honoured through `var(--safe-area-inset-*, env(safe-area-inset-*))`:
 
-- [`80-screens/browser-phone-title.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-phone-title.png) /
-  [`80-screens/browser-phone-app.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-phone-app.png) —
-  412 CSS px: full-width, unchanged.
-- [`80-screens/browser-tablet-title.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-tablet-title.png) /
-  [`80-screens/browser-tablet-app.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-tablet-app.png) —
-  800 CSS px: the 480px column, centred, with `#080705` gutters either side.
-- [`80-screens/browser-foldable-title.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-foldable-title.png) /
-  [`80-screens/browser-foldable-app.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-foldable-app.png) —
-  700 CSS px: same column treatment, narrower gutters.
-- [`80-screens/browser-chromebook-title.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-chromebook-title.png) /
-  [`80-screens/browser-chromebook-app.png`](../.planning/phases/80-android-release-build-tooling/80-screens/browser-chromebook-app.png) —
-  1280 CSS px: the widest gutters of the five viewports, column still exactly 480px.
+- Top: the HUD bands and, in the side layouts, the top of the navigation rail and the docked
+  Make Camp sheet.
+- Bottom: the tab bar in compact and medium, the bottom of the navigation rail and the side
+  rail card in the side layouts.
+- Left: the HUD bands, the condition strip, the tab bar or navigation rail, the sheet panels,
+  the title body and account chip, and the roller, so a landscape camera cutout never covers
+  text.
+- Right: the same surfaces on the other edge, plus the stage, the side panel and the rail
+  card, and the docked Make Camp sheet.
+
+**How to check it:** `npm run layout:check` (`tools/layout-check.mjs`, which replaced
+`tools/letterbox-check.mjs`). It is a dependency-free headless-Chrome driver. It renders
+twelve profiles across the four classes: phone portrait 412x915, phone landscape 915x412, a
+360 dp phone on its side 800x360, a 7-inch tablet in both orientations, a 10-inch tablet in
+both, a folded foldable 411x797, an unfolded foldable 841x701 and upright 701x841, and two
+Chromebook windows (1366x768 and 683x768). In each it builds the title, roller, map, map with
+a rail card, Settings, Hero, Gear, the Oracle, Dead, an encounter, a fight round, the store
+and Make Camp from real engine states, plus a rotate-mid-fight and rotate-mid-store round
+trip and a set of probes at the class boundaries. A run fails (exit 1) on horizontal
+overflow, a clipped control, a page exception, a wrong `data-mw-layout`, or a broken layout
+shape (for example the tab bar on the wrong edge, or the expanded pane outside 360 to 560
+px). It exits 0 when everything passes and 2 when no browser can be driven. Screenshots go
+to `tools/layout-check-output/`, which is gitignored. The check runs with zero insets, so a
+cutout is covered by the device pass instead.
+
+The Android emulator pass, absorbing the Phase 80 emulator plan (80-05), runs at the v2.4
+build gate on the debug APK: pixel_7 with gesture and 3-button navigation and a cutout,
+pixel_tablet rotated both ways, pixel_fold folded and unfolded, and a desktop-size window
+dragged across 840 px. Its rows join the batched Pixel 7 checklist.
+
+**Play's warning 3 — verdict:** addressed by removing the restriction rather than by
+accepting it. The verdict is **confirmed** once the next upload's pre-launch report runs
+against a build carrying this manifest (a milestone-close item, recorded here once known).
+
+**History.** Phase 80 (80-03) first answered warning 3 by keeping the restrictions and
+declaring the app a game: its research correction found that Android 16 exempts games from
+the large-screen ignore rule, so the portrait lock stayed honoured, and the 480 px column
+handled the width. Phase 97 reversed that on the user's ruling: the game now fills the
+screen it is on. The Phase 80 screenshots are kept as history only and describe a layout
+that no longer exists:
+[`80-screens/`](../.planning/phases/80-android-release-build-tooling/80-screens/)
+(`browser-{phone,tablet,foldable,chromebook}-{title,app}.png`).
 
 ## Edge-to-edge and system bars (DROID-02)
 
@@ -285,7 +300,8 @@ something this app's configuration reaches.
 `android:appCategory(0x01010545)=0` on `<application>` and
 `android:screenOrientation(0x0101001e)=1` on `MainActivity` — `0` and `1` are aapt2's resolved
 integer values for `"game"` and `"portrait"` respectively (DROID-03, cross-referenced here
-because the manifest audit ran alongside this scan against the same build).
+because the manifest audit ran alongside this scan against the same build). Phase 97 removed
+the orientation attribute; the next build-gate audit records the merged manifest without it.
 
 **Re-run the scan after every release build.** A new caller appearing here — especially one
 under `androidx` at a different API level, or any row under `app` or the removed
