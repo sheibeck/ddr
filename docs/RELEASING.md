@@ -17,6 +17,7 @@ The app lives on Play Console as **Delve, Die, Repeat** (`com.darktierstudios.de
 
 ```
 npm test                 # must be green
+npm run layout:check   # every screen shape: no overflow, no clipping (Phase 97)
 npm run play:release     # = bump versionCode → build:www → cap sync → pin-jdk → bundleRelease
 ```
 
@@ -362,7 +363,7 @@ milestone's build-part ruling:
 - **Delta:** 1,442,739 bytes smaller with R8 on, an 11.3% reduction.
 
 See `docs/ANDROID-DISPLAY.md` for the edge-to-edge/system-bars decisions (DROID-02) and the
-large-screen letterboxed-column decision (DROID-03), and its "Deprecated window API audit"
+large-screen layouts by window size class (DROID-03, Phase 97 SCREEN-01..06), and its "Deprecated window API audit"
 section for the full scan table run against this same build.
 
 ### First release after R8: Pixel 7 smoke (milestone-close checklist)
