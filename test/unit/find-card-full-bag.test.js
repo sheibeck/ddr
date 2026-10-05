@@ -141,6 +141,13 @@ function findScenario(state, find) {
   return { doc, sandbox, linesEl, actionsEl, region, drops };
 }
 
+// Phase 97.1 (FLAVOR-07): true when the element or any descendant has a class starting mw-rules.
+function hasRulesClass(el) {
+  if (!el) return false;
+  if (String(el.className || "").split(/\s+/).some((c) => c.startsWith("mw-rules"))) return true;
+  return (el.children || []).some(hasRulesClass);
+}
+
 function actionLabels(actionsEl) {
   return actionsEl.children.map((b) => b.textContent);
 }
@@ -168,19 +175,21 @@ test("(b) the largest bag full, a weapon found: item lines first, then the bound
   const rows = dropShelfRows(state.c);
   assert.equal(r.region.children.length, rows.length);
   r.region.children.forEach((el, n) => {
-    // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row is a div.mw-rules-wrap whose first child is the Drop button (name and
-    // flavour inside it); its stat line sits in the wrap's RULES body. A row with no flavour is the bare button, as before.
-    const wrapped = String(el.className).split(/\s+/).includes("mw-rules-wrap");
-    const rowEl = wrapped ? el.children[0] : el;
-    assert.ok(rowEl.innerHTML.includes(rows[n].name), `row ${n} names ${rows[n].name}`);
-    if (wrapped) {
-      const body = el.children.find((x) => String(x.className).split(/\s+/).includes("mw-rules-body"));
-      assert.deepEqual(body.children.map((p) => p.textContent), [rows[n].stats], `row ${n} carries its stat line in its RULES body`);
+    // Phase 97.1 (FLAVOR-07): declared re-pin: every row is the bare Drop button, flavoured or not. A flavoured row shows its flavour
+    // (not its stat line); a row with no flavour keeps its stat line, as before. No element anywhere in the region is a RULES control.
+    assert.equal(el.tagName.toLowerCase(), "button", `row ${n} is a bare button`);
+    assert.ok(!hasRulesClass(el), `row ${n} carries no RULES control or body`);
+    assert.ok(el.innerHTML.includes(rows[n].name), `row ${n} names ${rows[n].name}`);
+    const flavor = r.sandbox.context.window.__mzFlavor.flavorOfItem(rows[n].it);
+    if (flavor) {
+      assert.ok(el.innerHTML.includes(flavor), `row ${n} shows its flavour line`);
+      if (rows[n].stats) assert.ok(!el.innerHTML.includes(rows[n].stats), `row ${n} does not draw its stat line`);
     } else {
-      assert.ok(rowEl.innerHTML.includes(rows[n].stats), `row ${n} carries its stat line`);
+      assert.ok(el.innerHTML.includes(rows[n].stats), `row ${n} carries its stat line`);
     }
-    rowEl.onclick();
+    el.onclick();
   });
+  assert.ok(!hasRulesClass(r.region), "no element in the drop region has a class starting mw-rules");
   assert.deepEqual(r.drops, rows.map((row) => row.i), "each row drops its own item by its true index");
 
   assert.deepEqual(actionLabels(r.actionsEl), [RAIL_COPY.find.takeNow, RAIL_COPY.find.leave]);
@@ -218,10 +227,10 @@ test("(d) after a drop the card re-renders with the found item still first and t
   // Re-pinned by quick 260928-fcs: the first line is the head's first child.
   assert.ok(String(r.linesEl.children[0].children[0].textContent).startsWith(find.n), "the found item is still first");
   assert.equal(r.region.children.length, after.length);
-  // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row's button is the first child of its RULES wrapper.
+  // Phase 97.1 (FLAVOR-07): declared re-pin: every row is the bare button itself (there is no RULES wrapper).
   r.region.children.forEach((el, n) => {
-    const btn = String(el.className).split(/\s+/).includes("mw-rules-wrap") ? el.children[0] : el;
-    assert.ok(btn.innerHTML.includes(after[n].name), `row ${n} is ${after[n].name}`);
+    assert.equal(el.tagName.toLowerCase(), "button", `row ${n} is a bare button`);
+    assert.ok(el.innerHTML.includes(after[n].name), `row ${n} is ${after[n].name}`);
   });
 });
 

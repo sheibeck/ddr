@@ -3,73 +3,43 @@
   text="TEST DELVER · ABILITIES"
 ## #cb-sub-list
 <div id="cb-sub-list" class="cb-sub-list">
-  <div class="mw-rules-wrap">
-    <button id="cb-row-ability-kata" class="cb-row" aria-disabled="true" data-cbRow="1" data-state="ready" onclick>
-      <div class="cb-row-head">
-        <span class="cb-row-label">
-          text="KATA"
-        <span class="cb-row-cost">
-          text="READY"
-      <div class="cb-row-desc">
-        text="Years of practice in one tidy motion, so the next blow lands better and bites harder."
-    <button class="mw-rules-btn" aria-controls="mw-rules-combat-ability-kata" aria-expanded="false" aria-label="Rules for KATA" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-combat-ability-kata" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="one perfect form: +3 to hit on this strike, and it adds your level in damage; ready again 4 rounds after you use it"
-  <div class="mw-rules-wrap">
-    <button id="cb-row-ability-pommelStrike" class="cb-row" aria-disabled="true" data-cbRow="2" data-state="recharging" onclick>
-      <div class="cb-row-head">
-        <span class="cb-row-label">
-          text="POMMEL STRIKE"
-        <span class="cb-row-cost">
-          text="READY IN 3"
-      <div class="cb-row-desc">
-        text="The handle instead of the pointy bit, and a landed blow costs the foe its next move."
-    <button class="mw-rules-btn" aria-controls="mw-rules-combat-ability-pommelStrike" aria-expanded="false" aria-label="Rules for POMMEL STRIKE" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-combat-ability-pommelStrike" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="the blunt end, to the temple: a normal strike, and a hit also costs the target its next turn"
-  <div class="mw-rules-wrap">
-    <button id="cb-row-ability-deathTouch" class="cb-row" aria-disabled="true" data-cbRow="3" data-state="spent" onclick>
-      <div class="cb-row-head">
-        <span class="cb-row-label">
-          text="DEATH TOUCH"
-        <span class="cb-row-cost">
-          text="SPENT THIS FIGHT"
-      <div class="cb-row-desc">
-        text="Announce the blow, then land it: the frail are finished, and the stunt is not repeated this fight."
-    <button class="mw-rules-btn" aria-controls="mw-rules-combat-ability-deathTouch" aria-expanded="false" aria-label="Rules for DEATH TOUCH" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-combat-ability-deathTouch" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="call it: one swing, rolled as normal; if it lands it doubles and finishes anything under 15 hp; once per fight"
-  <div class="mw-rules-wrap">
-    <button id="cb-row-ability-sweep" class="cb-row" aria-disabled="true" data-cbRow="4" data-state="unavailable" onclick>
-      <div class="cb-row-head">
-        <span class="cb-row-label">
-          text="SWEEP"
-        <span class="cb-row-cost">
-          text="NEEDS TWO OR MORE FOES"
-      <div class="cb-row-desc">
-        text="A generous arc that clips every foe in reach, but only if there is a crowd to be clipped."
-    <button class="mw-rules-btn" aria-controls="mw-rules-combat-ability-sweep" aria-expanded="false" aria-label="Rules for SWEEP" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-combat-ability-sweep" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="one wide arc: every living foe takes half damage; needs two or more foes"
-  <div class="mw-rules-wrap">
-    <button id="cb-row-ability-lastStand" class="cb-row" aria-disabled="true" data-cbRow="5" data-state="unavailable" onclick>
-      <div class="cb-row-head">
-        <span class="cb-row-label">
-          text="LAST STAND"
-        <span class="cb-row-cost">
-          text="NEEDS A QUARTER HP OR LESS"
-      <div class="cb-row-desc">
-        text="Saved for when you are nearly done for: a furious flurry from someone with nothing to lose."
-    <button class="mw-rules-btn" aria-controls="mw-rules-combat-ability-lastStand" aria-expanded="false" aria-label="Rules for LAST STAND" type="button" type="button" onclick>
-      text="RULES ▸"
-    <div id="mw-rules-combat-ability-lastStand" class="mw-rules-body" hidden>
-      <p class="mw-rules-line">
-        text="under a quarter hp: three attacks this round; ready again 4 rounds after you use it"
+  <button id="cb-row-ability-kata" class="cb-row" aria-disabled="true" data-cbRow="1" data-state="ready" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="KATA"
+      <span class="cb-row-cost">
+        text="READY"
+    <div class="cb-row-desc">
+      text="Years of practice in one tidy motion, so the next blow lands better and bites harder."
+  <button id="cb-row-ability-pommelStrike" class="cb-row" aria-disabled="true" data-cbRow="2" data-state="recharging" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="POMMEL STRIKE"
+      <span class="cb-row-cost">
+        text="READY IN 3"
+    <div class="cb-row-desc">
+      text="The handle instead of the pointy bit, and a landed blow costs the foe its next move."
+  <button id="cb-row-ability-deathTouch" class="cb-row" aria-disabled="true" data-cbRow="3" data-state="spent" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="DEATH TOUCH"
+      <span class="cb-row-cost">
+        text="SPENT THIS FIGHT"
+    <div class="cb-row-desc">
+      text="Announce the blow, then land it: the frail are finished, and the stunt is not repeated this fight."
+  <button id="cb-row-ability-sweep" class="cb-row" aria-disabled="true" data-cbRow="4" data-state="unavailable" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="SWEEP"
+      <span class="cb-row-cost">
+        text="NEEDS TWO OR MORE FOES"
+    <div class="cb-row-desc">
+      text="A generous arc that clips every foe in reach, but only if there is a crowd to be clipped."
+  <button id="cb-row-ability-lastStand" class="cb-row" aria-disabled="true" data-cbRow="5" data-state="unavailable" onclick>
+    <div class="cb-row-head">
+      <span class="cb-row-label">
+        text="LAST STAND"
+      <span class="cb-row-cost">
+        text="NEEDS A QUARTER HP OR LESS"
+    <div class="cb-row-desc">
+      text="Saved for when you are nearly done for: a furious flurry from someone with nothing to lose."

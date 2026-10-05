@@ -151,8 +151,9 @@ test("(a) a find with room (or any other card) gets no head wrapper: its lines s
   sandbox.context.renderRail();
   const kids = doc.document.getElementById("mw-rail-lines").children;
   assert.ok(kids.length > 0);
-  // Phase 95 (FLAVOR-02/05): declared re-pin: the found item's line now carries a RULES toggle and its body as direct children of the lines column too (no head wrapper still).
-  assert.ok(kids.every((el) => /mw-rail-(line|roll)|mw-rules-(btn|body)/.test(String(el.className))), "plain lines (and the RULES toggle and body) only");
+  // Phase 97.1 (FLAVOR-07): declared re-pin: the lines column holds only plain lines and rolls again; no child is a RULES control or body.
+  assert.ok(kids.every((el) => /mw-rail-(line|roll)/.test(String(el.className))), "plain lines only");
+  assert.ok(!kids.some((el) => String(el.className).split(/\s+/).some((c) => c.startsWith("mw-rules"))), "no child has a class starting mw-rules");
   assert.ok(!kids.some((el) => /mw-find-head/.test(String(el.className))), "no head wrapper");
 });
 
@@ -210,22 +211,22 @@ test("(c) every row is still one tap target: a single <button> per item, the nam
   const { region } = r.parts();
   const rows = dropShelfRows(r.state.c);
   region.children.forEach((el, n) => {
-    // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: a flavoured row is a div.mw-rules-wrap whose FIRST child is the one Drop button; the name and
-    // the flavour are inside that button, the stat line sits in the wrap's RULES body, and the toggle is the button's sibling, never inside it.
-    const wrapped = String(el.className).split(/\s+/).includes("mw-rules-wrap");
-    const btn = wrapped ? el.children[0] : el;
+    // Phase 97.1 (FLAVOR-07): declared re-pin: every row is the one bare Drop button itself, flavoured or not. The name and the flavour are
+    // inside it; a flavoured row does not draw its stat line, an unflavoured row keeps it; nothing under the region is a RULES control.
+    const btn = el;
     assert.equal(btn.tagName, "button");
+    assert.ok(String(btn.className).split(/\s+/).includes("goods"), `row ${n}: the row is the Drop button`);
     assert.ok(btn.innerHTML.startsWith(`<span class="g-n">${rows[n].name}<i>`), `row ${n}: the name first`);
-    if (wrapped) {
-      assert.ok(String(btn.className).split(/\s+/).includes("goods"), `row ${n}: the first child is the Drop button`);
-      assert.ok(!btn.innerHTML.includes("mw-rules-btn"), `row ${n}: the toggle is never inside the button`);
-      assert.ok(btn.innerHTML.includes(flavorOfItem(rows[n].it)), `row ${n}: its flavour`);
-      const body = el.children.find((x) => String(x.className).split(/\s+/).includes("mw-rules-body"));
-      assert.deepEqual(body.children.map((p) => p.textContent), [rows[n].stats], `row ${n}: its stat line in the RULES body`);
+    assert.ok(!btn.innerHTML.includes("mw-rules"), `row ${n}: no RULES control inside the button`);
+    const flavor = flavorOfItem(rows[n].it);
+    if (flavor) {
+      assert.ok(btn.innerHTML.includes(flavor), `row ${n}: its flavour`);
+      if (rows[n].stats) assert.ok(!btn.innerHTML.includes(rows[n].stats), `row ${n}: its stat line is not drawn`);
     } else {
       assert.ok(btn.innerHTML.includes(rows[n].stats), `row ${n}: its stat line`);
     }
   });
+  assert.ok(!region.children.some((el) => String(el.className).split(/\s+/).some((c) => c.startsWith("mw-rules"))), "no sibling of the rows is a RULES wrapper");
 });
 
 test("(c) the new find-card rules use token colours only", () => {
@@ -248,10 +249,9 @@ test("(d) a drag that scrolls the list never presses a row; a clean tap afterwar
   assert.equal(typeof region.onpointerdown, "function");
   assert.equal(typeof region.onpointermove, "function");
   assert.equal(typeof region.onscroll, "function");
-  // Phase 95 (FLAVOR-02/05), Plan 07: declared re-pin: the row the test presses is the Drop button inside the row's RULES wrapper.
+  // Phase 97.1 (FLAVOR-07): declared re-pin: the row the test presses is the bare Drop button itself.
   const press = () => {
-    const el = region.children[3];
-    (String(el.className).split(/\s+/).includes("mw-rules-wrap") ? el.children[0] : el).onclick();
+    region.children[3].onclick();
   };
   drag(region, 80);
   press();
