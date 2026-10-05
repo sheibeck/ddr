@@ -196,23 +196,6 @@ h1{
 .meta .m b{font-family:var(--mono);font-size:calc(0.875rem * var(--mw-text-scale));letter-spacing:0;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .meta .m.warn b{color:var(--stamp)}
 
-/* ---------- layout ---------- */
-.desk{display:grid;grid-template-columns:262px minmax(0,1fr) 336px;gap:18px;align-items:start}
-.col-sheet{grid-column:1;grid-row:1/span 2}
-.col-maze {grid-column:2;grid-row:1}
-.col-doss {grid-column:2;grid-row:2}
-.col-right{grid-column:3;grid-row:1/span 2;display:flex;flex-direction:column;gap:14px}
-@media (max-width:1080px){
-  .desk{grid-template-columns:minmax(0,1fr)}
-  .desk > *{grid-column:auto;grid-row:auto}
-  .col-right{display:contents}
-  #enc-panel{order:1}
-  .col-maze{order:2}
-  .col-sheet{order:3}
-  #log-panel{order:4}
-  .col-doss{order:5}
-}
-
 .panel{
   background:var(--paper-2);
   border:1px solid var(--rule);
@@ -1185,7 +1168,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 
 /* ---------- dossier ---------- */
 .dossier{margin-top:0}
-@media (max-width:1080px){.dossier{margin-top:0}}
 .doss{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:16px}
 .doss section{display:flex;flex-direction:column;gap:3px}
 .doss h3{
@@ -1197,25 +1179,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 /* VOX-04 (Phase 79, Plan 03): the Race and Subclass notes' Good/Bad footer. */
 .doss .doss-rules{font-family:var(--mono);font-size:calc(0.75rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin-top:4px;overflow-wrap:anywhere}
 .doss section + section{border-left:1px dotted var(--rule);padding-left:16px}
-@media (max-width:700px){.doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}}
-
-/* ---------- vitals strip (mobile) ---------- */
-.vitals{display:none}
-@media (max-width:1080px){
-  .vitals{
-    display:flex;align-items:center;gap:10px;
-    margin:0 0 12px;padding-bottom:11px;border-bottom:1px solid var(--rule);
-  }
-  .v-bar{position:relative;flex:1;height:19px;background:var(--paper-3);border:1px solid var(--rule);overflow:hidden}
-  .v-fill{height:100%;background:var(--moss);transition:width .25s ease}
-  .v-fill.low{background:var(--stamp)}
-  .v-lab{
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));font-weight:600;color:var(--ink);
-    font-variant-numeric:tabular-nums;letter-spacing:.02em;
-  }
-  .v-side{font-family:var(--mono);font-size:calc(0.65625rem * var(--mw-text-scale));letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
-}
 
 .lastwords{border-top:1px dotted var(--rule);margin:0 0 14px;padding-top:10px;display:flex;flex-direction:column;gap:5px;text-align:left}
 .lastwords p{font-family:var(--mono);font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin:0}
@@ -2137,37 +2100,59 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-roller-cta.mw-roller-ready{background:var(--mw-gold-btn);color:var(--paper);border:none;cursor:pointer;box-shadow:0 5px 0 var(--mw-btn-border)}
 .mw-roller-cta.mw-roller-ready:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-border);transform:translateY(4px)}
 </style>
-<style id="mw-letterbox">
-/* BEGIN mw-letterbox (Phase 80, DROID-03)
-   Decision: one centred 480 CSS px portrait column over #080705 gutters
-   on anything wider than a phone; phones are untouched because every
-   rule below sits inside a min-width:481px media query. 480 (COLUMN_PX)
-   and 481 (BREAKPOINT_PX) change together with the matching constants in
-   tools/letterbox-check.mjs.
+<style id="mw-layout">
+/* BEGIN mw-layout (Phase 97, SCREEN-03..06)
+   The Phase 80 letterbox column is retired: the game no longer sits in a
+   centred 480 px strip over gutters. The WINDOW size class decides the
+   layout, never the device (resizing a Chromebook window or folding a phone
+   is just a re-layout). The classes live in src/browser/layoutClass.js:
+   short, compact, medium, expanded.
 
-   Why body, not #app: the title screen, roller screen, the bottom
-   sheets and the HUD menu scrim are position:fixed overlays with
-   inset:0, so each resolves against the nearest ancestor that
-   establishes a containing block for fixed descendants. `contain:layout`
-   on html>body makes body that containing block, so every one of those
-   overlays — and any fixed overlay a later phase adds — lands inside
-   this column automatically, with zero per-overlay CSS.
+   One media source: every @media query in this file is one of LAYOUT_MEDIA's
+   exact strings (or hover / reduced-motion), so the CSS and the shell's
+   layout global (window.__mzLayout, html[data-mw-layout]) cannot disagree.
 
-   Why :root and html>body (not a lone `body{...}` rule): these
-   selectors win regardless of where the other style blocks above set
-   body's own margin/background, so a gameplay-phase edit elsewhere in
-   this file cannot silently reorder this rule out of effect.
+   Rules in this block are indented two spaces on purpose: the shell pin
+   tests match only rules that start a line, so they keep reading the base
+   rules above.
 
-   Taps need no change: src/browser/controls.js#screenToCell already
-   computes clientX/clientY relative to .mw-maze-viewport's own
-   getBoundingClientRect(), so centring the column costs nothing there.
-
-   See docs/ANDROID-DISPLAY.md for the full decision record, the
-   corrected Android 16 large-screen mechanism, and the Play Console
-   display-configuration warning verdict.
+   body no longer has contain:layout, so fixed overlays (the title, the
+   roller, the sheets, the HUD menu scrim) size against the window again and
+   centre their own panels. 97-04 adds the side layout (short + expanded) and
+   the short rules here, 97-05 the medium and expanded rules.
 */
-@media (min-width:481px){ :root{background:#080705} html>body{max-width:480px;margin:0 auto;contain:layout;box-shadow:0 0 0 1px var(--rule),0 0 40px rgba(0,0,0,.6)} }
-/* END mw-letterbox */
+
+/* dvh tracks the visible window (the URL bar, the keyboard); the vh
+   declarations above stay as the fallback for a WebView without dvh. */
+@supports (height: 100dvh) {
+  #app.mw-app{height:100dvh}
+  .mw-hud-menu{max-height:calc(100dvh - 180px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))}
+  .mw-legend-panel{max-height:78dvh}
+  .log{max-height:min(44dvh,440px)}
+  .mw-find-drop{max-height:min(34dvh, calc(15rem * var(--mw-text-scale)))}
+  .mw-report-text{max-height:40dvh}
+}
+
+/* Side insets (SCREEN-06): a landscape camera cutout or a side navigation
+   bar. Each inset is 0 in portrait, so a portrait phone looks as before. */
+  .mw-hud-identity{padding-left:calc(14px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(14px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-hud-band2{padding-left:calc(14px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(14px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-cond-strip{padding-left:calc(14px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(14px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-tabbar{padding-left:var(--safe-area-inset-left, env(safe-area-inset-left, 0px));padding-right:var(--safe-area-inset-right, env(safe-area-inset-right, 0px))}
+  #mw-stage{padding-left:var(--safe-area-inset-left, env(safe-area-inset-left, 0px));padding-right:var(--safe-area-inset-right, env(safe-area-inset-right, 0px))}
+  #mw-rail{padding-left:calc(16px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-legend-panel{padding-left:calc(18px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(18px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  #mw-fightlog-sheet .mw-legend-panel{padding-left:var(--safe-area-inset-left, env(safe-area-inset-left, 0px));padding-right:var(--safe-area-inset-right, env(safe-area-inset-right, 0px))}
+  .mw-title-body{padding-left:calc(24px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(24px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-title-acct{right:calc(12px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+  .mw-roller-screen{padding-left:calc(20px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));padding-right:calc(20px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+
+/* Compact phones stack the Game Master's notes; wider windows set them side
+   by side. */
+@media (max-width: 599.98px) and (min-height: 480px) {
+  .doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}
+}
+/* END mw-layout */
 </style>
 </head>
 <body>

@@ -106,9 +106,12 @@ test("DROID-02: mazeworld.html keeps viewport-fit=cover", () => {
   assert.match(MAZEWORLD_HTML, /viewport-fit=cover/);
 });
 
-test("DROID-02: mazeworld.html still reads the --safe-area-inset-top/bottom CSS variables with env() fallbacks", () => {
+test("DROID-02: mazeworld.html still reads the --safe-area-inset-top/bottom/left/right CSS variables with env() fallbacks", () => {
   assert.match(MAZEWORLD_HTML, /var\(--safe-area-inset-top,\s*env\(safe-area-inset-top/);
   assert.match(MAZEWORLD_HTML, /var\(--safe-area-inset-bottom,\s*env\(safe-area-inset-bottom/);
+  // Phase 97 (SCREEN-06): declared extension — the side insets
+  assert.match(MAZEWORLD_HTML, /var\(--safe-area-inset-left,\s*env\(safe-area-inset-left/);
+  assert.match(MAZEWORLD_HTML, /var\(--safe-area-inset-right,\s*env\(safe-area-inset-right/);
 });
 
 // ─── Task 2: the plugin is gone from the dependency tree and native project ─
