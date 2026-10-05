@@ -253,3 +253,182 @@ export function secretCount(record) {
 export function menuCountText(record) {
   return fill(ACHIEVEMENTS_SHEET_COPY.menuCount, { n: earnedCount(record), total: ACHIEVEMENTS.length });
 }
+
+// ---------------------------------------------------------------------
+// The view model
+// ---------------------------------------------------------------------
+
+const KEY_PREFIX = "t";
+
+/** The row key: an opaque "t" plus the entry's listOrder. Never an id. */
+function keyOf(entry) {
+  return KEY_PREFIX + entry.listOrder;
+}
+
+function numeralName(name) {
+  return String(name).replace(/\s+(IV|III|II|I)$/, "");
+}
+
+function earnedAt(rec, entry) {
+  return has(rec.unlocked, entry.id) ? rec.unlocked[entry.id] : null;
+}
+
+/** dateText for an earned entry: the formatted date, or the "nobody wrote it down" line for a stored time of 0. */
+function dateTextOf(at, tz) {
+  return formatEarnedDate(at, tz) || ACHIEVEMENTS_SHEET_COPY.state.earnedNoDate;
+}
+
+function earnedStateText(at, tz) {
+  const date = formatEarnedDate(at, tz);
+  return date === null ? ACHIEVEMENTS_SHEET_COPY.state.earnedNoDate : fill(ACHIEVEMENTS_SHEET_COPY.state.earned, { date });
+}
+
+function isSecret(rec, entry) {
+  return entry.initialState === "Hidden" && !has(rec.unlocked, entry.id) && !rec.revealed.includes(entry.id);
+}
+
+function labelOf(name, stateText, detail, progress) {
+  return [name, stateText, detail, progress].filter((part) => typeof part === "string" && part.length > 0).join(". ");
+}
+
+function singleRow(rec, entry, tz) {
+  const key = keyOf(entry);
+  const at = earnedAt(rec, entry);
+  const base = { key, kind: "single", ladder: [], rungs: [], expandable: false };
+  if (at !== null) {
+    const stateText = earnedStateText(at, tz);
+    return {
+      ...base,
+      state: "earned",
+      name: entry.name,
+      iconSrc: achievementIconSrc(entry),
+      silhouette: false,
+      dim: false,
+      detail: entry.line,
+      dateText: dateTextOf(at, tz),
+      progressText: null,
+      stateText,
+      label: labelOf(entry.name, stateText, entry.line, null),
+    };
+  }
+  if (isSecret(rec, entry)) {
+    const name = ACHIEVEMENTS_SHEET_COPY.secret.name;
+    const detail = ACHIEVEMENTS_SHEET_COPY.secret.line;
+    return {
+      ...base,
+      state: "secret",
+      name,
+      iconSrc: achievementIconSrc(entry),
+      silhouette: true,
+      dim: false,
+      detail,
+      dateText: null,
+      progressText: null,
+      stateText: "",
+      label: labelOf(name, "", detail, null),
+    };
+  }
+  const progress = progressText(rec, entry);
+  const stateText = ACHIEVEMENTS_SHEET_COPY.state.locked;
+  return {
+    ...base,
+    state: "locked",
+    name: entry.name,
+    iconSrc: achievementIconSrc(entry),
+    silhouette: false,
+    dim: true,
+    detail: entry.description,
+    dateText: null,
+    progressText: progress,
+    stateText,
+    label: labelOf(entry.name, stateText, entry.description, progress),
+  };
+}
+
+function rungOf(rec, entry, index, tz) {
+  const at = earnedAt(rec, entry);
+  const earned = at !== null;
+  return {
+    key: keyOf(entry),
+    tier: TIER_NUMERALS[index] || String(index + 1),
+    name: entry.name,
+    state: earned ? "earned" : "locked",
+    text: earned ? entry.line : entry.description,
+    dateText: earned ? dateTextOf(at, tz) : null,
+    progressText: earned ? null : progressText(rec, entry),
+    stateText: earned ? earnedStateText(at, tz) : ACHIEVEMENTS_SHEET_COPY.state.locked,
+    iconSrc: achievementIconSrc(entry),
+  };
+}
+
+function trackRow(rec, track, tz) {
+  const rungs = track.entries.map((entry, i) => rungOf(rec, entry, i, tz));
+  const earnedIdx = rungs.map((r, i) => (r.state === "earned" ? i : -1)).filter((i) => i >= 0);
+  const top = earnedIdx.length ? earnedIdx[earnedIdx.length - 1] : -1;
+  const next = rungs.findIndex((r) => r.state === "locked");
+  const first = track.entries[0];
+  const name = numeralName(first.name);
+  const state = earnedIdx.length === rungs.length ? "earned" : earnedIdx.length > 0 ? "partial" : "locked";
+  const S = ACHIEVEMENTS_SHEET_COPY.state;
+  const stateText =
+    state === "earned"
+      ? fill(S.complete, { total: rungs.length })
+      : state === "partial"
+        ? fill(S.partial, { n: earnedIdx.length, total: rungs.length })
+        : S.locked;
+  const shown = top >= 0 ? top : 0;
+  const detail = top >= 0 ? rungs[top].text : track.entries[0].description;
+  const progress = next >= 0 ? rungs[next].progressText : null;
+  return {
+    key: keyOf(first),
+    kind: "track",
+    state,
+    name,
+    iconSrc: rungs[shown].iconSrc,
+    silhouette: false,
+    dim: top < 0,
+    detail,
+    dateText: top >= 0 ? rungs[top].dateText : null,
+    progressText: progress,
+    stateText,
+    ladder: rungs.map((r, i) => ({ tier: TIER_NUMERALS[i] || String(i + 1), state: r.state })),
+    rungs,
+    expandable: true,
+    label: labelOf(name, stateText, detail, progress),
+  };
+}
+
+function rowOf(rec, track, tz) {
+  return track.entries.length > 1 ? trackRow(rec, track, tz) : singleRow(rec, track.entries[0], tz);
+}
+
+/**
+ * buildAchievementsView(record, opts) — a lifetime record becomes the list:
+ * { title, earned, total, secrets, earnedText, secretsText, blocks }, deeply
+ * frozen. opts is { tzOffset } (minutes, default 0). The record goes through
+ * sanitizeRecord (a throw falls back to the empty record), so null, undefined
+ * and hostile values read as the all-zero record. Read-only and clock-free.
+ */
+export function buildAchievementsView(record, opts) {
+  const rec = safeRecord(record);
+  const tz = opts && typeof opts === "object" && typeof opts.tzOffset === "number" && Number.isFinite(opts.tzOffset) ? opts.tzOffset : 0;
+  const total = ACHIEVEMENTS.length;
+  const earned = earnedCount(rec);
+  const secrets = secretCount(rec);
+  const C = ACHIEVEMENTS_SHEET_COPY;
+  const secretsText = secrets === 0 ? C.secrets.none : secrets === 1 ? C.secrets.one : fill(C.secrets.many, { n: secrets });
+  const blocks = ACHIEVEMENT_BLOCKS.map((block) => ({
+    id: block.id,
+    title: C.blocks[block.id],
+    rows: DEFAULT_TRACKS.filter((t) => t.entries[0].listOrder >= block.firstOrder && t.entries[0].listOrder <= block.lastOrder).map((t) => rowOf(rec, t, tz)),
+  }));
+  return deepFreeze({
+    title: C.title,
+    earned,
+    total,
+    secrets,
+    earnedText: fill(C.earned, { n: earned, total }),
+    secretsText,
+    blocks,
+  });
+}
