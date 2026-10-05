@@ -423,7 +423,7 @@ Plans:
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
 - **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
-- **Hoarder (tiered):** gain X coin. Tiers 2,500 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run (user, 2026-10-05). Still open: coin earned during the run, or coin held at one time.
+- **Hoarder (tiered):** gain X coin. Tiers 2,500 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run, and the measure is the most coin held at one time (user, 2026-10-05): it unlocks the moment the hero's coin on hand reaches the threshold, so spending never counts against it.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. Tiers 10 / 25 / 50 / 100 (user, 2026-10-05).
 
