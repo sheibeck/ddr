@@ -434,7 +434,7 @@ Plans:
 - **Terminal Condition (user, 2026-10-05, icon done):** die from the Disease ailment's damage (user, 2026-10-05). Id `death_disease`, not tiered. **Blocker:** ailment damage cannot kill today. Every tick (`engine/movement.js` affliction loop) and the first hit (`engine/encounters.js` catchAffliction) are clamped to leave at least 1 HP, a deliberate rule ("never itself the killing blow"), so there is no `disease` death cause and the achievement is unreachable. Needs a user ruling at the milestone discussion: let Disease (or every ailment) kill with a new death cause (an engine rule change that moves fixtures), or re-scope the achievement.
 - **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
 - **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers: 10 / 25 / 50 / 100 (user, 2026-10-05), counted across all delves.
-- **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times. Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
+- **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times, counted across all runs (user, 2026-10-05). Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
