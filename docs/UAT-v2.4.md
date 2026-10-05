@@ -1,6 +1,6 @@
 # v2.4 Pixel 7 device round (build gate, before Phase 98 screenshots)
 
-**Build:** the debug APK 2.3.0 (versionCode 13), `android/app/build/outputs/apk/debug/app-debug.apk`, 14,615,477 bytes, sha256 `ede382b2f88f78f7a3c25496f37aabed742ff2ea0fe07b8dce2ca3b2caa08c7b`, built from commit `15ed21b8055d805d15058ae176d44ec2656ed8fe`. It is built from master after Phase 97, so it holds all v2.4 code (Phases 93–97). The Play release build comes after the user agrees the 2.4.0 patch notes (row 0.1). That build is 2.4.0 at versionCode 14, made with `npm run play:release`, which bumps the version.
+**Build:** the debug APK 2.3.0 (versionCode 13), `android/app/build/outputs/apk/debug/app-debug.apk`, 14,652,778 bytes, sha256 `871fba9797775b16bf5656a198b0b4d432bf227249c984ec64054e124531b507`, built from commit `376563852b32dde48a26f7bae83fcaf54f22d5b9` (after Phase 97.1, flavour only; installed on the Pixel 7 2026-10-05). It is built from master after Phase 97, so it holds all v2.4 code (Phases 93–97.1). The Play release build comes after the user agrees the 2.4.0 patch notes (row 0.1). That build is 2.4.0 at versionCode 14, made with `npm run play:release`, which bumps the version.
 
 **Protocol (deferred UAT):**
 - Every device check that Phases 93–97 deferred is batched here and walked in the user's own play sessions.
