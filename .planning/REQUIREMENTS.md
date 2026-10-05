@@ -18,7 +18,7 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 
 ### Tracking (999.12)
 
-- [ ] **TRACK-01**: The engine reports every fact an achievement needs (for example a kill's monster group, a Joiner's death, a healing potion drunk, a trap survived, an ailment that leaves the hero on 1 HP, the equipment worn at the first step) as additive event fields or events with zero rng draws; no parity fixture moves, or any moved one is declared
+- [x] **TRACK-01**: The engine reports every fact an achievement needs (for example a kill's monster group, a Joiner's death, a healing potion drunk, a trap survived, an ailment that leaves the hero on 1 HP, the equipment worn at the first step) as additive event fields or events with zero rng draws; no parity fixture moves, or any moved one is declared
 - [ ] **TRACK-02**: A lifetime stats record lives in `@capacitor/preferences` (the `storage.js` pattern), separate from the run save, loads tolerantly, and survives relaunch, app update and a crash mid-run; every count starts at zero on 2.5.0 (no credit from the graveyard or bests history)
 - [ ] **TRACK-03**: Each achievement unlocks the moment its condition is met: lifetime counters across all runs (deaths, kills by group, Joiners, fallen Joiners, parleys, traps survived, the Terminal Condition flags); single-run conditions within one run (depth reached, each race and class to floor 10 (quick 261005-opm, user 2026-10-05), Survivor days, Hoarder coin held at once, Chicken's 10 flees, Naked Ambition, Teetotaler, Fully Dressed); death achievements on the death that earns them; Tourist across all delves started
 - [ ] **TRACK-04**: Unlocks are permanent and idempotent: an unlock fires once, never re-locks, and is saved when earned, not only when the run ends
@@ -83,7 +83,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACH-03 | Phase 98 | Complete |
 | ACH-04 | Phase 98 | Complete |
 | ACH-05 | Phase 98 | Complete |
-| TRACK-01 | Phase 99 | Pending |
+| TRACK-01 | Phase 99 | Complete |
 | TRACK-02 | Phase 99 | Pending |
 | TRACK-03 | Phase 99 | Pending |
 | TRACK-04 | Phase 99 | Pending |

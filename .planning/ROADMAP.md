@@ -86,8 +86,8 @@ Plans:
 Plans:
 **Wave 1** *(99-01 and 99-02 touch disjoint files and can run in parallel)*
 
-- [ ] 99-01-PLAN.md — the two engine facts (`foeKilled.group`, the hero's HP after an ailment hit on `afflictionCaught` / `afflictionTick`), zero draws, parity byte-identical with zero fixtures moved
-- [ ] 99-02-PLAN.md — the lifetime stats record (`ddr.achievements.v1`, tolerant load) and the pure headless tracker, with tests driving all 77 triggers and every counting ruling
+- [x] 99-01-PLAN.md — the two engine facts (`foeKilled.group`, the hero's HP after an ailment hit on `afflictionCaught` / `afflictionTick`), zero draws, parity byte-identical with zero fixtures moved
+- [x] 99-02-PLAN.md — the lifetime stats record (`ddr.achievements.v1`, tolerant load) and the pure headless tracker, with tests driving all 77 triggers and every counting ruling
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
