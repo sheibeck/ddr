@@ -3061,6 +3061,8 @@ function syncDeadTabLock() {
     // tab; it only re-runs renderRail (guarded on window.__mzState — see
     // the boot-fix note above) so a card that auto-cleared re-hides.
     mwActiveTab = name;
+    // Phase 97 (SCREEN-03/04): the stage carries the active tab so the side layouts can dock the rail card beside the map on MAP and over the pane elsewhere (mw-layout CSS)
+    document.getElementById("mw-stage")?.setAttribute("data-tab", name);
     // Phase 49 (PERF-02): stepWith()'s paint({ skipHiddenTabs: true }) skips
     // the Hero/Gear mount while that screen is hidden (docs/PERF-BASELINE.md
     // BEFORE row `step`) — catch up here, the instant the tab becomes
@@ -5619,6 +5621,8 @@ function renderEncounter() {
     if (fightLogSheetOpen()) closeFightLogSheet();
   }
   encWasActive = active;
+  // Phase 97 (SCREEN-03): while the encounter panel is up the side layouts overlay the rail card on the panel's column instead of opening a second column
+  document.getElementById("mw-stage")?.setAttribute("data-panel-up", active ? "1" : "0");
   if (!active) {
     if (panel) hidePanel(panel);
     // 2026-09-17 UAT PERF/addendum: the panel no longer covers the map —
@@ -8008,6 +8012,11 @@ window.__mzClassicBoot = async function classicBoot() {
   // changes (shown, side) the camera re-runs the keep-in-view rule, which
   // reads the pad's rect as an edge; a rail card showing or going changes
   // nothing there, since the hidden pad keeps its box.
+  // Phase 97 (SCREEN-03): in the side layouts (short and expanded,
+  // window.__mzLayout.railBeside()) the card docks beside the map, never over
+  // the pad, so the pad no longer hides for it; in compact and medium the
+  // 260927-s7b rule holds unchanged. The layout watcher calls
+  // window.mzSyncArrowPad on a size-class change.
   // arrowPadKey is declared BEFORE the first applySettings call (TDZ).
   let arrowPadKey = "";
   function syncArrowPad() {
@@ -8025,7 +8034,7 @@ window.__mzClassicBoot = async function classicBoot() {
     pad.setAttribute("aria-label", model.label);
     for (const b of model.buttons) pad.querySelector(`[data-step="${b.dir}"]`)?.setAttribute("aria-label", b.label);
     const railEl = document.getElementById("mw-rail");
-    pad.dataset.railUp = model.visible && railEl && railEl.dataset.shown === "1" ? "1" : "0";
+    pad.dataset.railUp = model.visible && !window.__mzLayout?.railBeside?.() && railEl && railEl.dataset.shown === "1" ? "1" : "0";
     const key = model.visible ? model.side : "";
     if (key !== arrowPadKey) {
       arrowPadKey = key;

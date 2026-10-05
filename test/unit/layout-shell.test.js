@@ -191,3 +191,27 @@ test("(m) the classic resize listener is the only window resize listener, byte-i
   assert.equal(count(CODE, 'addEventListener("resize"'), 1);
   assert.ok(CODE.includes('addEventListener("resize", () => { fit(); window.mzKeepPartyInView?.(); renderEncounter(); });'));
 });
+
+// ─── (n)-(p) the tab and panel attributes, and the pad's card rule (SCREEN-03) ─
+
+test("(n) showTab writes data-tab on #mw-stage right after mwActiveTab = name;", () => {
+  assert.equal(count(CODE, "mwActiveTab = name;"), 1);
+  const at = CODE.indexOf("mwActiveTab = name;");
+  const after = CODE.slice(at + "mwActiveTab = name;".length).trimStart();
+  assert.ok(after.startsWith('document.getElementById("mw-stage")?.setAttribute("data-tab", name);'), "the stage attribute follows the tab write");
+});
+
+test("(o) renderEncounter writes data-panel-up on #mw-stage right after encWasActive = active; and nothing on #enc-panel", () => {
+  assert.equal(count(CODE, "encWasActive = active;"), 1);
+  const at = CODE.indexOf("encWasActive = active;");
+  const after = CODE.slice(at + "encWasActive = active;".length).trimStart();
+  assert.ok(after.startsWith('document.getElementById("mw-stage")?.setAttribute("data-panel-up", active ? "1" : "0");'));
+  // #enc-panel is a store snapshot root: no data-* attribute is ever written on it by this plan.
+  assert.equal(count(CODE, 'data-panel-up'), 1);
+  assert.doesNotMatch(CODE, /"enc-panel"\)\??\.setAttribute\("data-/);
+  assert.doesNotMatch(MARKUP, /id="enc-panel"[^>]*data-panel-up/);
+});
+
+test("(p) syncArrowPad's railUp expression reads window.__mzLayout?.railBeside?.()", () => {
+  assert.ok(CODE.includes('pad.dataset.railUp = model.visible && !window.__mzLayout?.railBeside?.() && railEl && railEl.dataset.shown === "1" ? "1" : "0";'));
+});

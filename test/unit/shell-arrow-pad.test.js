@@ -312,6 +312,27 @@ test("(c) a shown rail card hides the pad in place (data-rail-up=\"1\"): it neve
   assert.equal(r.keeps.length, 1);
 });
 
+// Phase 97 (SCREEN-03): declared addition — the side layouts (short and
+// expanded) dock the card beside the map, so a shown card no longer hides the
+// pad there; compact and medium (and the harness without a layout global)
+// keep the 260927-s7b rule.
+test("(c) Phase 97: in a side layout a shown rail card leaves the pad up (railUp 0, visible); a stacked layout still hides it", () => {
+  const side = bootSync({ railShown: true });
+  side.win.__mzLayout = { railBeside: () => true };
+  side.sync();
+  assert.equal(side.pad.hidden, false);
+  assert.equal(side.pad.dataset.railUp, "0", "the card sits beside the map, never over the pad");
+  const stacked = bootSync({ railShown: true });
+  stacked.win.__mzLayout = { railBeside: () => false };
+  stacked.sync();
+  assert.equal(stacked.pad.hidden, false);
+  assert.equal(stacked.pad.dataset.railUp, "1", "compact and medium: hidden in place as before");
+  const stillHidden = bootSync({ railShown: true, encounter: true });
+  stillHidden.win.__mzLayout = { railBeside: () => true };
+  stillHidden.sync();
+  assert.equal(stillHidden.pad.hidden, true, "an encounter still hides the pad in a side layout");
+});
+
 test("(c) a pad hidden for another reason (an encounter, a sheet, dead, tap mode) never reads as rail-up", () => {
   for (const opts of [{ encounter: true }, { sheet: true }, { state: { dead: true } }, { settings: { movement: "tap" } }]) {
     const r = bootSync({ ...opts, railShown: true });
