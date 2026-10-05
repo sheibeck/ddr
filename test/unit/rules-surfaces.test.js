@@ -1,10 +1,9 @@
 // test/unit/rules-surfaces.test.js
 //
 // Phase 95 (FLAVOR-01, FLAVOR-02, FLAVOR-05; CONTEXT 'Where the exact numbers
-// live'): one rule on every surface. The flavour shows, the exact old text sits
-// in a collapsed RULES body beside or under it, "Always show the rules" expands
-// it with no toggle, a revealed body survives a repaint, and an item with no
-// flavour renders as today.
+// live'): one rule on every surface. The flavour shows and an item with no
+// flavour renders as today (the exact old text once sat in a collapsed body; see
+// the Phase 97.1 paragraph below for what this file pins now).
 //
 // Plan 05 wires three surfaces and this file pins all three through the REAL
 // classic paint()/renderEncounter()/renderRail() (test/unit/harness/
@@ -16,8 +15,16 @@
 //
 // Extended by 95-06 (Gear) and 95-07 (store, sell, loot, drop): each adds its
 // surface here so the layering rule stays pinned in one place.
+//
+// Phase 97.1 (FLAVOR-07): declared re-pin. The RULES control is retired, and so is the
+// "Always show the rules" switch. This file used to pin the layering rule (flavour first,
+// the exact text behind a RULES control, an Always switch). It now pins, per surface, that
+// the flavour is shown, that a row with no flavour keeps today's text, that no rules
+// control or body exists on the surface, and that the model still carries the exact text
+// (row.rules, card.lines[0].rules, gearSheetModel().rules, storeRowLayer().rules, the
+// content tables), so no rules sentence or number loses its guard.
 
-import test, { beforeEach } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -26,9 +33,8 @@ import url from "node:url";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 import { loadShellSandbox, fixedStates } from "./harness/shellSandbox.js";
 import { setIdentityDials } from "./harness/identityDials.js";
-import { clearRulesOpen, setAlwaysRules } from "../../src/browser/rulesLayer.js";
 import { flavorOfItem, flavorOfIdentity, flavorOfAbility, flavorOfSkill } from "../../src/browser/flavorText.js";
-import { renderHeroTab } from "../../src/browser/heroTab.js";
+import { renderHeroTab, grimoireViewModel } from "../../src/browser/heroTab.js";
 // Phase 96 (FLAVOR-04): the ability and skill surface cases read the Hero view model, the skill tables and the Final Sheet.
 import { characterSheetViewModel } from "../../src/browser/heroTab.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/index.js";
@@ -44,7 +50,7 @@ import { rollJewel, rollBlade, rollMailPiece, stowItem, toolItem } from "../../e
 import { BAG_ITEMS, BAG_ORDER } from "../../content/index.js";
 import { offerFind } from "../../engine/encounters.js";
 import { makeRng } from "../../engine/rng.js";
-import { renderGearTab, GEAR_COPY, gearWornModel, bagUsage, renderCarriedList } from "../../src/browser/gearTab.js";
+import { renderGearTab, GEAR_COPY, gearWornModel, gearConsumablesModel, bagUsage, renderCarriedList } from "../../src/browser/gearTab.js";
 import { usableBy, itemStatLines, wornItemFor, bagArmorText, dropShelfRows, lootCompare } from "../../src/browser/viewModels.js";
 import { storeRowLayer } from "../../src/browser/storeScreen.js";
 import { renderGearSheet, gearSheetModel, GEAR_SHEET_IDS } from "../../src/browser/gearSheet.js";
@@ -61,11 +67,6 @@ setIdentityDials();
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const HTML = fs.readFileSync(path.join(__dirname, "..", "..", "mazeworld.html"), "utf8").replace(/\r\n/g, "\n");
 
-beforeEach(() => {
-  clearRulesOpen();
-  setAlwaysRules(false);
-});
-
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 function walk(node, out = []) {
@@ -80,7 +81,16 @@ function walk(node, out = []) {
 const hasClass = (el, name) => String(el.className || "").split(/\s+/).includes(name);
 const textOf = (el) => String(el.textContent ?? "");
 const findAll = (root, name) => walk(root).filter((el) => hasClass(el, name));
-const tap = (button) => button.onclick({ stopPropagation() {} });
+
+// Phase 97.1 (FLAVOR-07): declared re-pin. The retired control's tap helper is gone; this finder replaces it. A node is a rules
+// control or body when any of its classes starts with "mw-rules-" (the toggle, the body, a line, the wrapper), the root included.
+const RULES_CLASS = /(^|\s)mw-rules-/;
+function rulesNodes(root) {
+  return [root, ...walk(root)].filter((el) => RULES_CLASS.test(String(el.className || "")));
+}
+function assertNoRulesControls(root, label = "this surface") {
+  assert.deepEqual(rulesNodes(root).map((el) => el.className), [], `${label} draws no rules control or body`);
+}
 
 /** The text of the first <i>…</i> in a Grimoire row's innerHTML. */
 const italicOf = (info) => /<i>([\s\S]*?)<\/i>/.exec(String(info.innerHTML))[1];
@@ -138,7 +148,9 @@ function paintFind(pendingFind, cls = "Fighter") {
 
 // ─── (a) the Grimoire ─────────────────────────────────────────────────────
 
-test("(a) Grimoire: the italic line is niche label + flavour with no digit; the exact old text sits in a collapsed RULES body", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. The Grimoire row's italic is the niche label and the flavour; the RULES button and body
+// are gone. The exact txt and the resist sentence stay on the view model (the next test), drawn nowhere.
+test("(a) Grimoire: the italic line is niche label + flavour with no digit; the exact old text is not drawn and no rules control exists", () => {
   const { doc } = paintGrimoire();
   const heal = SPELLS.find((s) => s.n === "Heal");
   const info = grimInfo(doc, "Heal");
@@ -147,192 +159,129 @@ test("(a) Grimoire: the italic line is niche label + flavour with no digit; the 
   assert.ok(italic.includes(SPELL_FLAVOR.Heal), italic);
   assert.ok(italic.startsWith(`${NICHE_LABELS[heal.niche]} · `), "the niche label stays as the leading category tag");
 
-  const [button] = findAll(info, "mw-rules-btn");
-  assert.ok(button, "a RULES toggle under the flavour");
-  assert.equal(button.getAttribute("aria-expanded"), "false");
-  const [body] = findAll(info, "mw-rules-body");
-  assert.equal(body.hidden, true);
-  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), heal.txt, "the body holds exactly Heal's txt");
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: a collapsed RULES toggle and body holding Heal's txt.
+  assertNoRulesControls(info, "the Grimoire row");
+  assert.ok(!String(info.innerHTML).includes(heal.txt), "Heal's exact txt is not drawn");
 });
 
-test("(a) Grimoire: a foe-targeted spell's RULES body carries the txt and the resist sentence, in the old order", () => {
-  const { doc } = paintGrimoire(["Doze"]);
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the RULES body carried the txt and the resist sentence in the old order. The pin moves to
+// the view model that still carries both; the painted row shows neither.
+test("(a) Grimoire: a foe-targeted spell's view-model row still carries the txt and the resist sentence; the painted row draws neither", () => {
+  const { doc, state } = paintGrimoire(["Doze"]);
   const doze = SPELLS.find((s) => s.n === "Doze");
+  const row = grimoireViewModel(state).rows.find((r) => r.name === "Doze");
+  assert.ok(row, "Doze is on the view model");
+  assert.equal(row.txt, doze.txt, "the exact txt is still on the model");
+  assert.ok(typeof row.resistNote === "string" && row.resistNote.length > 0, "the resist sentence is still on the model");
   const info = grimInfo(doc, "Doze");
-  const body = findAll(info, "mw-rules-body")[0];
-  assert.match(textOf(findAll(body, "mw-rules-line")[0]), new RegExp(`^${doze.txt.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · a foe may resist this on its intelligence`));
-});
-
-test("(a) Grimoire: tapping RULES opens the body, and a repaint keeps it open", () => {
-  const { doc, sandbox } = paintGrimoire();
-  const button = findAll(grimInfo(doc, "Heal"), "mw-rules-btn")[0];
-  tap(button);
-  assert.equal(button.getAttribute("aria-expanded"), "true");
-  assert.equal(findAll(grimInfo(doc, "Heal"), "mw-rules-body")[0].hidden, false);
-
-  sandbox.paint();
-  const again = grimInfo(doc, "Heal");
-  assert.equal(findAll(again, "mw-rules-btn")[0].getAttribute("aria-expanded"), "true", "still open after a repaint");
-  assert.equal(findAll(again, "mw-rules-body")[0].hidden, false);
-  // the other row was never opened
-  assert.equal(findAll(grimInfo(doc, "Doze"), "mw-rules-body")[0].hidden, true);
-});
-
-test("(a) Grimoire: with Always show the rules on there is no toggle and the body is visible", () => {
-  setAlwaysRules(true);
-  const { doc } = paintGrimoire();
-  const info = grimInfo(doc, "Heal");
-  assert.equal(findAll(info, "mw-rules-btn").length, 0);
-  const body = findAll(info, "mw-rules-body")[0];
-  assert.equal(body.hidden, false);
-  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), SPELLS.find((s) => s.n === "Heal").txt);
+  assert.ok(!String(info.innerHTML).includes(doze.txt), "the txt is not drawn");
+  assert.ok(!String(info.innerHTML).includes(row.resistNote), "the resist sentence is not drawn");
+  assertNoRulesControls(info, "the Doze row");
 });
 
 // ─── (b) the combat SPELLS rows ───────────────────────────────────────────
 
-test("(b) combat SPELLS: each row's desc leads with its niche label and flavour, and the toggle is a sibling of the row button", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Each SPELLS row is the bare cb-row button now (no wrapper, no sibling toggle, no body). The
+// desc slot is the row's lead; the row model still carries the exact rules text, distinct from what is drawn.
+test("(b) combat SPELLS: each row's desc leads with its niche label and flavour; the row is a bare button with no rules control", () => {
   const state = fightState();
   const { list } = openMenu(state, "spells");
   const rows = combatMenuViewModel(state).submenus.spells.rows;
   assert.equal(list.children.length, 2);
-  for (const [i, wrap] of list.children.entries()) {
+  for (const [i, rowBtn] of list.children.entries()) {
     const vmRow = rows[i];
     const sp = SPELLS.find((s) => s.n.toUpperCase() === vmRow.label);
-    assert.ok(hasClass(wrap, "mw-rules-wrap"), `${vmRow.label} is wrapped`);
-    const [rowBtn, toggle, body] = wrap.children;
-    assert.equal(rowBtn.id, `cb-row-${vmRow.id}`);
-    assert.ok(hasClass(toggle, "mw-rules-btn"), "the toggle is the row button's sibling");
-    assert.equal(findAll(rowBtn, "mw-rules-btn").length, 0, "the toggle is not inside the row button");
+    assert.equal(rowBtn.id, `cb-row-${vmRow.id}`, `${vmRow.label} is the bare row button`);
+    assert.ok(hasClass(rowBtn, "cb-row"));
     const desc = textOf(findAll(rowBtn, "cb-row-desc")[0]);
     assert.ok(desc.startsWith(`${NICHE_LABELS[sp.niche]} · ${SPELL_FLAVOR[sp.n]}`), desc);
     assert.equal(desc, vmRow.lead, "the desc slot shows the lead");
     assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), vmRow.cost, "the functional tag stays");
-    assert.equal(textOf(findAll(body, "mw-rules-line")[0]), vmRow.rules, "the body is the row's rules");
+    assert.ok(typeof vmRow.rules === "string" && vmRow.rules.length > 0, "the model still carries the exact rules text");
+    assert.notEqual(vmRow.rules, desc, "the rules text is not what is drawn");
   }
+  assertNoRulesControls(list, "the SPELLS list");
   const freeze = textOf(findAll(list.children[0], "cb-row-desc")[0]);
   assert.ok(freeze.includes("Cave Rat resists on"), "the live resist hint stays visible on a foe-targeted spell");
 });
 
-test("(b) combat SPELLS: a revealed body survives a repaint; Always show the rules drops the toggle", () => {
-  const state = fightState();
-  const first = openMenu(state, "spells");
-  const toggle = first.list.children[0].children[1];
-  tap(toggle);
-  assert.equal(toggle.getAttribute("aria-expanded"), "true");
-
-  first.sandbox.context.renderEncounter();
-  const repainted = first.doc.document.getElementById("cb-sub-list").children[0];
-  assert.equal(repainted.children[1].getAttribute("aria-expanded"), "true", "open across a repaint");
-
-  setAlwaysRules(true);
-  first.sandbox.context.renderEncounter();
-  const always = first.doc.document.getElementById("cb-sub-list").children[0];
-  assert.equal(findAll(always, "mw-rules-btn").length, 0);
-  assert.equal(findAll(always, "mw-rules-body")[0].hidden, false);
-});
-
 // ─── (c) the combat ITEMS rows ────────────────────────────────────────────
 
-test("(c) combat ITEMS: the POTION and SCROLL rows are wrapped and keep their n LEFT tags", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. POTION and SCROLL are bare buttons; the scroll's exact rules are pinned on the model.
+test("(c) combat ITEMS: the POTION and SCROLL rows are bare buttons with their n LEFT tags; the scroll's exact rules stay on the model only", () => {
   const state = fightState();
   const { list } = openMenu(state, "items");
   const byLabel = (label) => list.children.find((w) => textOf(findAll(w, "cb-row-label")[0]) === label);
   const potion = byLabel("POTION");
   const scroll = byLabel("SCROLL");
-  for (const [wrap, tag] of [[potion, "2 LEFT"], [scroll, "1 LEFT"]]) {
-    assert.ok(wrap && hasClass(wrap, "mw-rules-wrap"), "wrapped");
-    assert.equal(textOf(findAll(wrap.children[0], "cb-row-cost")[0]), tag);
-    assert.ok(hasClass(wrap.children[1], "mw-rules-btn"));
-    assert.equal(findAll(wrap.children[0], "mw-rules-btn").length, 0, "the toggle is outside the row button");
+  for (const [row, tag] of [[potion, "2 LEFT"], [scroll, "1 LEFT"]]) {
+    assert.ok(row && hasClass(row, "cb-row"), "a bare row button");
+    assert.equal(textOf(findAll(row, "cb-row-cost")[0]), tag);
   }
   const rows = combatMenuViewModel(state).submenus.items.rows;
-  assert.equal(textOf(findAll(potion.children[0], "cb-row-desc")[0]), rows.find((r) => r.id === "potion").lead);
-  assert.equal(textOf(findAll(scroll.children[0], "cb-row-desc")[0]), rows.find((r) => r.id === "scroll").lead);
-  assert.equal(textOf(findAll(scroll.children[2], "mw-rules-line")[0]), rows.find((r) => r.id === "scroll").rules);
+  assert.equal(textOf(findAll(potion, "cb-row-desc")[0]), rows.find((r) => r.id === "potion").lead);
+  assert.equal(textOf(findAll(scroll, "cb-row-desc")[0]), rows.find((r) => r.id === "scroll").lead);
+  const scrollRules = rows.find((r) => r.id === "scroll").rules;
+  assert.ok(typeof scrollRules === "string" && scrollRules.length > 0, "the model still carries the scroll's exact rules");
+  assert.ok(!textOf(scroll).includes(scrollRules), "the scroll's exact rules are not drawn");
+  assertNoRulesControls(list, "the ITEMS list");
 });
 
-test("(c) combat ITEMS: a not-equipped reason row is not wrapped and keeps its reason text", () => {
+test("(c) combat ITEMS: a not-equipped reason row is a bare button and keeps its reason text", () => {
   const state = fightState({
     items: [{ n: "Ring of Power", kind: "jewel", eff: { dmg: 1 }, txt: "+1 damage" }],
     worn: { jewelry1: null, jewelry2: null, cloak: null },
   });
   const { list } = openMenu(state, "items");
   const reason = list.children.find((el) => el.id === "cb-row-item-0");
-  assert.ok(reason, "the reason row is a bare row button, not a wrapper");
+  assert.ok(reason, "the reason row is a bare row button");
   assert.ok(hasClass(reason, "cb-row"));
-  assert.equal(findAll(reason, "mw-rules-btn").length, 0);
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: no toggle on the reason row. Now: no rules control anywhere in the list.
+  assertNoRulesControls(list, "the ITEMS list");
 });
 
-// Phase 96 (FLAVOR-04): declared re-pin. The ABILITIES rows (and the Bard's SING row) now carry flavour, so each is a RULES wrapper:
-// the row button keeps its id, data-state and state label in the cost slot byte for byte; its desc slot reads the flavour line; the
-// toggle is the button's sibling and the hidden body holds the ability's exact txt.
-test("(c) combat ABILITIES: an ability row is wrapped; the cost keeps its state word, the desc is the flavour, the body is the txt", () => {
+// Phase 96 (FLAVOR-04): declared re-pin, again re-pinned by Phase 97.1 (FLAVOR-07). The ABILITIES rows (and the Bard's SING row) carry
+// flavour: the row button keeps its id, data-state and state label in the cost slot byte for byte; its desc slot reads the flavour
+// line. The ability's exact txt is pinned on the row model (vmRow.rules); it is not drawn and there is no wrapper, toggle or body.
+test("(c) combat ABILITIES: an ability row is a bare button; the cost keeps its state word, the desc is the flavour, the model keeps the txt", () => {
   const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata", "brace"] });
   const { list } = openMenu(state, "abilities");
   const rows = combatMenuViewModel(state).submenus.abilities.rows;
   assert.equal(list.children.length, 2);
-  for (const [i, wrap] of list.children.entries()) {
+  for (const [i, rowBtn] of list.children.entries()) {
     const vmRow = rows[i];
-    assert.ok(hasClass(wrap, "mw-rules-wrap"), `${vmRow.label} is wrapped`);
-    const [rowBtn, toggle, body] = wrap.children;
     assert.equal(rowBtn.id, `cb-row-${vmRow.id}`);
     assert.ok(hasClass(rowBtn, "cb-row"));
     assert.equal(rowBtn.dataset.state, vmRow.state, "the data-state edge is unchanged");
-    assert.ok(hasClass(toggle, "mw-rules-btn"), "the toggle is the row button's sibling");
-    assert.equal(findAll(rowBtn, "mw-rules-btn").length, 0, "the toggle is not inside the row button");
-    assert.equal(toggle.getAttribute("aria-expanded"), "false");
     assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), vmRow.cost, "the state label stays in the cost slot");
     assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), "READY");
     const desc = textOf(findAll(rowBtn, "cb-row-desc")[0]);
     assert.equal(desc, flavorOfAbility(ABILITY_BY_ID[vmRow.id.slice("ability-".length)].name), "the desc slot reads the flavour line");
     assert.ok(!/[0-9]/.test(desc), "the flavour line carries no digit");
-    assert.equal(textOf(findAll(body, "mw-rules-line")[0]), ABILITY_BY_ID[vmRow.id.slice("ability-".length)].txt, "the body is the ability's exact txt");
+    assert.equal(vmRow.rules, ABILITY_BY_ID[vmRow.id.slice("ability-".length)].txt, "the model still carries the ability's exact txt");
   }
+  assertNoRulesControls(list, "the ABILITIES list");
 });
 
-test("(c) combat ABILITIES: the Bard's SING row is wrapped the same way; its body is singDesc", () => {
+test("(c) combat ABILITIES: the Bard's SING row is a bare button; its model keeps singDesc", () => {
   const state = fightState({ cls: "Fighter", sub: "Bard", grimoire: [], abilities: ["kata"] });
   const { list } = openMenu(state, "abilities");
-  const sing = list.children[0];
-  assert.ok(hasClass(sing, "mw-rules-wrap"), "SING is wrapped");
-  const [rowBtn, toggle, body] = sing.children;
+  const rowBtn = list.children[0];
   assert.equal(rowBtn.id, "cb-row-sing");
-  assert.ok(hasClass(toggle, "mw-rules-btn"));
-  assert.equal(findAll(rowBtn, "mw-rules-btn").length, 0);
   assert.equal(textOf(findAll(rowBtn, "cb-row-cost")[0]), "READY");
   assert.equal(textOf(findAll(rowBtn, "cb-row-desc")[0]), flavorOfAbility("Sing"));
-  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), COMBAT_MENU_COPY.singDesc);
+  const vmRow = combatMenuViewModel(state).submenus.abilities.rows.find((r) => r.id === "sing");
+  assert.equal(vmRow.rules, COMBAT_MENU_COPY.singDesc, "the model still carries singDesc");
+  assertNoRulesControls(list, "the SING list");
 });
 
-test("(c) combat ABILITIES: a RULES tap opens the body and never uses the ability, spends a turn or touches the state; a repaint keeps it open; Always on drops the toggle", () => {
-  const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata"] });
-  const first = openMenu(state, "abilities");
-  const before = JSON.stringify(first.sandbox.context.S ?? state);
-  const wrap = first.list.children[0];
-  const [rowBtn, toggle] = wrap.children;
-  let rowTapped = 0;
-  const prev = rowBtn.onclick;
-  rowBtn.onclick = (...a) => { rowTapped++; return prev && prev(...a); };
-  tap(toggle);
-  assert.equal(toggle.getAttribute("aria-expanded"), "true");
-  assert.equal(rowTapped, 0, "the row button never hears the RULES tap");
-  assert.equal(JSON.stringify(first.sandbox.context.S ?? state), before, "no ability used, no round spent, no rng drawn");
-
-  first.sandbox.context.renderEncounter();
-  const repainted = first.doc.document.getElementById("cb-sub-list").children[0];
-  assert.equal(repainted.children[1].getAttribute("aria-expanded"), "true", "open across a repaint");
-
-  setAlwaysRules(true);
-  first.sandbox.context.renderEncounter();
-  const always = first.doc.document.getElementById("cb-sub-list").children[0];
-  assert.equal(findAll(always, "mw-rules-btn").length, 0);
-  assert.equal(findAll(always, "mw-rules-body")[0].hidden, false);
-});
-
-test("(c) combat ABILITIES: the 95-02 lock rule makes the RULES toggle inert while a round's beats play (one #cb-act[data-locked] rule covers .mw-rules-btn)", () => {
-  const lockRule = '#cb-act[data-locked="1"] .mw-rules-btn{opacity:.45;box-shadow:none;pointer-events:none';
-  assert.ok(HTML.includes(lockRule), "the lock rule that makes .mw-rules-btn pointer-inert under a locked #cb-act");
-  // Locked rendering marks the row button itself; the wrapper's toggle sits under #cb-act, so the same rule reaches it.
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the 95-02 lock rule made the RULES toggle inert. With no toggle the lock rule covers the
+// bare row buttons alone: the page's combat lock rule still names .cb-row, the page names no mw-rules class, and a locked ability row
+// is the bare button carrying data-locked.
+test("(c) combat ABILITIES: the lock rule covers the bare row buttons while a round's beats play, and the page names no mw-rules class", () => {
+  const lockRule = '#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip{opacity:.45;box-shadow:none;pointer-events:none';
+  assert.ok(HTML.includes(lockRule), "the lock rule that makes a locked #cb-act's rows pointer-inert");
+  assert.equal(HTML.includes("mw-rules"), false, "the page names no mw-rules class");
   const state = fightState({ cls: "Fighter", sub: "Soldier", grimoire: [], abilities: ["kata"] });
   const doc = createRecordingDocument();
   const sandbox = loadShellSandbox({ doc });
@@ -342,14 +291,16 @@ test("(c) combat ABILITIES: the 95-02 lock rule makes the RULES toggle inert whi
   sandbox.context.renderEncounter();
   const act = doc.document.getElementById("cb-act");
   assert.equal(act.getAttribute("data-locked"), "1");
-  const wrap = doc.document.getElementById("cb-sub-list").children[0];
-  assert.ok(hasClass(wrap, "mw-rules-wrap"));
-  assert.equal(wrap.children[0].getAttribute("data-locked"), "1", "the row button is locked");
+  const row = doc.document.getElementById("cb-sub-list").children[0];
+  assert.ok(hasClass(row, "cb-row"));
+  assert.equal(row.getAttribute("data-locked"), "1", "the row button is locked");
 });
 
 // ─── (d) the find card ────────────────────────────────────────────────────
 
-test("(d) find card: the item line reads name · flavour, and a RULES toggle outside the typed lines holds the old text", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a RULES toggle outside the typed lines held the old text. Now the item line reads
+// name · flavour and the old text is drawn nowhere on the card.
+test("(d) find card: the item line reads name · flavour, and the old text is not on the card; no rules control exists", () => {
   const jewel = rollJewel(makeRng(5));
   const flavor = flavorOfItem(jewel);
   assert.ok(flavor.length > 0, "the rolled jewel has a flavour line");
@@ -358,54 +309,28 @@ test("(d) find card: the item line reads name · flavour, and a RULES toggle out
   assert.ok(itemLine, `an item line for ${jewel.n}`);
   assert.ok(textOf(itemLine).includes(flavor), textOf(itemLine));
   assert.ok(!textOf(itemLine).includes(jewel.txt), "the rules text is not on the typed line");
-
-  const toggles = lines.children.filter((el) => hasClass(el, "mw-rules-btn"));
-  assert.equal(toggles.length, 1);
-  assert.ok(!hasClass(toggles[0], "mw-rail-line") && !hasClass(toggles[0], "mw-rail-roll"), "the toggle is not a typed line element");
-  assert.equal(toggles[0].getAttribute("aria-expanded"), "false");
-  const body = lines.children.find((el) => hasClass(el, "mw-rules-body"));
-  assert.equal(body.hidden, true);
-  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), jewel.txt);
+  assertNoRulesControls(lines, "the find card");
+  assert.ok(!textOf(lines).includes(jewel.txt), "the jewel's exact txt is drawn nowhere on the card");
 });
 
-test("(d) find card: tapping RULES opens the body and survives a repaint; Always show the rules expands it", () => {
-  const jewel = rollJewel(makeRng(5));
-  const { lines, sandbox, doc } = paintFind(jewel);
-  tap(lines.children.find((el) => hasClass(el, "mw-rules-btn")));
-  sandbox.context.renderRail();
-  const again = doc.document.getElementById("mw-rail-lines");
-  assert.equal(again.children.find((el) => hasClass(el, "mw-rules-btn")).getAttribute("aria-expanded"), "true");
-  assert.equal(again.children.find((el) => hasClass(el, "mw-rules-body")).hidden, false);
-
-  clearRulesOpen();
-  setAlwaysRules(true);
-  sandbox.context.renderRail();
-  const always = doc.document.getElementById("mw-rail-lines");
-  assert.equal(always.children.filter((el) => hasClass(el, "mw-rules-btn")).length, 0);
-  assert.equal(always.children.find((el) => hasClass(el, "mw-rules-body")).hidden, false);
-});
-
-test("(d) find card: a RULES tap never reaches the rail's dismiss handler (stopPropagation, plus an early return ahead of the arm check)", () => {
-  const { lines } = paintFind(rollJewel(makeRng(5)));
-  const toggle = lines.children.find((el) => hasClass(el, "mw-rules-btn"));
-  let stopped = false;
-  toggle.onclick({ stopPropagation() { stopped = true; } });
-  assert.equal(stopped, true, "the toggle stops the tap from bubbling to the card");
-
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a RULES tap never reaches the rail's dismiss handler. There is no such tap now, so the
+// pin is that the rail's tap handler names no rules class.
+test("(d) find card: the rail's dismiss handler names no mw-rules class", () => {
   const handler = HTML.slice(HTML.indexOf('document.getElementById("mw-rail").onclick'));
-  const guardAt = handler.indexOf('closest(".mw-rules-btn")');
   const armAt = handler.indexOf("isArmed(railShownAt");
-  assert.ok(guardAt > 0 && armAt > 0 && guardAt < armAt, "the RULES early return sits before the arm window, the typewriter completion and the pulse");
+  assert.ok(armAt > 0, "the arm check is still in the handler");
+  assert.equal(handler.slice(0, armAt).includes("mw-rules"), false, "no rules early return ahead of the arm window");
 });
 
 // ─── (e) tolerant load ────────────────────────────────────────────────────
 
-test("(e) Tolerant load: a removed item an old save may hold shows name · its own text and no toggle", () => {
+test("(e) Tolerant load: a removed item an old save may hold shows name · its own text and no rules control", () => {
   const { lines } = paintFind({ kind: "jewel", n: "Cloak of Healing", txt: "an old cloak's text" });
   const itemLine = lines.children.filter((el) => hasClass(el, "mw-rail-line")).find((el) => textOf(el).startsWith("Cloak of Healing"));
   assert.ok(itemLine, "an item line for the removed cloak");
   assert.ok(textOf(itemLine).startsWith("Cloak of Healing · an old cloak's text"), textOf(itemLine));
-  assert.equal(lines.children.filter((el) => hasClass(el, "mw-rules-btn") || hasClass(el, "mw-rules-body")).length, 0, "no toggle, no body");
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: no toggle and no body, looked up by the retired control's class names.
+  assertNoRulesControls(lines, "the removed item's find card");
 });
 
 // ─── Gear tab (Plan 06, Task 1): helpers copied by value from gear-tab-dom.test.js ───
@@ -456,11 +381,12 @@ const noteOf = (li) => mainOf(li).children.find((n) => hasClass(n, "mw-gear-note
 const descOf = (li) => mainOf(li).children.find((n) => hasClass(n, "mw-gear-desc"));
 const bagLi = (doc, i) => doc.document.getElementById("gear-bag").children.find((li) => li.dataset.i === String(i));
 const consLi = (doc, key) => doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === key);
-const rulesLinesOf = (main) => findAll(main, "mw-rules-line").map(textOf);
 
 // ─── (f) Gear tab: WORN rows ──────────────────────────────────────────────
 
-test("(f) Gear WORN: a flavoured row shows its flavour and no toggle; the armour row keeps its wear note; Always on shows the exact old line statically", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the Always-on half showed the exact old line statically. Now the exact line is drawn
+// nowhere; the worn list has no rules control or body at all.
+test("(f) Gear WORN: a flavoured row shows its flavour; the armour row keeps its wear note; the exact old line is not drawn and no rules control exists", () => {
   const state = { c: gearChar({ worn: { jewelry1: RING } }) };
   const doc = paintGear(state);
   const jewel = wornLi(doc, "jewelry1");
@@ -470,79 +396,59 @@ test("(f) Gear WORN: a flavoured row shows its flavour and no toggle; the armour
   const armourNote = gearWornModel(state).rows.find((r) => r.key === "armor").note;
   assert.equal(textOf(noteOf(wornLi(doc, "armor"))), armourNote, "the armour row keeps its live wear note");
   assert.match(armourNote, /\d/, "the wear note is state, with numbers");
-  assert.equal(findAll(doc.document.getElementById("gear-worn"), "mw-rules-btn").length, 0, "WORN rows are openers: no toggle");
-  assert.equal(findAll(doc.document.getElementById("gear-worn"), "mw-rules-body").length, 0);
-
-  setAlwaysRules(true);
-  const again = paintGear(state);
-  const jewelOn = wornLi(again, "jewelry1");
-  assert.deepEqual(rulesLinesOf(mainOf(jewelOn)), [RING.txt]);
-  assert.equal(findAll(mainOf(jewelOn), "mw-rules-body")[0].hidden, false);
-  assert.equal(findAll(again.document.getElementById("gear-worn"), "mw-rules-btn").length, 0);
-  assert.deepEqual(rulesLinesOf(mainOf(wornLi(again, "weapon"))), [GEAR_COPY.weaponMundane]);
-  assert.equal(findAll(mainOf(wornLi(again, "armor")), "mw-rules-body").length, 0, "the armour row carries no rules body");
-  assert.ok(jewelOn.children.every((n) => n.className !== "mw-rules-body"), "the body is inside main, never a direct child of the li");
+  const worn = doc.document.getElementById("gear-worn");
+  assertNoRulesControls(worn, "the WORN list");
+  assert.ok(!textOf(worn).includes(RING.txt), "the ring's exact txt is not drawn");
+  assert.ok(!textOf(worn).includes(GEAR_COPY.weaponMundane), "the weapon's voice line is not drawn");
 });
 
 // ─── (g) Gear tab: BAG cards ──────────────────────────────────────────────
 
-test("(g) Gear BAG: a card shows its flavour (plus the usable-by tag for armour), no toggle; Always on shows the exact old desc", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the Always-on half showed the exact old desc. Now it is drawn nowhere.
+test("(g) Gear BAG: a card shows its flavour (plus the usable-by tag for armour); the exact old desc is not drawn and no rules control exists", () => {
   const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
   const state = { c: gearChar({ items: [ANKLET, studded] }) };
   const doc = paintGear(state);
   const usable = usableBy(studded, state.c);
   assert.equal(textOf(descOf(bagLi(doc, 0))), MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
   assert.equal(textOf(descOf(bagLi(doc, 1))), usable ? `${ARMOR_FLAVOR.Studded} ${usable}` : ARMOR_FLAVOR.Studded);
-  assert.equal(findAll(doc.document.getElementById("gear-bag"), "mw-rules-btn").length, 0);
-
-  setAlwaysRules(true);
-  const again = paintGear(state);
-  assert.deepEqual(rulesLinesOf(mainOf(bagLi(again, 0))), [ANKLET.txt]);
-  assert.deepEqual(rulesLinesOf(mainOf(bagLi(again, 1))), [usable ? `AR 10 · 18/18 hp ${usable}` : "AR 10 · 18/18 hp"]);
-  assert.equal(findAll(again.document.getElementById("gear-bag"), "mw-rules-btn").length, 0);
+  const bag = doc.document.getElementById("gear-bag");
+  assertNoRulesControls(bag, "the BAG list");
+  assert.ok(!textOf(bag).includes(ANKLET.txt), "the Anklet's exact txt is not drawn");
+  assert.ok(!textOf(bag).includes("AR 10 · 18/18 hp"), "the armour's exact stat line is not drawn");
 });
 
 // ─── (h) Gear tab: CONSUMABLES ────────────────────────────────────────────
 
-test("(h) Gear CONSUMABLES: each row shows flavour then a collapsed RULES toggle with the exact old text; a tap reveals it and a repaint keeps it open", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a collapsed RULES toggle held the exact text, a tap revealed it, a repaint kept it open.
+// Now the rows show the flavour and the exact text is pinned on the model's `rules` field, drawn nowhere.
+test("(h) Gear CONSUMABLES: each row shows its flavour and the READ button; the exact text stays on the model's rules field and is not drawn", () => {
   const state = { c: gearChar({ scrolls: 2 }) };
   const doc = paintGear(state);
   const heal = consLi(doc, "heal");
   assert.equal(textOf(descOf(heal)), POTION_FLAVOR.Healing);
-  const main = mainOf(heal);
-  const btn = findAll(main, "mw-rules-btn")[0];
-  const body = findAll(main, "mw-rules-body")[0];
-  assert.equal(btn.getAttribute("aria-expanded"), "false");
-  assert.equal(body.hidden, true);
-  assert.deepEqual(rulesLinesOf(main), [GEAR_COPY.healingDesc]);
-  assert.ok(main.children.indexOf(btn) > main.children.indexOf(descOf(heal)), "the toggle sits after the description");
-  tap(btn);
-  assert.equal(body.hidden, false);
-  const fresh = paintGear(state);
-  assert.equal(findAll(mainOf(consLi(fresh, "heal")), "mw-rules-body")[0].hidden, false, "a repaint keeps it revealed");
-
   const scroll = consLi(doc, "scroll");
   assert.equal(textOf(descOf(scroll)), SCROLL_FLAVOR);
-  assert.deepEqual(rulesLinesOf(mainOf(scroll)), [`${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`]);
   assert.ok(scroll.children.some((n) => hasClass(n, "mw-gear-cons-btn")), "the READ button is unchanged");
 
-  clearRulesOpen();
-  setAlwaysRules(true);
-  const on = paintGear(state);
-  assert.equal(findAll(on.document.getElementById("gear-cons"), "mw-rules-btn").length, 0);
-  assert.equal(findAll(mainOf(consLi(on, "heal")), "mw-rules-body")[0].hidden, false);
+  const rows = gearConsumablesModel(state).rows;
+  assert.equal(rows.find((r) => r.key === "heal").rules, GEAR_COPY.healingDesc, "the model keeps the heal text");
+  const scrollRules = `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`;
+  assert.equal(rows.find((r) => r.key === "scroll").rules, scrollRules, "the model keeps the scroll text and the reader's odds");
+
+  assertNoRulesControls(consLi(doc, "heal"), "the heal row");
+  assertNoRulesControls(scroll, "the scroll row");
+  assert.ok(!textOf(heal).includes(GEAR_COPY.healingDesc), "the heal rules text is not drawn");
+  assert.ok(!textOf(scroll).includes(GEAR_COPY.scrollDesc), "the scroll rules text is not drawn");
 });
 
 // ─── (i) Gear tab: tolerant load ──────────────────────────────────────────
 
-test("(i) Tolerant load: a bagged removed item an old save may hold shows its own text and no rules body, even with Always on", () => {
+test("(i) Tolerant load: a bagged removed item an old save may hold shows its own text and no rules control or body", () => {
   const state = { c: gearChar({ items: [OLD_CLOAK] }) };
-  for (const on of [false, true]) {
-    setAlwaysRules(on);
-    const doc = paintGear(state);
-    assert.equal(textOf(descOf(bagLi(doc, 0))), "an old cloak's text");
-    assert.equal(findAll(bagLi(doc, 0), "mw-rules-btn").length + findAll(bagLi(doc, 0), "mw-rules-body").length, 0);
-  }
+  const doc = paintGear(state);
+  assert.equal(textOf(descOf(bagLi(doc, 0))), "an old cloak's text");
+  assertNoRulesControls(bagLi(doc, 0), "the old cloak's row");
 });
 
 // ─── Gear sheet (Plan 06, Task 2) ─────────────────────────────────────────
@@ -557,47 +463,81 @@ function openSheet(state, target) {
 
 // ─── (j) the bagged Anklet's sheet ────────────────────────────────────────
 
-test("(j) Gear sheet, bag: the note shows the flavour; RULES sit around the stats (collapsed, exact old stats), a tap opens it, a re-render keeps it open; Always on shows the body with no button", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. User rulings: numbers yes, rulebook sentences no. The Anklet's only stat row is its effect
+// row (the item's own txt sentence, which is rules text), so a flavoured Anklet's sheet draws no stat row and hides the container. The
+// model still carries the sentence (stats, rules) and says which key each row is (statKeys). Was: a RULES body held it and a tap opened it.
+test("(j) Gear sheet, bag: the note shows the flavour; the Anklet's effect sentence is not drawn (the container hides); the model keeps it", () => {
   const state = { c: gearChar({ items: [ANKLET] }) };
   const target = { from: "bag", i: 0, n: "Anklet of Invisibility" };
   const oldStats = itemStatLines(ANKLET, state.c).map((l) => l.text);
-  assert.ok(oldStats.length > 0, "the Anklet has stat lines to hide");
+  assert.ok(oldStats.length > 0, "the Anklet has stat lines");
+  const model = gearSheetModel(state, target);
+  assert.deepEqual(model.stats, oldStats, "the effect sentence is still on the model");
+  assert.deepEqual(model.rules, oldStats, "the model's rules array still carries it");
+  assert.deepEqual(model.statKeys, ["effect"], "its only row is the effect row");
+
   const sheet = openSheet(state, target);
   assert.equal(textOf(sheet.get("note")), MAGIC_ITEM_FLAVOR["Anklet of Invisibility"]);
   assert.equal(sheet.get("note").hidden, false);
   const statsEl = sheet.get("stats");
-  const btn = findAll(statsEl, "mw-rules-btn")[0];
-  const body = findAll(statsEl, "mw-rules-body")[0];
-  assert.equal(btn.getAttribute("aria-expanded"), "false");
-  assert.equal(body.hidden, true);
-  assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), oldStats);
-  assert.ok(findAll(body, "mw-rules-line").every((p) => hasClass(p, "mw-gsheet-note") && hasClass(p, "mw-gsheet-stat")));
-  tap(btn);
-  assert.equal(body.hidden, false);
-  sheet.render();
-  assert.equal(findAll(sheet.get("stats"), "mw-rules-body")[0].hidden, false, "a revealed body stays open when the sheet re-renders");
+  assert.equal(statsEl.hidden, true, "no row is left, so the container hides");
+  assert.equal(statsEl.children.length, 0);
+  assert.ok(!textOf(statsEl).includes(ANKLET.txt), "the effect sentence is not drawn");
+  assertNoRulesControls(statsEl, "the stats container");
 
-  clearRulesOpen();
-  setAlwaysRules(true);
-  const on = openSheet(state, target);
-  assert.equal(findAll(on.get("stats"), "mw-rules-btn").length, 0);
-  assert.equal(findAll(on.get("stats"), "mw-rules-body")[0].hidden, false);
-  assert.deepEqual(findAll(on.get("stats"), "mw-rules-line").map(textOf), oldStats);
+  sheet.render();
+  assert.equal(sheet.get("stats").hidden, true, "still hidden when the sheet re-renders");
+  assert.equal(sheet.get("stats").children.length, 0);
 });
 
 // ─── (k) the worn weapon's sheet ──────────────────────────────────────────
 
-test("(k) Gear sheet, worn weapon: the note shows the weapon flavour; the RULES body holds the exact old voice line then every stat line", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the RULES body held the old voice line then every stat line. Now the numeric stat rows
+// are drawn as plain rows (one p.mw-gsheet-note.mw-gsheet-stat per stats entry, in order) and the voice line is drawn nowhere; the model's
+// rules array still holds [voice line, ...stats].
+test("(k) Gear sheet, worn weapon: the note shows the weapon flavour; the numeric stat rows are plain rows; the old voice line is not drawn", () => {
   const state = { c: gearChar() };
   const stats = itemStatLines(wornItemFor(state.c, "weapon"), state.c).map((l) => l.text);
+  assert.ok(stats.length > 0);
+  assert.deepEqual(gearSheetModel(state, { from: "worn", slot: "weapon" }).rules, [GEAR_COPY.weaponMundane, ...stats], "the model keeps the voice line then every stat line");
   const sheet = openSheet(state, { from: "worn", slot: "weapon" });
   assert.equal(textOf(sheet.get("note")), WEAPON_FLAVOR["Long Sword"]);
-  assert.deepEqual(findAll(sheet.get("stats"), "mw-rules-line").map(textOf), [GEAR_COPY.weaponMundane, ...stats]);
+  const statsEl = sheet.get("stats");
+  assert.equal(statsEl.hidden, false, "a weapon shows its numbers");
+  assert.equal(statsEl.children.length, stats.length);
+  statsEl.children.forEach((row, i) => {
+    assert.equal(String(row.tagName).toLowerCase(), "p");
+    assert.ok(hasClass(row, "mw-gsheet-note") && hasClass(row, "mw-gsheet-stat"), "a plain stat row");
+    assert.equal(textOf(row), stats[i]);
+    assert.equal(RULES_CLASS.test(String(row.className)), false, "no rules class on a stat row");
+  });
+  assert.ok(!textOf(statsEl).includes(GEAR_COPY.weaponMundane), "the old voice line is not drawn");
+  assertNoRulesControls(statsEl, "the stats container");
+});
+
+// Phase 97.1 (FLAVOR-07): new case. A flavoured armour in the bag: its rows are exactly the itemStatLines texts, plain and visible, none of
+// them an effect row.
+test("(j2) Gear sheet, bagged armour: the AR, wear and usable-by rows are drawn as plain rows; none is an effect row", () => {
+  const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
+  const state = { c: gearChar({ items: [studded] }) };
+  const target = { from: "bag", i: 0, n: "Studded" };
+  const lines = itemStatLines(studded, state.c);
+  assert.ok(lines.length >= 2, "AR and wear at least");
+  assert.ok(lines.every((l) => l.key !== "effect"), "an armour has no effect row");
+  const sheet = openSheet(state, target);
+  assert.equal(textOf(sheet.get("note")), gearSheetModel(state, target).lead);
+  const statsEl = sheet.get("stats");
+  assert.equal(statsEl.hidden, false);
+  assert.deepEqual(statsEl.children.map(textOf), lines.map((l) => l.text));
+  for (const row of statsEl.children) {
+    assert.ok(hasClass(row, "mw-gsheet-note") && hasClass(row, "mw-gsheet-stat"));
+  }
+  assertNoRulesControls(statsEl, "the stats container");
 });
 
 // ─── (l) candidate subs and tolerant load ─────────────────────────────────
 
-test("(l) Gear sheet: a jewel SWAP FOR candidate's sub is that jewel's flavour; an old save's removed item renders note and stats as before with no toggle", () => {
+test("(l) Gear sheet: a jewel SWAP FOR candidate's sub is that jewel's flavour; an old save's removed item renders note and stats as before with no rules control", () => {
   const state = { c: gearChar({ worn: { jewelry1: RING }, items: [ANKLET] }) };
   const model = gearSheetModel(state, { from: "worn", slot: "jewelry1" });
   const swap = model.actions.find((a) => a.key === "swap:0");
@@ -609,13 +549,10 @@ test("(l) Gear sheet: a jewel SWAP FOR candidate's sub is that jewel's flavour; 
   const target = { from: "bag", i: 0, n: "Cloak of Healing" };
   const before = gearSheetModel(old, target);
   assert.ok(!("lead" in before) && !("rules" in before) && !("rulesId" in before));
-  for (const on of [false, true]) {
-    setAlwaysRules(on);
-    const s = openSheet(old, target);
-    assert.equal(textOf(s.get("note")), before.note);
-    assert.deepEqual(findAll(s.get("stats"), "mw-gsheet-stat").map(textOf), before.stats);
-    assert.equal(findAll(s.get("stats"), "mw-rules-btn").length + findAll(s.get("stats"), "mw-rules-body").length, 0);
-  }
+  const s = openSheet(old, target);
+  assert.equal(textOf(s.get("note")), before.note);
+  assert.deepEqual(findAll(s.get("stats"), "mw-gsheet-stat").map(textOf), before.stats);
+  assertNoRulesControls(s.get("stats"), "the old cloak's stats");
 });
 
 // ─── Plan 07: the store, the Sealed scroll and the Your gear sell list ────
@@ -634,16 +571,12 @@ const italicIn = (el) => {
   return m ? m[1] : null;
 };
 
-/** The stock button whose name span starts with `name`. */
+/** The stock button whose name span starts with `name`. Phase 97.1 (FLAVOR-07): declared re-pin. Every stock row is a bare button on the shelf now. */
 function stockButton(shelf, name) {
-  const buttons = shelf.children.flatMap((n) => (hasClass(n, "mw-rules-wrap") ? [n.children[0]] : [n]));
-  const b = buttons.find((x) => String(x.innerHTML).includes(`<span class="g-n">${name}`));
+  const b = shelf.children.find((x) => String(x.innerHTML).includes(`<span class="g-n">${name}`));
   assert.ok(b, `a stock row for ${name}`);
   return b;
 }
-
-/** The mw-rules-wrap a stock button sits in, or null when it is appended bare. */
-const wrapOf = (shelf, button) => shelf.children.find((n) => hasClass(n, "mw-rules-wrap") && n.children[0] === button) || null;
 
 test("(m0) storeRowLayer: food, rations and repairs return null; a potion leads with its flavour and hides the exact old stat text", () => {
   const c = fixedStates().thiefStore.c;
@@ -658,69 +591,51 @@ test("(m0) storeRowLayer: food, rations and repairs return null; a potion leads 
   assert.equal(layer.rules, "+d10+2 hp");
 });
 
-test("(m) store: a flavoured stock row leads with its flavour, keeps count/compare/reason, and its exact old stat line sits behind a RULES toggle that is a sibling of BUY", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the exact old stat line sat behind a RULES toggle that was a sibling of BUY. Now a flavoured
+// row is a bare BUY button whose italic starts with the flavour; the exact line is pinned on storeRowLayer (the test above) and is not drawn.
+test("(m) store: a flavoured stock row is a bare button that leads with its flavour and keeps count/compare/reason; no rules control exists", () => {
   const state = fixedStates().thiefStore;
   const { shelf } = paintStore(state);
 
   const heal = stockButton(shelf, "Healing potion");
-  const healWrap = wrapOf(shelf, heal);
-  assert.ok(healWrap, "the Healing potion row is wrapped");
+  assert.equal(String(heal.tagName).toLowerCase(), "button", "the Healing potion row is the bare BUY button");
   const lead = italicIn(heal);
   assert.ok(lead.startsWith(POTION_FLAVOR.Healing), lead);
   assert.ok(!/\d/.test(lead.split(" · ")[0]), "no digit before the first separator");
-  assert.equal(findAll(heal, "mw-rules-btn").length, 0, "the toggle is never inside the BUY button");
-  const [btn] = findAll(healWrap, "mw-rules-btn");
-  assert.equal(btn.getAttribute("aria-expanded"), "false");
-  assert.ok(healWrap.children.includes(btn) && healWrap.children[0] === heal, "the toggle is the BUY button's sibling");
-  const [body] = findAll(healWrap, "mw-rules-body");
-  assert.equal(body.hidden, true);
-  assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), ["+d10+2 hp"]);
+  assert.ok(!String(heal.innerHTML).includes("+d10+2 hp"), "the exact old stat text is not drawn");
 
   // The compare line (advice) stays visible in the italic.
   const weapon = state.store.stock.find((l) => l.effectId === "buyWeapon");
   const wb = stockButton(shelf, weapon.n);
   assert.match(italicIn(wb), /(upgrade|not an upgrade)(?= ·|$)/);
-  assert.ok(wrapOf(shelf, wb), "weapon rows are wrapped too");
 
-  // Rations are unwrapped and unchanged.
+  // Rations are bare and unchanged.
   const rations = stockButton(shelf, "Rations (+1 ration)");
-  assert.equal(wrapOf(shelf, rations), null);
   assert.match(italicIn(rations), /^\d+ left$/);
   assert.ok(shelf.children.includes(rations), "Rations are appended bare");
 
-  tap(btn);
-  assert.equal(body.hidden, false);
+  assertNoRulesControls(shelf, "the store shelf");
 });
 
-test("(m) store: a revealed body survives a repaint; Always on shows every body with no toggle", () => {
-  const state = fixedStates().thiefStore;
-  const first = paintStore(state);
-  const heal = stockButton(first.shelf, "Healing potion");
-  tap(findAll(wrapOf(first.shelf, heal), "mw-rules-btn")[0]);
-  const second = paintStore(state, first);
-  const wrap2 = wrapOf(second.shelf, stockButton(second.shelf, "Healing potion"));
-  assert.equal(findAll(wrap2, "mw-rules-body")[0].hidden, false, "still open after the repaint");
-
-  clearRulesOpen();
-  setAlwaysRules(true);
-  const on = paintStore(state);
-  const wrap = wrapOf(on.shelf, stockButton(on.shelf, "Healing potion"));
-  assert.equal(findAll(wrap, "mw-rules-btn").length, 0);
-  assert.equal(findAll(wrap, "mw-rules-body")[0].hidden, false);
-});
-
-test("(n) store: the Sealed scroll row shows the scroll flavour; its RULES hold the scroll's rules as the Gear SCROLLS row states them", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the Sealed scroll's RULES body held the scroll's rules. The pin moves to the row layer
+// that still carries them; the row shows the scroll flavour and not GEAR_COPY.scrollDesc.
+test("(n) store: the Sealed scroll row shows the scroll flavour; storeRowLayer still carries the scroll's rules as the Gear SCROLLS row states them", () => {
   const state = fixedStates().muStore;
   const { shelf } = paintStore(state);
   const b = stockButton(shelf, "Sealed scroll");
   assert.ok(italicIn(b).startsWith(SCROLL_FLAVOR), italicIn(b));
-  const wrap = wrapOf(shelf, b);
-  assert.ok(wrap, "the Sealed scroll row is wrapped");
-  assert.deepEqual(findAll(wrap, "mw-rules-line").map(textOf), [`${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`]);
-  assert.equal(findAll(wrap, "mw-rules-body")[0].hidden, true);
+  assert.ok(!String(b.innerHTML).includes(GEAR_COPY.scrollDesc), "the scroll rules text is not drawn");
+  const line = state.store.stock.find((l) => String(l.n).startsWith("Sealed scroll"));
+  assert.ok(line, "the Sealed scroll stock line");
+  const layer = storeRowLayer(line, state.c, state, false, "");
+  assert.ok(layer, "the Sealed scroll row has a layer");
+  assert.equal(layer.rules, `${GEAR_COPY.scrollDesc} ${scrollReadOdds(state)}`);
+  assertNoRulesControls(shelf, "the store shelf");
 });
 
-test("(o) Your gear sell list: each flavoured row shows its flavour with a collapsed toggle holding the exact old line; a tap opens it and a repaint keeps it open", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a collapsed toggle held the exact old line; a tap opened it and a repaint kept it open.
+// Now each flavoured row shows its flavour alone, an unflavoured row keeps its old text, and no rules control exists.
+test("(o) Your gear sell list: each flavoured row shows its flavour only; an unflavoured row keeps its old text; no rules control exists", () => {
   const state = fixedStates().thiefStore;
   const first = paintStore(state);
   const lis = first.sell.children;
@@ -733,22 +648,14 @@ test("(o) Your gear sell list: each flavoured row shows its flavour with a colla
     const [italic] = li.children.filter((n) => n.tagName === "I" || n.tagName === "i");
     if (!flavor) {
       assert.equal(textOf(italic), old);
-      assert.equal(findAll(li, "mw-rules-btn").length, 0);
       return;
     }
     flavoured++;
     assert.equal(textOf(italic), flavor);
-    const [btn] = findAll(li, "mw-rules-btn");
-    const [body] = findAll(li, "mw-rules-body");
-    assert.equal(btn.getAttribute("aria-expanded"), "false");
-    assert.equal(body.hidden, true);
-    assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [old]);
+    if (old) assert.ok(!textOf(li).includes(old), `${it.n}: the exact old line is not drawn`);
   });
   assert.ok(flavoured >= 3, "the fixture sells several flavoured items");
-
-  tap(findAll(lis[0], "mw-rules-btn")[0]);
-  const second = paintStore(state, first);
-  assert.equal(findAll(second.sell.children[0], "mw-rules-body")[0].hidden, false, "open after a second renderEncounter");
+  assertNoRulesControls(first.sell, "the sell list");
 });
 
 // ─── Plan 07: the bag-full drop shelf and the loot card's list ────────────
@@ -784,7 +691,10 @@ function findShelf(state, find) {
   return { doc, sandbox, region, drops };
 }
 
-test("(p) drop shelf (find card): a flavoured row is a RULES wrapper around the Drop button; the flavour is in the button, the body holds the stat line, the toggle never drops", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a flavoured row was a RULES wrapper around the Drop button, the body held the stat line and the
+// toggle never dropped. Now every row, flavoured or not, is the bare Drop button; a flavoured row shows its flavour (and the usable-by tag)
+// and not its stat line; a clean tap drops that row's true index.
+test("(p) drop shelf (find card): every row is a bare Drop button; a flavoured row shows its flavour and no stat line; a tap drops its true index", () => {
   const state = fullBagState();
   const rows = dropShelfRows(state.c);
   const { region, drops } = findShelf(state, rollBlade(makeRng(5), 4, true));
@@ -793,38 +703,22 @@ test("(p) drop shelf (find card): a flavoured row is a RULES wrapper around the 
   region.children.forEach((el, n) => {
     const row = rows[n];
     const flavor = flavorOfItem(row.it);
-    if (!flavor) {
-      assert.equal(el.tagName, "button", "an unflavoured row is the bare button, as before");
-      return;
-    }
+    assert.equal(el.tagName, "button", `row ${n} is the bare button`);
+    assert.ok(hasClass(el, "goods"));
+    if (!flavor) return;
     flavoured++;
-    assert.ok(hasClass(el, "mw-rules-wrap"), `row ${n} is wrapped`);
-    const [button, toggle, body] = el.children;
-    assert.ok(hasClass(button, "goods"));
     const tag = usableBy(row.it, state.c);
-    assert.equal(italicOf(button), tag ? `${flavor} ${tag}` : flavor);
-    assert.equal(findAll(button, "mw-rules-btn").length, 0, "the toggle is never inside the Drop button");
-    assert.ok(hasClass(toggle, "mw-rules-btn"));
-    assert.equal(toggle.getAttribute("aria-expanded"), "false");
-    assert.equal(body.hidden, true);
-    assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [row.stats]);
+    assert.equal(italicOf(el), tag ? `${flavor} ${tag}` : flavor);
+    assert.ok(!String(el.innerHTML).includes(row.stats), `row ${n}: the exact stat line is not drawn`);
   });
   assert.ok(flavoured >= 3, "the fixture bag holds several flavoured items");
+  assertNoRulesControls(region, "the drop shelf");
 
-  // A toggle tap opens the body and drops nothing; a clean tap on the button drops that row's true index.
-  const wrap = region.children.find((el) => hasClass(el, "mw-rules-wrap"));
-  tap(wrap.children[1]);
-  assert.equal(wrap.children[2].hidden, false);
-  assert.deepEqual(drops, []);
-  wrap.children[0].onclick();
-  assert.deepEqual(drops, [rows[region.children.indexOf(wrap)].i]);
-
-  clearRulesOpen();
-  setAlwaysRules(true);
-  const on = findShelf(fullBagState(), rollBlade(makeRng(5), 4, true));
-  const w2 = on.region.children.find((el) => hasClass(el, "mw-rules-wrap"));
-  assert.equal(findAll(w2, "mw-rules-btn").length, 0);
-  assert.equal(w2.children[1].hidden, false);
+  // A clean tap on the button drops that row's true index.
+  const n = region.children.findIndex((el, k) => flavorOfItem(rows[k].it));
+  assert.ok(n >= 0);
+  region.children[n].onclick();
+  assert.deepEqual(drops, [rows[n].i]);
 });
 
 /**
@@ -855,7 +749,9 @@ function paintLoot(state) {
 
 const italicsOf = (li) => li.children.filter((n) => String(n.tagName).toLowerCase() === "i");
 
-test("(q) loot list: a flavoured row shows its flavour, the take-or-leave advice on its own line, and the exact old line behind RULES", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: the exact old line sat behind RULES in each row and a toggle tap opened it. Now the flavour is
+// the first italic, the advice stays on its own second italic, a jewel has no advice, and the exact old line is drawn nowhere.
+test("(q) loot list: a flavoured row shows its flavour, the take-or-leave advice on its own line, and the exact old line is not drawn", () => {
   const state = newRun(9, [], { force: { cls: "Fighter" } });
   const blade = rollBlade(makeRng(5), 4, true);
   const jewel = rollJewel(makeRng(6));
@@ -871,44 +767,41 @@ test("(q) loot list: a flavoured row shows its flavour, the take-or-leave advice
   assert.equal(bladeItalics.length, 2, "the advice sits on its own second line");
   assert.equal(textOf(bladeItalics[1]), [cmp.line, cmp.usable].filter(Boolean).join(" "));
   assert.match(textOf(bladeItalics[1]), /upgrade|can't use/);
-  assert.deepEqual(findAll(bladeLi, "mw-rules-line").map(textOf), [oldBlade]);
-  assert.equal(findAll(bladeLi, "mw-rules-body")[0].hidden, true);
+  assert.ok(!textOf(bladeLi).includes(oldBlade), "the exact old blade line is not drawn");
 
   const jewelItalics = italicsOf(jewelLi);
   assert.equal(textOf(jewelItalics[0]), flavorOfItem(jewel));
   assert.equal(jewelItalics.length, 1, "a jewel has no advice, so no second line");
-  assert.deepEqual(findAll(jewelLi, "mw-rules-line").map(textOf), [jewel.txt]);
+  assert.ok(!textOf(jewelLi).includes(jewel.txt), "the jewel's exact txt is not drawn");
 
-  // The Take and Leave buttons are still the row's own buttons, after the toggle and body.
+  // The Take and Leave buttons are still the row's own buttons.
   assert.ok(bladeLi.children.some((n) => n.tagName === "button" && textOf(n) === "Leave"));
-  tap(findAll(bladeLi, "mw-rules-btn")[0]);
-  assert.equal(findAll(bladeLi, "mw-rules-body")[0].hidden, false);
+  assertNoRulesControls(list, "the loot list");
 });
 
-test("(r) tolerant: a bagged old-save Cloak of Healing appears on the drop shelf and the loot list exactly as before, with no toggle", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. One pass (the Always on/off loop is gone with the setting).
+test("(r) tolerant: a bagged old-save Cloak of Healing appears on the drop shelf and the loot list exactly as before, with no rules control", () => {
   const state = fullBagState({ extra: [OLD_CLOAK] });
   const rows = dropShelfRows(state.c);
   const n = rows.findIndex((r) => r.it.n === "Cloak of Healing");
   assert.ok(n >= 0, "the old cloak is on the drop shelf");
-  for (const on of [false, true]) {
-    setAlwaysRules(on);
-    const { region } = findShelf(structuredClone(state), rollBlade(makeRng(5), 4, true));
-    const el = region.children[n];
-    assert.equal(el.tagName, "button", "bare button, no wrapper");
-    assert.equal(findAll(el, "mw-rules-btn").length, 0);
-    assert.ok(String(el.innerHTML).includes("Cloak of Healing"));
-  }
+  const { region } = findShelf(structuredClone(state), rollBlade(makeRng(5), 4, true));
+  const el = region.children[n];
+  assert.equal(el.tagName, "button", "bare button");
+  assertNoRulesControls(el, "the old cloak's drop row");
+  assert.ok(String(el.innerHTML).includes("Cloak of Healing"));
 
-  setAlwaysRules(false);
   const loot = newRun(9, [], { force: { cls: "Fighter" } });
   loot.pendingLoot = [OLD_CLOAK];
   const { list } = paintLoot(loot);
   const li = list.children[0];
-  assert.equal(findAll(li, "mw-rules-btn").length + findAll(li, "mw-rules-body").length, 0);
+  assertNoRulesControls(li, "the old cloak's loot row");
   assert.equal(textOf(italicsOf(li)[0]), lootCompare(loot.c, OLD_CLOAK).line);
 });
 
-test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets name the flavour layer and the Always show the rules switch, old → new", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. The 2.4.0 DRAFT no longer names a RULES tap or the Always switch; it says the exact rules sit
+// behind the scenes, in the voice, and still validates.
+test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets say the exact rules sit behind the scenes, old → new", () => {
   const md = fs.readFileSync(path.join(__dirname, "..", "..", "docs", "patch-notes", "2.4.0.md"), "utf8").replace(/\r\n/g, "\n");
   assert.match(md, /\*\*DRAFT, not yet agreed\.\*\*/, "2.4.0 stays a DRAFT");
   assert.deepStrictEqual(validatePatchNotes(md, "2.4.0"), []);
@@ -918,25 +811,25 @@ test("patch notes: 2.4.0 is a DRAFT that validates, and its Interface bullets na
   const lines = md.slice(start, next === -1 ? md.length : next).split("\n");
   const flavour = lines.filter((l) => l.startsWith("- Spell, scroll, weapon, armour"));
   assert.equal(flavour.length, 1, "exactly one flavour-layer bullet");
-  for (const needle of ["→", "RULES"]) assert.ok(flavour[0].includes(needle), `the flavour bullet carries "${needle}"`);
+  for (const needle of ["→", "behind the scenes"]) assert.ok(flavour[0].includes(needle), `the flavour bullet carries "${needle}"`);
   // Phase 96 (plan 96-11): the identity, ability, special-skill and chip lines get their own old → new bullet, rules unchanged.
   const identity = lines.filter((l) => l.startsWith("- Race, sub-class and class blurbs"));
   assert.equal(identity.length, 1, "exactly one identity, ability and chip bullet");
-  for (const needle of ["→", "RULES", "ability and special-skill descriptions", "condition-chip explanations", "every rule and number unchanged"]) {
+  for (const needle of ["→", "behind the scenes", "ability and special-skill descriptions", "condition-chip explanations", "every rule and number unchanged"]) {
     assert.ok(identity[0].includes(needle), `the identity bullet carries "${needle}"`);
   }
-  const setting = lines.filter((l) => l.startsWith("- Settings:"));
-  assert.equal(setting.length, 1, "exactly one Settings bullet");
-  for (const needle of ["→", "Always show the rules", "Off by default"]) assert.ok(setting[0].includes(needle), `the Settings bullet carries "${needle}"`);
+  for (const line of md.split("\n")) {
+    assert.ok(!line.includes("RULES"), `no line names RULES: ${line.slice(0, 60)}`);
+    assert.ok(!line.includes("Always show the rules"), `no line names the Always switch: ${line.slice(0, 60)}`);
+  }
+  assert.equal(lines.filter((l) => l.startsWith("- Settings:")).length, 0, "no Settings bullet in the Interface category");
 });
 
 // ─── Phase 96 (FLAVOR-03): the Hero dossier and trait line ────────────────
 //
-// The dossier (Race, Class, Subclass) and the trait line follow the one rule:
-// the flavour leads, today's note and the unchanged footer sit behind RULES,
-// Always on shows them open with no toggle, an opened body survives a repaint,
-// and an identity with no flavour line renders as today. Extended by 96-06 and
-// 96-07.
+// Phase 97.1 (FLAVOR-07): declared re-pin. The dossier (Race, Class, Subclass) and the trait line show the flavour only. Today's note and the
+// unchanged footer are drawn nowhere (RACE_NOTE, CLASS_NOTE, SUB_NOTE and the identity footers stay in code for the guards), and an identity
+// with no flavour line renders as today. Extended by 96-06 and 96-07.
 
 function paintHero(sub, race) {
   const { document } = createRecordingDocument();
@@ -947,14 +840,8 @@ function paintHero(sub, race) {
 }
 
 const dossSections = (document) => document.getElementById("doss").children;
-const sectionParts = (sec) => ({
-  flavor: sec.children[2],
-  button: sec.children.find((el) => hasClass(el, "mw-rules-btn")),
-  body: sec.children.find((el) => hasClass(el, "mw-rules-body")),
-});
-const bodyLines = (body) => body.children.map((p) => textOf(p));
 
-test("(s) Dossier: each section leads with a digit-free flavour line; the note and footer sit behind a collapsed RULES body", () => {
+test("(s) Dossier: each section is the heading, the name and one digit-free flavour line; the note and footer are drawn nowhere", () => {
   const { document, state } = paintHero("Cat Burglar", "Wilmsry");
   const c = state.c;
   const expected = [
@@ -964,41 +851,22 @@ test("(s) Dossier: each section leads with a digit-free flavour line; the note a
   ];
   const secs = dossSections(document);
   assert.equal(secs.length, 3);
-  expected.forEach(([kind, key, lines], i) => {
-    const { flavor, button, body } = sectionParts(secs[i]);
+  expected.forEach(([kind, key, absent], i) => {
+    const sec = secs[i];
+    assert.equal(sec.children.length, 3, `${kind}: h3, p.who and the flavour paragraph, nothing else`);
+    const [h3, who, flavor] = sec.children;
+    assert.equal(String(h3.tagName).toLowerCase(), "h3");
+    assert.ok(hasClass(who, "who"));
     assert.equal(textOf(flavor), flavorOfIdentity(kind, key), `${kind}: the visible paragraph is the flavour line`);
     assert.doesNotMatch(textOf(flavor), /\d/, `${kind}: the flavour line carries no digit`);
-    assert.ok(button, `${kind}: a RULES button`);
-    assert.equal(button.getAttribute("aria-expanded"), "false");
-    assert.equal(body.hidden, true);
-    assert.deepEqual(bodyLines(body), lines, `${kind}: the body is the old note then the unchanged footer`);
+    for (const child of sec.children) assert.equal(/(^|\s)doss-rules/.test(String(child.className || "")), false, `${kind}: no doss-rules class on a child`);
+    assertNoRulesControls(sec, `the ${kind} section`);
+    const visible = sec.children.map(textOf).join("\n");
+    for (const line of absent) assert.ok(!visible.includes(line), `${kind}: "${String(line).slice(0, 40)}" is drawn nowhere`);
   });
 });
 
-test("(s) Dossier: a tap opens one body without acting, a repaint keeps it open, and Always on shows every body with no toggle", () => {
-  const view = paintHero("Cat Burglar", "Wilmsry");
-  const before = JSON.stringify(view.state);
-  const raceSec = dossSections(view.document)[0];
-  tap(sectionParts(raceSec).button);
-  assert.equal(sectionParts(raceSec).body.hidden, false, "the tapped body opens");
-  assert.equal(JSON.stringify(view.state), before, "a RULES tap never touches the game state");
-
-  view.repaint();
-  const after = dossSections(view.document);
-  assert.equal(sectionParts(after[0]).body.hidden, false, "the opened body survives a repaint");
-  assert.equal(sectionParts(after[1]).body.hidden, true, "the other bodies stay closed");
-  assert.equal(sectionParts(after[0]).button.getAttribute("aria-expanded"), "true");
-
-  setAlwaysRules(true);
-  view.repaint();
-  for (const sec of dossSections(view.document)) {
-    const { button, body } = sectionParts(sec);
-    assert.equal(button, undefined, "no toggle with Always on");
-    assert.equal(body.hidden, false);
-  }
-});
-
-test("(t) Trait line: the sentence keeps temperament, motive and phobia; the race note sits alone behind a RULES toggle", () => {
+test("(t) Trait line: the sentence keeps temperament, motive and phobia; the race note is drawn nowhere", () => {
   const { document, state } = paintHero("Cat Burglar", "Wilmsry");
   const c = state.c;
   const trait = document.getElementById("s-trait");
@@ -1006,15 +874,10 @@ test("(t) Trait line: the sentence keeps temperament, motive and phobia; the rac
   assert.equal(visible, `${c.temperament}, driven by ${c.motive.toLowerCase()}, afraid of ${c.phobia.toLowerCase()}.`);
   assert.doesNotMatch(visible, /\d/, "no number in the visible trait line");
   assert.ok(!String(trait.innerHTML).includes(RACES[c.race].note), "the race note is not in the visible markup");
-  const button = trait.children.find((el) => hasClass(el, "mw-rules-btn"));
-  const body = trait.children.find((el) => hasClass(el, "mw-rules-body"));
-  assert.ok(button && body, "a RULES toggle and body");
-  assert.equal(button.getAttribute("aria-expanded"), "false");
-  assert.equal(body.hidden, true);
-  assert.deepEqual(bodyLines(body), [RACES[c.race].note], "the toggle holds exactly the race note");
+  assertNoRulesControls(trait, "the trait line");
 });
 
-test("(u) tolerant: a sub-class with no flavour line renders its section as before, with no toggle and no throw", () => {
+test("(u) tolerant: a sub-class with no flavour line renders its section as before, with no rules control and no throw", () => {
   const view = paintHero("Cat Burglar", "Wilmsry");
   view.state.c.sub = "Mystery Sub";
   assert.doesNotThrow(() => view.repaint());
@@ -1022,22 +885,23 @@ test("(u) tolerant: a sub-class with no flavour line renders its section as befo
   assert.equal(secs.length, 3);
   const sub = secs[2];
   assert.equal(String(sub.innerHTML), `<h3>Subclass</h3><p class="who">Mystery Sub</p><p></p>`, "today's markup, nothing more");
-  assert.equal(sub.children.filter((el) => hasClass(el, "mw-rules-btn") || hasClass(el, "mw-rules-body")).length, 0);
-  assert.ok(sectionParts(secs[0]).button, "the known race still has its toggle");
+  assertNoRulesControls(sub, "the unknown sub-class section");
+  assert.equal(secs[0].children.length, 3, "the known race section is flavour-only");
+  assertNoRulesControls(secs[0], "the race section");
   assert.equal(String(view.document.getElementById("doss-who").textContent), `${view.state.c.race} Mystery Sub`);
 });
 
 // ─── Phase 96 (FLAVOR-04): the Hero ability and skill lists, and the Final Sheet's tricks ───
 //
-// The Hero tab's ability and passive-skill lists follow the one rule: the flavour leads, the exact txt sits behind RULES, the state
-// span and data-state are untouched, Always on shows the body with no toggle, an opened body survives a repaint. The read-only Final
-// Sheet shows the flavour and, only with Always on, the exact text as a static body with no control of any kind.
+// Phase 97.1 (FLAVOR-07): declared re-pin. The Hero tab's ability and passive-skill lists show the flavour line, with the state span and
+// data-state untouched, and no rules control or body. The exact txt is pinned by the skill-table and ability guards, not by this surface.
+// The read-only Final Sheet shows the flavour and no control of any kind.
 
 const abilityLis = (document) => document.getElementById("s-abilities").children;
 const skillLis = (document) => document.getElementById("s-skills").children;
 const lisChild = (li, tag) => li.children.find((el) => String(el.tagName).toLowerCase() === tag);
 
-test("(v) Hero abilities: each row reads its flavour line with no digit, a collapsed RULES toggle and the exact txt; the state span is unchanged", () => {
+test("(v) Hero abilities: each row reads its flavour line with no digit and its state span; no rules control exists", () => {
   for (const sub of ["Soldier", "Cat Burglar"]) {
     const view = paintHero(sub, "Wilmsry");
     const rows = characterSheetViewModel(view.state).abilities;
@@ -1050,17 +914,13 @@ test("(v) Hero abilities: each row reads its flavour line with no digit, a colla
       assert.equal(textOf(lisChild(li, "i")), flavor, `${row.name}: the italic line is the flavour`);
       assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/, `${row.name}: no digit in the flavour line`);
       assert.equal(textOf(lisChild(li, "span")), row.state, `${row.name}: the state span is unchanged`);
-      const button = li.children.find((el) => hasClass(el, "mw-rules-btn"));
-      const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
-      assert.ok(button && body, `${row.name}: a RULES toggle and body`);
-      assert.equal(button.getAttribute("aria-expanded"), "false");
-      assert.equal(body.hidden, true);
-      assert.deepEqual(bodyLines(body), [ABILITY_BY_ID[row.id].txt], `${row.name}: the body is the ability's exact txt`);
+      assertNoRulesControls(li, `${row.name}'s row`);
+      assert.ok(!textOf(li).includes(ABILITY_BY_ID[row.id].txt), `${row.name}: the exact txt is drawn nowhere`);
     });
   }
 });
 
-test("(v) Hero abilities: in a fight the row keeps its data-state and state words; a tap opens one body without acting; a repaint keeps it open; Always on drops the toggle", () => {
+test("(v) Hero abilities: in a fight the row keeps its data-state and state words, and still draws no rules control after a repaint", () => {
   const view = paintHero("Soldier", "Wilmsry");
   view.state.combat = { foes: [foe()], type: "Beasts", round: 2, target: 0, spellOpen: false, tracked: false, first: "you", pending: false };
   view.repaint();
@@ -1069,28 +929,11 @@ test("(v) Hero abilities: in a fight the row keeps its data-state and state word
   rows.forEach((row, i) => {
     assert.equal(lis[i].dataset.state, row.stateKind, `${row.name}: data-state unchanged`);
     assert.equal(textOf(lisChild(lis[i], "span")), row.state, `${row.name}: state words unchanged`);
+    assertNoRulesControls(lis[i], `${row.name}'s row`);
   });
-
-  const before = JSON.stringify(view.state);
-  const toggle = lis[0].children.find((el) => hasClass(el, "mw-rules-btn"));
-  tap(toggle);
-  assert.equal(lis[0].children.find((el) => hasClass(el, "mw-rules-body")).hidden, false, "the tapped body opens");
-  assert.equal(JSON.stringify(view.state), before, "a RULES tap never uses an ability or touches the game state");
-
-  view.repaint();
-  const after = abilityLis(view.document);
-  assert.equal(after[0].children.find((el) => hasClass(el, "mw-rules-body")).hidden, false, "the opened body survives a repaint");
-  assert.equal(after[1].children.find((el) => hasClass(el, "mw-rules-body")).hidden, true, "the other body stays closed");
-
-  setAlwaysRules(true);
-  view.repaint();
-  for (const li of abilityLis(view.document)) {
-    assert.equal(li.children.find((el) => hasClass(el, "mw-rules-btn")), undefined, "no toggle with Always on");
-    assert.equal(li.children.find((el) => hasClass(el, "mw-rules-body")).hidden, false);
-  }
 });
 
-test("(w) Hero skills: a passive row shows the skill flavour and a RULES body equal to txt (txt2 at level two); a Magic User and an empty list render as before", () => {
+test("(w) Hero skills: a passive row shows the skill flavour and nothing else; a Magic User and an empty list render as before", () => {
   const fighter = paintHero("Soldier", "Wilmsry");
   const owned = Object.keys(fighter.state.c.skills);
   assert.ok(owned.length >= 1);
@@ -1098,10 +941,7 @@ test("(w) Hero skills: a passive row shows the skill flavour and a RULES body eq
     const name = owned[i];
     assert.equal(textOf(lisChild(li, "i")), flavorOfSkill(name), `${name}: the italic line is the skill flavour`);
     assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/);
-    const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
-    assert.ok(li.children.find((el) => hasClass(el, "mw-rules-btn")), `${name}: a RULES toggle`);
-    assert.equal(body.hidden, true);
-    assert.deepEqual(bodyLines(body), [FIGHTER_SKILLS[name].txt], `${name}: the body is the exact txt`);
+    assertNoRulesControls(li, `${name}'s row`);
   });
 
   const thief = paintHero("Cat Burglar", "Wilmsry");
@@ -1109,8 +949,8 @@ test("(w) Hero skills: a passive row shows the skill flavour and a RULES body eq
   thief.repaint();
   const [locks, sewing] = skillLis(thief.document);
   assert.equal(textOf(lisChild(locks, "b")), "Locks ✦", "level two keeps its mark");
-  assert.deepEqual(bodyLines(locks.children.find((el) => hasClass(el, "mw-rules-body"))), [THIEF_SKILLS.Locks.txt2], "level two shows txt2");
-  assert.deepEqual(bodyLines(sewing.children.find((el) => hasClass(el, "mw-rules-body"))), [THIEF_SKILLS.Sewing.txt], "level one shows txt");
+  assertNoRulesControls(locks, "the Locks row");
+  assertNoRulesControls(sewing, "the Sewing row");
 
   const mu = newRun(1, [], { force: { cls: "Magic User" } });
   const muDoc = createRecordingDocument().document;
@@ -1119,7 +959,7 @@ test("(w) Hero skills: a passive row shows the skill flavour and a RULES body eq
   fighter.state.c.skills = {};
   fighter.repaint();
   assert.equal(textOf(skillLis(fighter.document)[0]), "No skills bought.");
-  assert.equal(findAll(fighter.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
+  assertNoRulesControls(fighter.document.getElementById("s-skills"), "the skills list");
 });
 
 function deadSheet(cls) {
@@ -1133,7 +973,7 @@ function deadSheet(cls) {
   return { vm, host };
 }
 
-test("(x) Final Sheet: the flavour shows, no control exists and no rules text is present with the setting off", () => {
+test("(x) Final Sheet: the flavour shows, no control exists, no rules text is present and no rules control or body exists", () => {
   for (const cls of ["Fighter", "Thief"]) {
     const { vm, host } = deadSheet(cls);
     const withFlavor = vm.tricks.rows.filter((r) => r.flavor);
@@ -1142,43 +982,21 @@ test("(x) Final Sheet: the flavour shows, no control exists and no rules text is
     const texts = all.map(textOf);
     for (const r of withFlavor) {
       assert.ok(texts.includes(r.flavor), `${cls}: ${r.name} shows its flavour`);
-      assert.ok(!texts.includes(r.description), `${cls}: ${r.name}'s exact text is absent with the setting off`);
+      assert.ok(!texts.includes(r.description), `${cls}: ${r.name}'s exact text is absent`);
     }
     for (const n of all) {
       assert.notEqual(n.tagName, "button");
       assert.equal(n.onclick, null);
     }
-    assert.equal(findAll(host, "mw-rules-body").length, 0);
-    assert.equal(findAll(host, "mw-rules-btn").length, 0);
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was: no body and no button with the setting off, a static body with it on.
+    assertNoRulesControls(host, `${cls}'s Final Sheet`);
   }
 });
 
-test("(x) Final Sheet: with Always on each flavoured row's exact text follows in a visible .mw-rules-body (final:trick:<name>) and there is still no button", () => {
-  setAlwaysRules(true);
-  for (const cls of ["Fighter", "Thief"]) {
-    const { vm, host } = deadSheet(cls);
-    const withFlavor = vm.tricks.rows.filter((r) => r.flavor && r.description);
-    assert.ok(withFlavor.length >= 1);
-    const all = walk(host);
-    for (const r of withFlavor) {
-      const id = "mw-rules-final-trick-" + r.name.replace(/[^A-Za-z0-9_-]/g, "-");
-      const body = all.find((n) => hasClass(n, "mw-rules-body") && n.id === id);
-      assert.ok(body, `${cls}: ${r.name} has a body ${id}`);
-      assert.equal(body.hidden, false, "the body is visible");
-      assert.deepEqual(findAll(body, "mw-rules-line").map(textOf), [r.description]);
-    }
-    for (const n of all) {
-      assert.notEqual(n.tagName, "button");
-      assert.equal(n.onclick, null);
-    }
-    assert.equal(findAll(host, "mw-rules-btn").length, 0, `${cls}: still no RULES button`);
-  }
-});
-
-// Phase 96 (FLAVOR-04), plan 96-12: declared re-pin. Case (y) used to pin "active rows keep today's markup" (an active skill
+// Phase 96 (FLAVOR-04): declared re-pin. Case (y) used to pin "active rows keep today's markup" (an active skill
 // had no skill flavour, so its row printed the rules text in the open). Every active skill now has a line, so that half of
 // the case moves to the new case below; case (y) keeps the tolerant half (an unknown ability id, an unknown skill name).
-test("(y) tolerant: an ability id absent from the catalog is dropped, and a skill with no flavour renders its txt with no toggle", () => {
+test("(y) tolerant: an ability id absent from the catalog is dropped, and a skill with no flavour renders its txt with no rules control", () => {
   const fighter = paintHero("Soldier", "Wilmsry");
   fighter.state.c.abilities = ["noSuchAbility", "taunt"];
   assert.doesNotThrow(() => fighter.repaint());
@@ -1192,12 +1010,12 @@ test("(y) tolerant: an ability id absent from the catalog is dropped, and a skil
   const [mystery] = skillLis(thief.document);
   assert.equal(flavorOfSkill("Mystery Skill"), "", "an unknown skill has no line");
   assert.equal(String(mystery.innerHTML), "<b>Mystery Skill</b><i></i>", "today's markup for an unknown skill");
-  assert.equal(findAll(thief.document.getElementById("s-skills"), "mw-rules-btn").length, 0);
+  assertNoRulesControls(thief.document.getElementById("s-skills"), "the skills list");
 });
 
-// Phase 96 (FLAVOR-04), plan 96-12: an ACTIVE special skill reads like a passive one: its own flavour line, the exact txt
-// behind a RULES toggle (the Hero special-skills list), and on the Final Sheet the line alone, the exact text only with Always on.
-test("(y2) Hero skills: a bought active skill shows its skill flavour and a RULES body equal to its txt, for every active skill", () => {
+// Phase 96 (FLAVOR-04), plan 96-12: an ACTIVE special skill reads like a passive one: its own flavour line. Phase 97.1 (FLAVOR-07):
+// declared re-pin. Was: the exact txt behind a RULES toggle. Now no rules control or body, for every active skill.
+test("(y2) Hero skills: a bought active skill shows its skill flavour and no rules control, for every active skill", () => {
   for (const [sub, table] of [["Soldier", FIGHTER_SKILLS], ["Cat Burglar", THIEF_SKILLS]]) {
     const active = Object.keys(table).filter((k) => table[k].active);
     assert.ok(active.length >= 4, `${sub}: the table has active skills`);
@@ -1209,10 +1027,7 @@ test("(y2) Hero skills: a bought active skill shows its skill flavour and a RULE
       assert.ok(flavorOfSkill(name), `${name}: has a skill line`);
       assert.equal(textOf(lisChild(li, "i")), flavorOfSkill(name), `${name}: the italic line is the skill flavour`);
       assert.doesNotMatch(textOf(lisChild(li, "i")), /[0-9]/);
-      assert.ok(li.children.find((el) => hasClass(el, "mw-rules-btn")), `${name}: a RULES toggle`);
-      const body = li.children.find((el) => hasClass(el, "mw-rules-body"));
-      assert.equal(body.hidden, true, `${name}: the body starts closed`);
-      assert.deepEqual(bodyLines(body), [table[name].txt], `${name}: the body is the exact txt`);
+      assertNoRulesControls(li, `${name}'s row`);
     });
   }
 });
@@ -1281,19 +1096,22 @@ function chipRig({ reducedMotion = true } = {}) {
   return { clock, doc, sandbox, w, ctx: sandbox.context, railEl, chip, descriptor, show, renderRail: () => sandbox.context.renderRail() };
 }
 
-/** The rail's typed lead lines, its RULES toggles and its RULES body, read off the real #mw-rail-lines. */
+/** The rail's typed lead lines, read off the real #mw-rail-lines. Phase 97.1 (FLAVOR-07): declared re-pin. The toggles and body it used to return are gone; assertNoRulesControls(lines) pins their absence. */
 function readRailCard(r) {
   const lines = r.doc.document.getElementById("mw-rail-lines");
   return {
+    lines,
     leads: lines.children.filter((el) => hasClass(el, "mw-rail-line")),
-    toggles: lines.children.filter((el) => hasClass(el, "mw-rules-btn")),
-    body: lines.children.find((el) => hasClass(el, "mw-rules-body")),
   };
 }
 
 const noDigit = (s) => !/[0-9]/.test(String(s));
 
-/** Assert the raised card leads with `lead`, holds `exact` behind a collapsed RULES toggle outside the typed lines. */
+/**
+ * Phase 97.1 (FLAVOR-07): declared re-pin. Was: assert the raised card leads with `lead` and holds `exact` behind a collapsed RULES
+ * toggle outside the typed lines. Now: the raised card leads with `lead` and the model still carries `exact` on lines[0].rules (the
+ * guard), and after a real repaint the rail draws the lead alone: no toggle, no body, and `exact` is drawn nowhere.
+ */
 function assertFlavourFirstCard(r, { lead, exact, kind }) {
   const card = r.w.__mzRail.card;
   assert.equal(card.kind, kind);
@@ -1302,41 +1120,16 @@ function assertFlavourFirstCard(r, { lead, exact, kind }) {
   assert.equal(card.lines[0].rules, exact);
   assert.equal(noDigit(lead), true, `the lead carries no digit: ${lead}`);
   r.renderRail();
-  const { leads, toggles, body } = readRailCard(r);
+  const { lines, leads } = readRailCard(r);
   assert.deepEqual(leads.map(textOf), [lead]);
-  assert.equal(toggles.length, 1, "one RULES toggle outside the typed lines");
-  assert.equal(toggles[0].getAttribute("aria-expanded"), "false");
-  assert.equal(body.hidden, true);
-  assert.equal(textOf(findAll(body, "mw-rules-line")[0]), exact);
+  assertNoRulesControls(lines, "the rail card");
+  assert.ok(!textOf(lines).includes(exact), "the exact text is not drawn on the rail");
   return card;
 }
 
-/** A RULES tap opens the body, never dismisses the card, and a repaint keeps it open; Always on drops the toggle. */
-function assertRulesTapStaysPut(r) {
-  const seq = r.w.__mzRail.card.seq;
-  const stateJson = JSON.stringify(r.w.__mzState.get());
-  const toggle = readRailCard(r).toggles[0];
-  tap(toggle);
-  assert.equal(r.w.__mzRail.card?.seq, seq, "the RULES tap leaves the card up");
-  r.clock.advance(ARM_DELAY_MS + 10);
-  // The rail's own body-tap handler returns early for a RULES tap, even after the arm window.
-  r.railEl().onclick({ target: { closest: (sel) => (sel === ".mw-rules-btn" ? toggle : null) } });
-  assert.equal(r.w.__mzRail.card?.seq, seq, "the rail handler never dismisses on a RULES tap");
-  r.renderRail();
-  const again = readRailCard(r);
-  assert.equal(again.toggles[0].getAttribute("aria-expanded"), "true", "a repaint keeps the body open");
-  assert.equal(again.body.hidden, false);
-  assert.equal(JSON.stringify(r.w.__mzState.get()), stateJson, "nothing in the state changed");
-
-  clearRulesOpen();
-  setAlwaysRules(true);
-  r.renderRail();
-  const always = readRailCard(r);
-  assert.equal(always.toggles.length, 0, "Always show the rules drops the toggle");
-  assert.equal(always.body.hidden, false);
-}
-
-test("(z1) HUD strip out of a fight: a harmful and two helpful chips lead with flavour; the whole tap text sits behind RULES", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin. Was: a RULES tap held the card up, a repaint kept the body open and Always on dropped the toggle.
+// With no control, only the plain chip-tap assertions remain.
+test("(z1) HUD strip out of a fight: a harmful and two helpful chips lead with flavour; the whole tap text stays on the card model, drawn nowhere", () => {
   const cases = [
     ["darkness", (s) => { s.c.darkFor = 9; }],
     ["might", (s) => { s.c.might = 2; }],
@@ -1360,13 +1153,10 @@ test("(z1) HUD strip out of a fight: a harmful and two helpful chips lead with f
     el.onclick();
     assertFlavourFirstCard(r, { lead, exact, kind: undefined });
     assert.equal(r.w.__mzRail.card.title, label.toUpperCase());
-    assertRulesTapStaysPut(r);
-    clearRulesOpen();
-    setAlwaysRules(false);
   }
 });
 
-test("(z1) HUD strip: the measured effect, the explanation and the how-long tail all stay in the RULES body, byte for byte", () => {
+test("(z1) HUD strip: the measured effect, the explanation and the how-long tail all stay on the card model, byte for byte", () => {
   const r = chipRig();
   const s = chipState();
   s.c.might = 2;
@@ -1379,7 +1169,7 @@ test("(z1) HUD strip: the measured effect, the explanation and the how-long tail
   assert.equal(exact, r.ctx.conditionTapText(cn, "Strong", s));
 });
 
-test("(z2) in a fight: the combat condition card leads with flavour and holds the exact text behind RULES; a RULES tap never aims or dismisses", () => {
+test("(z2) in a fight: the combat condition card leads with flavour and keeps the exact text on its model; the aim is unchanged", () => {
   const r = chipRig();
   const s = chipFightState();
   s.c.might = 2;
@@ -1396,10 +1186,7 @@ test("(z2) in a fight: the combat condition card leads with flavour and holds th
     assertFlavourFirstCard(r, { lead, exact, kind: "cond" });
     assert.equal(r.railEl().hidden, false);
     assert.equal(r.railEl().dataset.over, "combat");
-    assertRulesTapStaysPut(r);
     assert.equal(s.combat.target, target, "the aim is unchanged");
-    clearRulesOpen();
-    setAlwaysRules(false);
   }
   // The harmful chip's lead still says something is wrong.
   assert.match(flavorOfChip(r.descriptor("afraid")), /Fear|fear|nerve/);
@@ -1446,7 +1233,7 @@ function lotChipsOf(card) {
   return row ? row.children.filter((el) => el.className === "cb-lot-chip") : [];
 }
 
-test("(z3) YOUR LOT: the hero's Smoke chip and a Joiner's Sidestep chip raise the flavour-first card; the member wording sits in the body only", () => {
+test("(z3) YOUR LOT: the hero's Smoke chip and a Joiner's Sidestep chip raise the flavour-first card; the member wording sits in the card model's exact text only", () => {
   const r = lotRig();
   const used = applyAction(lotFightState(), { type: "useAbility", key: "smoke" }).state;
   const state = lotFightState({
@@ -1471,11 +1258,8 @@ test("(z3) YOUR LOT: the hero's Smoke chip and a Joiner's Sidestep chip raise th
   const heroExact = r.ctx.conditionTapText(heroCn, "Smoke", state, { member: false });
   assertFlavourFirstCard(r, { lead: heroLead, exact: heroExact, kind: "cond" });
   assert.match(heroExact, /from your Smoke\.$/);
-  assertRulesTapStaysPut(r);
 
-  // The Joiner's chip: "their" belongs to the body.
-  clearRulesOpen();
-  setAlwaysRules(false);
+  // The Joiner's chip: "their" belongs to the card model's exact text, never to the flavour lead.
   const memberChip = lotChipsOf(cards[1])[0];
   assert.equal(textOf(memberChip), "Sidestep · 1");
   const memberCn = r.w.__mzMemberConditionsOf(state, 0).find((cn) => cn.key === "ability");
@@ -1486,11 +1270,11 @@ test("(z3) YOUR LOT: the hero's Smoke chip and a Joiner's Sidestep chip raise th
   const memberExact = r.ctx.conditionTapText(memberCn, "Sidestep", state, { member: true });
   assertFlavourFirstCard(r, { lead: memberLead, exact: memberExact, kind: "cond" });
   assert.match(memberExact, /from their Sidestep\.$/);
-  assert.doesNotMatch(memberLead, /their/, "the member wording is inside the body only");
+  assert.doesNotMatch(memberLead, /their/, "the member wording is in the exact text only");
   assert.deepEqual(r.dispatched, [], "a chip tap never dispatches");
 });
 
-test("(z4) an ability chip leads with that ability's own flavour line; its body carries the ability's txt sentence", () => {
+test("(z4) an ability chip leads with that ability's own flavour line; its card model carries the ability's txt sentence", () => {
   const r = lotRig();
   const used = applyAction(lotFightState(), { type: "useAbility", key: "smoke" }).state;
   r.w.__mzState.set(used);
@@ -1501,11 +1285,11 @@ test("(z4) an ability chip leads with that ability's own flavour line; its body 
   const card = r.w.__mzRail.card;
   assert.equal(card.lines[0].text, flavorOfAbility(ABILITY_BY_ID.smoke.name));
   const txt = ABILITY_BY_ID.smoke.txt;
-  assert.ok(card.lines[0].rules.includes(txt[0].toUpperCase() + txt.slice(1)), "the ability's own txt sentence is in the body");
+  assert.ok(card.lines[0].rules.includes(txt[0].toUpperCase() + txt.slice(1)), "the ability's own txt sentence is in the exact text");
   assert.equal(card.lines[0].rules, r.ctx.conditionTapText(cn, "Smoke", used));
 });
 
-test("(z5) a darkness waiver keeps the waiver-led sentence in the body; dazed, weakened and a mirror Bubble lead with their own lines", () => {
+test("(z5) a darkness waiver keeps the waiver-led sentence in the card model; dazed, weakened and a mirror Bubble lead with their own lines", () => {
   // Darkness with Night Vision holding it back.
   const dark = chipRig();
   const ds = chipState();
@@ -1549,7 +1333,7 @@ test("(z5) a darkness waiver keeps the waiver-led sentence in the body; dazed, w
   assert.equal(m.w.__mzRail.card.lines[0].rules, m.ctx.conditionTapText(mcn, m.ctx.conditionLabel(mcn), ms));
 });
 
-test("(z6) tolerant: a chip descriptor with an unknown key raises today's card with no toggle and no throw", () => {
+test("(z6) tolerant: a chip descriptor with an unknown key raises today's card with no rules control and no throw", () => {
   const r = chipRig();
   const s = chipState();
   s.c.might = 2;
@@ -1565,11 +1349,10 @@ test("(z6) tolerant: a chip descriptor with an unknown key raises today's card w
   el.onclick();
   const card = r.w.__mzRail.card;
   assert.equal(card.lines[0].text, r.ctx.conditionTapText(cn, r.ctx.conditionLabel(cn), s), "today's card text");
-  assert.equal("rules" in card.lines[0], false, "no rules property, no toggle");
+  assert.equal("rules" in card.lines[0], false, "no rules property");
   r.renderRail();
-  const { toggles, body } = readRailCard(r);
-  assert.equal(toggles.length, 0);
-  assert.equal(body, undefined);
+  // Phase 97.1 (FLAVOR-07): declared re-pin. Was: toggles.length 0 and no body, read off the retired control's classes.
+  assertNoRulesControls(readRailCard(r).lines, "the unknown chip's card");
 });
 
 test("(z6) the entry points forward the flavour spec to the real card builders", () => {
@@ -1588,7 +1371,7 @@ function poolCard(r, state) {
   return { card, flavor };
 }
 
-test("(z7) UP YOUR SLEEVE: a fresh Fighter and Thief read 'New trick: <name> — <flavour>' with the exact old line behind RULES; a Magic User raises no card", () => {
+test("(z7) UP YOUR SLEEVE: a fresh Fighter and Thief read 'New trick: <name> — <flavour>' with the exact old line on the card model only; a Magic User raises no card", () => {
   for (const cls of ["Fighter", "Thief"]) {
     const r = chipRig();
     const state = newRun(9, [], { force: { cls } });
@@ -1606,17 +1389,15 @@ test("(z7) UP YOUR SLEEVE: a fresh Fighter and Thief read 'New trick: <name> —
     assert.equal(card.hold, RAIL_HOLD.level);
     const raised = r.w.__mzRail.card;
     assert.equal(raised.lines[0].text, lead);
-    assert.equal(raised.lines[0].rules, `New trick: ${meta.name} — ${meta.txt}`, "the exact old line, behind RULES");
+    assert.equal(raised.lines[0].rules, `New trick: ${meta.name} — ${meta.txt}`, "the exact old line, still on the card model");
     assert.equal(noDigit(lead), true, lead);
     r.renderRail();
     const read = readRailCard(r);
     assert.deepEqual(read.leads.map(textOf), [lead]);
-    assert.equal(read.toggles.length, 1);
-    assert.equal(read.toggles[0].getAttribute("aria-expanded"), "false");
-    assert.equal(textOf(findAll(read.body, "mw-rules-line")[0]), raised.lines[0].rules);
-    assertRulesTapStaysPut(r);
-    clearRulesOpen();
-    setAlwaysRules(false);
+    // Phase 97.1 (FLAVOR-07): declared re-pin. Was: one collapsed toggle and a body equal to the exact line. Now neither is drawn and the
+    // exact line is not on the rail.
+    assertNoRulesControls(read.lines, "the UP YOUR SLEEVE card");
+    assert.ok(!textOf(read.lines).includes(raised.lines[0].rules), "the exact old line is drawn nowhere");
   }
   const mu = newRun(9, [], { force: { cls: "Magic User" } });
   assert.equal(abilityPoolCard(mu.c), null);
