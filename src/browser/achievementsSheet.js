@@ -432,3 +432,153 @@ export function buildAchievementsView(record, opts) {
     blocks,
   });
 }
+
+// ---------------------------------------------------------------------
+// The DOM renderer
+// ---------------------------------------------------------------------
+
+function el(doc, tag, cls) {
+  const node = doc.createElement(tag);
+  if (cls) node.className = cls;
+  return node;
+}
+
+function str(value) {
+  return typeof value === "string" ? value : value === null || value === undefined ? "" : String(value);
+}
+
+function textEl(doc, tag, cls, value) {
+  const node = el(doc, tag, cls);
+  node.textContent = str(value);
+  return node;
+}
+
+/**
+ * Appends the non-empty parts as spans, each followed by a plain space node, so a
+ * screen reader that computes a button's name from its content hears separate
+ * words whatever the stylesheet does with the spans.
+ */
+function appendParts(doc, parent, parts) {
+  for (const [cls, value] of parts) {
+    if (typeof value !== "string" || value.length === 0) continue;
+    parent.appendChild(textEl(doc, "span", cls, value));
+    parent.appendChild(doc.createTextNode(" "));
+  }
+}
+
+function isOpen(expanded, key) {
+  if (Array.isArray(expanded)) return expanded.includes(key);
+  if (expanded && typeof expanded.has === "function") return expanded.has(key) === true;
+  return false;
+}
+
+function iconEl(doc, row) {
+  const img = el(doc, "img", "mw-ach-icon" + (row.dim ? " mw-ach-icon-dim" : "") + (row.silhouette ? " mw-ach-icon-silhouette" : ""));
+  if (typeof row.iconSrc === "string") img.setAttribute("src", row.iconSrc);
+  img.setAttribute("alt", "");
+  img.setAttribute("aria-hidden", "true");
+  return img;
+}
+
+function rungsEl(doc, rungs) {
+  const ul = el(doc, "ul", "mw-ach-rungs");
+  for (const rung of Array.isArray(rungs) ? rungs : []) {
+    if (!rung || typeof rung !== "object") continue;
+    const li = el(doc, "li", "mw-ach-rung");
+    li.setAttribute("data-state", str(rung.state));
+    appendParts(doc, li, [
+      ["mw-ach-rung-name", rung.name],
+      ["mw-ach-rung-state", rung.stateText],
+      ["mw-ach-rung-text", rung.text],
+      ["mw-ach-rung-progress", rung.progressText],
+    ]);
+    ul.appendChild(li);
+  }
+  return ul;
+}
+
+function rowEl(doc, row, opts) {
+  const expandable = row.expandable === true;
+  const open = expandable && isOpen(opts.expanded, row.key);
+  const li = el(doc, "li", "mw-ach-row");
+  li.setAttribute("data-state", str(row.state));
+  li.setAttribute("data-kind", str(row.kind));
+  li.setAttribute("data-key", str(row.key));
+
+  let head;
+  if (expandable) {
+    head = el(doc, "button", "mw-ach-head");
+    head.setAttribute("type", "button");
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    head.onclick = () => {
+      if (typeof opts.onToggle === "function") opts.onToggle(row.key);
+    };
+  } else {
+    head = el(doc, "div", "mw-ach-head");
+  }
+  head.appendChild(iconEl(doc, row));
+
+  const body = el(doc, "div", "mw-ach-text");
+  appendParts(doc, body, [
+    ["mw-ach-name", row.name],
+    ["mw-ach-state", row.stateText],
+    ["mw-ach-detail", row.detail],
+    ["mw-ach-progress", row.progressText],
+  ]);
+  if (expandable) body.appendChild(textEl(doc, "span", "mw-ach-hint", open ? ACHIEVEMENTS_SHEET_COPY.collapse : ACHIEVEMENTS_SHEET_COPY.expand));
+  head.appendChild(body);
+
+  if (expandable) {
+    const ladder = el(doc, "span", "mw-ach-ladder");
+    ladder.setAttribute("aria-hidden", "true");
+    for (const pip of Array.isArray(row.ladder) ? row.ladder : []) {
+      if (!pip || typeof pip !== "object") continue;
+      const i = textEl(doc, "i", "mw-ach-pip", pip.tier);
+      i.setAttribute("data-state", str(pip.state));
+      ladder.appendChild(i);
+    }
+    head.appendChild(ladder);
+  }
+  li.appendChild(head);
+  if (open) li.appendChild(rungsEl(doc, row.rungs));
+  return li;
+}
+
+/**
+ * renderAchievementsSheet(host, view, opts) — builds the list into `host`
+ * (replacing its children) from a buildAchievementsView result and returns
+ * the root. opts is { expanded, onToggle }: `expanded` an array or Set of row
+ * keys, `onToggle` called with a track row's key when its button is tapped.
+ * DOM order is reading order: a track's rung list sits directly after that
+ * row's head inside the same list item. No timers, no scrolling, no animation:
+ * expanding is a re-render driven by the caller's `expanded` set.
+ */
+export function renderAchievementsSheet(host, view, opts) {
+  if (!host || typeof host !== "object" || !host.ownerDocument) return null;
+  const doc = host.ownerDocument;
+  const settings = opts && typeof opts === "object" ? opts : {};
+  const root = el(doc, "div", "mw-ach");
+  const v = view && typeof view === "object" ? view : {};
+
+  if (typeof v.earnedText === "string" || typeof v.secretsText === "string") {
+    const summary = el(doc, "div", "mw-ach-summary");
+    summary.appendChild(textEl(doc, "p", "mw-ach-count", v.earnedText));
+    summary.appendChild(textEl(doc, "p", "mw-ach-secrets", v.secretsText));
+    root.appendChild(summary);
+  }
+
+  for (const block of Array.isArray(v.blocks) ? v.blocks : []) {
+    if (!block || typeof block !== "object") continue;
+    const rows = (Array.isArray(block.rows) ? block.rows : []).filter((r) => r && typeof r === "object");
+    if (rows.length === 0) continue;
+    const section = el(doc, "section", "mw-ach-block");
+    section.appendChild(textEl(doc, "h3", "mw-ach-block-title", block.title));
+    const list = el(doc, "ul", "mw-ach-list");
+    for (const row of rows) list.appendChild(rowEl(doc, row, settings));
+    section.appendChild(list);
+    root.appendChild(section);
+  }
+
+  host.replaceChildren(root);
+  return root;
+}
