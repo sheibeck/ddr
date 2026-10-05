@@ -47,7 +47,7 @@ Sources: backlog 999.17, 999.18, 999.20 (ROADMAP.md) and the todos `2026-10-02-b
 - [x] **FLAVOR-02**: Equipment, magic-item and potion descriptions shown to the player read as fantasy flavour
 - [x] **FLAVOR-03**: Race and sub-class blurbs read as fantasy flavour and still convey each one's good and bad
 - [x] **FLAVOR-04**: Ability rows and condition-chip explanations (CONDITION_EXPLAIN) read as fantasy flavour
-- [x] **FLAVOR-05**: Exact rules and numbers live in a separate technical layer, reachable in game where discuss-phase decides; the v2.3 truth-in-advertising guards (item-text-engine, authored-ranges, spell-audit, skill-audit, value-identity, identity tests) re-pin to that layer with no guard lost
+- [x] **FLAVOR-05**: Exact rules and numbers live in a separate technical layer, reachable in game where discuss-phase decides; the v2.3 truth-in-advertising guards (item-text-engine, authored-ranges, spell-audit, skill-audit, value-identity, identity tests) re-pin to that layer with no guard lost *(Superseded in part by FLAVOR-07, Phase 97.1: the technical layer is code-only and no longer reachable in game; the guards still re-pin to it.)*
 - [x] **FLAVOR-06**: All new player text passes the family-friendly safety scan and the narrative review, in the house sarcastic voice
 - [x] **FLAVOR-07**: Players see only the flavour lines: no RULES toggle or Always show the rules setting anywhere; the exact rules text stays in code for the guards (user 2026-10-04)
 
