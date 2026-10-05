@@ -51,7 +51,12 @@
   4. One command builds the import zip (`AchievementsMetadata.csv` and `AchievementsIconsMappings.csv` with no header rows, plus the 77 PNGs flat with unique file names, in the in-game list order), and a validator test checks the built zip against Google's rules (no subdirectories, only CSV and PNG, each file under 1 MB, at most 403 files, 7 values per metadata row and 2 per mapping row, `True`/`False` and `Hidden`/`Revealed` spelt exactly, steps only on incremental rows, every row's icon present and exactly 512 × 512) and fails when a rule is broken.
   5. `docs/ACHIEVEMENTS.md` covers rebuilding the zip, importing it in Play Console, testing with tester accounts, publishing and fetching the IDs file with Get resources, and the built zip is handed to the user for the draft import.
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 98-01-PLAN.md — the catalog structure (77 entries: ids, triggers, points, types, Hidden set, reveal pairs, list order, icons), the Disposable Help icon trim, and the voice-tool registration
+- [ ] 98-02-PLAN.md — the copy: all 77 names, descriptions and lines in the house voice, with the copy contract test (the strongest-writer plan)
+- [ ] 98-03-PLAN.md — the zip tool and 25-rule validator with tests that prove it fails, `docs/ACHIEVEMENTS.md`, the generated copy table, and the hand-off of the built zip (a non-blocking human step)
 
 ### Phase 99: Engine Facts & Lifetime Stats Tracker
 
@@ -124,7 +129,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 98. Achievement Catalog & Play Console Import Zip | 0/TBD | Not started | - |
+| 98. Achievement Catalog & Play Console Import Zip | 0/3 | Planned | - |
 | 99. Engine Facts & Lifetime Stats Tracker | 0/TBD | Not started | - |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
 | 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
