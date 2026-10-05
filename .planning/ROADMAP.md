@@ -279,11 +279,11 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   4. On a 10" tablet, a foldable (folded and unfolded) and a Chromebook-sized window, the layout uses the space sensibly, not a stretched phone column.
   5. Rotating, folding, unfolding, resizing and multi-window never restart or lose a run, a combat or an open store, and the safe areas and system bars are correct in every orientation; the shell snapshots and the perf baseline are refreshed.
 
-**Plans**: 2/7 plans executed
+**Plans**: 3/7 plans executed
 
 - [x] 97-01-PLAN.md
 - [x] 97-02-PLAN.md
-- [ ] 97-03-PLAN.md
+- [x] 97-03-PLAN.md
 - [ ] 97-04-PLAN.md
 - [ ] 97-05-PLAN.md
 - [ ] 97-06-PLAN.md
@@ -313,7 +313,7 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 | 94. Ability States You Can Tell Apart | 5/5 | Complete    | 2026-10-03 |
 | 95. Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items | 8/8 | Complete    | 2026-10-03 |
 | 96. Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review | 12/12 | Complete    | 2026-10-04 |
-| 97. Large-Screen Support | 2/7 | In Progress|  |
+| 97. Large-Screen Support | 3/7 | In Progress|  |
 | 98. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 ## Deferred / Not This Milestone
