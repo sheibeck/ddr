@@ -348,5 +348,61 @@
     "tier": null,
     "file_play": "play/ach_ether_entombed.png",
     "file_ingame": "ingame/ach_ether_entombed.png"
+  },
+  {
+    "id": "death_falling",
+    "name": "Gravity Wins",
+    "tier": null,
+    "file_play": "play/ach_death_falling.png",
+    "file_ingame": "ingame/ach_death_falling.png"
+  },
+  {
+    "id": "death_disease",
+    "name": "Terminal Condition",
+    "tier": null,
+    "file_play": "play/ach_death_disease.png",
+    "file_ingame": "ingame/ach_death_disease.png"
+  },
+  {
+    "id": "death_starvation",
+    "name": "Empty Calories",
+    "tier": null,
+    "file_play": "play/ach_death_starvation.png",
+    "file_ingame": "ingame/ach_death_starvation.png"
+  },
+  {
+    "id": "parlay",
+    "name": "Silver Tongue",
+    "tier": 1,
+    "file_play": "play/ach_parlay_t1.png",
+    "file_ingame": "ingame/ach_parlay_t1.png"
+  },
+  {
+    "id": "parlay",
+    "name": "Silver Tongue",
+    "tier": 2,
+    "file_play": "play/ach_parlay_t2.png",
+    "file_ingame": "ingame/ach_parlay_t2.png"
+  },
+  {
+    "id": "parlay",
+    "name": "Silver Tongue",
+    "tier": 3,
+    "file_play": "play/ach_parlay_t3.png",
+    "file_ingame": "ingame/ach_parlay_t3.png"
+  },
+  {
+    "id": "parlay",
+    "name": "Silver Tongue",
+    "tier": 4,
+    "file_play": "play/ach_parlay_t4.png",
+    "file_ingame": "ingame/ach_parlay_t4.png"
+  },
+  {
+    "id": "chicken",
+    "name": "Chicken",
+    "tier": null,
+    "file_play": "play/ach_chicken.png",
+    "file_ingame": "ingame/ach_chicken.png"
   }
 ]
