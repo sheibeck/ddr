@@ -101,7 +101,6 @@ Last activity: 2026-10-05 — Milestone v2.4 completed and archived
 
 ### Pending Todos
 
-- 2026-10-05 — **Tiered achievements use 50/100/200 tiers** (user): three tiers instead of the 50/100/200/500 ladder; `_t4` icons and the mythic frame go unused; confirm at the achievements milestone discuss which tracks take the literal counts — `todos/pending/2026-10-05-tiered-achievements-use-50-100-200-tiers.md`
 - 2026-09-28 — **☰ menu: drop CENTRE MAP, MAKE CAMP first** (user): remove the CENTRE MAP row (keep centerMap() for its other callers); MAKE CAMP becomes the first row under the account block; shell only, fits Phase 85 or a quick task after 83 — `todos/pending/2026-09-28-menu-drop-centre-map-make-camp-first.md`
 - 2026-09-28 — **Store can still be bought out at depth 7** (user, on device): gold income still outruns store prices mid-run despite v2.1 RULES-02; measure gold-on-arrival vs stock price by depth (tune-economy, milestone-end), then retune prices/sources; PULLED INTO v2.3 as ECON-11/ECON-12 (Phase 92, measured at the milestone end) — `todos/pending/2026-09-28-store-still-bought-out-at-depth-7.md`
 - ~~2026-09-28 — **Stores stock up to d10 rations** (user): each store rolls 1–10 rations (derived rng stream, declared fixtures, bot buys the new way, count shown in the store); PULLED INTO v2.3 as STORE-04 (Phase 87)~~ DONE 2026-09-30 (Phase 87, STORE-04) — `todos/completed/2026-09-28-stores-stock-up-to-d10-rations.md`
