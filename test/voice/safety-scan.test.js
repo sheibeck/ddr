@@ -347,8 +347,7 @@ function collectAuthoredStrings() {
   }
   // Phase 95 (FLAVOR-01/02/05): every flavour line, scanned AND counted here.
   // The walk is FLAVOR_DOMAINS-driven (everyFlavorLine), so Phase 96's domains
-  // need no edit here; RULES_COPY is covered by the corpus-wide scans and by
-  // test/unit/rules-layer.test.js (95-02).
+  // need no edit here (Phase 97.1 retired the toggle-word bank with the rules control).
   for (const [domain, key, line] of everyFlavorLine()) push(`FLAVOR.${domain}.${key}`, line);
   // Phase 19 (D-16 / RESEARCH Pitfall 7) — new content banks are NOT
   // auto-discovered here; every foe-ability telegraph line must be scanned.

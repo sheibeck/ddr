@@ -68,7 +68,8 @@ test("closed 1: the verdict files are consecutive rounds from 1, round 1 covers 
 test("closed 2: validateClosed over the committed verdicts returns no errors; a stale line, a latest revise and an unreviewed key each fail by key", () => {
   const live = validateClosed({ verdicts, lines });
   assert.deepStrictEqual(live.errors, [], names(live.errors));
-  assert.ok(lines.length >= 236, `the Phase 95 and 96 lines (225 at round 1, 236 after 96-12) are all reviewed, saw ${lines.length}`);
+  // Phase 97.1 (FLAVOR-07): declared re-pin, 236 to 233 after the three RULES_COPY toggle words were retired.
+  assert.ok(lines.length >= 233, `the Phase 95 and 96 lines (225 at round 1, 236 after 96-12, 233 after the toggle words went) are all reviewed, saw ${lines.length}`);
 
   // a line rewritten after its last verdict is stale, and the error names the key
   const target = lines.find((l) => l.key === "bank:SKILL_FLAVOR.Kata");

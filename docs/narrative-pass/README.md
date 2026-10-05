@@ -232,11 +232,14 @@ lists in tools/lib/voice-checks.mjs: only 79-12 edits them, and it prunes
 the exception lists for rot.
 
 Phase 95 (FLAVOR-01/02/05) amends this rule for the flavour layer: the eight
-*_FLAVOR maps and src/browser/rulesLayer.js#RULES_COPY are new banks, registered
+*_FLAVOR maps are the Phase 95 banks, registered
 in tools/lib/voice-corpus.mjs by plan 95-01 (FLAVOR_DOMAINS is a non-copy row).
 Their lines are new-line ledger rows (`before` "") in
 docs/narrative-pass/why/y-95-NN.json, the `y-` prefix keeping the ledgers in plan
-order after `x-94-04`. Phase 96 registers its own banks the same way. See
+order after `x-94-04`. Phase 96 registers its own banks the same way. The three
+RULES_COPY toggle words were registered by 95-01 and retired in Phase 97.1
+(FLAVOR-07) with the rules control; they never shipped in a release, so their
+ledger and verdict rows were erased rather than chained to a removal. See
 docs/TEXT-LAYERS.md.
 
 ## The Phase 96 review (FLAVOR-06)
@@ -246,7 +249,7 @@ and 96 flavour lines are reviewed one by one, and the review is recorded in
 files you can check.
 
 **The reviewed set.** Every key in docs/narrative-pass/why/y-95-*.json and
-y-96-*.json (the three RULES_COPY toggle words included), resolved to the last
+y-96-*.json, resolved to the last
 `after` in plan order, so a rewritten line is judged in its final wording.
 `node tools/flavor-review.mjs --worksheet` prints each one (add `--domain race`
 to read one domain at a time).

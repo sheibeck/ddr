@@ -439,7 +439,8 @@ test("live: the reviewed set is the keys of the y-95 and y-96 ledgers", () => {
   assert.equal(liveLines.length, keys.size);
   assert.ok(liveLines.length >= 225, "225 lines at the end of Phase 96 plan 04");
   assert.ok(liveLines.some((l) => l.key === HEAL));
-  assert.ok(liveLines.some((l) => l.key === "bank:RULES_COPY.label"), "the toggle words are reviewed too");
+  // Phase 97.1 (FLAVOR-07): declared re-pin. The three RULES_COPY toggle words were retired with the rules control and erased from the ledger.
+  assert.ok(!liveLines.some((l) => l.key.startsWith("bank:RULES_COPY.")), "the retired toggle words are no longer reviewed");
 });
 
 // Plan 96-11 (declared): a round-1 file covers every reviewed key EXCEPT the lines a POST_ROUND1_PLANS plan first added
@@ -473,7 +474,7 @@ test("live: the worksheet resolves every reviewed key to a domain, its line and 
   const { entries, problems } = await worksheet({ root: REPO_ROOT });
   assert.deepStrictEqual(problems, []);
   assert.deepStrictEqual(entries.map((e) => e.key).sort(), liveLines.map((l) => l.key).sort());
-  const domains = ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class", "ability", "skill", "chip", "rules"];
+  const domains = ["spell", "scroll", "potion", "tool", "bag", "magic", "weapon", "armor", "race", "sub", "class", "ability", "skill", "chip"]; // Phase 97.1 (FLAVOR-07): declared re-pin, the "rules" worksheet domain is gone
   let at = 0;
   for (const e of entries) {
     const i = domains.indexOf(e.domain);
@@ -481,7 +482,8 @@ test("live: the worksheet resolves every reviewed key to a domain, its line and 
     at = i;
     assert.equal(e.hash, lineHash(e.line));
     assert.ok(e.rules.length > 0 && e.rules.every((t) => t.length > 0), `${e.key} has rules text`);
-    if (!["weapon", "armor", "rules"].includes(e.domain)) assert.ok(!e.rules.includes("generated stat line") && !e.rules.includes("(toggle word)"), e.key);
+    // Phase 97.1 (FLAVOR-07): declared re-pin, the toggle-word exclusions left with the rules domain.
+    if (!["weapon", "armor"].includes(e.domain)) assert.ok(!e.rules.includes("generated stat line"), e.key);
     if (e.domain === "race" || e.domain === "sub") {
       assert.ok(e.tagged.good.length + e.tagged.bad.length + e.tagged.neutral.length > 0, `${e.key} has tagged entries`);
       for (const t of [...e.tagged.good, ...e.tagged.bad, ...e.tagged.neutral]) assert.ok(!t.text.startsWith("(no identity entry"), `${e.key} ${t.id}`);
@@ -491,5 +493,5 @@ test("live: the worksheet resolves every reviewed key to a domain, its line and 
   assert.equal(by("race"), 6);
   assert.equal(by("sub"), 24);
   assert.equal(by("chip"), 47);
-  assert.equal(by("rules"), 3);
+  assert.equal(by("rules"), 0); // Phase 97.1 (FLAVOR-07): declared re-pin, was 3 toggle words
 });

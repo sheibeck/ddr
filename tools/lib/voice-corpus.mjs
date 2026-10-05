@@ -226,7 +226,6 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/treasure-tables.js", "MAGIC_ITEM_FLAVOR", "items", "a jewel's, cloak's or staff's flavour line (Gear, store, loot and find cards, combat ITEMS menu)"),
   bank("content/weapons.js", "WEAPON_FLAVOR", "items", "a weapon type's flavour line (Gear, store, loot and find cards)"),
   bank("content/armors.js", "ARMOR_FLAVOR", "items", "an armour type's flavour line (Gear, store, loot and find cards)"),
-  bank("src/browser/rulesLayer.js", "RULES_COPY", "panels", "the RULES toggle that reveals an item's or spell's exact rules"),
 ]);
 
 /**

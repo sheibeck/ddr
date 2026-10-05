@@ -238,8 +238,6 @@ export function validateClosed({ verdicts, lines }) {
 
 // ─── The worksheet ─────────────────────────────────────────────────────────
 
-const DOMAIN_LABEL = Object.freeze({ rules: "the RULES toggle words" });
-
 const imp = (root, rel) => import(url.pathToFileURL(path.join(root, rel)).href);
 
 /** sliceTable(src, name) — the object literal assigned to `const <name> =` in a source text, evaluated; asserts it was found. */
@@ -268,8 +266,8 @@ function sliceTable(src, name) {
 /**
  * worksheet({ root }) — { entries, problems }. `entries` is one record per
  * reviewed key in the page's domain order (spell, scroll, potion, tool, bag,
- * magic, weapon, armor, race, sub, class, ability, skill, chip, then the
- * RULES_COPY toggle words), keys in content-table order:
+ * magic, weapon, armor, race, sub, class, ability, skill, chip), keys in
+ * content-table order:
  *   { key, domain, domainKey, line, hash, rules: [text], tagged: { good: [{id,text}], bad: [...], neutral: [...] } }
  * `problems` lists a key the live exports cannot resolve, or whose ledger line
  * differs from the live line. Nothing is hand-kept: every domain comes from
@@ -283,7 +281,6 @@ export async function worksheet({ root = REPO_ROOT } = {}) {
   const { identityEntries, footerLines } = await imp(root, "src/browser/identityFooter.js");
   const { GEAR_COPY } = await imp(root, "src/browser/gearTab.js");
   const { COMBAT_MENU_COPY } = await imp(root, "src/browser/combatMenu.js");
-  const { RULES_COPY } = await imp(root, "src/browser/rulesLayer.js");
   const html = fs.readFileSync(path.join(root, "mazeworld.html"), "utf8");
   const tables = {
     cond: sliceTable(html, "CONDITION_EXPLAIN"),
@@ -322,23 +319,18 @@ export async function worksheet({ root = REPO_ROOT } = {}) {
         if (k === "haste/Speed of Sound") return [tables.haste["Speed of Sound"]];
         return [tables.cond[k]];
       }
-      case "rules": return ["(toggle word)"];
       default: return [];
     }
   };
 
   const problems = [];
-  const order = [...FLAVOR_DOMAINS.map((d) => d.id), "rules"];
+  const order = FLAVOR_DOMAINS.map((d) => d.id);
   const entries = [];
   for (const { key, line } of lines) {
     let domain = null;
     let domainKey = null;
     let liveLine;
-    if (key.startsWith("bank:RULES_COPY.")) {
-      domain = "rules";
-      domainKey = key.slice("bank:RULES_COPY.".length);
-      liveLine = RULES_COPY[domainKey];
-    } else if (key.startsWith("bank:")) {
+    if (key.startsWith("bank:")) {
       const rest = key.slice("bank:".length);
       for (const d of FLAVOR_DOMAINS) {
         let k = null;
@@ -371,11 +363,9 @@ export async function worksheet({ root = REPO_ROOT } = {}) {
   const keyIndex = new Map();
   for (const d of FLAVOR_DOMAINS) keyIndex.set(d.id, d.keys());
   const rank = (e) => (keyIndex.get(e.domain) ?? []).indexOf(e.domainKey);
-  entries.sort((a, b) => order.indexOf(a.domain) - order.indexOf(b.domain) || (a.domain === "rules" ? cmp(RULES_ORDER(a), RULES_ORDER(b)) : rank(a) - rank(b)));
+  entries.sort((a, b) => order.indexOf(a.domain) - order.indexOf(b.domain) || rank(a) - rank(b));
   return { entries, problems };
 }
-
-const RULES_ORDER = (e) => ["closed", "open", "label"].indexOf(e.domainKey);
 
 /** formatWorksheet(entries, { domain }) — the text the reviewer reads; every entry opens with a line that starts with its ledger key. */
 export function formatWorksheet(entries, { domain } = {}) {
@@ -383,7 +373,7 @@ export function formatWorksheet(entries, { domain } = {}) {
   for (const e of entries) {
     if (domain && e.domain !== domain) continue;
     out.push(`${e.key}`);
-    out.push(`  domain: ${e.domain}${DOMAIN_LABEL[e.domain] ? ` (${DOMAIN_LABEL[e.domain]})` : ""}   hash: ${e.hash}`);
+    out.push(`  domain: ${e.domain}   hash: ${e.hash}`);
     out.push(`  LINE:  ${e.line}`);
     e.rules.forEach((t, i) => out.push(`  ${i === 0 ? "RULES:" : "      "} ${t}`));
     for (const side of ["good", "bad", "neutral"]) for (const t of e.tagged[side]) out.push(`  tagged ${side} ${t.id}: ${t.text}`);

@@ -223,9 +223,6 @@
     {"key":"bank:CHIP_FLAVOR.foeEffect/weakened","h":"254bca95","verdict":"pass"},
     {"key":"bank:CHIP_FLAVOR.heroOut/stopped","h":"5cd037ff","verdict":"pass"},
     {"key":"bank:CHIP_FLAVOR.ward/mirror","h":"4a932077","verdict":"pass"},
-    {"key":"bank:CHIP_FLAVOR.haste/Speed of Sound","h":"a9ccc728","verdict":"pass"},
-    {"key":"bank:RULES_COPY.closed","h":"b242f1e6","verdict":"pass"},
-    {"key":"bank:RULES_COPY.open","h":"5c62a402","verdict":"pass"},
-    {"key":"bank:RULES_COPY.label","h":"c8a80d30","verdict":"pass"}
+    {"key":"bank:CHIP_FLAVOR.haste/Speed of Sound","h":"a9ccc728","verdict":"pass"}
   ]
 }
