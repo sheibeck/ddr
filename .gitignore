@@ -47,3 +47,7 @@ boards-export*
 
 # Phase 97: tools/layout-check.mjs screenshots (never committed)
 tools/layout-check-output/
+
+# Phase 98: the Play Console achievements import zip (tools/achievements-zip.mjs)
+# is rebuilt on demand and never committed
+build/achievements/
