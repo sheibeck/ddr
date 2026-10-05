@@ -58,6 +58,11 @@ import { decorateMisses } from "./missLines.js";
 // reads/writes on the SAME three keys, independently). Both paths now
 // converge on this one module's exported get/set/remove/migrate surface.
 import * as storage from "./storage.js";
+// Phase 99 (TRACK-02..05): the lifetime achievements record and its pure
+// tracker. This adapter owns the durable ddr.achievements.v1 storage and the
+// hooks; the two modules own the shape and the rules (no DOM, no storage).
+import { ACHIEVEMENTS_KEY, parseRecord, serializeRecord } from "./achievementRecord.js";
+import { beginRun, foldAction } from "./achievementTracker.js";
 
 // Mirrors mazeworld.html's `const SAVE_KEY = "ddr.delve.v1";` (line
 // ~488). Deliberately duplicated as a literal rather than imported — the
@@ -200,6 +205,123 @@ function notifyRunRecorded(summary) {
   } catch {
     // swallowed: a listener bug must never change the death flow
   }
+}
+
+// Phase 99 (TRACK-02..05): the lifetime achievements record. Adapter-owned
+// cross-run data like `bests` and `graveyard`, NEVER part of GameState, and
+// stored under its own key (ACHIEVEMENTS_KEY, ddr.achievements.v1), apart from
+// the run save. `achievementRecord` is null until the first load; the record
+// is deep-frozen and replaced (never mutated) on every change.
+// `achievementQueue` holds ops (a run start or a dispatched action) that
+// arrived before the record loaded, or while a reload is in flight; they fold
+// into the stored record in order, so a lazy dispatch can never overwrite what
+// is on disk. `achievementLoad` is the in-flight load promise, or null.
+// `achievementListener` mirrors runRecordedListener: Phase 100 (the unlock
+// banner and the list) and Phase 101 (the Play mirror) register it. Dev runs
+// and the tuning bot never reach any of this: dispatch() and startNewRun()
+// queue nothing for a dev state, and tools/ never imports this file.
+let achievementRecord = null;
+let achievementListener = null;
+let achievementLoad = null;
+const achievementQueue = [];
+
+/**
+ * setAchievementListener(fn) — Phase 99: the one achievements listener. It is
+ * handed each action's frozen { unlocks, reveals, progress } once, for every
+ * action that produced any of them. Replaces any earlier listener; a
+ * non-function (e.g. null) unregisters it. With no listener the record still
+ * updates and is still saved.
+ */
+export function setAchievementListener(fn) {
+  achievementListener = typeof fn === "function" ? fn : null;
+}
+
+/**
+ * getAchievementRecord() — Phase 99: the current lifetime record (deep-frozen,
+ * replaced on every change), or null before the first loadAchievements().
+ */
+export function getAchievementRecord() {
+  return achievementRecord;
+}
+
+function notifyAchievements(result) {
+  if (!achievementListener || !result) return;
+  const { unlocks, reveals, progress } = result;
+  if (!unlocks.length && !reveals.length && !progress.length) return;
+  try {
+    const out = achievementListener(Object.freeze({ unlocks, reveals, progress }));
+    if (out && typeof out.then === "function") {
+      Promise.resolve(out).catch(() => {});
+    }
+  } catch {
+    // swallowed: a listener bug must never change a run
+  }
+}
+
+// One op through the tracker, inside its own try/catch: a tracker or storage
+// failure can never reach dispatch()'s fail-closed catch (which would replace
+// the run) or stop the death recording. A changed record is written once, in
+// the same write that carries any unlock it earned, enqueued synchronously so
+// storage.flush() sees it.
+function applyAchievementOp(op) {
+  try {
+    const opts = { now: op.now };
+    const result =
+      op.kind === "begin"
+        ? beginRun(achievementRecord, op.state, opts)
+        : foldAction(achievementRecord, op.events, op.before, op.after, opts);
+    if (result.changed) {
+      achievementRecord = result.record;
+      try {
+        storage.setItem(ACHIEVEMENTS_KEY, serializeRecord(achievementRecord));
+      } catch {
+        // swallowed: storage.setItem never throws, and a failure here must not stop the notify
+      }
+    }
+    notifyAchievements(result);
+  } catch {
+    // swallowed: nothing achievement-related may change a run
+  }
+}
+
+function queueAchievementOp(op) {
+  try {
+    if (achievementRecord !== null && achievementLoad === null && achievementQueue.length === 0) {
+      applyAchievementOp(op);
+      return;
+    }
+    achievementQueue.push(op);
+    if (achievementLoad === null) track(loadAchievements());
+  } catch {
+    // swallowed: see applyAchievementOp
+  }
+}
+
+/**
+ * loadAchievements() — Phase 99 (TRACK-02): loads the durable
+ * ddr.achievements.v1 record into memory. A missing, corrupt or older-shape
+ * value loads as all zeros (parseRecord is tolerant). Never rejects. When a
+ * load is already in flight it returns that promise. Each call re-reads
+ * storage and storage reads are not queued behind writes, so a caller that
+ * reloads mid-session flushes first. Ops queued while loading fold into the
+ * loaded record in order before the promise resolves. boot() calls this once.
+ */
+export function loadAchievements() {
+  if (achievementLoad) return achievementLoad;
+  achievementLoad = (async () => {
+    let raw = null;
+    try {
+      raw = await storage.getItem(ACHIEVEMENTS_KEY);
+    } catch {
+      raw = null;
+    }
+    achievementRecord = parseRecord(raw);
+    const ops = achievementQueue.splice(0);
+    for (const op of ops) applyAchievementOp(op);
+    achievementLoad = null;
+    return achievementRecord;
+  })();
+  return achievementLoad;
 }
 
 /** getState() — the adapter's current engine GameState (or null before boot). */
@@ -799,6 +921,14 @@ async function persistGrave(state, cause, when, summary, bestsJson, historyJson)
  * deliberately do NOT pass it (flag-off = the parity-identical store), and
  * tools/ bots call newRun(seed) directly so the mass-playtest ledgers are
  * unchanged by this phase.
+ *
+ * Phase 99 (TRACK-03): a non-dev run started here is handed to the
+ * achievements tracker, which records its sub-class for Tourist and resets the
+ * current-run progress (a run abandoned later still counted). startNewRun is
+ * the one seam every player-started delve passes through (the roller and the
+ * dev row). initRun() is deliberately NOT hooked: its other callers are boot()'s
+ * never-persisted pre-title fallback run and dispatch()'s fail-closed recovery
+ * run, neither a delve the player started.
  */
 export async function startNewRun(seed, options = {}) {
   const safeSeed = Number.isInteger(seed) ? seed : Date.now();
@@ -808,6 +938,7 @@ export async function startNewRun(seed, options = {}) {
   const startDepth = Number.isInteger(options.startDepth) && options.startDepth >= 1 ? options.startDepth : 1;
   const state = initRun(safeSeed, exclude, { startDepth, storeRoll: true });
   persist();
+  if (state.dev !== true) queueAchievementOp({ kind: "begin", state, now: Date.now() });
   return state;
 }
 
@@ -833,6 +964,11 @@ export async function startNewRun(seed, options = {}) {
  * after the graveyard, so getRunHistory() and the death panel's
  * history-based "new best?" answer are both populated before boot()
  * resolves too.
+ *
+ * Phase 99 (TRACK-02): the lifetime achievements record (loadAchievements())
+ * is loaded right after the run history, so getAchievementRecord() is
+ * populated before boot() resolves. boot()'s pre-title fallback run records
+ * nothing for Tourist (only startNewRun does).
  */
 export async function boot(freshSeed) {
   await storage.migrateLegacyKeys();
@@ -848,6 +984,10 @@ export async function boot(freshSeed) {
   // Phase 84 (BOARD-26): YOUR DEAD's own per-run history, loaded (and
   // once-only imported from the stores above) before boot() resolves.
   await loadRunHistory();
+  // Phase 99 (TRACK-02): the lifetime achievements record, tolerant of a
+  // missing, corrupt or older-shape value (all zeros), loaded before boot()
+  // resolves; the load never rejects.
+  await loadAchievements();
   let raw = null;
   try {
     raw = await storage.getItem(SAVE_KEY);
@@ -906,6 +1046,13 @@ function persist() {
  * carries `tooAdvanced` (its line reads the cast, then the copy note). Every
  * consumer of the returned `events` (the rail/fight-log fold, the roll
  * lookup) reads the same stamped list.
+ *
+ * Phase 99 (TRACK-03): the raw engine events (not the decorated copy) and the
+ * states either side of the action fold into the lifetime achievements record,
+ * synchronously, so getAchievementRecord() reflects the action the instant
+ * dispatch() returns. The fold has its own try/catch (applyAchievementOp), so
+ * no achievement failure can reach the fail-closed catch below. A dev run
+ * (either side) folds nothing.
  */
 export function dispatch(action) {
   if (!currentState) {
@@ -954,6 +1101,11 @@ export function dispatch(action) {
         notifyRunRecorded(summary);
         track(persistGrave(currentState, diedEvent.cause, when, summary, bestsJson, historyJson));
       }
+    }
+    // Phase 99 (TRACK-03): fold the action into the lifetime achievements
+    // record, next to the death recording above; real runs only.
+    if (before.dev !== true && currentState.dev !== true) {
+      queueAchievementOp({ kind: "fold", events, before, after: currentState, now: Date.now() });
     }
     // Phase 25 (FEED-05): stamp the rotating fledgling-miss quip onto any
     // strikeMissed event, gated on the hero's post-action level, BEFORE
