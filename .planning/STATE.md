@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Achievements
-current_phase: 99
-current_phase_name: Engine Facts & Lifetime Stats Tracker
-status: executing
+current_phase: 100
+current_phase_name: "In-Game Achievements: Unlock Toasts & the ☰ List"
+status: planning
 stopped_at: Completed-99-03-PLAN.md
-last_updated: "2026-10-05T22:41:46.401Z"
+last_updated: "2026-10-05T22:48:37.938Z"
 last_activity: 2026-10-05
-last_activity_desc: Phase 98 complete, transitioned to Phase 99
+last_activity_desc: Phase 99 complete, transitioned to Phase 100
 progress:
   total_phases: 5
   completed_phases: 2
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 99 — Engine Facts & Lifetime Stats Tracker
+Phase: 100 — In-Game Achievements: Unlock Toasts & the ☰ List
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-05 — Phase 98 complete, transitioned to Phase 99
+Status: Ready to plan
+Last activity: 2026-10-05 — Phase 99 complete, transitioned to Phase 100
 
 ## Ground Truth (durable facts every session needs)
 

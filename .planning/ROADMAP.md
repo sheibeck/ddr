@@ -25,7 +25,7 @@
 ### 🚧 v2.5 Achievements (In Progress)
 
 - [x] **Phase 98: Achievement Catalog & Play Console Import Zip** - All 77 achievements exist as one finished catalog in the house voice, and a tool builds the validated Play Console import zip for the user to import as a draft. (completed 2026-10-05)
-- [ ] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned.
+- [x] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned. (completed 2026-10-05)
 - [ ] **Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List** - An unlock is a toast with a sarcastic line, and a list opened from ☰ shows every achievement locked, unlocked, in progress or hidden, in every layout class.
 - [ ] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file.
 - [ ] **Phase 102: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the game as it now is, achievements list included.
@@ -81,7 +81,7 @@ Plans:
   4. An unlock fires exactly once, never re-locks, and is saved with its date the moment it is earned, not when the run ends: killing the app right after an unlock and relaunching leaves it unlocked and does not fire it again.
   5. The tuning bot's runs earn no achievements and never touch the stats record.
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1** *(99-01 and 99-02 touch disjoint files and can run in parallel)*
@@ -148,7 +148,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
-| 99. Engine Facts & Lifetime Stats Tracker | 0/3 | Planned | - |
+| 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 0/TBD | Not started | - |
 | 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
 | 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
