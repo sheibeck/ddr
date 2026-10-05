@@ -243,8 +243,6 @@ ul.skills li b{font-family:var(--mono);font-size:calc(0.71875rem * var(--mw-text
 ul.skills li i{font-family:var(--body);font-style:normal;font-size:calc(0.84375rem * var(--mw-text-scale));line-height:1.35;color:var(--ink-soft)}
 ul.skills li.none{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--ink-soft);padding:2px 0 2px 8px}
 /* Phase 38 (ABIL-01/04) — the abilities list's provenance tag/state suffix. */
-/* Phase 95 (FLAVOR-02/05): a column-flex li would stretch the RULES toggle full width. */
-ul.skills li>.mw-rules-btn{align-self:flex-start}
 ul.skills li small{font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));letter-spacing:.03em;color:var(--ink-soft)}
 ul.skills li span{font-family:var(--mono);font-size:calc(0.6875rem * var(--mw-text-scale));color:var(--moss)}
 /* Phase 94 (ASTATE-01): the Hero tab's in-combat ability rows carry the same four edges on the left rule, 4px so dashed and dotted read. */
@@ -881,17 +879,8 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
    #enc-panel hurry tap lands the round. No motion: the settle render simply
    draws the actions live again. */
 #cb-act[data-locked="1"] .cb-prompt,#cb-act[data-locked="1"] .cb-sub-title{color:#8f856f}
-#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip,#cb-act[data-locked="1"] .mw-rules-btn{opacity:.45;box-shadow:none;pointer-events:none;cursor:default}
+#cb-act[data-locked="1"] .cb-btn,#cb-act[data-locked="1"] .cb-row,#cb-act[data-locked="1"] .cb-chip{opacity:.45;box-shadow:none;pointer-events:none;cursor:default}
 #cb-act[data-locked="1"] .cb-btn:active,#cb-act[data-locked="1"] .cb-row:active,#cb-act[data-locked="1"] .cb-chip:active{transform:none;box-shadow:none}
-/* Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): the shared RULES
-   reveal (src/browser/rulesLayer.js). The toggle is a quiet chip beside a row,
-   never inside it; the revealed rules sit full width beneath. */
-.mw-rules-btn{flex:none;min-width:48px;min-height:48px;padding:6px 8px;border:1px solid #4a4032;border-radius:0;background:transparent;box-shadow:none;color:#a8955f;font-family:var(--mono);font-size:calc(0.625rem * var(--mw-text-scale));letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.mw-rules-btn:active:not(:disabled){transform:none;box-shadow:none}
-.mw-rules-body[hidden]{display:none}
-.mw-rules-line{margin:4px 0 0;font-size:calc(0.75rem * var(--mw-text-scale));line-height:1.35;color:#a8a08a;overflow-wrap:anywhere}
-.mw-rules-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-items:stretch;flex:none}
-.mw-rules-wrap>.mw-rules-body{grid-column:1/-1}
 .cb-submenu{animation:mwrise .16s ease}
 .cb-sub-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb-sub-title{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));color:#e8c97a;line-height:1.7}
@@ -1104,11 +1093,6 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-find-drop .g-n{min-width:0;overflow-wrap:anywhere;font-weight:700;color:var(--ink)}
 .mw-find-drop .g-n i{font-weight:400;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;margin-top:3px}
 .mw-find-drop .g-c{align-self:center}
-/* Phase 95 (FLAVOR-02/05): a flavoured drop row sits in a .mw-rules-wrap (the Drop button, a RULES toggle beside it, the body beneath); the wrap carries the divider the bare button carried. */
-.mw-find-drop>.mw-rules-wrap{border-bottom:1px solid var(--rule)}
-.mw-find-drop>.mw-rules-wrap:first-child{border-top:1px solid var(--rule)}
-.mw-find-drop>.mw-rules-wrap>.goods{align-items:flex-start;border:0;padding:10px 6px}
-.mw-find-drop>.mw-rules-wrap>.mw-rules-btn{align-self:center}
 
 /* DR16 Fix 3: the death card now carries two stacked actions — a secondary
    "Review the Oracle" and the primary Confirm — so .again is a full-width
@@ -2090,7 +2074,6 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-roller-rules-who{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.06em;line-height:1.6;color:var(--ink-soft);margin:0 0 4px;text-transform:uppercase}
 .mw-roller-rules-line{font-family:var(--body);font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.45;color:var(--ink-soft);margin:0 0 3px;overflow-wrap:anywhere}
 .mw-roller-flavor-line{font-family:var(--body);font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.45;color:var(--ink);margin:0 0 3px;overflow-wrap:anywhere}
-.mw-roller-rules .mw-rules-btn{align-self:flex-start;margin-top:4px}
 .mw-roller-spacer{flex:1}
 .mw-roller-cta{
   margin-top:22px;width:100%;text-align:center;font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));
@@ -2474,16 +2457,6 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
       <div class="mw-settings-row">
         <span class="mw-settings-label">Set dressing</span>
         <div class="mw-settings-options" data-setting="dressing">
-          <button type="button" class="mw-settings-opt" data-value="true">On</button>
-          <button type="button" class="mw-settings-opt" data-value="false">Off</button>
-        </div>
-      </div>
-      <!-- Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): Always show
-           the rules, default Off; On shows every RULES line under a flavour line
-           expanded. -->
-      <div class="mw-settings-row">
-        <span class="mw-settings-label">Always show the rules</span>
-        <div class="mw-settings-options" data-setting="alwaysRules">
           <button type="button" class="mw-settings-opt" data-value="true">On</button>
           <button type="button" class="mw-settings-opt" data-value="false">Off</button>
         </div>
@@ -4120,15 +4093,15 @@ function conditionTapText(cn, label, state, opts = {}) {
 /**
  * chipFlavorSpec(cn, label, member) — Phase 96 (FLAVOR-04): the flavour spec a
  * chip tap card leads with, `{ line, id, name }`, or null when the chip has no
- * flavour line. The line is window.__mzRules.flavorOfChip(cn); the exact
- * conditionTapText stays the card's second argument and rides behind RULES
- * (rail.js#railLineCard puts it on the line's `rules` property, the 95-05
- * reuse point). Fail-open: a missing bridge, an unknown key or a throwing
- * descriptor all read null, so the card is today's card with no toggle.
+ * flavour line. The line is window.__mzFlavor.flavorOfChip(cn) and is the
+ * card's flavour lead; the exact conditionTapText stays the card's second
+ * argument and rail.js#railLineCard carries it on the line for the guards,
+ * never drawn. Fail-open: a missing bridge, an unknown key or a throwing
+ * descriptor all read null, so the card is today's card.
  */
 function chipFlavorSpec(cn, label, member) {
   try {
-    const line = window.__mzRules?.flavorOfChip?.(cn);
+    const line = window.__mzFlavor?.flavorOfChip?.(cn);
     if (typeof line !== "string" || !line) return null;
     const id = "chip:" + [cn.key, cn.ability || cn.kind, cn.source || cn.item, member ? "member" : ""].filter(Boolean).join(":");
     return { line, id, name: String(label || cn.key || "") };
@@ -4247,8 +4220,9 @@ function paintConditions(c) {
     // same sentence goes on the combat-legal condition card (the rail is
     // otherwise hidden in a fight); anywhere else it is the unchanged typed
     // line card. The chip's own guard (condArmed) keeps it readable mid-round.
-    // Phase 96 (FLAVOR-04): the chip's flavour line leads the card and the
-    // exact explainText sits behind RULES (the trailing flavour argument).
+    // Phase 96 (FLAVOR-04): the chip's flavour line leads the card (the
+    // trailing flavour argument); the exact explainText rides on the card
+    // line for the guards and is not drawn.
     const chipFlavor = chipFlavorSpec(cn, label, false);
     guardInfoTap(btn, () => (combatScreenUp()
       ? window.mzConditionCard?.(label.toUpperCase(), explainText, chipFlavor)
@@ -4320,7 +4294,7 @@ function memberChipsFor(i) {
     const label = conditionLabel(cn);
     const unit = cn.cadence === "rounds" ? "rds" : (CONDITION_COPY[cn.key]?.unit || "sq");
     const text = typeof cn.remaining === "number" && cn.remaining > 0 ? `${label} · ${cn.remaining} ${unit}` : label;
-    // Phase 96 (FLAVOR-04): `flavor` leads the Company panel's chip card; tapText stays the exact text behind RULES.
+    // Phase 96 (FLAVOR-04): `flavor` leads the Company panel's chip card; tapText stays the exact text, carried for the guards and not drawn.
     return { text, tone: cn.polarity === "bad" ? "bad" : "good", label, flavor: chipFlavorSpec(cn, label, true), tapText: () => conditionTapText(cn, label, S, { member: true }) };
   });
 }
@@ -4527,16 +4501,15 @@ function renderDropShelf(shelf, entries) {
     // for armour) comes first; the old sub is the fallback for an item the
     // formatter has nothing to say about.
     const biSub = stats || (bi.kind === "armor" ? window.__mzArmorDisplay.bagArmorText(bi) : bi.txt);
-    // Phase 95 (FLAVOR-02/05): a flavoured row shows its flavour (then its usable-by tag) in the italic slot and the exact old line sits
-    // behind a RULES toggle. The flavour and the tag are content strings, the same trust as bi.n.
-    const flavor = window.__mzRules.flavorOfItem(bi);
+    // Phase 95 (FLAVOR-02/05): a flavoured row shows its flavour (then its usable-by tag) in the italic slot; the exact old line is not
+    // drawn (Phase 97.1). The flavour and the tag are content strings, the same trust as bi.n.
+    const flavor = window.__mzFlavor.flavorOfItem(bi);
     const tag = flavor ? window.__mzUsableBy(bi, S.c) : "";
     const biLine = flavor ? (tag ? `${flavor} ${tag}` : flavor) : biSub;
     row.innerHTML = `<span class="g-n">${bi.n}${biLine ? `<i>${biLine}</i>` : ""}</span><span class="g-c">Drop</span>`;
     row.onclick = () => { if (dropShelfDragged(shelf)) return; window.mzDropItem?.(i); };
-    // Phase 95: the RULES toggle sits beside the Drop button, never inside it (orchestrator ruling recorded in 95-02); the list's bounded
-    // scroll and drag guard are unchanged. An entry with no flavour is appended exactly as before.
-    shelf.appendChild(flavor ? window.__mzRules.wrap(document, row, { id: "drop:" + i + ":" + bi.n, name: bi.n, rules: biSub }) : row);
+    // Every row is a bare Drop button, flavoured or not; the list's bounded scroll and drag guard are unchanged.
+    shelf.appendChild(row);
   });
 }
 
@@ -5279,7 +5252,7 @@ function renderYourLot(host, vm) {
         btn.dataset.tone = chip.tone === "bad" ? "bad" : "good";
         btn.dataset.key = chip.cn?.key || "";
         btn.textContent = chip.text;
-        // Phase 96 (FLAVOR-04): flavour leads the card; the exact tap text rides behind RULES.
+        // Phase 96 (FLAVOR-04): flavour leads the card; the exact tap text is carried for the guards and not drawn.
         guardInfoTap(btn, () => window.mzConditionCard?.(chip.label.toUpperCase(), chip.tapText(), chip.flavor), lotChipArmed);
         row.appendChild(btn);
       }
@@ -5330,7 +5303,7 @@ function yourLotChipsFor(V, ref) {
   // Phase 93 (CHIP-01): the hero's card puts harmful chips first; a Joiner's card keeps today's order.
   return HC.lotChips(member ? (conds || []) : (HC.harmfulFirst?.(conds || []) ?? conds ?? [])).map((ch) => {
     const label = conditionLabel(ch.cn);
-    // Phase 96 (FLAVOR-04): `flavor` is the chip card's lead (chipFlavorSpec); tapText stays the exact text behind RULES.
+    // Phase 96 (FLAVOR-04): `flavor` is the chip card's lead (chipFlavorSpec); tapText stays the exact text, carried for the guards and not drawn.
     return { text: HC.chipText(label, ch), tone: ch.tone, label, cn: ch.cn, flavor: chipFlavorSpec(ch.cn, label, member), tapText: () => conditionTapText(ch.cn, label, V, { member }) };
   });
 }
@@ -5488,15 +5461,13 @@ function renderActionArea(host) {
     const list = document.createElement("div");
     list.className = "cb-sub-list";
     list.id = "cb-sub-list";
-    // Phase 95 (FLAVOR-01/02/05, plan 05): a row with flavour carries lead/rules/rulesId (src/browser/combatMenu.js#withFlavor). The
-    // desc slot then shows the lead (flavour first; the blocked reason and the live resist hint stay in it) and the exact rules sit
-    // behind a RULES toggle that is a SIBLING of the row button, never inside it (wrap puts it beside the row). A row without flavour
-    // (reasons, abilities, SING, FLEE, PARLEY, placeholders) is appended exactly as before. The 95-02 lock rule keeps the toggle inert
-    // while a round's beats play. cbRow itself is untouched.
+    // Phase 95 (FLAVOR-01/02/05, plan 05; Phase 97.1 FLAVOR-07): a row with flavour carries a lead (src/browser/combatMenu.js#withFlavor).
+    // The desc slot then shows the lead (flavour first; the blocked reason and the live resist hint stay in it); the exact text stays on
+    // the row model for the guards and is not drawn. A row without flavour (reasons, abilities, SING, FLEE, PARLEY, placeholders) is
+    // appended exactly as before. cbRow and lockAction are untouched.
     sm.rows.forEach((r, i) => {
-      const row = r.rules ? { ...r, desc: r.lead } : r;
-      const el = lockAction(cbRow(row, i + 1));
-      list.appendChild(r.rules ? window.__mzRules.wrap(document, el, { id: r.rulesId, name: r.label, rules: r.rules }) : el);
+      const row = r.lead ? { ...r, desc: r.lead } : r;
+      list.appendChild(lockAction(cbRow(row, i + 1)));
     });
     wrap.appendChild(list);
     host.appendChild(wrap);
@@ -5908,7 +5879,7 @@ function renderEncounter() {
             return (cmp.sub ? `${cmp.line} · ${cmp.sub}` : cmp.line) + (cmp.usable ? ` ${cmp.usable}` : "");
           },
           // Phase 95 (FLAVOR-02, orchestrator): the loot row shows its flavour; the take-or-leave advice (the upgrade verdict, a can't-use
-          // reason, the bag-slot comparison, the usable-by tag) stays visible on its own line; the row's exact old line sits behind RULES.
+          // reason, the bag-slot comparison, the usable-by tag) stays visible on its own line; the row's exact old line is not drawn.
           adviceFor: (it) => {
             const cmp = window.__mzLootCompare(c, it);
             const verdict = it.kind === "weapon" || it.kind === "armor" || it.kind === "bag" || cmp.legal === false ? cmp.line : "";
@@ -6141,12 +6112,11 @@ function renderRail() {
     tone = "good"; icon = "▪"; title = copy.find.title;
     lines = (window.__mzPendingNarration || []).map((l) => ({ text: htmlToPlain(l), roll: null }));
     // Phase 95 (FLAVOR-02, plan 05; CONTEXT 'Where the exact numbers live'): with a flavour line the item line reads
-    // `name · flavour` (usable-by suffix and the compare line below stay visible) and the old item text (findSub) rides on the
-    // line's `rules` property, mounted OUTSIDE the typed lines by the lines loop. With none (a removed item an old save may
-    // hold) the line is exactly as before and there is no toggle.
-    const findFlavor = window.__mzRules.flavorOfItem(it);
+    // `name · flavour` (usable-by suffix and the compare line below stay visible) and the old item text (findSub) is not drawn
+    // (Phase 97.1). With none (a removed item an old save may hold) the line is exactly as before.
+    const findFlavor = window.__mzFlavor.flavorOfItem(it);
     if (findFlavor) {
-      lines.push({ text: `${it.n || "An item"} · ${findFlavor}${usable ? ` ${usable}` : ""}`, roll: null, rules: findSub || "", rulesId: "find:" + (it.n || ""), rulesName: it.n || "the item" });
+      lines.push({ text: `${it.n || "An item"} · ${findFlavor}${usable ? ` ${usable}` : ""}`, roll: null });
     } else {
       lines.push({ text: `${it.n || "An item"}${findSub ? ` · ${findSub}` : ""}${usable ? ` ${usable}` : ""}`, roll: null });
     }
@@ -6355,10 +6325,6 @@ function renderRail() {
       typedTargets.push(rollEl);
       typedTexts.push(line.roll);
     }
-    // Phase 95 (FLAVOR-02/05): a line's `rules` (the exact old text) mounts the shared RULES toggle and body under it. They are
-    // NEVER pushed to typedTargets or typedTexts, so the typewriter and the aria-live announcement (syncRailLive) stay flavour only.
-    // The `rules` property on a rail line is the reuse point for Phase 96's chip card.
-    if (line.rules) window.__mzRules.mount(document, lineHost, { id: line.rulesId, name: line.rulesName, rules: line.rules });
   }
   if (shelfItems) {
     // Phase 78 (HUD-09, user 2026-09-25): the drop list is its own bounded,
@@ -6511,8 +6477,6 @@ document.getElementById("mw-rail").onclick = (e) => {
   const target = e && e.target;
   const btnTarget = target && typeof target.closest === "function" ? target.closest(".mw-rail-btn") : null;
   if (btnTarget) return;
-  // Phase 95 (FLAVOR-02/05): a RULES tap is an inspection: it must never dismiss, pulse or complete the card.
-  if (target && typeof target.closest === "function" && target.closest(".mw-rules-btn")) return;
   // Quick task 260928-fcs: a tap or a drag inside the full-bag drop list
   // belongs to the list (its rows, its scroll), never to the card body.
   if (target && typeof target.closest === "function" && target.closest(".mw-find-drop")) return;
@@ -7314,10 +7278,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 78 (CLIMB-01/02) — the pre-roll wall/crevice decision card's pure
   // view model, bridged onto window.__mzRailVM.hazardCard below.
   import { hazardCardViewModel } from "./src/browser/hazardCard.js";
-  // Phase 95 (FLAVOR-05): the shared RULES reveal component and the flavour
-  // lookup, bridged onto window.__mzRules below.
-  import { setAlwaysRules, alwaysRules, mountRules, wrapRow, layerText } from "./src/browser/rulesLayer.js";
-  import { flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip } from "./src/browser/flavorText.js";
+  // Phase 97.1 (FLAVOR-07): the name-to-flavour lookups the classic script
+  // reads, bridged onto window.__mzFlavor below.
+  import { flavorOfItem, flavorOfChip } from "./src/browser/flavorText.js";
   // Phase 91 (IDENT-14) — the Illusionist's teleport decision card's pure
   // view model (bridged onto window.__mzRailVM.teleportCard below) and the
   // pure answer-to-action map window.mzTeleportPick dispatches through.
@@ -7750,10 +7713,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // classic loot card reaches the shared carried-item list through
   // window.__mzCarriedList.
   window.__mzTabs = Object.freeze({ gear: renderGearTab, hero: renderHeroTab, store: renderStoreScreen });
-  // Phase 95 (FLAVOR-05): the RULES reveal component and the name-to-flavour
-  // lookup for the classic-script surfaces (flavour first, the exact rules one
-  // tap away); no second copy of either lives in the classic script.
-  window.__mzRules = Object.freeze({ mount: mountRules, wrap: wrapRow, layer: layerText, always: alwaysRules, flavorOf, flavorOfItem, flavorOfSpell, flavorOfScroll, flavorOfChip });
+  // Phase 95 (FLAVOR-05), narrowed in Phase 97.1 (FLAVOR-07): the name-to-flavour
+  // lookup for the classic-script surfaces; no second copy of it lives in the
+  // classic script.
+  window.__mzFlavor = Object.freeze({ flavorOfItem, flavorOfChip });
   window.__mzCarriedList = renderCarriedList;
   // Phase 63 (GSCR-07..10, GRULE-02): the GEAR action sheet's one bridge —
   // openGearSheet/refreshGearSheet (classic) render through it.
@@ -7877,7 +7840,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // The one-shot rail entry point Plans 03/04 use for chip explanations,
   // tap/inspect lines and the back-button quit warning — builds a card
   // directly (no fold pipeline) and repaints.
-  // Phase 96 (FLAVOR-04): a trailing `flavor` spec { line, id, name } leads the card with the flavour and puts `line` behind RULES.
+  // Phase 96 (FLAVOR-04): a trailing `flavor` spec { line, id, name } leads the card with the flavour; `line` is carried on the card line for the guards and not drawn.
   window.mzRailLine = (title, line, tone, hold, icon, iconKey = null, flavor = null) => {
     window.__mzRail = railPush(window.__mzRail, railLineCard(title, line, tone, hold, icon, iconKey, flavor));
     window.renderRail?.();
@@ -7912,7 +7875,7 @@ window.__mzClassicBoot = async function classicBoot() {
   // aim, never a skip. A no-op while the title, the roller or the
   // title-opened panel is up, with no state, or with neither a fight nor a
   // round still playing.
-  // Phase 96 (FLAVOR-04): the trailing `flavor` spec leads the card; `text` is the exact tap text behind RULES.
+  // Phase 96 (FLAVOR-04): the trailing `flavor` spec leads the card; `text` is the exact tap text, carried for the guards and not drawn.
   window.mzConditionCard = (title, text, flavor = null) => {
     if (!dungeonVisible()) return;
     const live = window.__mzState?.get?.();
@@ -8084,9 +8047,6 @@ window.__mzClassicBoot = async function classicBoot() {
     // call time (arrow mode turns tap-to-move off), and syncArrowPad below
     // shows or hides the opt-in pad from it on every apply.
     window.__mzSettings = settings;
-    // Phase 95 (FLAVOR-05): Always show the rules, read by the RULES component
-    // on every mount (runs at boot and on every write).
-    setAlwaysRules(settings.alwaysRules === true);
     // Phase 56 (AUD-05) — the ONE gate that makes the Settings "Sound" row
     // real: the row and its persistence already existed and nothing read
     // them until now. A flip to Off stops every in-flight voice and closes
@@ -8759,9 +8719,6 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 59 (DRESS-05): repaint at once so flipping Set dressing Off
     // clears every prop immediately and On brings them back (once loaded).
     if (key === "dressing") window.draw?.();
-    // Phase 95 (FLAVOR-05): paint repaints the tabs, an open Gear sheet, the
-    // encounter panel and the rail, so every RULES line flips at once.
-    if (key === "alwaysRules") window.paint?.();
     // Quick task 260924-51h (R-06): this tap is itself a gesture, so Sound
     // On with the title area up opens the device and starts the theme on
     // that same tap. On Sound Off, applySfxSettings (via applySettings above)
@@ -10031,7 +9988,7 @@ window.__mzClassicBoot = async function classicBoot() {
   function surfaceAbilityPool(state) {
     const card = abilityPoolCard(state.c);
     if (!card) return;
-    // Phase 96 (FLAVOR-04): the card leads with "New trick: <name> — <flavour>" and the exact line sits behind RULES; the Oracle log line is the flavour line too (no flavour: today's line).
+    // Phase 96 (FLAVOR-04): the card leads with "New trick: <name> — <flavour>" and the exact line is carried for the guards and not drawn; the Oracle log line is the flavour line too (no flavour: today's line).
     const flavor = abilityPoolFlavor(state.c);
     window.mzRailLine?.(card.title, card.line, card.tone, card.hold, card.icon, null, flavor);
     window.logLine?.(flavor ? flavor.line : card.line);

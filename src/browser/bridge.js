@@ -178,6 +178,15 @@ export const BRIDGE = Object.freeze({
     consumers: Object.freeze(["mazeworld.html (classic: renderFightLog / renderRoundStrip / openFightLogSheet / fightLogRefuse — rows/toggle/announcement/append/dull/summary/copy/byRound)"]),
     purpose: "Bridges fightLog.js's pure view-model functions so the classic fight-log renderer never imports the module a second time; summary (roundSummary) and copy (ROUND_STRIP_COPY) feed the Phase 71 D-07 what-happened strip above the combat actions; byRound (fightLogByRound) feeds THE FIGHT SO FAR, the full-log sheet the strip opens (71-06), whose copy shares ROUND_STRIP_COPY.",
   }),
+  __mzFlavor: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail — the found item's name and flavour line)",
+      "mazeworld.html (classic: renderDropShelf — the bag-full drop list's flavour line)",
+      "mazeworld.html (classic: chipFlavorSpec — flavorOfChip leads the condition-chip tap cards on the HUD strip, YOUR LOT and the Company panel)",
+    ]),
+    purpose: "Bridges the pure name-to-flavour lookups of src/browser/flavorText.js (flavorOfItem, flavorOfChip) to the classic script, so the page shows the flavour line with no second copy of the lookup (Phase 95 FLAVOR-05; Phase 97.1 FLAVOR-07 narrowed it to the lookups: the page draws no rules control).",
+  }),
   __mzFoeConditions: Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: foeStatusBadges — the combat foe cards' condition chips, via chips)"]),
@@ -355,16 +364,6 @@ export const BRIDGE = Object.freeze({
     owner: "mazeworld.html (module)",
     consumers: Object.freeze(["mazeworld.html (classic: renderEncounter — Joiner card eats line)"]),
     purpose: "Bridges the pure rations view-model and eats-line formatter so the Joiner card's eats readout reads engine/movement.js#eatsFor the same way the Hero tab (src/browser/heroTab.js, a direct import — no bridge needed) and its own Company panel do.",
-  }),
-  __mzRules: Object.freeze({
-    owner: "mazeworld.html (module)",
-    consumers: Object.freeze([
-      "mazeworld.html (classic: renderActionArea — the combat SPELLS and ITEMS rows' RULES toggle)",
-      "mazeworld.html (classic: renderRail — the find card's RULES line)",
-      "mazeworld.html (classic: renderDropShelf — the drop list's RULES toggle; the loot list's toggle comes through src/browser/gearTab.js#renderCarriedList's own import)",
-      "mazeworld.html (classic: chipFlavorSpec — flavorOfChip leads the condition-chip tap cards on the HUD strip, YOUR LOT and the Company panel, Phase 96 FLAVOR-04)",
-    ]),
-    purpose: "Bridges src/browser/rulesLayer.js (the one RULES reveal component and the Always show the rules state) and src/browser/flavorText.js (the name-to-flavour lookup) so the classic-script surfaces show flavour first and the exact rules one tap away, with no second copy of either (Phase 95, FLAVOR-05).",
   }),
   __mzSettings: Object.freeze({
     owner: "mazeworld.html (module)",
