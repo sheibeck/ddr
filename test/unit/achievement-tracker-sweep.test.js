@@ -120,8 +120,56 @@ function driveTourist(entry) {
   expectEdge(entry.id, first, second);
 }
 
-/** Drivers keyed by trigger kind; runs.test.js drives the four run-scoped entries. */
+// The four run-scoped entries run in a run the tracker saw start (seed 21).
+const RUN_STATE = (over = {}) => mkState({ seed: 21, ...over });
+const BARE = { weapon: "Fists", armor: "Nothing", worn: {} };
+
+function driveFullyDressed(entry) {
+  const full = { weapon: "Club", armor: "Leather", worn: { jewelry1: { n: "Ring" }, jewelry2: { n: "Ring" }, cloak: { n: "Cloak" } } };
+  const four = { ...full, worn: { jewelry1: { n: "Ring" }, jewelry2: { n: "Ring" } } };
+  const rec = beginRun(emptyRecord(), RUN_STATE(), { now: 1 }).record;
+  const first = foldAction(rec, [], RUN_STATE(), RUN_STATE({ c: four }), { now: NOW_BEFORE });
+  const second = foldAction(first.record, [], RUN_STATE({ c: four }), RUN_STATE({ c: full }), { now: NOW_AT });
+  expectEdge(entry.id, first, second);
+}
+
+function driveNakedAmbition(entry) {
+  const bare = (over = {}) => RUN_STATE({ ...over, c: BARE });
+  const rec = beginRun(emptyRecord(), bare(), { now: 1 }).record;
+  const stepped = foldAction(rec, [ev("moved", { to: { x: 1, y: 1 } })], bare(), bare({ steps: 1 }), { now: 1 });
+  const first = foldAction(stepped.record, [], bare({ steps: 1 }), bare({ steps: 30, floor: { depth: entry.threshold - 1 } }), { now: NOW_BEFORE });
+  const second = foldAction(first.record, [], bare({ steps: 30, floor: { depth: entry.threshold - 1 } }), bare({ steps: 40, floor: { depth: entry.threshold } }), { now: NOW_AT });
+  expectEdge(entry.id, first, second);
+}
+
+function driveTeetotaler(entry) {
+  const rec = beginRun(emptyRecord(), RUN_STATE(), { now: 1 }).record;
+  const first = foldAction(rec, [], RUN_STATE(), RUN_STATE({ floor: { depth: entry.threshold - 1 } }), { now: NOW_BEFORE });
+  const second = foldAction(first.record, [], RUN_STATE({ floor: { depth: entry.threshold - 1 } }), RUN_STATE({ floor: { depth: entry.threshold } }), { now: NOW_AT });
+  expectEdge(entry.id, first, second);
+}
+
+function driveChicken(entry) {
+  const escape = [ev("fled", { reason: "escaped" })];
+  let rec = beginRun(emptyRecord(), RUN_STATE(), { now: 1 }).record;
+  let first = null;
+  for (let i = 0; i < entry.threshold - 1; i++) {
+    first = foldAction(rec, escape, RUN_STATE(), RUN_STATE(), { now: NOW_BEFORE });
+    rec = first.record;
+  }
+  const second = foldAction(rec, escape, RUN_STATE(), RUN_STATE(), { now: NOW_AT });
+  expectEdge(entry.id, first, second);
+}
+
+const RUN_DRIVERS = {
+  fully_dressed: driveFullyDressed,
+  naked_ambition: driveNakedAmbition,
+  teetotaler: driveTeetotaler,
+  chicken: driveChicken,
+};
+
 function driverFor(entry) {
+  if (RUN_DRIVERS[entry.id]) return RUN_DRIVERS[entry.id];
   const t = entry.trigger;
   if (t.kind === "lifetimeCounter") return driveCounter;
   if (t.kind === "singleRunBest" && t.metric !== "fleesWon") return driveBest;
@@ -131,17 +179,23 @@ function driverFor(entry) {
   return null;
 }
 
-test("sweep: every driven catalog entry unlocks exactly at its threshold and not one fact before", () => {
+test("sweep: all 77 catalog entries unlock exactly at their threshold and not one fact before, once each", () => {
   const driven = [];
   for (const entry of ACHIEVEMENTS) {
     const drive = driverFor(entry);
-    if (!drive) continue;
+    assert.ok(drive, `no driver for ${entry.id}`);
     drive(entry);
     driven.push(entry.id);
   }
-  assert.equal(driven.length, 73);
-  const undriven = ACHIEVEMENTS.map((a) => a.id).filter((id) => !driven.includes(id)).sort();
-  assert.deepEqual(undriven, ["chicken", "fully_dressed", "naked_ambition", "teetotaler"]);
+  assert.equal(driven.length, 77);
+  assert.equal(new Set(driven).size, 77);
+  assert.deepEqual(ACHIEVEMENTS.map((a) => a.id).filter((id) => !driven.includes(id)), []);
+});
+
+test("sweep: the four run-scoped entries are the only ones driven through a seen run", () => {
+  assert.deepEqual(Object.keys(RUN_DRIVERS).sort(), ["chicken", "fully_dressed", "naked_ambition", "teetotaler"]);
+  const driven73 = ACHIEVEMENTS.filter((a) => !RUN_DRIVERS[a.id]);
+  assert.equal(driven73.length, 73);
 });
 
 test("sweep: Special Snowflake is a real death on floor 1 only", () => {

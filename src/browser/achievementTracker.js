@@ -42,6 +42,18 @@
 //     1; the flags are lifetime and it is never a death
 //   - Hoarder reads c.gold as the most held at once in a run
 //
+// Current-run progress lives in the record's run section, tagged to its run
+// (runTagOf): { tag, seen, stepped, naked, teetotal, fleesWon }. beginRun resets
+// it (Chicken, Naked Ambition and Teetotaler start over); a relaunch mid-run
+// keeps it because the tag still matches. A run the tracker did not see start (no
+// run section, or another run's tag: a pre-2.5 save resumed) gets seen false, so
+// it can never earn Naked Ambition or Teetotaler; everything else counts from
+// the moment it is seen. Chicken counts fled events with reason escaped only (10
+// in one run); Teetotaler breaks only on the hero's own potionDrunk and unlocks
+// on reaching floor 5; Fully Dressed needs all five slots filled at one moment;
+// Naked Ambition needs all five slots empty on the state the first step was
+// taken from and none filled again before floor 5.
+//
 // Only real runs count: a state with dev true earns nothing and returns the
 // same record. The tuning bot drives the engine directly and never calls this
 // module. The tracker folds facts and does not deduplicate actions; folding
@@ -179,9 +191,17 @@ export function progressFor(record, entry) {
 // ---------------------------------------------------------------------
 
 function flagMet(trigger, threshold, rec, after) {
+  const run = rec.run;
+  const floorReached = depthOf(after) >= (threshold === null ? 0 : threshold);
   switch (trigger.flag) {
     case "fullyDressed":
       return filledSlotCount(isObj(after) ? after.c : null) === 5;
+    case "nakedAtFirstStep":
+      // Only a run whose start the tracker saw can prove its first step was bare.
+      return run !== null && run.seen && run.stepped && run.naked && floorReached;
+    case "noHealingPotion":
+      // Likewise: an unseen run's earlier potions were never counted.
+      return run !== null && run.seen && run.teetotal && floorReached;
     default:
       return false;
   }
@@ -319,8 +339,10 @@ export function foldAction(record, events, before, after, options) {
     draft.run = { tag, seen: false, stepped: true, naked: false, teetotal: false, fleesWon: 0 };
   }
 
+  const run = draft.run;
   let sprung = 0;
   let cause = null;
+  let stepTaken = false;
   for (const e of list) {
     if (!isObj(e)) continue;
     switch (e.type) {
@@ -342,6 +364,17 @@ export function foldAction(record, events, before, after, options) {
         break;
       case "trapSprung":
         sprung += 1;
+        break;
+      case "fled":
+        // Only a won flee roll counts; door, cloaker, tracked and smoke escapes do not.
+        if (e.reason === "escaped") run.fleesWon += 1;
+        break;
+      case "potionDrunk":
+        // The hero's own healing potion; memberPotionDrunk and every other event leave it be.
+        run.teetotal = false;
+        break;
+      case "moved":
+        stepTaken = true;
         break;
       case "afflictionCaught":
       case "afflictionTick": {
@@ -366,12 +399,21 @@ export function foldAction(record, events, before, after, options) {
   // Each trap that did not end in a trap death was survived.
   draft.counters.trapsSurvived += Math.max(0, sprung - (cause === "trap" ? 1 : 0));
 
+  // First step: judged on the state the step was taken from.
+  if (run.seen && !run.stepped && (stepTaken || toInt(after.steps) > toInt(isObj(before) ? before.steps : 0))) {
+    run.stepped = true;
+    run.naked = filledSlotCount(isObj(before) && isObj(before.c) ? before.c : after.c) === 0;
+  }
+  // Naked Ambition breaks the moment any slot is filled again.
+  if (run.stepped && run.naked && filledSlotCount(after.c) > 0) run.naked = false;
+
   // Single-run bests.
   const depth = depthOf(after);
   const c = isObj(after.c) ? after.c : {};
   draft.bests.depth = Math.max(draft.bests.depth, depth);
   draft.bests.days = Math.max(draft.bests.days, toInt(after.day));
   draft.bests.wilmstHeld = Math.max(draft.bests.wilmstHeld, toInt(c.gold));
+  draft.bests.fleesWon = Math.max(draft.bests.fleesWon, run.fleesWon);
   if (has(draft.bests.depthByRace, c.race)) draft.bests.depthByRace[c.race] = Math.max(draft.bests.depthByRace[c.race], depth);
   if (has(draft.bests.depthByClass, c.cls)) draft.bests.depthByClass[c.cls] = Math.max(draft.bests.depthByClass[c.cls], depth);
 
