@@ -435,8 +435,8 @@ Plans:
 - **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
 - **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers: 10 / 25 / 50 / 100 (user, 2026-10-05), counted across all delves.
 - **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times in a single run (user, 2026-10-05; was all runs earlier the same day). Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
-- **Trap death (user, 2026-10-05, icon in progress):** die to a trap. A one-time achievement, not tiered. Death cause `trap` (`engine/encounters.js`, a trap's own damage; the poison arrow trap's hit counts). Proposed id `death_trap`; name TBD with the icon.
-- **Trap survivor (user, 2026-10-05, icon in progress):** set off a trap and live. Tiers 10 / 25 / 50 / 100, counted across all runs. Counts each `trapSprung` that does not end in a `trap` death. Proposed id `trap_survivor`; name TBD with the icon. It replaces the brainstorm's *Tripwire Connoisseur*.
+- **Fatal Misstep (user, 2026-10-05, icon in progress):** die to a trap. A one-time achievement, not tiered. Death cause `trap` (`engine/encounters.js`, a trap's own damage; the poison arrow trap's hit counts). Id `death_trap`.
+- **Still Standing (user, 2026-10-05, icon in progress):** set off a trap and live. Tiers 10 / 25 / 50 / 100, counted across all runs. Counts each `trapSprung` that does not end in a `trap` death. Id `trap_survivor`; tiers I–IV use the bronze / silver / gold / mythic frames. It replaces the brainstorm's *Tripwire Connoisseur*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
 **Brainstorm (Claude, 2026-09-25, for the milestone discussion; every one keys off an engine event or death cause that already exists):**
@@ -455,7 +455,7 @@ Plans:
   - *Speedrun:* die within your first N steps.
 - **Tiered event counters:**
   - ~~*Tactical Retreat Enthusiast:* flee X times (`fled`).~~ Replaced by the user's *Chicken* (2026-10-05).
-  - ~~*Tripwire Connoisseur:* spring X traps (`trapSprung`).~~ Replaced by the user's trap survivor (2026-10-05).
+  - ~~*Tripwire Connoisseur:* spring X traps (`trapSprung`).~~ Replaced by the user's *Still Standing* (2026-10-05).
   - *Bomb Squad:* disarm X traps (`trapDisarmed`).
   - *Get Off My Lawn:* turn X Walking Dead (`walkingDeadTurned`).
   - *Cartographer:* fully map X floors (`floorMapped`).
