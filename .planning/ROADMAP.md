@@ -423,7 +423,7 @@ Plans:
 - **Every class:** reach 5 with each parent class (Magic User, Fighter, Thief), not with each sub-class.
 - **Tourist:** start one delve with every one of the 24 sub-classes (`content/classes.js` `CLASSES[...].subs`). Depth doesn't matter.
 - **Survivor (tiered):** live for X days in a single run. Tiers 10 / 25 / 50 / 100 days (user, 2026-10-05).
-- **Hoarder (tiered):** gain X coin. Tiers 1,000 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Decide at planning whether it counts one run or lifetime, and whether it's coin earned or coin held.
+- **Hoarder (tiered):** gain X coin. Tiers 1,000 / 5,000 / 10,000 / 20,000 coin (user, 2026-10-05). Counts a single run (user, 2026-10-05). Still open: coin earned during the run, or coin held at one time.
 - **Special Snowflake:** die on floor 1. The user's line: *"You're a special snowflake."* Every run starts on floor 1 (there is no floor 0), so any death before the first descent counts.
 - **Party Animal (tiered):** accept X Joiners in total, counted across all your delves. Tiers 10 / 25 / 50 / 100 (user, 2026-10-05).
 
@@ -471,8 +471,8 @@ Plans:
 
 **Open decisions (for milestone discussion):**
 
-- **"Level" means floor depth or character level?** The engine has both: character level comes from `levelFromSP` in `engine/derived.js`. The depth-20 unicorn target suggests depth, and "reach 5" in the other ideas probably means depth too. Confirm.
-- **Where achievements live:** Play Games achievements, a local in-game list, or both. The plugin `@modbender/capacitor-play-games` already exposes `unlockAchievement` / `incrementAchievement` / `setAchievementSteps` / `loadAchievements` / `showAchievements`. The game must stay fully playable offline, so a local list is the source of truth and Play Games is a mirror. Unlocks earned offline or while signed out are queued like `pgsQueue` scores.
+- **SETTLED (user, 2026-10-05): "level" means floor depth.** Was: "Level" means floor depth or character level? The engine has both: character level comes from `levelFromSP` in `engine/derived.js`. The depth-20 unicorn target suggests depth, and "reach 5" in the other ideas probably means depth too. Confirm.
+- **SETTLED (user, 2026-10-05): achievements live in Play Games, so players earn Play Games XP.** Offline unlocks still queue (like `pgsQueue`) until the player is signed in. Was: **Where achievements live:** Play Games achievements, a local in-game list, or both. The plugin `@modbender/capacitor-play-games` already exposes `unlockAchievement` / `incrementAchievement` / `setAchievementSteps` / `loadAchievements` / `showAchievements`. The game must stay fully playable offline, so a local list is the source of truth and Play Games is a mirror. Unlocks earned offline or while signed out are queued like `pgsQueue` scores.
 - **Provisioning:** Play Console achievements need an icon and fixed XP points (1,000 XP cap per game). Created by script via the Games Configuration API (`achievementConfigurations.insert`) with the same service account as 999.11's leaderboards script, or by hand. Plan them together.
 - **Counters and persistence:** the kill counts per group, deaths, races/classes reached and sub-classes delved need a durable lifetime-stats record in `@capacitor/preferences` (the `storage.js` pattern), kept separate from the run save. Tolerant-load, no legacy paths. Decide whether to count retroactively from the local graveyard/bests history.
 - **Engine purity:** the engine only emits the facts (kills with group, potion drunk, equip state at step 1, depth reached). The achievement tracker is a shell layer that folds events into the lifetime stats. Zero rng draws, so zero parity fixtures should move (verify).
@@ -535,7 +535,7 @@ Minimum art job: **30 pictures + 4 tier frames**, exported as about **50 icon fi
 *Decisions that move the counts:*
 
 - ~~**Tier counts**~~ settled (user, 2026-10-05): every tiered track has its four thresholds.
-- **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
+- **SETTLED (user, 2026-10-05): each race and each class is its own achievement (9 total), as drawn.** Was: **Races and classes:** 9 separate achievements (as counted above), or one achievement each that fills up as you go. The single-achievement option cuts 9 files and 9 pictures down to 2 of each (30 pictures become 23).
 - **Points:** Play Games gives each game 1,000 points in total. Across 50–90 achievements that is roughly 10–20 points each, which argues for short tier ladders.
 
 **Constraints:** offline-first (no network needed to earn an achievement); no new runtime SDK beyond the existing Play Games plugin; family-friendly copy; needs a signed-in Pixel 7 check (unlock toast plus the Play Games popup), batched into the milestone-close checklist.
