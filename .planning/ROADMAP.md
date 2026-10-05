@@ -304,12 +304,12 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
   3. Every surface still shows its flavour line where it showed one before, and surfaces with no flavour line keep today's text.
   4. The guard tests still pin every rules number to the engine; only their path to the text changes, with no guard lost. docs/TEXT-LAYERS.md, the 2.4.0 patch notes and the UAT checklist say flavour-only.
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 
 - [x] 97.1-01-PLAN.md
-- [ ] 97.1-02-PLAN.md
+- [x] 97.1-02-PLAN.md
 - [ ] 97.1-03-PLAN.md
 - [ ] 97.1-04-PLAN.md
 
