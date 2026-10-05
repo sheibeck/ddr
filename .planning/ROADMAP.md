@@ -54,8 +54,16 @@
 **Plans:** 3 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 98-01-PLAN.md — the catalog structure (77 entries: ids, triggers, points, types, Hidden set, reveal pairs, list order, icons), the Disposable Help icon trim, and the voice-tool registration
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 98-02-PLAN.md — the copy: all 77 names, descriptions and lines in the house voice, with the copy contract test (the strongest-writer plan)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 98-03-PLAN.md — the zip tool and 25-rule validator with tests that prove it fails, `docs/ACHIEVEMENTS.md`, the generated copy table, and the hand-off of the built zip (a non-blocking human step)
 
 ### Phase 99: Engine Facts & Lifetime Stats Tracker
