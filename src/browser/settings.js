@@ -1,6 +1,6 @@
 // src/browser/settings.js
 //
-// The single source of truth for the fourteen persisted settings (UX-07;
+// The single source of truth for the thirteen persisted settings (UX-07;
 // DR18/DR15-E removed the `diceMode` field, Phase 33 UIF-05 removed the
 // former control-bar side option, Phase 46 NAME-02 removed the on-screen
 // movement-control-scheme field; Phase 59 DRESS-05 added `dressing`, the Set
@@ -18,13 +18,13 @@
 // loads cleanly under a plain `node --test` process that never bootstraps
 // `window` at all.
 //
-// All fourteen fields are persisted as ONE JSON object under a single
+// All thirteen fields are persisted as ONE JSON object under a single
 // versioned key (SETTINGS_STORAGE_KEY) — one storage.js write-queue entry
-// per settings change, never fourteen separate keys racing each other.
+// per settings change, never thirteen separate keys racing each other.
 //
 // Phase 97 (SCREEN-02) field:
 //   - `screen` ("portrait" | "rotate", default "portrait") is appended after
-//     alwaysRules: on a phone (smallest width below 600dp) Portrait keeps the
+//     `padSide`: on a phone (smallest width below 600dp) Portrait keeps the
 //     runtime portrait lock and Rotate lets the game turn; tablets, foldables
 //     unfolded and Chromebooks always follow the device and never read it
 //     (src/browser/nativeChrome.js#decideOrientationLock). An old blob without
@@ -87,7 +87,7 @@
 
 import { getItem, setItem } from "./storage.js";
 
-/** Single versioned key all fourteen settings fields are persisted under. */
+/** Single versioned key all thirteen settings fields are persisted under. */
 export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
 
 /**
@@ -110,12 +110,12 @@ export const SETTINGS_STORAGE_KEY = "ddr.settings.v1";
  * installs keep "tap" through readSettings) and `padSide`
  * (default "right", the arrow pad's bottom corner, read only in arrow mode)
  * are appended after `volEffects`, in that order.
- * Phase 95 (FLAVOR-05, CONTEXT 'Where the exact numbers live'): `alwaysRules`
- * (default false) is appended after `padSide`: on, every RULES line under a
- * flavour line shows expanded; an old blob reads false through the tolerant
- * merge, so no migration.
+ * Phase 95 added a rules switch that Phase 97.1 (FLAVOR-07) retired with the
+ * rules control; readSettings pulls only keys of SETTINGS_DEFAULTS, so a stored
+ * blob that still carries it loads normally and the stray key is ignored on
+ * read and absent from the next write (no migration).
  * Phase 97 (SCREEN-02): `screen` ("portrait" | "rotate", default "portrait") is
- * appended after `alwaysRules`: on a phone (smallest width below 600dp)
+ * appended after `padSide`: on a phone (smallest width below 600dp)
  * Portrait keeps the runtime portrait lock and Rotate lets the game turn;
  * tablets, foldables unfolded and Chromebooks always follow the device and
  * never read it (src/browser/nativeChrome.js#decideOrientationLock). An old
@@ -135,7 +135,6 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   volEffects: 100,
   movement: "arrows",
   padSide: "right",
-  alwaysRules: false,
   screen: "portrait",
 });
 
@@ -161,7 +160,6 @@ const ALLOWED_VALUES = {
   volEffects: isVolumeLevel,
   movement: ["tap", "arrows"],
   padSide: ["left", "right"],
-  alwaysRules: [true, false],
   screen: ["portrait", "rotate"],
 };
 
@@ -209,7 +207,7 @@ function isValidSettingValue(key, value) {
 }
 
 /**
- * readSettings() — resolves the full fourteen-field settings object: persisted
+ * readSettings() — resolves the full thirteen-field settings object: persisted
  * values merged over SETTINGS_DEFAULTS. Never throws: an unset key, a
  * storage error, or a corrupt/non-object JSON blob all yield full defaults.
  * Only recognized keys with a value in that field's allowed set are pulled

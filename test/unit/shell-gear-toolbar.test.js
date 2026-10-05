@@ -246,8 +246,7 @@ test("UIF-05: settings.js has no trace of handedness and exposes exactly 14 fiel
     // Phase 78 (HUD-08): Movement (tap/arrows) and the pad's corner.
     "movement",
     "padSide",
-    // Phase 95 (FLAVOR-05): Always show the rules, appended.
-    "alwaysRules",
+    // Phase 97.1 (FLAVOR-07): declared re-pin — the Phase 95 rules switch is retired, so the list is thirteen keys.
     // Phase 97 (SCREEN-02): declared re-pin — screen appended
     "screen",
   ]);
