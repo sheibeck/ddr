@@ -35,7 +35,6 @@ import { armorDisplay, usableBy, storeRowState, itemStatLines } from "./viewMode
 import { storeCountText } from "./viewModels.js";
 import { bagUsage, renderCarriedList } from "./gearTab.js";
 import { flavorOfItem, flavorOfScroll } from "./flavorText.js";
-import { wrapRow } from "./rulesLayer.js";
 import { GEAR_COPY } from "./gearTab.js";
 import { scrollReadOdds } from "./rollOdds.js";
 
@@ -156,7 +155,7 @@ export function renderStoreScreen(host, state, deps = {}) {
         ? `${repairSheet.armor} · ${Math.max(0, Number(repairSheet.armorMax) - Number(repairSheet.armorWP))} hp to mend at a tenth of its cost each`
         : `${ad.wornSub} · ${c.armorMax - c.armorWP} hp to mend at a tenth of its cost each`
       : stats ? stats.join(" · ") : item.sub;
-    // Phase 95 (FLAVOR-01/02/05): a flavoured row leads with its flavour; the exact old italic text rides behind a RULES toggle.
+    // Phase 97.1 (FLAVOR-07): a flavoured row leads with its flavour; the exact old italic text stays on the layer as rules for the guards and is not drawn.
     const layer = storeRowLayer(item, c, state, rs.showUsable, itemSub);
     const sub = layer ? layer.lead : itemSub;
     // Phase 43 (CLAR-02): usable is a static USABLE_COPY string (class
@@ -175,8 +174,8 @@ export function renderStoreScreen(host, state, deps = {}) {
     row.innerHTML = `<span class="g-n">${item.n}${subText || usable ? `<i>${subText || ""}${subText && usable ? " " : ""}${usable}</i>` : ""}</span>
         <span class="g-c">${item.sold ? "sold" : item.cost.toLocaleString() + " wm"}</span>`;
     row.onclick = () => deps.buyItem?.(i);
-    // Phase 95: the RULES toggle is a sibling of the BUY button, never inside it (orchestrator); a row with no flavour is appended exactly as before.
-    shelf.appendChild(layer && layer.rules ? wrapRow(doc, row, { id: "store:" + i + ":" + item.n, name: item.n, rules: layer.rules }) : row);
+    // Phase 97.1 (FLAVOR-07): the row is appended bare, flavoured or not.
+    shelf.appendChild(row);
   });
   // Phase 14 (ECON-06): the "Your gear" SELL section — every carried item with
   // a Sell button (deps.sellItem, forwarding to window.mzSellItem), rendered

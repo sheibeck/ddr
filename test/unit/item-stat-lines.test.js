@@ -18,7 +18,7 @@ import { WEAPONS, ARMORS, BAGS, POTIONS } from "../../content/index.js";
 import { BANNED, ALLOWLIST } from "../../content/safety-wordlist.js";
 import { itemStatLines, wornItemFor, ITEM_STAT_COPY, usableBy, storeRowState } from "../../src/browser/viewModels.js";
 import { gearSheetModel } from "../../src/browser/gearSheet.js";
-import { renderStoreScreen, storeItemStats } from "../../src/browser/storeScreen.js";
+import { renderStoreScreen, storeItemStats, storeRowLayer } from "../../src/browser/storeScreen.js";
 import { createRecordingDocument } from "./harness/recordingDom.js";
 
 // ─── fixtures ────────────────────────────────────────────────────────────
@@ -376,9 +376,15 @@ test("agreement (store DOM): an item row's italic segment opens with the formatt
     const seg = texts(itemStatLines(line.effectParams.item, c)).join(" · ");
     // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: a flavoured row leads with its flavour and the formatter's stat segment (the
     // sheet's stats joined by ' · ') sits in the row's RULES body; a row with no flavour keeps it at the head of the italic, as before.
-    if (String(rows[i].className).includes("mw-rules-wrap")) {
-      const body = rows[i].children.find((n) => String(n.className).includes("mw-rules-body"));
-      assert.equal(body.children.map((p) => p.textContent).join(" · "), seg, `${line.n}: the RULES body holds the formatter's stats`);
+    // Phase 97.1 (FLAVOR-07): declared re-pin: a flavoured row's italic opens with its flavour (not the stat segment) and has no rules element;
+    // the formatter's segment is the model's rules (storeRowLayer) and is not rendered.
+    const hasRules = (n) => String(n.className || "").startsWith("mw-rules") || (n.children || []).some(hasRules);
+    const flavored = storeRowLayer(line, c, state, true, seg);
+    if (flavored) {
+      assert.ok(!hasRules(rows[i]), `${line.n}: no mw-rules descendant`);
+      assert.equal(flavored.rules, seg, `${line.n}: the model's rules are the formatter's stats`);
+      assert.ok(rows[i].innerHTML.includes(`<i>${flavored.lead}`), `${line.n}: the italic opens with the flavour`);
+      assert.ok(!rows[i].innerHTML.includes(`<i>${seg}`), `${line.n}: the italic does not open with the stat segment`);
       return;
     }
     assert.ok(rows[i].innerHTML.includes(`<i>${seg}`), `${line.n}: expected <i>${seg}…, got ${rows[i].innerHTML}`);

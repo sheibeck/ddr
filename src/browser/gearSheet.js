@@ -37,7 +37,6 @@ import { GEAR_COPY, GEAR_WORN_ORDER, gearWornModel, gearBagCardsModel } from "./
 import { lootCompare, armorDisplay, itemStatLines, wornItemFor } from "./viewModels.js";
 import { LINE_FOR } from "./narrationLines.js";
 import { flavorOfItem } from "./flavorText.js";
-import { mountRules } from "./rulesLayer.js";
 
 /**
  * GEAR_SHEET_COPY — every new player-facing string the sheet shows, frozen
@@ -191,7 +190,8 @@ export function gearSheetModel(state, target) {
     const label = `${GEAR_COPY.slot[slot]}${GEAR_SHEET_COPY.head.sep}${real ? GEAR_SHEET_COPY.head.worn : GEAR_SHEET_COPY.head.empty}`;
     const title = real || row.filled ? row.name : GEAR_SHEET_COPY.head.nothingWorn;
     // Phase 71 (D-04): the worn piece's stats, from the one formatter.
-    const stats = itemStatLines(wornItemFor(c, slot), c).map((l) => l.text);
+    const statLines = itemStatLines(wornItemFor(c, slot), c);
+    const stats = statLines.map((l) => l.text);
     // Phase 71 (R-06): the note never repeats a stat. The weapon note is a
     // voice line, not a stat, so it stays. Worn armour's note IS its
     // durability, and a worn cloak/jewel's note IS its effect text — both
@@ -257,13 +257,15 @@ export function gearSheetModel(state, target) {
       }
     }
 
-    // Phase 95 (FLAVOR-02/05; CONTEXT 'Where the exact numbers live'): the sheet is the Gear tab's RULES surface. Note, stats and
-    // every action keep their values for the guards and older tests; `lead` (the item's flavour), `rules` (exactly what the note
-    // and stats slots printed before: the note when it is non-empty, then every stat text) and `rulesId` are additive and appear
-    // only for an item with a flavour (an empty slot, the magic plate alone and a removed item get nothing).
+    // Phase 95 (FLAVOR-02/05): note, stats and every action keep their values for the guards and older tests; `lead` (the item's
+    // flavour), `rules` (exactly what the note and stats slots printed before: the note when it is non-empty, then every stat
+    // text) and `rulesId` are additive and appear only for an item with a flavour (an empty slot, the magic plate alone and a
+    // removed item get nothing). Phase 97.1 (FLAVOR-07): the `rules` array and the effect row are carried for the guards and are
+    // not drawn; `statKeys` (the itemStatLines key of each stats entry, in order) is the one addition, so the renderer can
+    // tell the effect row (the item's own txt sentence) from the numeric rows, which it draws as plain rows.
     const lead = flavorOfItem(wornItemFor(c, slot));
     return lead
-      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:worn:" + slot }
+      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:worn:" + slot, statKeys: statLines.map((l) => l.key) }
       : { target, label, title, note, why, actions, stats };
   }
 
@@ -279,7 +281,8 @@ export function gearSheetModel(state, target) {
     const label = `${GEAR_SHEET_COPY.head.bag}${GEAR_SHEET_COPY.head.sep}${card.family ? GEAR_COPY.family[card.family] : GEAR_SHEET_COPY.head.fromBag}`;
     const title = card.name;
     // Phase 71 (D-04): the bag item's stats, from the one formatter.
-    const stats = itemStatLines(it, c).map((l) => l.text);
+    const statLines = itemStatLines(it, c);
+    const stats = statLines.map((l) => l.text);
     // Phase 71 (R-06): the card desc is the item's txt (bagArmorText for
     // armour) plus its usable-by — exactly what `stats` now carries — so the
     // note is dropped whenever the stats cover it, and kept only for an item
@@ -331,7 +334,7 @@ export function gearSheetModel(state, target) {
     // Phase 95 (FLAVOR-02/05): the same additive fields, keyed by name so a revealed body follows the item, not its bag index.
     const lead = flavorOfItem(it);
     return lead
-      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:bag:" + card.name }
+      ? { target, label, title, note, why, actions, stats, lead, rules: note ? [note, ...stats] : [...stats], rulesId: "gsheet:bag:" + card.name, statKeys: statLines.map((l) => l.key) }
       : { target, label, title, note, why, actions, stats };
   }
 
@@ -528,24 +531,20 @@ export function renderGearSheet(host, state, target, deps = {}) {
 
   // Phase 71 (D-04): one row per stat, textContent only; a re-render
   // replaces the rows, and an empty list hides the container.
+  // Phase 97.1 (FLAVOR-07): every item takes this one path. A flavoured item's effect row is the item's own txt sentence, which is
+  // rules text, so it is filtered on its key; its numeric rows (AR, hp, dice, bulk and the rest) are drawn as plain rows. An item
+  // with no flavour line draws every row, effect included, so nothing goes blank. The model's rules array is not drawn.
   const statsEl = ensureStatsEl(doc, whyEl);
-  if (Array.isArray(m.rules) && m.rules.length) {
-    // Phase 95: the RULES toggle sits around the stats (orchestrator); the hidden body holds the exact old note and stat lines.
-    // A revealed body stays open across refreshGearSheet because the open set lives in rulesLayer.js.
-    statsEl.replaceChildren();
-    mountRules(doc, statsEl, { id: m.rulesId, name: m.title, rules: m.rules, lineClass: "mw-gsheet-note mw-gsheet-stat" });
-    statsEl.hidden = false;
-  } else {
-    statsEl.replaceChildren(
-      ...m.stats.map((text) => {
-        const row = doc.createElement("p");
-        row.className = "mw-gsheet-note mw-gsheet-stat";
-        row.textContent = text;
-        return row;
-      })
-    );
-    statsEl.hidden = !m.stats.length;
-  }
+  const rows = m.lead && Array.isArray(m.statKeys) ? m.stats.filter((_, i) => m.statKeys[i] !== "effect") : m.stats;
+  statsEl.replaceChildren(
+    ...rows.map((text) => {
+      const row = doc.createElement("p");
+      row.className = "mw-gsheet-note mw-gsheet-stat";
+      row.textContent = text;
+      return row;
+    })
+  );
+  statsEl.hidden = !rows.length;
 
   doc.getElementById(GEAR_SHEET_IDS.actions).replaceChildren(
     ...m.actions.map((a, index) => buildActionButton(doc, a, index, deps))

@@ -24,7 +24,6 @@ import { WEAPONS, BAGS } from "../../content/index.js";
 import { armorDisplay, bagArmorText, lootCompare, usableBy, dropShelfItems } from "./viewModels.js";
 import { scrollReadOdds } from "./rollOdds.js";
 import { flavorOf, flavorOfItem, flavorOfScroll } from "./flavorText.js";
-import { mountRules, alwaysRules } from "./rulesLayer.js";
 
 /**
  * bagUsage(c) — Phase 29 (LOOT-04): the ONE "used / slots" readout the
@@ -317,7 +316,7 @@ export function gearUseCell(state, it) {
  * 'Data shape and guards'): the one layering rule for the Gear models, mirroring 95-05's combat rows. A row with a flavour
  * line gains `lead` (the flavour, plus a functional tag such as usable-by when one is passed), `rules` (exactly the text
  * this slot showed before Phase 95) and `rulesId`; every existing field is untouched and a row without flavour is returned
- * as it is.
+ * as it is. Phase 97.1 (FLAVOR-07): the `rules` and `rulesId` fields are kept for the guard tests; no renderer reads them.
  */
 function layerRow(row, flavor, tag, rules, rulesId) {
   if (typeof flavor !== "string" || !flavor) return row;
@@ -795,7 +794,7 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
     // an item name in this region).
     const b = doc.createElement("b");
     b.textContent = it.n + (st.text ? ` · ${st.text}` : "");
-    // Phase 95 (FLAVOR-02/05): flavour first, the row's exact old line behind RULES. A host that writes its own sub line (the loot card)
+    // Phase 97.1 (FLAVOR-07): the flavour line alone; the row's exact old line is not drawn. A host that writes its own sub line (the loot card)
     // opts in by naming its advice (opts.adviceFor), so the advice stays visible (orchestrator); a host that does not (the sell list)
     // gets the flavour alone. createElement and textContent only.
     const flavor = flavorOfItem(it);
@@ -812,7 +811,6 @@ export function renderCarriedList(container, state, items, opts = {}, deps = {})
         adviceEl.textContent = advice;
         li.appendChild(adviceEl);
       }
-      mountRules(doc, li, { id: (container.id || "carried") + ":" + i + ":" + it.n, name: it.n, rules: sub });
     }
     for (const a of (opts.actions || [])) {
       if (a === "use") {
@@ -987,10 +985,9 @@ export function renderGearTab(host, state, deps = {}) {
       li.appendChild(el("span", "mw-gear-slot", row.label));
       const main = el("div", "mw-gear-main");
       main.appendChild(el("span", "mw-gear-name", row.name));
-      // Phase 95 (FLAVOR-02/05): flavour first. WORN rows and BAG cards open the Gear sheet, so they carry no toggle (a button
-      // inside the opener would steal its tap); the RULES sit in the sheet, and "Always show the rules" shows them here too.
+      // Phase 97.1 (FLAVOR-07): the flavour line (lead) or today's note when the row has none; the exact rules text stays on
+      // the model as rules for the guards and is not drawn.
       main.appendChild(el("span", "mw-gear-note", row.lead ?? row.note));
-      if (row.rules && alwaysRules()) mountRules(doc, main, { id: row.rulesId, name: row.name, rules: row.rules });
       li.appendChild(main);
       li.onclick = opener(main, { from: "worn", slot: row.key }, "gear-open-" + row.key);
       li.appendChild(el("span", "mw-gear-val", row.value));
@@ -1035,7 +1032,6 @@ export function renderGearTab(host, state, deps = {}) {
         if (card.tag) top.appendChild(el("span", "mw-gear-tag" + (card.swap ? " mw-gear-tag-swap" : ""), card.tag));
         main.appendChild(top);
         main.appendChild(el("div", "mw-gear-desc", card.lead ?? card.desc));
-        if (card.rules && alwaysRules()) mountRules(doc, main, { id: card.rulesId, name: card.name, rules: card.rules });
         li.appendChild(main);
         li.onclick = opener(main, { from: "bag", i: card.i, n: card.name }, "gear-open-bag-" + card.i);
         if (card.use) li.appendChild(useCellEl(card.use, card.useRef, card.name));
@@ -1058,9 +1054,7 @@ export function renderGearTab(host, state, deps = {}) {
       top.appendChild(el("span", "mw-gear-qty" + (row.qty === 0 ? " mw-gear-qty-zero" : ""), row.qtyText));
       main.appendChild(top);
       main.appendChild(el("div", "mw-gear-desc", row.lead ?? row.desc));
-      // Phase 95: a CONSUMABLES card is not an opener, so it carries its own RULES toggle (the shared layer shows the body open
-      // with no toggle under "Always show the rules").
-      if (row.rules) mountRules(doc, main, { id: row.rulesId, name: row.name, rules: row.rules });
+      // Phase 97.1 (FLAVOR-07): a CONSUMABLES card shows the flavour line (lead) or today's desc; the rules text is not drawn.
       if (row.reason) main.appendChild(el("p", "mw-gear-cons-tag", row.reason));
       li.appendChild(main);
       const btn = doc.createElement("button");

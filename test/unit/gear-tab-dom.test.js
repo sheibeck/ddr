@@ -606,7 +606,12 @@ test("CONSUMABLES: the SCROLLS row's .mw-gear-desc shows the reader's own odds â
     const desc = main.children.find((n) => n.className === "mw-gear-desc");
     assert.ok(desc, "expected a .mw-gear-desc node on the SCROLLS row");
     // Phase 95 (FLAVOR-01/02/05), Plan 06: declared re-pin: the desc now holds the scroll flavour; the reader's odds sit in the RULES body line under it.
-    const rulesLine = main.children.find((n) => n.className === "mw-rules-body").children[0].textContent;
+    // Phase 97.1 (FLAVOR-07): declared re-pin: the desc is the scroll flavour, the main block has no rules element, and the reader's odds are read
+    // from the model's rules field (not drawn).
+    const rulesLine = gearConsumablesModel(state).rows.find((r) => r.key === "scroll").rules;
+    assert.ok(desc.textContent.length > 0);
+    assert.ok(!main.children.some((n) => String(n.className || "").startsWith("mw-rules")));
+    assert.ok(!main.children.some((n) => n.textContent.includes("without fail")), "the odds are not rendered");
     assert.ok(rulesLine.includes("without fail (Magic User)"));
   }
   {
@@ -614,7 +619,10 @@ test("CONSUMABLES: the SCROLLS row's .mw-gear-desc shows the reader's own odds â
     const { doc } = renderFresh(state);
     const scrollLi = doc.document.getElementById("gear-cons").children.find((li) => li.dataset.key === "scroll");
     const main = scrollLi.children.find((n) => n.className === "mw-gear-card-main");
-    const rulesLine = main.children.find((n) => n.className === "mw-rules-body").children[0].textContent;
+    // Phase 97.1 (FLAVOR-07): declared re-pin: the odds are read from the model's rules field and are not drawn.
+    const rulesLine = gearConsumablesModel(state).rows.find((r) => r.key === "scroll").rules;
+    assert.ok(!main.children.some((n) => String(n.className || "").startsWith("mw-rules")));
+    assert.ok(!main.children.some((n) => n.textContent.includes("backfires")), "the odds are not rendered");
     assert.ok(rulesLine.includes("8â€“20 (d20, intel 14)"));
     assert.ok(rulesLine.includes("1â€“3 backfires"));
     assert.ok(main.children.find((n) => n.className === "mw-gear-desc").textContent.length > 0);

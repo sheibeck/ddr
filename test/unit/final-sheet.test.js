@@ -29,7 +29,6 @@ import { FINAL_SHEET_COPY, finalSheetViewModel, renderFinalSheet } from "../../s
 import { createRecordingDocument } from "./harness/recordingDom.js";
 // Phase 96 (FLAVOR-04): the tricks-row pin below reads the real ability lookup.
 import { flavorOfAbility, flavorOfItem } from "../../src/browser/flavorText.js";
-import { setAlwaysRules } from "../../src/browser/rulesLayer.js";
 import { stripJs } from "../../tools/ident-sweep.mjs";
 import { BANNED as SAFETY_BANNED, ALLOWLIST as SAFETY_ALLOWLIST } from "../../content/safety-wordlist.js";
 
@@ -191,50 +190,34 @@ test("96-12: a worn ring and cloak and the bag items carry their Phase 95 flavou
   assert.ok(vm.bag.items.some((i) => i.flavor), "at least one bag item has a line");
 });
 
-test("96-12: with Always off the sheet shows the flavour and none of the rules text; with Always on each flavoured row gets a static body, still no control", () => {
+// Phase 97.1 (FLAVOR-07): declared re-pin — the sheet shows the flavour and none of the rules text, and renders no body and no
+// button. The Always-on half is deleted with the setting; the exact text is still pinned on the model by the tests around it.
+test("96-12: the sheet shows the flavour and none of the rules text, renders no body and no button", () => {
   const s = deadMagicUser();
   const vm = finalSheetViewModel(s);
   const flavoured = vm.worn.filter((r) => r.filled && r.flavor);
   const bagFlavoured = vm.bag.items.filter((i) => i.flavor);
   assert.ok(flavoured.length >= 2 && bagFlavoured.length >= 1);
 
-  setAlwaysRules(false);
   const off = renderInto(vm);
   const offTexts = textsOf(off.host);
   for (const r of flavoured) {
     assert.ok(offTexts.includes(r.flavor), `${r.key}: flavour shown`);
-    assert.ok(!offTexts.includes(r.note), `${r.key}: the rules note is absent with the setting off`);
+    assert.ok(!offTexts.includes(r.note), `${r.key}: the rules note is absent`);
   }
   for (const i of bagFlavoured) assert.ok(offTexts.includes(i.flavor) && !offTexts.includes(i.rules));
-  assert.equal(bodiesOf(off.host).length, 0, "no body with the setting off");
-
-  setAlwaysRules(true);
-  try {
-    const on = renderInto(vm);
-    const onTexts = textsOf(on.host);
-    const bodies = bodiesOf(on.host);
-    for (const r of flavoured) {
-      const body = bodies.find((b) => b.id === "mw-rules-final-worn-" + r.key);
-      assert.ok(body, `${r.key}: has a final:worn body`);
-      assert.equal(body.hidden, false);
-      assert.ok(onTexts.includes(r.note), `${r.key}: the exact note shows`);
-    }
-    vm.bag.items.forEach((i, n) => {
-      if (!i.flavor || !i.rules) return; // the fixture's bare Rope carries no txt, so it has nothing to show under RULES
-      const body = bodies.find((b) => b.id === "mw-rules-final-bag-" + n);
-      assert.ok(body, `bag ${n}: has a final:bag body`);
-      assert.equal(body.hidden, false);
-      assert.ok(onTexts.includes(i.rules));
-    });
-    walk(on.host, (n) => {
-      if (n.nodeType === 3) return;
-      assert.notEqual(n.tagName, "button");
-      assert.equal(n.onclick, null);
-    });
-    assert.equal(on.listeners.length, 0);
-  } finally {
-    setAlwaysRules(false);
+  // Phase 97.1 (FLAVOR-07): declared re-pin — a flavoured trick shows its flavour and not its description.
+  for (const r of vm.tricks.rows.filter((x) => x.flavor && x.description)) {
+    assert.ok(offTexts.includes(r.flavor) && !offTexts.includes(r.description), `trick ${r.name}: flavour only`);
   }
+  assert.equal(bodiesOf(off.host).length, 0, "no body");
+  walk(off.host, (n) => {
+    if (n.nodeType === 3) return;
+    assert.notEqual(n.tagName, "button");
+    assert.equal(n.onclick, null);
+    assert.ok(!classOf(n).includes("mw-rules"), "no element with an mw-rules class");
+  });
+  assert.equal(off.listeners.length, 0);
 });
 
 test("96-12: an item with no flavour line keeps today's note (worn) and name line (bag)", () => {

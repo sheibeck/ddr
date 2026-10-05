@@ -24,11 +24,9 @@
 import { ROMAN } from "../../content/index.js";
 import { characterSheetViewModel, grimoireViewModel } from "./heroTab.js";
 import { gearWornModel, gearBagCardsModel } from "./gearTab.js";
-// Phase 96 (FLAVOR-04): the ability flavour lookup and the shared RULES component. Both are pure (no window, no document;
-// mountRules takes the doc). With Always show the rules on, mountRules adds only a visible body and never a button, so the
-// sheet stays control-free (HUD-03). Plan 96-12 adds flavorOfItem for the worn and bag notes.
+// Phase 96 (FLAVOR-04): the ability flavour lookup (pure, no window, no document). Plan 96-12 adds flavorOfItem for the worn and
+// bag notes. Phase 97.1 (FLAVOR-07): the sheet shows the flavour only and stays control-free (HUD-03).
 import { flavorOfAbility, flavorOfItem } from "./flavorText.js";
-import { mountRules, alwaysRules } from "./rulesLayer.js";
 
 /**
  * FINAL_SHEET_COPY — every word the sheet adds of its own. The rest comes
@@ -255,11 +253,10 @@ export function renderFinalSheet(host, vm) {
   const t = m.tricks || {};
   for (const r of t.rows || []) {
     tricks.appendChild(row(doc, r.name, ""));
-    // Phase 96 (FLAVOR-04): with a flavour line the note shows it, and the exact description follows only when Always show
-    // the rules is on (a static visible body, never a control: the sheet is read-only). With none, today's description.
+    // Phase 97.1 (FLAVOR-07): with a flavour line the note shows it and nothing else (the description stays on the model for the
+    // guards); with none, today's description.
     if (r.flavor) {
       tricks.appendChild(el(doc, "p", "mw-fs-note", r.flavor));
-      if (r.description && alwaysRules()) mountRules(doc, tricks, { id: "final:trick:" + r.name, name: r.name, rules: r.description });
     } else if (r.description) tricks.appendChild(el(doc, "p", "mw-fs-note", r.description));
   }
   if (t.emptyLine) tricks.appendChild(el(doc, "p", "mw-fs-empty", t.emptyLine));
@@ -270,28 +267,23 @@ export function renderFinalSheet(host, vm) {
     const r = row(doc, w.label, w.name);
     if (w.value) r.appendChild(el(doc, "span", "mw-fs-v", w.value));
     worn.appendChild(r);
-    // Phase 96 (FLAVOR-04), plan 96-12: a filled row with a flavour line shows it as the note; the exact rules note follows
-    // only when Always show the rules is on, as a static visible body (the tricks pattern: no button, no handler). No
-    // flavour (armour, an empty slot) keeps today's note.
+    // Phase 97.1 (FLAVOR-07): a filled row with a flavour line shows it as the note and nothing else. No flavour (armour, an
+    // empty slot) keeps today's note.
     if (w.filled && w.flavor) {
       worn.appendChild(el(doc, "p", "mw-fs-note", w.flavor));
-      if (w.note && alwaysRules()) mountRules(doc, worn, { id: "final:worn:" + w.key, name: w.name, rules: w.note });
     } else if (w.note) worn.appendChild(el(doc, "p", w.filled ? "mw-fs-note" : "mw-fs-empty", w.note));
   }
   root.appendChild(worn);
 
   const bag = section(doc, FINAL_SHEET_COPY.bag, "bag");
   const b = m.bag || {};
-  // Phase 96 (FLAVOR-04), plan 96-12: each bag item keeps its name line; one with a flavour line gets it as a note, and the exact
-  // card text follows only with Always show the rules on (static, no control), id final:bag:<n> by position.
+  // Phase 97.1 (FLAVOR-07): each bag item keeps its name line; one with a flavour line gets it as a note, and the exact card
+  // text is not drawn (it stays on the model for the guards).
   const bagItems = Array.isArray(b.items) && b.items.length ? b.items : (b.names || []).map((name) => ({ name, flavor: "", rules: "" }));
-  bagItems.forEach((it, n) => {
+  bagItems.forEach((it) => {
     if (!it || !it.name) return;
     bag.appendChild(el(doc, "p", "mw-fs-line", it.name));
-    if (it.flavor) {
-      bag.appendChild(el(doc, "p", "mw-fs-note", it.flavor));
-      if (it.rules && alwaysRules()) mountRules(doc, bag, { id: "final:bag:" + n, name: it.name, rules: it.rules });
-    }
+    if (it.flavor) bag.appendChild(el(doc, "p", "mw-fs-note", it.flavor));
   });
   if (b.emptyLine) bag.appendChild(el(doc, "p", "mw-fs-empty", b.emptyLine));
   root.appendChild(bag);

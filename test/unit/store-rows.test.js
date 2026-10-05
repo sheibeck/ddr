@@ -23,7 +23,7 @@ import { openStore, storeBuyRefusal } from "../../engine/economy.js";
 import { bagCap, slotItems } from "../../engine/items.js";
 import { WEAPONS, ARMORS } from "../../content/index.js";
 import { storeRowState, storeCountText, STORE_ROW_COPY, lootCompare, itemStatLines, armorDisplay } from "../../src/browser/viewModels.js";
-import { renderStoreScreen } from "../../src/browser/storeScreen.js";
+import { renderStoreScreen, storeRowLayer, storeItemStats } from "../../src/browser/storeScreen.js";
 import { flavorOfItem, flavorOfScroll } from "../../src/browser/flavorText.js";
 import { usableBy } from "../../src/browser/viewModels.js";
 import { GEAR_COPY } from "../../src/browser/gearTab.js";
@@ -348,8 +348,9 @@ test("DOM: renderStoreScreen renders the Spiked Staff row enabled with its compa
 
   const shelf = rec.elementsById.get("shelf");
   assert.ok(shelf, "expected the #shelf element to exist after render");
-  // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: a flavoured row sits in a div.mw-rules-wrap (BUY button first), so the row buttons are unwrapped here.
-  const buttons = shelf.children.map((n) => (String(n.className).includes("mw-rules-wrap") ? n.children[0] : n));
+  // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: a flavoured row sat in a div.mw-rules-wrap (BUY button first), so the row buttons were unwrapped here.
+  // Phase 97.1 (FLAVOR-07): declared re-pin: the wrapper is gone, every shelf child is the row button itself.
+  const buttons = shelf.children;
   const staffRow = buttons.find((row) => row.innerHTML.includes("Spiked Staff"));
   const swordRow = buttons.find((row) => row.innerHTML.includes("Broadsword"));
   assert.ok(staffRow, "expected the Spiked Staff row to render");
@@ -370,9 +371,10 @@ test("DOM: renderStoreScreen renders the Spiked Staff row enabled with its compa
 
 // ─── Phase 71 (POLISH-06, D-04): item rows read the ONE stat formatter ────
 
-// Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: renderRows returns the row BUTTONS (a flavoured row's div.mw-rules-wrap is unwrapped to its
-// first child); renderWraps returns the shelf's own children, wrappers included.
-function renderWraps(c, stock) {
+// Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: renderRows returned the row BUTTONS (a flavoured row's div.mw-rules-wrap was unwrapped to its
+// first child); renderWraps returned the shelf's own children, wrappers included.
+// Phase 97.1 (FLAVOR-07): declared re-pin: no wrapper exists; the helper returns the shelf's own children, which are the row buttons.
+function renderRows(c, stock) {
   const base = newRun(7);
   const state = { ...base, c, store: { stock, haggle: 1, race: c.race } };
   const rec = createRecordingDocument();
@@ -380,34 +382,37 @@ function renderWraps(c, stock) {
   renderStoreScreen(host, state, {});
   return rec.elementsById.get("shelf").children;
 }
-const isWrap = (n) => String(n.className).includes("mw-rules-wrap");
-function renderRows(c, stock) {
-  return renderWraps(c, stock).map((n) => (isWrap(n) ? n.children[0] : n));
-}
+const hasRulesClass = (n) => String(n.className || "").startsWith("mw-rules") || (n.children || []).some(hasRulesClass);
 
 test("DOM (Phase 71): an item line's italic segment is itemStatLines' texts joined by ' · ', then the compare line", () => {
   const c = fixedFighter({ weapon: "Dagger" });
   const sword = weaponItem("Long Sword");
   const plate = armorItem("Plate");
-  const wraps = renderWraps(c, [weaponLine(sword, 200), armorLine(plate, 300)]);
+  const rows = renderRows(c, [weaponLine(sword, 200), armorLine(plate, 300)]);
+  const state = { ...newRun(7), c };
   // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: the italic segment now leads with the item's flavour (and its usable-by tag) in the
   // stat text's place; the formatter's texts joined by ' · ' (the old stat line) sit unchanged in the row's RULES body, and the compare line
   // and reason stay in the italic.
-  for (const [wrap, item, line] of [[wraps[0], sword, weaponLine(sword, 200)], [wraps[1], plate, armorLine(plate, 300)]]) {
-    assert.ok(isWrap(wrap), `${item.n} sits in a RULES wrapper`);
-    const row = wrap.children[0];
+  // Phase 97.1 (FLAVOR-07): declared re-pin: the row is the bare button with no rules element; the formatter text is asserted on the model
+  // (storeRowLayer's rules) and is not in the rendered row.
+  for (const [row, item, line] of [[rows[0], sword, weaponLine(sword, 200)], [rows[1], plate, armorLine(plate, 300)]]) {
+    assert.ok(String(row.className).startsWith("goods"), `${item.n} is a bare goods button`);
+    assert.ok(!hasRulesClass(row), `${item.n} has no rules element`);
     const seg = itemStatLines(item, c).map((l) => l.text).join(" · ");
     const rs = storeRowState(c, line);
     const tag = rs.showUsable ? usableBy(item, c) : "";
     const lead = tag ? `${flavorOfItem(item)} ${tag}` : flavorOfItem(item);
     const expected = [lead, rs.compareLine, rs.reasonText].filter(Boolean).join(" · ");
     assert.ok(row.innerHTML.includes(`<i>${expected}</i>`), `expected <i>${expected}</i>, got ${row.innerHTML}`);
-    const body = wrap.children.find((n) => String(n.className).includes("mw-rules-body"));
-    assert.deepEqual(body.children.map((p) => p.textContent), [seg]);
+    const oldSub = storeItemStats(line, c, rs.showUsable).join(" · ");
+    const layer = storeRowLayer(line, c, state, rs.showUsable, oldSub);
+    assert.equal(layer.rules, seg, `${item.n}: the formatter text is the model's rules`);
+    assert.ok(!row.innerHTML.includes(seg), `${item.n}: the formatter text is not rendered`);
   }
-  // Durability reads the formatter's "left/max hp", never the engine's "AR n, wp hp" sub (it is now the armour row's RULES text).
-  const plateBody = wraps[1].children.find((n) => String(n.className).includes("mw-rules-body"));
-  assert.ok(plateBody.children[0].textContent.includes(`AR ${plate.ar} · ${plate.wp}/${plate.wp} hp`));
+  // Durability reads the formatter's "left/max hp", never the engine's "AR n, wp hp" sub (it is the armour row's rules text on the model).
+  const plateSeg = itemStatLines(plate, c).map((l) => l.text).join(" · ");
+  assert.ok(plateSeg.includes(`AR ${plate.ar} · ${plate.wp}/${plate.wp} hp`));
+  assert.ok(!rows[1].innerHTML.includes(`${plate.wp}/${plate.wp} hp`));
 });
 
 test("DOM (Phase 71, R-07): food, the sealed scroll and the repair row render byte-identically to the pre-Phase-71 composition (rations gain only the Phase 87 count)", () => {
@@ -422,13 +427,13 @@ test("DOM (Phase 71, R-07): food, the sealed scroll and the repair row render by
   const ad = armorDisplay(c);
   // Phase 95 (FLAVOR-01/02/05), Plan 07: declared re-pin: the Sealed scroll now shows the scroll flavour and sits in a RULES wrapper (its rules:
   // GEAR_COPY.scrollDesc and the reader's odds); food, rations and repair stay byte-identical and unwrapped.
-  const wraps = renderWraps(c, stock);
-  assert.ok(isWrap(wraps[2]), "the Sealed scroll row is wrapped");
-  assert.ok(!isWrap(wraps[0]) && !isWrap(wraps[1]) && !isWrap(wraps[3]), "food, rations and repair are appended bare");
+  // Phase 97.1 (FLAVOR-07): declared re-pin: no row is wrapped; the scroll's rules are asserted on the model and are not rendered.
+  assert.ok(rows.every((r) => !hasRulesClass(r)), "no row carries a rules element");
   assert.equal(rows[2].innerHTML, `<span class="g-n">Sealed scroll<i>${flavorOfScroll()}</i></span>
         <span class="g-c">900 wm</span>`);
-  const scrollBody = wraps[2].children.find((n) => String(n.className).includes("mw-rules-body"));
-  assert.deepEqual(scrollBody.children.map((p) => p.textContent), [`${GEAR_COPY.scrollDesc} ${scrollReadOdds({ c })}`]);
+  const scrollRules = `${GEAR_COPY.scrollDesc} ${scrollReadOdds({ c })}`;
+  assert.equal(storeRowLayer(stock[2], c, { c }, true, "").rules, scrollRules);
+  assert.ok(!rows[2].innerHTML.includes(GEAR_COPY.scrollDesc), "the scroll rules text is not rendered");
   stock.forEach((item, i) => {
     if (item.effectId === "buyScroll") return;
     // The legacy (Phase 61) composition, restated here as the byte pin.

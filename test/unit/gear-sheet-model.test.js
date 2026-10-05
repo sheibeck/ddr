@@ -837,3 +837,20 @@ test("Phase 95: an old save's removed item (a Cloak of Healing jewel) renders a 
   const m = gearSheetModel(st(fixedChar({ items: [old] })), { from: "bag", i: 0, n: "Cloak of Healing" });
   assert.ok(!("lead" in m) && !("rules" in m) && !("rulesId" in m));
 });
+
+// Phase 97.1 (FLAVOR-07): declared re-pin - statKeys is the one additive field: the itemStatLines key of each stats entry, in
+// order, on a flavoured model only, so the renderer can drop the effect row (the item's own txt sentence) and draw the numeric rows.
+test("Phase 97.1: a flavoured sheet model carries statKeys, an unflavoured one does not", () => {
+  const anklet = gearSheetModel(st(fixedChar({ items: [REAL_ANKLET] })), { from: "bag", i: 0, n: "Anklet of Invisibility" });
+  assert.deepStrictEqual(anklet.statKeys, itemStatLines(REAL_ANKLET, fixedChar({ items: [REAL_ANKLET] })).map((l) => l.key));
+  assert.deepStrictEqual(anklet.statKeys, ["effect"]);
+
+  const cw = fixedChar({ weapon: "Long Sword" });
+  const sword = gearSheetModel(st(cw), { from: "worn", slot: "weapon" });
+  assert.deepStrictEqual(sword.statKeys, itemStatLines(wornItemFor(cw, "weapon"), cw).map((l) => l.key));
+  assert.equal(sword.statKeys.length, sword.stats.length);
+
+  const old = { kind: "jewel", n: "Cloak of Healing", txt: "an old cloak's text" };
+  const m = gearSheetModel(st(fixedChar({ items: [old] })), { from: "bag", i: 0, n: "Cloak of Healing" });
+  assert.equal("statKeys" in m, false);
+});

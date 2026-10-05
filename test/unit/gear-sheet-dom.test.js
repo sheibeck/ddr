@@ -551,24 +551,72 @@ test("Stats: the container is created once, sits after the note and before why, 
   assert.equal(statsEl.hidden, false);
   // Phase 95 (FLAVOR-02/05), Plan 06: declared re-pin: an Axe has a flavour, so its stat rows now sit inside the RULES body under
   // a collapsed toggle (children: button, body); the rows are the exact old note (weaponMundane) then every stat, in order.
-  assert.equal(statsEl.children.length, 2);
-  assert.equal(statsEl.children[0].className, "mw-rules-btn");
-  const body = statsEl.children[1];
-  assert.equal(body.className, "mw-rules-body");
-  assert.equal(body.hidden, true);
-  assert.deepStrictEqual(model.rules, [model.note, ...model.stats]);
-  assert.equal(body.children.length, model.rules.length);
-  body.children.forEach((row, i) => {
-    assert.ok(row.className.split(/\s+/).includes("mw-gsheet-note"), "each stat row reuses the note typography class");
-    assert.equal(row.textContent, model.rules[i]);
+  // Phase 97.1 (FLAVOR-07): declared re-pin: no toggle and no body. An Axe is flavoured and every one of its stat rows is numeric,
+  // so the container holds one plain visible row per model.stats entry; the old voice note (model.note) is not drawn.
+  assert.equal(statsEl.children.length, model.stats.length);
+  statsEl.children.forEach((row, i) => {
+    assert.equal(row.tagName, "p");
+    const classes = row.className.split(/\s+/);
+    assert.ok(classes.includes("mw-gsheet-note") && classes.includes("mw-gsheet-stat"), "each stat row reuses the note typography class");
+    assert.equal(row.textContent, model.stats[i]);
     assert.notEqual(row._content.kind, "html");
   });
+  assert.ok(!statsEl.children.some((n) => String(n.className || "").startsWith("mw-rules")), "no RULES control or body");
+  assert.ok(model.note.length > 0);
+  assert.ok(!statsEl.children.some((n) => n.textContent === model.note), "the old voice note is not among the rows");
+  assert.deepStrictEqual(model.rules, [model.note, ...model.stats]); // the model-side guard stays
 
   // A second render reuses the same container and replaces its rows.
   renderGearSheet(host, state, target, makeDeps().deps);
   assert.equal(doc.document.getElementById(GEAR_SHEET_IDS.stats), statsEl);
   assert.equal(head.children.filter((n) => n.id === GEAR_SHEET_IDS.stats).length, 1);
-  assert.equal(statsEl.children.length, 2, "Phase 95 declared re-pin: toggle plus body, replaced not appended");
+  assert.equal(statsEl.children.length, model.stats.length, "Phase 97.1 declared re-pin: one row per stat, replaced not appended");
+});
+
+// Phase 97.1 (FLAVOR-07): declared re-pin - a flavoured item keeps its numeric stat rows as plain rows and drops only the effect row
+// (the item's own txt sentence, which is rules text); an item with no flavour line draws every row, effect included.
+test("Stats (97.1): a flavoured bagged jewel's only stat row is its effect row, so the container is hidden and empty", () => {
+  const ring = { kind: "jewel", n: "Ring of Power", txt: "a ring, of power, allegedly", eff: { dmg: 1 } };
+  const state = st(fixedChar({ items: [ring] }));
+  const target = { from: "bag", i: 0, n: "Ring of Power" };
+  const model = gearSheetModel(state, target);
+  assert.deepStrictEqual(model.statKeys, ["effect"]);
+  assert.ok(model.stats.includes(ring.txt), "the model still holds the item's txt");
+  const { doc, host } = mountSheetHead();
+  renderGearSheet(host, state, target, makeDeps().deps);
+  const statsEl = doc.document.getElementById(GEAR_SHEET_IDS.stats);
+  assert.equal(statsEl.hidden, true);
+  assert.equal(statsEl.children.length, 0);
+  assert.ok(!statsEl.textContent.includes(ring.txt));
+});
+
+test("Stats (97.1): a flavoured bagged armour shows its AR and wear rows as plain rows", () => {
+  const studded = { kind: "armor", n: "Studded", ar: 10, wp: 18, left: 18, cls: "FT" };
+  const state = st(fixedChar({ items: [studded] }));
+  const target = { from: "bag", i: 0, n: "Studded" };
+  const model = gearSheetModel(state, target);
+  assert.ok(model.lead, "Studded has a flavour line");
+  assert.ok(model.stats.length >= 1 && !model.statKeys.includes("effect"));
+  const { doc, host } = mountSheetHead();
+  renderGearSheet(host, state, target, makeDeps().deps);
+  const statsEl = doc.document.getElementById(GEAR_SHEET_IDS.stats);
+  assert.equal(statsEl.hidden, false);
+  assert.deepStrictEqual(statsEl.children.map((n) => n.textContent), model.stats);
+  assert.ok(statsEl.children.every((n) => n.className.split(/\s+/).includes("mw-gsheet-stat")));
+});
+
+test("Stats (97.1): an item with no flavour line still draws its effect row, visibly, as the one plain row", () => {
+  const trinket = { kind: "jewel", n: "Mystery Trinket", txt: "does a mysterious thing" };
+  const state = st(fixedChar({ items: [trinket] }));
+  const target = { from: "bag", i: 0, n: "Mystery Trinket" };
+  const model = gearSheetModel(state, target);
+  assert.ok(!("lead" in model) && !("statKeys" in model));
+  const { doc, host } = mountSheetHead();
+  renderGearSheet(host, state, target, makeDeps().deps);
+  const statsEl = doc.document.getElementById(GEAR_SHEET_IDS.stats);
+  assert.equal(statsEl.hidden, false);
+  assert.deepStrictEqual(statsEl.children.map((n) => n.textContent), model.stats);
+  assert.ok(statsEl.children.some((n) => n.textContent.includes(trinket.txt)));
 });
 
 test("Stats: an empty stat list hides the container and leaves it with no rows; re-targeting replaces, never appends", () => {
