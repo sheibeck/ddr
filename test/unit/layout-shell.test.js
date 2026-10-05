@@ -207,11 +207,80 @@ test("(o) renderEncounter writes data-panel-up on #mw-stage right after encWasAc
   const after = CODE.slice(at + "encWasActive = active;".length).trimStart();
   assert.ok(after.startsWith('document.getElementById("mw-stage")?.setAttribute("data-panel-up", active ? "1" : "0");'));
   // #enc-panel is a store snapshot root: no data-* attribute is ever written on it by this plan.
-  assert.equal(count(CODE, 'data-panel-up'), 1);
+  assert.equal(count(CODE, 'setAttribute("data-panel-up"'), 1);
   assert.doesNotMatch(CODE, /"enc-panel"\)\??\.setAttribute\("data-/);
   assert.doesNotMatch(MARKUP, /id="enc-panel"[^>]*data-panel-up/);
 });
 
 test("(p) syncArrowPad's railUp expression reads window.__mzLayout?.railBeside?.()", () => {
   assert.ok(CODE.includes('pad.dataset.railUp = model.visible && !window.__mzLayout?.railBeside?.() && railEl && railEl.dataset.shown === "1" ? "1" : "0";'));
+});
+
+// ─── (q) the SIDE block (SCREEN-03/06) ──────────────────────────────────────
+
+// The body of the @media group whose header is `@media ${query}{`, brace-matched.
+function mediaGroup(css, query) {
+  const header = `@media ${query}{`;
+  const at = css.indexOf(header);
+  assert.ok(at !== -1, `media group not found: ${header}`);
+  let depth = 1;
+  let i = at + header.length;
+  for (; i < css.length && depth > 0; i++) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}") depth--;
+  }
+  assert.equal(depth, 0, "the media group closes");
+  return css.slice(at + header.length, i - 1);
+}
+const T_INSET = "var(--safe-area-inset-top, env(safe-area-inset-top, 0px))";
+const B_INSET = "var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))";
+const L_INSET = "var(--safe-area-inset-left, env(safe-area-inset-left, 0px))";
+const R_INSET = "var(--safe-area-inset-right, env(safe-area-inset-right, 0px))";
+const SIDE_W = "var(--mw-side-w, 45%)";
+
+test("(q) exactly one SIDE media group (LAYOUT_MEDIA.side) holds the ten rule groups: nav rail, side panel, docked camp", () => {
+  assert.equal(count(LAYOUT_CSS, `@media ${LAYOUT_MEDIA.side}{`), 1);
+  assert.equal(count(HTML, `@media ${LAYOUT_MEDIA.side}{`), 1);
+  const side = mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.side);
+  const has = (rule) => assert.ok(side.includes(`  ${rule}\n`), `side rule missing: ${rule}`);
+  // 1. the app grid
+  has('#app.mw-app{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"nav hud" "nav cond" "nav stage"}');
+  has("#mw-tabbar{grid-area:nav}");
+  has("#mw-hud{grid-area:hud}");
+  has("#mm-conditions{grid-area:cond}");
+  has(`#mw-stage{grid-area:stage;flex-direction:row;padding-left:0;padding-bottom:${B_INSET}}`);
+  // 2. the navigation rail
+  has(`.mw-tabbar{flex-direction:column;border-top:0;border-right:2px solid var(--rule);padding:${T_INSET} 0 ${B_INSET} ${L_INSET}}`);
+  has(".mw-tab{flex:1 1 0;min-height:48px;min-width:76px;padding:8px 6px;border-top:0;border-left:3px solid transparent}");
+  has(".mw-tab.active{border-left-color:var(--ditto)}");
+  // 3 + 4. screens beside the rail, the map box as a row
+  has("#mw-screens{flex:1 1 0;min-width:0}");
+  has(".mazebox{flex-direction:row}");
+  has(".mw-maze-viewport{flex:1 1 0;width:auto;min-width:0;min-height:0}");
+  // 5. the encounter panel as the right-hand column
+  has(`#enc-panel{position:relative;top:auto;right:auto;bottom:auto;left:auto;flex:0 0 ${SIDE_W};width:${SIDE_W};min-width:0;align-self:stretch;border-left:3px solid #3a3226}`);
+  // 6. the party stays visible beside the panel
+  has(".mw-party-pulse.covered{visibility:visible;animation-play-state:running}");
+  has(".mw-party-pulse.covered ~ .mw-party-sprite{visibility:visible}");
+  has(".mw-party-pulse.covered ~ .mw-party-sprite .mw-party-frame{animation-play-state:running}");
+  // 7. the arrow pad (the stage already pads the side insets)
+  has('.mw-arrow-pad[data-side="right"]{right:12px}');
+  has('.mw-arrow-pad[data-side="left"]{left:12px}');
+  // 8. the rail card overlays by default; an empty rail takes no space
+  has(`#mw-rail{top:auto;right:${R_INSET};bottom:${B_INSET};left:auto;width:${SIDE_W};max-height:70%;overflow-y:auto;padding-left:16px;padding-right:16px;transform:none}`);
+  has("#mw-rail[hidden]{display:none!important}");
+  // 9. the rail card as a column on the MAP tab (verbatim selector)
+  has(`#mw-stage[data-tab="maze"]:not([data-panel-up="1"]) > #mw-rail:not([data-over]){position:relative;top:auto;right:auto;bottom:auto;flex:0 0 ${SIDE_W};width:${SIDE_W};max-height:none;align-self:stretch;border-top:0;border-left:3px solid var(--rail-edge)}`);
+  // 10. Make Camp docked right, still modal
+  has("#mw-camp-sheet{justify-content:flex-end;align-items:stretch}");
+  has("#mw-camp-sheet .mw-legend-scrim{background:rgba(8,7,5,.35)}");
+  has(`#mw-camp-sheet .mw-legend-panel{width:${SIDE_W};max-width:none;max-height:none;height:100%;margin:0;overflow-y:auto;border-top:0;border-left:3px solid #6b5c3c;padding-top:calc(18px + ${T_INSET});padding-right:calc(18px + ${R_INSET})}`);
+  // every rule line inside the group is indented
+  for (const line of side.split("\n").filter((l) => l.trim() !== "")) assert.match(line, /^ {2}\S/, `unindented side rule: ${line.slice(0, 60)}`);
+});
+
+test("(q2) the SIDE group sits after the global rules, and after the compact notes group, inside mw-layout", () => {
+  const sideAt = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.side}{`);
+  assert.ok(sideAt > LAYOUT_CSS.indexOf("  .mw-roller-screen{padding-left:"), "after the side-inset rules");
+  assert.ok(sideAt > LAYOUT_CSS.indexOf("@supports (height: 100dvh) {"), "after the dvh group");
 });

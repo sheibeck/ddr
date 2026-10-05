@@ -2152,6 +2152,40 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 @media (max-width: 599.98px) and (min-height: 480px) {
   .doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}
 }
+
+/* ---- The side layouts (Phase 97, SCREEN-03/06): a phone on its side (short)
+   and, from 97-05, an expanded window. Navigation rail on the left edge, the
+   HUD and the stage to its right; on the MAP the rail card, the encounter
+   panel (combat, store, loot, stairs, death) and the camp sheet take a
+   right-hand side panel (--mw-side-w) that exists only while something is
+   up, so the map keeps the rest. The short block below adds the landscape-only
+   parts. Written after the global rules so it wins; every rule is indented
+   so the line-start pin tests keep reading the base rules. */
+@media (max-height: 479.98px), (min-width: 840px) and (min-height: 480px){
+  #app.mw-app{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"nav hud" "nav cond" "nav stage"}
+  #mw-tabbar{grid-area:nav}
+  #mw-hud{grid-area:hud}
+  #mm-conditions{grid-area:cond}
+  #mw-stage{grid-area:stage;flex-direction:row;padding-left:0;padding-bottom:var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))}
+  .mw-tabbar{flex-direction:column;border-top:0;border-right:2px solid var(--rule);padding:var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) var(--safe-area-inset-left, env(safe-area-inset-left, 0px))}
+  .mw-tab{flex:1 1 0;min-height:48px;min-width:76px;padding:8px 6px;border-top:0;border-left:3px solid transparent}
+  .mw-tab.active{border-left-color:var(--ditto)}
+  #mw-screens{flex:1 1 0;min-width:0}
+  .mazebox{flex-direction:row}
+  .mw-maze-viewport{flex:1 1 0;width:auto;min-width:0;min-height:0}
+  #enc-panel{position:relative;top:auto;right:auto;bottom:auto;left:auto;flex:0 0 var(--mw-side-w, 45%);width:var(--mw-side-w, 45%);min-width:0;align-self:stretch;border-left:3px solid #3a3226}
+  .mw-party-pulse.covered{visibility:visible;animation-play-state:running}
+  .mw-party-pulse.covered ~ .mw-party-sprite{visibility:visible}
+  .mw-party-pulse.covered ~ .mw-party-sprite .mw-party-frame{animation-play-state:running}
+  .mw-arrow-pad[data-side="right"]{right:12px}
+  .mw-arrow-pad[data-side="left"]{left:12px}
+  #mw-rail{top:auto;right:var(--safe-area-inset-right, env(safe-area-inset-right, 0px));bottom:var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));left:auto;width:var(--mw-side-w, 45%);max-height:70%;overflow-y:auto;padding-left:16px;padding-right:16px;transform:none}
+  #mw-rail[hidden]{display:none!important}
+  #mw-stage[data-tab="maze"]:not([data-panel-up="1"]) > #mw-rail:not([data-over]){position:relative;top:auto;right:auto;bottom:auto;flex:0 0 var(--mw-side-w, 45%);width:var(--mw-side-w, 45%);max-height:none;align-self:stretch;border-top:0;border-left:3px solid var(--rail-edge)}
+  #mw-camp-sheet{justify-content:flex-end;align-items:stretch}
+  #mw-camp-sheet .mw-legend-scrim{background:rgba(8,7,5,.35)}
+  #mw-camp-sheet .mw-legend-panel{width:var(--mw-side-w, 45%);max-width:none;max-height:none;height:100%;margin:0;overflow-y:auto;border-top:0;border-left:3px solid #6b5c3c;padding-top:calc(18px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));padding-right:calc(18px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))}
+}
 /* END mw-layout */
 </style>
 </head>
