@@ -36,15 +36,15 @@ const LOCKED = [
   ["naked_ambition", 5, 25, null, "std", "H"],
   ["teetotaler", 5, 15, null, "std", "R"],
   ["read_the_label", null, 5, null, "std", "H"],
-  ["race_human", 5, 10, null, "std", "R"],
-  ["race_elven", 5, 10, null, "std", "R"],
-  ["race_dwarven", 5, 10, null, "std", "R"],
-  ["race_wilmsry", 5, 10, null, "std", "R"],
-  ["race_fridgian", 5, 10, null, "std", "R"],
-  ["race_troll", 5, 10, null, "std", "R"],
-  ["class_magic_user", 5, 10, null, "std", "R"],
-  ["class_fighter", 5, 10, null, "std", "R"],
-  ["class_thief", 5, 10, null, "std", "R"],
+  ["race_human", 10, 20, null, "std", "R"],
+  ["race_elven", 10, 20, null, "std", "R"],
+  ["race_dwarven", 10, 20, null, "std", "R"],
+  ["race_wilmsry", 10, 20, null, "std", "R"],
+  ["race_fridgian", 10, 20, null, "std", "R"],
+  ["race_troll", 10, 20, null, "std", "R"],
+  ["class_magic_user", 10, 20, null, "std", "R"],
+  ["class_fighter", 10, 20, null, "std", "R"],
+  ["class_thief", 10, 20, null, "std", "R"],
   ["tourist", 24, 30, null, "inc", "R"],
   ["survivor_t1", 10, 5, 1, "inc", "R"],
   ["survivor_t2", 25, 10, 2, "inc", "R"],
@@ -219,7 +219,7 @@ test("points: per-id values match the locked table, 5..200 in multiples of 5", (
   assert.equal(Math.max(...ACHIEVEMENTS.map((a) => a.points)), 100);
 });
 
-test("points: total is 1110 (group by group), 890 under Play's 2000 cap", () => {
+test("points: total is 1200 (group by group), 800 under Play's 2000 cap", () => {
   const sum = (ids) => ids.reduce((s, id) => s + byId.get(id).points, 0);
   const tracks = ["frequent_flier", "kills_beasts", "kills_demons", "kills_humans", "kills_lair_beasts",
     "kills_magical", "kills_walking_dead", "survivor", "hoarder", "party_animal", "human_shields", "parlay", "trap_survivor"];
@@ -228,16 +228,16 @@ test("points: total is 1110 (group by group), 890 under Play's 2000 cap", () => 
   assert.equal(sum(tiered), 715);
   assert.equal(sum(["depth_t1", "depth_t2", "depth_t3"]), 60);
   assert.equal(sum(["unicorn"]), 100);
-  assert.equal(sum(["race_human", "race_elven", "race_dwarven", "race_wilmsry", "race_fridgian", "race_troll"]), 60);
-  assert.equal(sum(["class_magic_user", "class_fighter", "class_thief"]), 30);
+  assert.equal(sum(["race_human", "race_elven", "race_dwarven", "race_wilmsry", "race_fridgian", "race_troll"]), 120);
+  assert.equal(sum(["class_magic_user", "class_fighter", "class_thief"]), 60);
   assert.equal(sum(["tourist"]), 30);
   assert.equal(sum(["fully_dressed", "teetotaler", "chicken", "naked_ambition"]), 65);
   assert.equal(sum(["special_snowflake", "read_the_label", "death_trap", "death_falling", "death_starvation", "ether_entombed", "death_disease"]), 50);
   const total = ACHIEVEMENTS.reduce((s, a) => s + a.points, 0);
-  assert.equal(total, 1110);
-  assert.equal(715 + 60 + 100 + 60 + 30 + 30 + 65 + 50, 1110);
+  assert.equal(total, 1200);
+  assert.equal(715 + 60 + 100 + 120 + 60 + 30 + 65 + 50, 1200);
   assert.ok(total < 2000);
-  assert.equal(2000 - total, 890);
+  assert.equal(2000 - total, 800);
 });
 
 test("types: exactly the 57 incremental ids and 20 standard ids, pinned by name", () => {

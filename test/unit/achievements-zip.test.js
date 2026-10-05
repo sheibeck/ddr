@@ -232,7 +232,7 @@ test("the real zip validates with zero violations and the expected stats", () =>
   const v = validateZip(good.buffer, { catalog });
   assert.deepEqual(v.violations, []);
   assert.equal(v.ok, true);
-  assert.deepEqual(v.stats, { entries: 79, achievements: 77, points: 1110, incremental: 57, hidden: 8 });
+  assert.deepEqual(v.stats, { entries: 79, achievements: 77, points: 1200, incremental: 57, hidden: 8 });
 });
 
 test("loadCatalog reads the same catalog the build used", async () => {

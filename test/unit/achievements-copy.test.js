@@ -208,7 +208,7 @@ test("descriptions: each entry with a threshold states it in plain digits", () =
 // track prefix (a key ending in "_" covers every id that starts with it).
 const KILL_SOLO = [/\byourself\b/i, /\bpersonally\b/i, /\balone\b/i, /\bsingle-handed/i, /\bsolo\b/i];
 const ABANDON_RULING = [/abandon/i, /\b(?:not|never|don't|doesn't|won't)\b/i];
-const raceOrClass = (word) => ({ must: [/\bfloor 5\b/, word] });
+const raceOrClass = (word) => ({ must: [/\bfloor 10\b/, word] });
 
 const DESCRIPTION_PINS = {
   kills_beasts_: { must: [/\bBeasts\b/], mustNot: KILL_SOLO },
@@ -237,9 +237,9 @@ const DESCRIPTION_PINS = {
   race_wilmsry: raceOrClass(/\bWilmsry\b/),
   race_fridgian: raceOrClass(/\bFridgian\b/),
   race_troll: raceOrClass(/\bTroll\b/),
-  class_magic_user: { must: [/\bfloor 5\b/, /\bsub-?class/i, /\bMagic User\b/] },
-  class_fighter: { must: [/\bfloor 5\b/, /\bsub-?class/i, /\bFighter\b/] },
-  class_thief: { must: [/\bfloor 5\b/, /\bsub-?class/i, /\bThief\b/] },
+  class_magic_user: { must: [/\bfloor 10\b/, /\bsub-?class/i, /\bMagic User\b/] },
+  class_fighter: { must: [/\bfloor 10\b/, /\bsub-?class/i, /\bFighter\b/] },
+  class_thief: { must: [/\bfloor 10\b/, /\bsub-?class/i, /\bThief\b/] },
   fully_dressed: { must: [/\bweapon/i, /\barmour\b/i, /\bcloak\b/i, /\bjewel/i, /same moment|same time|at once/i] },
   naked_ambition: { must: [/\bfloor 5\b/, /nothing|no weapon|\bbare\b|\bempty\b|unequip|\bFists\b|without/i] },
   teetotaler: {

@@ -60,7 +60,7 @@ test("--build writes a valid zip and prints its path, size, sha256 and counts", 
     assert.equal(printed(r.stdout, "sha256"), sha(bytes));
     assert.equal(printed(r.stdout, "entries"), "79");
     assert.equal(printed(r.stdout, "achievements"), "77");
-    assert.equal(printed(r.stdout, "points"), "1110");
+    assert.equal(printed(r.stdout, "points"), "1200");
     assert.deepEqual(fs.readdirSync(path.dirname(out)), ["ddr-achievements.zip"], "no temp file left");
   }));
 
