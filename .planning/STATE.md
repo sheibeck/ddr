@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.4
-milestone_name: next milestone)
-status: Awaiting next milestone
-stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-05T11:21:44.550Z"
+milestone: v2.5
+milestone_name: Achievements
+status: planning
+last_updated: "2026-10-05T17:01:33.796Z"
 last_activity: 2026-10-05
-last_activity_desc: Milestone v2.4 completed and archived
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 41
-  completed_plans: 41
-  percent: 100
-current_phase: 98
-current_phase_name: Fresh Store & Website Screenshots
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: Milestone v2.4 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-05 — Milestone v2.4 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-05 — Milestone v2.5 started
 
 ## Ground Truth (durable facts every session needs)
 
