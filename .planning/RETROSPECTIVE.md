@@ -367,6 +367,51 @@
 - Sessions: several (the audits, the value review, then the device pass and the release).
 - Notable: 66 plans in four days; batching each audit's rulings up front kept the build plans short.
 
+## v2.4 Fit & Finish (2026-10-03 → 2026-10-05)
+
+**Phases:** 8 (93–97, incl. the inserted 93.1, 94.1 and 97.1) · **Plans:** 41 · shipped as Play 2.4.0 / vc14 (signed AAB, user upload) · Phase 98 screenshots deferred
+
+### What Was Built
+- Quick wins:
+  - harmful chips first
+  - the Cloak of Regeneration heals on use
+  - the Gauntlet of the Giant is +6 damage (player report #6)
+  - a Joiner's level follows the floor
+- Ability rows that read READY / READY IN N / the reason / SPENT THIS FIGHT, by word, edge and colour.
+- 233 fantasy-flavour lines, reviewed three times, across spells, scrolls, items, races, sub-classes, classes, abilities, skills and chips.
+- Then the user's 97.1 ruling: flavour only, with the RULES layer retired. Gear sheets keep their numeric rows.
+- Large screens:
+  - no orientation lock in the manifest; a phone-only Portrait/Rotate setting
+  - window size classes: a landscape side-rail, a widened medium stack and expanded two panes
+  - a zero-dependency CDP layout check over 12 device shapes
+
+### What Worked
+- The user's build gate before the screenshots: a debug APK on the phone, notes agreed, then the signed AAB. A device-led ruling (no RULES button) became a small inserted phase before release, not after.
+- One shared size-class source (`LAYOUT_MEDIA`) for CSS and JS, plus a CDP tool that fails on overflow. It found two real clipping bugs before any device saw them.
+- Publishing review pages for the user (the Phase 96 line review, the 180-screenshot layout gallery) put decisions in front of them at a glance.
+- Executors on master for shared-file waves and worktrees only where files did not overlap. Merges stayed trivial.
+
+### What Was Inefficient
+- Phases 95–96 built a full RULES layer, with sweeps, toggles and an Always setting, that Phase 97.1 removed a day later. A quick device look at the RULES control before building it on 20 surfaces would have saved two phases of plumbing.
+- One plan's executor ran ~2,250 tests in "targeted" sweeps; executor prompts now forbid sweeps explicitly.
+- A session restart killed the Phase 97 planner mid-run with nothing on disk; resumed planners now write each plan to disk as soon as it is drafted.
+- Line-ending noise (CRLF working copies vs LF in the repo) blocked one worktree merge until the index was refreshed.
+
+### Patterns Established
+- Build gate: debug APK and checklist, then patch notes agreed, then the signed release, and only then the screenshots.
+- Size classes decided by window, never by device; one constant source, pinned in both CSS and JS.
+- A user ruling found on the device during the gate becomes an inserted x.1 phase before the release build.
+
+### Key Lessons
+1. Show the user one surface of a new interaction pattern on the device before rolling it out to every surface.
+2. Visual layout work needs a renderer-level check (CDP across profiles), not only DOM pins.
+3. Ask before destructive device steps (an uninstall wipes the local run, settings and handle), even mid-gate.
+
+### Cost Observations
+- Model mix: Opus orchestrator and the Phase 97 planner; Sonnet planners for precedented phases (97.1), all executors and the integration checker.
+- Sessions: several (two restarts with compactions, resumed from STATE and checkpoints).
+- Notable: the user retired stall-watch monitors and asked for the full suite only once per phase; pushes are now done by the orchestrator after each phase.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -387,6 +432,7 @@
 | v2.1 | 1 long run (several compactions) | 16 (six inserted) | Bots only at the milestone end; build part last; live cloud E2E from the orchestrator; patch notes agreed before every release build |
 | v2.2 | 1 long run (1 compaction) | 5 | Discuss/plan of later phases overlapped with execution; parallel worktree waves merged by the orchestrator; transition rules for a live backend swap; live setup by Claude with one console checkpoint |
 | v2.3 | several | 12 (six inserted) | Audit tables with user rulings before any fix; text-vs-engine guards; a pre-release device pass feeding short inserted phases |
+| v2.4 | several (2 restarts) | 8 (three inserted) | Build gate before screenshots; size classes from one constant source; CDP layout check; device-found ruling → inserted phase before release |
 
 ### Cumulative Quality
 
@@ -406,6 +452,7 @@
 | v2.1 | 7902 | parity 66/66 re-baselined for roll-high with declared moves; roll-ledger sync guard; mirror-theorem property test; no-committed-secrets scan | 0 (Firestore via plain fetch, no SDK) |
 | v2.2 | 8068 | engine/parity untouched; rules contract + transition-rules equality tests; fake board server; live smoke 17/17; RETIRE-02 sweep | −1 (the Play Games plugin removed; Firebase via plain fetch) |
 | v2.3 | 10,215 | closed audit tables with named pins (items 117, spells/skills 108, identities 132); text-vs-engine number guards; race × class × sub-class hp guard; declared fixture moves per phase | +1 (the PlayIdentity Capacitor plugin + Play Games SDK, for board names only) |
+| v2.4 | 10,624 | engine/parity untouched bar declared moves (93, 94.1); 20-surface flavour sweep and flavour-only guard; size-class pins + layout:check 12 profiles × 15 scenes | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
