@@ -102,6 +102,8 @@ import { SPELLS } from "../../content/spells.js";
 import { ACHIEVEMENTS } from "../../content/achievements.js";
 // Phase 100 (AUI-01): the unlock banner's chrome copy (card titles, the many-at-once lead and hint, the Earned strip label).
 import { ACHIEVEMENT_CARD_COPY } from "../../src/browser/achievementCard.js";
+// Phase 100 (AUI-02): the achievements list's chrome copy (header, block titles, row states, the Secret teaser, progress units).
+import { ACHIEVEMENTS_SHEET_COPY } from "../../src/browser/achievementsSheet.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
 import { ABILITIES } from "../../content/abilities.js";
@@ -493,6 +495,16 @@ function collectAuthoredStrings() {
       else if (v && typeof v === "object") walkAchievementCardCopy(v, label);
     }
   })(ACHIEVEMENT_CARD_COPY, "ACHIEVEMENT_CARD_COPY");
+  // Phase 100 (AUI-02): the achievements list's chrome copy, same walk. Labels
+  // start with ACHIEVEMENTS_SHEET_COPY. (never ACHIEVEMENTS.) so the Phase 98
+  // count of 231 ACHIEVEMENTS.* labels stays exact.
+  (function walkAchievementsSheetCopy(obj, pathLabel) {
+    for (const [k, v] of Object.entries(obj)) {
+      const label = `${pathLabel}.${k}`;
+      if (typeof v === "string") push(label, v);
+      else if (v && typeof v === "object") walkAchievementsSheetCopy(v, label);
+    }
+  })(ACHIEVEMENTS_SHEET_COPY, "ACHIEVEMENTS_SHEET_COPY");
 
   return out;
 }
@@ -533,6 +545,16 @@ test("Phase 100: the unlock banner's chrome copy is in the authored-string walk"
   for (const l of [
     "ACHIEVEMENT_CARD_COPY.title", "ACHIEVEMENT_CARD_COPY.many.title", "ACHIEVEMENT_CARD_COPY.many.lead",
     "ACHIEVEMENT_CARD_COPY.many.hint", "ACHIEVEMENT_CARD_COPY.strip.label",
+  ]) {
+    assert.ok(labels.has(l), `missing ${l}`);
+  }
+});
+
+test("Phase 100: the achievements list's chrome copy is in the authored-string walk", () => {
+  const labels = new Set(collectAuthoredStrings().map(([label]) => label));
+  for (const l of [
+    "ACHIEVEMENTS_SHEET_COPY.title", "ACHIEVEMENTS_SHEET_COPY.secrets.many",
+    "ACHIEVEMENTS_SHEET_COPY.state.earnedNoDate", "ACHIEVEMENTS_SHEET_COPY.secret.line",
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);
   }
