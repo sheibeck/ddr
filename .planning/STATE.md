@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Fit & Finish
 current_phase: 97
-current_phase_name: Large-Screen Support
 status: executing
 stopped_at: Completed 96-11-PLAN.md
-last_updated: "2026-10-05T01:23:31.324Z"
+last_updated: "2026-10-05T01:23:58.336Z"
 last_activity: 2026-10-04
-last_activity_desc: Phase 96 complete, transitioned to Phase 97
+last_activity_desc: Phase 97 execution started
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 30
+  total_plans: 37
   completed_plans: 30
   percent: 75
+current_phase_name: Large-Screen Support
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Truth in Advertising shipped as Play 2.3.0 / vc13 to closed testing; open Pixel 7 UAT batches: the v2.3 checklist artifact, v2.2 3 upgrade-path rows + user tasks 0.6–0.8, v2.1 108 + 12, v2.0 142, v1.9 21, v1.8 30, v1.7 25 + DR bar, v1.6 26, v1.5 140)
 
 **Core value:** The dungeon crawl — the tension and discovery of descending into the unknown.
-**Current focus:** Phase 96 — Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review
+**Current focus:** Phase 97
 
 ## Current Position
 
-Phase: 97 — Large-Screen Support
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-04 — Phase 96 complete, transitioned to Phase 97
+Phase: 97 — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 97
+Last activity: 2026-10-04 — Phase 97 execution started
 Progress: [██████████] 100% (0 of 6 phases)
 
 Phase order: 93 Quick Wins (CHIP-01, ITEM-08) → 94 Ability States (ASTATE-01..05) → 95 Fantasy Flavour I: text layer, spells, scrolls, items (FLAVOR-01, 02, 05) → 96 Fantasy Flavour II: races, sub-classes, abilities, chips, review (FLAVOR-03, 04, 06) → 97 Large-Screen Support (SCREEN-01..06) → 98 Fresh Store & Website Screenshots (SHOTS-01..03, last by user ruling).
