@@ -103,7 +103,7 @@
 - ✓ **Flavour only** — v2.4 Phase 97.1 (FLAVOR-07, user 2026-10-04 "remove rules entirely"): every RULES toggle and the Always show the rules setting retired; players see only flavour lines (Gear sheets keep numeric stat rows); exact rules text stays in code/models for the guards; flavour-only guard test
 - [ ] **Fantasy-flavour player text** (v2.4 todo) — players read narrative; the exact rules stay in code, docs and the audit pins
 - ✓ **Small v2.4 todos** — v2.4 Phase 93: harmful condition chips first; the Cloak of Regeneration heals a d6 on use (ruling B); plus Phase 93.1, the Gauntlet of the Giant at +6
-- [ ] **Achievements** (v2.5, backlog 999.12) — the user's 81 achievements (icons built from 37 pictures), earned in the game, mirrored to Play Games with Compete ON, and created in Play Console from an import zip the milestone builds
+- [ ] **Achievements** (v2.5, backlog 999.12) — the user's achievements (81 icons built from 37 pictures; 77 ship after Disposable Help was dropped at the Phase 98 discuss), earned in the game, mirrored to Play Games with Compete ON, and created in Play Console from an import zip the milestone builds
 - [ ] **Fresh store and website screenshots** (v2.5, backlog 999.18) — the last phase of v2.5, after the achievements screen exists
 
 ### Out of Scope
@@ -117,21 +117,21 @@
 
 ## Current Milestone: v2.5 Achievements (started 2026-10-05, aimed at Play 2.5.0 / vc15)
 
-**Goal:** Players earn 81 sarcastic achievements in the game, and with Compete ON they also unlock in Play Games for XP. The milestone also delivers a Play Console import zip that creates all 81 achievements.
+**Goal:** Players earn 77 sarcastic achievements in the game, and with Compete ON they also unlock in Play Games for XP. The milestone also delivers a Play Console import zip that creates all 77 achievements.
 
 **Target features:**
-- **One achievement catalog** (the user's 81 from backlog 999.12; the icons are already built in `achievements/`): name, description in the game's voice, tier threshold, points, Hidden or Revealed, incremental or standard. It feeds the game and the import zip.
+- **One achievement catalog** (the user's 81 from backlog 999.12, 77 after the Phase 98 discuss dropped Disposable Help; the icons are already built in `achievements/`): name, description in the game's voice, tier threshold, points, Hidden or Revealed, incremental or standard. It feeds the game and the import zip.
 - **Lifetime stats** in `@capacitor/preferences`, separate from the run save: kills by monster group, deaths, death causes, parleys, traps, Joiners, summons, days and coin. Every count starts at zero on 2.5.0 (user, 2026-10-05: no credit from the graveyard or bests history).
 - **Engine facts only:** the engine reports what happened, with zero rng draws; the achievement tracker is a shell layer that folds events into the lifetime stats.
 - **In the game:** an unlock is a toast with a sarcastic line, not a card; an achievements list opened from ☰ shows locked, unlocked and in-progress achievements and keeps the hidden ones secret.
 - **Play Games mirror:** the in-repo `PlayIdentity` plugin gains unlock, progress, reveal and show calls. Unlocks queue while Compete is OFF or the player is signed out and sync once Compete is ON and signed in (user, 2026-10-05: no separate achievements switch).
-- **Play Console import zip:** a tool builds `AchievementsMetadata.csv` + `AchievementsIconsMappings.csv` + the 81 icons (512 × 512) from the catalog, checked against Google's rules (no header rows, no commas in names or descriptions, names ≤ 100 characters and unique, descriptions ≤ 500, points 5–200 in steps of 5 within the 2,000-point game cap, steps ≤ 10,000).
+- **Play Console import zip:** a tool builds `AchievementsMetadata.csv` + `AchievementsIconsMappings.csv` + the 77 icons (512 × 512) from the catalog, checked against Google's rules (no header rows, no commas in names or descriptions, names ≤ 100 characters and unique, descriptions ≤ 500, points 5–200 in steps of 5 within the 2,000-point game cap, steps ≤ 10,000).
 - **Fresh store and website screenshots** (backlog 999.18, the deferred v2.4 Phase 98), as the last phase.
 
 **Key context:**
 - Play assigns achievement IDs only after the import. The user imports the zip and publishes, then hands back the ID file from the Achievements page's "Get resources"; the game reads Play's IDs from that file (Google's guidance is to keep the IDs in string resources, not in code).
 - An achievement's initial state (Hidden or Revealed) and type (incremental or standard) cannot change once published, and a published achievement cannot be deleted, so both are settled before the zip is built.
-- The brainstorm ideas beyond the 81 stay in the 999.12 backlog entry (each needs new art).
+- The brainstorm ideas beyond the 77 stay in the 999.12 backlog entry (each needs new art).
 - Patch notes are agreed before the release build, and the release build is last.
 
 ## Last Milestone: v2.4 Fit & Finish (shipped 2026-10-05 as Play 2.4.0 / vc14, signed AAB for the user upload)
