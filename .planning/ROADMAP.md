@@ -116,7 +116,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion; 100-01 and 100-02 touch disjoint modules but both edit the two voice-registration files, so they run in order)*
 
-- [ ] 100-02-PLAN.md — the pure list core: the copy bank, the 7 blocks and 35 track rows, dates and unit-bearing progress, the view model (ladders, rungs, secrets that leak nothing) and the TalkBack-ordered DOM renderer
+- [x] 100-02-PLAN.md — the pure list core: the copy bank, the 7 blocks and 35 track rows, dates and unit-bearing progress, the view model (ladders, rungs, secrets that leak nothing) and the TalkBack-ordered DOM renderer
 
 **Wave 3** *(blocked on Wave 2 completion; 100-03, 100-04 and 100-05 all edit `mazeworld.html`, so they run in order)*
 
