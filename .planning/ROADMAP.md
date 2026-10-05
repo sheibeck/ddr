@@ -433,7 +433,7 @@ Plans:
 - **Gravity Wins (user, 2026-10-05, icon done):** die from a fall. Id `death_falling`, not tiered. The engine has no `fall` death cause; the failed climb or leap hurt (`engine/movement.js`, `LEAP_FALL` and the `CLIMB_TABLE` falls) is the likely source. Map it at planning.
 - **Terminal Condition (user, 2026-10-05, icon done):** die of disease. Id `death_disease`, not tiered. The engine has no `disease` death cause; the Disease affliction's ticks are the likely source. Map it at planning.
 - **Empty Calories (user, 2026-10-05, icon done):** starve to death. Id `death_starvation`, not tiered. Death cause `starve`.
-- **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers. Tier counts TBD.
+- **Silver Tongue (user, 2026-10-05, icons done):** successful parleys (`parleyWon`). Id `parlay`, 4 tiers: 10 / 25 / 50 / 100 (user, 2026-10-05), counted across all delves.
 - **Chicken (user, 2026-10-05, icon done):** successfully flee from combat 10 times. Id `chicken`, a one-time achievement, not tiered. It replaces the brainstorm's *Tactical Retreat Enthusiast*.
 - **"Any kind of fun thing" (user):** the brainstorm below is open. Keep what's funny.
 
@@ -512,7 +512,7 @@ Icons are required. Play Games treats each tier as its own achievement, and ever
 | Disposable Help (fallen summons, 5 / 10 / 25 / 50) | 4 | 4 | 1 |
 | Solid Miscalculation (entombed by the Cloak of Ether; added 2026-10-04) | 1 | 1 | 1 |
 | Gravity Wins, Terminal Condition, Empty Calories (added 2026-10-05) | 1 each | 3 | 3 |
-| Silver Tongue (successful parleys; added 2026-10-05) | 4 | 4 | 1 |
+| Silver Tongue (successful parleys, 10 / 25 / 50 / 100; added 2026-10-05) | 4 | 4 | 1 |
 | Chicken (flee 10 times; added 2026-10-05) | 1 | 1 | 1 |
 | **Total** | | **76** | **35** |
 
