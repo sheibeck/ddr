@@ -314,7 +314,9 @@ test("(r) exactly one SHORT media group (LAYOUT_MEDIA.short), after the side gro
   // 2. the one-row HUD
   has('.mw-hud{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ident band2" "track track";align-items:center}');
   has(`.mw-hud-identity{grid-area:ident;padding-top:calc(6px + ${T_INSET});padding-bottom:6px;padding-right:8px}`);
-  has(`.mw-hud-band2{grid-area:band2;padding-top:calc(4px + ${T_INSET});padding-bottom:4px;padding-left:0}`);
+  // Phase 97 (SCREEN-03): declared re-pin. 97-06's layout check found the 48 px menu button
+  // reaching 3 px above the window in the one-row HUD, so band 2's top padding went 4px -> 7px.
+  has(`.mw-hud-band2{grid-area:band2;padding-top:calc(7px + ${T_INSET});padding-bottom:4px;padding-left:0}`);
   has(".mw-hud-wptrack{grid-area:track}");
   has(".mw-cond-strip{padding-top:4px;padding-bottom:5px}");
   // 3. the dropdown fits the short window
@@ -515,4 +517,18 @@ test("(u5) expanded, a death that starts while GEAR fills the pane: the MAP tab 
   assert.equal(r.read("mwActiveTab"), "maze");
   assert.equal(r.doc.document.getElementById("enc-panel").hidden, false);
   assert.equal(r.calls.filter((n) => n === "maze").length, 1, "one switch to MAP");
+});
+
+// ─── (w) the compact HUD gaps (SCREEN-06, found by tools/layout-check.mjs) ─────
+
+test("(w) the compact group eases the HUD band 2 gaps so a 360 px phone shows every counter", () => {
+  const at = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.compact}`);
+  assert.ok(at !== -1, "compact group present");
+  const end = LAYOUT_CSS.indexOf("@media", at + 10);
+  const compact = LAYOUT_CSS.slice(at, end);
+  assert.ok(compact.includes(".mw-hud-band2{gap:clamp(6px, calc((100vw - 340px) / 7), 10px)}"));
+  assert.ok(compact.includes(".mw-hud-counters{gap:clamp(2px, calc((100vw - 332px) / 10), 8px)}"));
+  // the base gaps (10px and 8px) stay as the roomy-window default
+  assert.ok(HTML.includes(".mw-hud-band2{display:flex;align-items:center;gap:10px;"));
+  assert.ok(HTML.includes(".mw-hud-counters{flex:1;min-width:0;display:flex;gap:8px;"));
 });
