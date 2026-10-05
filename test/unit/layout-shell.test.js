@@ -89,7 +89,8 @@ test("(f) one mw-layout style block, last in <head>, with BEGIN/END markers; no 
   assert.match(LAYOUT_STYLE[2], /\/\* BEGIN mw-layout \(Phase 97, SCREEN-03\.\.06\)/);
   assert.match(LAYOUT_STYLE[2], /\/\* END mw-layout \*\//);
   assert.equal(count(HTML, "mw-letterbox"), 0);
-  assert.doesNotMatch(ALL_CSS, /(?<![\w-])body(?![\w-])[^{]*\{[^}]*max-width/i, "no rule sets max-width on body");
+  // Phase 97 (SCREEN-04): declared re-pin. The expanded group (97-05) holds body[data-boards-entry="title"] #screen-dead{max-width:640px...}, a rule for a descendant of body; the pin now matches only rules whose subject is body itself (body, html>body, body[attr]).
+  assert.doesNotMatch(ALL_CSS, /(?<![\w-])body(?:\[[^\]]*\])*\s*\{[^}]*max-width/i, "no rule sets max-width on body");
   assert.doesNotMatch(ALL_CSS, /(?<![\w-])body(?![\w-])[^{]*\{[^}]*contain\s*:\s*layout/i, "no rule sets contain:layout on body");
 });
 
@@ -338,4 +339,68 @@ test("(r2) the base rules the short block overrides are untouched: the hud-menu,
   assert.ok(ALL_CSS.includes(".cb-sum-body{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;margin-top:7px;height:78px;"));
   assert.ok(ALL_CSS.includes(".cb-act{flex:none;border-top:3px solid #3a3226;background:#1b170f;padding:10px 12px 26px}"));
   assert.ok(ALL_CSS.includes(".cb-head{flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 14px 9px;"));
+});
+
+// ─── (s)(t) the MEDIUM and EXPANDED blocks (SCREEN-04/05) ────────────────────
+
+test("(s) exactly one MEDIUM media group (LAYOUT_MEDIA.medium), after the short group, centring the text surfaces at the readable width", () => {
+  assert.equal(count(LAYOUT_CSS, `@media ${LAYOUT_MEDIA.medium}{`), 1);
+  assert.equal(count(HTML, `@media ${LAYOUT_MEDIA.medium}{`), 1);
+  assert.ok(LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.medium}{`) > LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`), "medium follows short");
+  const medium = mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.medium);
+  const has = (rule) => assert.ok(medium.includes(`  ${rule}\n`), `medium rule missing: ${rule}`);
+  assert.equal(LAYOUT_READABLE_MAX_PX, 640);
+  const W = `${LAYOUT_READABLE_MAX_PX}px`;
+  // A1. the tab screens
+  has(`#screen-hero,#screen-gear,#screen-oracle,#screen-dead{max-width:${W};margin-left:auto;margin-right:auto;width:100%}`);
+  // A2. the sheets
+  has(`.mw-legend-panel{max-width:${W};margin-left:auto;margin-right:auto}`);
+  // A3. the encounter overlay keeps covering the map, its content centred
+  has(`#enc-panel{padding-left:max(15px, calc((100% - ${W}) / 2));padding-right:max(15px, calc((100% - ${W}) / 2))}`);
+  has(`#enc-panel[data-mode="dark"]{padding-left:max(0px, calc((100% - ${W}) / 2));padding-right:max(0px, calc((100% - ${W}) / 2))}`);
+  // A4. the bottom rail card centred, its slide transform untouched
+  has(`#mw-rail{left:max(0px, calc((100% - ${W}) / 2));right:max(0px, calc((100% - ${W}) / 2))}`);
+  assert.doesNotMatch(medium, /transform/, "the rail's slide transform is not touched");
+  for (const line of medium.split("\n").filter((l) => l.trim() !== "")) assert.match(line, /^ {2}\S/, `unindented medium rule: ${line.slice(0, 60)}`);
+});
+
+test("(t) exactly one EXPANDED media group (LAYOUT_MEDIA.expanded), after the medium group: the map plus a persistent right pane", () => {
+  assert.equal(count(LAYOUT_CSS, `@media ${LAYOUT_MEDIA.expanded}{`), 1);
+  assert.equal(count(HTML, `@media ${LAYOUT_MEDIA.expanded}{`), 1);
+  const at = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.expanded}{`);
+  assert.ok(at > LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.medium}{`), "expanded follows medium");
+  assert.ok(LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.medium}{`) > LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`) && LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`) > LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.side}{`), "source order SIDE < SHORT < MEDIUM < EXPANDED");
+  const expanded = mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.expanded);
+  const has = (rule) => assert.ok(expanded.includes(`  ${rule}\n`), `expanded rule missing: ${rule}`);
+  // B1. the pane width is the shared constant
+  has(`:root{--mw-side-w:${LAYOUT_SIDE_WIDTH.expanded}}`);
+  assert.equal(LAYOUT_SIDE_WIDTH.expanded, "clamp(360px, 40%, 560px)");
+  // B2. the screens as a grid; a second column on every tab but the map
+  has("#mw-screens{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden}");
+  has(`#mw-stage:not([data-tab="maze"]) > #mw-screens{grid-template-columns:minmax(0,1fr) ${SIDE_W}}`);
+  // B3. the map is always visible on the left, never faded on a tab switch
+  has("#screen-maze{grid-column:1;grid-row:1;min-width:0}");
+  has("#screen-maze[hidden]{display:flex!important}");
+  has('#screen-maze[data-motion="closing"]{position:relative;top:auto;right:auto;bottom:auto;left:auto;animation:none;pointer-events:auto;transform:none!important}');
+  // B4. the persistent right pane
+  has("#screen-hero,#screen-gear,#screen-oracle,#screen-dead{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow-y:auto;border-left:3px solid #3a3226}");
+  has(`.mw-screens > .mw-screen[data-motion="closing"]{left:auto;width:${SIDE_W}}`);
+  // B5. the encounter panel belongs to the MAP tab, as on a phone
+  has('#mw-stage:not([data-tab="maze"]) #enc-panel{display:none!important}');
+  // B6. sheets centred
+  has(`.mw-legend-panel{max-width:${LAYOUT_READABLE_MAX_PX}px;margin-left:auto;margin-right:auto}`);
+  // B7. the title-opened leaderboards own the window
+  has('body[data-boards-entry="title"] #screen-maze{display:none!important}');
+  has('body[data-boards-entry="title"] #mw-stage > #mw-screens{grid-template-columns:minmax(0,1fr)}');
+  has(`body[data-boards-entry="title"] #screen-dead{grid-column:1;max-width:${LAYOUT_READABLE_MAX_PX}px;width:100%;margin-left:auto;margin-right:auto;border-left:0}`);
+  // B8. the Hero dossier stacks in the pane, as on a compact phone
+  has(".doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}");
+  for (const line of expanded.split("\n").filter((l) => l.trim() !== "")) assert.match(line, /^ {2}\S/, `unindented expanded rule: ${line.slice(0, 60)}`);
+  // Prohibitions: no three columns (the encounter panel hides off the MAP tab), and no new rule outside the two
+  // size-class queries (compact stays as it was): nothing follows the expanded group but the END marker.
+  const after = LAYOUT_CSS.slice(at + `@media ${LAYOUT_MEDIA.expanded}{`.length + expanded.length + 1);
+  assert.equal(after.trim(), "", "the expanded group is the last thing in mw-layout");
+  const medAt = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.medium}{`);
+  const shortEnd = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`) + `@media ${LAYOUT_MEDIA.short}{`.length + mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.short).length + 1;
+  assert.equal(LAYOUT_CSS.slice(shortEnd, medAt).trim(), "", "only the two new groups follow the short group");
 });

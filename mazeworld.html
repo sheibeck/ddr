@@ -2214,6 +2214,51 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
   .cb-sum-body{height:44px}
   .cb-act{padding:7px 10px 10px}
 }
+/* ---- The medium window (Phase 97, SCREEN-04): 600-839 px wide, at least 480
+   tall (a portrait tablet, an unfolded foldable held upright). The compact
+   stack, widened: the map already fills the width (cells scaled by fit()),
+   and the text surfaces centre in a readable column at most 640 px wide
+   (LAYOUT_READABLE_MAX_PX). The encounter panel still covers the map but its
+   content is centred, and the bottom rail card is centred the same way (its
+   slide transform is untouched). */
+@media (min-width: 600px) and (max-width: 839.98px) and (min-height: 480px){
+  #screen-hero,#screen-gear,#screen-oracle,#screen-dead{max-width:640px;margin-left:auto;margin-right:auto;width:100%}
+  .mw-legend-panel{max-width:640px;margin-left:auto;margin-right:auto}
+  #enc-panel{padding-left:max(15px, calc((100% - 640px) / 2));padding-right:max(15px, calc((100% - 640px) / 2))}
+  #enc-panel[data-mode="dark"]{padding-left:max(0px, calc((100% - 640px) / 2));padding-right:max(0px, calc((100% - 640px) / 2))}
+  #mw-rail{left:max(0px, calc((100% - 640px) / 2));right:max(0px, calc((100% - 640px) / 2))}
+}
+
+/* ---- The expanded window (Phase 97, SCREEN-04/05): 840 px wide or more and
+   at least 480 tall (a landscape tablet, an unfolded foldable on its side, a
+   Chromebook window). Two panes, never a stretched phone column: the map
+   stays up on the left on EVERY tab, and a right pane (--mw-side-w, 360-560
+   px) holds the chosen Hero, Gear, Oracle or leaderboards (Dead) screen. On
+   the MAP tab the right pane is the play pane (the side block above docks the
+   rail card, the encounter, combat, store, loot, stairs and death there) and
+   takes no width when nothing is up. Choices recorded (Claude's Discretion):
+   the navigation rail serves expanded too (the side block, shared with the
+   short window); Dead and the leaderboards open in the right pane; the pane
+   shows its play content only while something is up, which keeps the standing
+   ruling that no idle card fills an empty pane. Pure CSS over the hidden
+   attributes and data-tab, so crossing 840 px or folding twice lands in the
+   same layout: no script state accumulates per change. */
+@media (min-width: 840px) and (min-height: 480px){
+  :root{--mw-side-w:clamp(360px, 40%, 560px)}
+  #mw-screens{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden}
+  #mw-stage:not([data-tab="maze"]) > #mw-screens{grid-template-columns:minmax(0,1fr) var(--mw-side-w, 45%)}
+  #screen-maze{grid-column:1;grid-row:1;min-width:0}
+  #screen-maze[hidden]{display:flex!important}
+  #screen-maze[data-motion="closing"]{position:relative;top:auto;right:auto;bottom:auto;left:auto;animation:none;pointer-events:auto;transform:none!important}
+  #screen-hero,#screen-gear,#screen-oracle,#screen-dead{grid-column:2;grid-row:1;min-width:0;min-height:0;overflow-y:auto;border-left:3px solid #3a3226}
+  .mw-screens > .mw-screen[data-motion="closing"]{left:auto;width:var(--mw-side-w, 45%)}
+  #mw-stage:not([data-tab="maze"]) #enc-panel{display:none!important}
+  .mw-legend-panel{max-width:640px;margin-left:auto;margin-right:auto}
+  body[data-boards-entry="title"] #screen-maze{display:none!important}
+  body[data-boards-entry="title"] #mw-stage > #mw-screens{grid-template-columns:minmax(0,1fr)}
+  body[data-boards-entry="title"] #screen-dead{grid-column:1;max-width:640px;width:100%;margin-left:auto;margin-right:auto;border-left:0}
+  .doss section + section{border-left:0;padding-left:0;border-top:1px dotted var(--rule);padding-top:14px}
+}
 /* END mw-layout */
 </style>
 </head>
