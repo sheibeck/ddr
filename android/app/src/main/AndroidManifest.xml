@@ -2,13 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Phase 80 (DROID-03): declaring the app a game (the appCategory
-         attribute below, value "game") keeps Android 16 (targetSdk 36)
-         honouring the portrait lock below on displays with smallest width
-         >= 600dp — for apps targeting API 36, Android 16 otherwise ignores
-         orientation/resizability/aspect-ratio restrictions on those large
-         displays, EXCEPT for apps declared as games via this attribute.
-         See docs/ANDROID-DISPLAY.md. -->
+    <!-- Phase 80 (DROID-03) declared the game category (the appCategory
+         attribute below, value "game"). Phase 97 (SCREEN-01) removed the
+         manifest orientation lock, so no orientation, resizability or
+         aspect-ratio restriction lives in this manifest and Play's
+         large-screen notice clears. The category stays because it is the
+         honest one. On phones only (smallest width below 600dp)
+         src/browser/nativeChrome.js locks portrait at runtime from the
+         Settings Screen preference (Portrait by default, Rotate unlocks).
+         The configChanges list on MainActivity keeps rotation, fold, unfold
+         and resize from recreating the WebView, so a run, a fight, an open
+         store and an open sheet stay put. See docs/ANDROID-DISPLAY.md. -->
     <application
         android:allowBackup="true"
         android:appCategory="game"
@@ -42,7 +46,6 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
-            android:screenOrientation="portrait"
             android:exported="true">
 
             <intent-filter>

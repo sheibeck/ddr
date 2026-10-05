@@ -1,19 +1,19 @@
 // test/unit/android-large-screen.test.js
 //
-// Phase 80 (DROID-03) — source pins for the large-screen decision:
-//   1. The manifest declares the app a game (android:appCategory="game")
-//      so Android 16 keeps honouring the portrait lock on large screens,
-//      the MainActivity portrait lock itself is untouched, and no
-//      resizeableActivity / restricted-resizability opt-out property has
-//      been added alongside it.
-//   2. src/browser/nativeChrome.js still locks orientation "portrait".
-//   3. mazeworld.html carries exactly one <style id="mw-letterbox"> block,
-//      positioned after every other <style> element in <head>, holding
-//      BEGIN/END markers and a min-width:481px media query whose
-//      html>body rule sets max-width:480px, margin:0 auto and a
-//      containing-block declaration, and whose :root rule sets the
-//      #080705 gutter background — and no OTHER style block in the file
-//      sets a max-width on body.
+// Phase 97 (SCREEN-01, SCREEN-02, SCREEN-05): declared re-pin of the Phase 80
+// DROID-03 pins. The portrait-lock and letterbox pins are retired: the
+// manifest carries no restriction, nativeChrome locks only phones from the
+// Screen preference, and the letterbox column's pins move to
+// test/unit/layout-shell.test.js (97-03).
+//
+//   1. The manifest keeps android:appCategory="game" but carries no
+//      orientation, resizability or aspect-ratio restriction, and keeps the
+//      exact configChanges list and launchMode so rotation, fold and resize
+//      never recreate the WebView.
+//   2. src/browser/nativeChrome.js locks portrait in exactly one place,
+//      syncOrientationLock, and registerNativeChrome goes through it.
+//   3. decideOrientationLock never locks a device whose smallest width is
+//      600 CSS px or more.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -21,140 +21,102 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import url from "node:url";
 import { stripJs } from "../../tools/ident-sweep.mjs";
+import { decideOrientationLock } from "../../src/browser/nativeChrome.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
 const readRepoFile = (rel) => readFileSync(path.join(REPO_ROOT, rel), "utf8");
-
-// ─── Brace-matching helper (media queries and rule bodies can nest) ────────
-
-/** Given `src` and the index of an opening `{`, returns the index of its matching `}`. */
-function matchingBrace(src, openIdx) {
-  let depth = 0;
-  for (let i = openIdx; i < src.length; i++) {
-    if (src[i] === "{") depth++;
-    else if (src[i] === "}") {
-      depth--;
-      if (depth === 0) return i;
-    }
-  }
-  throw new Error("no matching closing brace found");
-}
+const stripXmlComments = (src) => src.replace(/<!--[\s\S]*?-->/g, "");
 
 // ─── AndroidManifest.xml ────────────────────────────────────────────────────
 
-test("DROID-03: the manifest declares the app a game, keeps the portrait lock, and adds no large-screen opt-out", () => {
-  const manifest = readRepoFile("android/app/src/main/AndroidManifest.xml");
+test("SCREEN-01: the manifest keeps the game category and carries no orientation, resizability or aspect restriction", () => {
+  const manifest = stripXmlComments(readRepoFile("android/app/src/main/AndroidManifest.xml"));
 
   const appTagMatch = manifest.match(/<application\b[^>]*>/);
   assert.ok(appTagMatch, "the manifest has an <application> start tag");
   assert.match(
     appTagMatch[0],
     /android:appCategory\s*=\s*"game"/,
-    "the <application> element declares android:appCategory=\"game\""
+    "the <application> element keeps android:appCategory=\"game\""
   );
 
   const activityTagMatch = manifest.match(/<activity\b[^>]*android:name="\.MainActivity"[^>]*>/s);
   assert.ok(activityTagMatch, "the manifest has the .MainActivity <activity> tag");
-  assert.match(
+  // Phase 97 (SCREEN-01): declared re-pin. Phase 80 pinned
+  // android:screenOrientation="portrait" here; the lock left the manifest.
+  assert.doesNotMatch(
     activityTagMatch[0],
-    /android:screenOrientation\s*=\s*"portrait"/,
-    "the .MainActivity activity keeps android:screenOrientation=\"portrait\""
+    /android:screenOrientation/,
+    "the .MainActivity activity has no android:screenOrientation attribute"
   );
 
-  assert.doesNotMatch(
-    manifest,
-    /android:resizeableActivity\s*=/,
-    "the manifest adds no android:resizeableActivity attribute"
-  );
-  assert.doesNotMatch(
-    manifest,
-    /PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY/,
-    "the manifest adds no restricted-resizability compat property"
-  );
+  // Phase 97 (SCREEN-01): declared re-pin. The whole manifest is now pinned
+  // free of every large-screen restriction, not just resizeableActivity.
+  for (const [re, what] of [
+    [/android:screenOrientation/, "android:screenOrientation"],
+    [/android:resizeableActivity/, "android:resizeableActivity"],
+    [/android:maxAspectRatio/, "android:maxAspectRatio"],
+    [/android:minAspectRatio/, "android:minAspectRatio"],
+    [/PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY/, "the restricted-resizability compat property"],
+    [/<layout\b/, "a <layout> element"],
+  ]) {
+    assert.doesNotMatch(manifest, re, `the manifest carries no ${what}`);
+  }
+});
+
+test("SCREEN-01: MainActivity keeps the exact configChanges list and launchMode singleTask", () => {
+  const manifest = stripXmlComments(readRepoFile("android/app/src/main/AndroidManifest.xml"));
+  const activityTagMatch = manifest.match(/<activity\b[^>]*android:name="\.MainActivity"[^>]*>/s);
+  assert.ok(activityTagMatch, "the manifest has the .MainActivity <activity> tag");
+  const tag = activityTagMatch[0];
+
+  const cc = tag.match(/android:configChanges\s*=\s*"([^"]*)"/);
+  assert.ok(cc, "MainActivity declares android:configChanges");
+  assert.deepEqual(cc[1].split("|"), [
+    "orientation",
+    "keyboardHidden",
+    "keyboard",
+    "screenSize",
+    "locale",
+    "smallestScreenSize",
+    "screenLayout",
+    "uiMode",
+    "navigation",
+    "density",
+  ]);
+  assert.match(tag, /android:launchMode\s*=\s*"singleTask"/, "MainActivity keeps launchMode singleTask");
 });
 
 // ─── src/browser/nativeChrome.js ────────────────────────────────────────────
 
-test("DROID-03: nativeChrome.js still locks orientation to portrait", () => {
+test("SCREEN-02: nativeChrome.js locks portrait in exactly one place, inside syncOrientationLock", () => {
   const src = stripJs(readRepoFile("src/browser/nativeChrome.js"));
-  assert.match(
-    src,
-    /ScreenOrientation\??\.lock\??\.?\(\{\s*orientation:\s*"portrait"\s*\}\)/,
-    "registerNativeChrome still calls ScreenOrientation.lock({ orientation: \"portrait\" })"
-  );
+
+  const lockCall = /\.lock\??\.?\(\{\s*orientation:\s*"portrait"\s*\}\)/g;
+  // Phase 97 (SCREEN-02): declared re-pin. Phase 80 pinned an unconditional
+  // lock inside registerNativeChrome; the only lock call now sits in the
+  // phone-only syncOrientationLock.
+  assert.equal(src.match(lockCall)?.length, 1, "exactly one lock({ orientation: \"portrait\" }) call");
+
+  const start = src.indexOf("export async function syncOrientationLock");
+  assert.ok(start >= 0, "syncOrientationLock is exported");
+  const next = src.indexOf("\nexport ", start + 1);
+  const body = src.slice(start, next === -1 ? undefined : next);
+  assert.match(body, lockCall, "the lock call sits inside syncOrientationLock");
+  assert.match(body, /\.unlock\??\.?\(\)/, "an unlock call sits inside syncOrientationLock");
+
+  const regStart = src.indexOf("export async function registerNativeChrome");
+  assert.ok(regStart >= 0, "registerNativeChrome is exported");
+  const regNext = src.indexOf("\n}\n", regStart);
+  const regBody = src.slice(regStart, regNext === -1 ? undefined : regNext);
+  assert.match(regBody, /syncOrientationLock\(\)/, "registerNativeChrome applies the rule through syncOrientationLock()");
+  assert.doesNotMatch(regBody, /\.lock\??\.?\(/, "registerNativeChrome no longer calls the plugin's lock directly");
 });
 
-// ─── mazeworld.html: the delimited mw-letterbox style block ────────────────
-
-test("DROID-03: mazeworld.html has exactly one mw-letterbox <style> block, last in <head>", () => {
-  const html = readRepoFile("mazeworld.html");
-  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
-  assert.ok(headMatch, "mazeworld.html has a <head> section");
-  const head = headMatch[1];
-
-  const styleOpenTags = [...head.matchAll(/<style\b[^>]*>/g)];
-  assert.ok(styleOpenTags.length >= 2, "the head has more than one <style> element");
-
-  const letterboxOpenTags = styleOpenTags.filter((m) => /id\s*=\s*"mw-letterbox"/.test(m[0]));
-  assert.equal(letterboxOpenTags.length, 1, "exactly one <style id=\"mw-letterbox\"> element exists");
-
-  const lastOpenTag = styleOpenTags[styleOpenTags.length - 1];
-  assert.match(
-    lastOpenTag[0],
-    /id\s*=\s*"mw-letterbox"/,
-    "the mw-letterbox style element is the LAST <style> element in <head>"
-  );
-});
-
-test("DROID-03: the mw-letterbox block holds BEGIN/END markers and the column rules", () => {
-  const html = readRepoFile("mazeworld.html");
-  const openTagMatch = html.match(/<style\s+id\s*=\s*"mw-letterbox"\s*>/);
-  assert.ok(openTagMatch, "mazeworld.html has the <style id=\"mw-letterbox\"> opening tag");
-
-  const blockStart = openTagMatch.index + openTagMatch[0].length;
-  const closeIdx = html.indexOf("</style>", blockStart);
-  assert.ok(closeIdx > blockStart, "the mw-letterbox style element has a closing </style>");
-  const block = html.slice(blockStart, closeIdx);
-
-  assert.match(block, /BEGIN\s+mw-letterbox/, "the block opens with a BEGIN mw-letterbox marker comment");
-  assert.match(block, /END\s+mw-letterbox/, "the block closes with an END mw-letterbox marker comment");
-
-  const mediaMatch = block.match(/@media\s*\(\s*min-width\s*:\s*481px\s*\)\s*\{/);
-  assert.ok(mediaMatch, "the block has an @media (min-width:481px) query");
-  const mediaOpenBraceIdx = mediaMatch.index + mediaMatch[0].length - 1;
-  const mediaCloseBraceIdx = matchingBrace(block, mediaOpenBraceIdx);
-  const mediaBody = block.slice(mediaOpenBraceIdx + 1, mediaCloseBraceIdx);
-
-  const htmlBodyRuleMatch = mediaBody.match(/html\s*>\s*body\s*\{([^}]*)\}/);
-  assert.ok(htmlBodyRuleMatch, "the media query has an html>body rule");
-  const htmlBodyRule = htmlBodyRuleMatch[1];
-  assert.match(htmlBodyRule, /max-width\s*:\s*480px/, "html>body sets max-width:480px");
-  assert.match(htmlBodyRule, /margin\s*:\s*0\s+auto/, "html>body sets margin:0 auto");
-  assert.match(
-    htmlBodyRule,
-    /contain\s*:\s*layout|transform\s*:\s*translateZ\(0\)/,
-    "html>body declares a containing-block property (contain:layout, or the transform fallback)"
-  );
-
-  const rootRuleMatch = mediaBody.match(/:root\s*\{([^}]*)\}/);
-  assert.ok(rootRuleMatch, "the media query has a :root rule");
-  assert.match(rootRuleMatch[1], /background\s*:\s*#080705/, ":root sets background:#080705");
-});
-
-test("DROID-03: no OTHER <style> block in mazeworld.html sets a max-width on body", () => {
-  const html = readRepoFile("mazeworld.html");
-  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
-  const head = headMatch[1];
-
-  const letterboxOpenMatch = head.match(/<style\s+id\s*=\s*"mw-letterbox"\s*>/);
-  assert.ok(letterboxOpenMatch, "the mw-letterbox style element exists in <head>");
-  const headWithoutLetterbox = head.slice(0, letterboxOpenMatch.index);
-
-  assert.doesNotMatch(
-    headWithoutLetterbox,
-    /(?<![\w-])body(?![\w-])[^{]*\{[^}]*max-width/i,
-    "no style block before mw-letterbox sets a max-width on body"
-  );
+test("SCREEN-01: nothing is locked on a tablet, foldable-unfolded or Chromebook window", () => {
+  assert.equal(decideOrientationLock({ screenPref: "portrait", smallestWidth: 412 }), "portrait");
+  assert.equal(decideOrientationLock({ screenPref: "rotate", smallestWidth: 412 }), "unlock");
+  assert.equal(decideOrientationLock({ screenPref: "portrait", smallestWidth: 800 }), "unlock");
 });
