@@ -225,6 +225,9 @@ export const BANK_REGISTRY = Object.freeze([
   bank("content/bags.js", "BAG_FLAVOR", "items", "a bag's flavour line (Gear, store, loot and find cards)"),
   bank("content/treasure-tables.js", "MAGIC_ITEM_FLAVOR", "items", "a jewel's, cloak's or staff's flavour line (Gear, store, loot and find cards, combat ITEMS menu)"),
   bank("content/weapons.js", "WEAPON_FLAVOR", "items", "a weapon type's flavour line (Gear, store, loot and find cards)"),
+  // Phase 98 (ACH-02): the achievement catalog's Play name and description (the Play
+  // Console import and the achievements list) and the in-game unlock line.
+  bank("content/achievements.js", "ACHIEVEMENTS", "panels", "an achievement's name and Play description (the Play Console import and the achievements list) and its unlock line", { pick: ["name", "description", "line"] }),
   bank("content/armors.js", "ARMOR_FLAVOR", "items", "an armour type's flavour line (Gear, store, loot and find cards)"),
 ]);
 

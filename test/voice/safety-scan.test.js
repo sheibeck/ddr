@@ -98,6 +98,8 @@ import { NAMES } from "../../content/names.js";
 import { RACES } from "../../content/races.js";
 import { RACE_NOTE, CLASS_NOTE, SUB_NOTE, TEMPERAMENTS, MOTIVES, PHOBIAS, JOINER_EXIT_LINES, JOINER_MURDER_LINES, JOINER_PARTING_LINES } from "../../content/flavor.js";
 import { SPELLS } from "../../content/spells.js";
+// Phase 98 (ACH-02): the achievement catalog's name / description / line copy joins the same walk.
+import { ACHIEVEMENTS } from "../../content/achievements.js";
 import { POTIONS } from "../../content/potions.js";
 import { FIGHTER_SKILLS, THIEF_SKILLS } from "../../content/skills.js";
 import { ABILITIES } from "../../content/abilities.js";
@@ -471,6 +473,14 @@ function collectAuthoredStrings() {
       }
     })(bank, bankName);
   }
+  // Phase 98 (ACH-02): the achievement catalog is a new content bank and is NOT
+  // auto-discovered; walk its three copy fields (name and description go to Play,
+  // line is the in-game unlock line).
+  for (const a of ACHIEVEMENTS) {
+    push(`ACHIEVEMENTS.${a.id}.name`, a.name);
+    push(`ACHIEVEMENTS.${a.id}.description`, a.description);
+    push(`ACHIEVEMENTS.${a.id}.line`, a.line);
+  }
 
   return out;
 }
@@ -491,6 +501,19 @@ test("Phase 85: the LEADERBOARD_COPY.global-equivalent and the placement banks a
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);
   }
+});
+
+test("Phase 98: the achievement catalog's 231 name / description / line strings are in the authored-string walk", () => {
+  const labels = collectAuthoredStrings().map(([label]) => label).filter((l) => l.startsWith("ACHIEVEMENTS."));
+  assert.equal(labels.length, 231);
+  assert.equal(new Set(labels).size, 231, "no duplicate labels");
+  assert.equal(ACHIEVEMENTS.length * 3, 231);
+  const have = new Set(labels);
+  for (const a of ACHIEVEMENTS) {
+    for (const f of ["name", "description", "line"]) assert.ok(have.has(`ACHIEVEMENTS.${a.id}.${f}`), `missing ${a.id}.${f}`);
+  }
+  assert.ok(have.has("ACHIEVEMENTS.special_snowflake.line"));
+  assert.ok(have.has("ACHIEVEMENTS.kills_walking_dead_t4.description"));
 });
 
 // ─── Meta-test A: the allowlist is COMPLETE (no false positives) ────────────
