@@ -11,6 +11,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+import vm from "node:vm";
+
+import { newRun } from "../../engine/state.js";
+import { createRecordingDocument } from "./harness/recordingDom.js";
+import { loadShellSandbox } from "./harness/shellSandbox.js";
 
 import { stripJs, stripHtml } from "../../tools/ident-sweep.mjs";
 import { LAYOUT_MEDIA, LAYOUT_SIDE_WIDTH, LAYOUT_READABLE_MAX_PX } from "../../src/browser/layoutClass.js";
@@ -403,4 +408,95 @@ test("(t) exactly one EXPANDED media group (LAYOUT_MEDIA.expanded), after the me
   const medAt = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.medium}{`);
   const shortEnd = LAYOUT_CSS.indexOf(`@media ${LAYOUT_MEDIA.short}{`) + `@media ${LAYOUT_MEDIA.short}{`.length + mediaGroup(LAYOUT_CSS, LAYOUT_MEDIA.short).length + 1;
   assert.equal(LAYOUT_CSS.slice(shortEnd, medAt).trim(), "", "only the two new groups follow the short group");
+});
+
+// ─── (u)(v) a fight that starts in expanded takes the pane (SCREEN-04) ───────
+
+function sandboxBoot() {
+  const doc = createRecordingDocument();
+  const sandbox = loadShellSandbox({ doc });
+  const w = sandbox.context.window;
+  const state = newRun(11, [], { force: { cls: "Fighter" } });
+  state.c.wp = state.c.maxWP;
+  sandbox.setState(state);
+  sandbox.paint();
+  const calls = [];
+  const realShowTab = w.__mzShowTab;
+  w.__mzShowTab = (name) => {
+    calls.push(name);
+    return realShowTab(name);
+  };
+  const read = (expr) => vm.runInContext(expr, sandbox.context);
+  const withCombat = () => {
+    const s = structuredClone(state);
+    s.combat = {
+      foes: [{ name: "Limp Wolf", type: "Beasts", lvl: 1, size: "S", intel: 1, wp: 10, maxWP: 10, alive: true, asleep: 0, sp: {}, lives: 1 }],
+      type: "Beasts", round: 1, target: 0, spellOpen: false, tracked: false, first: "you",
+    };
+    return s;
+  };
+  return { doc, sandbox, w, calls, read, withCombat, realShowTab };
+}
+
+test("(u1) expanded (mapStaysUp), HERO shown: a fight that starts brings the MAP tab forward exactly once, and the panel is up", () => {
+  const r = sandboxBoot();
+  r.w.__mzLayout = { mapStaysUp: () => true, railBeside: () => true };
+  r.w.__mzShowTab("hero");
+  assert.equal(r.read("mwActiveTab"), "hero");
+  r.calls.length = 0;
+  r.sandbox.setState(r.withCombat());
+  r.sandbox.renderEncounter();
+  assert.deepEqual(r.calls, ["maze"]);
+  assert.equal(r.read("mwActiveTab"), "maze");
+  assert.equal(r.doc.document.getElementById("enc-panel").hidden, false);
+  assert.equal(r.doc.document.getElementById("mw-stage").getAttribute("data-panel-up"), "1");
+});
+
+test("(u2) not expanded (mapStaysUp false, or no __mzLayout): no switch, the tab stays HERO as today", () => {
+  for (const layout of [{ mapStaysUp: () => false, railBeside: () => false }, undefined]) {
+    const r = sandboxBoot();
+    if (layout) r.w.__mzLayout = layout;
+    r.w.__mzShowTab("hero");
+    r.calls.length = 0;
+    r.sandbox.setState(r.withCombat());
+    r.sandbox.renderEncounter();
+    assert.deepEqual(r.calls, []);
+    assert.equal(r.read("mwActiveTab"), "hero");
+  }
+});
+
+test("(u3) expanded, MAP already active: an encounter that starts makes no extra showTab call", () => {
+  const r = sandboxBoot();
+  r.w.__mzLayout = { mapStaysUp: () => true, railBeside: () => true };
+  assert.equal(r.read("mwActiveTab"), "maze");
+  r.sandbox.setState(r.withCombat());
+  r.sandbox.renderEncounter();
+  assert.deepEqual(r.calls, []);
+  assert.equal(r.read("mwActiveTab"), "maze");
+});
+
+test("(u4) expanded, an encounter already up: opening GEAR mid-fight and re-rendering does not switch back (only the start edge switches)", () => {
+  const r = sandboxBoot();
+  r.w.__mzLayout = { mapStaysUp: () => true, railBeside: () => true };
+  r.w.__mzShowTab("hero");
+  r.sandbox.setState(r.withCombat());
+  r.sandbox.renderEncounter();
+  assert.equal(r.read("mwActiveTab"), "maze");
+  r.w.__mzShowTab("gear");
+  r.calls.length = 0;
+  r.sandbox.renderEncounter();
+  r.sandbox.renderEncounter();
+  assert.deepEqual(r.calls, []);
+  assert.equal(r.read("mwActiveTab"), "gear");
+});
+
+test("(v) renderEncounter computes encStarting right after hasActiveEncounter(), and the switch reads window.__mzLayout?.mapStaysUp?.()", () => {
+  const render = sliceBetween(CODE, "function renderEncounter()", "\nfunction ");
+  const at = render.indexOf("const active = hasActiveEncounter();");
+  assert.ok(at !== -1);
+  assert.ok(render.slice(at).replace(/^const active = hasActiveEncounter\(\);\s*/, "").startsWith("const encStarting = active && !encWasActive;"), "encStarting follows `active` immediately");
+  assert.equal(count(render, "const encStarting = active && !encWasActive;"), 1);
+  assert.ok(render.includes('if (encStarting && window.__mzLayout?.mapStaysUp?.() && mwActiveTab !== "maze" && window.__mzShowTab) window.__mzShowTab("maze");'));
+  assert.ok(render.indexOf("encWasActive = active;") < render.indexOf("window.__mzLayout?.mapStaysUp?.()"), "the switch follows the encWasActive bookkeeping");
+  assert.ok(render.indexOf('setAttribute("data-panel-up"') < render.indexOf("window.__mzLayout?.mapStaysUp?.()"), "the switch follows the data-panel-up line");
 });

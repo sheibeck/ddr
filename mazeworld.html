@@ -5697,6 +5697,7 @@ function renderEncounter() {
   // ONLY while something is actually happening (feature-tile narration,
   // combat, store, death/win) — never a permanent fixture beneath the map.
   const active = hasActiveEncounter();
+  const encStarting = active && !encWasActive;
   // Phase 70 (D-08, ruling R-D): the ☰ now opens over encounters, so only an
   // encounter STARTING (the false -> true edge) closes an open menu — a
   // safety net, since the scrim above the overlay makes it practically
@@ -5730,6 +5731,8 @@ function renderEncounter() {
   encWasActive = active;
   // Phase 97 (SCREEN-03): while the encounter panel is up the side layouts overlay the rail card on the panel's column instead of opening a second column
   document.getElementById("mw-stage")?.setAttribute("data-panel-up", active ? "1" : "0");
+  // Phase 97 (SCREEN-04): in the expanded two panes the map stays visible on every tab, so the player can walk while Hero, Gear, the Oracle or the leaderboards fill the pane; a fight, store, find screen, stair prompt or death that starts then brings the play pane (the MAP tab) forward at once. Only the start edge switches, so a player who opens Gear mid-fight keeps it. The death branch's own switch below is untouched (a death on HERO/GEAR in compact still switches there).
+  if (encStarting && window.__mzLayout?.mapStaysUp?.() && mwActiveTab !== "maze" && window.__mzShowTab) window.__mzShowTab("maze");
   if (!active) {
     if (panel) hidePanel(panel);
     // 2026-09-17 UAT PERF/addendum: the panel no longer covers the map —
