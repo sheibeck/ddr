@@ -12,6 +12,11 @@
 //     persistence design (T-02-04): a fire-and-forget write started in a
 //     pause/appStateChange handler has no guarantee of completing before the
 //     OS suspends/kills the process.
+//   - PHONE_SMALLEST_WIDTH_LIMIT, decideOrientationLock(...),
+//     syncOrientationLock() (Phase 97, SCREEN-02/SCREEN-05): the phone-only,
+//     Screen-preference-driven orientation rule. decideOrientationLock is
+//     PURE; syncOrientationLock re-applies it idempotently (one plugin call
+//     per real change) and never throws.
 //   - registerNativeChrome({...}): the native-only wiring that reaches
 //     `@capacitor/app` (and, for chrome finalized in 02-04 and migrated to
 //     the core SystemBars plugin in 80-02,
@@ -62,6 +67,37 @@ export function decideBackAction({
   if (alreadyConfirming) return "exit-app";
   if (hasLiveRun) return "confirm-quit";
   return "exit-app";
+}
+
+/**
+ * PHONE_SMALLEST_WIDTH_LIMIT — a device is a PHONE when its smallest width, in
+ * CSS px (dp), is below this. The Screen preference (Portrait / Rotate)
+ * applies only on a phone; tablets, unfolded foldables and Chromebook windows
+ * (smallest width 600 or more) always follow the device and are never locked.
+ * This is a DEVICE rule, separate from the window size classes in
+ * src/browser/layoutClass.js (97-02), even though both happen to use 600.
+ */
+export const PHONE_SMALLEST_WIDTH_LIMIT = 600;
+
+/**
+ * decideOrientationLock({ screenPref, smallestWidth }) — pure decision for the
+ * runtime ScreenOrientation lock (Phase 97, SCREEN-02). No DOM, no window, no
+ * plugin access. Returns "portrait" or "unlock":
+ *
+ *   - "portrait" only for a phone (smallestWidth < 600) whose Screen
+ *     preference is not "rotate" (an unknown or missing preference reads as
+ *     the Portrait default).
+ *   - "unlock" for a phone set to "rotate", and for every device whose
+ *     smallestWidth is 600 or more, whatever the preference says.
+ *
+ * Boundaries: 599 and 599.98 are phones; 600 and 601 are not. A missing,
+ * non-numeric, non-finite, zero or negative smallestWidth counts as a phone,
+ * so the shipped portrait default holds when the measurement is unavailable.
+ */
+export function decideOrientationLock({ screenPref, smallestWidth } = {}) {
+  const measured = typeof smallestWidth === "number" && Number.isFinite(smallestWidth) && smallestWidth > 0;
+  const isPhone = !measured || smallestWidth < PHONE_SMALLEST_WIDTH_LIMIT;
+  return isPhone && screenPref !== "rotate" ? "portrait" : "unlock";
 }
 
 /**
@@ -148,6 +184,12 @@ async function loadApp(injectedApp) {
  * is false and this function is never called at all) never attempt to
  * resolve a bare `@capacitor/*` specifier.
  *
+ * Phase 97 (SCREEN-02/SCREEN-05): two optional getters, `getScreenPref` and
+ * `getSmallestWidth`, are read at call time on every orientation sync; the
+ * shell passes the saved Screen setting and Math.min(screen.width,
+ * screen.height). Without them the rule sees "no preference, unmeasured",
+ * which is a phone on the Portrait default.
+ *
  * `getGameContext()` is called fresh on every backButton press and must
  * return `{ hasOpenModal, hasLiveRun, isAtRoot, closeModal, navigateBack,
  * showConfirmQuit }` — the boolean fields feed decideBackAction (`canGoBack`
@@ -178,14 +220,66 @@ async function loadApp(injectedApp) {
 // previously protected against it.
 let registered = false;
 
+// Phase 97 (SCREEN-02/SCREEN-05): module state for the orientation rule.
+// orientationPlugin / orientationGetters are set by registerNativeChrome;
+// lastOrientationLock remembers the last decision that actually reached the
+// plugin so a repeat sync with the same inputs makes no second call.
+let orientationPlugin = null;
+let orientationGetters = null;
+let lastOrientationLock = null;
+
+/**
+ * syncOrientationLock() — applies decideOrientationLock to the registered
+ * ScreenOrientation plugin, reading the Screen preference and the smallest
+ * width from the injected getters at call time. Idempotent: the same decision
+ * as the last successful one makes no plugin call; a changed preference or a
+ * fold/unfold crossing the 600 line makes exactly one lock() or unlock().
+ * A throwing getter reads as undefined; a throwing plugin call is swallowed
+ * and forgotten so the next sync retries. Before registerNativeChrome has run
+ * it returns null and touches nothing (browser dev loop, node --test).
+ * Never throws. Resolves to the decision.
+ */
+export async function syncOrientationLock() {
+  if (!orientationPlugin) return null;
+  let screenPref;
+  let smallestWidth;
+  try {
+    screenPref = orientationGetters?.getScreenPref?.();
+  } catch {
+    screenPref = undefined;
+  }
+  try {
+    smallestWidth = orientationGetters?.getSmallestWidth?.();
+  } catch {
+    smallestWidth = undefined;
+  }
+  const decision = decideOrientationLock({ screenPref, smallestWidth });
+  if (decision === lastOrientationLock) return decision;
+  try {
+    if (decision === "portrait") {
+      await orientationPlugin.lock?.({ orientation: "portrait" });
+    } else {
+      await orientationPlugin.unlock?.();
+    }
+    lastOrientationLock = decision;
+  } catch {
+    /* plugin call failed — forget it so the next sync retries */
+    lastOrientationLock = null;
+  }
+  return decision;
+}
+
 /**
  * __resetNativeChromeRegistrationForTests() — test-only: clears the
- * idempotency guard so `node --test` (which calls registerNativeChrome()
+ * idempotency guard (and the Phase 97 orientation state) so `node --test` (which calls registerNativeChrome()
  * once per test case, each with its own fresh fake App) doesn't have every
  * test after the first silently no-op. Production code never calls this.
  */
 export function __resetNativeChromeRegistrationForTests() {
   registered = false;
+  orientationPlugin = null;
+  orientationGetters = null;
+  lastOrientationLock = null;
 }
 
 export async function registerNativeChrome({
@@ -198,6 +292,8 @@ export async function registerNativeChrome({
   getGameContext,
   onBackground,
   onForeground,
+  getScreenPref,
+  getSmallestWidth,
 } = {}) {
   if (registered) return;
   registered = true;
@@ -237,7 +333,11 @@ export async function registerNativeChrome({
   }
   try {
     const ScreenOrientation = injectedScreenOrientation || (await import("@capacitor/screen-orientation")).ScreenOrientation;
-    await ScreenOrientation?.lock?.({ orientation: "portrait" });
+    // Phase 97 (SCREEN-02): the phone-only, preference-driven rule replaces
+    // the unconditional portrait lock; see decideOrientationLock.
+    orientationPlugin = ScreenOrientation || null;
+    orientationGetters = { getScreenPref, getSmallestWidth };
+    await syncOrientationLock();
   } catch {
     /* screen-orientation plugin unavailable/not yet configured — non-fatal */
   }
