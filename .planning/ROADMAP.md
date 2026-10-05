@@ -30,6 +30,7 @@
 - [x] **Phase 95: Fantasy Flavour I: The Text Layer, Spells, Scrolls & Items** - Spells, scrolls, equipment, magic items and potions read as fantasy flavour; the exact rules live in a technical layer that the truth guards pin and the player can still reach. (completed 2026-10-03)
 - [x] **Phase 96: Fantasy Flavour II: Races, Sub-classes, Abilities, Chips & the Review** - Race and sub-class blurbs, ability descriptions and chip explanations read as flavour (good and bad still conveyed), and every new text clears the safety scan and the narrative review. (completed 2026-10-04)
 - [x] **Phase 97: Large-Screen Support** - No orientation or resizability restriction; a full run in landscape, sensible tablet, foldable and Chromebook layouts, and rotating, folding or resizing never loses a run. (completed 2026-10-04)
+- [ ] **Phase 97.1: Flavour Only** (INSERTED) - Players see only the flavour lines: every RULES toggle and the Always show the rules setting are retired; the exact rules text stays in code for the guards.
 - [ ] **Phase 98: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the current game, with real tablet and landscape shots.
 
 **Sequencing:** SHOTS is last (user): after large-screen support so the tablet and landscape shots are real, and after the flavour text so the shots show the final words. The two quick wins go first: the cloak's final text feeds the flavour pass, and the chip strip is in its final order before the other UI work. Ability states (94) and the flavour text (95–96) land before large-screen support (97), so the landscape and tablet layouts are designed once against the final rows, the details surface and the real text lengths, and one refreshed set of shell snapshots and one perf baseline describe the final UI. Engine bytes move only in Phase 93 (ITEM-08, a derived-stream tick with declared fixtures) and Phase 94 (ASTATE-04, additive derived state, zero draws); the rest is shell, content, Android manifest and tooling. No bot pass is planned (no balance change beyond the cloak tick; the fair bot's cloak model is updated in Phase 93).
@@ -290,6 +291,23 @@ Full details: `.planning/milestones/v2.0-ROADMAP.md`.
 - [x] 97-07-PLAN.md
 
 **UI hint**: yes
+
+### Phase 97.1: Flavour Only (INSERTED)
+
+**Goal:** Every player-facing description reads as flavour only. No RULES toggle and no Always show the rules setting remain anywhere in the game (user ruling 2026-10-04, "Remove rules entirely").
+**Requirements**: FLAVOR-07
+**Depends on:** Phase 97. It runs before the build gate's release build. The rules data (RACE_NOTE, SUB_NOTE, CLASS_NOTE, item notes, spell/ability/skill txt, CONDITION_EXPLAIN, identity footers) stays in code, because the v2.3/Phase 95 guard tests read it. It is simply rendered nowhere. Engine gate: no rule, number, rng or serialized-field change. `alwaysRules` leaves the settings model: old blobs tolerant-load and drop it.
+**Success Criteria** (what must be TRUE):
+
+  1. No screen renders a RULES control or a rules body. That covers the roller, Hero, Gear and its sheet, the store, sell, loot/find, the drop shelf, the Grimoire, combat SPELLS, ITEMS, ABILITIES and SING, chip taps, UP YOUR SLEEVE and the Final Sheet. A sweep test fails if any `rules:` toggle or body reappears.
+  2. Settings has no Always show the rules row, and the setting key is gone from defaults and allowed values. An old saved settings blob still loads.
+  3. Every surface still shows its flavour line where it showed one before, and surfaces with no flavour line keep today's text.
+  4. The guard tests still pin every rules number to the engine; only their path to the text changes, with no guard lost. docs/TEXT-LAYERS.md, the 2.4.0 patch notes and the UAT checklist say flavour-only.
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 97.1 to break down)
 
 ### Phase 98: Fresh Store & Website Screenshots
 
