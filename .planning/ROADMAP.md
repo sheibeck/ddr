@@ -64,7 +64,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 98-03-PLAN.md — the zip tool and 25-rule validator with tests that prove it fails, `docs/ACHIEVEMENTS.md`, the generated copy table, and the hand-off of the built zip (a non-blocking human step)
+- [x] 98-03-PLAN.md — the zip tool and 25-rule validator with tests that prove it fails, `docs/ACHIEVEMENTS.md`, the generated copy table, and the hand-off of the built zip (a non-blocking human step)
 
 ### Phase 99: Engine Facts & Lifetime Stats Tracker
 

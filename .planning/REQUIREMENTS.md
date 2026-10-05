@@ -41,9 +41,9 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 
 ### Play Console import zip (999.12)
 
-- [ ] **ZIP-01**: A repo tool builds the Play Console import zip from the catalog and the `achievements/play/` icons: `AchievementsMetadata.csv` (no header row; Name, Description, Incremental value, Steps Needed, Initial State, Points, List Order), `AchievementsIconsMappings.csv` (no header row; Name, icon file) and the 77 PNG icons, flat with unique file names; the list order matches the in-game list
-- [ ] **ZIP-02**: A test checks the zip against Google's rules: no subdirectories; only CSV and PNG files; each file under 1 MB; at most 403 files; 7 values per metadata row and 2 per mapping row; `True`/`False` and `Hidden`/`Revealed` spelt exactly; steps only on incremental rows; the ACH-02 and ACH-03 limits; every row has an icon that exists, and every icon is exactly 512 × 512
-- [ ] **ZIP-03**: `docs/ACHIEVEMENTS.md` covers rebuilding the zip, importing it in Play Console (Grow users > Play Games Services > Setup and management > Achievements > Import achievements, then Save as draft), testing with tester accounts, publishing, and fetching the IDs file with Get resources
+- [x] **ZIP-01**: A repo tool builds the Play Console import zip from the catalog and the `achievements/play/` icons: `AchievementsMetadata.csv` (no header row; Name, Description, Incremental value, Steps Needed, Initial State, Points, List Order), `AchievementsIconsMappings.csv` (no header row; Name, icon file) and the 77 PNG icons, flat with unique file names; the list order matches the in-game list
+- [x] **ZIP-02**: A test checks the zip against Google's rules: no subdirectories; only CSV and PNG files; each file under 1 MB; at most 403 files; 7 values per metadata row and 2 per mapping row; `True`/`False` and `Hidden`/`Revealed` spelt exactly; steps only on incremental rows; the ACH-02 and ACH-03 limits; every row has an icon that exists, and every icon is exactly 512 × 512
+- [x] **ZIP-03**: `docs/ACHIEVEMENTS.md` covers rebuilding the zip, importing it in Play Console (Grow users > Play Games Services > Setup and management > Achievements > Import achievements, then Save as draft), testing with tester accounts, publishing, and fetching the IDs file with Get resources
 
 ### Screenshots (999.18)
 
@@ -97,9 +97,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PGS-09 | Phase 101 | Pending |
 | PGS-10 | Phase 101 | Pending |
 | PGS-11 | Phase 101 | Pending |
-| ZIP-01 | Phase 98 | Pending |
-| ZIP-02 | Phase 98 | Pending |
-| ZIP-03 | Phase 98 | Pending |
+| ZIP-01 | Phase 98 | Complete |
+| ZIP-02 | Phase 98 | Complete |
+| ZIP-03 | Phase 98 | Complete |
 | SHOTS-01 | Phase 102 | Pending |
 | SHOTS-02 | Phase 102 | Pending |
 | SHOTS-03 | Phase 102 | Pending |
