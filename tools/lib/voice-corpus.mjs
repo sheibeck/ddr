@@ -284,6 +284,10 @@ export const NON_COPY_EXPORTS = Object.freeze([
   // boardsView.js#LINEAGE_SUBS row this disposition used to mirror.
   nonCopy("src/browser/leaderboardView.js", "SUB_IDS", "sub-class name ids used to validate a SUB-CLASS sheet pick (name vocabulary, not sentences)"),
   nonCopy("src/browser/motion.js", "REDUCED_MOTION_QUERY", "a CSS media query"),
+  // Phase 97 (SCREEN-03): the size-class media strings and the side-pane width
+  // are CSS, shared by the stylesheet and the layout watcher; never rendered.
+  nonCopy("src/browser/layoutClass.js", "LAYOUT_MEDIA", "the CSS media-query strings for the screen size classes"),
+  nonCopy("src/browser/layoutClass.js", "LAYOUT_SIDE_WIDTH", "CSS width values for the side pane per size class"),
   // 79.3: the bundled release notes for this version, generated from
   // docs/patch-notes/<versionName>.md by tools/patch-notes.mjs --write-module:
   // release content, not UI copy (D-18/D-19 and the addendum's Copy note).
