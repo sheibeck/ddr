@@ -920,8 +920,18 @@ scrim and the Android back button all close it (`hasOpenModal` and `closeModal` 
   `window.mzRefreshAchievementsSheet` and the count through `window.mzSyncAchievementsCount`.
 - **Icons in the web bundle.** The 144 x 144 PNGs come from `achievements/ingame/`;
   `tools/build-www.mjs` (`copyAchievementIcons`) copies exactly that folder to
-  `www/achievements/ingame/` (and nothing else from `achievements/`), so the same
+  `www/achievements/ingame/` (and, since quick 261005-vhn, `achievements/large/`, the 320 x 320
+  art behind the large view; nothing else from `achievements/`), so the same
   page-relative path works in the browser dev loop and in the Android WebView.
+- **The large view (quick 261005-vhn).** An EARNED entry's icon (a single row, a track head,
+  an earned rung) carries a `large` object in the view and renders as a transparent button laid
+  over the icon, labelled "<name>, view larger" (`ACHIEVEMENTS_SHEET_COPY.viewLarger`), before
+  the head so the head still precedes its rung list; a locked or secret entry has neither. The
+  tap calls `onLarge(large, button)`, which fills `#mw-achievements-large`, an overlay inside
+  the sheet showing the 320 px art (`achievementLargeSrc`, at most 240 px, shrinking to fit),
+  the name, the line and the earned date. A tap anywhere on it, or one Android back press
+  (`closeModal` checks it before the sheet), closes only the overlay, and focus returns to the
+  button, found again by its `data-large` key. It declares no motion.
 - **The layout classes.** The panel is a flex column that does not scroll; its body
   (`#mw-achievements-body`) owns the vertical scroll and never scrolls sideways. Rows flow
   by CSS grid `auto-fill` with a 300px column minimum on the window width alone: one

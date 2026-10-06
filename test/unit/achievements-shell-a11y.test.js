@@ -198,7 +198,7 @@ test("a11y tree: on a real render only the icons and the ladder are aria-hidden"
     if (n.nodeType !== 1 || n.getAttribute("aria-hidden") !== "true") return;
     hidden++;
     const cls = n.className || "";
-    const isIcon = n.tagName.toLowerCase() === "img" && /\bmw-ach-icon\b/.test(cls);
+    const isIcon = n.tagName.toLowerCase() === "img" && /\bmw-ach-(rung-)?icon\b/.test(cls); // quick 261005-vhn declared re-pin: a rung icon is decorative too
     const isLadder = /\bmw-ach-ladder\b/.test(cls);
     if (!isIcon && !isLadder) offenders.push(`${n.tagName} ${cls}`);
   });

@@ -52,7 +52,13 @@
 //   the check shows the VIEW IN PLAY GAMES row (and its failure line, the
 //   widest the row gets) before it measures: the button must sit inside the
 //   window, at least 48 px tall and above the scrolling body, which must
-//   still scroll on its own and never sideways; the achievement
+//   still scroll on its own and never sideways. From quick 261005-vhn the
+//   achievements scene also opens the LARGE VIEW of an earned icon (the page
+//   is seeded with a lifetime record holding two Depth tiers and the single
+//   achievement with the longest name and line), twice: the overlay must cover
+//   the sheet, show a loaded 320 px icon of at most 240 px beside its name,
+//   line and "Earned" date, fit without scrolling or overflowing sideways, and
+//   close on a tap with focus back on the icon button; the achievement
 //   card must show a loaded icon and sit like any other docked card; the
 //   Earned strip must stay bounded and clear of the death panel's buttons.
 //
@@ -92,12 +98,27 @@ import { newRun } from "../engine/state.js";
 import { startCombat } from "../engine/combat.js";
 import { applyAction } from "../engine/engine.js";
 import { openStore } from "../engine/economy.js";
-import { ACHIEVEMENTS_SHEET_COPY } from "../src/browser/achievementsSheet.js";
+import { ACHIEVEMENTS_SHEET_COPY, tracksOf } from "../src/browser/achievementsSheet.js";
+import { ACHIEVEMENTS } from "../content/achievements.js";
 import { die } from "../engine/death.js";
 import { makeRng } from "../engine/rng.js";
 import { PATCH_NOTES } from "../src/browser/patchNotesData.js";
 import { buildAchievementsView } from "../src/browser/achievementsSheet.js";
-import { emptyRecord } from "../src/browser/achievementRecord.js";
+import { emptyRecord, serializeRecord, ACHIEVEMENTS_KEY } from "../src/browser/achievementRecord.js";
+
+// Quick 261005-vhn: the lifetime record the page boots with, so the achievements
+// sheet has earned icons to open large: two Depth tiers (a track head and a
+// rung) and the single achievement whose name plus line is longest (the worst
+// case for the overlay's text).
+const SINGLE_IDS = new Set(tracksOf().filter((t) => t.entries.length === 1).map((t) => t.entries[0].id));
+const WORST_SINGLE = ACHIEVEMENTS.filter((e) => SINGLE_IDS.has(e.id)).sort(
+  (a, b) => b.name.length + b.line.length - (a.name.length + a.line.length) || (a.id < b.id ? -1 : 1),
+)[0];
+const SEED_RECORD = (() => {
+  const rec = JSON.parse(serializeRecord(emptyRecord()));
+  rec.unlocked = { depth_t1: Date.UTC(2026, 9, 1, 12), depth_t2: Date.UTC(2026, 9, 2, 12), [WORST_SINGLE.id]: Date.UTC(2026, 9, 3, 12) };
+  return JSON.stringify(rec);
+})();
 
 const CONTENT_TYPES = {
   ".html": "text/html",
@@ -117,6 +138,11 @@ const DEFAULT_CHROME_PATHS = [
 ];
 
 const TOL_PX = 1;
+
+// How long a cold page boot may take before a run fails. 45 s by default;
+// LAYOUT_CHECK_BOOT_MS raises it for a slow machine (a reload re-fetches the
+// ~180 modules, and on a loaded box that has taken over a minute).
+const BOOT_WAIT_MS = Number(process.env.LAYOUT_CHECK_BOOT_MS) > 0 ? Number(process.env.LAYOUT_CHECK_BOOT_MS) : 45000;
 
 // ---------------------------------------------------------------------------
 // Profiles and probes (exported; pinned by test/unit/layout-check.test.js)
@@ -691,6 +717,45 @@ function measureSheet() {
 
 const MEASURE_SHEET = `(${measureSheet.toString()})()`;
 
+// Quick 261005-vhn: the open large view, measured in one synchronous page pass.
+function measureLarge() {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const q = (sel) => document.querySelector(sel);
+  const box = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+  };
+  const overlay = q("#mw-achievements-large");
+  const img = q("#mw-ach-large-img");
+  const shown = !!overlay && !overlay.hidden && overlay.getClientRects().length > 0;
+  return {
+    innerWidth: W,
+    innerHeight: H,
+    shown,
+    overlay: box(overlay),
+    sheet: box(q("#mw-achievements-sheet")),
+    art: box(img),
+    imgLoaded: !!img && img.complete && img.naturalWidth > 0,
+    imgNaturalWidth: img ? img.naturalWidth : 0,
+    imgSrc: img ? img.getAttribute("src") : null,
+    name: q("#mw-ach-large-name") ? q("#mw-ach-large-name").textContent : "",
+    line: q("#mw-ach-large-line") ? q("#mw-ach-large-line").textContent : "",
+    date: q("#mw-ach-large-date") ? q("#mw-ach-large-date").textContent : "",
+    nameBox: box(q("#mw-ach-large-name")),
+    lineBox: box(q("#mw-ach-large-line")),
+    dateBox: box(q("#mw-ach-large-date")),
+    scrollHeight: overlay ? overlay.scrollHeight : 0,
+    clientHeight: overlay ? overlay.clientHeight : 0,
+    scrollWidth: overlay ? overlay.scrollWidth : 0,
+    clientWidth: overlay ? overlay.clientWidth : 0,
+    focusOnOverlay: !!overlay && document.activeElement === overlay,
+  };
+}
+
+const MEASURE_LARGE = `(${measureLarge.toString()})()`;
+
 // Phase 100: the achievement card on the rail.
 function measureCard() {
   const rail = document.querySelector("#mw-rail");
@@ -776,7 +841,7 @@ const EXPR = {
   })()`,
   // The settings turn Compete off (no board, identity or feed call) and the
   // notes key is the bundled version, so the what's-new sheet stays shut.
-  seed: `(() => { localStorage.clear(); localStorage.setItem("ddr.settings.v1", JSON.stringify({ compete: false, movement: "arrows", padSide: "right", nameWelcomed: true, sound: false })); localStorage.setItem("ddr.notes.seen.v1", ${JSON.stringify(String(PATCH_NOTES.version))}); window.__mzLC = 1; return true; })()`,
+  seed: `(() => { localStorage.clear(); localStorage.setItem("ddr.settings.v1", JSON.stringify({ compete: false, movement: "arrows", padSide: "right", nameWelcomed: true, sound: false })); localStorage.setItem("ddr.notes.seen.v1", ${JSON.stringify(String(PATCH_NOTES.version))}); localStorage.setItem(${JSON.stringify(ACHIEVEMENTS_KEY)}, ${JSON.stringify(SEED_RECORD)}); window.__mzLC = 1; return true; })()`,
   inject: (json) => `(() => { window.__mzState.set(JSON.parse(${JSON.stringify(json)})); window.paint(); if (window.mzCenterMap) window.mzCenterMap(); window.__mzRail = Object.assign({}, window.__mzRail, { card: null, pending: null }); window.renderRail(); return true; })()`,
   showTab: (name) => `(() => { window.__mzShowTab(${JSON.stringify(name)}); return true; })()`,
   railCard: `(() => { window.mzRailLine("LAYOUT CHECK", "A card for the side panel.", "info", 60000); return true; })()`,
@@ -792,6 +857,10 @@ const EXPR = {
   // widest the row gets) and hidden again; the app's own ids and copy only.
   showPlayRow: `(() => { const row = document.querySelector("#mw-achievements-play"); if (!row) return false; row.hidden = false; const note = document.querySelector("#mw-achievements-play-note"); if (note) { note.textContent = ${JSON.stringify(ACHIEVEMENTS_SHEET_COPY.play.failed)}; note.hidden = false; } return true; })()`,
   hidePlayRow: `(() => { const row = document.querySelector("#mw-achievements-play"); if (!row) return false; row.hidden = true; const note = document.querySelector("#mw-achievements-play-note"); if (note) { note.textContent = ""; note.hidden = true; } return true; })()`,
+  // Quick 261005-vhn: the large view, through the app's own buttons and overlay.
+  clickLargeLabel: (label) => `(() => { const b = Array.from(document.querySelectorAll("#mw-achievements-body .mw-ach-large-open")).find((x) => x.getAttribute("aria-label") === ${JSON.stringify(label)}); if (!b) return false; b.scrollIntoView({ block: "center" }); b.click(); return true; })()`,
+  tapLarge: `(() => { const o = document.querySelector("#mw-achievements-large"); if (!o) return false; o.click(); return true; })()`,
+  activeLabel: `(() => { const a = document.activeElement; return a && a.getAttribute ? a.getAttribute("aria-label") : null; })()`,
   expandFirstTrack: `(() => { const b = document.querySelector("#mw-achievements-body button.mw-ach-head"); if (!b) return false; if (b.getAttribute("aria-expanded") !== "true") b.click(); return true; })()`,
   achUnlock: `(() => { window.__mzAchBanner.onEvent({ unlocks: [{ id: "depth_t1", at: 1 }], reveals: [], progress: [] }); return true; })()`,
   deathUnlocks: `(() => { window.__mzAchBanner.onEvent({ unlocks: ${JSON.stringify(["depth_t1", "depth_t2", "kills_beasts_t1", "party_animal_t1", "special_snowflake", "tourist"].map((id, i) => ({ id, at: 1 + i })))}, reveals: [], progress: [] }); window.paint(); return true; })()`,
@@ -1047,6 +1116,69 @@ function sheetFailures(cls, m, opts = {}) {
   return out;
 }
 
+// The open large view's shape: `want` is the expected { name, line, stateText }
+// from the pure view. `m` comes from measureLarge().
+function largeFailures(label, m, want) {
+  const out = [];
+  const W = m.innerWidth;
+  const H = m.innerHeight;
+  if (!m.shown) {
+    out.push(`${label}: the large view is not visible after tapping the icon`);
+    return out;
+  }
+  const inside = (b, what) => {
+    if (!b) {
+      out.push(`${label}: ${what} not found`);
+      return;
+    }
+    if (b.left < -TOL_PX || b.right > W + TOL_PX || b.top < -TOL_PX || b.bottom > H + TOL_PX) {
+      out.push(`${label}: ${what} box [${f1(b.left)},${f1(b.top)},${f1(b.right)},${f1(b.bottom)}] leaves the ${W}x${H} window`);
+    }
+  };
+  inside(m.overlay, "the overlay");
+  inside(m.art, "the icon");
+  inside(m.nameBox, "the name");
+  inside(m.lineBox, "the line");
+  inside(m.dateBox, "the date");
+  if (m.overlay && m.sheet) {
+    const o = m.overlay;
+    const sh = m.sheet;
+    if (Math.abs(o.left - sh.left) > TOL_PX || Math.abs(o.right - sh.right) > TOL_PX || Math.abs(o.top - sh.top) > TOL_PX || Math.abs(o.bottom - sh.bottom) > TOL_PX) {
+      out.push(`${label}: the overlay does not cover the whole sheet`);
+    }
+  }
+  if (m.art) {
+    if (m.art.width > 240 + TOL_PX) out.push(`${label}: the icon is ${f1(m.art.width)} px wide, expected at most 240`);
+    if (m.art.height > 240 + TOL_PX) out.push(`${label}: the icon is ${f1(m.art.height)} px tall, expected at most 240`);
+    if (m.art.width < 63 || m.art.height < 63) out.push(`${label}: the icon shrank to ${f1(m.art.width)} x ${f1(m.art.height)}, expected at least 64`);
+  }
+  if (!m.imgLoaded) out.push(`${label}: the large icon did not load (${m.imgSrc})`);
+  else if (m.imgNaturalWidth !== 320) out.push(`${label}: the large icon is ${m.imgNaturalWidth} px wide, expected the 320 px export`);
+  if (!/^achievements\/large\/ach_[a-z0-9_]+\.png$/.test(String(m.imgSrc))) out.push(`${label}: the icon path is "${m.imgSrc}", expected achievements/large/ach_<id>.png`);
+  if (m.name !== want.name) out.push(`${label}: the name reads "${m.name}", expected "${want.name}"`);
+  if (m.line !== want.line) out.push(`${label}: the line reads "${m.line}", expected "${want.line}"`);
+  if (m.date !== want.stateText) out.push(`${label}: the date reads "${m.date}", expected "${want.stateText}"`);
+  if (m.scrollHeight > m.clientHeight + 1) out.push(`${label}: the overlay needs scrolling (scrollHeight ${m.scrollHeight} > clientHeight ${m.clientHeight}); its content should fit`);
+  if (m.scrollWidth > m.clientWidth + 1) out.push(`${label}: the overlay scrolls sideways (scrollWidth ${m.scrollWidth} > clientWidth ${m.clientWidth})`);
+  if (!m.focusOnOverlay) out.push(`${label}: focus is not on the overlay`);
+  return out;
+}
+
+// The two large views the achievements scene opens, from the pure view of the
+// seeded record: the first Depth track's head (its top earned tier) and the
+// single entry with the longest name and line.
+function largeTargets() {
+  const rec = JSON.parse(SEED_RECORD);
+  const view = buildAchievementsView(rec, { tzOffset: 0 });
+  const rows = view.blocks.flatMap((b) => b.rows);
+  const depth = rows.find((r) => r.kind === "track" && r.large);
+  const worst = rows.find((r) => r.kind === "single" && r.large && r.large.name === WORST_SINGLE.name);
+  return [
+    { label: "Depth head icon", large: depth.large },
+    { label: `longest entry "${WORST_SINGLE.id}" icon`, large: worst.large },
+  ];
+}
+
 // The achievement card on the rail (the shape rules for a docked card come
 // from shapeFailures, as for map-card).
 function cardFailures(m, g) {
@@ -1159,7 +1291,7 @@ async function runProfile(cdp, prof, ctx) {
   await setMetrics(cdp, prof.width, prof.height, prof.mobile);
   await cdp.evaluate(EXPR.seed);
   await cdp.send("Page.reload");
-  await waitForStable(cdp, EXPR.titleReady, 45000, `title ready at ${prof.name}`);
+  await waitForStable(cdp, EXPR.titleReady, BOOT_WAIT_MS, `title ready at ${prof.name}`);
   excMark = cdp.exceptions.length; // exceptions of the boot itself are scene "title"
   reqMark = cdp.requests.length;
   await sleep(250);
@@ -1278,6 +1410,27 @@ async function runProfile(cdp, prof, ctx) {
   }, async () => {
     const ms = await cdp.evaluate(MEASURE_SHEET);
     const fails = sheetFailures(cls, ms, { expectExpanded: true, expectPlay: true });
+    // Quick 261005-vhn: the large view, opened and closed twice (a track head and
+    // the longest single entry), with focus checked on the way back.
+    for (const target of largeTargets()) {
+      const clicked = await cdp.evaluate(EXPR.clickLargeLabel(target.large.label));
+      if (!clicked) {
+        fails.push(`${target.label}: no icon button labelled "${target.large.label}" in the list`);
+        continue;
+      }
+      await sleep(250);
+      // The 320 px file is fetched on first use: give a slow machine time to
+      // land it before judging it (a failure is still reported by the measure).
+      await waitForStable(cdp, `(() => { const i = document.querySelector("#mw-ach-large-img"); return !!(i && i.complete && i.naturalWidth > 0); })()`, 5000, "the large icon to load").catch(() => {});
+      fails.push(...largeFailures(target.label, await cdp.evaluate(MEASURE_LARGE), target.large));
+      await shot(cdp, c, target.large.key.startsWith("row:") && target.large.name === WORST_SINGLE.name ? "achievement-large-longest" : "achievement-large");
+      await cdp.evaluate(EXPR.tapLarge);
+      await sleep(150);
+      const after = await cdp.evaluate(MEASURE_LARGE);
+      if (after.shown) fails.push(`${target.label}: a tap on the overlay did not close it`);
+      const active = await cdp.evaluate(EXPR.activeLabel);
+      if (active !== target.large.label) fails.push(`${target.label}: focus returned to "${active}", expected the icon button "${target.large.label}"`);
+    }
     await cdp.evaluate(EXPR.clickSel("#mw-achievements-close"));
     const err = await expectHidden(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet to close");
     if (err) fails.push(err);
@@ -1516,7 +1669,7 @@ async function main() {
     // longer than 15 s for a fresh headless Chrome profile to finish its
     // cold boot (the same class of flakiness recorded for
     // tools/shell-boot-check.mjs, STATE blockers). Not a code bug.
-    await waitForStable(cdp, EXPR.titleReady, 45000, "title ready (initial boot)");
+    await waitForStable(cdp, EXPR.titleReady, BOOT_WAIT_MS, "title ready (initial boot)");
     for (const prof of profiles) {
       let scenes = [];
       let error = null;

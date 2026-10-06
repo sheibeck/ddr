@@ -43,7 +43,7 @@
 import { ACHIEVEMENTS } from "../../content/achievements.js";
 import { progressFor } from "./achievementTracker.js";
 import { emptyRecord, sanitizeRecord } from "./achievementRecord.js";
-import { achievementIconSrc } from "./achievementCard.js";
+import { achievementIconSrc, achievementLargeSrc } from "./achievementCard.js";
 
 function deepFreeze(value) {
   if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
@@ -108,6 +108,7 @@ export const ACHIEVEMENTS_SHEET_COPY = deepFreeze({
     wilmstHeld: "wilmst held",
     subClasses: "sub-classes",
   },
+  viewLarger: "{name}, view larger",
   expand: "Tap for every tier",
   collapse: "Tap to fold it away",
   play: {
@@ -290,6 +291,23 @@ function earnedStateText(at, tz) {
   return date === null ? ACHIEVEMENTS_SHEET_COPY.state.earnedNoDate : fill(ACHIEVEMENTS_SHEET_COPY.state.earned, { date });
 }
 
+/**
+ * The large view of an EARNED entry: { key, src, name, line, stateText, label }.
+ * `key` is opaque and unique per button ("row:<row key>" or "rung:<entry id>");
+ * only earned entries ever get one, so a locked or secret row has no large
+ * view and nothing about it can leak through this object.
+ */
+function largeOf(key, entry, stateText) {
+  return {
+    key,
+    src: achievementLargeSrc(entry),
+    name: entry.name,
+    line: entry.line,
+    stateText,
+    label: fill(ACHIEVEMENTS_SHEET_COPY.viewLarger, { name: entry.name }),
+  };
+}
+
 function isSecret(rec, entry) {
   return entry.initialState === "Hidden" && !has(rec.unlocked, entry.id) && !rec.revealed.includes(entry.id);
 }
@@ -315,6 +333,7 @@ function singleRow(rec, entry, tz) {
       dateText: dateTextOf(at, tz),
       progressText: null,
       stateText,
+      large: largeOf("row:" + key, entry, stateText),
       label: labelOf(entry.name, stateText, entry.line, null),
     };
   }
@@ -332,6 +351,7 @@ function singleRow(rec, entry, tz) {
       dateText: null,
       progressText: null,
       stateText: "",
+      large: null,
       label: labelOf(name, "", detail, null),
     };
   }
@@ -348,6 +368,7 @@ function singleRow(rec, entry, tz) {
     dateText: null,
     progressText: progress,
     stateText,
+    large: null,
     label: labelOf(entry.name, stateText, entry.description, progress),
   };
 }
@@ -365,6 +386,7 @@ function rungOf(rec, entry, index, tz) {
     progressText: earned ? null : progressText(rec, entry),
     stateText: earned ? earnedStateText(at, tz) : ACHIEVEMENTS_SHEET_COPY.state.locked,
     iconSrc: achievementIconSrc(entry),
+    large: earned ? largeOf("rung:" + entry.id, entry, earnedStateText(at, tz)) : null,
   };
 }
 
@@ -398,6 +420,7 @@ function trackRow(rec, track, tz) {
     dateText: top >= 0 ? rungs[top].dateText : null,
     progressText: progress,
     stateText,
+    large: top >= 0 ? largeOf("row:" + keyOf(first), track.entries[top], rungs[top].stateText) : null,
     ladder: rungs.map((r, i) => ({ tier: TIER_NUMERALS[i] || String(i + 1), state: r.state })),
     rungs,
     expandable: true,
@@ -487,12 +510,44 @@ function iconEl(doc, row) {
   return img;
 }
 
-function rungsEl(doc, rungs) {
+/**
+ * The icon button of an earned entry: a transparent, labelled button laid over
+ * its icon (the icon image itself stays a decorative image). Only an entry with
+ * a `large` object gets one; locked and secret entries get nothing, so their
+ * icons stay inert. Tapping it calls opts.onLarge(large, button).
+ */
+function largeButtonEl(doc, large, opts, cls) {
+  const btn = el(doc, "button", "mw-ach-large-open " + cls);
+  btn.setAttribute("type", "button");
+  btn.setAttribute("aria-label", str(large.label));
+  btn.setAttribute("data-large", str(large.key));
+  btn.onclick = (event) => {
+    if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+    if (typeof opts.onLarge === "function") opts.onLarge(large, btn);
+  };
+  return btn;
+}
+
+function hasLarge(item) {
+  return !!item && typeof item === "object" && !!item.large && typeof item.large === "object" && typeof item.large.src === "string";
+}
+
+function rungIconEl(doc, rung) {
+  const img = el(doc, "img", "mw-ach-rung-icon" + (rung.state === "earned" ? "" : " mw-ach-icon-dim"));
+  if (typeof rung.iconSrc === "string") img.setAttribute("src", rung.iconSrc);
+  img.setAttribute("alt", "");
+  img.setAttribute("aria-hidden", "true");
+  return img;
+}
+
+function rungsEl(doc, rungs, opts) {
   const ul = el(doc, "ul", "mw-ach-rungs");
   for (const rung of Array.isArray(rungs) ? rungs : []) {
     if (!rung || typeof rung !== "object") continue;
     const li = el(doc, "li", "mw-ach-rung");
     li.setAttribute("data-state", str(rung.state));
+    if (hasLarge(rung)) li.appendChild(largeButtonEl(doc, rung.large, opts, "mw-ach-rung-open"));
+    li.appendChild(rungIconEl(doc, rung));
     appendParts(doc, li, [
       ["mw-ach-rung-name", rung.name],
       ["mw-ach-rung-state", rung.stateText],
@@ -546,16 +601,21 @@ function rowEl(doc, row, opts) {
     }
     head.appendChild(ladder);
   }
+  // The icon button sits BEFORE the head, so the head stays directly followed
+  // by its rung list; it is a sibling (a track head is itself a button).
+  if (hasLarge(row)) li.appendChild(largeButtonEl(doc, row.large, opts, "mw-ach-head-open"));
   li.appendChild(head);
-  if (open) li.appendChild(rungsEl(doc, row.rungs));
+  if (open) li.appendChild(rungsEl(doc, row.rungs, opts));
   return li;
 }
 
 /**
  * renderAchievementsSheet(host, view, opts) — builds the list into `host`
  * (replacing its children) from a buildAchievementsView result and returns
- * the root. opts is { expanded, onToggle }: `expanded` an array or Set of row
- * keys, `onToggle` called with a track row's key when its button is tapped.
+ * the root. opts is { expanded, onToggle, onLarge }: `expanded` an array or Set
+ * of row keys, `onToggle` called with a track row's key when its button is
+ * tapped, `onLarge` called with (large, button) when an earned entry's icon
+ * button is tapped (that tap never reaches the track head).
  * DOM order is reading order: a track's rung list sits directly after that
  * row's head inside the same list item. No timers, no scrolling, no animation:
  * expanding is a re-render driven by the caller's `expanded` set.

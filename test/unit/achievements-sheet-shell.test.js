@@ -246,14 +246,26 @@ function buildHarness({ record = null } = {}) {
   const body = {
     scrollTop: 0,
     rows: [],
-    querySelectorAll: () => body.rows,
+    buttons: [],
+    querySelectorAll: (sel) => (sel === ".mw-ach-large-open" ? body.buttons : body.rows),
   };
+  // Quick 261005-vhn: the large-view overlay and its four fields.
+  const large = { hidden: true, focus: (opts) => calls.push(["focus-large", opts]) };
+  const largeImg = { src: null, setAttribute: (n, v) => (largeImg[n] = v) };
+  const largeName = { textContent: "" };
+  const largeLine = { textContent: "" };
+  const largeDate = { textContent: "" };
   const count = { textContent: "" };
   const els = {
     "mw-achievements-sheet": sheet,
     "mw-achievements-title": title,
     "mw-achievements-body": body,
     "mw-menu-achievements-count": count,
+    "mw-achievements-large": large,
+    "mw-ach-large-img": largeImg,
+    "mw-ach-large-name": largeName,
+    "mw-ach-large-line": largeLine,
+    "mw-ach-large-date": largeDate,
   };
   const fakeDocument = { getElementById: (id) => els[id] || null };
   const panelMotion = {
@@ -290,11 +302,14 @@ function buildHarness({ record = null } = {}) {
       close: closeAchievementsSheet,
       sync: syncAchievementsCount,
       refresh: () => { if (achievementsSheetOpen()) renderAchievementsSheetNow(); },
+      largeOpen: achievementLargeOpen,
+      openLarge: openAchievementLarge,
+      closeLarge: closeAchievementLarge,
     };
     `,
   );
   const api = factory(fakeDocument, panelMotion, buildAchievementsView, renderAchievementsSheet, menuCountText, getAchievementRecord);
-  return { api, calls, renders, sheet, title, body, rowHead, count, setRecord: (r) => (current = r) };
+  return { api, calls, renders, sheet, title, body, rowHead, count, large, largeImg, largeName, largeLine, largeDate, setRecord: (r) => (current = r) };
 }
 
 test("(D1) BEHAVIOUR: open renders the list into the body, writes the title from the view, opens through panelMotion once and focuses the title", () => {
@@ -411,4 +426,96 @@ test("(D8) BEHAVIOUR: a missing count element or body is a no-op, never a throw"
     bare.sync();
     bare.refresh();
   });
+});
+
+// ═══════════════════════ (E) the large view (quick 261005-vhn) ═════════════
+
+const LARGE_INFO = {
+  key: "row:t10",
+  src: "achievements/large/ach_depth_t1.png",
+  name: "Depth",
+  line: "A line.",
+  stateText: "Earned 5 Oct 2026",
+  label: "Depth, view larger",
+};
+
+test("(E1) SOURCE: the overlay is one hidden dialog inside the sheet with the art and three empty text elements, no words of its own", () => {
+  const markup = sliceBetween(MARKUP, '<div id="mw-achievements-sheet"', '<div class="mw-fade"');
+  assert.match(markup, /<div id="mw-achievements-large" class="mw-ach-large" role="dialog" aria-modal="true" aria-labelledby="mw-ach-large-name" tabindex="-1" hidden>/);
+  assert.match(markup, /<img id="mw-ach-large-img" alt="" aria-hidden="true">/);
+  for (const id of ["mw-ach-large-name", "mw-ach-large-line", "mw-ach-large-date"]) {
+    assert.match(markup, new RegExp(`<p class="[^"]*" id="${id}"></p>`));
+  }
+  assert.equal(occurrences(HTML, 'id="mw-achievements-large"'), 1);
+  const texts = (markup.match(/>[^<]+</g) ?? []).map((t) => t.slice(1, -1)).filter((t) => t.trim() !== "");
+  assert.deepEqual(texts, ["Close"], "the overlay adds no player copy to the markup");
+});
+
+test("(E2) CSS: the overlay covers the sheet, shrinks its art to fit (no vh or dvh), and the icon buttons are laid over the 48 px icons", () => {
+  const rule = STYLE.match(/\.mw-ach-large\{([^}]*)\}/);
+  assert.ok(rule, "the overlay rule exists");
+  assert.match(rule[1], /position:absolute/);
+  assert.match(rule[1], /inset:0/);
+  assert.match(rule[1], /overflow-y:auto/);
+  assert.match(STYLE, /\.mw-ach-large\[hidden\]\{display:none\}/);
+  const art = STYLE.match(/\.mw-ach-large-art\{([^}]*)\}/);
+  assert.ok(art);
+  assert.match(art[1], /flex:0 1 240px/);
+  assert.match(art[1], /max-width:100%/);
+  assert.doesNotMatch(rule[1] + art[1], /\d(vh|dvh)\b/);
+  assert.match(STYLE, /\.mw-ach-head-open\{[^}]*width:48px;height:48px/);
+  assert.match(STYLE, /\.mw-ach-row\{position:relative/);
+});
+
+test("(E3) BEHAVIOUR: opening the large view fills the four fields from the tapped entry, shows the overlay and focuses it", () => {
+  const h = buildHarness();
+  h.api.open();
+  h.calls.length = 0;
+  assert.equal(h.api.largeOpen(), false);
+  h.renders[0].opts.onLarge(LARGE_INFO, {});
+  assert.equal(h.api.largeOpen(), true);
+  assert.equal(h.largeImg.src, LARGE_INFO.src);
+  assert.equal(h.largeName.textContent, "Depth");
+  assert.equal(h.largeLine.textContent, "A line.");
+  assert.equal(h.largeDate.textContent, "Earned 5 Oct 2026");
+  assert.deepEqual(h.calls, [["focus-large", { preventScroll: true }]]);
+  assert.equal(h.api.isOpen(), true, "the sheet stays open under the overlay");
+});
+
+test("(E4) BEHAVIOUR: closing the overlay hides only it and returns focus to the icon button that opened it, found again by key", () => {
+  const h = buildHarness();
+  h.api.open();
+  h.renders[0].opts.onLarge(LARGE_INFO, {});
+  h.calls.length = 0;
+  const stale = { getAttribute: () => "rung:other", focus: () => h.calls.push(["focus-other"]) };
+  const fresh = { getAttribute: (n) => (n === "data-large" ? "row:t10" : null), focus: (o) => h.calls.push(["focus-button", o]) };
+  h.body.buttons = [stale, fresh];
+  h.api.closeLarge();
+  assert.equal(h.api.largeOpen(), false);
+  assert.equal(h.api.isOpen(), true, "the sheet is still open after closing the overlay");
+  assert.deepEqual(h.calls, [["focus-button", { preventScroll: true }]]);
+  h.calls.length = 0;
+  h.api.closeLarge();
+  assert.deepEqual(h.calls, [], "closing a closed overlay is a no-op");
+});
+
+test("(E5) BEHAVIOUR: closing the whole sheet also hides the overlay; a re-draw while it is up leaves it up", () => {
+  const h = buildHarness();
+  h.api.open();
+  h.renders[0].opts.onLarge(LARGE_INFO, {});
+  h.api.refresh();
+  assert.equal(h.api.largeOpen(), true, "a list re-draw does not close the overlay");
+  h.api.close();
+  assert.equal(h.api.largeOpen(), false);
+  assert.equal(h.api.isOpen(), false);
+});
+
+test("(E6) SOURCE: Android back closes only the overlay: its line sits right before the sheet's own, and the list render passes onLarge", () => {
+  const closeModal = sliceBetween(MODULE, "closeModal: () => {", "\n        navigateBack: () => {");
+  const large = closeModal.indexOf("if (achievementLargeOpen()) { closeAchievementLarge(); return; }");
+  const ach = closeModal.indexOf("if (achievementsSheetOpen()) { closeAchievementsSheet(); return; }");
+  assert.ok(large !== -1 && ach !== -1 && large < ach, "overlay first, then the sheet");
+  assert.equal(occurrences(closeModal, "achievementLargeOpen()"), 1);
+  assert.match(SHEET_BLOCK, /onLarge: openAchievementLarge/);
+  assert.match(MODULE, /document\.getElementById\("mw-achievements-large"\)\?\.addEventListener\("click", closeAchievementLarge\);/);
 });

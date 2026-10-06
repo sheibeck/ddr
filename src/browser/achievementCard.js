@@ -47,6 +47,9 @@ export const ACHIEVEMENT_COLLAPSE_OVER = 3;
 /** Where the shell resolves an entry's `icon.ingame` path from, relative to the page. */
 export const ACHIEVEMENT_ICON_DIR = "achievements/";
 
+/** Where the 320 px large-view exports live, relative to the page (quick 261005-vhn). */
+export const ACHIEVEMENT_LARGE_DIR = "achievements/large/";
+
 function deepFreeze(obj) {
   for (const v of Object.values(obj)) {
     if (v && typeof v === "object") deepFreeze(v);
@@ -85,6 +88,17 @@ function inListOrder(a, b) {
 export function achievementIconSrc(entryOrId) {
   const entry = resolve(entryOrId);
   return entry ? ACHIEVEMENT_ICON_DIR + entry.icon.ingame : null;
+}
+
+/**
+ * achievementLargeSrc(entryOrId) — ACHIEVEMENT_LARGE_DIR plus the stem of the
+ * entry's `icon.ingame` file (the same ach_<id>.png name, 320 x 320), or null
+ * for an unknown entry. Quick 261005-vhn: the sharp art the list's large view
+ * shows for an earned entry.
+ */
+export function achievementLargeSrc(entryOrId) {
+  const entry = resolve(entryOrId);
+  return entry ? ACHIEVEMENT_LARGE_DIR + entry.icon.ingame.split("/").pop() : null;
 }
 
 /**

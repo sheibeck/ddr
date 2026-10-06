@@ -231,13 +231,15 @@ test("render: expanded inserts the rung list directly after the head inside the 
   assert.equal(head.getAttribute("aria-expanded"), "true");
   assert.equal(byClass(row, "mw-ach-hint")[0].textContent, "Tap to fold it away");
   const kids = elementChildren(row);
-  assert.deepStrictEqual(kids.map((k) => k.className), ["mw-ach-head", "mw-ach-rungs"]);
+  // Quick 261005-vhn (declared re-pin): this track has earned tiers, so its icon
+  // button sits BEFORE the head; the rung list still follows the head directly.
+  assert.deepStrictEqual(kids.map((k) => k.className), ["mw-ach-large-open mw-ach-head-open", "mw-ach-head", "mw-ach-rungs"]);
   const rungs = byClass(row, "mw-ach-rung");
   assert.equal(rungs.length, 4);
   const r = view.blocks.flatMap((b) => b.rows).find((x) => x.key === key).rungs;
   rungs.forEach((li, i) => {
     assert.equal(li.tagName, "li");
-    const spans = elementChildren(li);
+    const spans = elementChildren(li).filter((c) => c.tagName === "span");
     assert.deepStrictEqual(spans.map((s) => s.className).slice(0, 3), ["mw-ach-rung-name", "mw-ach-rung-state", "mw-ach-rung-text"]);
     assert.equal(spans[0].textContent, r[i].name);
     assert.equal(spans[1].textContent, r[i].stateText);

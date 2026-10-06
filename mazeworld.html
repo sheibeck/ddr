@@ -2035,7 +2035,7 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-ach-secrets{color:#a89c82}
 .mw-ach-block-title{margin:14px 0 6px;font-family:var(--disp);font-weight:400;font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.08em;text-transform:uppercase;color:#c9bda0;overflow-wrap:anywhere}
 .mw-ach-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:0 18px;list-style:none;margin:0;padding:0}
-.mw-ach-row{min-width:0;border-bottom:2px solid #241f16}
+.mw-ach-row{position:relative;min-width:0;border-bottom:2px solid #241f16}
 .mw-ach-head{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:48px;padding:8px 0;margin:0;text-align:left;font:inherit;letter-spacing:0;text-transform:none;background:transparent;color:inherit;border:0;border-radius:0;box-shadow:none}
 button.mw-ach-head{cursor:pointer}
 button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled){background:transparent;transform:none;box-shadow:none}
@@ -2053,8 +2053,21 @@ button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled)
 .mw-ach-pip{display:inline-block;box-sizing:border-box;width:16px;height:16px;border:1px solid #6b5c3c;font-family:var(--mono);font-style:normal;font-weight:700;font-size:calc(0.5625rem * var(--mw-text-scale));line-height:14px;text-align:center;color:#a89c82}
 .mw-ach-pip[data-state="earned"]{background:#e0b84a;border-color:#e0b84a;color:#14110c}
 .mw-ach-rungs{list-style:none;margin:0 0 8px 60px;padding:0}
-.mw-ach-rung{display:flex;flex-wrap:wrap;gap:0 8px;padding:3px 0;color:#e6ddc6;overflow-wrap:anywhere}
+.mw-ach-rung{position:relative;display:flex;flex-wrap:wrap;align-content:center;gap:0 8px;min-height:48px;padding:3px 0;color:#e6ddc6;overflow-wrap:anywhere}
 .mw-ach-rung > span{min-width:0;overflow-wrap:anywhere}
+.mw-ach-rung-icon,.mw-ach-rung-open{position:absolute;left:-60px;top:0;width:48px;height:48px;object-fit:contain}
+.mw-ach-large-open{position:absolute;z-index:1;box-sizing:border-box;min-width:0;min-height:0;margin:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;cursor:pointer}
+.mw-ach-large-open:hover:not(:disabled),.mw-ach-large-open:active:not(:disabled){background:transparent;transform:none;box-shadow:none}
+.mw-ach-large-open:focus-visible{outline:2px solid #e8c97a;outline-offset:-2px}
+.mw-ach-head-open{left:0;top:8px;width:48px;height:48px}
+.mw-ach-large{position:absolute;inset:0;z-index:2;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:10px;overflow-y:auto;padding:calc(16px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px))) calc(16px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px))) calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))) calc(16px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));background:rgba(10,8,5,.97);text-align:center;cursor:pointer;outline:none}
+.mw-ach-large[hidden]{display:none}
+.mw-ach-large-art{flex:0 1 240px;width:240px;max-width:100%;min-height:64px}
+.mw-ach-large-art img{display:block;width:100%;height:100%;object-fit:contain}
+.mw-ach-large-name,.mw-ach-large-line,.mw-ach-large-date{flex:none;max-width:min(100%,420px);margin:0;overflow-wrap:anywhere}
+.mw-ach-large-name{font-family:var(--disp);font-size:calc(0.625rem * var(--mw-text-scale));line-height:1.6;color:#e8c97a}
+.mw-ach-large-line{font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.45;color:#e6ddc6}
+.mw-ach-large-date{font-family:var(--mono);font-weight:700;font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45;color:#a89c82}
 .mw-ach-rung-name{color:#e8c97a}
 .mw-ach-rung[data-state="locked"] .mw-ach-rung-name{color:#a89c82}
 .mw-ach-rung-progress{color:#a89c82}
@@ -2695,13 +2708,23 @@ button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled)
      Phase 101 block of the module script, which un-hides the row only with
      Compete ON and signed in.
      Closes by Close, the scrim and the Android back button (getGameContext's
-     hasOpenModal and closeModal both name it). -->
+     hasOpenModal and closeModal both name it).
+     Quick 261005-vhn: #mw-achievements-large is the large view of an EARNED
+     icon, an overlay inside the sheet. The module block fills its four
+     elements from the tapped entry (name, line and date are the list's own
+     strings); a tap anywhere on it, or one Android back press, closes only it. -->
 <div id="mw-achievements-sheet" class="mw-legend-sheet mw-achievements-sheet" hidden>
   <div class="mw-legend-scrim" id="mw-achievements-scrim"></div>
   <div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-achievements-title">
     <div class="mw-legend-head"><span id="mw-achievements-title" tabindex="-1"></span><button type="button" class="mw-legend-close" id="mw-achievements-close" aria-label="Close">Close</button></div>
     <div id="mw-achievements-play" class="mw-achievements-play" hidden><button type="button" class="mw-achievements-play-btn" id="mw-achievements-play-btn"></button><span class="mw-achievements-play-note" id="mw-achievements-play-note" role="status" hidden></span></div>
     <div class="mw-achievements-body" id="mw-achievements-body"></div>
+  </div>
+  <div id="mw-achievements-large" class="mw-ach-large" role="dialog" aria-modal="true" aria-labelledby="mw-ach-large-name" tabindex="-1" hidden>
+    <div class="mw-ach-large-art"><img id="mw-ach-large-img" alt="" aria-hidden="true"></div>
+    <p class="mw-ach-large-name" id="mw-ach-large-name"></p>
+    <p class="mw-ach-large-line" id="mw-ach-large-line"></p>
+    <p class="mw-ach-large-date" id="mw-ach-large-date"></p>
   </div>
 </div>
 
@@ -8810,7 +8833,7 @@ window.__mzClassicBoot = async function classicBoot() {
     const body = document.getElementById("mw-achievements-body");
     if (!body) return;
     const top = body.scrollTop;
-    renderAchievementsSheet(body, view, { expanded: achExpanded, onToggle: toggleAchievementTrack });
+    renderAchievementsSheet(body, view, { expanded: achExpanded, onToggle: toggleAchievementTrack, onLarge: openAchievementLarge });
     body.scrollTop = top;
   }
   function toggleAchievementTrack(key) {
@@ -8827,6 +8850,47 @@ window.__mzClassicBoot = async function classicBoot() {
       break;
     }
   }
+  // Quick 261005-vhn: the large view of an earned icon. It is an overlay inside
+  // the sheet that shows the 320 px art, the name, the line and the date from
+  // the tapped entry; a tap anywhere on it closes it (so does one Android back
+  // press, through closeModal, which closes only the overlay), and focus goes
+  // back to the icon button that opened it. No animation: nothing to reduce.
+  let achLargeKey = null;
+  function achievementLargeOpen() {
+    const large = document.getElementById("mw-achievements-large");
+    return !!large && !large.hidden;
+  }
+  function openAchievementLarge(info) {
+    const large = document.getElementById("mw-achievements-large");
+    if (!large || !info) return;
+    const img = document.getElementById("mw-ach-large-img");
+    if (img && typeof info.src === "string") img.setAttribute("src", info.src);
+    const name = document.getElementById("mw-ach-large-name");
+    const line = document.getElementById("mw-ach-large-line");
+    const date = document.getElementById("mw-ach-large-date");
+    if (name) name.textContent = info.name;
+    if (line) line.textContent = info.line;
+    if (date) date.textContent = info.stateText;
+    achLargeKey = info.key;
+    large.hidden = false;
+    large.focus?.({ preventScroll: true });
+  }
+  function closeAchievementLarge() {
+    const large = document.getElementById("mw-achievements-large");
+    if (!large || large.hidden) return;
+    large.hidden = true;
+    const key = achLargeKey;
+    achLargeKey = null;
+    // The list may have been re-drawn while the overlay was up, so find the
+    // button again by its key rather than holding the old element.
+    const body = document.getElementById("mw-achievements-body");
+    const buttons = body?.querySelectorAll?.(".mw-ach-large-open") || [];
+    for (const btn of buttons) {
+      if (btn.getAttribute?.("data-large") !== key) continue;
+      btn.focus?.({ preventScroll: true });
+      break;
+    }
+  }
   function openAchievementsSheet() {
     renderAchievementsSheetNow();
     const sheet = document.getElementById("mw-achievements-sheet");
@@ -8835,6 +8899,9 @@ window.__mzClassicBoot = async function classicBoot() {
   }
   function closeAchievementsSheet() {
     const sheet = document.getElementById("mw-achievements-sheet");
+    const large = document.getElementById("mw-achievements-large");
+    if (large) large.hidden = true;
+    achLargeKey = null;
     if (sheet && !sheet.hidden) panelMotion.close(sheet);
   }
   function syncAchievementsCount() {
@@ -8844,6 +8911,13 @@ window.__mzClassicBoot = async function classicBoot() {
   document.getElementById("mw-menu-achievements")?.addEventListener("click", closeMenuThen(openAchievementsSheet));
   document.getElementById("mw-achievements-scrim")?.addEventListener("click", closeAchievementsSheet);
   document.getElementById("mw-achievements-close")?.addEventListener("click", closeAchievementsSheet);
+  document.getElementById("mw-achievements-large")?.addEventListener("click", closeAchievementLarge);
+  document.getElementById("mw-achievements-large")?.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.stopPropagation();
+    closeAchievementLarge();
+  });
   window.mzOpenAchievements = openAchievementsSheet;
   window.mzRefreshAchievementsSheet = () => { if (achievementsSheetOpen()) renderAchievementsSheetNow(); };
   window.mzSyncAchievementsCount = syncAchievementsCount;
@@ -11124,6 +11198,7 @@ window.__mzClassicBoot = async function classicBoot() {
           // Phase 100 (AUI-02): the ACHIEVEMENTS sheet closes right after
           // the notes sheet and before the Final Sheet, so one back press
           // closes only it; with it closed this line is a no-op.
+          if (achievementLargeOpen()) { closeAchievementLarge(); return; }
           if (achievementsSheetOpen()) { closeAchievementsSheet(); return; }
           // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
           // death card, so one back press closes only it.
