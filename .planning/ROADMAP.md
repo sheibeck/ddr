@@ -28,7 +28,7 @@
 - [x] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned. (completed 2026-10-05)
 - [x] **Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List** - An unlock is a toast with a sarcastic line, and a list opened from ☰ shows every achievement locked, unlocked, in progress or hidden, in every layout class. (completed 2026-10-05)
 - [x] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file. (completed 2026-10-05)
-- [ ] **Phase 102: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the game as it now is, achievements list included.
+- [x] **Phase 102: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the game as it now is, achievements list included. (completed 2026-10-06)
 
 **Sequencing:** the catalog goes first because its copy freezes at the Phase 98 close and the zip it yields is the user's one step in Play Console, which can run in parallel with everything after it. The tracker (99) evaluates the catalog's triggers, the toast and list (100) need the tracker's unlock stream, and the Play mirror (101) needs that stream, the ☰ list it hangs a Play row on, and the IDs file the user hands back after importing the zip. Screenshots (102) are last by the user's ruling (2026-10-05), so they show the achievements list on the final build. Engine bytes move only in Phase 99 (additive event facts, zero rng draws, any moved fixture declared); the rest is content, shell, in-repo Android plugin code and tooling. No bot balance pass is planned: v2.5 changes no game rule, and the tuning bot earns no achievements.
 
@@ -179,7 +179,7 @@ Plans:
   2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots exported to Play's size rules, and `store-listing/LISTING.md` describes them.
   3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live (the deploy is the user's call).
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -202,7 +202,7 @@ Plans:
 | 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 5/5 | Complete    | 2026-10-05 |
 | 101. Play Games Achievements Mirror | 6/6 | Complete    | 2026-10-05 |
-| 102. Fresh Store & Website Screenshots | 0/3 | Planned | - |
+| 102. Fresh Store & Website Screenshots | 3/3 | Complete    | 2026-10-06 |
 
 <details>
 <summary>✅ v2.4 Fit & Finish (Phases 93–97.1) — SHIPPED 2026-10-05</summary>
