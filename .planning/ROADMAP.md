@@ -27,7 +27,7 @@
 - [x] **Phase 98: Achievement Catalog & Play Console Import Zip** - All 77 achievements exist as one finished catalog in the house voice, and a tool builds the validated Play Console import zip for the user to import as a draft. (completed 2026-10-05)
 - [x] **Phase 99: Engine Facts & Lifetime Stats Tracker** - The engine reports the facts the achievements need, and a headless shell tracker folds them into a durable lifetime-stats record and unlocks each achievement the moment it is earned. (completed 2026-10-05)
 - [x] **Phase 100: In-Game Achievements: Unlock Toasts & the ☰ List** - An unlock is a toast with a sarcastic line, and a list opened from ☰ shows every achievement locked, unlocked, in progress or hidden, in every layout class. (completed 2026-10-05)
-- [ ] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file.
+- [x] **Phase 101: Play Games Achievements Mirror** - With Compete ON and signed in, unlocks, progress and reveals reach Play Games (popup and XP) through a durable queue, using the IDs from Play's own resource file. (completed 2026-10-05)
 - [ ] **Phase 102: Fresh Store & Website Screenshots** - The Play listing and darktierstudios.com show the game as it now is, achievements list included.
 
 **Sequencing:** the catalog goes first because its copy freezes at the Phase 98 close and the zip it yields is the user's one step in Play Console, which can run in parallel with everything after it. The tracker (99) evaluates the catalog's triggers, the toast and list (100) need the tracker's unlock stream, and the Play mirror (101) needs that stream, the ☰ list it hangs a Play row on, and the IDs file the user hands back after importing the zip. Screenshots (102) are last by the user's ruling (2026-10-05), so they show the achievements list on the final build. Engine bytes move only in Phase 99 (additive event facts, zero rng draws, any moved fixture declared); the rest is content, shell, in-repo Android plugin code and tooling. No bot balance pass is planned: v2.5 changes no game rule, and the tuning bot earns no achievements.
@@ -148,7 +148,7 @@ Plans:
   4. Play's achievement IDs are read by name from the Get resources file, never hard-coded in the JS; until that file is in the build, Play sync is a no-op and the in-game achievements still work; once it is, a test proves every catalog id resolves to a Play ID, and a signed-in Pixel 7 check (the toast plus Play's unlock popup) is a row in the milestone-close device checklist.
   5. The Data safety answers in `store-listing/LISTING.md` and the privacy pages have been checked for achievement progress sent to Play Games with Compete ON, and updated where needed (submitting the Data safety form stays the user's step).
 
-**Plans:** 6 plans
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1** *(101-01, 101-02, 101-05 and 101-06 touch disjoint files and can run in parallel; 101-06 also commits in C:/projects/darktier-studio)*
@@ -188,7 +188,7 @@ Plans:
 | 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
 | 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 5/5 | Complete    | 2026-10-05 |
-| 101. Play Games Achievements Mirror | 0/6 | Planned | - |
+| 101. Play Games Achievements Mirror | 6/6 | Complete    | 2026-10-05 |
 | 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 <details>
