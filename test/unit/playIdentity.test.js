@@ -13,6 +13,7 @@ import {
   createPlayIdentity,
   createFakePlayIdentity,
   PLAY_IDENTITY_REASONS,
+  PLAY_ACHIEVEMENT_REASONS,
 } from "../../src/browser/playIdentity.js";
 import {
   FIREBASE_CONFIG,
@@ -80,10 +81,10 @@ test("fake: setPlayer changes status and the next code; calls() lists every call
   );
 });
 
-test("fake and native expose the same four methods and are frozen", () => {
+test("fake and native expose the same six Play Games methods and are frozen (Phase 101-01 adds the achievement pair)", () => {
   const fake = createFakePlayIdentity();
   const native = createPlayIdentity({ loadPlugin: async () => ({ plugin: {} }) });
-  for (const m of ["init", "status", "signIn", "serverAuthCode"]) {
+  for (const m of ["init", "status", "signIn", "serverAuthCode", "syncAchievements", "showAchievements"]) {
     assert.equal(typeof fake[m], "function", `fake.${m}`);
     assert.equal(typeof native[m], "function", `native.${m}`);
   }
@@ -243,6 +244,175 @@ test("module source touches no window or document and names @capacitor/core only
   assert.ok(!/\bwindow\b|\bdocument\b/.test(code), "no DOM globals outside comments");
   assert.ok(/import\(\s*["']@capacitor\/core["']\s*\)/.test(code));
   assert.ok(!/^\s*import\s.*@capacitor/m.test(code), "no static capacitor import");
+});
+
+// ─── Phase 101-01: the achievement pair (PGS-07, AUI-04) ────────────────────
+
+const OPS = [
+  { kind: "unlock", resource: "achievement_chicken" },
+  { kind: "steps", resource: "achievement_downward_mobility_i", n: 3 },
+  { kind: "reveal", resource: "achievement_death_falling" },
+];
+
+test("PLAY_ACHIEVEMENT_REASONS is the frozen closed set; PLAY_IDENTITY_REASONS is unchanged", () => {
+  assert.ok(Object.isFrozen(PLAY_ACHIEVEMENT_REASONS));
+  assert.deepEqual([...PLAY_ACHIEVEMENT_REASONS], ["unavailable", "signin", "network", "unknown", "type", "config", "error"]);
+  assert.deepEqual([...PLAY_IDENTITY_REASONS], ["unavailable", "config", "denied", "error"]);
+});
+
+test("native: syncAchievements forwards { ops } and normalizes the per-op results", async () => {
+  const seen = [];
+  const plugin = {
+    async syncAchievements(args) {
+      seen.push(args);
+      return {
+        ok: true,
+        results: [
+          { i: 0, ok: true },
+          { i: 1, ok: false, reason: "network" },
+          { i: 2, ok: false, reason: "weird" }, // unknown reason clamps to error
+          { i: 3, ok: true }, // outside the 3-op batch: dropped
+          { i: "1", ok: true }, // not an integer: dropped
+          { i: 1.5, ok: true }, // not an integer: dropped
+          { i: -1, ok: true }, // negative: dropped
+          { i: 0, ok: "yes" }, // ok not a boolean: dropped
+          null,
+          "x",
+        ],
+      };
+    },
+  };
+  const id = createPlayIdentity({ loadPlugin: async () => ({ plugin }) });
+  const out = await id.syncAchievements({ ops: OPS });
+  assert.deepEqual(seen, [{ ops: OPS }]);
+  assert.deepEqual(out, {
+    ok: true,
+    results: [
+      { i: 0, ok: true },
+      { i: 1, ok: false, reason: "network" },
+      { i: 2, ok: false, reason: "error" },
+    ],
+  });
+  assert.ok(Object.isFrozen(out));
+});
+
+test("native: syncAchievements clamps whole-call reasons and turns every other shape into error", async () => {
+  const answers = [
+    [{ ok: false, reason: "signin" }, { ok: false, reason: "signin" }],
+    [{ ok: false, reason: "weird" }, { ok: false, reason: "error" }],
+    [{ ok: false }, { ok: false, reason: "error" }],
+    [{ ok: true }, { ok: false, reason: "error" }], // ok without a results array
+    [{ ok: true, results: "nope" }, { ok: false, reason: "error" }],
+    [{}, { ok: false, reason: "error" }],
+    [null, { ok: false, reason: "error" }],
+    ["text", { ok: false, reason: "error" }],
+  ];
+  for (const [raw, want] of answers) {
+    const id = createPlayIdentity({ loadPlugin: async () => ({ plugin: { async syncAchievements() { return raw; } } }) });
+    assert.deepEqual(await id.syncAchievements({ ops: OPS }), want);
+  }
+  const rejecting = createPlayIdentity({ loadPlugin: async () => ({ plugin: { syncAchievements() { throw new Error("boom"); } } }) });
+  assert.deepEqual(await rejecting.syncAchievements({ ops: OPS }), { ok: false, reason: "error" });
+  const rejecting2 = createPlayIdentity({ loadPlugin: async () => ({ plugin: { syncAchievements: () => Promise.reject(new Error("no")) } }) });
+  assert.deepEqual(await rejecting2.syncAchievements({ ops: OPS }), { ok: false, reason: "error" });
+  const noOps = createPlayIdentity({ loadPlugin: async () => ({ plugin: { async syncAchievements() { return { ok: true, results: [{ i: 0, ok: true }] }; } } }) });
+  assert.deepEqual(await noOps.syncAchievements(), { ok: true, results: [] }, "no batch: no entry is inside it");
+});
+
+test("native: a failed plugin load answers unavailable for both achievement methods", async () => {
+  const bad = createPlayIdentity({
+    loadPlugin: async () => {
+      throw new Error("no bridge");
+    },
+  });
+  assert.deepEqual(await bad.syncAchievements({ ops: OPS }), { ok: false, reason: "unavailable" });
+  assert.deepEqual(await bad.showAchievements(), { ok: false, reason: "unavailable" });
+});
+
+test("native: showAchievements forwards, keeps ok, clamps reasons and turns other shapes into error", async () => {
+  let calls = 0;
+  const plugin = {
+    async showAchievements() {
+      calls++;
+      return { ok: true, extra: "ignored" };
+    },
+  };
+  const id = createPlayIdentity({ loadPlugin: async () => ({ plugin }) });
+  assert.deepEqual(await id.showAchievements(), { ok: true });
+  assert.equal(calls, 1);
+
+  const answers = [
+    [{ ok: false, reason: "signin" }, { ok: false, reason: "signin" }],
+    [{ ok: false, reason: "weird" }, { ok: false, reason: "error" }],
+    [{ ok: false, reason: "denied" }, { ok: false, reason: "error" }], // an identity reason, not an achievement one
+    [{}, { ok: false, reason: "error" }],
+    [null, { ok: false, reason: "error" }],
+    [7, { ok: false, reason: "error" }],
+  ];
+  for (const [raw, want] of answers) {
+    const one = createPlayIdentity({ loadPlugin: async () => ({ plugin: { async showAchievements() { return raw; } } }) });
+    assert.deepEqual(await one.showAchievements(), want);
+  }
+  const throwing = createPlayIdentity({ loadPlugin: async () => ({ plugin: { showAchievements() { throw new Error("x"); } } }) });
+  assert.deepEqual(await throwing.showAchievements(), { ok: false, reason: "error" });
+});
+
+test("native: the thenable-plugin rule holds for the achievement pair", async () => {
+  const plugin = {
+    get then() {
+      throw new Error("the plugin object was treated as a thenable");
+    },
+    async syncAchievements() {
+      return { ok: true, results: [{ i: 0, ok: true }] };
+    },
+    async showAchievements() {
+      return { ok: true };
+    },
+  };
+  const id = createPlayIdentity({ loadPlugin: async () => ({ plugin }) });
+  assert.deepEqual(await id.syncAchievements({ ops: [OPS[0]] }), { ok: true, results: [{ i: 0, ok: true }] });
+  assert.deepEqual(await id.showAchievements(), { ok: true });
+});
+
+test("fake: both achievement methods are recorded in calls()", async () => {
+  const fake = createFakePlayIdentity();
+  await fake.syncAchievements({ ops: OPS });
+  await fake.showAchievements();
+  assert.deepEqual(fake.calls(), [{ method: "syncAchievements", args: { ops: OPS } }, { method: "showAchievements" }]);
+});
+
+test("fake: signed out, both achievement methods answer signin", async () => {
+  const fake = createFakePlayIdentity({ signedIn: false });
+  assert.deepEqual(await fake.syncAchievements({ ops: OPS }), { ok: false, reason: "signin" });
+  assert.deepEqual(await fake.showAchievements(), { ok: false, reason: "signin" });
+  // Neither signs the player in.
+  assert.deepEqual(await fake.status(), { ok: true, signedIn: false });
+  assert.equal(fake.calls().length, 3);
+});
+
+test("fake: signed in, syncAchievements answers one ok entry per op for a 1 to 20 op batch; show answers ok", async () => {
+  const fake = createFakePlayIdentity();
+  assert.deepEqual(await fake.syncAchievements({ ops: OPS }), {
+    ok: true,
+    results: [
+      { i: 0, ok: true },
+      { i: 1, ok: true },
+      { i: 2, ok: true },
+    ],
+  });
+  const twenty = Array.from({ length: 20 }, (_, k) => ({ kind: "unlock", resource: `achievement_x${k}` }));
+  const out = await fake.syncAchievements({ ops: twenty });
+  assert.equal(out.ok, true);
+  assert.equal(out.results.length, 20);
+  assert.deepEqual(await fake.showAchievements(), { ok: true });
+});
+
+test("fake: a missing, empty or over-long batch answers error", async () => {
+  const fake = createFakePlayIdentity();
+  const twentyOne = Array.from({ length: 21 }, (_, k) => ({ kind: "unlock", resource: `achievement_x${k}` }));
+  for (const arg of [undefined, {}, { ops: [] }, { ops: "x" }, { ops: twentyOne }]) {
+    assert.deepEqual(await fake.syncAchievements(arg), { ok: false, reason: "error" });
+  }
 });
 
 // ─── config ─────────────────────────────────────────────────────────────────
