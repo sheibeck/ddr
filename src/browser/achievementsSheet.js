@@ -26,6 +26,9 @@
 //   - no fact rides on colour, a greyed icon or a glyph alone: the same fact
 //     is always in the row's text, and the icons are decorative.
 //
+// Phase 101 (AUI-04): ACHIEVEMENTS_SHEET_COPY.play holds the VIEW IN PLAY GAMES
+// button's label and its one failure line; the shell's Phase 101 block writes them.
+//
 // 35 rows, not 36: CONTEXT says 36 rows but also says "the depth ladder and
 // Unicorn! read as one track of four rungs". The catalog derives 35 tracks
 // (13 four-tier tracks, the depth-and-Unicorn! track and 21 single
@@ -107,6 +110,10 @@ export const ACHIEVEMENTS_SHEET_COPY = deepFreeze({
   },
   expand: "Tap for every tier",
   collapse: "Tap to fold it away",
+  play: {
+    view: "VIEW IN PLAY GAMES",
+    failed: "Play Games would not open. Your achievements are all still here, taking themselves very seriously.",
+  },
 });
 
 /** The tier numerals of a ladder. Not copy: they are labels, not sentences. */

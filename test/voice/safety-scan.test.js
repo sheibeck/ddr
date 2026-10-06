@@ -560,6 +560,23 @@ test("Phase 100: the achievements list's chrome copy is in the authored-string w
   }
 });
 
+test("Phase 101: the VIEW IN PLAY GAMES label, its failure line and the Compete help are in the authored-string walk", () => {
+  const strings = new Map(collectAuthoredStrings());
+  for (const l of [
+    "ACHIEVEMENTS_SHEET_COPY.play.view", "ACHIEVEMENTS_SHEET_COPY.play.failed",
+    "ACCOUNT_COPY.sheet.onHelp",
+  ]) {
+    assert.ok(strings.has(l), `missing ${l}`);
+    assert.deepStrictEqual(findBannedTerms(strings.get(l)), [], `${l} must be family-friendly`);
+  }
+  assert.equal(strings.get("ACHIEVEMENTS_SHEET_COPY.play.view"), "VIEW IN PLAY GAMES");
+  const failed = strings.get("ACHIEVEMENTS_SHEET_COPY.play.failed");
+  assert.ok(!/[<>]/.test(failed), "the failure line carries no markup");
+  assert.ok(!/\bWP\b/.test(failed), "the failure line carries no WP word");
+  assert.match(failed, /Play Games/);
+  assert.match(failed, /achievements/);
+});
+
 // ─── Meta-test A: the allowlist is COMPLETE (no false positives) ────────────
 // Scan the raw closed vocabularies with the allowlist DISABLED; every resulting
 // collision must be covered by the allowlist. This proves the scan will never
