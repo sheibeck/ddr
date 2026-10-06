@@ -179,7 +179,20 @@ Plans:
   2. `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots exported to Play's size rules, and `store-listing/LISTING.md` describes them.
   3. The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live (the deploy is the user's call).
 
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 102-01-PLAN.md — the tool's foundation: its own package, the three sizes (phone portrait, both tablets landscape) and the eight-scene order, the Play-rules check proven on synthetic images, `seed.mjs` (the offline record, saves and states with consistency checks), the frame guard (no dev chip, no debug UI, no request off localhost), and the one declared isolation-pin update
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 102-02-PLAN.md — the eight scene recipes and the one-command capture (real clicks only for combat), the 24 shots at Play's exact sizes, three contact sheets and the fix loop to a clean, rule-checked set
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 102-03-PLAN.md — the gated, staged install into `store-listing/screenshots/`, the `LISTING.md` Screenshots section, then the website: eight webp shots, a combat `featured.webp`, alt text and one local darktier-studio commit (no push, no deploy; the Play upload and the site deploy are the user's steps)
 
 #### Progress
 
@@ -189,7 +202,7 @@ Plans:
 | 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 5/5 | Complete    | 2026-10-05 |
 | 101. Play Games Achievements Mirror | 6/6 | Complete    | 2026-10-05 |
-| 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
+| 102. Fresh Store & Website Screenshots | 0/3 | Planned | - |
 
 <details>
 <summary>✅ v2.4 Fit & Finish (Phases 93–97.1) — SHIPPED 2026-10-05</summary>
