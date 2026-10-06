@@ -148,7 +148,23 @@ Plans:
   4. Play's achievement IDs are read by name from the Get resources file, never hard-coded in the JS; until that file is in the build, Play sync is a no-op and the in-game achievements still work; once it is, a test proves every catalog id resolves to a Play ID, and a signed-in Pixel 7 check (the toast plus Play's unlock popup) is a row in the milestone-close device checklist.
   5. The Data safety answers in `store-listing/LISTING.md` and the privacy pages have been checked for achievement progress sent to Play Games with Compete ON, and updated where needed (submitting the Data safety form stays the user's step).
 
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+**Wave 1** *(101-01, 101-02, 101-05 and 101-06 touch disjoint files and can run in parallel; 101-06 also commits in C:/projects/darktier-studio)*
+
+- [ ] 101-01-PLAN.md — the Play Console export as `res/values/games-ids.xml` (manifest on `@string/app_id`, `package_name` dropped from strings.xml, `@string/achievement_*` kept from the shrinker), PlayIdentityPlugin's syncAchievements, showAchievements and achievementsClosed, and the JS seam's two methods with PLAY_ACHIEVEMENT_REASONS; declared pin updates
+- [ ] 101-02-PLAN.md — `src/browser/playAchievements.js`: resource names, the one legal op per entry, the record-minus-ledger diff (`ddr.pgsAch.v1`), and the Compete-first, single-flight, batch-acknowledged mirror, with the full-coverage proof against the real export and the Compete OFF proof
+- [ ] 101-05-PLAN.md — the in-app Compete help clause (COMP-05), `docs/PLAY-GAMES-SETUP.md` (sign-in and achievements, the export rules) and `docs/ACHIEVEMENTS.md` (the IDs file's home, testers, the PGS-11 device check)
+- [ ] 101-06-PLAN.md — the darktierstudios.com privacy pages (website repo commit; deploy is the user's step) and `store-listing/LISTING.md`'s 2.5.0 Data safety answers and privacy record (the form is the user's step)
+
+**Wave 2** *(blocked on 101-01 and 101-02)*
+
+- [ ] 101-03-PLAN.md — the mirror wired into `mazeworld.html`: subscribed beside the banner, woken on background, foreground, online, death, Compete ON, sign-in and boot, with a shell-level Compete OFF proof and the SHELL-MODULES.md section
+
+**Wave 3** *(blocked on 101-03; same `mazeworld.html`)*
+
+- [ ] 101-04-PLAN.md — the VIEW IN PLAY GAMES button at the top of the ACHIEVEMENTS sheet (Compete ON and signed in only), its house-voice copy registered with the voice tooling, the layout check over the row, and the docs sentence the user's ruling corrects
 
 ### Phase 102: Fresh Store & Website Screenshots
 
@@ -172,7 +188,7 @@ Plans:
 | 98. Achievement Catalog & Play Console Import Zip | 3/3 | Complete    | 2026-10-05 |
 | 99. Engine Facts & Lifetime Stats Tracker | 3/3 | Complete    | 2026-10-05 |
 | 100. In-Game Achievements: Unlock Toasts & the ☰ List | 5/5 | Complete    | 2026-10-05 |
-| 101. Play Games Achievements Mirror | 0/TBD | Not started | - |
+| 101. Play Games Achievements Mirror | 0/6 | Planned | - |
 | 102. Fresh Store & Website Screenshots | 0/TBD | Not started | - |
 
 <details>
