@@ -7568,6 +7568,9 @@ window.__mzClassicBoot = async function classicBoot() {
   // import convention.
   import { setAchievementListener } from "./src/browser/engineAdapter.js";
   import { achievementEvents } from "./src/browser/achievementBus.js";
+  // Phase 101 (PGS-07/08/09) — the Play Games achievements mirror (pure; the
+  // shell hands it the one Play seam, the Compete gate and the record reader).
+  import { createAchievementMirror } from "./src/browser/playAchievements.js";
   import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
@@ -9447,6 +9450,75 @@ window.__mzClassicBoot = async function classicBoot() {
     if (document.visibilityState === "visible") boardSync.session();
   });
 
+  // Phase 101 (PGS-07/08/09) — the Play Games achievements mirror. The block
+  // builds ONE mirror over the shell's one lazy Play seam and its one Compete
+  // gate, subscribes it to the achievement fan-out (never to the adapter's
+  // slot, which stays the banner's fan-out above) and wakes it from the
+  // triggers CONTEXT lists: app background and foreground, coming back
+  // online, a death, Compete turning ON, Play sign-in turning to "in", and
+  // boot (the boot wake sits after boardSync.boot below). Compete is checked
+  // INSIDE the mirror before any storage read or plugin call, so with Compete
+  // OFF every one of these is a no-op; Compete turning OFF also cancels the
+  // mirror's pending timers at once. Nothing here is awaited and a Play
+  // failure never reaches the banner, the board or the run. The listeners are
+  // added after boardSync's, which stay the first of their kind (shell-board
+  // pins that), and the account hook is a named subscriber added last, so the
+  // first account.subscribe block above stays byte-identical. The native
+  // pause path (registerNativeChrome's waitForPending) is deliberately left
+  // alone: the ledger is rebuilt from the record and every Play op is
+  // idempotent, so a ledger write lost to a pause only causes a harmless
+  // resend. The record reader is handed over as a function reference.
+  const achievementMirror = createAchievementMirror({
+    storage: window.mzStorage,
+    playIdentity: playIdentity(),
+    competeOn: competeIsOn,
+    online: () => navigator.onLine !== false,
+    getRecord: getAchievementRecord,
+  });
+  function onAchievementMirror(payload) {
+    try {
+      achievementMirror.kick(payload);
+      // A death wakes the mirror at once: a microtask after the dispatch that
+      // killed the hero, so the engine state already says so.
+      queueMicrotask(() => {
+        try {
+          if (window.__mzState?.get?.()?.dead === true) achievementMirror.wake();
+        } catch {
+          // a Play failure never reaches the run
+        }
+      });
+    } catch {
+      // a Play failure never reaches the banner or the dispatch
+    }
+  }
+  achievementEvents.subscribe(onAchievementMirror);
+  document.addEventListener("visibilitychange", () => {
+    achievementMirror.wake();
+  });
+  window.addEventListener("online", () => {
+    achievementMirror.wake({ force: true });
+  });
+  let mirrorCompete = competeIsOn() === true;
+  let mirrorSignin = account.state().signin;
+  function onAccountForMirror() {
+    try {
+      const compete = competeIsOn() === true;
+      const signin = account.state().signin;
+      const turnedOn = compete && !mirrorCompete;
+      const signedIn = compete && signin === "in" && mirrorSignin !== "in";
+      mirrorCompete = compete;
+      mirrorSignin = signin;
+      if (!compete) {
+        achievementMirror.cancel();
+        return;
+      }
+      if (turnedOn || signedIn) achievementMirror.wake({ force: true, checkPlayer: true });
+    } catch {
+      // a Play failure never reaches the account surfaces
+    }
+  }
+  account.subscribe(onAccountForMirror);
+
   // Phase 85 (ACCT-04, 85-CONTEXT group 2): boardSync's placement report
   // for an acknowledged flush becomes either the death panel's fading rank
   // line (drawn while that panel is up and the report still names the live
@@ -10907,6 +10979,10 @@ window.__mzClassicBoot = async function classicBoot() {
   // bounded to the local run history's own pre-2.2 imports, then flushes it
   // while Compete is ON. Also never awaited; never blocks the title.
   boardSync.boot({ history: getRunHistory() }).catch(() => {});
+  // Phase 101 (PGS-08): the boot wake — resend anything the ledger never
+  // acknowledged, after checking which Play account is signed in. Not
+  // awaited; with Compete OFF it is a no-op inside the mirror.
+  achievementMirror.wake({ checkPlayer: true });
 
   // PLT-02 (back button) / PLT-03 (lifecycle flush) — 02-RESEARCH.md "Back
   // Button + Lifecycle". Native-only: isNativePlatform() is false in the
