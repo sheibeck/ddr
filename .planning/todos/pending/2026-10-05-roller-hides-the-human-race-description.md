@@ -2,6 +2,7 @@
 created: 2026-10-05T23:30:00.000Z
 title: Roller hides the Human race description
 area: ui
+target: after 2.5.0 (user, 2026-10-05)
 files:
   - src/browser/roller.js:102
 ---
