@@ -539,3 +539,45 @@ test("PGS-09 harness: a kick that throws inside the mirror is swallowed by the s
   const fn = factory(broken, () => {}, r.win);
   assert.doesNotThrow(() => fn(unlockPayload(UNLOCK_ID)));
 });
+
+// ═══════════════════════ Part 3: the docs section ══════════════════════════
+
+const DOCS = fs.readFileSync(path.join(REPO_ROOT, "docs", "SHELL-MODULES.md"), "utf8").replace(/\r\n/g, "\n");
+const DOCS_HEADING = "### Play Games achievements mirror (Phase 101)";
+
+function docsSection() {
+  const start = DOCS.indexOf(DOCS_HEADING);
+  assert.ok(start !== -1, "the section exists");
+  const ends = [DOCS.indexOf("\n## ", start + DOCS_HEADING.length), DOCS.indexOf("\n### ", start + DOCS_HEADING.length)].filter((i) => i !== -1);
+  return DOCS.slice(start, ends.length ? Math.min(...ends) : DOCS.length);
+}
+
+test("docs: the Play mirror section sits after the Phase 100 list section and before 'What stays shared'", () => {
+  const list = DOCS.indexOf("### Achievements list (Phase 100)");
+  const mirror = DOCS.indexOf(DOCS_HEADING);
+  const shared = DOCS.indexOf("## What stays shared");
+  assert.ok(list !== -1 && mirror > list && shared > mirror);
+  assert.equal(occurrences(DOCS, DOCS_HEADING), 1);
+});
+
+test("docs: the Play mirror section names the module, the bus hook, the ledger key, the ops, the gate and boardSync", () => {
+  const text = docsSection();
+  for (const needle of [
+    "createAchievementMirror",
+    "achievementEvents.subscribe",
+    "ddr.pgsAch.v1",
+    "syncAchievements",
+    "setStepsImmediate",
+    "Compete OFF",
+    "boardSync",
+    "onAccountForMirror",
+    "waitForPending",
+  ]) {
+    assert.ok(text.includes(needle), `the section names ${needle}`);
+  }
+});
+
+test("docs: the Play mirror section does not use the retired notification word", () => {
+  const retired = ["to", "ast"].join("");
+  assert.equal(docsSection().toLowerCase().includes(retired), false);
+});

@@ -942,6 +942,62 @@ as the adapter publishes it. The list reads `getAchievementRecord()` and not the
 so a Play mirror never needs to touch the list. The Play row sits beside the ACHIEVEMENTS row
 in the ☰ menu and opens through its own handler.
 
+### Play Games achievements mirror (Phase 101)
+
+`src/browser/playAchievements.js` is a pure module (no window, no document, no network of
+its own; `tools/` never imports it). `createAchievementMirror({ storage, playIdentity,
+competeOn, online, getRecord })` returns `{ kick, wake, flush, cancel, showAchievements,
+snapshot, waitForPending }`. The shell builds exactly one, in a labelled block right after
+boardSync's `visibilitychange` listener in the module script, over the shell's one lazy
+seam (`playIdentity()`), the one Compete gate (`competeIsOn`) and the record reader
+(`getAchievementRecord`, handed over as a reference, never called by the block).
+
+- **The seam.** `syncAchievements` and `showAchievements` on `playIdentity()` are reached
+  only through the mirror; the shell never calls them itself and holds no Play ID. Names
+  cross the bridge, IDs stay in Android resources.
+- **Gate order.** First failing check wins and returns without touching the seam: Compete
+  ON (checked before any storage read or plugin call, because `status()` starts the SDK),
+  record loaded, online, backoff elapsed, then `status()` (signed out is a hold with no
+  backoff), then batches with Compete and online re-checked before every batch. With
+  Compete OFF the mirror makes no seam call, reads and writes no ledger and schedules no
+  timer.
+- **The ledger.** `ddr.pgsAch.v1` holds what Play acknowledged (unlocks, reveals, steps),
+  the Play `playerId`, the failure count and the retry time. Pending work is the diff
+  `getAchievementRecord()` minus the ledger, so the ledger is never an event queue. It is
+  written after every acknowledged batch and reset (everything resent) when the `playerId`
+  changes. Compete OFF never purges it and sends nothing.
+- **The ops.** `setStepsImmediate` with an absolute value for each of the 57 incrementals
+  (Play keeps the larger, so a resend cannot double-count), `unlockImmediate` for a
+  standard entry, `revealImmediate` for a Hidden entry that is revealed and not unlocked.
+  Batches hold at most 20 ops. A refused op is skipped for the session and retried on the
+  next launch.
+- **Wake-ups.** The bus is only a wake-up: unlocks and reveals flush about 1.5 s after they
+  happen (so Play's unlock popup lands near the unlock card), progress about every 60 s.
+  Also: `visibilitychange` in either direction, coming back online (forced past a
+  backoff), a death (a microtask after the dispatch that killed the hero), Compete turning
+  ON and Play sign-in turning to "in" (forced, with the account check), and boot (with the
+  account check, right after `boardSync.boot(`). Compete turning OFF cancels the pending
+  timers at once. Every wake goes through the mirror's single-flight flush, so the shell
+  never has two batches in flight.
+- **Wiring order rules.** The mirror subscribes with
+  `achievementEvents.subscribe(onAchievementMirror)` after the banner's subscription and
+  before `await boot(`; `setAchievementListener(` still appears exactly once. Its
+  `visibilitychange` and `online` listeners come after boardSync's, which stay the first of
+  their kind. The account hook is a separate named subscriber,
+  `account.subscribe(onAccountForMirror)`, placed inside the mirror block, so the first
+  `account.subscribe` block and `onSession` stay byte-identical. The block adds no
+  `window.__mz*` name.
+- **The native pause path.** `registerNativeChrome`'s `waitForPending` line still awaits
+  only the engine and boardSync, not the ledger. The ledger is rebuilt from the record and
+  every op is idempotent, so a ledger write lost to a pause costs one harmless resend;
+  editing that pinned line would move two pins for no gain a player could see.
+- **Isolation.** The bus subscriber only calls `kick` and queues one microtask, inside a
+  try/catch; the bus already swallows a throwing or rejecting subscriber. A Play failure
+  therefore never touches the unlock card, the list, the run or the board.
+  `test/unit/play-achievements-shell.test.js` pins the anchors and runs the shipped block
+  against the real mirror, the real bus and the recording fake seam, including the
+  Compete OFF proof across every trigger.
+
 ## What stays shared
 
 `src/browser/viewModels.js` keeps the view models more than one surface
