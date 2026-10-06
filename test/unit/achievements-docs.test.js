@@ -52,6 +52,29 @@ test("the docs state the catalog's count, points, incremental and hidden numbers
   assert.ok(howTo.includes(`${2000 - points} points of Play's 2000-point cap`));
 });
 
+// Phase 101 plan 05 (PGS-11, COMP-05): where the IDs file lives, who can test drafts, the device check.
+test("docs/ACHIEVEMENTS.md names both IDs-file copies, the proving tests, the testers rule and one device-check section", () => {
+  for (const literal of [
+    "achievements/games-ids.xml",
+    "android/app/src/main/res/values/games-ids.xml",
+    "517177834262",
+    "play-achievements.test.js",
+    "play-achievements-native.test.js",
+    "Testers",
+  ]) {
+    assert.ok(howTo.includes(literal), `missing: ${literal}`);
+  }
+  assert.doesNotMatch(howTo, /is confirmed in that phase's research/);
+  const heading = "## Check Play's side on a device";
+  assert.equal(howTo.split(heading).length - 1, 1, "exactly one device-check heading");
+  const rest = howTo.split(heading)[1];
+  const section = rest.slice(0, rest.search(/\n## /) >= 0 ? rest.search(/\n## /) : rest.length);
+  for (const needle of ["airplane", "Compete OFF", "release build", "force-stop"]) {
+    assert.ok(section.includes(needle), `the device-check section lists: ${needle}`);
+  }
+  assert.equal(section.split("\n").filter((l) => /^\d+\. \*\*/.test(l)).length, 7, "seven device rows");
+});
+
 test("neither doc uses the retired working title", () => {
   for (const [name, text] of [["ACHIEVEMENTS.md", howTo], ["ACHIEVEMENTS-COPY.md", copy]]) {
     assert.ok(!/\bmazeworld\b/i.test(text), `${name} uses the retired working title`);

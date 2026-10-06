@@ -86,6 +86,10 @@ Before publishing, look at the draft list in Play Console:
 4. The Release tracks tab and Add tracks cover which build tracks may use the draft. A game that
    is still unpublished needs its testers on the allowlist, otherwise they meet OAuth and 404
    errors.
+5. Testing the draft achievements on the Pixel 7 needs that device's Google account on this
+   Testers list. A non-tester sees sign-in failures or unknown-achievement refusals until the
+   configuration is published; the game then holds the achievements and retries at the next
+   launch, so nothing is lost.
 
 ## Publish
 
@@ -93,6 +97,8 @@ Before publishing, look at the draft list in Play Console:
 2. On the Publishing page, review the list, fix any issues it reports, then Publish.
 3. Publish the Play Games Services settings **before** publishing a game release.
 4. Publishing is required for achievements to work for anyone outside the tester list.
+5. Publish at least 2 hours before a production rollout: changes take up to 2 hours to reach
+   players.
 
 ## The one-way doors
 
@@ -112,9 +118,46 @@ Read these before you press Publish. None of them can be undone.
 
 1. On the Achievements page, choose Get resources.
 2. Take the Android resources XML, save the file and hand it back.
-3. Phase 101 reads it. The exact file format is confirmed in that phase's research, not here.
+3. The file lives in two places, byte for byte the same: `achievements/games-ids.xml` (the
+   export, committed) and `android/app/src/main/res/values/games-ids.xml` (the copy the Android
+   build packs, which the manifest reads as `@string/app_id`).
 
-Phases 99 to 102 do not wait on the import. Only Phase 101's full-coverage proof needs the IDs file.
+Two tests keep it honest. `test/unit/play-achievements.test.js` proves full coverage: all 77
+catalog achievements resolve to a Play id in the export, none of the export's achievements goes
+unused, the ids are unique, and `app_id` (517177834262) equals `PLAY_GAMES_CONFIG.appId`.
+`test/unit/play-achievements-native.test.js` proves the two copies are equal, that no string name
+is defined twice, and that `res/raw/keep.xml` keeps `@string/achievement_*` so the release build
+does not shrink the strings away.
+
+A catalog name becomes a resource name by this rule: lower-case, with every run of other
+characters turned into one underscore, and the ends trimmed. That is why the names are the link
+(see the one-way doors above).
+
+A later re-export, for example after more achievements are added, is a drop-in: replace both
+copies with the new file, then run those two tests. If one copy is missed, the equality test fails.
+
+## Check Play's side on a device
+
+These rows join the milestone-close Pixel 7 checklist. They need a debug build signed in to Play
+Games, which means the debug keystore's SHA-1 credential that sign-in already requires
+(`docs/PLAY-GAMES-SETUP.md`, section 2, step 5), and the device's Google account on the Testers
+list while the achievements are still drafts.
+
+1. **A signed-in unlock.** With Compete on and signed in, earn a standard achievement. The in-game
+   card shows first, then Play's own unlock popup with its XP.
+2. **An incremental step.** Play a run that moves an incremental achievement; open Play's list
+   from the ACHIEVEMENTS sheet (VIEW IN PLAY GAMES) and see the progress count match the game's.
+3. **A reveal.** Earn the achievement that reveals a hidden one; the hidden entry turns visible in
+   Play's list.
+4. **An airplane-mode round.** Earn something with airplane mode on, then turn it off: the unlock
+   reaches Play shortly after the phone is back online, once and not twice.
+5. **A Compete OFF round with adb logcat.** Turn Compete off, restart the game, earn something and
+   watch `adb logcat`: no Play Games achievements call at all. Turn Compete on again and the
+   backlog goes up.
+6. **The release build shrinker check.** Install a release build and open Play's list from the
+   sheet: it opens, and an unlock still reaches Play. This proves the keep rule held.
+7. **A force-stop during a sync.** Earn several, force-stop the app while the sync is under way,
+   reopen it: nothing is lost and nothing is double-counted.
 
 ## If the import is refused
 

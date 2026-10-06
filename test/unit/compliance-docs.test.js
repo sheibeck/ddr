@@ -104,6 +104,18 @@ test("docs/PLAY-GAMES-SETUP.md keeps the secret out of the repo and still points
   assert.match(doc, /PROFILE or EMAIL/);
 });
 
+// Phase 101 (COMP-05): the runbook covers sign-in AND achievements, and says so once.
+test("docs/PLAY-GAMES-SETUP.md covers sign-in and achievements: no sign-in-only claim, the app_id resource, the keep rule, the testers rule and one achievements section", () => {
+  const doc = read(RUNBOOK_PATH);
+  assert.doesNotMatch(doc, /sign-in only/i, "no longer claims sign-in only");
+  assert.doesNotMatch(doc, /no achievements/i, "no longer claims there are no achievements");
+  for (const needle of ["@string/app_id", "keep.xml", "achievement_*", "Testers", "VIEW IN PLAY GAMES", "sign-in and achievements"]) {
+    assert.ok(doc.includes(needle), `PLAY-GAMES-SETUP.md names ${needle}`);
+  }
+  assert.equal(doc.split("## 7. Achievements").length - 1, 1, "exactly one achievements section heading");
+  assert.doesNotMatch(doc, /game_services_project_id/, "the retired resource name is gone");
+});
+
 // ─── docs/LEADERBOARDS.md: the Play Games configuration stays, and the rules cutover ───
 
 test("docs/LEADERBOARDS.md section 16 keeps the Play Games configuration and still lists all five Season-1 board IDs", () => {

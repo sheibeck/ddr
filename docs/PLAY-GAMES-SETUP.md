@@ -1,10 +1,11 @@
-# Play Games sign-in setup (live runbook)
+# Play Games setup: sign-in and achievements (live runbook)
 
 **Delve, Die, Repeat** (`com.darktierstudios.delvedierepeat`) 2.3 signs players in with Google
 Play Games Services (PGS) v2 so the board can name every player by their Google Play Games name
-(Phase 91.2, D-09, D-10). This file is the live runbook for the console side. It covers
-**sign-in only**: no Play Games leaderboards, no achievements, no saved games. The board itself
-is our own Firebase board (`docs/LEADERBOARDS.md`).
+(Phase 91.2, D-09, D-10). 2.5 also mirrors the game's achievements to Play Games while Compete is
+on and the player is signed in (Phase 101). This file is the live runbook for the console side.
+It covers **sign-in and achievements**: no Play Games leaderboards, no saved games. The board
+itself is our own Firebase board (`docs/LEADERBOARDS.md`).
 
 This file replaces the retirement notice 2.2.0 left here. The 2.0/2.1 runbook, with the four
 Season-1 leaderboards in it, lives in git history at commit
@@ -32,6 +33,19 @@ the order of the steps is what matters. Every live change is your go first (D-14
   name or email. Never add either scope: they return exactly that.
 - Until the configuration below exists and is wired in, sign-in fails gracefully: the game stays
   fully playable and finished runs wait in the queue (a SIGN IN row shows in the account block).
+- **Achievements (2.5).** With Compete on and the player signed in, the game mirrors its 77
+  achievements to Play Games: standard ones as unlocks, hidden ones as reveals, and the
+  incremental ones as progress sent as absolute set-steps values (the count so far, never an
+  add-one). Unlocks and reveals go about 1.5 seconds after they happen, so Play's popup lands
+  near the in-game card. Progress is batched about every 60 seconds, and also sent when the app
+  goes to the background or comes back, on a death, on coming back online, when Compete is turned
+  on and on a new sign-in.
+- **The backlog.** Anything earned while Compete was off, while signed out or while offline is
+  sent later, the next time Compete is on and the player is signed in. Play shows its popups for
+  them one after another. A different Play account gets everything resent.
+- **Compete off sends nothing.** It never starts the SDK for achievements, never asks Play
+  anything, and never deletes the local record of what Play already has. ERASE MY RUNS removes
+  runs from the board; it does not touch achievements held in Play Games.
 
 ## 2. Path A: reuse the existing configuration (the default, D-09)
 
@@ -81,6 +95,8 @@ You do these, in the consoles:
    (or enable a release track under the **Release tracks** tab). Anyone not listed cannot sign
    in until the configuration is published. Google says new testers can use PGS within a couple
    of hours. Add yourself: an unpublished configuration with nobody on the list lets nobody in.
+   The draft achievements follow the same rule: only accounts on the Testers list can earn them
+   before the configuration is published.
 7. **Firebase billing.** Firebase project `delve-die-repeat-6ba5f` -> **Usage and billing** ->
    attach a billing account (the **Blaze** plan; the `boardName` function is a Cloud Function and
    needs it), then Cloud Console -> **Billing** -> **Budgets and alerts** -> create a budget with
@@ -108,14 +124,18 @@ reports `signInWithIdp` failing for it), or if it turns out not to exist after a
    **Game server** credential (the Firebase project's auto-created web client, or a new Web
    application client), and the OAuth consent screen (section 2, step 2). Testers, billing and
    publishing as in section 2.
-3. Send Claude the new **application ID**. Claude changes it in **both** places, which a unit test
-   keeps equal:
-   - `android/app/src/main/res/values/games-ids.xml` (`game_services_project_id`);
-   - `PLAY_GAMES_CONFIG.appId` in `src/browser/firebaseConfig.js`;
+3. A new configuration means re-importing the achievements zip into it (`docs/ACHIEVEMENTS.md`)
+   and fetching a fresh **Get resources** export. Hand Claude that export. Claude replaces **both**
+   copies of it, which a unit test keeps equal:
+   - `achievements/games-ids.xml` (the export, committed);
+   - `android/app/src/main/res/values/games-ids.xml` (the same bytes; the manifest reads
+     `@string/app_id` from it);
 
-   and the new web client ID in `PLAY_GAMES_CONFIG.webClientId`. A new configuration gives every
-   player a new Play Games player ID; that is harmless, because nothing stored today depends on
-   the old one.
+   and the export's `app_id` must equal `PLAY_GAMES_CONFIG.appId` in
+   `src/browser/firebaseConfig.js` (a test checks it). The new web client ID goes in
+   `PLAY_GAMES_CONFIG.webClientId`. A new configuration gives every player a new Play Games
+   player ID, and the game resends every achievement to it; that is harmless, because nothing
+   else stored today depends on the old one.
 4. Rebuild the debug APK and re-run the dev-row probe.
 
 ## 4. What you hand Claude, and what Claude runs
@@ -168,13 +188,25 @@ run), then `node tools/board-names/deploy.mjs --name-source games --pgs-client-i
   for the debug APK.
 - **Unpublished configuration.** Only testers can sign in. Publish at the release (section 2,
   step 8), at least 2 hours before a rollout.
-- **No APP_ID in the manifest.** `AndroidManifest.xml` references `@string/game_services_project_id`
-  (`games-ids.xml`) in its `com.google.android.gms.games.APP_ID` meta-data. A placeholder there
-  breaks sign-in; the game plays on, runs queue.
+- **No APP_ID in the manifest.** `AndroidManifest.xml` references `@string/app_id` (from
+  `android/app/src/main/res/values/games-ids.xml`, the Play Console Get resources export) in its
+  `com.google.android.gms.games.APP_ID` meta-data. A placeholder there breaks sign-in; the game
+  plays on, runs queue.
 - **PROFILE or EMAIL scopes.** Never requested. They would return the Google account's real name
   and email, which the game must never see.
-- **The two APP_ID copies.** `games-ids.xml` and `PLAY_GAMES_CONFIG.appId` must agree; a unit
-  test checks it.
+- **The two APP_ID copies.** The export's `app_id` and `PLAY_GAMES_CONFIG.appId` must agree; a
+  unit test checks it.
+- **A re-export must replace both copies.** `achievements/games-ids.xml` and
+  `android/app/src/main/res/values/games-ids.xml` are the same bytes. Replacing one leaves the
+  game looking up ids the build does not have, or the tests failing; the equality test is the
+  net.
+- **The keep.xml wildcard.** `android/app/src/main/res/raw/keep.xml` keeps `@string/achievement_*`.
+  The game looks those strings up by name at run time, so without the wildcard the release build
+  shrinks them away: debug works, release silently sends nothing.
+- **Draft achievements and testers.** Until the configuration is published, only accounts on the
+  Testers list (section 2, step 6) can earn the draft achievements. Any other account sees
+  sign-in failures or refusals for unknown achievements; the game holds and retries at the next
+  launch.
 - **The secret in the wrong place.** It goes in a file outside the repo, then into the provider
   configuration only. A key path inside the repository is refused by the tools.
 - **Deleting the configuration.** Do not. The Season-1 leaderboards inside it may stay or go
@@ -187,10 +219,38 @@ On a device signed in with a tester account, with Compete on, after the build is
 - the account block shows the player's Google Play Games name (not "NOT SIGNED IN"), and
 - a finished run shows on the board under that name.
 
+- an achievement earned in a run shows the in-game card and then Play's own unlock popup (with its
+  XP), and VIEW IN PLAY GAMES at the top of the ACHIEVEMENTS sheet opens Play's list showing it.
+
 If it stays signed out, re-check in order: the credential's SHA-1 is the signer's (section 5),
 the application ID in `games-ids.xml` matches the configuration, and the account is on the
 Testers list (or the configuration is published). The dev-row probe's report names the first
 step that fails.
 
-Source for the Play Games data the SDK collects (the Data safety answers):
-`store-listing/LISTING.md`, "Data safety".
+## 7. Achievements (2.5, Phase 101)
+
+The whole achievements side, end to end:
+
+- **The IDs file.** The user's Play Console **Get resources** export (the Android resources XML)
+  lives in two copies of the same bytes: `achievements/games-ids.xml` and
+  `android/app/src/main/res/values/games-ids.xml`. It holds `app_id` and one
+  `achievement_*` string per achievement; the manifest's APP_ID meta-data reads `@string/app_id`.
+- **The tests.** `test/unit/play-achievements.test.js` proves all 77 catalog names resolve in the
+  export, none is unused, the values are unique and `app_id` equals `PLAY_GAMES_CONFIG.appId`.
+  `test/unit/play-achievements-native.test.js` proves the res copy equals the export, no string
+  name is defined twice, `keep.xml` keeps `@string/achievement_*` and the plugin's source pins.
+- **The plugin.** `PlayIdentityPlugin` has two achievements methods: `syncAchievements` (a batch
+  of unlock, reveal and set-steps operations) and `showAchievements` (Play's own list).
+- **The mirror.** `src/browser/playAchievements.js` works out what Play still lacks from the
+  record and a durable ledger (`ddr.pgsAch.v1`), and sends it only with Compete on, online and
+  signed in. Compete off never starts the SDK and never purges the ledger.
+- **The button.** VIEW IN PLAY GAMES sits at the top of the ACHIEVEMENTS sheet (reached through
+  the menu), and shows only with Compete on and the player signed in.
+- **Testers for drafts.** Draft achievements work only for accounts on the Testers list
+  (section 2, step 6).
+- **Publishing.** Publish the configuration, achievements included, at least 2 hours before a
+  production rollout (section 2, step 8, and `docs/ACHIEVEMENTS.md`).
+- **The device check** for the milestone-close Pixel 7 checklist is in `docs/ACHIEVEMENTS.md`,
+  "Check Play's side on a device".
+- **Data safety.** Achievement progress now counts in the Play Games data the SDK collects; the
+  answers are in `store-listing/LISTING.md`, "Data safety".
