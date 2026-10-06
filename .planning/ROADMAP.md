@@ -120,7 +120,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion; 100-03, 100-04 and 100-05 all edit `mazeworld.html`, so they run in order)*
 
-- [ ] 100-03-PLAN.md — the ☰ ACHIEVEMENTS row (with its count) and the sheet: markup, CSS, expand, Android back, with the declared ☰ pin updates
+- [x] 100-03-PLAN.md — the ☰ ACHIEVEMENTS row (with its count) and the sheet: markup, CSS, expand, Android back, with the declared ☰ pin updates
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
