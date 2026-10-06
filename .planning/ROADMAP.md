@@ -192,7 +192,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 102-03-PLAN.md — the gated, staged install into `store-listing/screenshots/`, the `LISTING.md` Screenshots section, then the website: eight webp shots, a combat `featured.webp`, alt text and one local darktier-studio commit (no push, no deploy; the Play upload and the site deploy are the user's steps)
+- [x] 102-03-PLAN.md — the gated, staged install into `store-listing/screenshots/`, the `LISTING.md` Screenshots section, then the website: eight webp shots, a combat `featured.webp`, alt text and one local darktier-studio commit (no push, no deploy; the Play upload and the site deploy are the user's steps)
 
 #### Progress
 

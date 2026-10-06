@@ -48,8 +48,8 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 ### Screenshots (999.18)
 
 - [x] **SHOTS-01**: An agreed shot list is captured on the current build for the phone, the 7" tablet, the 10" tablet and, where it fits, landscape, with no dev chip or debug UI in frame; the final flavour text, the ability states and the achievements list are visible
-- [ ] **SHOTS-02**: `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots exported to Play's size rules, and `store-listing/LISTING.md` describes them
-- [ ] **SHOTS-03**: The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live (the deploy is the user's call)
+- [x] **SHOTS-02**: `store-listing/screenshots/` (`phone/`, `tablet-7in/`, `tablet-10in/`) holds the new shots exported to Play's size rules, and `store-listing/LISTING.md` describes them
+- [x] **SHOTS-03**: The darktierstudios.com shots and `featured.webp` are replaced as webp with updated alt text in the `ddr-shots` section, and the site is deployed with the new images live (the deploy is the user's call)
 
 ### Compliance
 
@@ -101,8 +101,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ZIP-02 | Phase 98 | Complete |
 | ZIP-03 | Phase 98 | Complete |
 | SHOTS-01 | Phase 102 | Complete |
-| SHOTS-02 | Phase 102 | Pending |
-| SHOTS-03 | Phase 102 | Pending |
+| SHOTS-02 | Phase 102 | Complete |
+| SHOTS-03 | Phase 102 | Complete |
 | COMP-05 | Phase 101 | Complete |
 
 **Coverage:**
