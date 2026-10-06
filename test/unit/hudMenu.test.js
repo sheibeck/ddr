@@ -67,16 +67,19 @@ test("hudMenuNext: totality — every open/kind/ctx combination returns a strict
 
 // ─── HUD_MENU_ITEMS ──────────────────────────────────────────────────────
 
-test("HUD_MENU_ITEMS: five frozen rows in order camp, marks, settings, report, notes, with the three legacy chip ids and the mock's glyph codepoints", () => {
+test("HUD_MENU_ITEMS: six frozen rows in order camp, marks, achievements, settings, report, notes, with the three legacy chip ids and the mock's glyph codepoints", () => {
   // Phase 85 (85-01, ACCT-03): the user's 2026-09-28 todo dropped the CENTRE
   // MAP row and put MAKE CAMP first under the account block.
+  // Declared pin update (Phase 100, plan 100-03, AUI-02): re-pinned from five
+  // to six rows; ACHIEVEMENTS sits after MARKS.
   assert.ok(Object.isFrozen(HUD_MENU_ITEMS));
-  assert.equal(HUD_MENU_ITEMS.length, 5);
+  assert.equal(HUD_MENU_ITEMS.length, 6);
   for (const row of HUD_MENU_ITEMS) assert.ok(Object.isFrozen(row));
 
   const expected = [
     { key: "camp", id: "btn-camp", glyph: "☾" },
     { key: "marks", id: "mw-chip-marks", glyph: "◈" },
+    { key: "achievements", id: "mw-menu-achievements", glyph: "★" },
     { key: "settings", id: "mw-gear-btn", glyph: "⚙" },
     { key: "report", id: "mw-menu-report", glyph: "✎" },
     { key: "notes", id: "mw-menu-notes", glyph: "¶" },
@@ -98,6 +101,15 @@ test("HUD_MENU_ITEMS (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES carry their
   assert.deepStrictEqual(
     { key: notes.key, id: notes.id, label: notes.label, glyph: notes.glyph, color: notes.color, size: notes.size },
     { key: "notes", id: "mw-menu-notes", label: "PATCH NOTES", glyph: "¶", color: "#8fb3c9", size: 15 },
+  );
+});
+
+// Phase 100 (AUI-02, plan 100-03): the ACHIEVEMENTS row's full shape.
+test("HUD_MENU_ITEMS (Phase 100 AUI-02): ACHIEVEMENTS carries its label, gold star, colour and size", () => {
+  const ach = HUD_MENU_ITEMS.find((r) => r.key === "achievements");
+  assert.deepStrictEqual(
+    { key: ach.key, id: ach.id, label: ach.label, glyph: ach.glyph, color: ach.color, size: ach.size },
+    { key: "achievements", id: "mw-menu-achievements", label: "ACHIEVEMENTS", glyph: "★", color: "#e0b84a", size: 15 },
   );
 });
 
@@ -276,6 +288,8 @@ test("quit rows (D-06): the five new names are each exported exactly once", () =
 const ROW_ORDER = [
   { key: "camp", id: "btn-camp" },
   { key: "marks", id: "mw-chip-marks" },
+  // Phase 100 (AUI-02, plan 100-03): ACHIEVEMENTS, always enabled.
+  { key: "achievements", id: "mw-menu-achievements" },
   { key: "settings", id: "mw-gear-btn" },
   // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two new always-enabled rows.
   { key: "report", id: "mw-menu-report" },
@@ -291,6 +305,7 @@ function enabledMap(rows) {
 const ALL_ON = Object.freeze({
   camp: true,
   marks: true,
+  achievements: true,
   settings: true,
   report: true,
   notes: true,
@@ -298,12 +313,14 @@ const ALL_ON = Object.freeze({
   abandon: true,
 });
 
-test("row states (D-08): seven frozen { key, id, enabled } entries in dropdown order; the first five ids equal HUD_MENU_ITEMS'", () => {
+test("row states (D-08): eight frozen { key, id, enabled } entries in dropdown order; the first six ids equal HUD_MENU_ITEMS'", () => {
   // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows — the
   // CENTRE MAP row is gone.
+  // Declared pin update (Phase 100, plan 100-03, AUI-02): re-pinned from
+  // seven to eight rows; ACHIEVEMENTS joined after MARKS.
   const rows = hudMenuRowStates({ hero: true });
   assert.ok(Object.isFrozen(rows));
-  assert.equal(rows.length, 7);
+  assert.equal(rows.length, 8);
   for (const r of rows) {
     assert.ok(Object.isFrozen(r));
     assert.deepStrictEqual(Object.keys(r).sort(), ["enabled", "id", "key"]);
@@ -314,13 +331,14 @@ test("row states (D-08): seven frozen { key, id, enabled } entries in dropdown o
     ROW_ORDER,
   );
   assert.deepStrictEqual(
-    rows.slice(0, 5).map((r) => r.id),
+    rows.slice(0, 6).map((r) => r.id),
     HUD_MENU_ITEMS.map((r) => r.id),
   );
 });
 
-test("row states (D-08): a live, idle hero enables all seven rows", () => {
+test("row states (D-08): a live, idle hero enables all eight rows", () => {
   // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows.
+  // Declared pin update (Phase 100, plan 100-03): now eight rows.
   assert.deepStrictEqual(enabledMap(hudMenuRowStates({ hero: true, dead: false, encounter: false })), { ...ALL_ON });
 });
 
@@ -359,19 +377,19 @@ test("row states (D-08): no hero (hero not strictly true) disables MAKE CAMP onl
 
 // Phase 78 (HUD-02): MARKS left this always-on set (a dead hero locks it,
 // pinned above); SETTINGS and the two quit rows are the no-trap guarantee.
-test("row states (D-08, HUD-02): SETTINGS, REPORT A BUG, PATCH NOTES, SAVE & QUIT and ABANDON are always enabled, dead or alive", () => {
+test("row states (D-08, HUD-02): ACHIEVEMENTS, SETTINGS, REPORT A BUG, PATCH NOTES, SAVE & QUIT and ABANDON are always enabled, dead or alive", () => {
   // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): report and notes join the
-  // always-enabled set.
+  // always-enabled set. Phase 100 (AUI-02): so does achievements.
   const ctxs = [{ hero: true }, { hero: true, encounter: true }, { hero: true, dead: true }, { hero: false, dead: true, encounter: true }, {}];
   for (const ctx of ctxs) {
     const m = enabledMap(hudMenuRowStates(ctx));
-    for (const key of ["settings", "report", "notes", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
+    for (const key of ["achievements", "settings", "report", "notes", "saveQuit", "abandon"]) assert.equal(m[key], true, `${key} ctx=${JSON.stringify(ctx)}`);
   }
 });
 
 // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and PATCH NOTES must
 // never be disabled by hudMenuRowStates, for any ctx — including hostile ones.
-test("row states (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES are enabled for every ctx, hostile included", () => {
+test("row states (79.3 D-08, D-20; Phase 100 AUI-02): REPORT A BUG, PATCH NOTES and ACHIEVEMENTS are enabled for every ctx, hostile included", () => {
   const hostile = {
     get hero() {
       throw new Error("boom");
@@ -423,6 +441,7 @@ test("row states (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES are enabled for
     const m = enabledMap(rows);
     assert.equal(m.report, true, `report ctx=${safeLabel(ctx)}`);
     assert.equal(m.notes, true, `notes ctx=${safeLabel(ctx)}`);
+    assert.equal(m.achievements, true, `achievements ctx=${safeLabel(ctx)}`);
   }
 });
 

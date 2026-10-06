@@ -97,13 +97,16 @@ test("(2) the ☰ sits on band 2, outside .mw-hud-counters' clipping box: the ba
 
 // ─── (3) the five menu rows match HUD_MENU_ITEMS in order ────────────────
 
-test("(3) the five menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
+test("(3) the six menu rows match HUD_MENU_ITEMS in order: id, label and glyph (decoded from the numeric character reference), and the [data-glyph] rule's colour/size", () => {
   // Phase 85 (85-01, ACCT-03): re-pinned from six to five rows — the
   // centring row is gone and MAKE CAMP is first.
+  // Declared pin update (Phase 100, plan 100-03, AUI-02): re-pinned from five
+  // to six rows (ACHIEVEMENTS after MARKS), and the row pattern now allows
+  // the optional earned-count span (.mw-hud-menu-count) after the label.
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  const rowRe = /<button type="button" role="menuitem" class="mw-hud-menu-item" id="([^"]+)"><span class="mw-hud-menu-glyph" data-glyph="([^"]+)" aria-hidden="true">&#(\d+);<\/span><span class="mw-hud-menu-label">([^<]+)<\/span><\/button>/g;
+  const rowRe = /<button type="button" role="menuitem" class="mw-hud-menu-item" id="([^"]+)"><span class="mw-hud-menu-glyph" data-glyph="([^"]+)" aria-hidden="true">&#(\d+);<\/span><span class="mw-hud-menu-label">([^<]+)<\/span>(?:<span class="mw-hud-menu-count" id="[^"]+"><\/span>)?<\/button>/g;
   const rows = [...menuSlice.matchAll(rowRe)].map((m) => ({ id: m[1], key: m[2], glyph: String.fromCodePoint(Number(m[3])), label: m[4] }));
-  assert.equal(rows.length, 5, "expected exactly five menu rows");
+  assert.equal(rows.length, 6, "expected exactly six menu rows");
   assert.deepStrictEqual(
     rows.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
     HUD_MENU_ITEMS.map((r) => ({ id: r.id, key: r.key, glyph: r.glyph, label: r.label })),
@@ -355,9 +358,12 @@ test("(9) BEHAVIOUR: every close trigger closes the menu (re-tap, select, a tab 
 // Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): mw-menu-report and mw-menu-notes
 // join the row list — both must stay enabled in every scenario below.
 // Phase 85 (85-01, ACCT-03): the centring row is gone and MAKE CAMP is first.
+// Declared pin update (Phase 100, plan 100-03, AUI-02): mw-menu-achievements
+// joins the list (after MARKS) so every scenario below also proves it enabled.
 const ROW_IDS = [
   "btn-camp",
   "mw-chip-marks",
+  "mw-menu-achievements",
   "mw-gear-btn",
   "mw-menu-report",
   "mw-menu-notes",
@@ -417,12 +423,13 @@ test("(11) BEHAVIOUR: with __mzHudMenu deleted from the sandbox window, the ☰ 
 
 // ─── (12) accessibility ───────────────────────────────────────────────────
 
-test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the three legacy rows, Phase 79.3's REPORT A BUG and PATCH NOTES, plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
+test("(12) accessibility: the ☰ carries aria-haspopup=menu/aria-controls/aria-label; the dropdown is role=menu; every row (the three legacy rows, Phase 100's ACHIEVEMENTS, Phase 79.3's REPORT A BUG and PATCH NOTES, plus Phase 70's SAVE & QUIT and ABANDON) is role=menuitem; aria-expanded mirrors data-open across open and close", () => {
   // Phase 85 (85-01, ACCT-03): re-pinned from eight to seven rows.
+  // Declared pin update (Phase 100, plan 100-03, AUI-02): seven to eight.
   assert.match(HTML, /id="mw-hud-menu-btn" aria-haspopup="menu" aria-controls="mw-hud-menu" aria-expanded="false" aria-label="Menu"/);
   assert.match(HTML, /<div class="mw-hud-menu" id="mw-hud-menu" role="menu" aria-label="Map menu" data-open="0">/);
   const menuSlice = sliceBetween(HTML, '<div class="mw-hud-menu" id="mw-hud-menu"', "</header>");
-  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 7, "all seven rows must be role=menuitem");
+  assert.equal((menuSlice.match(/role="menuitem"/g) || []).length, 8, "all eight rows must be role=menuitem");
 
   const { doc } = freshSandbox(states.thief);
   menuBtn(doc).onclick();
@@ -887,4 +894,69 @@ test("(22) BEHAVIOUR (79.3 D-08, D-20): REPORT A BUG and PATCH NOTES carry neith
   // mw-menu-save-quit still carries the split (the two new rows land before it, not after)
   const saveQuitTag = HTML.slice(saveQuitIdx - 200, saveQuitIdx + 40);
   assert.match(saveQuitTag, /class="[^"]*\bmw-hud-menu-split\b[^"]*"/, "mw-menu-save-quit must keep mw-hud-menu-split");
+});
+
+// ─── (23) BEHAVIOUR (Phase 100 AUI-02): ACHIEVEMENTS is always enabled and
+// sits after MARKS; syncHudMenuRows ends by refreshing its count ───────────
+
+test("(23) BEHAVIOUR (Phase 100 AUI-02): ACHIEVEMENTS carries neither disabled nor aria-disabled idle, mid-encounter, or on any tab including dead; it sits after mw-chip-marks and before mw-gear-btn; syncHudMenuRows ends by calling window.mzSyncAchievementsCount; every open calls it", () => {
+  {
+    const { doc } = freshSandbox(states.thief);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assert.ok(isRowEnabled(doc, "mw-menu-achievements"), "idle: ACHIEVEMENTS must carry neither disabled nor aria-disabled");
+  }
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzStair = { dir: "N" };
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc));
+    assert.ok(isRowEnabled(doc, "mw-menu-achievements"), "encounter: ACHIEVEMENTS must carry neither disabled nor aria-disabled");
+  }
+  for (const tab of ["maze", "hero", "gear", "oracle", "dead"]) {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    sandbox.context.window.__mzShowTab(tab);
+    menuBtn(doc).onclick();
+    assert.ok(isOpen(doc), `tab=${tab}: the ☰ opens`);
+    assert.ok(isRowEnabled(doc, "mw-menu-achievements"), `tab=${tab}: ACHIEVEMENTS must carry neither disabled nor aria-disabled`);
+  }
+
+  // every open re-reads the count: the hook is called once per open
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    let calls = 0;
+    sandbox.context.window.mzSyncAchievementsCount = () => {
+      calls += 1;
+    };
+    menuBtn(doc).onclick();
+    assert.equal(calls, 1, "opening the menu calls mzSyncAchievementsCount once");
+    menuBtn(doc).onclick();
+    assert.equal(calls, 1, "closing the menu does not");
+    menuBtn(doc).onclick();
+    assert.equal(calls, 2, "the next open calls it again");
+  }
+  // a missing hook is a no-op
+  {
+    const { doc, sandbox } = freshSandbox(states.thief);
+    delete sandbox.context.window.mzSyncAchievementsCount;
+    assert.doesNotThrow(() => menuBtn(doc).onclick());
+    assert.ok(isOpen(doc));
+  }
+
+  // source: the call is the last statement of syncHudMenuRows
+  const syncRegion = fnRegion("function syncHudMenuRows(");
+  assert.match(syncRegion, /window\.mzSyncAchievementsCount\?\.\(\);\s*\}\s*$/,"syncHudMenuRows ends with window.mzSyncAchievementsCount?.()");
+
+  // markup order: mw-chip-marks, mw-menu-achievements, mw-gear-btn
+  const idxOf = (id) => HTML.indexOf(`id="${id}"`);
+  const marksIdx = idxOf("mw-chip-marks");
+  const achIdx = idxOf("mw-menu-achievements");
+  const gearIdx = idxOf("mw-gear-btn");
+  assert.ok(marksIdx !== -1 && achIdx !== -1 && gearIdx !== -1, "all three ids must be found");
+  assert.ok(marksIdx < achIdx && achIdx < gearIdx, "mw-chip-marks, mw-menu-achievements, mw-gear-btn must appear in that order");
+  // the row carries a count span after its label
+  assert.match(
+    HTML,
+    /id="mw-menu-achievements"><span class="mw-hud-menu-glyph" data-glyph="achievements" aria-hidden="true">&#9733;<\/span><span class="mw-hud-menu-label">ACHIEVEMENTS<\/span><span class="mw-hud-menu-count" id="mw-menu-achievements-count"><\/span><\/button>/,
+  );
 });

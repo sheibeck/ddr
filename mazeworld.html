@@ -1346,6 +1346,10 @@ html,body{height:100%}
 /* Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): the two always-enabled rows. */
 .mw-hud-menu-glyph[data-glyph="report"]{color:#d9826b;font-size:14px}
 .mw-hud-menu-glyph[data-glyph="notes"]{color:#8fb3c9;font-size:15px}
+/* Phase 100 (AUI-02): the always-enabled ACHIEVEMENTS row: a gold star and
+   the earned count ("12 / 77") pushed to the right edge of the row. */
+.mw-hud-menu-glyph[data-glyph="achievements"]{color:#e0b84a;font-size:15px}
+.mw-hud-menu-count{flex:none;margin-left:auto;font-family:var(--mono);font-size:calc(0.4375rem * var(--mw-text-scale));font-variant-numeric:tabular-nums;color:#c9bda0}
 /* Phase 70 (D-06): the two quit rows. They carry no glyph, so their labels
    start where the glyph rows' labels do: padding-left 42px = the row's
    14px + the 18px glyph + the 10px gap. .mw-hud-menu-split draws a heavier
@@ -2646,8 +2650,9 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
            label/glyph/colour source of truth. Phase 79.3 (BUG-01 D-08,
            NOTES-02 D-20) adds two more rows, REPORT A BUG and PATCH NOTES,
            with their own ids. Phase 85 (85-01, ACCT-03): MAKE CAMP is the
-           first row under the account block, above MARKS; the order is
-           MAKE CAMP, MARKS, SETTINGS, REPORT A BUG, PATCH NOTES.
+           first row under the account block, above MARKS; Phase 100 adds
+           ACHIEVEMENTS after MARKS; the order is MAKE CAMP, MARKS,
+           ACHIEVEMENTS, SETTINGS, REPORT A BUG, PATCH NOTES.
            Phase 70 (POLISH-02, D-03/D-04, superseding Phase 67 D-05): the
            button wears the Play Games name's initials avatar while Compete
            is ON (this static plain ☰ while Compete is OFF or before the
@@ -2662,6 +2667,11 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
           <div class="mw-hud-menu-acct" id="mw-hud-menu-acct" role="group" aria-label="Account"></div>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="btn-camp"><span class="mw-hud-menu-glyph" data-glyph="camp" aria-hidden="true">&#9790;</span><span class="mw-hud-menu-label">MAKE CAMP</span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-chip-marks"><span class="mw-hud-menu-glyph" data-glyph="marks" aria-hidden="true">&#9672;</span><span class="mw-hud-menu-label">MARKS</span></button>
+          <!-- Phase 100 (AUI-02, plan 100-03): ACHIEVEMENTS, after MARKS,
+               always enabled; the count span is written from the lifetime
+               record each time the menu opens (syncHudMenuRows). Phase 101
+               adds a Play Games row beside it. -->
+          <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-menu-achievements"><span class="mw-hud-menu-glyph" data-glyph="achievements" aria-hidden="true">&#9733;</span><span class="mw-hud-menu-label">ACHIEVEMENTS</span><span class="mw-hud-menu-count" id="mw-menu-achievements-count"></span></button>
           <button type="button" role="menuitem" class="mw-hud-menu-item" id="mw-gear-btn"><span class="mw-hud-menu-glyph" data-glyph="settings" aria-hidden="true">&#9881;</span><span class="mw-hud-menu-label">SETTINGS</span></button>
           <!-- Phase 79.3 (BUG-01 D-08, NOTES-02 D-20): REPORT A BUG and
                PATCH NOTES, always enabled; their sheets are wired by the
@@ -6815,7 +6825,7 @@ function hudMenuEvent(kind) {
 // MAKE CAMP while an over-map encounter is up, the hero is dead or there is
 // no hero. The pure src/browser/hudMenu.js#hudMenuRowStates (bridged as
 // window.__mzHudMenu.rows) owns the rule; this writes its answer onto the
-// seven row buttons — the disabled property plus aria-disabled="true", both
+// eight row buttons — the disabled property plus aria-disabled="true", both
 // cleared when the row is live. TDZ-safe like hudMenuEvent: state comes
 // through window.__mzState, never a bare S, and the encounter is only
 // computed once that bridge exists. It never touches the ACCOUNT block
@@ -6838,6 +6848,9 @@ function syncHudMenuRows() {
       el.setAttribute("aria-disabled", "true");
     }
   }
+  // Phase 100 (AUI-02): the ACHIEVEMENTS row's earned count, re-read from the
+  // lifetime record on every open (the module script owns the writer).
+  window.mzSyncAchievementsCount?.();
 }
 // Phase 70 (D-07): every ☰ row closes the menu BEFORE its action runs, so a
 // sheet, the title screen or the roller it opens never appears under a
