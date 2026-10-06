@@ -102,8 +102,18 @@ function reachableFrom(root, entryFiles) {
 // by this one tool; it never drives the engine and never reaches the engine
 // adapter (the hooks and the ddr.achievements.v1 writes), which stays
 // forbidden for it like for every other tool.
+//
+// Phase 102 (declared re-pin, 2026-10-05): tools/store-screenshots/seed.mjs is
+// the second read-only harness tool. The screenshot capture builds the mid-game
+// achievements record and the Earned strip ids offline from the pure record and
+// tracker modules (a real engine death folded through the real tracker), and
+// hands the browser side seeds.json as data. It never drives the adapter, and
+// the walk below still forbids the engine adapter for it. The rest of the
+// capture harness is CommonJS and runs seed.mjs as a child process, so it
+// stays on the strict walk.
 const READ_ONLY_VIEW_TOOLS = Object.freeze({
   "tools/layout-check.mjs": ["src/browser/achievementTracker.js", "src/browser/achievementRecord.js"],
+  "tools/store-screenshots/seed.mjs": ["src/browser/achievementTracker.js", "src/browser/achievementRecord.js"],
 });
 
 test("nothing reachable from tools/ is the tracker, the record module or the engine adapter", () => {
