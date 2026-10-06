@@ -2,6 +2,5 @@
 <resources>
     <string name="app_name">Delve, Die, Repeat</string>
     <string name="title_activity_main">Delve, Die, Repeat</string>
-    <string name="package_name">com.darktierstudios.delvedierepeat</string>
     <string name="custom_url_scheme">com.darktierstudios.delvedierepeat</string>
 </resources>

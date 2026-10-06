@@ -264,13 +264,13 @@ test("PLAY_GAMES_CONFIG carries the Game server web client; playGamesConfigured 
   assert.equal(playGamesConfigured(undefined), false);
 });
 
-test("the APP_ID in games-ids.xml equals PLAY_GAMES_CONFIG.appId (D-09)", () => {
+test("the app_id in games-ids.xml (the Play Console export, Phase 101) equals PLAY_GAMES_CONFIG.appId (D-09)", () => {
   const xml = readFileSync(
     path.join(REPO_ROOT, "android", "app", "src", "main", "res", "values", "games-ids.xml"),
     "utf8",
   ).replace(/\r\n/g, "\n");
-  const m = xml.match(/<string name="game_services_project_id"[^>]*>([^<]+)<\/string>/);
-  assert.ok(m, "games-ids.xml carries game_services_project_id");
+  const m = xml.match(/<string name="app_id"[^>]*>([^<]+)<\/string>/);
+  assert.ok(m, "games-ids.xml carries app_id");
   assert.equal(m[1].trim(), PLAY_GAMES_CONFIG.appId);
 });
 
