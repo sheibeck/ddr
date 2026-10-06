@@ -169,6 +169,27 @@ test("onHelp says deaths go on the board under the Play Games name", () => {
   assert.match(help, /Play Games name/);
 });
 
+// Phase 101 (COMP-05): the help says achievements go to Play Games too, the backlog earned while Compete was off included.
+test("onHelp says achievements go to Play Games too, earned-while-off included, and says it once (Phase 101, COMP-05)", () => {
+  const help = ACCOUNT_COPY.sheet.onHelp;
+  assert.match(help, /achievements/i);
+  assert.match(help, /Play Games too/);
+  assert.match(help, /\boff\b/i);
+  assert.match(help, /earned/i);
+  assert.equal(help.match(/achievement/gi).length, 1, "achievements are named exactly once");
+  // the board sentence and the Play Games name stay
+  assert.match(help, /board/i);
+  assert.match(help, /Play Games name/);
+  assert.ok(help.length <= 220, `onHelp should stay short, got ${help.length} characters`);
+});
+
+test("offHelp is byte-identical to the Phase 92.2 string (Phase 101 leaves it alone)", () => {
+  assert.equal(
+    ACCOUNT_COPY.sheet.offHelp,
+    "Nothing leaves this phone, and Compete off means no Play Games sign-in. Turning it off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board. Compete must be on to reach the board, and so to erase anything already sitting there.",
+  );
+});
+
 test("offHelp says nothing leaves the phone, Compete off means no Play Games sign-in, and Compete must be on to reach the board (and so to erase)", () => {
   const help = ACCOUNT_COPY.sheet.offHelp;
   assert.match(help, /leaves this phone/i);
