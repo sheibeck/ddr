@@ -5,16 +5,31 @@
 // identity layer and the shell reach Play Games only through an object made
 // here: createPlayIdentity() over the native plugin, or
 // createFakePlayIdentity() in memory for `node --test` and the browser dev
-// loop. Both expose the same four methods, so callers swap them freely:
+// loop. Both expose the same six Play Games methods, so callers swap them
+// freely:
 //
 //   init()                          -> { ok: true } | { ok: false, reason }
 //   status() / signIn()             -> { ok: true, signedIn: false }
 //                                    | { ok: true, signedIn: true, playerId, displayName }
 //                                    | { ok: false, reason }
 //   serverAuthCode({ serverClientId }) -> { ok: true, authCode } | { ok: false, reason }
+//   syncAchievements({ ops })       -> { ok: true, results: [{ i, ok } | { i, ok: false, reason }] }
+//                                    | { ok: false, reason }
+//   showAchievements()              -> { ok: true } | { ok: false, reason }
 //
-// Every method resolves a plain object and never rejects or throws. Reasons
-// are the closed set PLAY_IDENTITY_REASONS.
+// Every method resolves a plain object and never rejects or throws. The four
+// identity methods carry reasons from the closed set PLAY_IDENTITY_REASONS.
+//
+// ACHIEVEMENTS (Phase 101, PGS-07/PGS-10, AUI-04). `ops` is a batch of 1 to 20
+// { kind: "unlock" | "reveal" | "steps", resource, n? } objects: `resource` is
+// a NAME such as achievement_x that the native plugin looks up in the Play
+// Console resource file (no Play ID is ever in JS) and `n` is the absolute
+// step count of a "steps" op. `results` covers the ops the plugin attempted
+// (it stops at the first network or signin answer), by index `i` into the
+// batch. The two achievement methods carry reasons from their own closed set
+// PLAY_ACHIEVEMENT_REASONS. The shell calls them only through the Play mirror
+// (src/browser/playAchievements.js, plan 101-02) and the sheet button, and
+// only while Compete is ON: the first call starts the Play Games SDK.
 //
 // BUILD INFO. The native seam (only) also has buildInfo() -> { ok: true,
 // debug: boolean } | { ok: false, reason }, the plugin's BuildConfig.DEBUG.
@@ -92,12 +107,60 @@ function normBuildInfo(raw) {
   return fail("error");
 }
 
+// ─── the achievement pair (Phase 101-01): their own closed reason set ───────
+
+/** The closed set of failure reasons the two achievement methods may carry. */
+export const PLAY_ACHIEVEMENT_REASONS = Object.freeze([
+  "unavailable",
+  "signin",
+  "network",
+  "unknown",
+  "type",
+  "config",
+  "error",
+]);
+
+function failAch(reason) {
+  return Object.freeze({ ok: false, reason: PLAY_ACHIEVEMENT_REASONS.includes(reason) ? reason : "error" });
+}
+
+/**
+ * syncAchievements: { ok: true, results } keeps only well-formed entries that
+ * point inside the batch that was sent (`args.ops`); { ok: false, reason }
+ * clamps the reason; anything else is an error.
+ */
+function normSync(raw, args) {
+  if (!raw || typeof raw !== "object") return failAch("error");
+  if (raw.ok === false) return failAch(raw.reason);
+  if (raw.ok !== true || !Array.isArray(raw.results)) return failAch("error");
+  const size = Array.isArray(args && args.ops) ? args.ops.length : 0;
+  const results = [];
+  for (const entry of raw.results) {
+    if (!entry || typeof entry !== "object") continue;
+    if (!Number.isInteger(entry.i) || entry.i < 0 || entry.i >= size) continue;
+    if (typeof entry.ok !== "boolean") continue;
+    results.push(
+      Object.freeze(entry.ok ? { i: entry.i, ok: true } : { i: entry.i, ok: false, reason: failAch(entry.reason).reason }),
+    );
+  }
+  return Object.freeze({ ok: true, results: Object.freeze(results) });
+}
+
+function normShow(raw) {
+  if (!raw || typeof raw !== "object") return failAch("error");
+  if (raw.ok === true) return Object.freeze({ ok: true });
+  if (raw.ok === false) return failAch(raw.reason);
+  return failAch("error");
+}
+
 const NORMALIZERS = {
   init: normInit,
   status: normStatus,
   signIn: normStatus,
   serverAuthCode: normCode,
   buildInfo: normBuildInfo,
+  syncAchievements: normSync,
+  showAchievements: normShow,
 };
 
 /**
@@ -150,7 +213,7 @@ export function createPlayIdentity({ loadPlugin } = {}) {
     try {
       const { plugin } = wrap;
       const raw = await plugin[method](args);
-      return NORMALIZERS[method](raw);
+      return NORMALIZERS[method](raw, args);
     } catch {
       return fail("error");
     }
@@ -163,6 +226,8 @@ export function createPlayIdentity({ loadPlugin } = {}) {
     signIn: () => invoke("signIn"),
     serverAuthCode: ({ serverClientId } = {}) => invoke("serverAuthCode", { serverClientId }),
     buildInfo: () => invoke("buildInfo"),
+    syncAchievements: (arg) => invoke("syncAchievements", { ops: arg ? arg.ops : undefined }),
+    showAchievements: () => invoke("showAchievements"),
   });
 }
 
@@ -213,6 +278,21 @@ export function createFakePlayIdentity({
         ok: true,
         authCode: `fake:${encodeURIComponent(pid)}:${encodeURIComponent(name)}:${counter}`,
       });
+    },
+    async syncAchievements(arg) {
+      const ops = arg ? arg.ops : undefined;
+      record("syncAchievements", { ops });
+      if (!isSignedIn) return failAch("signin");
+      if (!Array.isArray(ops) || ops.length < 1 || ops.length > 20) return failAch("error");
+      return Object.freeze({
+        ok: true,
+        results: Object.freeze(ops.map((_, i) => Object.freeze({ i, ok: true }))),
+      });
+    },
+    async showAchievements() {
+      record("showAchievements");
+      if (!isSignedIn) return failAch("signin");
+      return Object.freeze({ ok: true });
     },
     setSignedIn(value) {
       isSignedIn = !!value;

@@ -214,7 +214,12 @@ test("native: buildInfo never initializes the Play Games SDK (the 92.1 privacy g
   }
   // The SDK still starts from exactly one call site, in initSdkOnce.
   assert.equal(occurrences(PLUGIN_CODE, "PlayGamesSdk.initialize("), 1);
-  assert.equal(occurrences(PLUGIN_CODE, "ensureInit();"), 4, "init, status, signIn and serverAuthCode only");
+  // Re-pinned in Phase 101-01 (PGS-07/AUI-04): 4 -> 6 for the two achievement methods, which are reached only from JS.
+  assert.equal(
+    occurrences(PLUGIN_CODE, "ensureInit();"),
+    6,
+    "init, status, signIn, serverAuthCode, syncAchievements and showAchievements only",
+  );
 });
 
 test("native: the app module generates BuildConfig (AGP 8 default is off) so BuildConfig.DEBUG compiles", () => {

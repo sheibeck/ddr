@@ -8,6 +8,11 @@
   explicitly here. splash.png (the base/land variants) is kept alongside it
   since it shares the same "splash" family and is not referenced from any
   layout/manifest R8's resource shrinker can trace.
+
+  Phase 101 (PGS-10) — the PlayIdentity plugin looks the achievement strings
+  up at run time by a name built in JS (getIdentifier), which the resource
+  shrinker cannot trace, so they are kept by wildcard. A release build
+  without this keeps working in debug and fails in release.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/splash_screen,@drawable/splash" />
+    tools:keep="@drawable/splash_screen,@drawable/splash,@string/achievement_*" />

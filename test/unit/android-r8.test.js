@@ -122,3 +122,10 @@ test("DROID-01: keep.xml declares tools:keep for the name-loaded splash drawable
   assert.match(keepXml, /xmlns:tools="http:\/\/schemas\.android\.com\/tools"/);
   assert.match(keepXml, /tools:keep="[^"]*@drawable\/splash_screen[^"]*"/);
 });
+
+test("Phase 101 (PGS-10): keep.xml keeps @string/achievement_* for the name-looked-up achievement strings", () => {
+  const keepXml = read("android/app/src/main/res/raw/keep.xml");
+  assert.match(keepXml, /tools:keep="[^"]*@string\/achievement_\*[^"]*"/);
+  // The splash drawables stay kept beside it.
+  assert.match(keepXml, /tools:keep="[^"]*@drawable\/splash_screen[^"]*"/);
+});
