@@ -55,7 +55,10 @@ const PATCH_NOTES_RENDER_CLASSES = ["mw-pn", "mw-pn-h1", "mw-pn-h2", "mw-pn-h3",
 // ═══════════════════════ (A) the markup ════════════════════════════════════
 
 test("(A1) SOURCE: #mw-notes-sheet's markup is byte-for-byte the shipped legend-sheet chrome, with Close as the only text node", () => {
-  const markup = sliceBetween(MARKUP, '<div id="mw-notes-sheet"', '<div class="mw-fade"');
+  // Declared pin update (Phase 100, plan 100-03): the slice now ends where the
+  // ACHIEVEMENTS sheet begins (it sits between this sheet and the fade layer),
+  // so "Close is the only text node" still reads this sheet alone.
+  const markup = sliceBetween(MARKUP, '<div id="mw-notes-sheet"', '<div id="mw-achievements-sheet"');
   assert.match(markup, /^<div id="mw-notes-sheet" class="mw-legend-sheet mw-notes-sheet" hidden>$/m);
   assert.match(markup, /<div class="mw-legend-scrim" id="mw-notes-scrim"><\/div>/);
   assert.match(markup, /<div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-notes-title">/);

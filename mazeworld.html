@@ -1990,6 +1990,65 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
 .mw-notes-past{margin:16px 0 0;font-family:var(--mono);font-size:calc(0.78125rem * var(--mw-text-scale))}
 .mw-notes-past-link{display:inline-block;min-height:44px;line-height:44px}
 
+/* ---------- ACHIEVEMENTS sheet (Phase 100, AUI-02/03) ----------
+   #mw-achievements-sheet stacks like the notes sheet (z-index 55): the ☰ row
+   #mw-menu-achievements opens it over any screen. Reuses the legend-sheet
+   chrome (.mw-legend-sheet/-scrim/-panel/-head/-close, above); the list is
+   drawn into #mw-achievements-body by src/browser/achievementsSheet.js
+   (the .mw-ach-* classes below). This block declares no animation and no
+   transition: the rise and the close come from the legend chrome through
+   panelMotion, which honours reduced motion.
+   Layout: the panel is a flex column that does not scroll; the body owns
+   overflow-y and never scrolls sideways. Rows flow by CSS grid auto-fill on
+   the window width alone (never a device test): one column in a phone-width
+   panel, as many 300px-minimum columns as fit where the panel is wider (up
+   to 960px). min(100%, 300px) lets a panel narrower than 300px shrink the
+   column instead of overflowing.
+   Cascade for max-height: this block declares none on purpose. The panel
+   keeps the family's own height cap: the base .mw-legend-panel 78vh, its
+   78dvh twin in the @supports block and the short class's full window height
+   minus the top inset all stay in force, because an id selector here
+   (1,1,0) would outrank the short rule (0,1,0) and the layout pin tests
+   count every vh and dvh length outside the mw-layout block. The id selector
+   does beat the medium and expanded blocks' 640px max-width, which is the
+   point: this sheet is wider than the notes sheet. */
+#mw-achievements-sheet{z-index:55}
+#mw-achievements-sheet .mw-legend-panel{display:flex;flex-direction:column;overflow:hidden;max-width:960px}
+#mw-achievements-sheet .mw-legend-head{flex:none}
+#mw-achievements-title{overflow-wrap:anywhere}
+#mw-achievements-title:focus{outline:none}
+.mw-achievements-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding-top:4px}
+.mw-ach{display:block;color:#e6ddc6}
+.mw-ach-summary{margin:6px 0 2px}
+.mw-ach-count,.mw-ach-secrets{margin:2px 0;font-family:var(--mono);font-weight:700;font-size:calc(0.78125rem * var(--mw-text-scale));line-height:1.45;overflow-wrap:anywhere}
+.mw-ach-count{color:#e8c97a}
+.mw-ach-secrets{color:#a89c82}
+.mw-ach-block-title{margin:14px 0 6px;font-family:var(--disp);font-weight:400;font-size:calc(0.5rem * var(--mw-text-scale));letter-spacing:.08em;text-transform:uppercase;color:#c9bda0;overflow-wrap:anywhere}
+.mw-ach-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:0 18px;list-style:none;margin:0;padding:0}
+.mw-ach-row{min-width:0;border-bottom:2px solid #241f16}
+.mw-ach-head{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:48px;padding:8px 0;margin:0;text-align:left;font:inherit;letter-spacing:0;text-transform:none;background:transparent;color:inherit;border:0;border-radius:0;box-shadow:none}
+button.mw-ach-head{cursor:pointer}
+button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled){background:transparent;transform:none;box-shadow:none}
+.mw-ach-icon{width:48px;height:48px;flex:none;object-fit:contain}
+.mw-ach-icon-dim{filter:grayscale(1) opacity(.45)}
+.mw-ach-icon-silhouette{filter:brightness(0) opacity(.6)}
+.mw-ach-text{flex:1 1 auto;min-width:0}
+.mw-ach-text > span{display:block;overflow-wrap:anywhere}
+.mw-ach-name{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.6;color:#e8c97a}
+.mw-ach-state,.mw-ach-detail,.mw-ach-progress,.mw-ach-hint,.mw-ach-rung{font-family:var(--mono);font-weight:700;font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45}
+.mw-ach-state,.mw-ach-detail{color:#e6ddc6}
+.mw-ach-progress,.mw-ach-hint{color:#a89c82}
+.mw-ach-row[data-state="locked"] .mw-ach-name,.mw-ach-row[data-state="secret"] .mw-ach-name{color:#a89c82}
+.mw-ach-ladder{flex:none;display:inline-flex;gap:3px;margin-top:2px}
+.mw-ach-pip{display:inline-block;box-sizing:border-box;width:16px;height:16px;border:1px solid #6b5c3c;font-family:var(--mono);font-style:normal;font-weight:700;font-size:calc(0.5625rem * var(--mw-text-scale));line-height:14px;text-align:center;color:#a89c82}
+.mw-ach-pip[data-state="earned"]{background:#e0b84a;border-color:#e0b84a;color:#14110c}
+.mw-ach-rungs{list-style:none;margin:0 0 8px 60px;padding:0}
+.mw-ach-rung{display:flex;flex-wrap:wrap;gap:0 8px;padding:3px 0;color:#e6ddc6;overflow-wrap:anywhere}
+.mw-ach-rung > span{min-width:0;overflow-wrap:anywhere}
+.mw-ach-rung-name{color:#e8c97a}
+.mw-ach-rung[data-state="locked"] .mw-ach-rung-name{color:#a89c82}
+.mw-ach-rung-progress{color:#a89c82}
+
 /* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
    Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
    -scrim/-panel/-head, above); only the copy + actions row differ. */
@@ -2602,6 +2661,23 @@ body[data-boards-entry="title"] #screen-dead{padding-top:calc(14px + var(--safe-
     <div class="mw-legend-head"><span id="mw-notes-title"></span><button type="button" class="mw-legend-close" id="mw-notes-close" aria-label="Close">Close</button></div>
     <div class="mw-notes-body" id="mw-notes-body"></div>
     <p class="mw-notes-past"><a class="mw-notes-past-link" id="mw-notes-past" target="_blank" rel="noreferrer"></a></p>
+  </div>
+</div>
+
+<!-- ============ ACHIEVEMENTS SHEET (Phase 100, AUI-02/03) ============
+     The legend-sheet chrome (.mw-legend-sheet/-scrim/-panel/-head/-close,
+     above), stacked at z-index 55 like the notes sheet. Opened from the ☰
+     row #mw-menu-achievements, from every screen. The body is drawn by
+     src/browser/achievementsSheet.js#renderAchievementsSheet from the
+     adapter's lifetime record; every word, the title included, comes from
+     ACHIEVEMENTS_SHEET_COPY, so this markup carries only the Close label.
+     Closes by Close, the scrim and the Android back button (getGameContext's
+     hasOpenModal and closeModal both name it). -->
+<div id="mw-achievements-sheet" class="mw-legend-sheet mw-achievements-sheet" hidden>
+  <div class="mw-legend-scrim" id="mw-achievements-scrim"></div>
+  <div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-achievements-title">
+    <div class="mw-legend-head"><span id="mw-achievements-title" tabindex="-1"></span><button type="button" class="mw-legend-close" id="mw-achievements-close" aria-label="Close">Close</button></div>
+    <div class="mw-achievements-body" id="mw-achievements-body"></div>
   </div>
 </div>
 
@@ -7412,6 +7488,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // through — see openNotesSheet/showNotesOnTitle below.
   import { PATCH_NOTES } from "./src/browser/patchNotesData.js";
   import { parsePatchNotes, renderPatchNotes, readNotesLaunch, markNotesSeen, PATCH_NOTES_COPY, PATCH_NOTES_RELEASES_URL } from "./src/browser/patchNotes.js";
+  // Phase 100 (AUI-02/03, plan 100-03): the ACHIEVEMENTS sheet's pure view
+  // model and renderer, and the adapter's read-only lifetime record, the
+  // adapter name on its own import line per this file's import convention —
+  // see openAchievementsSheet below.
+  import { buildAchievementsView, renderAchievementsSheet, menuCountText } from "./src/browser/achievementsSheet.js";
+  import { getAchievementRecord } from "./src/browser/engineAdapter.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
   import { arrowPadModel } from "./src/browser/arrowPad.js";
@@ -8535,6 +8617,65 @@ window.__mzClassicBoot = async function classicBoot() {
     openNotesSheet();
   }
   document.getElementById("mw-menu-notes")?.addEventListener("click", closeMenuThen(openNotesSheet));
+
+  // Phase 100 (AUI-02/03, plan 100-03): the ACHIEVEMENTS sheet — shell-only;
+  // reads no S and writes no storage. The list is drawn from the adapter's
+  // lifetime record (a null record before boot reads as the all-zero list),
+  // so the sheet is correct whenever it opens and needs no listener of its
+  // own; plan 100-04 calls window.mzRefreshAchievementsSheet and
+  // window.mzSyncAchievementsCount on every unlock. The module adds no
+  // motion (panelMotion owns the rise and close, reduced motion included)
+  // and never calls window.mzKeepPartyInView. The only state that survives
+  // closing is the set of expanded track keys.
+  const achExpanded = new Set();
+  function achievementsSheetOpen() {
+    const sheet = document.getElementById("mw-achievements-sheet");
+    return !!sheet && !sheet.hidden;
+  }
+  function renderAchievementsSheetNow() {
+    const view = buildAchievementsView(getAchievementRecord(), { tzOffset: new Date().getTimezoneOffset() });
+    const title = document.getElementById("mw-achievements-title");
+    if (title) title.textContent = view.title;
+    const body = document.getElementById("mw-achievements-body");
+    if (!body) return;
+    const top = body.scrollTop;
+    renderAchievementsSheet(body, view, { expanded: achExpanded, onToggle: toggleAchievementTrack });
+    body.scrollTop = top;
+  }
+  function toggleAchievementTrack(key) {
+    if (achExpanded.has(key)) achExpanded.delete(key);
+    else achExpanded.add(key);
+    renderAchievementsSheetNow();
+    // The re-render replaced the tapped button: give focus back to its
+    // successor so TalkBack and keyboard users stay on the row they toggled.
+    const body = document.getElementById("mw-achievements-body");
+    const rows = body?.querySelectorAll?.(".mw-ach-row") || [];
+    for (const row of rows) {
+      if (row.getAttribute?.("data-key") !== key) continue;
+      row.querySelector?.(".mw-ach-head")?.focus?.({ preventScroll: true });
+      break;
+    }
+  }
+  function openAchievementsSheet() {
+    renderAchievementsSheetNow();
+    const sheet = document.getElementById("mw-achievements-sheet");
+    if (sheet) panelMotion.open(sheet);
+    document.getElementById("mw-achievements-title")?.focus?.({ preventScroll: true });
+  }
+  function closeAchievementsSheet() {
+    const sheet = document.getElementById("mw-achievements-sheet");
+    if (sheet && !sheet.hidden) panelMotion.close(sheet);
+  }
+  function syncAchievementsCount() {
+    const count = document.getElementById("mw-menu-achievements-count");
+    if (count) count.textContent = menuCountText(getAchievementRecord());
+  }
+  document.getElementById("mw-menu-achievements")?.addEventListener("click", closeMenuThen(openAchievementsSheet));
+  document.getElementById("mw-achievements-scrim")?.addEventListener("click", closeAchievementsSheet);
+  document.getElementById("mw-achievements-close")?.addEventListener("click", closeAchievementsSheet);
+  window.mzOpenAchievements = openAchievementsSheet;
+  window.mzRefreshAchievementsSheet = () => { if (achievementsSheetOpen()) renderAchievementsSheetNow(); };
+  window.mzSyncAchievementsCount = syncAchievementsCount;
   document.getElementById("mw-notes-scrim")?.addEventListener("click", closeNotesSheet);
   document.getElementById("mw-notes-close")?.addEventListener("click", closeNotesSheet);
 
@@ -10646,7 +10787,7 @@ window.__mzClassicBoot = async function classicBoot() {
         // stair-down overlay (window.__mzStair) and the MARKS/MAKE CAMP
         // sheets ARE modals — the back button closes them (never a rail
         // decision, and never a step).
-        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen() || reportSheetOpen() || notesSheetOpen(),
+        hasOpenModal: boardsPanel.isTitleOpen() || !!(S && ((S.beats && S.beats.groups && S.beats.groups.length) || S.combat || S.store)) || !!window.__mzStair || !document.getElementById("mw-camp-sheet")?.hidden || !document.getElementById("mw-legend-sheet")?.hidden || !document.getElementById("mw-gear-sheet")?.hidden || fightLogSheetOpen() || hudMenuIsOpen() || accountSheetOpen() || finalSheetOpen() || reportSheetOpen() || notesSheetOpen() || achievementsSheetOpen(),
         hasLiveRun: !!(S && S.c && !S.dead),
         isAtRoot: !!(S && !S.combat && !S.store && !(S.beats && S.beats.groups && S.beats.groups.length)) && !window.__mzStair,
         closeModal: () => {
@@ -10677,6 +10818,10 @@ window.__mzClassicBoot = async function classicBoot() {
           // right after the report sheet, whether opened from the ☰ or by
           // the once-per-update auto-show.
           if (notesSheetOpen()) { closeNotesSheet(); return; }
+          // Phase 100 (AUI-02): the ACHIEVEMENTS sheet closes right after
+          // the notes sheet and before the Final Sheet, so one back press
+          // closes only it; with it closed this line is a no-op.
+          if (achievementsSheetOpen()) { closeAchievementsSheet(); return; }
           // Phase 78 (HUD-03): the FINAL SHEET sits over the DEAD tab or the
           // death card, so one back press closes only it.
           if (finalSheetOpen()) { closeFinalSheet(); return; }
