@@ -148,13 +148,91 @@ SCENES.title = {
   },
 };
 
+// Tap a combat button the way a thumb does: wait until the shell's own arm window has passed
+// (window.__mzTapArmed) and no round is still playing, then click it. `find` is a selector or a
+// button label prefix.
+async function armedClick(page, find) {
+  const arg = { find, label: !find.startsWith("#") };
+  await page.waitForFunction((a) => {
+    const n = (t) => String(t).replace(/\s+/g, " ").trim().toUpperCase();
+    const el = a.label
+      ? [...document.querySelectorAll("button")].find((b) => b.getBoundingClientRect().width > 0 && !b.disabled && n(b.innerText).startsWith(n(a.find)))
+      : document.querySelector(a.find);
+    if (!el || el.disabled) return false;
+    if (window.__mzBeat && window.__mzBeat.active && window.__mzBeat.active()) return false;
+    return !window.__mzTapArmed || window.__mzTapArmed(el) === true;
+  }, arg, { timeout: 60000 });
+  await page.evaluate((a) => {
+    const n = (t) => String(t).replace(/\s+/g, " ").trim().toUpperCase();
+    const el = a.label
+      ? [...document.querySelectorAll("button")].find((b) => b.getBoundingClientRect().width > 0 && !b.disabled && n(b.innerText).startsWith(n(a.find)))
+      : document.querySelector(a.find);
+    el.click();
+  }, arg);
+}
+
+// One round of the real fight has finished playing: the busy prompt is gone, the action area is
+// back with its strike button, and the hero and the fight are both still standing.
+async function roundSettled(page) {
+  await page.waitForFunction(() => {
+    const st = window.__mzState.get();
+    if (!st || st.dead || !st.combat) return false;
+    if (document.body.innerText.indexOf("THE DICE ARE STILL OUT") !== -1) return false;
+    if (window.__mzBeat && window.__mzBeat.active && window.__mzBeat.active()) return false;
+    return !!document.getElementById("cb-strike");
+  }, null, { timeout: 60000 });
+  await wait(page, 500);
+}
+
+async function openAbilities(page, key) {
+  await armedClick(page, "#cb-spells");
+  await page.waitForSelector("#cb-row-ability-" + key, { state: "visible", timeout: 30000 });
+  await wait(page, 400);
+}
+
 SCENES.combat = {
   resume: true,
-  async run() {
-    throw new Error("combat recipe not written yet");
+  async run(page, ctx) {
+    const key = ctx.seed.abilityKey;
+    await resume(page);
+    await clearRail(page);
+    await page.evaluate((d) => window.move(d), ctx.seed.dir);
+    await waitButton(page, "FIGHT IT OUT", true, 30000);
+    await wait(page, 400);
+    await armedClick(page, "FIGHT IT OUT");
+    await roundSettled(page);
+    await openAbilities(page, key);
+    // the saved ability: a real use of it, so its row reads a recharge afterwards
+    await armedClick(page, "#cb-row-ability-" + key);
+    await roundSettled(page);
+    await armedClick(page, "#cb-strike");
+    await roundSettled(page);
+    await openAbilities(page, key);
+    if (SHOT_DEBUG) console.log("  combat buttons", await buttonLabels(page));
   },
   spec(ctx) {
-    return mapBesideOnTablet(ctx, baseSpec(ctx));
+    const spec = baseSpec(ctx, { min: [{ selector: ".cb-log-entry, .cb-sum-line", n: 2 }] });
+    // the foe cards and the ability rows are the shot's subject
+    spec.selectors = [".cb-foe", ".cb-row"];
+    return mapBesideOnTablet(ctx, spec);
+  },
+  // Real ability-state words from the game's own rows (never typed here), at least two distinct, one not plain READY;
+  // the hero alive and the fight still running.
+  async extra(page, ctx) {
+    const info = await page.evaluate(() => {
+      const vis = (e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+      };
+      const words = [...document.querySelectorAll('[id^="cb-row-ability-"] .cb-row-cost')].filter(vis).map((e) => e.textContent.trim());
+      const st = window.__mzState.get();
+      return { words, dead: !!st.dead, combat: !!st.combat };
+    });
+    const distinct = [...new Set(info.words)];
+    return [
+      { name: "two distinct ability-state words, one not plain READY", ok: distinct.length >= 2 && distinct.some((w) => w !== "READY"), detail: distinct.join(" | ") },
+      { name: "the hero is alive and the fight is still running", ok: !info.dead && info.combat, detail: "" },
+    ];
   },
 };
 
