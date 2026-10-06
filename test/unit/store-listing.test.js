@@ -65,9 +65,10 @@ const DATA_SAFETY_REQUIRED = [
   "Firestore",
 ];
 
-test("Data safety section carries the 2.3.0 answers, the sources and the source-level audit", () => {
+test("Data safety section carries the 2.5.0 answers, the sources and the source-level audit", () => {
   const ds = section("Data safety");
-  assert.ok(ds.includes("Answers for 2.3.0"), "the section is titled for 2.3.0");
+  // Declared pin update (Phase 101, COMP-05): "Answers for 2.3.0" became "Answers for 2.5.0".
+  assert.ok(ds.includes("Answers for 2.5.0"), "the section is titled for 2.5.0");
   for (const needle of DATA_SAFETY_REQUIRED) {
     assert.ok(ds.includes(needle), `Data safety section mentions "${needle}"`);
   }
@@ -202,4 +203,69 @@ test("the Data safety section names Firebase as the service provider and never u
   assert.match(ds, /delve-die-repeat-6ba5f/);
   assert.ok(ds.includes("service provider"));
   assert.ok(ds.includes("never uploads runs finished while Compete was off"));
+});
+
+// Phase 101 (COMP-05): 2.5.0 adds achievements sent to Google Play Games while
+// Compete is on. No new Data safety data type: the Other actions row covers them.
+
+/** How many times `needle` appears in `text`. */
+function count(text, needle) {
+  return text.split(needle).length - 1;
+}
+
+test("the Other actions row also covers achievements sent to Google Play Games", () => {
+  const ds = section("Data safety");
+  const row = ds.split("\n").find((l) => l.startsWith("| App activity → **Other actions**"));
+  assert.ok(row, "an App activity → Other actions table row");
+  assert.match(row, /Google Play Games name/);
+  assert.match(row, /achievement/i);
+  assert.match(row, /Google Play Games/);
+  assert.match(row, /progress/i);
+  assert.match(row, /earned while Compete was off/);
+  assert.equal(count(row, "achievement unlocks"), 1, "the row names achievement unlocks once");
+});
+
+test("the 2.3.0 'sign-in only' claim is gone and Unlocked achievements now maps to Other actions", () => {
+  const ds = section("Data safety");
+  assert.doesNotMatch(ds, /Play Games for sign-in only/);
+  assert.doesNotMatch(LISTING, /sign-in only/i);
+  assert.ok(ds.includes("Unlocked achievements"), "the mapping bullets name the Unlocked achievements item");
+});
+
+test("Why optional covers achievements earned while Compete was off, and still the runs rule", () => {
+  const ds = section("Data safety").replace(/\s+/g, " ");
+  assert.ok(
+    ds.includes(
+      "achievements earned while Compete was off stay on the phone and go to Google Play Games only after Compete is turned on and the player is signed in",
+    ),
+  );
+  assert.ok(ds.includes("never uploads runs finished while Compete was off"));
+});
+
+test("Deletion says plainly that ERASE MY RUNS does not delete achievements held in Google Play Games", () => {
+  const ds = section("Data safety").replace(/\s+/g, " ");
+  const sentence = "ERASE MY RUNS does not delete achievements held in Google Play Games";
+  assert.equal(count(ds, sentence), 1, "said once");
+});
+
+test("the Shared finding says achievements go to Google's own service under the player's account", () => {
+  const ds = section("Data safety").replace(/\s+/g, " ");
+  assert.ok(ds.includes("achievements go to Google Play Games, Google's own service, under the player's own account"));
+});
+
+test("the Notes for the console step carry a 2.5.0 bullet: no new data type, re-read the form", () => {
+  const ds = section("Data safety").replace(/\s+/g, " ");
+  assert.ok(ds.includes("2.5.0 adds no new data type"));
+  assert.equal(count(ds, "2.5.0 adds no new data type"), 1);
+  assert.ok(ds.includes("2.5.0 adds no package"));
+});
+
+test("the Privacy section records Reconciled for 2.5.0 once, keeps 2.3.0, and names two website commits", () => {
+  const privacy = section("Privacy policy URL");
+  assert.equal(count(privacy, "Reconciled for 2.5.0"), 1);
+  assert.equal(count(privacy, "Reconciled for 2.3.0"), 1);
+  const commits = privacy.match(/darktier-studio commit [0-9a-f]{7,40}\b/g) || [];
+  assert.equal(commits.length, 2, "the 2.3.0 and the 2.5.0 website commits");
+  assert.ok(privacy.includes("darktier-studio commit 7d4ad754c8860f73042e879917b08b219797521f"));
+  assert.ok(privacy.includes("October 5, 2026"));
 });

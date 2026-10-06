@@ -66,20 +66,29 @@ name): effective October 1, 2026, live when the site deploys with the release.
 
 darktier-studio commit 0f39ee3d4c43e7690478138d75c7feb8a2565c9e, committed on `main` and not yet deployed or pushed from this run (the push and the deploy are the user's go; the deploy is `docs/RELEASING.md` "Release 2.3.0" step 2). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro`, `delete-data.astro`, `delve-die-repeat/terms.astro` and `delve-die-repeat/index.astro`.
 
+Reconciled for 2.5.0 (achievements go to Google Play Games while Compete is on):
+effective October 5, 2026, live when the site deploys with the release.
+
+darktier-studio commit 7d4ad754c8860f73042e879917b08b219797521f, committed on `main` and not yet pushed or deployed (the push and the deploy are the user's go). Source: `C:/projects/darktier-studio/src/pages/privacy/apps.astro` and `delete-data.astro`; the shared Compete-off wording, the terms page and the game page make no claim about achievements and are unchanged.
+
 Backend: "We keep one small database on Google Firebase for the public leaderboard and bug reports, nothing else."
 
 ## Data safety
 
-Answers for 2.3.0: the public leaderboard now shows each player under their
-Google Play Games name, so Name joins the list, User IDs is reworded, and the
-Play Games SDK's own collection is declared as Google's data-collection page
-describes it. The 2.1.0 in-app bug reports are unchanged in substance. Play
+Answers for 2.5.0: since 2.3.0 the public leaderboard shows each player under
+their Google Play Games name, so Name joins the list, User IDs is reworded, and
+the Play Games SDK's own collection is declared as Google's data-collection
+page describes it. What 2.5.0 changes: achievement unlocks, reveals and
+progress counts now go to Google Play Games while Compete is on and the player
+is signed in. That adds no new data type: it is covered by the Other actions
+row below. The 2.1.0 in-app bug reports are unchanged in substance. Play
 Console → Delve, Die, Repeat → Policy and programs → App content → Data
 safety.
 
 "Does your app collect or share any of the required user data types?" →
 **Yes.** Since 2.3 the game signs in with Google Play Games and posts each
-finished run to its own public leaderboard while the in-game Compete setting
+finished run to its own public leaderboard, and since 2.5 it also sends the
+player's achievements to Google Play Games, while the in-game Compete setting
 is on (it is on by default; the player can turn it off at any time from the
 account block). A bug report is sent only when the player taps Send in
 ☰ REPORT A BUG.
@@ -88,7 +97,7 @@ account block). A bug report is sent only when the player taps Send in
 |---|---|---|---|---|---|---|
 | Personal info → **Name** | Your Google Play Games name (a gamer name, a nickname you choose in Google Play Games), shown publicly beside your runs on the leaderboard | Yes | No | Yes (Compete) | App functionality | No (it is on the public board) |
 | Personal info → **User IDs** | The game's Firebase account ID, which Firebase Authentication links to your Google Play Games player ID when you sign in with Compete on. The player ID is never shown publicly. A bug report may still create the account anonymously, with no link | Yes | No | Yes (created only when Compete is ON and a run is sent, or when the player sends a bug report) | App functionality | No |
-| App activity → **Other actions** | Per finished run while Compete is on: your Google Play Games name and every field of the run document — hero name rolled by the game, race, class, sub-class, level, floor, days survived, squares walked, kills, wilmst carried, experience, cause of death, what killed you, epitaph, time of death, app version, dungeon seed, turn count, a fingerprint of the run, season, and the ranking numbers derived from them | Yes | No | Yes (Compete off) | App functionality | No (stored on the public board) |
+| App activity → **Other actions** | Per finished run while Compete is on: your Google Play Games name and every field of the run document — hero name rolled by the game, race, class, sub-class, level, floor, days survived, squares walked, kills, wilmst carried, experience, cause of death, what killed you, epitaph, time of death, app version, dungeon seed, turn count, a fingerprint of the run, season, and the ranking numbers derived from them. Since 2.5.0 also: achievement unlocks, reveals and progress counts (such as 37 of 50), sent to Google Play Games under the player's own Play Games account while Compete is on and they are signed in, including ones earned while Compete was off | Yes | No | Yes (Compete off) | App functionality | No (runs are stored on the public board; achievements in the player's Play Games profile) |
 | App activity → **Other user-generated content** | The bug report the player types in the ☰ REPORT A BUG sheet (up to 2,000 characters), sent only when they tap Send | Yes | No | Yes (sent only when the player taps Send) | App functionality | No (stored in Firestore and posted publicly on GitHub) |
 | App info and performance → **Diagnostics** | Attached to a bug report only: the run's Oracle log, the app version and build, the device model and Android version (the WebView user agent), and the run context (floor, race, sub-class, class, level, day, steps, alive or dead) | Yes | No | Yes (sent only when the player taps Send) | App functionality | No |
 | App info and performance → **Diagnostics** (Play Games SDK) | The Play Games Services SDK's own diagnostics and analytics data, which Google's SDK collects automatically "to improve the stability of our SDKs and make product improvements" (Google's data-collection page, below). It happens only while Compete is on and the SDK is running: the game starts the SDK only then. Turning Compete off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board | Yes | No | Yes (Compete off: the SDK never starts the next time you open the game) | Analytics, App functionality | No |
@@ -107,9 +116,11 @@ The mapping used above:
   with the purpose Analytics added because Google says the data is used "to
   improve the stability of our SDKs and make product improvements".
 - The page's second table ("collected depending on your usage": game analytics,
-  achievements, scores, metagame, saved games) does not apply: the game uses
-  Play Games for sign-in only, with no leaderboards, achievements, saved games
-  or metagame data (`docs/PLAY-GAMES-SETUP.md`).
+  achievements, scores, metagame, saved games): the "Unlocked achievements"
+  item now applies and is declared under App activity → **Other actions** (the
+  row above), because 2.5.0 sends achievement progress to Google Play Games.
+  The rest does not apply: no Google leaderboards, no saved games and no
+  metagame data (`docs/PLAY-GAMES-SETUP.md`).
 
 The page was read on 2026-10-01. It describes only "the latest version" of
 the SDKs, and the developer is "solely responsible" for the answer, so
@@ -119,7 +130,9 @@ re-read it at each release.
 actions in-app not listed here such as gameplay" (answer/10787469, checked
 2026-10-01), so board runs go there. Play defines Name as "How a user refers
 to themselves, such as their first or last name, or nickname" (same page), so
-the gamer name is a Name.
+the gamer name is a Name. The same definition ("such as gameplay") is why
+achievements are declared there too; if you would rather file them under
+another category, that is the user's call at console time (see the notes below).
 
 **Bug reports:** nothing leaves the phone until the player taps Send in
 ☰ REPORT A BUG. The sheet states first that the report and the run's Oracle
@@ -139,8 +152,10 @@ automatically 2 days after the last report; the report document itself
 carries no id of any kind.
 
 Every other data type: not collected, not shared. Saves, settings, personal
-bests and the local run history never leave the phone; a run's details,
-including its epitaph, leave it only as a Compete-ON board run; a bug report
+bests and the local run history never leave the phone; the achievements record
+leaves it only as the achievement updates sent to Google Play Games while
+Compete is on; a run's details, including its epitaph, leave it only as a
+Compete-ON board run; a bug report
 leaves it only on Send. The Google account's real name and email are never
 requested (the game asks for no profile or email scope). Android Advertising
 ID: not used. Data is not sold.
@@ -154,7 +169,9 @@ ID: not used. Data is not sold.
   ERASE MY RUNS in the ☰ account block (a two-tap confirm) deletes every one
   of the player's runs on the board, in every season, deletes the player's
   board name record, and deletes the game account with its Google Play Games
-  link; local run history stays on the phone. Disconnecting the game in
+  link; local run history stays on the phone. ERASE MY RUNS does not delete
+  achievements held in Google Play Games: those are Google's data, which the
+  player deletes in their Play Games profile (Google's page). Disconnecting the game in
   Google Play Games settings removes Google's side, and Google's page says
   players can delete their Play Games account and its data through their Play
   Games profile or Google MyAccount. Without the game (for example after an
@@ -168,7 +185,10 @@ ID: not used. Data is not sold.
   the board, never starts the Play Games SDK, asks for no Play Games sign-in,
   creates no game ID, and discards any runs still queued. The game
   never uploads runs finished while Compete was off, even once Compete is
-  turned back on. Play counts an opt-out as optional collection ("all users … can
+  turned back on. Achievements are different: achievements earned while
+  Compete was off stay on the phone and go to Google Play Games only after
+  Compete is turned on and the player is signed in. Compete OFF sends nothing.
+  Play counts an opt-out as optional collection ("all users … can
   either optionally provide information, opt-out, or opt-in",
   answer/10787469).
 
@@ -183,7 +203,7 @@ Google's page says "when a user logs into your game using Play Games
 Services, their gamer identity is shared with your Play Games Services
 enabled game", so the data flows between the player and Google as the
 operator of Play Games, under the player's own Google Play Games account,
-and the SDK is Google's own software. We treat that as the service-provider
+and the SDK is Google's own software. Since 2.5.0 achievements go to Google Play Games, Google's own service, under the player's own account, with the same exemptions. We treat that as the service-provider
 and user-initiated exemptions, not a transfer to a third party. Showing the
 Play Games name and runs on the public board is the player's own choice, made
 by leaving Compete on and announced by the welcome card (it says the Play
@@ -224,6 +244,11 @@ Sources:
   declaration (it costs nothing to declare, and it matches Google's page word
   for word). The Play Games SDK rows say "Yes, optional" because Compete off
   never starts the SDK.
+- 2.5.0 adds no new data type: achievements (unlocks, reveals and progress
+  counts sent to Google Play Games while Compete is on) are covered by the
+  Other actions row above. Re-read the whole form against these answers before
+  you resubmit it; if you would rather file achievements under a different
+  category than Other actions, that is your call (RESEARCH assumption A6).
 - Re-read the IARC questionnaire's "users interact" question at the same
   sitting. Gamer names on a public board are expected not to change the
   rating; you confirm that in the console.
@@ -256,6 +281,10 @@ Run in the 91.2-09 worktree at the 91.2-08 boundary.
   call is either inert, same-origin, or an explicit board, sign-in or
   bug-report call gated on Compete or a player's own Send action. The widened
   grep over a freshly built `www/` is re-run at the release build.
+
+2.5.0 adds no package: the PlayIdentity plugin gains two achievement methods
+on the same `play-services-games-v2`, with no new dependency and no new
+permission.
 
 The earlier 2.2.0 audits (source level at commit 7a08a774, build level on the
 versionCode 12 debug build) found zero ad, analytics or crash-reporting
