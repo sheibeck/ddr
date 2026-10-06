@@ -178,9 +178,26 @@ it: no overlay, no text, no edit. The shots are the shipped web build drawn by
 its own renderer. Headless Chrome may draw a font or a glyph differently from
 the Android WebView, which is why the user eyeballs all 24 shots on the Pixel 7.
 
-## Install and web export
+## Install into the store listing
 
-Filled in by plan 102-03:
+`node install.js` copies the checked set from `out/` into `store-listing/screenshots/`:
 
-- **Install**: copying the checked set into `store-listing/screenshots/`.
-- **Web export**: the webp set for the website.
+1. any leftover staging folder (`store-listing/.screenshots-staging`) is deleted;
+2. the gate: `out/manifest.json` must hold 24 shots, all ok, with the rules result
+   ok, and the full Play-rules tree check must pass on `out/`; every reason is
+   printed and the exit is 1 on any failure, with nothing touched;
+3. the eight scene files of each size are copied into the staging folder, which
+   is checked again;
+4. each live folder is moved aside, the staged one renamed into place, and the
+   old folders deleted only when all three swaps worked (a failed swap puts them
+   back);
+5. the installed tree is checked once more and `installed 24 files` is printed.
+
+Running it twice leaves exactly the same 24 files and nothing else. `--dry-run`
+stops after step 3 and removes the staging folder. `--from <dir>` and `--to <dir>`
+point it at scratch folders, to show the gate and the staging without touching
+the tracked tree.
+
+## Web export
+
+Filled in with the web-export task.

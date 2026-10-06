@@ -294,20 +294,94 @@ the Play Games Services SDK back, that last clause no longer holds, and this
 
 ## Screenshots
 
-`screenshots/phone` (1080×1920), `screenshots/tablet-7in` (1350×2400),
-`screenshots/tablet-10in` (1620×2880). All 9:16 PNG, under 8 MB. Eight per
-size, in the upload order: title, combat, map, death, loot, hero, find,
-graveyard.
+Three folders under `store-listing/screenshots/`, eight PNGs each, named
+`01-title.png` to `08-board.png` and uploaded in that file order. Every file is
+a 24-bit PNG without alpha, under 8 MB, drawn by the shipped web build
+(version 2.4.0, versionCode 14) with nothing added to the image afterward.
 
-Regenerate after UI changes with `node tools/store-screenshots/capture.js`
-(see `tools/store-screenshots/README.md`).
+| Folder | Pixels | Orientation | Capture window and scale | Layout class |
+| --- | --- | --- | --- | --- |
+| `phone/` | 1080×1920 | portrait | 432×768 CSS px at 2.5 | compact |
+| `tablet-7in/` | 2400×1350 | landscape | 960×540 CSS px at 2.5 | expanded |
+| `tablet-10in/` | 2880×1620 | landscape | 1280×720 CSS px at 2.25 | expanded |
 
-**Owed (deferred human item):** `08-dead.png` (all three sizes) shows the
-pre-2.0 graveyard and must be regenerated showing the v3 Leaderboards panel
-(the LEADERBOARD view) at 1080×1920, 1350×2400 and 1620×2880. On 2026-09-24
-the capture tool could not run: `playwright-core` is not installed anywhere
-in the repo, and installing a package was out of scope for 69-01. Either
-install `playwright-core` per the README and run `capture.js` (its bot
-predates later UI changes and may need label updates), or capture by hand in
-Chrome device mode at 432×768 @2.5, 675×1200 @2 and 810×1440 @2 from the
-served `www/`.
+The tablet shots are landscape so the two-pane layout shows: the map on the
+left, the Oracle, the hero sheet, the store or the leaderboard on the right.
+One hero, Tamsin of Ash Alley (a Wilmsry Guard), appears in every shot except
+the title.
+
+### The eight shots, in upload order
+
+1. **Title.** The key art with the ENTER and VIEW THE DEAD buttons. On the
+   tablets the art is drawn centred with black bars either side.
+2. **Combat.** A depth 1 fight against two Gremlins (7/10 and 10/10), with the
+   log lines "You hit Gremlin (3)" and "Gremlin misses you ×2" and the ability
+   list showing the two ability states: POMMEL STRIKE, READY IN 2, and BRACE,
+   READY. On the 7-inch tablet the foe cards have scrolled out of view above
+   the log; the log and both ability rows are in frame.
+3. **A deep floor.** Depth 9, day 9, 394 squares walked: the explored map with
+   the party, the stairs, a portal and a trap. On the tablets the Oracle pane
+   sits beside the map showing its first line, "Delve resumed."
+4. **Achievements.** The menu's ACHIEVEMENTS list: "16 of 77 earned", "4 secrets
+   still hiding", the first track (The descent) open with Downward Mobility I
+   earned on 11 Sep 2026, tiers II and III locked with their "best: floor 9"
+   progress. On the tablets the list is a centred panel; the 7-inch window
+   shows only the open track and one locked entry.
+5. **Death.** The epitaph (cut down by a Drake at floor 10, day 9), "THAT IS
+   THAT", and the EARNED, POSTHUMOUSLY strip listing Downward Mobility II and
+   Wilmsry Loves Company, above REVIEW THE ORACLE, FINAL SHEET and BURY THEM.
+   In the 7-inch shot the game's own layout leaves no room for the epitaph
+   lines in a 540 px window, so that one shows the strip and the buttons.
+6. **Hero.** The Hero tab scrolled to the Special skills (Stealth and
+   Ambidextrous with their flavour lines) and the Abilities list (Pommel
+   Strike, Brace, Overhead Blow, with cooldowns).
+7. **A store.** "A store" with 110 wilmst in the purse: Chicken, Bread, Meat,
+   potions with their flavour lines and prices, the dearest rows dimmed as
+   unaffordable.
+8. **Leaderboard.** The v3 leaderboard with ten rows ranked by depth, showing
+   Play Games style names (Cask_Warden_77, Moss Knuckle, Nell of the Mines,
+   pipHollowbrook, @lanternjay) with each hero's race, class and level. The
+   board shows seed data from the dev board seed (below); the 7-inch window
+   fits seven rows. This replaces the pre-2.0 graveyard shot the previous
+   version of this file said was owed.
+
+The loot, find and graveyard shots of the 2.0 set were dropped.
+
+### Play's rules
+
+Checked on 2026-10-05 at
+<https://support.google.com/googleplay/android-developer/answer/9866151>:
+JPEG or 24-bit PNG with no alpha, each side 320 to 3840 px, the longer side at
+most twice the shorter, tablet shots at least 1080 px per side, up to 8 per
+device type. The page names no per-file size limit for these shots; the 8 MB
+ceiling is the project's own conservative cap. `tools/store-screenshots/play-rules.js`
+holds these rules as code and checks the tree on every install.
+
+### How they are made
+
+`tools/store-screenshots/` renders the shipped `www/` build in the installed
+Chrome at the exact sizes above. Two things exist only in that capture harness
+and nothing ships in the app: the mid-game achievements record the Achievements
+shot reads (written to the capture browser's storage only), and the dev board
+seed the Leaderboard shot reads through the shell's in-memory board (nothing is
+sent to the live board). A frame guard fails any shot with a dev control, a dev
+run line, an unexpected card or sheet, or an undecoded image in view.
+
+Regenerate after a UI change:
+
+```
+cd tools/store-screenshots
+npm install            # once
+node capture.js        # build www/, seed, render all 24 shots, check the rules
+node contact.js        # contact sheets in out/contact/ to look over
+node install.js        # gate, stage and install into store-listing/screenshots
+```
+
+See `tools/store-screenshots/README.md` for the details.
+
+### Upload (the owner's step)
+
+In Play Console, open Main store listing, then Graphics. Upload the files of
+`phone/` under Phone screenshots, `tablet-7in/` under 7-inch tablet
+screenshots and `tablet-10in/` under 10-inch tablet screenshots, each in file
+order (01 first), then check that the preview accepts all 24 images.
