@@ -24,6 +24,7 @@ import { ACHIEVEMENTS } from "../../content/achievements.js";
 import { stripHtml } from "../../tools/ident-sweep.mjs";
 import { sanitizeRecord } from "../../src/browser/achievementRecord.js";
 import { createAchievementBus } from "../../src/browser/achievementBus.js";
+import { ACHIEVEMENTS_SHEET_COPY } from "../../src/browser/achievementsSheet.js";
 import { createFakePlayIdentity } from "../../src/browser/playIdentity.js";
 import {
   PGS_ACH_KEY,
@@ -55,6 +56,15 @@ const BLOCK_END_MARK = "account.subscribe(onAccountForMirror);";
 const BLOCK_START = CODE.indexOf(BLOCK_START_MARK);
 const BLOCK_END = CODE.indexOf(BLOCK_END_MARK) + BLOCK_END_MARK.length;
 const BLOCK = CODE.slice(BLOCK_START, BLOCK_END);
+// Plan 101-04 (AUI-04): the VIEW IN PLAY GAMES button's wiring sits right after
+// the mirror block and outside its span (the five-name pin below stays exact).
+const BTN_START_MARK = "const playAchievementsRow = ";
+const BTN_END_MARK = "syncPlayAchievementsButton();";
+const BTN_START = CODE.indexOf(BTN_START_MARK);
+const BTN_END = CODE.lastIndexOf(BTN_END_MARK) + BTN_END_MARK.length;
+const BTN = CODE.slice(BTN_START, BTN_END);
+const SHEET_IMPORT_LINE = 'import { ACHIEVEMENTS_SHEET_COPY } from "./src/browser/achievementsSheet.js";';
+const PINNED_SHEET_IMPORT = 'import { buildAchievementsView, renderAchievementsSheet, menuCountText } from "./src/browser/achievementsSheet.js";';
 
 // ═══════════════════════ Part 1: source anchors ════════════════════════════
 
@@ -145,6 +155,47 @@ test("PGS-07 anchors: the only new top-level names are the mirror, its two funct
   assert.equal(declared.length + 1, names.length, "the block declares exactly the five names (the first const opens the slice)");
 });
 
+// ═══════════ Plan 101-04 anchors: the VIEW IN PLAY GAMES row ═══════════════════
+
+test("AUI-04 anchors: the copy import is on its own line once; the pinned sheet import line is untouched", () => {
+  assert.equal(CODE.split("\n").filter((l) => l.trim() === SHEET_IMPORT_LINE).length, 1);
+  assert.equal(CODE.split("\n").filter((l) => l.trim() === PINNED_SHEET_IMPORT).length, 1);
+  assert.equal(occurrences(CODE, "getAchievementRecord("), 2);
+});
+
+test("AUI-04 anchors: the markup row sits between the sheet's head and its body and carries no text", () => {
+  const sheet = RAW_HTML.slice(RAW_HTML.indexOf('<div id="mw-achievements-sheet"'), RAW_HTML.indexOf("<!-- Phase 78 (HUD-06): the stairs fade layer"));
+  const head = sheet.indexOf('<div class="mw-legend-head">');
+  const row = sheet.indexOf('id="mw-achievements-play"');
+  const body = sheet.indexOf('id="mw-achievements-body"');
+  assert.ok(head !== -1 && row > head && body > row, "head, then the play row, then the body");
+  const rowMarkup = sheet.slice(sheet.lastIndexOf("<div", row), sheet.lastIndexOf("<div", body));
+  assert.match(rowMarkup, /<div id="mw-achievements-play" class="mw-achievements-play" hidden>/);
+  assert.match(rowMarkup, /<button type="button" class="mw-achievements-play-btn" id="mw-achievements-play-btn"><\/button>/);
+  assert.match(rowMarkup, /<span class="mw-achievements-play-note" id="mw-achievements-play-note" role="status" hidden><\/span>/);
+  assert.equal(rowMarkup.replace(/<[^>]*>/g, "").trim(), "", "no text in the markup");
+});
+
+test("AUI-04 anchors: the wiring follows the mirror block, precedes boot and reaches Play only through the mirror", () => {
+  assert.ok(BTN_START !== -1 && BTN_END > BTN_START, "the button block is sliceable");
+  assert.ok(BTN_START > BLOCK_END, "outside the mirror block's span");
+  assert.ok(BTN_START < CODE.indexOf("await boot("));
+  assert.equal(occurrences(CODE, "achievementMirror.showAchievements("), 1);
+  assert.equal(occurrences(CODE, "ACHIEVEMENTS_SHEET_COPY.play.view"), 1);
+  assert.equal(occurrences(CODE, "ACHIEVEMENTS_SHEET_COPY.play.failed"), 1);
+  assert.equal(occurrences(CODE, "account.subscribe(syncPlayAchievementsButton);"), 1);
+  for (const token of ["Capacitor", "isNativePlatform", "localStorage", "setItem", "fetch(", "setTimeout", "setInterval", ".style"]) {
+    assert.equal(BTN.includes(token), false, `the button block must not contain ${token}`);
+  }
+  assert.equal(/window\.__mz\w*\s*=[^=]/.test(BTN), false);
+});
+
+test("AUI-04 anchors: the button's text and the failure line are written with textContent", () => {
+  assert.ok(BTN.includes("playAchievementsBtn.textContent = ACHIEVEMENTS_SHEET_COPY.play.view"));
+  assert.ok(BTN.includes("playAchievementsNote.textContent = ACHIEVEMENTS_SHEET_COPY.play.failed"));
+  assert.equal(BTN.includes("innerHTML"), false);
+});
+
 // ═══════════════════════ Part 2: the behaviour harness ═════════════════════
 
 const UNLOCK_ID = "special_snowflake";
@@ -218,6 +269,29 @@ const unlockPayload = (...ids) => ({ unlocks: ids.map((id) => ({ id, at: 1 })), 
 const revealPayload = (...ids) => ({ unlocks: [], reveals: ids, progress: [] });
 const progressPayload = () => ({ unlocks: [], reveals: [], progress: [{ id: INCREMENTAL.id, value: 1, steps: INCREMENTAL.steps }] });
 
+// Fake row, button and note, as the markup ships them: the row and the note start hidden.
+function makePlayRow() {
+  const clicks = [];
+  const row = { hidden: true };
+  const note = { hidden: true, textContent: "" };
+  const btn = {
+    textContent: "",
+    addEventListener(type, fn) {
+      if (type === "click") clicks.push(fn);
+    },
+    click() {
+      return Promise.all(clicks.map((fn) => fn({ type: "click" })));
+    },
+  };
+  return {
+    row,
+    btn,
+    note,
+    clicks,
+    byId: { "mw-achievements-play": row, "mw-achievements-play-btn": btn, "mw-achievements-play-note": note },
+  };
+}
+
 function rig(over = {}) {
   const st = {
     compete: over.compete === true,
@@ -240,7 +314,12 @@ function rig(over = {}) {
   const storage = makeStorage();
   const sched = makeSched();
   const win = { ...makeListeners(), mzStorage: storage, __mzState: { get: () => ({ dead: st.dead }) } };
-  const doc = { ...makeListeners(), visibilityState: "visible" };
+  const dom = over.dom === true ? makePlayRow() : null;
+  const doc = {
+    ...makeListeners(),
+    visibilityState: "visible",
+    getElementById: (id) => (dom ? dom.byId[id] || null : null),
+  };
   const nav = { get onLine() { return st.online; } };
   const micro = [];
   const queueMicro = (fn) => micro.push(fn);
@@ -269,10 +348,11 @@ function rig(over = {}) {
     "achievementEvents",
     "account",
     "queueMicrotask",
-    `${BLOCK}\nreturn { achievementMirror, onAchievementMirror, onAccountForMirror };`,
+    "ACHIEVEMENTS_SHEET_COPY",
+    `${BLOCK}\n${BTN}\nreturn { achievementMirror, onAchievementMirror, onAccountForMirror, syncPlayAchievementsButton };`,
   );
-  const out = factory(win, doc, nav, wrapped, competeIsOn, playIdentity, getAchievementRecord, bus, account, queueMicro);
-  return { st, account, emitAccount, seam, storage, sched, win, doc, micro, drainMicro, seen, bus, banner, getAchievementRecord, ...out };
+  const out = factory(win, doc, nav, wrapped, competeIsOn, playIdentity, getAchievementRecord, bus, account, queueMicro, ACHIEVEMENTS_SHEET_COPY);
+  return { st, account, emitAccount, seam, storage, sched, win, doc, dom, micro, drainMicro, seen, bus, banner, getAchievementRecord, ...out };
 }
 
 const syncCalls = (r) => r.seam.calls().filter((c) => c.method === "syncAchievements");
@@ -538,6 +618,153 @@ test("PGS-09 harness: a kick that throws inside the mirror is swallowed by the s
   );
   const fn = factory(broken, () => {}, r.win);
   assert.doesNotThrow(() => fn(unlockPayload(UNLOCK_ID)));
+});
+
+// ═══════════ Plan 101-04 harness: the VIEW IN PLAY GAMES row ═══════════════════
+
+const showCalls = (r) => r.seam.calls().filter((c) => c.method === "showAchievements");
+
+test("AUI-04 harness: the button's label comes from the copy bank", () => {
+  const r = rig({ dom: true });
+  assert.equal(r.dom.btn.textContent, ACHIEVEMENTS_SHEET_COPY.play.view);
+  assert.equal(r.dom.btn.textContent, "VIEW IN PLAY GAMES");
+  assert.equal(r.dom.clicks.length, 1);
+});
+
+test("AUI-04 harness: the row is hidden with Compete OFF and with every signin but 'in'; shown with Compete ON and signed in", () => {
+  const off = rig({ dom: true, compete: false, signin: "in" });
+  assert.equal(off.dom.row.hidden, true, "Compete OFF");
+  for (const signin of ["unknown", "out", "busy", "unavailable"]) {
+    const r = rig({ dom: true, compete: true, signin });
+    assert.equal(r.dom.row.hidden, true, signin);
+  }
+  const on = rig({ dom: true, compete: true, signin: "in" });
+  assert.equal(on.dom.row.hidden, false);
+});
+
+test("AUI-04 harness: the row appears and disappears live as the account changes", () => {
+  const r = rig({ dom: true, compete: true, signin: "out" });
+  assert.equal(r.dom.row.hidden, true);
+  r.st.signin = "in";
+  r.emitAccount();
+  assert.equal(r.dom.row.hidden, false);
+  r.st.compete = false;
+  r.emitAccount();
+  assert.equal(r.dom.row.hidden, true, "Compete turning OFF hides it");
+  r.st.compete = true;
+  r.emitAccount();
+  assert.equal(r.dom.row.hidden, false);
+  r.st.signin = "busy";
+  r.emitAccount();
+  assert.equal(r.dom.row.hidden, true);
+});
+
+test("AUI-04 harness: a tap reaches the seam once; a second tap while one is in flight is ignored", async () => {
+  const base = createFakePlayIdentity({ signedIn: true, playerId: "player-aaa-0001" });
+  let release;
+  let shows = 0;
+  const seam = Object.freeze({
+    ...base,
+    status: () => base.status(),
+    showAchievements: () => {
+      shows++;
+      return new Promise((resolve) => {
+        release = () => resolve({ ok: true });
+      });
+    },
+    calls: () => base.calls(),
+  });
+  const r = rig({ dom: true, compete: true, signin: "in", seam });
+  const first = r.dom.btn.click();
+  await settle();
+  assert.equal(shows, 1);
+  await r.dom.btn.click();
+  assert.equal(shows, 1, "the second tap was ignored");
+  release();
+  await first;
+  const again = r.dom.btn.click();
+  await settle();
+  assert.equal(shows, 2, "after the answer a new tap goes through");
+  release();
+  await again;
+  assert.equal(r.dom.note.hidden, true, "an ok answer leaves the note hidden");
+});
+
+test("AUI-04 harness: a tap with the fake seam records one showAchievements call", async () => {
+  const r = rig({ dom: true, compete: true, signin: "in" });
+  await r.dom.btn.click();
+  assert.equal(showCalls(r).length, 1);
+  assert.equal(r.dom.note.hidden, true);
+});
+
+test("AUI-04 harness: a failed open shows the one failure line; the next tap clears it", async () => {
+  const base = createFakePlayIdentity({ signedIn: true, playerId: "player-aaa-0001" });
+  let answer = { ok: false, reason: "error" };
+  const seam = Object.freeze({
+    ...base,
+    status: () => base.status(),
+    showAchievements: async () => answer,
+    calls: () => base.calls(),
+  });
+  const r = rig({ dom: true, compete: true, signin: "in", seam });
+  await r.dom.btn.click();
+  assert.equal(r.dom.note.hidden, false);
+  assert.equal(r.dom.note.textContent, ACHIEVEMENTS_SHEET_COPY.play.failed);
+  answer = { ok: true };
+  await r.dom.btn.click();
+  assert.equal(r.dom.note.hidden, true);
+  assert.equal(r.dom.note.textContent, "");
+  answer = { ok: false, reason: "network" };
+  await r.dom.btn.click();
+  assert.equal(r.dom.note.hidden, false);
+  r.st.signin = "out";
+  r.emitAccount();
+  assert.equal(r.dom.note.hidden, true, "re-syncing the row hidden clears the note");
+  assert.equal(r.dom.note.textContent, "");
+});
+
+test("AUI-04 harness: a thrown seam answer reads as the failure line too", async () => {
+  const base = createFakePlayIdentity({ signedIn: true, playerId: "player-aaa-0001" });
+  const seam = Object.freeze({
+    ...base,
+    status: () => base.status(),
+    showAchievements: () => {
+      throw new Error("boom");
+    },
+    calls: () => base.calls(),
+  });
+  const r = rig({ dom: true, compete: true, signin: "in", seam });
+  await assert.doesNotReject(() => r.dom.btn.click());
+  assert.equal(r.dom.note.hidden, false);
+  assert.equal(r.dom.note.textContent, ACHIEVEMENTS_SHEET_COPY.play.failed);
+});
+
+test("AUI-04 harness: a tap after Compete went OFF behind the button's back reaches nothing and says nothing", async () => {
+  const r = rig({ dom: true, compete: true, signin: "in" });
+  assert.equal(r.dom.row.hidden, false);
+  r.st.compete = false; // no account event: the row stays forced visible
+  assert.equal(r.dom.row.hidden, false);
+  await r.dom.btn.click();
+  assert.deepEqual(r.seam.calls(), [], "no seam call at all");
+  assert.equal(r.dom.note.hidden, true);
+  assert.equal(r.storage.calls.length, 0);
+});
+
+test("AUI-04 harness: with no row elements in the document the block still evaluates and the account hook still runs", () => {
+  const r = rig({ compete: true, signin: "out" });
+  assert.equal(r.dom, null);
+  r.st.signin = "in";
+  assert.doesNotThrow(() => r.emitAccount());
+  assert.doesNotThrow(() => r.syncPlayAchievementsButton());
+});
+
+test("AUI-04 harness: nothing opens Play's screen without a tap, whatever the account does", () => {
+  const r = rig({ dom: true, compete: true, signin: "in" });
+  r.st.signin = "out";
+  r.emitAccount();
+  r.st.signin = "in";
+  r.emitAccount();
+  assert.equal(showCalls(r).length, 0);
 });
 
 // ═══════════════════════ Part 3: the docs section ══════════════════════════

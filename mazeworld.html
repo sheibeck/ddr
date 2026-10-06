@@ -2058,6 +2058,15 @@ button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled)
 .mw-ach-rung-name{color:#e8c97a}
 .mw-ach-rung[data-state="locked"] .mw-ach-rung-name{color:#a89c82}
 .mw-ach-rung-progress{color:#a89c82}
+/* Phase 101 (AUI-04): the VIEW IN PLAY GAMES row sits between the head and the
+   scrolling body. It exists only while the shell un-hides it (Compete ON and
+   signed in); the explicit [hidden] rule makes the attribute win over display. */
+.mw-achievements-play{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:8px 0 4px}
+.mw-achievements-play[hidden]{display:none}
+.mw-achievements-play-btn{min-height:48px;max-width:100%;padding:8px 12px;overflow-wrap:anywhere;font-family:var(--mono);font-size:calc(0.71875rem * var(--mw-text-scale));letter-spacing:.08em;text-transform:uppercase;background:transparent;border:2px solid #4a4032;color:#e8c97a;box-shadow:none}
+.mw-achievements-play-btn:hover:not(:disabled),.mw-achievements-play-btn:active:not(:disabled){background:transparent;color:#e8c97a;transform:none;box-shadow:none}
+.mw-achievements-play-note{flex:1 1 200px;min-width:0;font-family:var(--mono);font-weight:700;font-size:calc(0.71875rem * var(--mw-text-scale));line-height:1.45;color:#a89c82;overflow-wrap:anywhere}
+.mw-achievements-play-note[hidden]{display:none}
 
 /* ---------- MAKE CAMP bottom sheet (Phase 35, MAP-06/08) ----------
    Reuses the MARKS legend sheet's own scrim/rise chrome (.mw-legend-sheet/
@@ -2681,12 +2690,17 @@ button.mw-ach-head:hover:not(:disabled),button.mw-ach-head:active:not(:disabled)
      src/browser/achievementsSheet.js#renderAchievementsSheet from the
      adapter's lifetime record; every word, the title included, comes from
      ACHIEVEMENTS_SHEET_COPY, so this markup carries only the Close label.
+     The play row (Phase 101, AUI-04) follows the same rule: its button label
+     and its failure line are ACHIEVEMENTS_SHEET_COPY.play, written by the
+     Phase 101 block of the module script, which un-hides the row only with
+     Compete ON and signed in.
      Closes by Close, the scrim and the Android back button (getGameContext's
      hasOpenModal and closeModal both name it). -->
 <div id="mw-achievements-sheet" class="mw-legend-sheet mw-achievements-sheet" hidden>
   <div class="mw-legend-scrim" id="mw-achievements-scrim"></div>
   <div class="mw-legend-panel" role="dialog" aria-modal="true" aria-labelledby="mw-achievements-title">
     <div class="mw-legend-head"><span id="mw-achievements-title" tabindex="-1"></span><button type="button" class="mw-legend-close" id="mw-achievements-close" aria-label="Close">Close</button></div>
+    <div id="mw-achievements-play" class="mw-achievements-play" hidden><button type="button" class="mw-achievements-play-btn" id="mw-achievements-play-btn"></button><span class="mw-achievements-play-note" id="mw-achievements-play-note" role="status" hidden></span></div>
     <div class="mw-achievements-body" id="mw-achievements-body"></div>
   </div>
 </div>
@@ -7571,6 +7585,8 @@ window.__mzClassicBoot = async function classicBoot() {
   // Phase 101 (PGS-07/08/09) — the Play Games achievements mirror (pure; the
   // shell hands it the one Play seam, the Compete gate and the record reader).
   import { createAchievementMirror } from "./src/browser/playAchievements.js";
+  // Phase 101 (AUI-04) — the VIEW IN PLAY GAMES row's label and failure line.
+  import { ACHIEVEMENTS_SHEET_COPY } from "./src/browser/achievementsSheet.js";
   import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
@@ -9518,6 +9534,56 @@ window.__mzClassicBoot = async function classicBoot() {
     }
   }
   account.subscribe(onAccountForMirror);
+
+  // Phase 101 (AUI-04) — the VIEW IN PLAY GAMES row at the top of the
+  // ACHIEVEMENTS sheet. It un-hides only while Compete is ON and Play sign-in
+  // is "in", re-syncing on every account change (so it appears and goes live
+  // while the sheet is open); it never starts a sign-in and never opens
+  // anything by itself. A tap goes through the mirror, whose first check is
+  // Compete, so a row left visible by a stale frame still reaches nothing with
+  // Compete OFF. One open at a time; a failed open writes one line into the
+  // row's note and leaves the in-game list untouched. Every element access is
+  // null-safe. Kept outside the mirror block above, whose five names are pinned.
+  const playAchievementsRow = document.getElementById("mw-achievements-play");
+  const playAchievementsBtn = document.getElementById("mw-achievements-play-btn");
+  const playAchievementsNote = document.getElementById("mw-achievements-play-note");
+  let playAchievementsBusy = false;
+  function hidePlayAchievementsNote() {
+    if (!playAchievementsNote) return;
+    playAchievementsNote.textContent = "";
+    playAchievementsNote.hidden = true;
+  }
+  function showPlayAchievementsFailure() {
+    if (!playAchievementsNote) return;
+    playAchievementsNote.textContent = ACHIEVEMENTS_SHEET_COPY.play.failed;
+    playAchievementsNote.hidden = false;
+  }
+  function syncPlayAchievementsButton() {
+    try {
+      const show = competeIsOn() === true && account.state().signin === "in";
+      if (playAchievementsRow) playAchievementsRow.hidden = !show;
+      if (!show) hidePlayAchievementsNote();
+    } catch {
+      // the row is chrome; a read that throws leaves it as it was
+    }
+  }
+  async function onPlayAchievementsTap() {
+    if (playAchievementsBusy) return;
+    playAchievementsBusy = true;
+    try {
+      hidePlayAchievementsNote();
+      const answer = await achievementMirror.showAchievements();
+      if (answer?.ok !== true && answer?.reason !== "off") showPlayAchievementsFailure();
+    } catch {
+      showPlayAchievementsFailure();
+    } finally {
+      playAchievementsBusy = false;
+    }
+  }
+  if (playAchievementsBtn) playAchievementsBtn.textContent = ACHIEVEMENTS_SHEET_COPY.play.view;
+  playAchievementsBtn?.addEventListener("click", onPlayAchievementsTap);
+  account.subscribe(syncPlayAchievementsButton);
+  syncPlayAchievementsButton();
 
   // Phase 85 (ACCT-04, 85-CONTEXT group 2): boardSync's placement report
   // for an acknowledged flush becomes either the death panel's fading rank
