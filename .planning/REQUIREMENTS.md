@@ -27,8 +27,8 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 ### In-game surfacing (999.12)
 
 - [x] **AUI-01**: An unlock shows as a toast, not a card, carrying the achievement's name and its sarcastic line, and several unlocks at once stay readable under the toast rules (linger, stack, tap to dismiss)
-- [ ] **AUI-02**: An achievements list opened from ☰ shows every achievement with its icon: unlocked (with when), locked (greyed), progress on counters (for example 37 / 50), and hidden ones as a teaser until they unlock or their hint reveals them
-- [ ] **AUI-03**: The list works in every layout class (phone portrait, landscape, tablet) with back, TalkBack and reduced motion, in the shell's sheet conventions
+- [x] **AUI-02**: An achievements list opened from ☰ shows every achievement with its icon: unlocked (with when), locked (greyed), progress on counters (for example 37 / 50), and hidden ones as a teaser until they unlock or their hint reveals them
+- [x] **AUI-03**: The list works in every layout class (phone portrait, landscape, tablet) with back, TalkBack and reduced motion, in the shell's sheet conventions
 - [ ] **AUI-04**: With Compete ON and signed in, ☰ also opens Play Games' own achievements screen
 
 ### Play Games mirror (999.12)
@@ -89,8 +89,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRACK-04 | Phase 99 | Complete |
 | TRACK-05 | Phase 99 | Complete |
 | AUI-01 | Phase 100 | Complete |
-| AUI-02 | Phase 100 | Pending |
-| AUI-03 | Phase 100 | Pending |
+| AUI-02 | Phase 100 | Complete |
+| AUI-03 | Phase 100 | Complete |
 | AUI-04 | Phase 101 | Pending |
 | PGS-07 | Phase 101 | Pending |
 | PGS-08 | Phase 101 | Pending |

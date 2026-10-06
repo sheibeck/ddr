@@ -128,7 +128,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 100-05-PLAN.md — the icons in the web bundle, the layout check extended to the sheet, the card and the strip in every class and at every size boundary (run and fixed), reduced-motion and accessibility pins, and the SHELL-MODULES.md sections with the Phase 101 contract
+- [x] 100-05-PLAN.md — the icons in the web bundle, the layout check extended to the sheet, the card and the strip in every class and at every size boundary (run and fixed), reduced-motion and accessibility pins, and the SHELL-MODULES.md sections with the Phase 101 contract
 
 **UI hint**: yes
 
