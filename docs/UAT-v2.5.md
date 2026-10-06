@@ -1,6 +1,6 @@
 # UAT v2.5 Achievements: Pixel 7 device round
 
-Debug APK built from master `e9213960` (sha256 `bb57d3a2…`), installed 2026-10-05 after uninstalling the Play 2.4.0 build (local data wiped, user OK).
+Debug APK built from master `bbaecfba` (adds quick tasks 261005-vhn, 261005-vn5, 261006-1js), installed 2026-10-06 over the first 2.5 debug build `e9213960` (data kept). The Play 2.4.0 build was uninstalled on 2026-10-05 (local data wiped, user OK).
 
 **Before you start:** the Pixel 7's Google account must be on Play Console > Play Games Services > Setup and management > Testers (draft achievements only reach testers). Done: the user confirmed it is on the list (2026-10-05). Mark each row passed / failed with a note.
 
