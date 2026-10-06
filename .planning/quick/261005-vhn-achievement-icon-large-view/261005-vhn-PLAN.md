@@ -35,6 +35,14 @@ The spec is the todo `.planning/todos/pending/2026-10-05-tap-an-earned-achieveme
   - focus return.
 - Run `npm run layout:check` (one re-run is allowed for the cold-boot flake) so the overlay fits in all profiles.
 
+## Task 3: the roller shows the Human race description (user, 2026-10-05: "I want that too")
+- Spec: `.planning/todos/pending/2026-10-05-roller-hides-the-human-race-description.md`.
+- In `src/browser/roller.js` `fillRules` (~line 102), show the race group for every race that has a flavour line, Human included. Gate it on the flavour line existing, not on the footer's Good/Bad lines.
+- Update the roller tests that pin the Human exclusion (declared re-pin), and confirm every race shows its line.
+- Check the roller still fits in the short layout class; `npm run layout:check` covers the roller.
+- Move that todo to `.planning/todos/completed/` too.
+- Device row: roll a Human and see its race line.
+
 ## Rules
 - Targeted tests only, plus the voice inventory (must print 0) and stale-terms. The word "toast" is banned in raw .js/.mjs lines.
 - Plain `git commit` with the two trailers, and no amends.
