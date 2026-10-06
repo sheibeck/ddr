@@ -937,6 +937,7 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-over-earned-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 14px;max-height:9.5em;overflow-y:auto;overscroll-behavior:contain}
 .cb-over-earned-item{display:flex;align-items:center;gap:8px;min-width:0}
 .cb-over-earned-icon{width:32px;height:32px;object-fit:contain;flex:none}
+.cb-over-hint{margin:10px 0 0;padding:0 2px;font-family:var(--mono);font-style:italic;font-size:calc(0.8125rem * var(--mw-text-scale));line-height:1.45;color:#a89c82;overflow-wrap:anywhere}
 .cb-over-earned-name{font-family:var(--mono);font-weight:700;font-size:calc(0.875rem * var(--mw-text-scale));line-height:1.4;color:#e6ddc6;overflow-wrap:anywhere}
 /* Phase 68 (PLACE-01, D-10/D-11): the DEEPEST rank line under the NEW
    PERSONAL BEST block. It fades in once when the rank arrives; the blanket
@@ -5717,6 +5718,8 @@ function renderCombatOver(host, kind, opts = {}) {
   // Phase 100 (AUI-01): the Earned strip (what this death earned plus anything
   // still queued) sits above the buttons; bounded, it scrolls inside itself.
   if (kind === "dead") renderEarnedStrip(over, window.__mzAchBanner?.takeStrip?.() ?? null);
+  // Quick 261005-vn5: and, on the death that reveals a secret, one hint line right under it.
+  if (kind === "dead") renderDeathHint(over, window.__mzAchBanner?.takeHint?.() ?? null);
   if (Array.isArray(opts.buttons) && opts.buttons.length) {
     const actions = document.createElement("div");
     actions.className = "cb-over-actions";
@@ -5834,6 +5837,26 @@ function renderEarnedStrip(host, view) {
   const actions = typeof host.querySelector === "function" ? host.querySelector(".cb-over-actions") : null;
   if (actions) host.insertBefore(box, actions);
   else host.appendChild(box);
+}
+
+// Quick 261005-vn5: the death-screen hint line, drawn only on the death that reveals a
+// death-revealed secret. `text` is window.__mzAchBanner.takeHint() (a string or null); it
+// carries no copy literal here, only createElement and textContent. It sits under the
+// Earned strip (or the rank line) and above the buttons. It is a short line that wraps and
+// grows with the text scale; it is not a scroller of its own (the death panel scrolls as a
+// whole, as it does for the strip's own overflow), so both death buttons stay reachable. A redraw replaces it.
+function renderDeathHint(host, text) {
+  if (!host) return;
+  const old = typeof host.querySelector === "function" ? host.querySelector("#cb-over-hint") : null;
+  if (old) old.remove();
+  if (typeof text !== "string" || text === "") return;
+  const p = document.createElement("p");
+  p.className = "cb-over-hint";
+  p.id = "cb-over-hint";
+  p.textContent = text;
+  const actions = typeof host.querySelector === "function" ? host.querySelector(".cb-over-actions") : null;
+  if (actions) host.insertBefore(p, actions);
+  else host.appendChild(p);
 }
 
 function renderEncounter() {
@@ -7610,7 +7633,7 @@ window.__mzClassicBoot = async function classicBoot() {
   import { createAchievementMirror } from "./src/browser/playAchievements.js";
   // Phase 101 (AUI-04) — the VIEW IN PLAY GAMES row's label and failure line.
   import { ACHIEVEMENTS_SHEET_COPY } from "./src/browser/achievementsSheet.js";
-  import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";
+  import { emptyBannerQueue, bannerEnqueue, bannerNext, deathHintFor } from "./src/browser/achievementCard.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
   import { arrowPadModel } from "./src/browser/arrowPad.js";
@@ -8046,8 +8069,15 @@ window.__mzClassicBoot = async function classicBoot() {
   // banner bug can never reach dispatch.
   let bannerQueue = emptyBannerQueue();
   let deathStrip = null;
+  // Quick 261005-vn5: the death screen hint line. hintQueued is set by the action that
+  // reveals a death-revealed secret (without earning it); settle moves it to deathHint once
+  // the hero is dead, and takeHint reads it once per death panel render.
+  let hintQueued = null;
+  let deathHint = null;
   function onAchievementBanner(payload) {
     try {
+      const hint = deathHintFor(payload);
+      if (hint) hintQueued = hint;
       const unlocks = Array.isArray(payload?.unlocks) ? payload.unlocks : [];
       const reveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
       bannerQueue = bannerEnqueue(bannerQueue, unlocks);
@@ -8077,7 +8107,12 @@ window.__mzClassicBoot = async function classicBoot() {
     const s = window.__mzState?.get?.();
     if (!(s && s.dead === true)) {
       deathStrip = null;
+      deathHint = null;
       return false;
+    }
+    if (hintQueued) {
+      deathHint = hintQueued;
+      hintQueued = null;
     }
     const r = bannerNext(bannerQueue, { dead: true });
     bannerQueue = r.queue;
@@ -8104,10 +8139,19 @@ window.__mzClassicBoot = async function classicBoot() {
       return null;
     }
   }
+  function takeDeathHint() {
+    try {
+      return settleDeathStrip() ? deathHint : null;
+    } catch {
+      return null;
+    }
+  }
   function clearDeathStrip() {
     deathStrip = null;
+    deathHint = null;
+    hintQueued = null;
   }
-  window.__mzAchBanner = { onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, clearStrip: clearDeathStrip };
+  window.__mzAchBanner = { onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, takeHint: takeDeathHint, clearStrip: clearDeathStrip };
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
   // field on S/state (serializeRun spreads S wholesale), same rule as

@@ -38,6 +38,9 @@ export const ACHIEVEMENT_CARD_COPY = deepFreeze({
   },
   strip: {
     label: "EARNED, POSTHUMOUSLY",
+    // Quick 261005-vn5: the death screen line on the death that reveals a death-revealed secret.
+    // It points at floor 1 and never names the achievement.
+    hint: "Somewhere up there, a hero died on floor 1 and got a prize for it. You went deeper. Nobody gave you anything.",
   },
 });
 
@@ -234,6 +237,24 @@ export function earnedStripView(ids) {
       entries.map((e) => Object.freeze({ id: e.id, name: e.name, iconSrc: achievementIconSrc(e) })),
     ),
   });
+}
+
+/**
+ * deathHintFor(payload) — the death screen hint line (ACHIEVEMENT_CARD_COPY.strip.hint) when this
+ * action's payload ({ unlocks, reveals }) reveals a Hidden entry whose catalog `revealOn` is
+ * { kind: "realDeath" } WITHOUT unlocking it (a death that earns it shows it in the Earned strip
+ * instead). Null otherwise. Total: a malformed payload reads as nothing. Quick 261005-vn5.
+ */
+export function deathHintFor(payload) {
+  const p = payload && typeof payload === "object" ? payload : {};
+  const earned = new Set((Array.isArray(p.unlocks) ? p.unlocks : []).map((u) => (u && typeof u === "object" ? u.id : null)));
+  for (const id of Array.isArray(p.reveals) ? p.reveals : []) {
+    const entry = typeof id === "string" ? BY_ID.get(id) : null;
+    if (entry && entry.initialState === "Hidden" && entry.revealOn && entry.revealOn.kind === "realDeath" && !earned.has(id)) {
+      return ACHIEVEMENT_CARD_COPY.strip.hint;
+    }
+  }
+  return null;
 }
 
 /**

@@ -799,6 +799,7 @@ function measureEarned() {
   };
   const strip = document.querySelector("#cb-over-earned");
   const list = strip ? strip.querySelector(".cb-over-earned-list") : null;
+  const hint = document.querySelector("#cb-over-hint");
   const buttons = Array.from(document.querySelectorAll("#cb-over .cb-over-actions button")).map((b) => ({
     id: b.id || b.className,
     visible: vis(b),
@@ -812,6 +813,11 @@ function measureEarned() {
     items: strip ? strip.querySelectorAll(".cb-over-earned-item").length : 0,
     listMaxHeight: list ? getComputedStyle(list).maxHeight : null,
     listOverflowY: list ? getComputedStyle(list).overflowY : null,
+    hintVisible: vis(hint),
+    hint: hint ? rect(hint) : null,
+    hintText: hint ? hint.textContent : "",
+    hintScrollHeight: hint ? hint.scrollHeight : 0,
+    hintClientHeight: hint ? hint.clientHeight : 0,
     buttons,
   };
 }
@@ -863,7 +869,7 @@ const EXPR = {
   activeLabel: `(() => { const a = document.activeElement; return a && a.getAttribute ? a.getAttribute("aria-label") : null; })()`,
   expandFirstTrack: `(() => { const b = document.querySelector("#mw-achievements-body button.mw-ach-head"); if (!b) return false; if (b.getAttribute("aria-expanded") !== "true") b.click(); return true; })()`,
   achUnlock: `(() => { window.__mzAchBanner.onEvent({ unlocks: [{ id: "depth_t1", at: 1 }], reveals: [], progress: [] }); return true; })()`,
-  deathUnlocks: `(() => { window.__mzAchBanner.onEvent({ unlocks: ${JSON.stringify(["depth_t1", "depth_t2", "kills_beasts_t1", "party_animal_t1", "special_snowflake", "tourist"].map((id, i) => ({ id, at: 1 + i })))}, reveals: [], progress: [] }); window.paint(); return true; })()`,
+  deathUnlocks: `(() => { window.__mzAchBanner.onEvent({ unlocks: ${JSON.stringify(["depth_t1", "depth_t2", "kills_beasts_t1", "party_animal_t1", "unicorn", "tourist"].map((id, i) => ({ id, at: 1 + i })))}, reveals: ["special_snowflake"], progress: [] }); window.paint(); return true; })()`,
   clearStrip: `(() => { window.__mzAchBanner.clearStrip(); return true; })()`,
 };
 
@@ -1217,6 +1223,20 @@ function earnedFailures(m) {
   if (!m.listMaxHeight || m.listMaxHeight === "none") out.push("the strip's list has no max-height: it could grow the panel");
   if (m.listOverflowY !== "auto" && m.listOverflowY !== "scroll") {
     out.push(`the strip's list overflow-y is "${m.listOverflowY}", expected auto so it scrolls inside itself`);
+  }
+  // Quick 261005-vn5: the death that reveals Special Snowflake (without earning it) also shows one
+  // hint line, clear of the strip and of both buttons; the panel scrolls as a whole, so the line is not a scroller.
+  if (!m.hintVisible || !m.hint) {
+    out.push("#cb-over-hint is not visible");
+  } else {
+    const h = m.hint;
+    if (h.left < -TOL_PX || h.right > W + TOL_PX) out.push(`#cb-over-hint box [${f1(h.left)},${f1(h.right)}] leaves the ${W} px window horizontally`);
+    if (!m.hintText || /snowflake/i.test(m.hintText)) out.push(`#cb-over-hint reads "${m.hintText}": empty, or it names the achievement`);
+    if (m.hintScrollHeight > m.hintClientHeight + 1) out.push(`#cb-over-hint clips its own text (scrollHeight ${m.hintScrollHeight} > clientHeight ${m.hintClientHeight})`);
+    if (rectsIntersect(h, b)) out.push("#cb-over-hint overlaps the Earned strip");
+    for (const btn of m.buttons) {
+      if (rectsIntersect(btn.box, h)) out.push(`death panel button ${btn.id} overlaps the hint`);
+    }
   }
   if (!m.buttons.length) out.push("the death panel has no buttons under .cb-over-actions");
   for (const btn of m.buttons) {

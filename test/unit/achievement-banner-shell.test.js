@@ -511,7 +511,7 @@ test("AUI-01 beat end: the last round's playback settles through paint(), and pa
 // ═══════════════════════ Part 2: the module glue ═══════════════════════════
 
 import { BRIDGE } from "../../src/browser/bridge.js";
-import { emptyBannerQueue, bannerEnqueue, bannerNext } from "../../src/browser/achievementCard.js";
+import { emptyBannerQueue, bannerEnqueue, bannerNext, deathHintFor } from "../../src/browser/achievementCard.js";
 
 const CODE = stripHtml(RAW_HTML);
 
@@ -526,7 +526,7 @@ function occurrences(haystack, needle) {
 }
 
 const GLUE_START = CODE.indexOf("let bannerQueue = emptyBannerQueue();");
-const GLUE_END_MARK = "clearStrip: clearDeathStrip };";
+const GLUE_END_MARK = "takeHint: takeDeathHint, clearStrip: clearDeathStrip };";
 const GLUE_END = CODE.indexOf(GLUE_END_MARK, GLUE_START) + GLUE_END_MARK.length;
 const GLUE = CODE.slice(GLUE_START, GLUE_END);
 
@@ -549,7 +549,7 @@ test("AUI-01 anchors: the three new imports sit on their own lines and the pinne
   for (const line of [
     'import { setAchievementListener } from "./src/browser/engineAdapter.js";',
     'import { achievementEvents } from "./src/browser/achievementBus.js";',
-    'import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";',
+    'import { emptyBannerQueue, bannerEnqueue, bannerNext, deathHintFor } from "./src/browser/achievementCard.js";',
     'import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";',
     'import { takeBootResumeEvents, formatEvents } from "./src/browser/engineAdapter.js";',
   ]) {
@@ -557,10 +557,10 @@ test("AUI-01 anchors: the three new imports sit on their own lines and the pinne
   }
 });
 
-test("AUI-01 anchors: __mzAchBanner is assigned once, right after the rail parcel, with exactly four members; showTitleScreen clears the strip beside the death-record reset", () => {
+test("AUI-01 anchors: __mzAchBanner is assigned once, right after the rail parcel, with exactly five members; showTitleScreen clears the strip beside the death-record reset", () => {
   assert.equal(occurrences(CODE, "window.__mzAchBanner ="), 1);
-  const m = CODE.match(/window\.__mzAchBanner = \{ onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, clearStrip: clearDeathStrip \};/);
-  assert.ok(m, "the four members, in order");
+  const m = CODE.match(/window\.__mzAchBanner = \{ onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, takeHint: takeDeathHint, clearStrip: clearDeathStrip \};/);
+  assert.ok(m, "the five members, in order");
   assert.ok(CODE.indexOf("window.__mzRail = emptyRail();") < CODE.indexOf("window.__mzAchBanner ="));
   const start = CODE.indexOf("function showTitleScreen({ allowResume } = {})");
   assert.ok(start !== -1);
@@ -590,10 +590,10 @@ function makeGlue(over = {}) {
     ...over,
   };
   const factory = new Function(
-    "window", "dungeonVisible", "combatScreenUp", "railLocked", "emptyBannerQueue", "bannerEnqueue", "bannerNext", "railPush", "queueMicrotask",
+    "window", "dungeonVisible", "combatScreenUp", "railLocked", "emptyBannerQueue", "bannerEnqueue", "bannerNext", "deathHintFor", "railPush", "queueMicrotask",
     `${GLUE}\nreturn { queue: () => bannerQueue, strip: () => deathStrip, bridge: window.__mzAchBanner };`,
   );
-  const g = factory(w, () => st.visible, () => st.fighting, () => st.decision, emptyBannerQueue, bannerEnqueue, bannerNext, railPush, queueMicrotask);
+  const g = factory(w, () => st.visible, () => st.fighting, () => st.decision, emptyBannerQueue, bannerEnqueue, bannerNext, deathHintFor, railPush, queueMicrotask);
   return { st, w, ...g };
 }
 const unlocksOf = (...ids) => ({ unlocks: ids.map((id) => ({ id, at: 1 })), reveals: [], progress: [] });
@@ -787,4 +787,149 @@ test("AUI-01 bridge: __mzAchBanner is registered with the module as owner, its c
     assert.ok(joined.includes(needle), "consumers name " + needle);
   }
   assert.ok(e.purpose.length > 20);
+});
+
+// ═══════ Quick 261005-vn5: the death screen hint line for a death-revealed secret ═══════
+
+import { ACHIEVEMENT_CARD_COPY } from "../../src/browser/achievementCard.js";
+
+const HINT = ACHIEVEMENT_CARD_COPY.strip.hint;
+
+test("vn5 hint: renderDeathHint draws #cb-over-hint with textContent, after the strip and before the buttons; null and empty draw nothing", () => {
+  const doc = createRecordingDocument();
+  const sb = loadBannerSandbox({ doc });
+  sb.setState(deadState());
+  const strip = twoItemStrip();
+  sb.w.__mzAchBanner = { takeStrip: () => strip, takeHint: () => HINT };
+  const host = doc.document.createElement("div");
+  drawDead(sb, host);
+  const over = overOf(host);
+  const kids = over.children;
+  const stripAt = kids.findIndex((c) => c.id === "cb-over-earned");
+  const hintAt = kids.findIndex((c) => c.id === "cb-over-hint");
+  const actionsAt = kids.findIndex((c) => c.className === "cb-over-actions");
+  assert.ok(stripAt !== -1 && hintAt !== -1 && actionsAt !== -1);
+  assert.ok(stripAt < hintAt && hintAt < actionsAt, "strip, then hint, then the buttons");
+  assert.equal(kids[hintAt].className, "cb-over-hint");
+  assert.equal(kids[hintAt].textContent, HINT);
+  assert.equal(kids[actionsAt].children.length, 2, "both death buttons are still drawn");
+
+  for (const takeHint of [() => null, () => "", () => undefined, () => 5, undefined]) {
+    const d2 = createRecordingDocument();
+    const s2 = loadBannerSandbox({ doc: d2 });
+    s2.setState(deadState());
+    s2.w.__mzAchBanner = { takeStrip: () => null, takeHint };
+    const h2 = d2.document.createElement("div");
+    drawDead(s2, h2);
+    assert.ok(overOf(h2), "the panel still draws");
+    assert.equal(overOf(h2).children.some((c) => c.id === "cb-over-hint"), false);
+  }
+  const d3 = createRecordingDocument();
+  const s3 = loadBannerSandbox({ doc: d3 });
+  s3.setState(deadState());
+  s3.w.__mzAchBanner = null;
+  const h3 = d3.document.createElement("div");
+  drawDead(s3, h3);
+  assert.equal(overOf(h3).children.some((c) => c.id === "cb-over-hint"), false, "an absent bridge draws no hint");
+});
+
+test("vn5 hint: with no strip the hint still draws; redrawing leaves exactly one; markup shows literally", () => {
+  const doc = createRecordingDocument();
+  const sb = loadBannerSandbox({ doc });
+  sb.setState(deadState());
+  sb.w.__mzAchBanner = { takeStrip: () => null, takeHint: () => "Floor <b>1</b> & friends" };
+  const host = doc.document.createElement("div");
+  drawDead(sb, host);
+  const over = overOf(host);
+  assert.equal(over.children.some((c) => c.id === "cb-over-earned"), false);
+  const hint = over.children.find((c) => c.id === "cb-over-hint");
+  assert.equal(hint.textContent, "Floor <b>1</b> & friends");
+  sb.context.renderDeathHint(over, "again");
+  assert.equal(over.children.filter((c) => c.id === "cb-over-hint").length, 1);
+  assert.equal(over.children.find((c) => c.id === "cb-over-hint").textContent, "again");
+});
+
+test("vn5 hint: renderCombatOver reads takeHint once, after the strip, before the buttons; the builder has no innerHTML and no copy literal", () => {
+  const code = stripHtml(RAW_HTML);
+  const oStart = code.indexOf("function renderCombatOver(host, kind, opts = {})");
+  const oEnd = code.indexOf("\nfunction ", oStart + 10);
+  const over = code.slice(oStart, oEnd);
+  const stripIdx = over.indexOf('if (kind === "dead") renderEarnedStrip(over, window.__mzAchBanner?.takeStrip?.() ?? null);');
+  const hintIdx = over.indexOf('if (kind === "dead") renderDeathHint(over, window.__mzAchBanner?.takeHint?.() ?? null);');
+  const actionsIdx = over.indexOf('actions.className = "cb-over-actions";');
+  assert.ok(stripIdx !== -1 && hintIdx !== -1 && actionsIdx !== -1);
+  assert.ok(stripIdx < hintIdx && hintIdx < actionsIdx);
+  assert.equal(over.split("takeHint").length - 1, 1, "takeHint is read exactly once");
+  const bStart = code.indexOf("function renderDeathHint(host, text)");
+  assert.ok(bStart !== -1);
+  const builder = code.slice(bStart, code.indexOf("\nfunction ", bStart + 10));
+  assert.doesNotMatch(builder, /innerHTML/);
+  assert.doesNotMatch(builder, /floor 1|died|prize/i, "no copy literal in the builder");
+  assert.equal(code.includes(HINT), false, "the line lives only in ACHIEVEMENT_CARD_COPY");
+});
+
+test("vn5 hint css: the hint is a plain wrapping line (not a nested scroller, so the panel scrolls as a whole), follows the text scale, and does not animate", () => {
+  const i = RAW_HTML.indexOf(".cb-over-hint{");
+  assert.ok(i !== -1);
+  const rule = RAW_HTML.slice(i, RAW_HTML.indexOf("}", i) + 1);
+  assert.doesNotMatch(rule, /max-height|overflow-y|(^|[;{])height:/);
+  assert.match(rule, /overflow-wrap:anywhere/);
+  assert.match(rule, /--mw-text-scale/);
+  assert.doesNotMatch(rule, /animation|transition|vh|dvh/);
+});
+
+test("vn5 hint glue: the death that reveals Special Snowflake without earning it parks the hint; takeHint returns it on every redraw", () => {
+  const g = makeGlue();
+  g.st.s = { c: { name: "hero" }, dead: true };
+  g.bridge.onEvent({ unlocks: [], reveals: ["special_snowflake"], progress: [] });
+  assert.equal(g.bridge.takeHint(), HINT);
+  assert.equal(g.bridge.takeHint(), HINT, "the same line on a redraw");
+  assert.equal(g.bridge.takeStrip(), null, "nothing was earned, so no strip");
+});
+
+test("vn5 hint glue: no hint when the death earned it, revealed a different secret, or the hero is alive; a payload that arrives before the hero reads dead still shows on the death", () => {
+  const earned = makeGlue();
+  earned.st.s = { c: { name: "hero" }, dead: true };
+  earned.bridge.onEvent({ unlocks: [{ id: "special_snowflake", at: 1 }], reveals: ["special_snowflake"], progress: [] });
+  assert.equal(earned.bridge.takeHint(), null);
+  assert.equal(earned.bridge.takeStrip().items[0].id, "special_snowflake");
+
+  const other = makeGlue();
+  other.st.s = { c: { name: "hero" }, dead: true };
+  other.bridge.onEvent({ unlocks: [{ id: "death_trap", at: 1 }], reveals: ["death_trap"], progress: [] });
+  assert.equal(other.bridge.takeHint(), null);
+
+  const alive = makeGlue();
+  alive.bridge.onEvent({ unlocks: [], reveals: ["special_snowflake"], progress: [] });
+  assert.equal(alive.bridge.takeHint(), null, "alive: nothing to show");
+  alive.st.s = { c: { name: "hero" }, dead: true };
+  assert.equal(alive.bridge.takeHint(), HINT, "the death that follows shows the parked line");
+});
+
+test("vn5 hint glue: the next hero never sees it; clearStrip drops it; takeHint is total", () => {
+  const g = makeGlue();
+  g.st.s = { c: { name: "hero" }, dead: true };
+  g.bridge.onEvent({ unlocks: [], reveals: ["special_snowflake"], progress: [] });
+  assert.equal(g.bridge.takeHint(), HINT);
+  g.st.s = { c: { name: "next" }, dead: false };
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.bridge.takeHint(), null, "alive: dropped");
+  g.st.s = { c: { name: "next" }, dead: true };
+  assert.equal(g.bridge.takeHint(), null, "and it does not come back on the next death");
+
+  const h = makeGlue();
+  h.st.s = { c: { name: "hero" }, dead: true };
+  h.bridge.onEvent({ unlocks: [], reveals: ["special_snowflake"], progress: [] });
+  h.bridge.clearStrip();
+  assert.equal(h.bridge.takeHint(), null);
+
+  const t = makeGlue({ __mzState: { get: () => { throw new Error("boom"); } } });
+  assert.equal(t.bridge.takeHint(), null);
+  for (const p of [null, undefined, {}, 7, { reveals: "x" }]) assert.doesNotThrow(() => makeGlue().bridge.onEvent(p));
+});
+
+test("vn5 hint: deathHintFor is the glue decision, and the bridge entry names takeHint", () => {
+  assert.equal(deathHintFor({ unlocks: [], reveals: ["special_snowflake"] }), HINT);
+  assert.ok(BRIDGE.__mzAchBanner.purpose.includes("takeHint"));
+  assert.ok(BRIDGE.__mzAchBanner.consumers.join("\n").includes("takeHint()"));
 });

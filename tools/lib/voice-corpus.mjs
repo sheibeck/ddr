@@ -229,7 +229,7 @@ export const BANK_REGISTRY = Object.freeze([
   // Console import and the achievements list) and the in-game unlock line.
   bank("content/achievements.js", "ACHIEVEMENTS", "panels", "an achievement's name and Play description (the Play Console import and the achievements list) and its unlock line", { pick: ["name", "description", "line"] }),
   // Phase 100 (AUI-01): the unlock banner's chrome copy.
-  bank("src/browser/achievementCard.js", "ACHIEVEMENT_CARD_COPY", "rail-cards", "an achievement unlock card, the many-at-once card and the death screen's Earned strip"),
+  bank("src/browser/achievementCard.js", "ACHIEVEMENT_CARD_COPY", "rail-cards", "an achievement unlock card, the many-at-once card, the death screen's Earned strip and its one hint line"),
   // Phase 100 (AUI-02): the achievements list's chrome copy.
   bank("src/browser/achievementsSheet.js", "ACHIEVEMENTS_SHEET_COPY", "panels", "the ☰ ACHIEVEMENTS list: its header, block titles, row states, the Secret teaser and the progress units"),
   bank("content/armors.js", "ARMOR_FLAVOR", "items", "an armour type's flavour line (Gear, store, loot and find cards)"),

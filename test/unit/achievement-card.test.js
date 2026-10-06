@@ -153,3 +153,25 @@ test("a card pushed through the rail keeps its kind, icon path, id and gains a s
   assert.deepEqual(r2.card.achievementIds, ["depth_t1", "depth_t2"]);
   assert.equal(r2.card.seq, 2);
 });
+
+// Quick 261005-vn5: the death screen hint line for a death-revealed secret.
+import { deathHintFor } from "../../src/browser/achievementCard.js";
+
+test("deathHintFor: a reveal of Special Snowflake without its unlock gives the one hint line; it never names the achievement", () => {
+  const hint = deathHintFor({ unlocks: [], reveals: ["special_snowflake"], progress: [] });
+  assert.equal(hint, ACHIEVEMENT_CARD_COPY.strip.hint);
+  assert.equal(typeof hint, "string");
+  assert.match(hint, /floor 1/);
+  for (const word of ["Special", "Snowflake", "snowflake", "special_snowflake"]) assert.equal(hint.includes(word), false, word);
+  assert.equal(hint.trim(), hint);
+});
+
+test("deathHintFor: nothing when the death earned it, revealed another secret, or the payload is missing or malformed", () => {
+  assert.equal(deathHintFor({ unlocks: [{ id: "special_snowflake", at: 1 }], reveals: ["special_snowflake"] }), null);
+  assert.equal(deathHintFor({ unlocks: [], reveals: ["death_falling", "ether_entombed"] }), null);
+  assert.equal(deathHintFor({ unlocks: [{ id: "depth_t1", at: 1 }], reveals: [] }), null);
+  for (const bad of [null, undefined, 5, "x", [], {}, { reveals: "special_snowflake" }, { reveals: [null, 7, {}] }, { reveals: ["nope"] }]) {
+    assert.equal(deathHintFor(bad), null);
+  }
+  assert.equal(deathHintFor({ reveals: ["special_snowflake"], unlocks: "bad" }), ACHIEVEMENT_CARD_COPY.strip.hint);
+});

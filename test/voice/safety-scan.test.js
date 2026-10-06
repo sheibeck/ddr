@@ -545,9 +545,21 @@ test("Phase 100: the unlock banner's chrome copy is in the authored-string walk"
   for (const l of [
     "ACHIEVEMENT_CARD_COPY.title", "ACHIEVEMENT_CARD_COPY.many.title", "ACHIEVEMENT_CARD_COPY.many.lead",
     "ACHIEVEMENT_CARD_COPY.many.hint", "ACHIEVEMENT_CARD_COPY.strip.label",
+    // Quick 261005-vn5: the death screen hint line for the death-revealed secret.
+    "ACHIEVEMENT_CARD_COPY.strip.hint",
   ]) {
     assert.ok(labels.has(l), `missing ${l}`);
   }
+});
+
+test("Quick 261005-vn5: the death-screen hint line is in the walk, family-friendly, points at floor 1 and never names the achievement", () => {
+  const strings = new Map(collectAuthoredStrings());
+  const hint = strings.get("ACHIEVEMENT_CARD_COPY.strip.hint");
+  assert.equal(typeof hint, "string");
+  assert.deepStrictEqual(findBannedTerms(hint), [], "the hint must be family-friendly");
+  assert.match(hint, /floor 1/);
+  assert.ok(!/snowflake|special/i.test(hint), "the hint never names the achievement");
+  assert.ok(!/[<>]/.test(hint), "no markup");
 });
 
 test("Phase 100: the achievements list's chrome copy is in the authored-string walk", () => {
