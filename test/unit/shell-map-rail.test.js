@@ -518,8 +518,9 @@ test('(q) 2026-09-17 UAT ruling (actual icons): renderRail renders an <img> from
   const region = railRegion();
   assert.match(region, /iconKey = rail\.card\.iconKey \?\? null;/);
   assert.match(region, /iconKey = base\.iconKey \?\? null;/);
-  assert.match(region, /iconEl\.textContent = iconKey \? "" : icon;/);
-  assert.match(region, /img\.src = featureIconSrc\(iconKey\);/);
+  // Phase 100 (AUI-01): declared re-pin — an achievement card's iconSrc takes precedence over iconKey on the same img path.
+  assert.match(region, /iconEl\.textContent = \(iconSrc \|\| iconKey\) \? "" : icon;/);
+  assert.match(region, /img\.src = iconSrc \|\| featureIconSrc\(iconKey\);/);
   assert.match(region, /document\.createElement\("img"\)/);
   assert.doesNotMatch(region, /innerHTML/);
 

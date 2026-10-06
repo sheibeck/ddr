@@ -931,6 +931,13 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-over-best-head{font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));line-height:1.6;color:#e8c97a}
 .cb-over-best-row{font-family:var(--mono);font-weight:700;font-size:calc(0.875rem * var(--mw-text-scale));line-height:1.4;color:#e8c97a;margin:6px 0 0}
 .cb-over-best-quip{font-family:var(--mono);font-weight:700;font-size:calc(0.875rem * var(--mw-text-scale));line-height:1.45;color:#c9bda0;margin:8px 0 0}
+/* Phase 100 (AUI-01): the death screen's Earned strip: bounded, scrolls inside itself, no motion. */
+.cb-over-earned{margin-top:12px;padding:10px 12px;border:2px solid #5e7a3c;background:#141a0f}
+.cb-over-earned-label{margin:0;font-family:var(--disp);font-size:calc(0.5625rem * var(--mw-text-scale));line-height:1.6;color:#a8cc72}
+.cb-over-earned-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 14px;max-height:9.5em;overflow-y:auto;overscroll-behavior:contain}
+.cb-over-earned-item{display:flex;align-items:center;gap:8px;min-width:0}
+.cb-over-earned-icon{width:32px;height:32px;object-fit:contain;flex:none}
+.cb-over-earned-name{font-family:var(--mono);font-weight:700;font-size:calc(0.875rem * var(--mw-text-scale));line-height:1.4;color:#e6ddc6;overflow-wrap:anywhere}
 /* Phase 68 (PLACE-01, D-10/D-11): the DEEPEST rank line under the NEW
    PERSONAL BEST block. It fades in once when the rank arrives; the blanket
    prefers-reduced-motion rule below removes the fade. */
@@ -994,6 +1001,9 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .mw-rail-row{display:flex;gap:11px;align-items:flex-start}
 .mw-rail-icon{flex:none;width:26px;font-size:20px;line-height:1.2;color:var(--rail-ink)}
 .mw-rail-icon img{width:26px;height:26px;object-fit:contain;display:block}
+/* Phase 100 (AUI-01): the 144px achievement art needs a bigger slot than the 26px glyph one; no motion. */
+#mw-rail[data-card-kind="achievement"] .mw-rail-icon{width:44px}
+#mw-rail[data-card-kind="achievement"] .mw-rail-icon img{width:44px;height:44px}
 .mw-rail-body{flex:1;min-width:0}
 .mw-rail-title{font-family:var(--disp);font-size:calc(0.5rem * var(--mw-text-scale));line-height:1.6;color:var(--rail-ink)}
 .mw-rail-line{font-weight:700;font-size:calc(0.90625rem * var(--mw-text-scale));line-height:1.4;color:#c9bda0;margin-top:6px}
@@ -5667,6 +5677,9 @@ function renderCombatOver(host, kind, opts = {}) {
   // under THAT IS THAT / "The maze keeps the rest." and above the buttons.
   if (kind === "dead") renderNewBestBlock(over, window.__mzDeathRecord);
   if (kind === "dead") renderRankLine(over, window.__mzPlacement);
+  // Phase 100 (AUI-01): the Earned strip (what this death earned plus anything
+  // still queued) sits above the buttons; bounded, it scrolls inside itself.
+  if (kind === "dead") renderEarnedStrip(over, window.__mzAchBanner?.takeStrip?.() ?? null);
   if (Array.isArray(opts.buttons) && opts.buttons.length) {
     const actions = document.createElement("div");
     actions.className = "cb-over-actions";
@@ -5743,6 +5756,47 @@ function renderRankLine(host, placement) {
   if (actions) host.insertBefore(p, actions);
   else host.appendChild(p);
   if (placement.fresh === true) window.__mzPlacement = { hash: placement.hash, line: placement.line, fresh: false };
+}
+
+// Phase 100 (AUI-01): the Earned strip on THAT IS THAT. `view` is
+// achievementCard.js#earnedStripView's shape ({ label, items: [{ name,
+// iconSrc }] }), read through window.__mzAchBanner.takeStrip(). Nothing is
+// drawn for a missing view or an empty list. createElement and textContent
+// only, no innerHTML, no copy literal of its own; an existing strip is
+// replaced so a redraw never doubles it.
+function renderEarnedStrip(host, view) {
+  if (!host) return;
+  const old = typeof host.querySelector === "function" ? host.querySelector("#cb-over-earned") : null;
+  if (old) old.remove();
+  if (!view || typeof view !== "object" || !Array.isArray(view.items) || view.items.length === 0) return;
+  const box = document.createElement("div");
+  box.className = "cb-over-earned";
+  box.id = "cb-over-earned";
+  const label = document.createElement("p");
+  label.className = "cb-over-earned-label";
+  label.textContent = view.label;
+  box.appendChild(label);
+  const list = document.createElement("ul");
+  list.className = "cb-over-earned-list";
+  view.items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "cb-over-earned-item";
+    const img = document.createElement("img");
+    img.className = "cb-over-earned-icon";
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.src = item.iconSrc;
+    li.appendChild(img);
+    const name = document.createElement("span");
+    name.className = "cb-over-earned-name";
+    name.textContent = item.name;
+    li.appendChild(name);
+    list.appendChild(li);
+  });
+  box.appendChild(list);
+  const actions = typeof host.querySelector === "function" ? host.querySelector(".cb-over-actions") : null;
+  if (actions) host.insertBefore(box, actions);
+  else host.appendChild(box);
 }
 
 function renderEncounter() {
@@ -6103,6 +6157,11 @@ function renderRail() {
   const vm = window.__mzRailVM;
   const copy = vm ? vm.copy : null;
   if (!vm || !copy) return;
+  // Phase 100 (AUI-01): offer the held unlock queue a turn before anything is
+  // painted. The drain (module glue) pushes the next card onto a free rail
+  // and re-enters renderRail itself, so this outer call stops; it says no
+  // while a fight, a decision, the stairs fade or another card is up.
+  if (window.__mzAchBanner?.drain?.()) return;
   // 2026-09-16 UAT (user ruling): both conditions hide — the column owners
   // (combat/dead/won) AND any non-Map tab. 2026-09-17 UAT (user ruling):
   // "Don't show the nothing is happening screen until the They are down
@@ -6111,7 +6170,7 @@ function renderRail() {
   // major overlays), the idle card stays hidden too; a real card (e.g. the
   // bagFull refusal) still shows.
 
-  let key, tone, icon, iconKey = null, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
+  let key, tone, icon, iconKey = null, iconSrc = null, title, lines, buttons = [], idle = false, peek = "", shelfItems = null;
   // Phase 78 (CLIMB-01/02): the pre-roll wall/crevice decision card, built
   // from S.pendingHazard alone (null out of any pause, in combat, in a
   // store, or dead), so a relaunch with the record saved shows the same card.
@@ -6236,6 +6295,8 @@ function renderRail() {
   } else if (rail.card) {
     key = "card:" + rail.card.seq;
     tone = rail.card.tone; icon = rail.card.icon; iconKey = rail.card.iconKey ?? null; title = rail.card.title; lines = rail.card.lines;
+    // Phase 100 (AUI-01): an achievement card carries its own in-game icon path.
+    iconSrc = typeof rail.card.iconSrc === "string" ? rail.card.iconSrc : null;
   } else {
     key = "idle:" + S.floor.depth;
     title = copy.idleTitle.replace("{n}", S.floor.depth);
@@ -6367,7 +6428,11 @@ function renderRail() {
 
   railEl.dataset.tone = tone;
   railEl.dataset.idle = idle ? "1" : "0";
-  const iconEl = document.getElementById("mw-rail-icon"); iconEl.textContent = iconKey ? "" : icon; if (iconKey) { const img = document.createElement("img"); img.src = featureIconSrc(iconKey); img.alt = ""; img.setAttribute("aria-hidden", "true"); iconEl.appendChild(img); }
+  // Phase 100 (AUI-01): an achievement card stamps its kind so the CSS gives
+  // the icon slot a larger box; any other card removes the stamp.
+  if (rail.card && typeof rail.card.kind === "string" && rail.card.kind.startsWith("achievement")) railEl.dataset.cardKind = "achievement";
+  else if (railEl.dataset.cardKind) delete railEl.dataset.cardKind;
+  const iconEl = document.getElementById("mw-rail-icon"); iconEl.textContent = (iconSrc || iconKey) ? "" : icon; if (iconSrc || iconKey) { const img = document.createElement("img"); img.src = iconSrc || featureIconSrc(iconKey); img.alt = ""; img.setAttribute("aria-hidden", "true"); iconEl.appendChild(img); }
   document.getElementById("mw-rail-title").textContent = title;
   document.getElementById("mw-rail-peek").textContent = peek;
   // Phase 58 (MOTION-04, D-13): read before the lines loop below — a
@@ -6578,8 +6643,11 @@ document.getElementById("mw-rail").onclick = (e) => {
   if (kind === "locked") { railPulse(); return; }
   clearTimeout(railTimer);
   railTimer = null;
+  // Phase 100 (AUI-01): the many-at-once summary card opens the list after it clears.
+  const tapped = window.__mzRail && window.__mzRail.card;
   window.__mzRail = railVM.clear(window.__mzRail);
   renderRail();
+  if (tapped && tapped.opensList) { window.mzOpenAchievements?.(); }
 };
 
 // Phase 58 (MOTION-03, D-11): a tap during a beat lands the rest of the
