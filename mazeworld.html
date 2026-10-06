@@ -785,6 +785,10 @@ button.mw-danger-btn:active:not(:disabled){box-shadow:0 1px 0 var(--mw-btn-shado
 .cb-head-round{color:#e8c97a}
 .cb-head-standing{color:#c9bda0}
 .cb-mid{flex:1;overflow:auto;min-height:0}
+/* Quick 261006-1js: on the death panel the epitaph block keeps its natural height (never shrunk to
+   zero by the Earned strip, the hint and the buttons below it); #enc-body scrolls the whole panel. */
+.cb-mid.cb-mid-dead{flex:none;overflow:visible;min-height:auto}
+#enc-body>.cb-over{flex:none}
 .cb-hint{font-family:var(--disp);font-size:calc(0.40625rem * var(--mw-text-scale));color:#a89c82;line-height:1.7}
 .cb-threat{font-family:var(--mono);font-weight:700;font-size:calc(0.8125rem * var(--mw-text-scale));color:#8f856f}
 .cb-foes{padding:11px 12px 0}
@@ -5665,6 +5669,7 @@ function renderCombatOver(host, kind, opts = {}) {
   const mid = document.createElement("div");
   mid.className = "cb-mid";
   mid.id = "cb-mid";
+  if (kind === "dead") mid.classList.add("cb-mid-dead");
   const lines = document.createElement("div");
   lines.className = "cb-over-lines";
   const allLines = [

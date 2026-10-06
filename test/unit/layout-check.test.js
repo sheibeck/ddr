@@ -15,7 +15,7 @@ test("every profile's expected class is what layoutClassFor says", () => {
   }
 });
 
-test("the twelve named profiles exist, each class at least twice", () => {
+test("the thirteen named profiles exist, each class at least twice", () => {
   const names = PROFILES.map((p) => p.name);
   for (const n of [
     "phone-portrait",
@@ -23,6 +23,7 @@ test("the twelve named profiles exist, each class at least twice", () => {
     "phone-landscape-360",
     "tablet7-portrait",
     "tablet7-landscape",
+    "tablet7-landscape-short",
     "tablet10-portrait",
     "tablet10-landscape",
     "foldable-folded",
@@ -33,8 +34,8 @@ test("the twelve named profiles exist, each class at least twice", () => {
   ]) {
     assert.ok(names.includes(n), `missing profile ${n}`);
   }
-  assert.equal(PROFILES.length, 12);
-  assert.equal(new Set(names).size, 12);
+  assert.equal(PROFILES.length, 13);
+  assert.equal(new Set(names).size, 13);
   for (const cls of ["short", "compact", "medium", "expanded"]) {
     assert.ok(PROFILES.filter((p) => p.expect === cls).length >= 2, `class ${cls} needs two profiles`);
   }
@@ -42,6 +43,7 @@ test("the twelve named profiles exist, each class at least twice", () => {
   const sizes = Object.fromEntries(PROFILES.map((p) => [p.name, `${p.width}x${p.height}`]));
   assert.equal(sizes["phone-portrait"], "412x915");
   assert.equal(sizes["phone-landscape-360"], "800x360");
+  assert.equal(sizes["tablet7-landscape-short"], "960x540");
   assert.equal(sizes["foldable-unfolded"], "841x701");
   assert.equal(sizes["chromebook-half"], "683x768");
   assert.equal(PROFILES.find((p) => p.name === "chromebook-window").mobile, false);

@@ -20,7 +20,7 @@
 //   npm run layout:check
 //
 // Behaviour:
-//   ONE headless Chrome serves the whole run. For each of twelve PROFILES
+//   ONE headless Chrome serves the whole run. For each of thirteen PROFILES
 //   (phone, 360dp phone on its side, 7" and 10" tablets both ways, a foldable
 //   folded / unfolded / unfolded upright, two Chromebook windows) it sets
 //   Emulation.setDeviceMetricsOverride, seeds the settings (Compete off, so
@@ -158,6 +158,8 @@ export const PROFILES = Object.freeze([
   profile("phone-landscape-360", 800, 360, "short"),
   profile("tablet7-portrait", 600, 960, "medium"),
   profile("tablet7-landscape", 960, 600, "expanded"),
+  // Quick 261006-1js: the same 7" tablet on its side with the system bars taking 60 px (a 960 x 540 CSS window).
+  profile("tablet7-landscape-short", 960, 540, "expanded"),
   profile("tablet10-portrait", 800, 1280, "medium"),
   profile("tablet10-landscape", 1280, 800, "expanded"),
   profile("foldable-folded", 411, 797, "compact"),
@@ -541,6 +543,16 @@ function measurePage() {
     }
     if (ys && el !== document.body && el !== document.documentElement) {
       const r = el.getBoundingClientRect();
+      // Quick 261006-1js: a scroller inside a panel that itself scrolls (the death panel's Earned list)
+      // may sit below the fold until that panel scrolls; the panel's own box is checked on its own turn.
+      let host = el.parentElement;
+      let inScrolledHost = false;
+      while (host && host !== document.body && host !== document.documentElement) {
+        const hy = getComputedStyle(host).overflowY;
+        if ((hy === "auto" || hy === "scroll") && host.scrollHeight > host.clientHeight + 1) { inScrolledHost = true; break; }
+        host = host.parentElement;
+      }
+      if (inScrolledHost && r.left >= -1 && r.right <= W + 1) continue;
       if (r.left < -1 || r.right > W + 1 || r.top < -1 || r.bottom > H + 1) {
         vscrollers.push(
           label(el) + " box [" + num(r.left) + "," + num(r.top) + "," + num(r.right) + "," + num(r.bottom) + "] leaves the " + W + "x" + H + " window"
@@ -800,6 +812,14 @@ function measureEarned() {
   const strip = document.querySelector("#cb-over-earned");
   const list = strip ? strip.querySelector(".cb-over-earned-list") : null;
   const hint = document.querySelector("#cb-over-hint");
+  // Quick 261006-1js: the epitaph block (.cb-over-lines inside #cb-mid) and the scroller that carries the whole panel.
+  const mid = document.querySelector("#cb-mid");
+  const lines = document.querySelector("#cb-mid .cb-over-lines");
+  const epi = document.querySelector("#cb-mid .cb-epitaph");
+  const body = document.querySelector("#enc-body");
+  const bodyRect = body ? rect(body) : null;
+  const scrollTopNow = body ? body.scrollTop : 0;
+  const lastBtn = document.querySelector("#cb-over .cb-over-actions button:last-child");
   const buttons = Array.from(document.querySelectorAll("#cb-over .cb-over-actions button")).map((b) => ({
     id: b.id || b.className,
     visible: vis(b),
@@ -816,6 +836,21 @@ function measureEarned() {
     hintVisible: vis(hint),
     hint: hint ? rect(hint) : null,
     hintText: hint ? hint.textContent : "",
+    epitaph: {
+      midHeight: mid ? mid.getBoundingClientRect().height : 0,
+      linesHeight: lines ? lines.getBoundingClientRect().height : 0,
+      lineCount: lines ? lines.querySelectorAll("p").length : 0,
+      epitaphHeight: epi ? epi.getBoundingClientRect().height : 0,
+      epitaphText: epi ? epi.textContent : "",
+      epitaphVisible: vis(epi),
+      // The epitaph's bottom in the scrolled content (viewport top + scroll offset), against the content height.
+      epitaphBottomInContent: epi && bodyRect ? epi.getBoundingClientRect().bottom - bodyRect.top + scrollTopNow : 0,
+      bodyScrollHeight: body ? body.scrollHeight : 0,
+      bodyClientHeight: body ? body.clientHeight : 0,
+      bodyOverflowY: body ? getComputedStyle(body).overflowY : null,
+      midOverflowY: mid ? getComputedStyle(mid).overflowY : null,
+      lastButtonBottomInContent: lastBtn && bodyRect ? lastBtn.getBoundingClientRect().bottom - bodyRect.top + scrollTopNow : 0,
+    },
     hintScrollHeight: hint ? hint.scrollHeight : 0,
     hintClientHeight: hint ? hint.clientHeight : 0,
     buttons,
@@ -1236,6 +1271,23 @@ function earnedFailures(m) {
     if (rectsIntersect(h, b)) out.push("#cb-over-hint overlaps the Earned strip");
     for (const btn of m.buttons) {
       if (rectsIntersect(btn.box, h)) out.push(`death panel button ${btn.id} overlaps the hint`);
+    }
+  }
+  // Quick 261006-1js: the epitaph block never collapses, in any window, and the panel scrolls as a whole.
+  const e = m.epitaph;
+  if (!e || !e.epitaphVisible) {
+    out.push("the death panel's epitaph line (.cb-epitaph) is not visible");
+  } else {
+    if (e.midHeight < 1) out.push("#cb-mid (the epitaph block) collapsed to zero height");
+    if (e.linesHeight < 20) out.push(`the epitaph block is ${f1(e.linesHeight)} px tall: collapsed`);
+    if (e.lineCount < 3) out.push(`the epitaph block holds ${e.lineCount} lines, expected the cut-down line, the floor line and the epitaph`);
+    if (e.epitaphHeight < 10) out.push(`the epitaph line is ${f1(e.epitaphHeight)} px tall`);
+    if (!/\S/.test(e.epitaphText)) out.push("the epitaph line is empty");
+    if (e.epitaphBottomInContent > e.bodyScrollHeight + 1) out.push("the epitaph line lies outside the scrolled content");
+    if (e.midOverflowY === "auto" || e.midOverflowY === "scroll") out.push("#cb-mid is a nested scroller on the death panel: the panel must scroll as one column");
+    if (e.lastButtonBottomInContent > e.bodyScrollHeight + 1) out.push("the last death button lies outside the scrolled content, unreachable by scrolling");
+    if (e.bodyScrollHeight > e.bodyClientHeight + 1 && e.bodyOverflowY !== "auto" && e.bodyOverflowY !== "scroll") {
+      out.push(`#enc-body overflows (${e.bodyScrollHeight} > ${e.bodyClientHeight}) but its overflow-y is "${e.bodyOverflowY}": the panel cannot scroll`);
     }
   }
   if (!m.buttons.length) out.push("the death panel has no buttons under .cb-over-actions");
