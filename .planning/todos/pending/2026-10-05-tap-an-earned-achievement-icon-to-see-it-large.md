@@ -2,7 +2,7 @@
 created: 2026-10-05T23:40:00.000Z
 title: Tap an earned achievement icon to see it large
 area: ui
-target: after 2.5.0 (user, 2026-10-05)
+target: 2.5.0, before the Phase 102 screenshots (user reversed the timing 2026-10-05) — quick 261005-vhn
 files:
   - src/browser/achievementsSheet.js
   - mazeworld.html (#mw-achievements-sheet)
@@ -22,4 +22,4 @@ User rulings (2026-10-05):
 - Use sharp art: add a ~320 × 320 transparent export per achievement, made from `achievements/master/` by `build_achievements.py` (Pillow, NumPy and SciPy are under `python` here), and ship it in `www/` alongside `ingame/`. That is about 3 MB more in the app.
 - The track head stays a button that expands or folds the track. Only the icon opens the large view.
 - Keep the sheet conventions: TalkBack (the icon becomes a labelled button for earned entries), reduced motion, and every layout class (re-run `npm run layout:check`).
-- Lands after 2.5.0, with the roller Human-description fix (todo 2026-10-05-roller-hides-the-human-race-description).
+- Lands in 2.5.0 as quick 261005-vhn, before Phase 102 captures the shots. The roller Human-description fix stays after 2.5.0.
