@@ -99,6 +99,7 @@ Last activity: 2026-10-05 — Phase 101 complete, transitioned to Phase 102
 | 18 | Add achievement + icon inventory to 999.12 backlog item | 2026-09-25 | f5cec79 | — |
 | 19 | Save 999.12 icon-generation brief (ICON-BRIEF.md) | 2026-09-25 | 4b65770 | — |
 | 261005-opm | Race and class achievements to floor 10 at 20 points each (catalog 1,110 -> 1,200 points, headroom 800); copy, docs, zip and Phase 98 records updated | 2026-10-05 | 7bdcb24e, 6c77b9d7 | [261005-opm-race-class-floor-10](./quick/261005-opm-race-class-floor-10/) |
+| 261005-vhn | Tap an earned achievement icon to see it large (320 px art in achievements/large, labelled icon buttons, overlay with name, line and date, back closes only it) plus the roller shows the Human race description; layout:check 12/12 and 7/7 | 2026-10-05 | 58a30734, 7a02bd9b, 7699a1a7 | [261005-vhn-achievement-icon-large-view](./quick/261005-vhn-achievement-icon-large-view/) |
 
 ### Pending Todos
 
