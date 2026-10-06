@@ -808,3 +808,16 @@ test("docs: the Play mirror section does not use the retired notification word",
   const retired = ["to", "ast"].join("");
   assert.equal(docsSection().toLowerCase().includes(retired), false);
 });
+
+test("docs: the Play mirror section describes the VIEW IN PLAY GAMES button (plan 101-04)", () => {
+  const text = docsSection();
+  for (const needle of [
+    "VIEW IN PLAY GAMES",
+    "mw-achievements-play",
+    "achievementMirror.showAchievements()",
+    "ACHIEVEMENTS_SHEET_COPY.play",
+    "layout check",
+  ]) {
+    assert.ok(text.includes(needle), `the section names ${needle}`);
+  }
+});

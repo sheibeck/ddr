@@ -271,7 +271,7 @@ test("docs: the list section names the row, the sheet, the view, the shape, www 
   }
 });
 
-test("docs: the Phase 101 contract is stated", () => {
+test("docs: the Phase 101 contract is stated, with Play's screen on the sheet's VIEW IN PLAY GAMES button and no ☰ row (the user's ruling)", () => {
   const text = section("### Achievements list (Phase 100)");
   assert.match(text, /For Phase 101/);
   assert.match(text, /achievementEvents\.subscribe/);
@@ -279,7 +279,8 @@ test("docs: the Phase 101 contract is stated", () => {
   assert.match(text, /\{ unlocks, reveals, progress \}/);
   assert.match(text, /getAchievementRecord\(\)/);
   assert.match(text, /not the stream/);
-  assert.match(text, /Play row sits beside the ACHIEVEMENTS row/);
+  assert.ok(text.includes("VIEW IN PLAY GAMES button at the top of this sheet"));
+  assert.equal(text.includes("Play row sits beside"), false);
 });
 
 test("docs: the retired surface word is not used in the new sections", () => {

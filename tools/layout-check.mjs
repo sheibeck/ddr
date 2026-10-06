@@ -48,7 +48,11 @@
 //   clear of a docked card, and so on). The achievements sheet adds its own
 //   shape rules (the panel and its scroller inside the window, a vertical
 //   scroller that never scrolls sideways, one column on compact phones, two or
-//   more from 840 px, the rows in view order, icons loaded); the achievement
+//   more from 840 px, the rows in view order, icons loaded). From Phase 101
+//   the check shows the VIEW IN PLAY GAMES row (and its failure line, the
+//   widest the row gets) before it measures: the button must sit inside the
+//   window, at least 48 px tall and above the scrolling body, which must
+//   still scroll on its own and never sideways; the achievement
 //   card must show a loaded icon and sit like any other docked card; the
 //   Earned strip must stay bounded and clear of the death panel's buttons.
 //
@@ -88,6 +92,7 @@ import { newRun } from "../engine/state.js";
 import { startCombat } from "../engine/combat.js";
 import { applyAction } from "../engine/engine.js";
 import { openStore } from "../engine/economy.js";
+import { ACHIEVEMENTS_SHEET_COPY } from "../src/browser/achievementsSheet.js";
 import { die } from "../engine/death.js";
 import { makeRng } from "../engine/rng.js";
 import { PATCH_NOTES } from "../src/browser/patchNotesData.js";
@@ -634,6 +639,8 @@ function measureSheet() {
   const keys = firstBlock
     ? Array.from(firstBlock.querySelectorAll(".mw-ach-row")).map((li) => li.getAttribute("data-key"))
     : [];
+  const playBtn = q("#mw-achievements-play-btn");
+  const playNote = q("#mw-achievements-play-note");
   const head = body ? body.querySelector("button.mw-ach-head") : null;
   let expanded = null;
   if (head) {
@@ -662,6 +669,11 @@ function measureSheet() {
     sheetVisible: vis(sheet),
     panel: box(panel),
     body: box(body),
+    playBtn: box(playBtn),
+    playBtnVisible: vis(playBtn),
+    playBtnText: playBtn ? playBtn.textContent : null,
+    playNote: box(playNote),
+    playNoteVisible: vis(playNote),
     bodyOverflowY: bodyCs ? bodyCs.overflowY : null,
     bodyScrollHeight: body ? body.scrollHeight : 0,
     bodyClientHeight: body ? body.clientHeight : 0,
@@ -776,6 +788,10 @@ const EXPR = {
   // Phase 100: the app's own names only (window.mzOpenAchievements,
   // window.__mzAchBanner); nothing here exists for the check's sake.
   openSheet: `(() => { if (!window.mzOpenAchievements) return false; window.mzOpenAchievements(); return true; })()`,
+  // Phase 101: the VIEW IN PLAY GAMES row, shown with its failure line (the
+  // widest the row gets) and hidden again; the app's own ids and copy only.
+  showPlayRow: `(() => { const row = document.querySelector("#mw-achievements-play"); if (!row) return false; row.hidden = false; const note = document.querySelector("#mw-achievements-play-note"); if (note) { note.textContent = ${JSON.stringify(ACHIEVEMENTS_SHEET_COPY.play.failed)}; note.hidden = false; } return true; })()`,
+  hidePlayRow: `(() => { const row = document.querySelector("#mw-achievements-play"); if (!row) return false; row.hidden = true; const note = document.querySelector("#mw-achievements-play-note"); if (note) { note.textContent = ""; note.hidden = true; } return true; })()`,
   expandFirstTrack: `(() => { const b = document.querySelector("#mw-achievements-body button.mw-ach-head"); if (!b) return false; if (b.getAttribute("aria-expanded") !== "true") b.click(); return true; })()`,
   achUnlock: `(() => { window.__mzAchBanner.onEvent({ unlocks: [{ id: "depth_t1", at: 1 }], reveals: [], progress: [] }); return true; })()`,
   deathUnlocks: `(() => { window.__mzAchBanner.onEvent({ unlocks: ${JSON.stringify(["depth_t1", "depth_t2", "kills_beasts_t1", "party_animal_t1", "special_snowflake", "tourist"].map((id, i) => ({ id, at: 1 + i })))}, reveals: [], progress: [] }); window.paint(); return true; })()`,
@@ -989,6 +1005,21 @@ function sheetFailures(cls, m, opts = {}) {
   }
   if (m.bodyScrollWidth > m.bodyClientWidth + 1) {
     out.push(`#mw-achievements-body scrolls sideways (scrollWidth ${m.bodyScrollWidth} > clientWidth ${m.bodyClientWidth})`);
+  }
+  if (opts.expectPlay) {
+    // Phase 101 (AUI-04): the row was shown before the measurement.
+    if (!m.playBtnVisible) {
+      out.push("the VIEW IN PLAY GAMES button is not visible with its row shown");
+    } else {
+      inside(m.playBtn, "the VIEW IN PLAY GAMES button");
+      if (m.playBtn.height < 48 - TOL_PX) out.push(`the VIEW IN PLAY GAMES button is ${f1(m.playBtn.height)} px tall, expected at least 48`);
+      if (m.body && m.playBtn.bottom > m.body.top + TOL_PX) {
+        out.push(`the VIEW IN PLAY GAMES button bottom ${f1(m.playBtn.bottom)} runs into the scrolling body (top ${f1(m.body.top)})`);
+      }
+      if (m.playBtnText !== ACHIEVEMENTS_SHEET_COPY.play.view) out.push(`the button reads "${m.playBtnText}", expected "${ACHIEVEMENTS_SHEET_COPY.play.view}"`);
+    }
+    if (!m.playNoteVisible) out.push("the failure line is not visible with its note shown");
+    else inside(m.playNote, "the failure line");
   }
   if (m.layout !== cls) out.push(`html[data-mw-layout] is "${m.layout}", expected "${cls}"`);
   const want = Math.max(1, Math.floor((m.listWidth + m.gap) / (COLUMN_MIN_PX + m.gap)));
@@ -1240,14 +1271,17 @@ async function runProfile(cdp, prof, ctx) {
     const err = await expectVisible(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet");
     if (err) return err;
     await settle(cdp);
+    // Phase 101: the play row is shown, then measured with the rest.
+    if (!(await cdp.evaluate(EXPR.showPlayRow))) return "the VIEW IN PLAY GAMES row is missing from the sheet";
     await cdp.evaluate(EXPR.expandFirstTrack);
     return null;
   }, async () => {
     const ms = await cdp.evaluate(MEASURE_SHEET);
-    const fails = sheetFailures(cls, ms, { expectExpanded: true });
+    const fails = sheetFailures(cls, ms, { expectExpanded: true, expectPlay: true });
     await cdp.evaluate(EXPR.clickSel("#mw-achievements-close"));
     const err = await expectHidden(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet to close");
     if (err) fails.push(err);
+    await cdp.evaluate(EXPR.hidePlayRow);
     return fails;
   });
 
@@ -1371,12 +1405,15 @@ async function runProbes(cdp, ctx = {}) {
       const shown = await expectVisible(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet");
       if (shown) sheet.push(shown);
       await settle(cdp);
+      // Phase 101: the play row is shown for the measurement, hidden after.
+      if (!(await cdp.evaluate(EXPR.showPlayRow))) sheet.push("the VIEW IN PLAY GAMES row is missing from the sheet");
       const m = await cdp.evaluate(MEASURE);
       sheet.push(...genericFailures(m));
-      sheet.push(...sheetFailures(p.expect, await cdp.evaluate(MEASURE_SHEET)));
+      sheet.push(...sheetFailures(p.expect, await cdp.evaluate(MEASURE_SHEET), { expectPlay: true }));
       await cdp.evaluate(EXPR.clickSel("#mw-achievements-close"));
       const gone = await expectHidden(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet to close");
       if (gone) sheet.push(gone);
+      await cdp.evaluate(EXPR.hidePlayRow);
     } catch (e) {
       err = e.message;
     }

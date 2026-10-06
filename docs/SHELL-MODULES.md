@@ -939,8 +939,9 @@ scrim and the Android back button all close it (`hasOpenModal` and `closeModal` 
 `src/browser/achievementBus.js`; never call `setAchievementListener` again (a test pins
 exactly one call, the shell's). The payload is `{ unlocks, reveals, progress }`, exactly
 as the adapter publishes it. The list reads `getAchievementRecord()` and not the stream,
-so a Play mirror never needs to touch the list. The Play row sits beside the ACHIEVEMENTS row
-in the ☰ menu and opens through its own handler.
+so a Play mirror never needs to touch the list. Play's own achievements screen opens from a
+VIEW IN PLAY GAMES button at the top of this sheet, shown only with Compete ON and signed
+in, not from a ☰ row (Phase 101).
 
 ### Play Games achievements mirror (Phase 101)
 
@@ -997,6 +998,22 @@ seam (`playIdentity()`), the one Compete gate (`competeIsOn`) and the record rea
   `test/unit/play-achievements-shell.test.js` pins the anchors and runs the shipped block
   against the real mirror, the real bus and the recording fake seam, including the
   Compete OFF proof across every trigger.
+- **The VIEW IN PLAY GAMES button.** The ACHIEVEMENTS sheet carries one row between its
+  head and its scrolling body: `#mw-achievements-play` (hidden by default) holding
+  `#mw-achievements-play-btn` and the status note `#mw-achievements-play-note`. A second
+  labelled block of the module script, right after the mirror block and outside its span,
+  writes the label and the failure line with `textContent` from
+  `ACHIEVEMENTS_SHEET_COPY.play` and un-hides the row only while `competeIsOn()` is true
+  and the account's `signin` is `"in"`; its own named account subscriber re-syncs it on
+  every account change, so it appears and goes away live while the sheet is open, and
+  re-syncing it hidden also clears the note. A tap calls
+  `achievementMirror.showAchievements()`, whose first check is Compete (a row left
+  visible after Compete went OFF reaches nothing), ignores a second tap while one is in
+  flight, and on any answer other than ok (except `off`) shows the one failure line in
+  the note; the in-game list is untouched. The row never starts a sign-in and never opens
+  anything by itself. The layout check shows the row, with its failure line, and measures
+  it in all 12 profiles and 7 boundary probes (inside the window, at least 48px tall,
+  above the body, which still scrolls on its own and never sideways).
 
 ## What stays shared
 
