@@ -60,6 +60,10 @@ Dropped from the 2.0-era set: loot, find, and the dead/graveyard shot.
 - The webp quality and size settings for the website.
 - The plan split. Expect 2 plans: (1) extend the capture tool and capture the shots; (2) the store-listing files plus LISTING.md, then the website webp files, alt text and the darktier-studio commit.
 
+### Website amendment (user, 2026-10-05, after planning; overrides plan 102-03)
+- The website shows the **best 4** shots, keeping the page's layout: title, combat, the achievements list, the map (deep floor). The other new shots are not added to the site.
+- **`featured.webp` stays the current title key art** with the baked-in logo. It is NOT replaced. The earlier "featured = combat" decision is reversed.
+
 </decisions>
 
 <code_context>
