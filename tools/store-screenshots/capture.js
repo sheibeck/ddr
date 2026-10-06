@@ -1,117 +1,269 @@
-const { chromium } = require('playwright-core');
-const fs = require('fs');
-const { startRun, snapshot, stepToward } = require('./bot.js');
-const SIZES = { phone: [432, 768, 2.5], tab7: [675, 1200, 2], tab10: [810, 1440, 2] }; // all exact 9:16
-const PRIORITY = ['FIGHT IT OUT','1 · STRIKE','TAKE ALL','TAKE','EQUIP NOW','STOW','GO DOWN','DESCEND','TAKE THEM ALONG','WELCOME','ACCEPT','YES','MOVE ON','CONTINUE','OK','DONE','CLOSE','LEAVE','CONFIRM','BURY THEM'];
-const NAV = /^mw-chip|^btn-camp|^mw-gear-btn|^mw-hud-menu|^mw-tab|^mw-cond/;
-const bodyText = (page, n=500) => page.evaluate((n)=>document.body.innerText.replace(/\s*\n\s*/g,' / ').slice(0,n), n);
-const clickTab = (page, t) => page.evaluate((t)=>[...document.querySelectorAll('button.mw-tab')].find(b=>b.innerText.trim()===t).click(), t);
-const clickLabel = (page, lab) => page.evaluate((lab)=>{const norm=b=>b.innerText.trim().replace(/\s+/g,' ').slice(0,28); const b=[...document.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled).find(b=>norm(b)===lab); if(!b) return false; b.click(); return true;}, lab);
-const stateJSON = (page) => page.evaluate(()=>JSON.stringify(window.__mzState.get()));
-const waitRoller = (page) => page.waitForFunction(() => { const b=document.getElementById('mw-roller-cta'); return b && !b.disabled && !/STILL FALLING/i.test(b.innerText); }, null, { timeout: 30000 });
-const scenes = {}; // name -> { state, tab }
-const want = (name) => !scenes[name];
+"use strict";
+// The one command: rebuild www/, regenerate the seeds, serve www/, render the eight
+// scenes at the three sizes, check every frame and the whole tree, exit non-zero on
+// any miss.
+//
+//   node capture.js                          everything, from clean
+//   node capture.js --sizes phone,tab7       only these sizes (phone, tab7, tab10)
+//   node capture.js --only combat,deep       only these scenes (title, combat, deep,
+//                                            achievements, death, hero, store, board)
+//   node capture.js --no-build               skip the www/ rebuild (iteration only; the
+//                                            final run is always a full one)
+//
+// One capture runs at a time: it owns the port and the out/ tree. A second run finds the
+// port taken and exits with a message. Nothing is applied to a PNG after Chrome writes it.
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+const { chromium } = require("playwright-core");
 
-async function backToTitle(page) {
-  for (let k=0;k<6;k++){ const t=await bodyText(page,300); if (/ENTER/.test(t) && !/BURY/.test(t)) break; await clickLabel(page,'BURY THEM') || await clickLabel(page,'REVIEW THE ORACLE'); await page.waitForTimeout(400); }
+const config = require("./config.js");
+const { SIZES, SCENES: SCENE_LIST, PORT, ORIGIN, OUT_DIR, KEYS, launchOptions } = config;
+const { checkTree, readPng } = require("./play-rules.js");
+const { attachGuards, frameReport } = require("./frame-guard.js");
+const serve = require("./serve.js");
+const { SCENES } = require("./scenes.js");
+
+const ROOT = path.resolve(__dirname, "..", "..");
+const BOOT_MS = 300000; // a cold page boot on a slow machine
+const SCENE_MS = 120000;
+
+function parseArgs(argv) {
+  const out = { sizes: Object.keys(SIZES), only: SCENE_LIST.map((s) => s.id), build: true, full: true };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--sizes") {
+      out.sizes = String(argv[++i] || "").split(",").filter(Boolean);
+      out.full = false;
+    } else if (a === "--only") {
+      out.only = String(argv[++i] || "").split(",").filter(Boolean);
+      out.full = false;
+    } else if (a === "--no-build") out.build = false;
+    else {
+      console.error("unknown argument: " + a);
+      process.exit(2);
+    }
+  }
+  for (const s of out.sizes) if (!SIZES[s]) (console.error("unknown size: " + s), process.exit(2));
+  for (const s of out.only) if (!SCENES[s]) (console.error("unknown scene: " + s), process.exit(2));
+  return out;
 }
 
-async function playUntilDeath(page, maxIters=1500, stopAtSteps=Infinity) {
-  let visited=[], lastFloor=null, lastSteps=-1, stepStall=0, lastSig=null, sigCount=0, prev=null;
-  for (let i=0;i<maxIters;i++){
-    const s = await snapshot(page);
-    if (s.floor!==lastFloor){ visited=[]; lastFloor=s.floor; }
-    const nonNav = s.btns.filter(b=>!NAV.test(b));
-    const labels = nonNav.map(b=>b.split(':').slice(1).join(':').toUpperCase());
-    if (s.dead) { if (want('death')) scenes.death = { state: await stateJSON(page) }; console.log('DEAD floor', s.floor, 'steps', s.steps); return s; }
-    if (s.steps>=stopAtSteps && !s.blocked && !nonNav.length && !s.joiner && !s.find) return s;
-    if (s.joiner && !nonNav.length) {
-      if (want('joiner')) scenes.joiner = { state: await stateJSON(page), tab: 'HERO' };
-      await clickTab(page,'HERO'); await page.waitForTimeout(350);
-      (await clickLabel(page,'TAKE THEM ALONG')) || (await clickLabel(page,'LEAVE THEM'));
-      await page.waitForTimeout(300); await clickTab(page,'MAP'); await page.waitForTimeout(320); continue;
-    }
-    if (s.blocked || nonNav.length || s.find || s.railPending) {
-      const sig = nonNav.join('|'); if (sig===lastSig) { if (++sigCount>40) { console.log('STALL', sig); return s; } } else { lastSig=sig; sigCount=0; }
-      if (!nonNav.length) { console.log('STUCK no buttons', JSON.stringify(s)); return s; }
-      if (s.combat && labels.some(l=>l.startsWith('FIGHT IT OUT'))) { const st = await stateJSON(page); if (want('encounter')) scenes.encounter = { state: st }; const S=JSON.parse(st); if (want('encounterPre') && prev && S.combat && S.combat.foes && S.combat.foes.length>=2) { scenes.encounterPre = { state: prev.state, dir: prev.dir }; console.log('encounterPre captured, foes', S.combat.foes.length); } }
-      if (s.combat && labels.some(l=>l.startsWith('1 · STRIKE')) && want('combat')) { const S = JSON.parse(await stateJSON(page)); if (S.combat && S.combat.foes && S.combat.foes.length>=2 && S.combat.round>=2) scenes.combat = { state: JSON.stringify(S) }; }
-      if (s.loot && want('loot')) scenes.loot = { state: await stateJSON(page) };
-      if (s.find && want('find')) scenes.find = { state: await stateJSON(page) };
-      if (s.store) { if (want('store')) scenes.store = { state: await stateJSON(page) }; await page.waitForTimeout(500); await clickLabel(page,'LEAVE'); await page.waitForTimeout(400); continue; }
-      let idx=-1; for (const p of PRIORITY){ idx = labels.findIndex(l=>l===p || l.startsWith(p)); if(idx>=0) break; }
-      if (idx<0) idx = nonNav.findIndex(b=>b.startsWith('mw-major-primary')); if (idx<0) idx=0;
-      const lab = nonNav[idx].split(':').slice(1).join(':');
-      if (!(await clickLabel(page, lab))) { console.log('CLICK FAIL', nonNav[idx]); return s; }
-      await page.waitForTimeout(250); continue;
-    }
-    if (s.steps===lastSteps) { if (++stepStall>40) { console.log('MOVE STALL'); return s; } } else { lastSteps=s.steps; stepStall=0; }
-    visited.push(s.pos.join(','));
-    const pre = await stateJSON(page); const r = await stepToward(page, visited); if (!r) { console.log('no target'); return s; } prev = { state: pre, dir: r.dir };
-    await page.waitForTimeout(50);
+function child(label, file, args) {
+  const r = spawnSync(process.execPath, [file].concat(args || []), { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (r.status !== 0) {
+    console.error(label + " failed (exit " + r.status + ")");
+    console.error((r.stdout || "").split("\n").slice(-20).join("\n"));
+    console.error(r.stderr || "");
+    process.exit(1);
   }
-  return await snapshot(page);
 }
 
-(async () => {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
-  let graveyard, best;
-  if (process.argv[2]==='--replay') { const j=JSON.parse(fs.readFileSync('scenes.json','utf8')); Object.assign(scenes, j.scenes); graveyard=j.graveyard; best=j.best; } else {
-  const [w,h,dpr] = SIZES.phone;
-  let ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: true, hasTouch: true });
-  let page = await ctx.newPage();
-  await page.goto('http://localhost:8765/', { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
-  // Phase A: real runs until we have the scenes + at least 3 graves
-  let graves=0;
-  for (let run=1; run<=9 && (graves<5 || !scenes.combat || !scenes.loot || !scenes.find); run++) {
-    await startRun(page);
-    const s = await playUntilDeath(page);
-    if (s.dead) graves++;
-    await backToTitle(page);
-    if (!s.dead) { await page.evaluate(()=>localStorage.removeItem('ddr.delve.v1')); await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1000); }
-    console.log('run', run, 'scenes so far:', Object.keys(scenes).join(','), 'graves', graves);
-  }
-  graveyard = await page.evaluate(()=>localStorage.getItem('ddr.graveyard.v1'));
-  best = await page.evaluate(()=>localStorage.getItem('ddr.best.v1'));
-  // deep floor map: dev start at depth 4, explore ~45 squares, keep alive
-  for (let tries=0; tries<6 && !scenes.deep; tries++) {
-    await startRun(page); await page.evaluate(()=>window.mzDevStartAtDepth(2)); await page.waitForTimeout(600);
-    const s = await playUntilDeath(page, 900, 90);
-    if (!s.dead) { const S = JSON.parse(await stateJSON(page)); const seen=[]; S.floor.g.forEach((row,y)=>row.forEach((c,x)=>{ if(c.seen && !c.wall) seen.push([x,y]); })); const cx=seen.reduce((a,p)=>a+p[0],0)/seen.length, cy=seen.reduce((a,p)=>a+p[1],0)/seen.length; let best=null,bd=1e9; for(const [x,y] of seen){ const d=(x-cx)**2+(y-cy)**2; if(d<bd){bd=d;best=[x,y];} } S.floor.px=best[0]; S.floor.py=best[1]; console.log('deep: seen',seen.length,'party moved to',best); scenes.deep = { state: JSON.stringify(S) }; }
-    else { await backToTitle(page); await page.evaluate(()=>localStorage.removeItem('ddr.delve.v1')); await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1000); }
-  }
-  fs.writeFileSync('scenes.json', JSON.stringify({ scenes, graveyard, best }));
-  console.log('SCENES', Object.keys(scenes).join(','));
-  await ctx.close();
+function versionInfo() {
+  const text = fs.readFileSync(path.join(ROOT, "android", "version.properties"), "utf8");
+  const pick = (k) => ((text.match(new RegExp("^" + k + "=(.*)$", "m")) || [])[1] || "").trim();
+  return { versionName: pick("versionName"), versionCode: Number(pick("versionCode")) };
+}
+
+// Two frames, fonts, every visible image decoded, then a pause for any last paint.
+async function settle(page) {
+  await page.evaluate(async () => {
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const imgs = [...document.images].filter((i) => i.getClientRects().length > 0);
+    await Promise.all(
+      imgs.map((i) =>
+        i.complete
+          ? i.decode ? i.decode().catch(() => {}) : null
+          : new Promise((r) => {
+              i.onload = i.onerror = r;
+            })
+      )
+    );
+  });
+  await page.waitForTimeout(600);
+}
+
+async function shoot(browser, key, id, seeds, guardsOut) {
+  const def = SIZES[key];
+  const scene = SCENES[id];
+  const meta = SCENE_LIST.find((s) => s.id === id);
+  const seed = seeds.scenes[id] || {};
+  const ctx = { size: key, def, tablet: key !== "phone", seed, seeds };
+  const file = path.join(OUT_DIR, def.folder, meta.file);
+  const entry = { size: key, scene: id, file: path.relative(OUT_DIR, file).split(path.sep).join("/"), ok: false, failures: [], checks: [], layout: null, textHead: "" };
+
+  const context = await browser.newContext({
+    viewport: { width: def.css[0], height: def.css[1] },
+    screen: { width: def.css[0], height: def.css[1] },
+    deviceScaleFactor: def.dpr,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const guards = await attachGuards(context, ORIGIN);
+  const init = {
+    keys: KEYS,
+    settings: JSON.stringify(seeds.settings),
+    notes: seeds.notesVersion,
+    achKey: seeds.achievementsKey,
+    record: seed.record || null,
+    // death and store inject a state over the resumed deep run
+    save: scene.resume ? (scene.saveFrom ? (seeds.scenes[scene.saveFrom] || {}).save : seed.save) || null : null,
+  };
+  await context.addInitScript((i) => {
+    try {
+      localStorage.clear();
+      localStorage.setItem(i.keys.settings, i.settings);
+      localStorage.setItem(i.keys.notesSeen, i.notes);
+      if (i.record) localStorage.setItem(i.achKey, i.record);
+      if (i.save) localStorage.setItem(i.keys.save, i.save);
+    } catch (e) {
+      /* a blocked storage shows up as a failed frame */
+    }
+  }, init);
+
+  const page = await context.newPage();
+  page.setDefaultTimeout(SCENE_MS);
+  let failure = null;
+  try {
+    await page.goto(ORIGIN + "/", { waitUntil: "networkidle", timeout: BOOT_MS });
+    await page.waitForFunction(() => {
+      const b = document.getElementById("mw-title-enter");
+      return b && !b.disabled;
+    }, null, { timeout: BOOT_MS });
+    await scene.run(page, ctx);
+    await settle(page);
+  } catch (e) {
+    failure = "recipe: " + (e && e.message ? e.message.split("\n")[0] : String(e));
   }
 
-  // Phase B: replay every scene at every size
-  const ORDER = [['title',null],['deep','MAP'],['encounter',null],['combat',null],['loot',null],['find',null],['joiner','HERO'],['hero','HERO'],['gear','GEAR'],['oracle','ORACLE'],['store',null],['death',null],['dead','DEAD']];
-  for (const [size,[w,h,dpr]] of Object.entries(SIZES)) {
-    fs.mkdirSync(`out/${size}`, { recursive: true });
-    let n=0;
-    for (const [name, tab] of ORDER) {
-      const sc = (name==='combat' ? scenes.encounterPre : scenes[name]) || (['hero','gear','oracle','dead'].includes(name) ? (scenes.deep || scenes.loot || scenes.find) : null);
-      if (name!=='title' && !sc) { console.log('skip', name); continue; }
-      const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr, isMobile: true, hasTouch: true });
-      const seed = (name==='combat' && sc) ? sc.state : null;
-      await ctx.addInitScript(({g,b,st})=>{ try { if(g) localStorage.setItem('ddr.graveyard.v1', g); if(b) localStorage.setItem('ddr.best.v1', b); if(st) localStorage.setItem('ddr.delve.v1', st); else localStorage.removeItem('ddr.delve.v1'); } catch(e){} }, { g: graveyard, b: best, st: seed });
-      const page = await ctx.newPage();
-      await page.goto('http://localhost:8765/', { waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
-      if (name!=='title') {
-        await page.click('text=ENTER'); await page.waitForTimeout(700);
-        if (name!=='combat') { // roll a victim, then inject the scene state directly (resume strips in-flight encounters)
-          await waitRoller(page); await page.click('#mw-roller-cta'); await page.waitForTimeout(500);
-          await page.evaluate((st)=>{ window.__mzState.set(JSON.parse(st)); window.paint(); window.draw(); window.renderEncounter(); window.renderRail?.(); }, sc.state); await page.waitForTimeout(400);
-        }
-        if (name==='combat') { await page.waitForTimeout(600); await page.evaluate((d)=>window.move(d), sc.dir); await page.waitForTimeout(600); const clickPrefix=(p)=>page.evaluate((p)=>{const b=[...document.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled).find(b=>b.innerText.trim().replace(/s+/g,' ').toUpperCase().startsWith(p)); if(!b) return false; b.click(); return true;}, p); await page.waitForTimeout(500); await clickPrefix('FIGHT IT OUT'); await page.waitForTimeout(600); for (let r=0;r<2;r++){ const inCombat = await page.evaluate(()=>!!window.__mzState.get().combat); if(!inCombat) break; await clickPrefix('1 · STRIKE'); await page.waitForTimeout(700); } await page.waitForTimeout(300); }
-        if (tab && tab!=='MAP') { await clickTab(page, tab); await page.waitForTimeout(500); }
-        if (tab==='MAP') { await page.evaluate(()=>window.mzCenterMap?.()); await page.waitForTimeout(300); }
+  try {
+    const spec = scene.spec(ctx);
+    const report = await frameReport(page, guards, spec);
+    entry.checks = report.checks.slice();
+    entry.failures = report.failures.slice();
+    entry.textHead = report.text.slice(0, 160);
+    if (!failure && scene.extra) {
+      for (const c of await scene.extra(page, ctx, report)) {
+        entry.checks.push({ name: c.name, ok: !!c.ok, detail: c.detail || "" });
+        if (!c.ok) entry.failures.push(c.name + (c.detail ? " (" + c.detail + ")" : ""));
       }
-      n++; const f=`out/${size}/${String(n).padStart(2,'0')}-${name}.png`;
-      await page.screenshot({ path: f }); console.log(size, f, (await bodyText(page,140)));
-      await ctx.close();
+    }
+    entry.layout = await page.evaluate(() => document.documentElement.dataset.mwLayout || null);
+  } catch (e) {
+    entry.failures.push("frame check: " + (e && e.message ? e.message.split("\n")[0] : String(e)));
+  }
+  if (failure) entry.failures.unshift(failure);
+
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    await page.screenshot({ path: file });
+    const png = readPng(fs.readFileSync(file));
+    if (!png.ok) entry.failures.push("screenshot is not a PNG: " + png.error);
+    else if (png.width !== def.px[0] || png.height !== def.px[1]) {
+      entry.failures.push("screenshot is " + png.width + " x " + png.height + ", need " + def.px[0] + " x " + def.px[1]);
+    }
+  } catch (e) {
+    entry.failures.push("screenshot: " + (e && e.message ? e.message.split("\n")[0] : String(e)));
+  }
+
+  for (const u of guards.blocked) guardsOut.push({ size: key, scene: id, url: u });
+  entry.ok = entry.failures.length === 0;
+  await context.close();
+  return entry;
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.build) {
+    const r = spawnSync(process.execPath, [path.join(ROOT, "tools", "build-www.mjs")], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    if (r.status !== 0) {
+      console.error("build-www failed (exit " + r.status + ")\n" + (r.stdout || "").split("\n").slice(-15).join("\n") + (r.stderr || ""));
+      process.exit(1);
+    }
+  } else {
+    console.log("--no-build: www/ is as the last build left it (iteration only)");
+  }
+  child("seed.mjs", path.join(__dirname, "seed.mjs"), []);
+  const seeds = JSON.parse(fs.readFileSync(path.join(__dirname, "seeds.json"), "utf8"));
+
+  let server;
+  try {
+    server = await serve.start(PORT);
+  } catch (e) {
+    console.error(
+      "port " + PORT + " is not free (" + e.message + "). One capture runs at a time: stop the other run (or whatever holds the port) and try again."
+    );
+    process.exit(2);
+  }
+
+  if (args.full) {
+    for (const key of Object.keys(SIZES)) fs.rmSync(path.join(OUT_DIR, SIZES[key].folder), { recursive: true, force: true });
+    fs.rmSync(path.join(OUT_DIR, "contact"), { recursive: true, force: true });
+    fs.rmSync(path.join(OUT_DIR, "manifest.json"), { force: true });
+  }
+  for (const key of Object.keys(SIZES)) fs.mkdirSync(path.join(OUT_DIR, SIZES[key].folder), { recursive: true });
+
+  const browser = await chromium.launch(launchOptions());
+  const shots = [];
+  const blocked = [];
+  const times = {};
+  try {
+    for (const key of args.sizes) {
+      const t0 = Date.now();
+      for (const meta of SCENE_LIST) {
+        if (!args.only.includes(meta.id)) continue;
+        const entry = await shoot(browser, key, meta.id, seeds, blocked);
+        shots.push(entry);
+        console.log((entry.ok ? "ok    " : "FAIL  ") + entry.file + (entry.ok ? "" : "  " + entry.failures.join("; ")));
+      }
+      times[key] = Math.round((Date.now() - t0) / 1000);
+      console.log(key + ": " + times[key] + " s");
+    }
+  } finally {
+    await browser.close();
+    await new Promise((r) => server.close(r));
+  }
+
+  const rules = checkTree(OUT_DIR, { partial: !args.full });
+  const manifestPath = path.join(OUT_DIR, "manifest.json");
+  // A partial run keeps the entries it did not touch.
+  let merged = shots;
+  if (!args.full && fs.existsSync(manifestPath)) {
+    try {
+      const old = JSON.parse(fs.readFileSync(manifestPath, "utf8")).shots || [];
+      const keep = old.filter((o) => !shots.some((s) => s.size === o.size && s.scene === o.scene));
+      merged = keep.concat(shots);
+    } catch (e) {
+      merged = shots;
     }
   }
-  await browser.close();
-})();
+  const order = (s) => Object.keys(SIZES).indexOf(s.size) * 100 + SCENE_LIST.findIndex((m) => m.id === s.scene);
+  merged.sort((a, b) => order(a) - order(b));
+  const manifest = Object.assign(
+    { generatedAt: new Date().toISOString(), partial: !args.full, seconds: times, shots: merged, blocked, rules },
+    versionInfo()
+  );
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+
+  const bad = shots.filter((s) => !s.ok);
+  let missing = 0;
+  if (args.full) {
+    for (const key of Object.keys(SIZES)) {
+      for (const meta of SCENE_LIST) if (!fs.existsSync(path.join(OUT_DIR, SIZES[key].folder, meta.file))) missing++;
+    }
+  }
+  console.log(
+    shots.length - bad.length + " of " + shots.length + " shots ok; rules " + (rules.ok ? "ok" : rules.violations.length + " violation(s)") +
+      "; blocked requests " + blocked.length + (missing ? "; " + missing + " file(s) missing" : "")
+  );
+  if (!rules.ok) for (const v of rules.violations) console.log("  rule: " + v);
+  process.exit(bad.length || !rules.ok || blocked.length || missing ? 1 : 0);
+}
+
+main().catch((e) => {
+  console.error(e && e.stack ? e.stack : e);
+  process.exit(1);
+});

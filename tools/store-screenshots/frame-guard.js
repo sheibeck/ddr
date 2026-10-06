@@ -142,7 +142,8 @@ function probe(arg) {
     stateDev = null;
   }
 
-  const sheets = [...document.querySelectorAll('[id$="-sheet"]')].filter(elementVisible).map((el) => el.id);
+  // A sheet is a panel, not a control: the death panel's own FINAL SHEET button is `btn-death-sheet`.
+  const sheets = [...document.querySelectorAll('[id$="-sheet"]')].filter((el) => !/^(BUTTON|A|INPUT)$/.test(el.tagName)).filter(elementVisible).map((el) => el.id);
 
   let rail = { up: false, kind: null, title: "" };
   const railEl = document.getElementById("mw-rail");
@@ -152,6 +153,9 @@ function probe(arg) {
     const idle = railEl.dataset.idle === "1";
     rail = { up: !idle && title.length > 0, kind: railEl.dataset.cardKind || null, title };
   }
+
+  // The title and the roller are full-screen layers: if either is up, whatever is behind it is not the shot.
+  const cover = ["mw-title-screen", "mw-roller-screen"].filter((id) => elementVisible(document.getElementById(id)));
 
   const imgs = [...document.images].filter(elementVisible).map((im) => ({ src: im.currentSrc || im.src, ok: im.complete && im.naturalWidth > 0 }));
 
@@ -164,6 +168,7 @@ function probe(arg) {
     stateDev,
     sheets,
     rail,
+    cover,
     imgs,
     layout: document.documentElement.dataset.mwLayout || null,
     selectors,
@@ -215,6 +220,9 @@ async function frameReport(page, guards, spec) {
   const achievementUp = snap.rail.up && snap.rail.kind === "achievement";
   add("no unexpected achievement card", !achievementUp || allow === "any" || allow === "achievement", achievementUp ? snap.rail.title : "");
   add("no unexpected rail card", !snap.rail.up || achievementUp || allow === "any", snap.rail.up && !achievementUp ? snap.rail.title : "");
+
+  const covers = sp.title === true ? [] : snap.cover;
+  add("no title or roller screen covers the frame", covers.length === 0, covers.join(", "));
 
   const brokenImgs = snap.imgs.filter((i) => !i.ok).map((i) => i.src);
   add("every visible image is decoded", brokenImgs.length === 0, brokenImgs.join(", "));
