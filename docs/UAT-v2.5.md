@@ -2,7 +2,7 @@
 
 Debug APK built from master `e9213960` (sha256 `bb57d3a2…`), installed 2026-10-05 after uninstalling the Play 2.4.0 build (local data wiped, user OK).
 
-**Before you start:** add the Pixel 7's Google account to Play Console > Play Games Services > Setup and management > Testers (draft achievements only reach testers). Mark each row passed / failed with a note.
+**Before you start:** the Pixel 7's Google account must be on Play Console > Play Games Services > Setup and management > Testers (draft achievements only reach testers). Done: the user confirmed it is on the list (2026-10-05). Mark each row passed / failed with a note.
 
 ## 1. The unlock card and the death screen (Phase 100)
 | # | Check | Result |
