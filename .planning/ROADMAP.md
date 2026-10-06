@@ -164,7 +164,7 @@ Plans:
 
 **Wave 3** *(blocked on 101-03; same `mazeworld.html`)*
 
-- [ ] 101-04-PLAN.md — the VIEW IN PLAY GAMES button at the top of the ACHIEVEMENTS sheet (Compete ON and signed in only), its house-voice copy registered with the voice tooling, the layout check over the row, and the docs sentence the user's ruling corrects
+- [x] 101-04-PLAN.md — the VIEW IN PLAY GAMES button at the top of the ACHIEVEMENTS sheet (Compete ON and signed in only), its house-voice copy registered with the voice tooling, the layout check over the row, and the docs sentence the user's ruling corrects
 
 ### Phase 102: Fresh Store & Website Screenshots
 
