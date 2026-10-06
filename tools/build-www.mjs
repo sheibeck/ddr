@@ -44,6 +44,11 @@
 //      docs/patch-notes/<versionName>.md file — the release-gate hook a
 //      Play build can never skip.
 //
+//   7. Phase 100 (AUI-01/02): copy the 77 in-game achievement icons
+//      (achievements/ingame/, 144 x 144 PNG) into www/achievements/ingame/ so
+//      the unlock banner and the achievements list can draw them. Only that
+//      one folder ships: not the 512px Play art, the masters or the sources.
+//
 // Run: node tools/build-www.mjs  (also wired as `npm run build:www`)
 
 import {
@@ -255,6 +260,22 @@ function copySfx() {
   step("copied sfx/ into www/sfx/");
 }
 
+// Phase 100 (AUI-01/02): the 77 in-game achievement icons the unlock banner
+// and the achievements list draw, whole-directory copied at build time -
+// mirrors copyIcons() and copySfx() (throw loudly if the source is missing, no
+// runtime fetch). ONLY achievements/ingame/ ships; the Play art, masters and
+// sources stay out of the bundle. The page-relative path the shell builds
+// (src/browser/achievementCard.js achievementIconSrc) resolves the same
+// under the repo root and under www/.
+function copyAchievementIcons() {
+  const src = path.join(ROOT, "achievements", "ingame");
+  if (!existsSync(src)) {
+    throw new Error(`${src} does not exist - expected the 77 in-game achievement icons (see achievementIconSrc in src/browser/achievementCard.js)`);
+  }
+  cpSync(src, path.join(WWW, "achievements", "ingame"), { recursive: true });
+  step("copied achievements/ingame/ into www/achievements/ingame/");
+}
+
 function vendorCapacitorPackages() {
   const imports = {};
   for (const pkg of CAPACITOR_PACKAGES) {
@@ -338,6 +359,7 @@ function main() {
   bundlePatchNotes();
   copyFonts();
   copyIcons();
+  copyAchievementIcons();
   copySplash();
   copySfx();
   const importMap = vendorCapacitorPackages();
