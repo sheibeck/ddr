@@ -63,6 +63,7 @@ test("the scene list covers every screen the run conventions name", () => {
   assert.deepEqual([...SCENES], [
     "title", "roller", "map", "map-card", "settings", "hero", "gear", "oracle", "dead",
     "encounter", "combat", "combat-turn", "store", "store-turn", "camp",
+    "achievements", "achievement-card", "death-earned",
   ]);
 });
 

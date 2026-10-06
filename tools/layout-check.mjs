@@ -24,13 +24,17 @@
 //   (phone, 360dp phone on its side, 7" and 10" tablets both ways, a foldable
 //   folded / unfolded / unfolded upright, two Chromebook windows) it sets
 //   Emulation.setDeviceMetricsOverride, seeds the settings (Compete off, so
-//   the page makes no network call), reloads, and walks fifteen scenes: title,
+//   the page makes no network call), reloads, and walks eighteen scenes: title,
 //   roller, map, map with a rail card, Settings, Hero, Gear, Oracle, the
-//   leaderboards (Dead), a pending encounter, a combat round, the store and
-//   the Make Camp sheet. Combat and store states are built in node with the
-//   engine (newRun, startCombat, openStore) and injected through
-//   window.__mzState.set + paint(). Each scene is measured in one synchronous
-//   page pass and one PNG per scene is saved to the gitignored output dir.
+//   leaderboards (Dead), a pending encounter, a combat round, the store, the
+//   Make Camp sheet and, from Phase 100, the achievements sheet (one track
+//   expanded), a real achievement card on the rail (raised through
+//   window.__mzAchBanner.onEvent) and the death panel's Earned strip (a dead
+//   engine state plus six unlocks). Combat, store and dead states are built in
+//   node with the engine (newRun, startCombat, openStore, die) and injected
+//   through window.__mzState.set + paint(). Each scene is measured in one
+//   synchronous page pass and one PNG per scene is saved to the gitignored
+//   output dir.
 //
 //   A scene fails on: horizontal overflow (the document, or any auto/scroll
 //   container other than the two strips built to scroll sideways); a clipped
@@ -41,7 +45,12 @@
 //   size class (app spans the window, tab bar along the bottom or in a left
 //   rail, Hero centred at 640 or less in medium, a 360-560 px pane beside the
 //   map in expanded, panel and docked card right of the map, the arrow pad
-//   clear of a docked card, and so on).
+//   clear of a docked card, and so on). The achievements sheet adds its own
+//   shape rules (the panel and its scroller inside the window, a vertical
+//   scroller that never scrolls sideways, one column on compact phones, two or
+//   more from 840 px, the rows in view order, icons loaded); the achievement
+//   card must show a loaded icon and sit like any other docked card; the
+//   Earned strip must stay bounded and clear of the death panel's buttons.
 //
 //   Mid-combat and mid-store the window is turned (width and height swapped,
 //   no reload) and turned back: S.combat / S.store must be byte-identical
@@ -51,6 +60,9 @@
 //   Seven boundary probes (915x479 / 915x480, 599x900 / 600x900, 839x900 /
 //   840x900, 840x479) prove CSS and JS agree one step either side of every
 //   threshold: html[data-mw-layout] must equal layoutClassFor(width, height).
+//   At each probe the achievements sheet is also opened and measured (inside
+//   the window, no overflow, no clipped control, a column count that follows
+//   the window width), then closed; the probe passes only when both hold.
 //
 //   CDP emulation has no system bars or cutouts (every inset is 0), so this
 //   proves layout and overflow, not inset clearance: insets are on the
@@ -62,7 +74,8 @@
 //
 // This tool adds NOTHING to the shipped app: no permanent console trace, no
 // dev Oracle line. It only reads DOM/CSS the app already exposes and injects
-// engine states through hooks the app already has.
+// engine states through hooks the app already has (window.__mzState,
+// window.mzOpenAchievements, window.__mzAchBanner).
 
 import http from "node:http";
 import fs from "node:fs";
@@ -75,8 +88,11 @@ import { newRun } from "../engine/state.js";
 import { startCombat } from "../engine/combat.js";
 import { applyAction } from "../engine/engine.js";
 import { openStore } from "../engine/economy.js";
+import { die } from "../engine/death.js";
 import { makeRng } from "../engine/rng.js";
 import { PATCH_NOTES } from "../src/browser/patchNotesData.js";
+import { buildAchievementsView } from "../src/browser/achievementsSheet.js";
+import { emptyRecord } from "../src/browser/achievementRecord.js";
 
 const CONTENT_TYPES = {
   ".html": "text/html",
@@ -150,6 +166,9 @@ export const SCENES = Object.freeze([
   "store",
   "store-turn",
   "camp",
+  "achievements",
+  "achievement-card",
+  "death-earned",
 ]);
 
 /**
@@ -574,6 +593,154 @@ function measurePage() {
 
 const MEASURE = `(${measurePage.toString()})()`;
 
+// Phase 100: the achievements sheet, measured in one synchronous pass (page
+// side, like measurePage: no node references).
+function measureSheet() {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const q = (sel) => document.querySelector(sel);
+  const vis = (el) => {
+    if (!el) return false;
+    let v = false;
+    try {
+      v = el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+    } catch {
+      v = !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+    }
+    if (!v) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const box = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+  };
+  const sheet = q("#mw-achievements-sheet");
+  const panel = q("#mw-achievements-sheet .mw-legend-panel");
+  const body = q("#mw-achievements-body");
+  const list = body ? body.querySelector(".mw-ach-list") : null;
+  let cols = 0;
+  let gap = 0;
+  let listWidth = 0;
+  if (list) {
+    const cs = getComputedStyle(list);
+    cols = cs.gridTemplateColumns.split(/\s+/).filter(Boolean).length;
+    gap = parseFloat(cs.columnGap) || 0;
+    listWidth = list.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  }
+  const bodyCs = body ? getComputedStyle(body) : null;
+  const firstBlock = body ? body.querySelector(".mw-ach-block") : null;
+  const keys = firstBlock
+    ? Array.from(firstBlock.querySelectorAll(".mw-ach-row")).map((li) => li.getAttribute("data-key"))
+    : [];
+  const head = body ? body.querySelector("button.mw-ach-head") : null;
+  let expanded = null;
+  if (head) {
+    const next = head.nextElementSibling;
+    expanded = {
+      ariaExpanded: head.getAttribute("aria-expanded"),
+      rungsAfter: !!(next && next.tagName === "UL" && next.classList.contains("mw-ach-rungs")),
+      rungCount: next && next.tagName === "UL" ? next.querySelectorAll("li").length : 0,
+    };
+  }
+  const bb = body ? body.getBoundingClientRect() : null;
+  let iconsInView = 0;
+  const iconsNotLoaded = [];
+  if (body && bb) {
+    for (const img of body.querySelectorAll("img.mw-ach-icon")) {
+      const r = img.getBoundingClientRect();
+      if (r.bottom <= bb.top || r.top >= bb.bottom || r.width <= 0) continue;
+      iconsInView++;
+      if (!(img.complete && img.naturalWidth > 0)) iconsNotLoaded.push(img.getAttribute("src"));
+    }
+  }
+  return {
+    innerWidth: W,
+    innerHeight: H,
+    layout: document.documentElement.dataset.mwLayout || null,
+    sheetVisible: vis(sheet),
+    panel: box(panel),
+    body: box(body),
+    bodyOverflowY: bodyCs ? bodyCs.overflowY : null,
+    bodyScrollHeight: body ? body.scrollHeight : 0,
+    bodyClientHeight: body ? body.clientHeight : 0,
+    bodyScrollWidth: body ? body.scrollWidth : 0,
+    bodyClientWidth: body ? body.clientWidth : 0,
+    cols,
+    gap,
+    listWidth,
+    keys,
+    expanded,
+    iconsInView,
+    iconsNotLoaded,
+  };
+}
+
+const MEASURE_SHEET = `(${measureSheet.toString()})()`;
+
+// Phase 100: the achievement card on the rail.
+function measureCard() {
+  const rail = document.querySelector("#mw-rail");
+  const img = document.querySelector("#mw-rail-icon img");
+  const title = document.querySelector("#mw-rail-title");
+  const lines = document.querySelector("#mw-rail-lines");
+  return {
+    kind: rail ? rail.dataset.cardKind || null : null,
+    hasImg: !!img,
+    imgLoaded: !!(img && img.complete && img.naturalWidth > 0),
+    imgNaturalWidth: img ? img.naturalWidth : 0,
+    title: title ? title.textContent.trim() : null,
+    railScrollHeight: rail ? rail.scrollHeight : 0,
+    railClientHeight: rail ? rail.clientHeight : 0,
+    linesScrollHeight: lines ? lines.scrollHeight : 0,
+    linesClientHeight: lines ? lines.clientHeight : 0,
+  };
+}
+
+const MEASURE_CARD = `(${measureCard.toString()})()`;
+
+// Phase 100: the death panel's Earned strip against the window and the buttons.
+function measureEarned() {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const vis = (el) => {
+    if (!el) return false;
+    let v = false;
+    try {
+      v = el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+    } catch {
+      v = !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+    }
+    if (!v) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const rect = (el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+  };
+  const strip = document.querySelector("#cb-over-earned");
+  const list = strip ? strip.querySelector(".cb-over-earned-list") : null;
+  const buttons = Array.from(document.querySelectorAll("#cb-over .cb-over-actions button")).map((b) => ({
+    id: b.id || b.className,
+    visible: vis(b),
+    box: rect(b),
+  }));
+  return {
+    innerWidth: W,
+    innerHeight: H,
+    stripVisible: vis(strip),
+    strip: strip ? rect(strip) : null,
+    items: strip ? strip.querySelectorAll(".cb-over-earned-item").length : 0,
+    listMaxHeight: list ? getComputedStyle(list).maxHeight : null,
+    listOverflowY: list ? getComputedStyle(list).overflowY : null,
+    buttons,
+  };
+}
+
+const MEASURE_EARNED = `(${measureEarned.toString()})()`;
+
 function visibleExpr(sel) {
   return `(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return false; let v = false; try { v = e.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true }); } catch { v = !!e.offsetWidth; } return !!(v && e.getBoundingClientRect().width > 0); })()`;
 }
@@ -606,6 +773,13 @@ const EXPR = {
   settle: `new Promise((resolve) => { let done = false; const fin = () => { if (!done) { done = true; resolve(true); } }; setTimeout(fin, 1500); requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(fin, 350))); })`,
   settleShort: `new Promise((resolve) => { let done = false; const fin = () => { if (!done) { done = true; resolve(true); } }; setTimeout(fin, 1500); requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(fin, 60))); })`,
   layoutNow: `document.documentElement.dataset.mwLayout || null`,
+  // Phase 100: the app's own names only (window.mzOpenAchievements,
+  // window.__mzAchBanner); nothing here exists for the check's sake.
+  openSheet: `(() => { if (!window.mzOpenAchievements) return false; window.mzOpenAchievements(); return true; })()`,
+  expandFirstTrack: `(() => { const b = document.querySelector("#mw-achievements-body button.mw-ach-head"); if (!b) return false; if (b.getAttribute("aria-expanded") !== "true") b.click(); return true; })()`,
+  achUnlock: `(() => { window.__mzAchBanner.onEvent({ unlocks: [{ id: "depth_t1", at: 1 }], reveals: [], progress: [] }); return true; })()`,
+  deathUnlocks: `(() => { window.__mzAchBanner.onEvent({ unlocks: ${JSON.stringify(["depth_t1", "depth_t2", "kills_beasts_t1", "party_animal_t1", "special_snowflake", "tourist"].map((id, i) => ({ id, at: 1 + i })))}, reveals: [], progress: [] }); window.paint(); return true; })()`,
+  clearStrip: `(() => { window.__mzAchBanner.clearStrip(); return true; })()`,
 };
 
 // ---------------------------------------------------------------------------
@@ -636,11 +810,18 @@ function buildStates() {
   if (!round.combat) throw new Error("layout-check: the injected fight ended on its FIGHT step");
   const store = structuredClone(base);
   openStore(store, makeRng(5), []);
+  // The dead state (the dead-lockdown recipe): a real run taken through
+  // engine/death.js#die, so the death panel is the real one.
+  const dead = structuredClone(base);
+  dead.c.wp = dead.c.maxWP;
+  die(dead, "combat", "a rat", makeRng(4), [], () => 1);
+  if (dead.dead !== true) throw new Error("layout-check: die() left the injected run alive");
   return {
     base: JSON.stringify(base),
     combat: JSON.stringify(combat),
     round: JSON.stringify(round),
     store: JSON.stringify(store),
+    dead: JSON.stringify(dead),
   };
 }
 
@@ -723,7 +904,7 @@ function shapeFailures(cls, scene, m) {
       out.push(`#mw-maze-viewport right ${f1(r.viewport.right)} does not reach the stage edge ${f1(edge)} with nothing up`);
     }
   }
-  if (side && scene === "map-card") {
+  if (side && (scene === "map-card" || scene === "achievement-card")) {
     if (!r.rail || !r.rail.visible) {
       out.push("#mw-rail card not visible");
     } else {
@@ -767,6 +948,129 @@ function shapeFailures(cls, scene, m) {
     }
   }
   return out;
+}
+
+// Phase 100: the expected key order of the list's first block, from the pure
+// view of an empty record (the page's own record only changes the rows' text,
+// never their order).
+function expectedFirstBlockKeys() {
+  const view = buildAchievementsView(emptyRecord(), { tzOffset: 0 });
+  return view.blocks[0].rows.map((r) => r.key);
+}
+
+const COLUMN_MIN_PX = 300;
+
+// The open achievements sheet's shape. `opts.expectExpanded` adds the checks
+// for the scene that expands the first track. `m` comes from measureSheet().
+function sheetFailures(cls, m, opts = {}) {
+  const out = [];
+  const W = m.innerWidth;
+  const H = m.innerHeight;
+  if (!m.sheetVisible) {
+    out.push("the achievements sheet is not visible");
+    return out;
+  }
+  const inside = (b, label) => {
+    if (!b) {
+      out.push(`${label} not found`);
+      return;
+    }
+    if (b.left < -TOL_PX || b.right > W + TOL_PX || b.top < -TOL_PX || b.bottom > H + TOL_PX) {
+      out.push(`${label} box [${f1(b.left)},${f1(b.top)},${f1(b.right)},${f1(b.bottom)}] leaves the ${W}x${H} window`);
+    }
+  };
+  inside(m.panel, "the sheet panel");
+  inside(m.body, "#mw-achievements-body");
+  if (m.bodyOverflowY !== "auto" && m.bodyOverflowY !== "scroll") {
+    out.push(`#mw-achievements-body overflow-y is "${m.bodyOverflowY}", expected a vertical scroller (auto or scroll)`);
+  }
+  if (!(m.bodyScrollHeight > m.bodyClientHeight)) {
+    out.push(`#mw-achievements-body holds no more than its box (scrollHeight ${m.bodyScrollHeight}, clientHeight ${m.bodyClientHeight}): the list should scroll on its own`);
+  }
+  if (m.bodyScrollWidth > m.bodyClientWidth + 1) {
+    out.push(`#mw-achievements-body scrolls sideways (scrollWidth ${m.bodyScrollWidth} > clientWidth ${m.bodyClientWidth})`);
+  }
+  if (m.layout !== cls) out.push(`html[data-mw-layout] is "${m.layout}", expected "${cls}"`);
+  const want = Math.max(1, Math.floor((m.listWidth + m.gap) / (COLUMN_MIN_PX + m.gap)));
+  if (m.cols !== want) {
+    out.push(`the list shows ${m.cols} column(s), expected ${want} (list width ${f1(m.listWidth)}, gap ${f1(m.gap)}, minimum ${COLUMN_MIN_PX})`);
+  }
+  if (cls === "compact" && m.cols !== 1) out.push(`a compact window shows ${m.cols} columns, expected exactly 1`);
+  if (W >= 840 && m.cols < 2) out.push(`a ${W} px window shows ${m.cols} column, expected at least 2`);
+  const keys = expectedFirstBlockKeys();
+  if (JSON.stringify(m.keys) !== JSON.stringify(keys)) {
+    out.push(`the first block's rows read ${JSON.stringify(m.keys)}, expected the view's order ${JSON.stringify(keys)}`);
+  }
+  if (!(m.iconsInView > 0)) out.push("no achievement icon is in view in the list");
+  for (const src of m.iconsNotLoaded) out.push(`list icon did not load: ${src}`);
+  if (opts.expectExpanded) {
+    const e = m.expanded;
+    if (!e) {
+      out.push("no expandable track button in the list");
+    } else {
+      if (e.ariaExpanded !== "true") out.push(`the first track's aria-expanded is "${e.ariaExpanded}", expected "true"`);
+      if (!e.rungsAfter) out.push("the expanded track has no ul.mw-ach-rungs right after its button");
+      if (e.rungCount !== 4) out.push(`the expanded track lists ${e.rungCount} rungs, expected 4`);
+    }
+  }
+  return out;
+}
+
+// The achievement card on the rail (the shape rules for a docked card come
+// from shapeFailures, as for map-card).
+function cardFailures(m, g) {
+  const out = [];
+  // A bottom-docked card (compact, medium) must sit above the tab bar, never
+  // under it: the line it carries is meant to be read in full.
+  const r = g && g.rects;
+  if (r && r.rail && r.rail.visible && r.tabbar && r.tabbar.visible && r.tabbar.width > r.tabbar.height) {
+    if (r.rail.bottom > r.tabbar.top + 1) {
+      out.push(`#mw-rail bottom ${f1(r.rail.bottom)} runs under the tab bar (top ${f1(r.tabbar.top)})`);
+    }
+  }
+  if (m.kind !== "achievement") out.push(`#mw-rail data-card-kind is "${m.kind}", expected "achievement"`);
+  if (!m.hasImg) out.push("#mw-rail-icon holds no img");
+  else if (!m.imgLoaded) out.push(`the card's icon did not load (naturalWidth ${m.imgNaturalWidth})`);
+  if (m.railScrollHeight > m.railClientHeight + 1 || m.linesScrollHeight > m.linesClientHeight + 1) {
+    out.push(`the card's text does not fit without scrolling (rail ${m.railScrollHeight} > ${m.railClientHeight}, lines ${m.linesScrollHeight} > ${m.linesClientHeight})`);
+  }
+  if ((m.title || "").toUpperCase() !== "ACHIEVEMENT") out.push(`#mw-rail-title reads "${m.title}", expected ACHIEVEMENT`);
+  return out;
+}
+
+// The Earned strip: bounded, six items, clear of every button on the panel.
+function earnedFailures(m) {
+  const out = [];
+  const W = m.innerWidth;
+  if (!m.stripVisible || !m.strip) {
+    out.push("#cb-over-earned is not visible");
+    return out;
+  }
+  const b = m.strip;
+  if (b.left < -TOL_PX || b.right > W + TOL_PX) {
+    out.push(`#cb-over-earned box [${f1(b.left)},${f1(b.right)}] leaves the ${W} px window horizontally`);
+  }
+  if (m.items !== 6) out.push(`#cb-over-earned holds ${m.items} items, expected 6`);
+  if (!m.listMaxHeight || m.listMaxHeight === "none") out.push("the strip's list has no max-height: it could grow the panel");
+  if (m.listOverflowY !== "auto" && m.listOverflowY !== "scroll") {
+    out.push(`the strip's list overflow-y is "${m.listOverflowY}", expected auto so it scrolls inside itself`);
+  }
+  if (!m.buttons.length) out.push("the death panel has no buttons under .cb-over-actions");
+  for (const btn of m.buttons) {
+    if (!btn.visible) out.push(`death panel button ${btn.id} is not visible`);
+    if (rectsIntersect(btn.box, b)) out.push(`death panel button ${btn.id} overlaps the Earned strip`);
+  }
+  return out;
+}
+
+// Waits for an element to be gone (a closed sheet); returns a message or null.
+async function expectHidden(cdp, sel, ms, label) {
+  try {
+    await waitForStable(cdp, `!(${visibleExpr(sel)})`, ms, label || sel);
+    return null;
+  } catch (err) {
+    return err.message;
+  }
 }
 
 // Verifies that a scene's required element showed up; returns a message or null.
@@ -927,6 +1231,55 @@ async function runProfile(cdp, prof, ctx) {
   });
   await cdp.evaluate("(() => { if (window.closeCampSheet) window.closeCampSheet(); return true; })()");
 
+  // Phase 100: the achievements sheet with the first track expanded.
+  await scene("achievements", async () => {
+    await cdp.evaluate(EXPR.inject(ctx.states.base));
+    await cdp.evaluate(EXPR.showTab("maze"));
+    await sleep(200);
+    await cdp.evaluate(EXPR.openSheet);
+    const err = await expectVisible(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet");
+    if (err) return err;
+    await settle(cdp);
+    await cdp.evaluate(EXPR.expandFirstTrack);
+    return null;
+  }, async () => {
+    const ms = await cdp.evaluate(MEASURE_SHEET);
+    const fails = sheetFailures(cls, ms, { expectExpanded: true });
+    await cdp.evaluate(EXPR.clickSel("#mw-achievements-close"));
+    const err = await expectHidden(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet to close");
+    if (err) fails.push(err);
+    return fails;
+  });
+
+  // Phase 100: a real unlock raised through the app's own banner bridge, so it
+  // takes the real gate and the real icon path.
+  await scene("achievement-card", async () => {
+    await cdp.evaluate(EXPR.inject(ctx.states.base));
+    await cdp.evaluate(EXPR.showTab("maze"));
+    await sleep(200);
+    await cdp.evaluate(EXPR.achUnlock);
+    return expectVisible(cdp, "#mw-rail", 3000, "the achievement card");
+  }, async (g) => {
+    const fails = cardFailures(await cdp.evaluate(MEASURE_CARD), g);
+    await cdp.evaluate(EXPR.railClear);
+    return fails;
+  });
+
+  // Phase 100: the death panel with the Earned strip (six unlocks).
+  await scene("death-earned", async () => {
+    await cdp.evaluate(EXPR.inject(ctx.states.dead));
+    await cdp.evaluate(EXPR.showTab("maze"));
+    await sleep(200);
+    await cdp.evaluate(EXPR.deathUnlocks);
+    return expectVisible(cdp, "#cb-over-earned", 5000, "the Earned strip (#cb-over-earned)");
+  }, async () => {
+    const fails = earnedFailures(await cdp.evaluate(MEASURE_EARNED));
+    await cdp.evaluate(EXPR.clearStrip);
+    await cdp.evaluate(EXPR.inject(ctx.states.base));
+    await cdp.evaluate(EXPR.showTab("maze"));
+    return fails;
+  });
+
   return scenes;
 }
 
@@ -992,18 +1345,42 @@ async function rotationRoundTrip(cdp, prof, c, sceneName, key, controlSel, scene
 // Boundary probes
 // ---------------------------------------------------------------------------
 
-async function runProbes(cdp) {
+async function runProbes(cdp, ctx = {}) {
   const results = [];
+  if (ctx.states) {
+    // Back to a plain map state: the sheet opens over whatever the last
+    // profile left, and the check should not depend on it.
+    try {
+      await cdp.evaluate(EXPR.inject(ctx.states.base));
+      await cdp.evaluate(EXPR.showTab("maze"));
+    } catch {
+      /* the probe's own error handling reports a dead page */
+    }
+  }
   for (const p of BOUNDARY_PROBES) {
     let got = null;
     let err = null;
+    const sheet = [];
+    const excMark = cdp.exceptions.length;
     try {
       await setMetrics(cdp, p.width, p.height, true);
       await cdp.evaluate(EXPR.settleShort);
       got = await cdp.evaluate(EXPR.layoutNow);
+      // Phase 100: the sheet, opened one step either side of the threshold.
+      await cdp.evaluate(EXPR.openSheet);
+      const shown = await expectVisible(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet");
+      if (shown) sheet.push(shown);
+      await settle(cdp);
+      const m = await cdp.evaluate(MEASURE);
+      sheet.push(...genericFailures(m));
+      sheet.push(...sheetFailures(p.expect, await cdp.evaluate(MEASURE_SHEET)));
+      await cdp.evaluate(EXPR.clickSel("#mw-achievements-close"));
+      const gone = await expectHidden(cdp, "#mw-achievements-sheet", 3000, "the achievements sheet to close");
+      if (gone) sheet.push(gone);
     } catch (e) {
       err = e.message;
     }
+    for (const e of cdp.exceptions.slice(excMark)) sheet.push(`page exception: ${e}`);
     const want = layoutClassFor(p.width, p.height);
     results.push({
       name: p.name,
@@ -1012,7 +1389,8 @@ async function runProbes(cdp) {
       expect: p.expect,
       want,
       got,
-      pass: !err && got === want && want === p.expect,
+      sheet,
+      pass: !err && got === want && want === p.expect && sheet.length === 0,
       error: err,
     });
   }
@@ -1038,10 +1416,14 @@ function printReport(result, outDir, shotsOn) {
     }
   }
   console.log("");
-  console.log("| Boundary probe | Expected | html[data-mw-layout] | Verdict |");
-  console.log("| --- | --- | --- | --- |");
+  console.log("| Boundary probe | Expected | html[data-mw-layout] | Open sheet | Verdict |");
+  console.log("| --- | --- | --- | --- | --- |");
   for (const r of result.probes) {
-    console.log(`| ${r.name} | ${r.want} | ${r.error ? "error: " + r.error : r.got} | ${r.pass ? "PASS" : "FAIL"} |`);
+    const sheetCell = r.error ? "-" : (r.sheet || []).length === 0 ? "PASS" : "FAIL";
+    console.log(`| ${r.name} | ${r.want} | ${r.error ? "error: " + r.error : r.got} | ${sheetCell} | ${r.pass ? "PASS" : "FAIL"} |`);
+  }
+  for (const r of result.probes) {
+    for (const f of r.sheet || []) console.log(`probe ${r.name} / open sheet: ${f}`);
   }
   const pp = result.profiles.filter((p) => p.pass).length;
   const qp = result.probes.filter((r) => r.pass).length;
@@ -1109,7 +1491,7 @@ async function main() {
       const pass = !error && scenes.length > 0 && scenes.every((s) => s.failures.length === 0);
       result.profiles.push({ name: prof.name, width: prof.width, height: prof.height, expect: prof.expect, scenes, error, pass });
     }
-    result.probes = await runProbes(cdp);
+    result.probes = await runProbes(cdp, { states });
   } catch (err) {
     console.error(`ERROR: browser could not be driven: ${err.message}`);
     if (session) await session.teardown();
