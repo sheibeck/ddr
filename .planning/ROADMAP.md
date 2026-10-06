@@ -184,11 +184,11 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 102-01-PLAN.md — the tool's foundation: its own package, the three sizes (phone portrait, both tablets landscape) and the eight-scene order, the Play-rules check proven on synthetic images, `seed.mjs` (the offline record, saves and states with consistency checks), the frame guard (no dev chip, no debug UI, no request off localhost), and the one declared isolation-pin update
+- [x] 102-01-PLAN.md — the tool's foundation: its own package, the three sizes (phone portrait, both tablets landscape) and the eight-scene order, the Play-rules check proven on synthetic images, `seed.mjs` (the offline record, saves and states with consistency checks), the frame guard (no dev chip, no debug UI, no request off localhost), and the one declared isolation-pin update
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 102-02-PLAN.md — the eight scene recipes and the one-command capture (real clicks only for combat), the 24 shots at Play's exact sizes, three contact sheets and the fix loop to a clean, rule-checked set
+- [x] 102-02-PLAN.md — the eight scene recipes and the one-command capture (real clicks only for combat), the 24 shots at Play's exact sizes, three contact sheets and the fix loop to a clean, rule-checked set
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
