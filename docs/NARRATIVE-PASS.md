@@ -52,9 +52,9 @@ Keys are lines as the game stores them (a builder is one key, however many ways 
 | boards (leaderboards and account) | 182 | 5 | 177 | 0 | 5 | 4 |
 | panels (hero, gear, store and final-sheet panels) | 190 | 18 | 172 | 5 | 24 | 4 |
 | map (the map, its marks and legend) | 21 | 3 | 18 | 0 | 5 | 0 |
-| title (title, roller, settings and menus) | 17 | 2 | 15 | 16 | 74 | 56 |
+| title (title, roller, settings and menus) | 17 | 1 | 16 | 17 | 74 | 56 |
 | other (everything else) | 32 | 5 | 27 | 14 | 31 | 2 |
-| **Total** | **1871** | **458** | **1413** | **515** | **1109** | **137** |
+| **Total** | **1871** | **457** | **1414** | **516** | **1109** | **137** |
 
 ## The review verdicts
 
@@ -1217,8 +1217,8 @@ The player lines Phases 95 and 96 added were each judged by a reviewer against t
 | `bank:BUG_REPORT_COPY.sending`<br>the ☰ REPORT A BUG sheet | *(new line)* | Sending your report… | **q-260928-z5-bug** (what happened, to whom, reads aloud): Phase 79.3 (BUG-02, D-09): the locked sending state states plainly what is happening, read naturally aloud. |
 | `bank:BUG_REPORT_COPY.sent`<br>the ☰ REPORT A BUG sheet | *(new line)* | Report sent. Thank you: a real person will read it, which is more than the monsters ever did. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (BUG-02, D-09): the send succeeded, stated first, then the house joke lands after the fact. |
 | `bank:BUG_REPORT_COPY.title`<br>the ☰ REPORT A BUG sheet | *(new line)* | REPORT A BUG | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-09): the sheet's title states plainly what it is, matching the row that opens it. |
-| `bank:HUD_MENU_ITEMS.3.label`<br>a ☰ menu row | *(new line)* | REPORT A BUG | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-08): the new ☰ row's label states plainly what it opens. Phase 85 (85-01, ACCT-03): re-indexed from HUD\_MENU\_ITEMS.4 to .3 — the CENTRE MAP row that once preceded it is gone and MAKE CAMP moved to the front. |
-| `bank:HUD_MENU_ITEMS.4.label`<br>a ☰ menu row | *(new line)* | PATCH NOTES | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the new ☰ row's label states plainly what it opens. Phase 85 (85-01, ACCT-03): re-indexed from HUD\_MENU\_ITEMS.5 to .4 — the CENTRE MAP row that once preceded it is gone and MAKE CAMP moved to the front. |
+| `bank:HUD_MENU_ITEMS.4.label`<br>a ☰ menu row | *(new line)* | REPORT A BUG | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (BUG-01, D-08): the new ☰ row's label states plainly what it opens. Phase 85 (85-01, ACCT-03): re-indexed from HUD\_MENU\_ITEMS.4 to .3 — the CENTRE MAP row that once preceded it is gone and MAKE CAMP moved to the front. Phase 100 (100-03, AUI-02): re-indexed from HUD\_MENU\_ITEMS.3 to .4 — the ACHIEVEMENTS row now sits after MARKS. |
+| `bank:HUD_MENU_ITEMS.5.label`<br>a ☰ menu row | *(new line)* | PATCH NOTES | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the new ☰ row's label states plainly what it opens. Phase 85 (85-01, ACCT-03): re-indexed from HUD\_MENU\_ITEMS.5 to .4 — the CENTRE MAP row that once preceded it is gone and MAKE CAMP moved to the front. Phase 100 (100-03, AUI-02): re-indexed from HUD\_MENU\_ITEMS.4 to .5 — the ACHIEVEMENTS row now sits after MARKS. |
 | `bank:PATCH_NOTES_COPY.missing`<br>the ☰ PATCH NOTES sheet | *(new line)* | This build shipped without its patch notes. Every version's notes are on GitHub, which is better organised than the dungeon. | **q-260928-z5-bug** (what happened, to whom, the joke after the fact): Phase 79.3 (NOTES-02, D-19, D-20): states the fallback fact first, then the house joke (79.3-03's addendum Copy note). |
 | `bank:PATCH_NOTES_COPY.pastLink`<br>the ☰ PATCH NOTES sheet | *(new line)* | Past versions | **q-260928-z5-bug** (what happened, to whom): Quick task 260928-web: the link now points at the darktierstudios.com patch-notes page, not GitHub, so the label no longer names GitHub (supersedes 79.3-03's addendum Copy note). |
 | `bank:PATCH_NOTES_COPY.title`<br>the ☰ PATCH NOTES sheet | *(new line)* | PATCH NOTES | **q-260928-z5-bug** (what happened, to whom): Phase 79.3 (NOTES-02, D-20): the sheet's title states plainly what it is, matching the row that opens it (79.3-03's addendum Copy note). |

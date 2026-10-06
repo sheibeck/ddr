@@ -94,12 +94,32 @@ function reachableFrom(root, entryFiles) {
   return new Set([...seen].map((f) => path.relative(root, f).split(path.sep).join("/")));
 }
 
+// Phase 100 close (declared re-pin, 2026-10-05): tools/layout-check.mjs is a
+// headless-Chrome layout harness, not a simulation. Plan 100-05 has it import
+// the PURE list view model (achievementsSheet.js#buildAchievementsView) to
+// compute the expected column count, and that module reads progressFor and
+// the record's empty/sanitize helpers. Those two pure modules may be reached
+// by this one tool; it never drives the engine and never reaches the engine
+// adapter (the hooks and the ddr.achievements.v1 writes), which stays
+// forbidden for it like for every other tool.
+const READ_ONLY_VIEW_TOOLS = Object.freeze({
+  "tools/layout-check.mjs": ["src/browser/achievementTracker.js", "src/browser/achievementRecord.js"],
+});
+
 test("nothing reachable from tools/ is the tracker, the record module or the engine adapter", () => {
   const entries = listSources(path.join(ROOT, "tools"));
   assert.ok(entries.length > 10, "the walk starts from the real tools/ tree");
-  const reached = reachableFrom(ROOT, entries);
+  const rel = (f) => path.relative(ROOT, f).split(path.sep).join("/");
+  const strict = entries.filter((f) => !(rel(f) in READ_ONLY_VIEW_TOOLS));
+  const reached = reachableFrom(ROOT, strict);
   for (const forbidden of FORBIDDEN) {
     assert.ok(!reached.has(forbidden), `${forbidden} is reachable from tools/`);
+  }
+  for (const [tool, allowed] of Object.entries(READ_ONLY_VIEW_TOOLS)) {
+    const viewReach = reachableFrom(ROOT, [path.join(ROOT, tool)]);
+    for (const forbidden of FORBIDDEN.filter((p) => !allowed.includes(p))) {
+      assert.ok(!viewReach.has(forbidden), `${forbidden} is reachable from ${tool}`);
+    }
   }
 });
 
