@@ -324,8 +324,9 @@ No new `window.__mz` bridge: the account lives in the module script.
 ### The ☰ menu rows (Phase 70)
 
 The ☰ dropdown (`#mw-hud-menu`) reads, top to bottom: the ACCOUNT block
-(`#mw-hud-menu-acct`), MARKS, CENTRE MAP, MAKE CAMP, SETTINGS (the four
-`HUD_MENU_ITEMS` rows), SAVE & QUIT (`#mw-menu-save-quit`), then ABANDON
+(`#mw-hud-menu-acct`), then the six `HUD_MENU_ITEMS` rows in order: MAKE CAMP,
+MARKS, ACHIEVEMENTS (Phase 100, with its earned count), SETTINGS, REPORT A BUG and
+PATCH NOTES; then SAVE & QUIT (`#mw-menu-save-quit`), then ABANDON
 THIS CHARACTER (`#mw-menu-abandon`) last, in the danger look. The HERO
 tab's Delve panel and its two buttons are retired (D-06).
 
@@ -353,7 +354,7 @@ Oracle, on all five tabs including DEAD, and while dead. Rows are disabled
 by context, not hidden.
 
 - `hudMenu.js#hudMenuRowStates(ctx)` (bridged as `window.__mzHudMenu.rows`)
-  answers which of the eight rows can act: MARKS, SETTINGS, REPORT A BUG,
+  answers which of the eight rows can act: MARKS, ACHIEVEMENTS, SETTINGS, REPORT A BUG,
   PATCH NOTES, SAVE & QUIT and ABANDON always (REPORT A BUG and PATCH NOTES
   per Phase 79.3, BUG-01 D-08/NOTES-02 D-20 — never disabled, on any screen,
   dead or alive); CENTRE MAP unless an over-map encounter covers the map;
@@ -856,6 +857,90 @@ durable queue.
   from then on, but can never earn Naked Ambition or Teetotaler.
 - The record never leaves the device in this phase: no network call, no analytics, no Play
   call. Phase 101 adds the Compete-gated mirror.
+
+### Achievements banner (Phase 100)
+
+Every unlock reaches the screen as an achievement card on the rail: the one feedback
+surface for minor events. It is a normal rail card (`railPush`, `holdForCard`,
+`railDismissKind`), never a decision, so it holds long and a tap dismisses it. A reveal
+(a secret becoming a readable, greyed row) updates the list and the count only: a reveal
+makes no card.
+
+**The modules.** `src/browser/achievementBus.js` is the fan-out: the adapter has one
+listener slot (`setAchievementListener`, Phase 99), the shell fills it once with
+`achievementEvents.publish`, and every consumer subscribes to `achievementEvents`.
+`src/browser/achievementCard.js` is pure (no DOM, no window, no timers): the card
+builders (`achievementCardFor`, `achievementSummaryCard`, `achievementIconSrc`), the
+pending queue (`emptyBannerQueue`, `bannerEnqueue`, `bannerNext`) and the Earned strip
+view (`earnedStripView`). Names, lines, order and icon paths come only from the catalog.
+
+**The gate.** `bannerNext(queue, ctx)` offers a card only when the rail is free: a hero
+is loaded and the dungeon is visible (`ready`), no fight or last-round playback is up
+(`fighting`), the hero is alive (`dead`), the stairs fade is not running (`fade`), no
+decision or torch offer is pending (`decision`) and no other card is up (`railBusy`).
+The classic `renderRail` asks `window.__mzAchBanner.drain()` first on every render, so
+the clear timer and the body tap start the next card, and a fight just holds the queue:
+the card appears when the playback ends. A store behaves as the rail does there today.
+One card per unlock, in catalog list order, each with its own hold.
+
+**The collapse rule.** When more than 3 are pending at once they collapse into one
+summary card that lists the names; tapping it opens the achievements list. Nothing is
+ever lost.
+
+**The Earned strip.** On death the rail is hidden, so the queue is parked and
+`renderCombatOver` draws it above the death panel's buttons as `#cb-over-earned`
+(icon and name per item, label `EARNED, POSTHUMOUSLY`): everything this death earned plus
+anything still queued from the final fight. It is bounded (`max-height: 9.5em`) and
+scrolls inside itself, so it never pushes a button out of the window. It is read once
+per death through `takeStrip` and cleared when the title shows.
+
+**`window.__mzAchBanner`** (bridge-registered, owner the module block in
+`mazeworld.html`): `onEvent(payload)` (the bus subscriber; enqueues the unlocks, refreshes
+the list and the ☰ count), `drain()` (push the next card, or park the strip when dead),
+`takeStrip()` and `clearStrip()`. The headless layout check drives the card and the strip
+through these names only.
+
+### Achievements list (Phase 100)
+
+The ☰ menu's ACHIEVEMENTS row (`#mw-menu-achievements`, after MARKS, gold star, earned
+count such as "12 / 77") opens `#mw-achievements-sheet`, a legend-family sheet (z-index
+55) built like Settings and PATCH NOTES. It is always enabled, dead or alive. Close, the
+scrim and the Android back button all close it (`hasOpenModal` and `closeModal` name it).
+
+- **The view.** `src/browser/achievementsSheet.js` is pure. `buildAchievementsView(record,
+  { tzOffset })` turns the lifetime record into the 35-row shape (one row per track,
+  grouped under the seven catalog blocks; the depth ladder and Unicorn! are one track of
+  four rungs), and `renderAchievementsSheet(host, view, { expanded, onToggle })` draws it
+  with `createElement`/`textContent` only. Tiered tracks show the highest tier earned, an
+  I to IV ladder, the next rung's progress and expand on tap; locked rows show the Play
+  description; unlocked rows show the line and the date; secrets read as a teaser until
+  they unlock or are revealed. Every string is in `ACHIEVEMENTS_SHEET_COPY`.
+- **The data.** The sheet reads `getAchievementRecord()` and holds no listener. A row's
+  key is an opaque `t{listOrder}`, never an id. Unlocks refresh it through
+  `window.mzRefreshAchievementsSheet` and the count through `window.mzSyncAchievementsCount`.
+- **Icons in the web bundle.** The 144 x 144 PNGs come from `achievements/ingame/`;
+  `tools/build-www.mjs` (`copyAchievementIcons`) copies exactly that folder to
+  `www/achievements/ingame/` (and nothing else from `achievements/`), so the same
+  page-relative path works in the browser dev loop and in the Android WebView.
+- **The layout classes.** The panel is a flex column that does not scroll; its body
+  (`#mw-achievements-body`) owns the vertical scroll and never scrolls sideways. Rows flow
+  by CSS grid `auto-fill` with a 300px column minimum on the window width alone: one
+  column on a compact phone, two or more from 840 px. No device test decides anything;
+  the block holds no media query. `npm run layout:check` opens the sheet in every profile
+  (one track expanded) and at each of the seven size-boundary probes, and also measures
+  the achievement card and the Earned strip.
+- **Motion and text.** No rule here declares an animation or a transition (the rise and
+  close come from `panelMotion`, which honours reduced motion); every font size goes
+  through `--mw-text-scale`; a track's button is at least 48px tall.
+  `test/unit/achievements-shell-a11y.test.js` pins these, the dialog semantics and the
+  accessibility tree (only the icons and the ladder are `aria-hidden`).
+
+**For Phase 101.** Subscribe with `achievementEvents.subscribe(fn)` from
+`src/browser/achievementBus.js`; never call `setAchievementListener` again (a test pins
+exactly one call, the shell's). The payload is `{ unlocks, reveals, progress }`, exactly
+as the adapter publishes it. The list reads `getAchievementRecord()` and not the stream,
+so a Play mirror never needs to touch the list. The Play row sits beside the ACHIEVEMENTS row
+in the ☰ menu and opens through its own handler.
 
 ## What stays shared
 
