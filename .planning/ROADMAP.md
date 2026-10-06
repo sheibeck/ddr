@@ -124,7 +124,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 100-04-PLAN.md — the unlock banner on the screen: listener registration before boot, the rail drain hook and icon path, the summary-card tap that opens the list, the Earned strip on the death panel, and the `__mzAchBanner` bridge
+- [x] 100-04-PLAN.md — the unlock banner on the screen: listener registration before boot, the rail drain hook and icon path, the summary-card tap that opens the list, the Earned strip on the death panel, and the `__mzAchBanner` bridge
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
