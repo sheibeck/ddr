@@ -11,7 +11,8 @@
 // chosen or changed in the game (D-11); with Compete on and the player not
 // signed in, the account block offers SIGN IN WITH PLAY GAMES (D-03) and the
 // runs wait in the queue until it is done. With Compete off nothing leaves the
-// phone and Play Games is never asked for anything.
+// phone and Play Games is never asked for anything; achievements earned in the
+// meantime are sent once Compete is back on (Phase 101, COMP-05).
 //
 // The chip sits in the title's corner and opens the sheet; in the dungeon the
 // same rows live inside the ☰ dropdown (the account block). Both read from this
@@ -50,7 +51,7 @@ export const ACCOUNT_COPY = Object.freeze({
     compete: "COMPETE",
     on: "ON",
     off: "OFF",
-    onHelp: "Every death from here goes on the board under your Play Games name, for anyone to find. Turn it off any time, right here.",
+    onHelp: "Every death from here goes on the board under your Play Games name, for anyone to find. Your achievements go to Play Games too, even the ones earned while this was off. Turn it off any time, right here.",
     offHelp: "Nothing leaves this phone, and Compete off means no Play Games sign-in. Turning it off takes full effect the next time you open the game: Play Games stays signed in until the app closes, and nothing reaches the board. Compete must be on to reach the board, and so to erase anything already sitting there.",
     signin: "SIGN IN WITH PLAY GAMES",
     signingIn: "SIGNING IN…",
