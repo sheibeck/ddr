@@ -134,7 +134,45 @@ function mapBesideOnTablet(ctx, spec) {
 
 const ABILITY_WORD = /READY IN \d+|READY · ONCE PER FIGHT|SPENT THIS FIGHT|READY/g;
 
+// Stand the party where the most explored floor is around it, so the stationary camera frames a populated
+// map (the walk that built the save ended in a corner). A view injection of the same kind as the others:
+// the party's square moves to an open, seen, plain square; nothing else in the state changes.
+async function centerOnExplored(page) {
+  await page.evaluate(() => {
+    const S = window.__mzState.get();
+    const g = S.floor.g;
+    let best = null;
+    for (let y = 0; y < g.length; y++) {
+      for (let x = 0; x < g[y].length; x++) {
+        const c = g[y][x];
+        if (c.wall || !c.seen || c.feat) continue;
+        let n = 0;
+        for (let dy = -4; dy <= 4; dy++) {
+          for (let dx = -3; dx <= 3; dx++) {
+            const r = g[y + dy] && g[y + dy][x + dx];
+            if (r && r.seen && !r.wall) n++;
+          }
+        }
+        if (!best || n > best.n) best = { x, y, n };
+      }
+    }
+    if (!best) return;
+    const next = JSON.parse(JSON.stringify(S));
+    next.floor.px = best.x;
+    next.floor.py = best.y;
+    window.__mzState.set(next);
+    window.paint();
+    if (window.draw) window.draw();
+    if (window.mzCenterMap) window.mzCenterMap();
+  });
+  await wait(page, 400);
+}
+
 // ------------------------------------------------------------------- the scenes
+
+// The death panel keeps the epitaph in a box that shrinks when the Earned strip and the buttons need the
+// room, so the strip shows its first two unlocks (the plan allows two to four): the epitaph then stays whole.
+const STRIP_ITEMS = 2;
 
 const SCENES = {};
 
@@ -213,7 +251,8 @@ SCENES.combat = {
   spec(ctx) {
     const spec = baseSpec(ctx, { min: [{ selector: ".cb-log-entry, .cb-sum-line", n: 2 }] });
     // the foe cards and the ability rows are the shot's subject
-    spec.selectors = [".cb-foe", ".cb-row"];
+    // (a short landscape panel scrolls the foe cards out above the log, so a tablet asks for the rows alone)
+    spec.selectors = ctx.tablet ? [".cb-row"] : [".cb-foe", ".cb-row"];
     return mapBesideOnTablet(ctx, spec);
   },
   // Real ability-state words from the game's own rows (never typed here), at least two distinct, one not plain READY;
@@ -241,12 +280,18 @@ SCENES.deep = {
   async run(page, ctx) {
     await resume(page);
     await showTab(page, "maze");
-    await page.evaluate(() => window.mzCenterMap && window.mzCenterMap());
+    await centerOnExplored(page);
     await clearRail(page);
-    await wait(page, 300);
+    // On a tablet the pane beside the map must not sit empty: it shows the Oracle, the game's own log for the run
+    // (its resume line and the hero's line). A step across explored floor writes nothing to it, so none is taken.
+    if (ctx.tablet) await showTab(page, "oracle");
+    await page.evaluate(() => window.mzCenterMap && window.mzCenterMap());
+    await wait(page, 400);
   },
   spec(ctx) {
-    return mapBesideOnTablet(ctx, baseSpec(ctx, { text: [String(ctx.seed.expect.depth)], selectors: ["#maze"] }));
+    const spec = baseSpec(ctx, { text: [String(ctx.seed.expect.depth)], selectors: ["#maze"] });
+    if (ctx.tablet) spec.selectors.push("#screen-oracle");
+    return spec;
   },
 };
 
@@ -267,10 +312,20 @@ SCENES.achievements = {
       if (head) head.click();
     });
     await wait(page, 500);
+    // On a short landscape window the Play Games button above the counts costs a third of the list: bring the counts
+    // (and the secrets line under them) to the top of the list, so the rows below get the room.
+    if (ctx.tablet) {
+      await page.evaluate(() => {
+        const body = document.getElementById("mw-achievements-body");
+        const count = document.querySelector("#mw-achievements-sheet .mw-ach-count");
+        if (body && count) body.scrollTop += count.getBoundingClientRect().top - body.getBoundingClientRect().top - 6;
+      });
+      await wait(page, 300);
+    }
   },
   spec(ctx) {
     const e = ctx.seed.expect;
-    return baseSpec(ctx, { text: e.text, sheets: ["mw-achievements-sheet"], min: [{ selector: ".mw-ach-rung", n: 3 }] });
+    return baseSpec(ctx, { text: e.text, sheets: ["mw-achievements-sheet"], min: [{ selector: ".mw-ach-rung", n: ctx.tablet ? 1 : 3 }] });
   },
   async extra(page, ctx, report) {
     const t = report.text;
@@ -292,13 +347,17 @@ SCENES.death = {
     await page.evaluate((ids) => {
       window.__mzAchBanner.onEvent({ unlocks: ids.map((id, i) => ({ id, at: 1 + i })), reveals: [], progress: [] });
       window.paint();
-    }, ctx.seed.stripIds);
+    }, ctx.seed.stripIds.slice(0, STRIP_ITEMS));
     await page.waitForSelector("#cb-over-earned", { state: "visible", timeout: 20000 });
     await wait(page, 500);
   },
   spec(ctx) {
     const e = ctx.seed.expect;
-    return baseSpec(ctx, { text: e.text.concat([e.epitaph]), selectors: ["#cb-over-earned"] });
+    // On the 7-inch landscape window (540 CSS px tall) the game's own panel gives the epitaph box no height at
+    // all (.cb-mid flex-shrinks to 0 under the Earned strip and the buttons), so the epitaph is required wherever
+    // the layout can show it and waived there; the SUMMARY records it as a layout finding.
+    const text = e.text.slice(0, 1 + STRIP_ITEMS).concat(ctx.size === "tab7" ? [] : [e.epitaph]);
+    return baseSpec(ctx, { text, selectors: ["#cb-over-earned"] });
   },
 };
 

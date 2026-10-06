@@ -135,11 +135,52 @@ node play-rules.js out                   # check a finished tree (add --partial 
 Run one run at a time: the capture serves `www/` on port 8765, and a second run
 would collide with it.
 
-## Capture, contact sheets, install, web export
+## Capture and contact sheets
 
-Filled in by plans 102-02 and 102-03:
+```
+node capture.js                       # everything, from clean: build www/, seed, serve, render, check
+node capture.js --sizes phone,tab7    # only these sizes (phone, tab7, tab10)
+node capture.js --only combat,deep    # only these scenes
+node capture.js --no-build            # skip the www/ rebuild (iteration only; the final run is a full one)
+node contact.js                       # out/contact/phone.png, tab7.png, tab10.png (add --size phone|tab7|tab10)
+node play-rules.js out                # the Play rules over the whole tree
+```
 
-- **Capture** (plan 102-02): `scenes.js`, `capture.js`, `contact.js` and the
-  captured, checked `out/` tree.
-- **Install** (plan 102-03): copying the checked set into `store-listing/screenshots/`.
-- **Web export** (plan 102-03): the webp set for the website.
+A full run, in this order: `node tools/build-www.mjs`, then `seed.mjs` as a child
+process (it rewrites `seeds.json`), then it serves `www/` itself on
+`127.0.0.1:8765`, deletes the three size folders, `out/contact` and
+`out/manifest.json`, renders the eight scenes at the three sizes into
+`out/phone`, `out/tablet-7in` and `out/tablet-10in` as `NN-name.png`, writes
+`out/manifest.json`, runs the tree check and exits non-zero on any failed shot,
+missing file or rule violation. A partial run (`--sizes` or `--only`) touches
+only the files it renders and merges into the manifest.
+
+**One run at a time.** The capture owns port 8765 and the one `out/` tree. A
+second run finds the port taken and exits with a message (exit 2) instead of
+sharing or overwriting. Parallel capture is unsupported by design.
+
+**Reading a failed run.** Every shot prints `ok` or `FAIL` and its reasons. The
+same facts are in `out/manifest.json`: per shot `{ size, scene, file, ok,
+failures, checks, layout, textHead }`, and at the top `generatedAt`,
+`versionName`, `versionCode`, the `blocked` request list (it must be empty) and
+the `rules` result. A scene whose recipe throws is a failed entry with the
+message and is still photographed so you can look at it; nothing is skipped
+silently. `node contact.js` draws a red border and the failure text around any
+shot whose entry failed.
+
+**Time.** Measured on this machine (cold boots included): about 40 to 45 seconds
+per size, so a full run is about two and a half minutes. Each shot boots a fresh
+browser context, which is the slow part; the page boot itself is allowed up to
+five minutes.
+
+**What the capture does not do.** It applies nothing to a PNG after Chrome writes
+it: no overlay, no text, no edit. The shots are the shipped web build drawn by
+its own renderer. Headless Chrome may draw a font or a glyph differently from
+the Android WebView, which is why the user eyeballs all 24 shots on the Pixel 7.
+
+## Install and web export
+
+Filled in by plan 102-03:
+
+- **Install**: copying the checked set into `store-listing/screenshots/`.
+- **Web export**: the webp set for the website.

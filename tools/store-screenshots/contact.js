@@ -22,7 +22,7 @@ function gridFor(key, manifest) {
   const def = SIZES[key];
   const portrait = def.orientation === "portrait";
   const cols = portrait ? 4 : 2;
-  const cell = Math.floor((SHEET_W - GAP * (cols + 1)) / cols);
+  const cell = Math.floor((SHEET_W - GAP * (cols + 1)) / cols) - 10; // minus the 5 px border each side
   const cards = SCENES.map((meta) => {
     const entry = (manifest.shots || []).find((s) => s.size === key && s.scene === meta.id);
     const exists = fs.existsSync(path.join(OUT_DIR, def.folder, meta.file));
