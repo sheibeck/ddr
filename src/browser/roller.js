@@ -85,11 +85,14 @@ function pickDisplay(list, random) {
   return list[Math.floor(random() * list.length)];
 }
 
-// VOX-04 (Phase 79, Plan 03): one group per footer — the sub-class, then a
-// non-Human race (Human's neutral line adds nothing a new player needs at
-// the roll) — each a `.mw-roller-rules-group` holding the name and one
-// paragraph per footerLines line, textContent only. An empty `sheet` (the
-// start of a roll) just clears the element.
+// VOX-04 (Phase 79, Plan 03): one group per footer — the sub-class, then the
+// race — each a `.mw-roller-rules-group` holding the name and one paragraph
+// per footerLines line, textContent only. An empty `sheet` (the start of a
+// roll) just clears the element.
+// Quick 261005-vhn: the race group is gated on the race having a flavour line
+// (Human included; the Phase 79 rule that left a Human hero with no race
+// description predates the flavour lines). A race with no flavour line keeps
+// the old gate: only when its footer has a Good or Bad line.
 // Phase 97.1 (FLAVOR-07): a group is the name and the identity's flavour line.
 // An identity with no flavour line keeps the visible footer lines, so nothing
 // goes blank. The exact footer text is not drawn for a flavoured identity.
@@ -99,17 +102,19 @@ function fillRules(doc, sheet) {
   el.textContent = "";
   if (!sheet) return;
   const groups = [["sub", sheet.subLabel]];
-  if (footerLines("race", sheet.raceLabel).some((line) => /^(Good|Bad): /.test(line))) groups.push(["race", sheet.raceLabel]);
+  if (flavorOfIdentity("race", sheet.raceLabel) || footerLines("race", sheet.raceLabel).some((line) => /^(Good|Bad): /.test(line))) {
+    groups.push(["race", sheet.raceLabel]);
+  }
   for (const [kind, key] of groups) {
     const lines = footerLines(kind, key);
-    if (!lines.length) continue;
+    const flavor = flavorOfIdentity(kind, key);
+    if (!lines.length && !flavor) continue;
     const group = doc.createElement("div");
     group.className = "mw-roller-rules-group";
     const who = doc.createElement("p");
     who.className = "mw-roller-rules-who";
     who.textContent = key;
     group.appendChild(who);
-    const flavor = flavorOfIdentity(kind, key);
     if (flavor) {
       // Phase 97.1 (FLAVOR-07): the flavour line alone.
       const f = doc.createElement("p");

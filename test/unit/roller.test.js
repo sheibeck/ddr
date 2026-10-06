@@ -603,7 +603,7 @@ test("VOX-04: ROLLER_IDS lists the footer element and the roller-screen markup d
   assert.ok(slice.indexOf('id="mw-roller-quirk"') < slice.indexOf('id="mw-roller-rules"'), "the footer sits after the quirk");
 });
 
-test("VOX-04: nothing shows before the reveal; the reveal shows the sub-class footer, and a Human race adds none", async () => {
+test("VOX-04: nothing shows before the reveal; the reveal shows the sub-class line, and a Human race now adds its own (quick 261005-vhn)", async () => {
   const rig = makeRig();
   await rollTo(rig, SUMMONER_HUMAN, 0);
   const rules = rig.el(ROLLER_IDS.rules);
@@ -612,10 +612,13 @@ test("VOX-04: nothing shows before the reveal; the reveal shows the sub-class fo
   assert.equal(rules.children.length, 0, "still empty one tick before the reveal");
   await rig.timers.advance(1);
   // Phase 97.1 (FLAVOR-07): declared re-pin — the flavour line alone; the footer is not drawn.
+  // Quick 261005-vhn: declared re-pin — Human now shows its race description too.
   assert.deepEqual(rulesText(rules), [
     { who: "Summoner", flavor: flavorOfIdentity("sub", "Summoner") },
+    { who: "Human", flavor: flavorOfIdentity("race", "Human") },
   ]);
-  assert.equal(rules.children[0].children.length, 2, "name and flavour line only");
+  assert.ok(flavorOfIdentity("race", "Human"), "Human has a flavour line");
+  assert.ok(rules.children.every((g) => g.children.length === 2), "name and flavour line only");
   assert.ok(!hasRulesClass(rules), "no element under the footer container has an mw-rules class");
   // Phase 97.1 (FLAVOR-07): declared re-pin — the half-strength guard is model-side now.
   assert.ok(footerLines("sub", "Summoner").some((l) => /healing spells you cast heal at half strength/.test(l)), "the half-strength healing line is on the model");
@@ -644,9 +647,25 @@ test("VOX-04: a non-Human race adds its own footer; a re-roll clears and refills
   await p;
   await rig.timers.advance(ROLLER_TIMELINE.reveal);
   // Phase 97.1 (FLAVOR-07): declared re-pin — name and flavour line only.
+  // Quick 261005-vhn: declared re-pin — the Human race group follows the sub-class.
   assert.deepEqual(rulesText(rules), [
     { who: "Summoner", flavor: flavorOfIdentity("sub", "Summoner") },
+    { who: "Human", flavor: flavorOfIdentity("race", "Human") },
   ]);
+});
+
+test("quick 261005-vhn: every race in the game shows its flavour line at the reveal, Human included", async () => {
+  for (const race of reelWordLists().race) {
+    const run = newRun(3, [], { force: { sub: "Warlock", race } });
+    const rig = makeRig();
+    await rollTo(rig, run, 0);
+    await rig.timers.advance(ROLLER_TIMELINE.reveal);
+    const shown = rulesText(rig.el(ROLLER_IDS.rules));
+    const raceGroup = shown.find((g) => g.who === race);
+    assert.ok(raceGroup, `${race} shows a race group`);
+    assert.ok(raceGroup.flavor && raceGroup.flavor === flavorOfIdentity("race", race), `${race} shows its flavour line`);
+    assert.equal(shown.length, 2, `${race}: the sub-class group and the race group`);
+  }
 });
 
 test("VOX-04: the footer reads footerLines and reaches the DOM through textContent, never innerHTML", () => {
