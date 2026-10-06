@@ -90,7 +90,11 @@ test("the copy table lists every achievement, in seven blocks, with the 8 reveal
   const dataRows = (text) => text.split("\n").filter((l) => /^\| \d+ \|/.test(l));
   assert.equal(dataRows(copy).length, 77);
   assert.equal(copy.split("\n").filter((l) => /^## \d+\. /.test(l)).length, 7);
-  const pairs = copy.split("## Reveal pairs")[1].split("\n").filter((l) => l.startsWith("| ") && !l.startsWith("| Revealer") && !l.startsWith("|--"));
+  // Quick 261005-vn5 (declared re-pin): the pairs table now ends where the "Revealed by an event" section starts.
+  const pairs = copy.split("## Reveal pairs")[1].split("## Revealed by an event")[0].split("\n").filter((l) => l.startsWith("| ") && !l.startsWith("| Revealer") && !l.startsWith("|--"));
   assert.equal(pairs.length, 8);
+  const byEvent = copy.split("## Revealed by an event")[1].split("\n").filter((l) => l.startsWith("| ") && !l.startsWith("| Event"));
+  assert.equal(byEvent.length, 1);
+  assert.ok(byEvent[0].endsWith("| Special Snowflake |"));
   assert.ok(copy.endsWith("\n") && !copy.endsWith("\n\n"), "one trailing newline");
 });

@@ -7,6 +7,11 @@
 // test, so a silent drift fails here before it can reach a published
 // achievement: type and initial state are permanent once the Play Console
 // zip is imported. The name / description / line copy is plan 98-02's to test.
+//
+// Quick 261005-vn5 (declared re-pins): Special Snowflake now starts Hidden, so
+// 9 entries start Hidden and 68 Revealed; every entry gains a fifteenth key,
+// revealOn (null, or { kind: "realDeath" } for Special Snowflake, the one Hidden
+// entry a death reveals instead of a revealer entry).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -102,14 +107,14 @@ const LOCKED = [
   ["frequent_flier_t3", 200, 15, 3, "inc", "R"],
   ["frequent_flier_t4", 500, 25, 4, "inc", "R"],
   ["death_disease", null, 15, null, "std", "H"],
-  ["special_snowflake", null, 5, null, "std", "R"],
+  ["special_snowflake", null, 5, null, "std", "H"],
 ];
 
 const IDS = LOCKED.map((r) => r[0]);
 
 const HIDDEN = [
   "naked_ambition", "read_the_label", "death_trap", "death_starvation",
-  "death_falling", "ether_entombed", "death_disease", "chicken",
+  "death_falling", "ether_entombed", "death_disease", "chicken", "special_snowflake",
 ];
 
 const REVEAL_PAIRS = {
@@ -130,7 +135,7 @@ const NULL_THRESHOLD = [
 
 const FIELDS = [
   "id", "name", "description", "line", "trigger", "threshold", "tier", "points",
-  "initialState", "type", "steps", "reveals", "listOrder", "icon",
+  "initialState", "type", "steps", "reveals", "revealOn", "listOrder", "icon",
 ];
 
 const TRIGGER_KEYS = {
@@ -181,13 +186,14 @@ test("catalog: strictly ascending listOrder (array order is list order)", () => 
   }
 });
 
-test("catalog: every entry has exactly the fourteen keys in order, with the right shapes", () => {
+test("catalog: every entry has exactly the fifteen keys in order, with the right shapes", () => {
   for (const a of ACHIEVEMENTS) {
     assert.deepEqual(Object.keys(a), FIELDS, a.id);
     for (const k of FIELDS) assert.notEqual(a[k], undefined, `${a.id}.${k}`);
     for (const k of ["id", "name", "description", "line"]) assert.equal(typeof a[k], "string", `${a.id}.${k}`);
     assert.ok(a.trigger && typeof a.trigger === "object", a.id);
     assert.ok(Array.isArray(a.reveals), `${a.id}.reveals is an array`);
+    assert.ok(a.revealOn === null || (a.revealOn && typeof a.revealOn === "object" && TRIGGER_VOCABULARY.revealKinds.includes(a.revealOn.kind) && Object.keys(a.revealOn).join() === "kind"), `${a.id}.revealOn is null or a known { kind }`);
     assert.ok(a.icon && typeof a.icon.play === "string" && typeof a.icon.ingame === "string", a.id);
     assert.deepEqual(Object.keys(a.icon), ["play", "ingame"], a.id);
     assert.ok(a.type === "standard" || a.type === "incremental", `${a.id} type`);
@@ -296,11 +302,11 @@ test("thresholds: strictly ascend within every track, so no tier shares its neig
   }
 });
 
-test("hidden: exactly the 8 named ids start Hidden, the other 69 Revealed; no Hidden entry is incremental", () => {
+test("hidden: exactly the 9 named ids start Hidden, the other 68 Revealed; no Hidden entry is incremental", () => {
   const hidden = ACHIEVEMENTS.filter((a) => a.initialState === "Hidden").map((a) => a.id);
-  assert.equal(hidden.length, 8);
+  assert.equal(hidden.length, 9);
   assert.deepEqual([...hidden].sort(), [...HIDDEN].sort());
-  assert.equal(ACHIEVEMENTS.filter((a) => a.initialState === "Revealed").length, 69);
+  assert.equal(ACHIEVEMENTS.filter((a) => a.initialState === "Revealed").length, 68);
   for (const [id, , , , , state] of LOCKED) assert.equal(byId.get(id).initialState, state === "H" ? "Hidden" : "Revealed", id);
   for (const id of HIDDEN) assert.equal(byId.get(id).type, "standard", id);
 });
@@ -310,7 +316,15 @@ test("reveals: the 8 pinned pairs, every other entry reveals nothing", () => {
   assert.equal(Object.keys(REVEAL_PAIRS).length, 8);
 });
 
-test("reveals: each Hidden id has exactly one revealer, no Revealed id is revealed, no self-reveal", () => {
+test("reveals: only Special Snowflake is revealed by a death (revealOn realDeath); it is Hidden, has no revealer entry, and a revealer entry never names it", () => {
+  assert.deepEqual(TRIGGER_VOCABULARY.revealKinds, ["realDeath"]);
+  const byDeath = ACHIEVEMENTS.filter((a) => a.revealOn !== null).map((a) => [a.id, a.revealOn]);
+  assert.deepEqual(byDeath, [["special_snowflake", { kind: "realDeath" }]]);
+  assert.equal(byId.get("special_snowflake").initialState, "Hidden");
+  assert.equal(ACHIEVEMENTS.some((a) => a.reveals.includes("special_snowflake")), false);
+});
+
+test("reveals: each Hidden id has exactly one revealer (an entry's reveals, or its own revealOn), no Revealed id is revealed, no self-reveal", () => {
   const count = new Map();
   for (const a of ACHIEVEMENTS) {
     for (const r of a.reveals) {
@@ -320,7 +334,7 @@ test("reveals: each Hidden id has exactly one revealer, no Revealed id is reveal
     }
   }
   for (const a of ACHIEVEMENTS) {
-    if (a.initialState === "Hidden") assert.equal(count.get(a.id), 1, `${a.id} has one revealer`);
+    if (a.initialState === "Hidden") assert.equal((count.get(a.id) ?? 0) + (a.revealOn ? 1 : 0), 1, `${a.id} has one revealer`);
     else assert.equal(count.get(a.id), undefined, `${a.id} is Revealed so nothing reveals it`);
   }
 });
@@ -330,7 +344,7 @@ test("reveals: graph is acyclic, every Hidden id is reachable from a Revealed ro
   // root would never reach a Revealed entry.
   const revealerOf = new Map();
   for (const a of ACHIEVEMENTS) for (const r of a.reveals) revealerOf.set(r, a.id);
-  for (const a of ACHIEVEMENTS.filter((e) => e.initialState === "Hidden")) {
+  for (const a of ACHIEVEMENTS.filter((e) => e.initialState === "Hidden" && !e.revealOn)) {
     const seen = new Set([a.id]);
     let cur = a.id;
     while (revealerOf.has(cur)) {

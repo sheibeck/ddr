@@ -17,8 +17,22 @@ The catalog is the source of truth for the in-game text. Play holds a **frozen c
 description from the moment you import. The in-game unlock line never goes to Play, so it can be
 reworded at any time.
 
-The numbers to expect: 77 achievements, 1200 points, 57 incremental, 8 hidden (20 standard, 69
+The numbers to expect: 77 achievements, 1200 points, 57 incremental, 9 hidden (20 standard, 68
 revealed from the start). That leaves 800 points of Play's 2000-point cap for a later set.
+
+### Special Snowflake changed state after the first draft import
+
+Special Snowflake (die on floor 1) was Revealed in the first zip, and the draft was imported from
+that zip. On 2026-10-05 it was ruled a secret: it now starts **Hidden** in the catalog and in the
+rebuilt zip, and the game reveals it on the first real death that does not earn it (a death on
+floor 2 or deeper; abandons never count), with one sarcastic hint line on that death screen.
+Nothing else about it changed: its name, description, points (5) and type are as imported.
+
+The Play Console draft is **already flipped**: on 2026-10-05 the initial state of Special Snowflake
+was changed to Hidden by hand in the draft, before anything was published. Nothing is left for you
+to do for it. **Do not re-import the rebuilt zip over the draft** (import once, see below): the
+rebuilt zip only matters if the draft is ever deleted and imported afresh. The initial state is
+frozen at publish, so the hand-flip had to happen while it was still a draft, and it did.
 
 ## Rebuild the zip
 
@@ -46,7 +60,7 @@ under their `ach_*.png` names. Neither CSV has a header row. Rows are in the in-
 
 Open `docs/ACHIEVEMENTS-COPY.md`. It lists all 77 achievements in list order, in seven blocks, with
 the Play description, the in-game line, points, type, steps, initial state and what each one
-reveals, followed by the 8 reveal pairs.
+reveals, followed by the 8 reveal pairs and the one entry that a death reveals (Special Snowflake).
 
 - The **Description (Play)** column freezes when you import. Read it as final.
 - The **Line (in game)** column can be reworded later.
@@ -73,7 +87,7 @@ If the import is refused, see "If the import is refused" below.
 
 Before publishing, look at the draft list in Play Console:
 
-- It shows 77 achievements, 1200 points, 57 incremental and 8 hidden. Count them. If the count is
+- It shows 77 achievements, 1200 points, 57 incremental and 9 hidden. Count them. If the count is
   off, you have a partial or doubled import: fix the drafts, do not publish.
 - Every icon shows.
 - The list is in the order of `docs/ACHIEVEMENTS-COPY.md`.

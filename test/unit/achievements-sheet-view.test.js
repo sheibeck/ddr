@@ -41,18 +41,18 @@ function assertEmptyView(view) {
   assert.equal(allRows(view).length, 35);
   assert.equal(view.earned, 0);
   assert.equal(view.total, 77);
-  assert.equal(view.secrets, 8);
+  assert.equal(view.secrets, 9);
   assert.equal(view.earnedText, "0 of 77 earned");
-  assert.equal(view.secretsText, "8 secrets still hiding");
+  assert.equal(view.secretsText, "9 secrets still hiding");
   const secretRows = allRows(view).filter((r) => r.state === "secret");
-  assert.equal(secretRows.length, 8);
+  assert.equal(secretRows.length, 9);
   for (const r of allRows(view)) {
     assert.ok(r.state === "locked" || r.state === "secret", `${r.key} is ${r.state}`);
   }
   assert.ok(secretRows.every((r) => r.kind === "single"));
 }
 
-test("buildAchievementsView: the empty record is 35 locked-or-secret rows, 0 of 77, 8 secrets", () => {
+test("buildAchievementsView: the empty record is 35 locked-or-secret rows, 0 of 77, 9 secrets", () => {
   assertEmptyView(buildAchievementsView(emptyRecord()));
 });
 
@@ -244,8 +244,10 @@ function secretRowFor(view, entry) {
   return allRows(view).find((r) => r.key === `t${entry.listOrder}`);
 }
 
-test("secrets: eight Hidden entries are Secret rows with the teaser and a silhouette", () => {
-  assert.equal(HIDDEN.length, 8);
+// Quick 261005-vn5 (declared re-pin): Special Snowflake now starts Hidden, so 9 entries are secrets (was 8).
+test("secrets: nine Hidden entries (Special Snowflake included) are Secret rows with the teaser and a silhouette", () => {
+  assert.equal(HIDDEN.length, 9);
+  assert.ok(HIDDEN.some((e) => e.id === "special_snowflake"));
   const view = buildAchievementsView(emptyRecord());
   for (const e of HIDDEN) {
     const row = secretRowFor(view, e);
@@ -278,14 +280,14 @@ test("secrets: revealed becomes a normal locked row, unlocked becomes an earned 
 });
 
 test("secrets: the header counts them down as they are revealed or unlocked", () => {
-  assert.equal(buildAchievementsView(rec({ revealed: ["chicken"] })).secretsText, "7 secrets still hiding");
-  assert.equal(buildAchievementsView(rec({ unlocked: { chicken: 1 }, revealed: ["death_trap"] })).secrets, 6);
+  assert.equal(buildAchievementsView(rec({ revealed: ["chicken"] })).secretsText, "8 secrets still hiding");
+  assert.equal(buildAchievementsView(rec({ unlocked: { chicken: 1 }, revealed: ["death_trap"] })).secrets, 7);
   const unlocked = {};
   for (const e of HIDDEN.slice(1)) unlocked[e.id] = 1;
   assert.equal(buildAchievementsView(rec({ unlocked })).secretsText, "1 secret still hiding");
 });
 
-test("secrets: a secret row object carries nothing of the real achievement (all 8 Hidden entries)", () => {
+test("secrets: a secret row object carries nothing of the real achievement (all 9 Hidden entries)", () => {
   const view = buildAchievementsView(emptyRecord());
   for (const e of HIDDEN) {
     const row = secretRowFor(view, e);
@@ -351,4 +353,15 @@ test("the view is deeply frozen and a deep-frozen record is never mutated", () =
   assert.ok(deepFrozen(view));
   assert.equal(JSON.stringify(r), before);
   assert.ok(deepFrozen(r));
+});
+
+test("quick 261005-vn5: Special Snowflake is a Secret row until a death below floor 1 reveals it or a floor-1 death earns it", () => {
+  const snow = ACHIEVEMENTS.find((e) => e.id === "special_snowflake");
+  assert.equal(secretRowFor(buildAchievementsView(emptyRecord()), snow).state, "secret");
+  const revealed = secretRowFor(buildAchievementsView(rec({ revealed: ["special_snowflake"] })), snow);
+  assert.equal(revealed.state, "locked");
+  assert.equal(revealed.name, "Special Snowflake");
+  const earned = secretRowFor(buildAchievementsView(rec({ unlocked: { special_snowflake: T_B } })), snow);
+  assert.equal(earned.state, "earned");
+  assert.equal(earned.detail, "You're a special snowflake.");
 });

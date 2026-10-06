@@ -79,6 +79,7 @@ Count check: 52 + 3 + 1 + 6 + 3 + 1 + 4 + 7 = 77. Headroom: 2,000 − 1,200 = 80
 
 ### Hidden achievements and who reveals them (ACH-04)
 - **8 start Hidden:** Naked Ambition, Read the Label, Fatal Misstep, Empty Calories, Gravity Wins, Solid Miscalculation, Terminal Condition and Chicken. **The other 69 start Revealed**, Special Snowflake and Unicorn! included.
+- **Amended 2026-10-05 (quick 261005-vn5): Special Snowflake now starts Hidden, so 9 start Hidden and 68 start Revealed.** It is revealed by a death, not by a revealer entry: the catalog field `revealOn: { kind: "realDeath" }` reveals it on the player's first real death that does NOT earn it (a death on floor 2 or deeper; abandons never count), and that death screen shows one sarcastic hint line about floor 1 that never names it. Unlocking it directly (a floor-1 death) still reveals it. The user flipped it to Hidden by hand in the Play Console draft the same day. Points, type and copy are unchanged.
 - When a revealer unlocks, it reveals its hidden achievement, both in game and in Play (`revealAchievement`). A hidden achievement can still be earned directly before it is revealed.
 
 | Revealer (when it unlocks) | Reveals | Why the hint is true |

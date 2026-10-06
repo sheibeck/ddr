@@ -180,22 +180,23 @@ test("progressText: a null or empty record reads as zero", () => {
 
 // --- counts -----------------------------------------------------------------
 
-test("earnedCount and secretCount: the empty record is 0 earned and 8 secrets", () => {
+// Quick 261005-vn5 (declared re-pin): Special Snowflake now starts Hidden, so 9 entries are secrets (was 8).
+test("earnedCount and secretCount: the empty record is 0 earned and 9 secrets", () => {
   assert.equal(earnedCount(emptyRecord()), 0);
-  assert.equal(secretCount(emptyRecord()), 8);
+  assert.equal(secretCount(emptyRecord()), 9);
   assert.equal(earnedCount(null), 0);
-  assert.equal(secretCount(undefined), 8);
+  assert.equal(secretCount(undefined), 9);
 });
 
 test("secretCount: a reveal lowers it without changing the earned count", () => {
   const r = rec({ revealed: ["death_falling"] });
-  assert.equal(secretCount(r), 7);
+  assert.equal(secretCount(r), 8);
   assert.equal(earnedCount(r), 0);
 });
 
 test("secretCount: unlocking a Hidden entry lowers it and raises the earned count", () => {
   const r = rec({ unlocked: { chicken: 1000 } });
-  assert.equal(secretCount(r), 7);
+  assert.equal(secretCount(r), 8);
   assert.equal(earnedCount(r), 1);
 });
 

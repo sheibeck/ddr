@@ -745,5 +745,15 @@ export function copyTable(catalog) {
     }
   }
   out.push("");
+  // Quick 261005-vn5: a Hidden entry that a game event reveals (revealOn) instead of a revealer entry.
+  const byEvent = list.filter((a) => a.revealOn);
+  if (byEvent.length > 0) {
+    const WHEN = { realDeath: "The first real death that does not earn it (any death below floor 1; an abandon never counts)" };
+    out.push("## Revealed by an event", "");
+    out.push("| Event | Reveals |");
+    out.push("|-------|---------|");
+    for (const a of byEvent) out.push(`| ${cell(WHEN[a.revealOn.kind] ?? a.revealOn.kind)} | ${cell(a.name)} |`);
+    out.push("");
+  }
   return out.join("\n");
 }

@@ -181,13 +181,15 @@ test("reveals: each revealer's unlock reveals its target (the six pairs the coun
   }
   const chain = fold(emptyRecord(), [ev("died", { cause: "fall" })], { floor: { depth: 3 } });
   assert.deepEqual(chain.unlocks.map((u) => u.id), ["death_falling"]);
-  assert.deepEqual(chain.reveals, ["death_falling", "ether_entombed"]);
+  // Quick 261005-vn5 (declared re-pin): any real death also reveals Special Snowflake (revealOn realDeath).
+  assert.deepEqual(chain.reveals, ["death_falling", "ether_entombed", "special_snowflake"]);
 });
 
 test("reveals: a Hidden entry unlocked directly is revealed; a target already revealed is not reported again", () => {
   const direct = fold(emptyRecord(), [ev("died", { cause: "trap" })], { floor: { depth: 2 } });
-  assert.deepEqual(direct.reveals, ["death_trap"]);
-  assert.deepEqual(direct.record.revealed, ["death_trap"]);
+  // Quick 261005-vn5 (declared re-pin): the floor-2 death also reveals Special Snowflake.
+  assert.deepEqual(direct.reveals, ["death_trap", "special_snowflake"]);
+  assert.deepEqual(direct.record.revealed, ["death_trap", "special_snowflake"]);
   const already = fold(seedRecord({ counters: { trapsSurvived: 9 }, revealed: ["death_trap"] }), [ev("trapSprung")]);
   assert.ok(already.unlocks.some((u) => u.id === "trap_survivor_t1"));
   assert.deepEqual(already.reveals, []);
@@ -197,8 +199,49 @@ test("reveals: a Hidden entry unlocked directly is revealed; a target already re
 test("TRACK-03 adjacency: a revealer and the Hidden entry it reveals unlocking together report one reveal", () => {
   const r = fold(emptyRecord(), [ev("died", { cause: "fall" })], { floor: { depth: 5 } });
   assert.deepEqual(r.unlocks.map((u) => u.id), ["depth_t1", "death_falling"]);
-  assert.deepEqual(r.reveals, ["death_falling", "ether_entombed"]);
+  // Quick 261005-vn5 (declared re-pin): the death also reveals Special Snowflake.
+  assert.deepEqual(r.reveals, ["death_falling", "ether_entombed", "special_snowflake"]);
   assert.equal(new Set(r.reveals).size, r.reveals.length);
+});
+
+test("quick 261005-vn5: Special Snowflake starts Hidden; the first real death below floor 1 reveals it without earning it", () => {
+  assert.equal(entryOf("special_snowflake").initialState, "Hidden");
+  const r = fold(emptyRecord(), [ev("died", { cause: "combat" })], { floor: { depth: 2 } });
+  assert.deepEqual(r.reveals, ["special_snowflake"]);
+  assert.deepEqual(r.record.revealed, ["special_snowflake"]);
+  assert.equal(r.unlocks.some((u) => u.id === "special_snowflake"), false);
+  assert.equal(r.record.unlocked.special_snowflake, undefined);
+  const deep = fold(emptyRecord(), [ev("died", { cause: "combat" })], { floor: { depth: 4 } });
+  assert.deepEqual(deep.reveals, ["special_snowflake"]);
+});
+
+test("quick 261005-vn5: a floor-1 death earns Special Snowflake (and so reveals it too); the reveal is not repeated afterwards", () => {
+  const r = fold(emptyRecord(), [ev("died", { cause: "combat" })], { floor: { depth: 1 } });
+  assert.deepEqual(r.unlocks.map((u) => u.id), ["special_snowflake"]);
+  assert.deepEqual(r.reveals, ["special_snowflake"]);
+  assert.deepEqual(r.record.revealed, ["special_snowflake"]);
+  const later = fold(r.record, [ev("died", { cause: "combat" })], { floor: { depth: 4 } });
+  assert.deepEqual(later.reveals, []);
+});
+
+test("quick 261005-vn5: an abandon, a death-free action and a dev run reveal nothing; the reveal fires once and persists", () => {
+  const aband = fold(emptyRecord(), [ev("died", { cause: "abandon" })], { floor: { depth: 3 } });
+  assert.deepEqual(aband.reveals, []);
+  assert.deepEqual(aband.record.revealed, []);
+  const walk = fold(emptyRecord(), [ev("moved")], { floor: { depth: 3 } });
+  assert.deepEqual(walk.reveals, []);
+  const dev = fold(emptyRecord(), [ev("died", { cause: "combat" })], { floor: { depth: 3 }, dev: true });
+  assert.deepEqual(dev.reveals, []);
+  const first = fold(emptyRecord(), [ev("died", { cause: "combat" })], { floor: { depth: 3 } });
+  assert.deepEqual(first.reveals, ["special_snowflake"]);
+  const second = fold(first.record, [ev("died", { cause: "combat" })], { floor: { depth: 4 } });
+  assert.deepEqual(second.reveals, []);
+  assert.deepEqual(second.record.revealed, ["special_snowflake"]);
+  // a later floor-1 death still earns it, and it stays revealed
+  const earn = fold(second.record, [ev("died", { cause: "combat" })], { floor: { depth: 1 } });
+  assert.deepEqual(earn.unlocks.map((u) => u.id), ["special_snowflake"]);
+  assert.deepEqual(earn.reveals, []);
+  assert.deepEqual(earn.record.revealed, ["special_snowflake"]);
 });
 
 test("reveals: no Revealed-state id ever appears in reveals", () => {

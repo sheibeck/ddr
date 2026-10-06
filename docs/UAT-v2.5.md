@@ -11,6 +11,8 @@ Debug APK built from master `e9213960` (sha256 `bb57d3a2…`), installed 2026-10
 | 1.2 | Earn a tier while walking (e.g. Downward Mobility I at floor 5): a card with icon, ACHIEVEMENT, name and line; it holds about twice as long; a tap dismisses it | |
 | 1.3 | Cross a tier inside a fight: no card during the fight or its last-round playback; the card appears after | |
 | 1.4 | TalkBack announces the card once | |
+| 1.5 | Special Snowflake is a Secret in the list on a fresh install. Then die on floor 3 (not floor 1): the death screen shows one hint line about floor 1 (it never names the achievement) under the Earned strip, both death buttons stay reachable, and in the list Special Snowflake now reads as itself, still locked | |
+| 1.6 | A second death on floor 3 shows no hint line; abandoning a hero on floor 1 or 3 shows no hint line and reveals nothing; a later floor-1 death earns it and the Earned strip names it with no hint line | |
 
 ## 2. The ☰ ACHIEVEMENTS list (Phase 100)
 | # | Check | Result |
@@ -25,7 +27,7 @@ Debug APK built from master `e9213960` (sha256 `bb57d3a2…`), installed 2026-10
 ## 3. Play Games (Phase 101): Compete ON, signed in
 | # | Check | Result |
 |---|---|---|
-| 3.1 | An unlock shows the in-game card, then Play's own popup, and XP is credited | |
+| 3.1 | An unlock shows the in-game card, then Play's own popup, and XP is credited. Check the XP after publishing: draft achievements unlock for testers but do not appear to credit XP (Special Snowflake showed 0 XP on the draft), so a 0 here before publishing is expected and not a failure | |
 | 3.2 | An incremental achievement's progress and a reveal show in Play's list | |
 | 3.3 | VIEW IN PLAY GAMES sits at the top of the list only with Compete ON and signed in; it opens Play's screen and back returns to the list | |
 | 3.4 | Airplane mode: earn something, reconnect, it syncs (no popup storm) | |

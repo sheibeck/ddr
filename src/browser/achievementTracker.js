@@ -33,7 +33,10 @@
 //   - Human Shields: memberDowned and joinerMurdered
 //   - Still Standing: each trapSprung that does not end in a trap death
 //   - abandon is not a death (no Frequent Flier step, no Special Snowflake, no
-//     death achievement), but its run still counted for Tourist
+//     death achievement, no death reveal), but its run still counted for Tourist
+//   - Special Snowflake starts Hidden (quick 261005-vn5); its catalog revealOn
+//     { kind: "realDeath" } reveals it on the first real death, floor 1 (which
+//     also unlocks it) or deeper; the reveal persists in record.revealed
 //   - Special Snowflake is any real death on floor 1; Gravity Wins is fall or
 //     gorge; Read the Label potion; Fatal Misstep trap; Empty Calories starve;
 //     Solid Miscalculation entombed
@@ -283,6 +286,13 @@ function finish(base, draft, ctx) {
     if (isHidden(entry.id)) revealSet.add(entry.id);
     for (const id of Array.isArray(entry.reveals) ? entry.reveals : []) {
       if (isHidden(id)) revealSet.add(id);
+    }
+  }
+  // A death reveals what the catalog says a real death reveals (revealOn realDeath): any real
+  // death (abandons excluded), whether or not it also earns the entry. Idempotent through `revealed`.
+  if (cause !== null && cause !== "abandon") {
+    for (const entry of catalog) {
+      if (isHidden(entry.id) && isObj(entry.revealOn) && entry.revealOn.kind === "realDeath") revealSet.add(entry.id);
     }
   }
   const reveals = catalog.filter((e) => revealSet.has(e.id) && !draft.revealed.includes(e.id)).map((e) => e.id);

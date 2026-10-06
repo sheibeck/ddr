@@ -144,7 +144,7 @@ test("render: every icon is decorative; dim and silhouette classes follow the ro
     assert.equal(hasClass(img, "mw-ach-icon-dim"), flat[i].dim);
     assert.equal(hasClass(img, "mw-ach-icon-silhouette"), flat[i].silhouette);
   });
-  assert.ok(byClass(root, "mw-ach-icon-silhouette").length === 8);
+  assert.ok(byClass(root, "mw-ach-icon-silhouette").length === 9);
 });
 
 test("render: the ladder is aria-hidden with four pips I, II, III, IV", () => {
@@ -303,11 +303,11 @@ test("render: DOM row order equals the view's row order", () => {
 
 // --- secret leak -----------------------------------------------------------------
 
-test("render: no secret's name, description, line or id reaches any text or attribute but src (all 8 Hidden entries)", () => {
+test("render: no secret's name, description, line or id reaches any text or attribute but src (all 9 Hidden entries)", () => {
   const view = buildAchievementsView(emptyRecord());
   const { root } = render(view, { expanded: view.blocks.flatMap((b) => b.rows.map((r) => r.key)) });
   const secretRows = byClass(root, "mw-ach-row").filter((r) => r.getAttribute("data-state") === "secret");
-  assert.equal(secretRows.length, 8);
+  assert.equal(secretRows.length, 9);
   for (const row of secretRows) {
     const seen = [];
     walk(row, (n) => {
