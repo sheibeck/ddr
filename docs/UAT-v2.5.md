@@ -46,4 +46,4 @@ Debug APK built from master `bbaecfba` (adds quick tasks 261005-vhn, 261005-vn5,
 |---|---|---|
 | 5.1 | VIEW IN PLAY GAMES opens Play's list (the shrinker kept the achievement IDs) | |
 | 5.2 | Publish the achievements in Play Console after this round passes, at least 2 hours before the 2.5.0 rollout | passed: published by the user 2026-10-06 |
-| 5.3 | Deploy darktier-studio commit 7d4ad754 (privacy pages) and re-check the Data safety form | |
+| 5.3 | Deploy darktier-studio commit 7d4ad754 (privacy pages) and re-check the Data safety form | deployed 2026-10-06 (privacy, shots, 2.5.0 notes live); Data safety re-check is the user's |
