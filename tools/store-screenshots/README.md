@@ -200,4 +200,31 @@ the tracked tree.
 
 ## Web export
 
-Filled in with the web-export task.
+The website shows the four best shots only (user ruling, 2026-10-05): title,
+combat, deep floor and the Achievements list, in the page's existing four-slot
+grid. `featured.webp` (the title key art with the logo) is not replaced, and the
+hero `<img>` is untouched.
+
+```
+node webp.js --export <site repo>        # 01-title, 02-combat, 03-deep, 04-achievements as 540 x 960 webp
+node webp.js --check-site <site repo>    # the page and the files, exit 1 with one line per failure
+node webp.js --self-test                 # 18 cases on scratch sites, no Chrome needed
+```
+
+`--export` requires the installed `store-listing/screenshots` tree to pass the
+Play rules, then encodes the phone PNGs in Chrome from a canvas (lossy webp,
+quality 0.80, stepping down by 0.05 to a floor of 0.60 while a file is over
+200 KB), writes them under `public/assets/delve-die-repeat/shots/` and deletes
+any other `.webp` in that folder. It writes nowhere else.
+
+`--check-site` fails when the page's `shots` names are not the first four scene
+names in order, a referenced file is missing, empty, not RIFF/WEBP, the wrong
+size (540 x 960) or over 200 KB, the shots folder holds an unreferenced file, an
+alt is empty, under 20 or over 125 code points (counted by code point, not
+byte), repeated or holds an emoji, the shots `<img>` lacks `height="960"`, the
+hero's width and height differ from `featured.webp`, `featured.webp` is over
+450 KB, the hero alt is empty or over 160 code points, or `index.astro` begins
+with a byte-order mark.
+
+The site's own gate is `npm run check` in the site repo. The tool never pushes
+and never deploys; both are the owner's steps.
