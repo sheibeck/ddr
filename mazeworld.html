@@ -7562,6 +7562,13 @@ window.__mzClassicBoot = async function classicBoot() {
   // see openAchievementsSheet below.
   import { buildAchievementsView, renderAchievementsSheet, menuCountText } from "./src/browser/achievementsSheet.js";
   import { getAchievementRecord } from "./src/browser/engineAdapter.js";
+  // Phase 100 (AUI-01) — the unlock banner: the adapter's one listener slot,
+  // the fan-out in front of it (Phase 101 subscribes to the same bus) and the
+  // pure queue/card builders; each import on its own line per this file's
+  // import convention.
+  import { setAchievementListener } from "./src/browser/engineAdapter.js";
+  import { achievementEvents } from "./src/browser/achievementBus.js";
+  import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";
   // Phase 78 (HUD-08) — the opt-in arrow pad's pure view model (visibility,
   // side, the four labelled buttons); syncArrowPad below renders it.
   import { arrowPadModel } from "./src/browser/arrowPad.js";
@@ -7982,6 +7989,83 @@ window.__mzClassicBoot = async function classicBoot() {
   // Illusionist teleport decision card, built from S.pendingTeleport alone.
   window.__mzRailVM = { card: railCardFor, push: railPush, clear: railClear, lineCard: railLineCard, announcement: railAnnouncement, copy: RAIL_COPY, holdForCard, dismissKind: railDismissKind, isCombatCard, hazardCard: hazardCardViewModel, teleportCard: teleportCardViewModel };
   window.__mzRail = emptyRail();
+  // Phase 100 (AUI-01) — the unlock banner glue. An unlock becomes one rail
+  // card, shown only when the rail is free: a hero is loaded and the dungeon
+  // is visible, no fight (or last-round playback) is up, the hero is alive,
+  // the stairs fade is not running, no decision or torch offer is pending and
+  // no other card is up. The classic renderRail asks window.__mzAchBanner for
+  // a card on every render (so the clear-timer and body-tap paths start the
+  // next one), and a fight simply holds the queue until it ends. On death the
+  // rail stays hidden, so the queue is parked as the death panel's Earned
+  // strip (read through takeStrip, once per death). A reveal never shows a
+  // card; it only refreshes the list and the menu count. Presentation only:
+  // nothing here persists (an unshown card is simply in the list), and no
+  // call here reaches the network, storage or Play. Every body is total, so a
+  // banner bug can never reach dispatch.
+  let bannerQueue = emptyBannerQueue();
+  let deathStrip = null;
+  function onAchievementBanner(payload) {
+    try {
+      const unlocks = Array.isArray(payload?.unlocks) ? payload.unlocks : [];
+      const reveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
+      bannerQueue = bannerEnqueue(bannerQueue, unlocks);
+      if (unlocks.length > 0 || reveals.length > 0) {
+        try { window.mzSyncAchievementsCount?.(); } catch { /* cosmetic */ }
+        try { window.mzRefreshAchievementsSheet?.(); } catch { /* cosmetic */ }
+      }
+      if (unlocks.length > 0) queueMicrotask(() => { try { window.renderRail?.(); } catch { /* cosmetic */ } });
+    } catch {
+      // a banner bug never reaches dispatch
+    }
+  }
+  function bannerCtx() {
+    const s = window.__mzState?.get?.();
+    return {
+      ready: !!(s && s.c) && dungeonVisible() === true,
+      fighting: combatScreenUp() === true,
+      dead: !!(s && s.dead === true),
+      fade: window.__mzStairsFade?.active?.() === true,
+      decision: railLocked() === true,
+      railBusy: !!(window.__mzRail && window.__mzRail.card),
+    };
+  }
+  // Dead: hand everything queued to the Earned strip (a later empty result
+  // never overwrites a parked strip). Alive: any parked strip is stale.
+  function settleDeathStrip() {
+    const s = window.__mzState?.get?.();
+    if (!(s && s.dead === true)) {
+      deathStrip = null;
+      return false;
+    }
+    const r = bannerNext(bannerQueue, { dead: true });
+    bannerQueue = r.queue;
+    if (r.strip) deathStrip = r.strip;
+    return true;
+  }
+  function drainAchievementBanner() {
+    try {
+      if (settleDeathStrip()) return false;
+      const r = bannerNext(bannerQueue, bannerCtx());
+      bannerQueue = r.queue;
+      if (!r.card) return false;
+      window.__mzRail = railPush(window.__mzRail, r.card);
+      window.renderRail?.();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function takeDeathStrip() {
+    try {
+      return settleDeathStrip() ? deathStrip : null;
+    } catch {
+      return null;
+    }
+  }
+  function clearDeathStrip() {
+    deathStrip = null;
+  }
+  window.__mzAchBanner = { onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, clearStrip: clearDeathStrip };
   // Phase 35 (MAP-05, decision 5) — the stair-down gate's own presentation
   // flag: { dir } while THE STAIR DOWN overlay is up, else null. Never a
   // field on S/state (serializeRun spreads S wholesale), same rule as
@@ -9346,6 +9430,12 @@ window.__mzClassicBoot = async function classicBoot() {
   // boot() (below, near account.boot()) runs the bounded 2.1.0 backfill once
   // and flushes it.
   setRunRecordedListener(onRunRecorded);
+  // Phase 100 (AUI-01): the adapter's ONE achievement listener slot takes the
+  // fan-out's publish, registered before the first action (before boot
+  // below); the banner is its first subscriber and Phase 101's Play mirror
+  // subscribes to the same bus, never to the slot.
+  setAchievementListener(achievementEvents.publish);
+  achievementEvents.subscribe(onAchievementBanner);
   window.addEventListener("online", () => boardSync.flush({ force: true }));
   // Kept the FIRST visibilitychange listener in the file on purpose
   // (shell-board.test.js requires it; the title-music observer further
@@ -10335,6 +10425,9 @@ window.__mzClassicBoot = async function classicBoot() {
     // Phase 65 (RUN-04): the title shows after BURY THEM, abandon and
     // save-and-quit, so a later death never renders a stale block.
     window.__mzDeathRecord = null;
+    // Phase 100 (AUI-01): and the Earned strip. The queue is deliberately NOT
+    // cleared: an unshown unlock still shows on the next delve's first free render.
+    clearDeathStrip();
     // Phase 68 (D-11/D-12): the same for the rank line. With no death panel
     // left, a rank that returns later goes to the rail card instead.
     window.__mzPlacement = null;

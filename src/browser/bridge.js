@@ -29,6 +29,15 @@
 // wholesale, so these would leak into a save if they were.
 
 export const BRIDGE = Object.freeze({
+  __mzAchBanner: Object.freeze({
+    owner: "mazeworld.html (module)",
+    consumers: Object.freeze([
+      "mazeworld.html (classic: renderRail — asks drain() for the next unlock card on every render; renderCombatOver — reads takeStrip() for the death panel's Earned strip)",
+      "mazeworld.html (module: showTitleScreen — clearStrip() beside the death-record reset)",
+      "tools/layout-check.mjs (raises an unlock card and an Earned strip to measure the rail and the death panel's buttons)",
+    ]),
+    purpose: "Presentation-only unlock-banner glue { onEvent, drain, takeStrip, clearStrip } over the pure queue in achievementCard.js (Phase 100, AUI-01); never a field on state.",
+  }),
   __mzAppImportOverride: Object.freeze({
     owner: "src/browser/nativeChrome.js",
     consumers: Object.freeze(["test/persistence/lifecycle.test.js", "test/unit/haptics.test.js"]),

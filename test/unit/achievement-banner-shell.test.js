@@ -507,3 +507,284 @@ test("AUI-01 beat end: the last round's playback settles through paint(), and pa
   const pEnd = code.indexOf("\nfunction ", pStart + 10);
   assert.match(code.slice(pStart, pEnd), /\n  renderRail\(\);/);
 });
+
+// ═══════════════════════ Part 2: the module glue ═══════════════════════════
+
+import { BRIDGE } from "../../src/browser/bridge.js";
+import { emptyBannerQueue, bannerEnqueue, bannerNext } from "../../src/browser/achievementCard.js";
+
+const CODE = stripHtml(RAW_HTML);
+
+function occurrences(haystack, needle) {
+  let n = 0;
+  let i = haystack.indexOf(needle);
+  while (i !== -1) {
+    n++;
+    i = haystack.indexOf(needle, i + needle.length);
+  }
+  return n;
+}
+
+const GLUE_START = CODE.indexOf("let bannerQueue = emptyBannerQueue();");
+const GLUE_END_MARK = "clearStrip: clearDeathStrip };";
+const GLUE_END = CODE.indexOf(GLUE_END_MARK, GLUE_START) + GLUE_END_MARK.length;
+const GLUE = CODE.slice(GLUE_START, GLUE_END);
+
+test("AUI-01 anchors: the listener is registered once, with the banner subscribed after it, both before boot", () => {
+  const reg = "setAchievementListener(achievementEvents.publish);";
+  const sub = "achievementEvents.subscribe(onAchievementBanner);";
+  assert.equal(occurrences(CODE, reg), 1);
+  assert.equal(occurrences(CODE, sub), 1);
+  assert.equal(occurrences(CODE, "setAchievementListener("), 1, "the adapter slot is taken exactly once");
+  const regAt = CODE.indexOf(reg);
+  const subAt = CODE.indexOf(sub);
+  const runRecorded = CODE.indexOf("setRunRecordedListener(onRunRecorded);");
+  const bootAt = CODE.indexOf("await boot(");
+  assert.ok(runRecorded !== -1 && runRecorded < regAt, "registered next to setRunRecordedListener, after it");
+  assert.ok(regAt < subAt, "the subscription follows the registration");
+  assert.ok(subAt < bootAt, "both before `await boot(`");
+});
+
+test("AUI-01 anchors: the three new imports sit on their own lines and the pinned adapter imports are byte-identical", () => {
+  for (const line of [
+    'import { setAchievementListener } from "./src/browser/engineAdapter.js";',
+    'import { achievementEvents } from "./src/browser/achievementBus.js";',
+    'import { emptyBannerQueue, bannerEnqueue, bannerNext } from "./src/browser/achievementCard.js";',
+    'import { boot, dispatch, startNewRun, waitForPending, takeBootWornReport } from "./src/browser/engineAdapter.js";',
+    'import { takeBootResumeEvents, formatEvents } from "./src/browser/engineAdapter.js";',
+  ]) {
+    assert.equal(CODE.split("\n").filter((l) => l.trim() === line).length, 1, line);
+  }
+});
+
+test("AUI-01 anchors: __mzAchBanner is assigned once, right after the rail parcel, with exactly four members; showTitleScreen clears the strip beside the death-record reset", () => {
+  assert.equal(occurrences(CODE, "window.__mzAchBanner ="), 1);
+  const m = CODE.match(/window\.__mzAchBanner = \{ onEvent: onAchievementBanner, drain: drainAchievementBanner, takeStrip: takeDeathStrip, clearStrip: clearDeathStrip \};/);
+  assert.ok(m, "the four members, in order");
+  assert.ok(CODE.indexOf("window.__mzRail = emptyRail();") < CODE.indexOf("window.__mzAchBanner ="));
+  const start = CODE.indexOf("function showTitleScreen({ allowResume } = {})");
+  assert.ok(start !== -1);
+  const region = CODE.slice(start, CODE.indexOf("\n  function ", start + 20));
+  const rec = region.indexOf("window.__mzDeathRecord = null;");
+  const clr = region.indexOf("clearDeathStrip();");
+  assert.ok(rec !== -1 && clr > rec, "clearDeathStrip() follows the death-record reset");
+  assert.equal(region.includes("bannerQueue"), false, "the queue is deliberately not cleared on the title screen");
+});
+
+test("AUI-01 anchors: the glue block holds no network, storage or Capacitor token and no dispatch call", () => {
+  assert.ok(GLUE_START !== -1 && GLUE.length > 200);
+  for (const token of ["fetch", "localStorage", "mzStorage", "setItem", "getItem", "Capacitor", "dispatch(", "XMLHttpRequest", "WebSocket"]) {
+    assert.equal(GLUE.includes(token), false, `glue must not contain ${token}`);
+  }
+});
+
+function makeGlue(over = {}) {
+  const st = { s: { c: { name: "hero" }, dead: false }, visible: true, fighting: false, decision: false, fade: false, renders: 0, syncs: 0, refreshes: 0 };
+  const w = {
+    __mzState: { get: () => st.s },
+    __mzRail: emptyRail(),
+    __mzStairsFade: { active: () => st.fade },
+    renderRail: () => { st.renders++; },
+    mzSyncAchievementsCount: () => { st.syncs++; },
+    mzRefreshAchievementsSheet: () => { st.refreshes++; },
+    ...over,
+  };
+  const factory = new Function(
+    "window", "dungeonVisible", "combatScreenUp", "railLocked", "emptyBannerQueue", "bannerEnqueue", "bannerNext", "railPush", "queueMicrotask",
+    `${GLUE}\nreturn { queue: () => bannerQueue, strip: () => deathStrip, bridge: window.__mzAchBanner };`,
+  );
+  const g = factory(w, () => st.visible, () => st.fighting, () => st.decision, emptyBannerQueue, bannerEnqueue, bannerNext, railPush, queueMicrotask);
+  return { st, w, ...g };
+}
+const unlocksOf = (...ids) => ({ unlocks: ids.map((id) => ({ id, at: 1 })), reveals: [], progress: [] });
+const flush = () => new Promise((r) => setImmediate(r));
+const clearRail = (w) => { w.__mzRail = railClear(w.__mzRail); };
+
+test("AUI-01 glue: an unlock schedules one render; drain then pushes one achievement card and re-enters renderRail once, returning true", async () => {
+  const g = makeGlue();
+  g.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.equal(g.st.renders, 0, "the render waits for the microtask");
+  await flush();
+  assert.equal(g.st.renders, 1, "exactly one scheduled render");
+  assert.equal(g.bridge.drain(), true);
+  assert.equal(g.w.__mzRail.card.kind, "achievement");
+  assert.equal(g.w.__mzRail.card.achievementId, IDS[0]);
+  assert.equal(g.st.renders, 2, "the drain re-entered renderRail once");
+  assert.equal(g.bridge.drain(), false, "a card is up: the rail is busy");
+  assert.equal(g.w.__mzRail.card.achievementId, IDS[0]);
+});
+
+test("AUI-01 glue: three queued come out as three cards in list order, one per free rail; four collapse into one list-opening card", () => {
+  const g = makeGlue();
+  g.bridge.onEvent(unlocksOf(IDS[2], IDS[0], IDS[1]));
+  const seen = [];
+  for (let i = 0; i < 3; i++) {
+    assert.equal(g.bridge.drain(), true);
+    seen.push(g.w.__mzRail.card.achievementId);
+    assert.equal(g.bridge.drain(), false);
+    clearRail(g.w);
+  }
+  assert.deepEqual(seen, [IDS[0], IDS[1], IDS[2]]);
+  assert.equal(g.bridge.drain(), false, "nothing left");
+
+  const h = makeGlue();
+  h.bridge.onEvent(unlocksOf(IDS[0], IDS[1], IDS[2], IDS[3]));
+  assert.equal(h.bridge.drain(), true);
+  assert.equal(h.w.__mzRail.card.kind, "achievement-many");
+  assert.equal(h.w.__mzRail.card.opensList, true);
+  clearRail(h.w);
+  assert.equal(h.bridge.drain(), false, "all four were in the one summary: none left over, none lost");
+});
+
+test("AUI-01 glue: unlocks arriving while a card is up never overwrite it; they wait their turn", () => {
+  const g = makeGlue();
+  g.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.equal(g.bridge.drain(), true);
+  g.bridge.onEvent(unlocksOf(IDS[1]));
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.w.__mzRail.card.achievementId, IDS[0]);
+  clearRail(g.w);
+  assert.equal(g.bridge.drain(), true);
+  assert.equal(g.w.__mzRail.card.achievementId, IDS[1]);
+});
+
+test("AUI-01 glue: a fight holds the queue and nothing is lost; the held card appears once the fight is over", () => {
+  const g = makeGlue();
+  g.st.fighting = true;
+  g.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.w.__mzRail.card, null);
+  assert.deepEqual([...g.queue().pending], [IDS[0]]);
+  g.st.fighting = false;
+  assert.equal(g.bridge.drain(), true);
+  assert.equal(g.w.__mzRail.card.achievementId, IDS[0]);
+});
+
+test("AUI-01 glue: a pending decision, the stairs fade, a hidden dungeon and a missing hero each hold the card", () => {
+  const live = () => ({ c: { name: "hero" }, dead: false });
+  const cases = [
+    ["decision", (g) => { g.st.decision = true; }, (g) => { g.st.decision = false; }],
+    ["fade", (g) => { g.st.fade = true; }, (g) => { g.st.fade = false; }],
+    ["dungeon hidden", (g) => { g.st.visible = false; }, (g) => { g.st.visible = true; }],
+    ["no hero", (g) => { g.st.s = { c: null, dead: false }; }, (g) => { g.st.s = live(); }],
+    ["no state", (g) => { g.st.s = null; }, (g) => { g.st.s = live(); }],
+  ];
+  for (const [name, block, release] of cases) {
+    const g = makeGlue();
+    g.bridge.onEvent(unlocksOf(IDS[0]));
+    block(g);
+    assert.equal(g.bridge.drain(), false, name + " blocks");
+    assert.equal(g.w.__mzRail.card, null, name + " pushed nothing");
+    release(g);
+    assert.equal(g.bridge.drain(), true, name + " released");
+  }
+});
+
+test("AUI-01 glue: on death drain pushes no card; takeStrip returns everything queued in list order, the queue empties, and the same strip comes back on a redraw", () => {
+  const g = makeGlue();
+  g.st.s = { c: { name: "hero" }, dead: true };
+  g.bridge.onEvent(unlocksOf(IDS[1], IDS[0]));
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.w.__mzRail.card, null);
+  const strip = g.bridge.takeStrip();
+  assert.deepEqual(strip.items.map((i) => i.id), [IDS[0], IDS[1]]);
+  assert.equal(g.queue().pending.length, 0);
+  assert.equal(g.bridge.takeStrip(), strip, "idempotent: the very same parked strip");
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.bridge.takeStrip(), strip, "a later empty result never overwrites it");
+});
+
+test("AUI-01 glue: with the hero next seen alive the parked strip is cleared and shows no card; clearStrip empties it", () => {
+  const g = makeGlue();
+  g.st.s = { c: { name: "hero" }, dead: true };
+  g.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.ok(g.bridge.takeStrip());
+  g.st.s = { c: { name: "next" }, dead: false };
+  assert.equal(g.bridge.drain(), false, "the parked strip never becomes a card");
+  assert.equal(g.w.__mzRail.card, null);
+  assert.equal(g.strip(), null, "stale strip dropped");
+  assert.equal(g.bridge.takeStrip(), null);
+
+  const h = makeGlue();
+  h.st.s = { c: { name: "hero" }, dead: true };
+  h.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.ok(h.bridge.takeStrip());
+  h.bridge.clearStrip();
+  assert.equal(h.strip(), null);
+  assert.equal(h.bridge.takeStrip(), null);
+});
+
+test("AUI-01 glue: takeStrip is null when nothing is parked or the hero is alive", () => {
+  const g = makeGlue();
+  assert.equal(g.bridge.takeStrip(), null);
+  g.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.equal(g.bridge.takeStrip(), null, "alive: the queue stays for the rail");
+  assert.equal(g.queue().pending.length, 1);
+  g.st.s = { c: { name: "hero" }, dead: true };
+  assert.equal(g.bridge.takeStrip().items.length, 1);
+});
+
+test("AUI-01 glue: a reveals-only payload leaves the queue unchanged, schedules no render, and refreshes the sheet and count", async () => {
+  const g = makeGlue();
+  const before = g.queue();
+  g.bridge.onEvent({ unlocks: [], reveals: [IDS[5]], progress: [] });
+  await flush();
+  assert.equal(g.queue(), before);
+  assert.equal(g.st.renders, 0);
+  assert.equal(g.st.syncs, 1);
+  assert.equal(g.st.refreshes, 1);
+  assert.equal(g.bridge.drain(), false);
+});
+
+test("AUI-01 glue: null, {} and empty arrays do nothing and do not throw", async () => {
+  const g = makeGlue();
+  for (const p of [null, undefined, {}, { unlocks: [], reveals: [], progress: [] }, { unlocks: "x", reveals: 3 }, 7]) {
+    assert.doesNotThrow(() => g.bridge.onEvent(p));
+  }
+  await flush();
+  assert.equal(g.st.renders, 0);
+  assert.equal(g.st.syncs, 0);
+  assert.equal(g.st.refreshes, 0);
+  assert.equal(g.queue().pending.length, 0);
+  assert.equal(g.bridge.drain(), false, "an empty queue drains to false and writes nothing");
+  assert.equal(g.w.__mzRail.card, null);
+});
+
+test("AUI-01 glue: an unlock calls the count sync and the sheet refresh; a throwing refresh never escapes", async () => {
+  const g = makeGlue({
+    mzRefreshAchievementsSheet: () => { throw new Error("boom"); },
+    mzSyncAchievementsCount: () => { throw new Error("boom"); },
+  });
+  assert.doesNotThrow(() => g.bridge.onEvent(unlocksOf(IDS[0])));
+  await flush();
+  assert.equal(g.st.renders, 1, "the render is still scheduled");
+  assert.deepEqual([...g.queue().pending], [IDS[0]]);
+
+  const h = makeGlue();
+  h.bridge.onEvent(unlocksOf(IDS[0]));
+  assert.equal(h.st.syncs, 1);
+  assert.equal(h.st.refreshes, 1);
+});
+
+test("AUI-01 glue: drain and takeStrip are total (a throwing state read returns false / null)", () => {
+  const g = makeGlue({ __mzState: { get: () => { throw new Error("boom"); } } });
+  assert.equal(g.bridge.drain(), false);
+  assert.equal(g.bridge.takeStrip(), null);
+});
+
+test("AUI-01 glue: ids are matched exactly: a near-miss id queues nothing", () => {
+  const g = makeGlue();
+  g.bridge.onEvent({ unlocks: [{ id: IDS[0].toUpperCase() + " ", at: 1 }, { id: "nope" }], reveals: [] });
+  assert.equal(g.queue().pending.length, 0);
+});
+
+test("AUI-01 bridge: __mzAchBanner is registered with the module as owner, its consumers and a purpose", () => {
+  const e = BRIDGE.__mzAchBanner;
+  assert.ok(e, "registered");
+  assert.equal(e.owner, "mazeworld.html (module)");
+  const joined = e.consumers.join("\n");
+  for (const needle of ["renderRail", "renderCombatOver", "showTitleScreen", "tools/layout-check.mjs"]) {
+    assert.ok(joined.includes(needle), "consumers name " + needle);
+  }
+  assert.ok(e.purpose.length > 20);
+});
