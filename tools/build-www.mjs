@@ -48,6 +48,8 @@
 //      (achievements/ingame/, 144 x 144 PNG) into www/achievements/ingame/ so
 //      the unlock banner and the achievements list can draw them. Only that
 //      one folder ships: not the 512px Play art, the masters or the sources.
+//      Quick 261005-vhn adds achievements/large/ (77 sharp 320 x 320 PNGs, the
+//      large view of an earned icon) beside it, as www/achievements/large/.
 //
 // Run: node tools/build-www.mjs  (also wired as `npm run build:www`)
 
@@ -274,6 +276,13 @@ function copyAchievementIcons() {
   }
   cpSync(src, path.join(WWW, "achievements", "ingame"), { recursive: true });
   step("copied achievements/ingame/ into www/achievements/ingame/");
+  // Quick 261005-vhn: the 320 px exports behind the list's large view.
+  const large = path.join(ROOT, "achievements", "large");
+  if (!existsSync(large)) {
+    throw new Error(`${large} does not exist - expected the 77 large achievement icons (python achievements/build_large.py writes them)`);
+  }
+  cpSync(large, path.join(WWW, "achievements", "large"), { recursive: true });
+  step("copied achievements/large/ into www/achievements/large/");
 }
 
 function vendorCapacitorPackages() {

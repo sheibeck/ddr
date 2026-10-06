@@ -20,6 +20,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const ACH_DIR = path.join(REPO_ROOT, "achievements");
 const INGAME_DIR = path.join(ACH_DIR, "ingame");
+const LARGE_DIR = path.join(ACH_DIR, "large");
 const BUILD_WWW_PATH = path.join(REPO_ROOT, "tools", "build-www.mjs");
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -79,6 +80,35 @@ test("AUI-01: achievementIconSrc(entry) is achievements/ + icon.ingame for every
   for (const e of ACHIEVEMENTS) {
     assert.equal(achievementIconSrc(e), "achievements/" + e.icon.ingame);
   }
+});
+
+// ─── (1b) the 320 px large-view icons (quick 261005-vhn) ──────────────
+
+test("large view: achievements/large/ holds exactly the 77 stems of achievements/ingame/", () => {
+  const large = readdirSync(LARGE_DIR).sort();
+  assert.equal(large.length, 77);
+  assert.deepEqual(large, readdirSync(INGAME_DIR).sort());
+});
+
+test("large view: every large icon is a 320 x 320 PNG", () => {
+  for (const name of readdirSync(LARGE_DIR)) {
+    const { width, height } = pngSize(path.join(LARGE_DIR, name));
+    assert.equal(width, 320, `${name} width`);
+    assert.equal(height, 320, `${name} height`);
+  }
+});
+
+test("large view: the list's large path resolves to a file for every catalog entry", () => {
+  for (const e of ACHIEVEMENTS) {
+    assert.ok(existsSync(path.join(ACH_DIR, "large", path.basename(e.icon.ingame))), `${e.id}`);
+  }
+});
+
+test("large view: copyAchievementIcons() also copies achievements/large whole into www/achievements/large", () => {
+  const body = fnBody(buildSource(), "copyAchievementIcons");
+  assert.match(body, /path\.join\(ROOT,\s*["']achievements["'],\s*["']large["']\)/);
+  assert.match(body, /path\.join\(WWW,\s*["']achievements["'],\s*["']large["']\)/);
+  assert.equal((body.match(/cpSync\(/g) ?? []).length, 2, "ingame and large, nothing else");
 });
 
 // ─── (2) build wiring ──────────────────────────────────────────────────
