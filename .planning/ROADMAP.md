@@ -153,14 +153,14 @@ Plans:
 Plans:
 **Wave 1** *(101-01, 101-02, 101-05 and 101-06 touch disjoint files and can run in parallel; 101-06 also commits in C:/projects/darktier-studio)*
 
-- [ ] 101-01-PLAN.md — the Play Console export as `res/values/games-ids.xml` (manifest on `@string/app_id`, `package_name` dropped from strings.xml, `@string/achievement_*` kept from the shrinker), PlayIdentityPlugin's syncAchievements, showAchievements and achievementsClosed, and the JS seam's two methods with PLAY_ACHIEVEMENT_REASONS; declared pin updates
-- [ ] 101-02-PLAN.md — `src/browser/playAchievements.js`: resource names, the one legal op per entry, the record-minus-ledger diff (`ddr.pgsAch.v1`), and the Compete-first, single-flight, batch-acknowledged mirror, with the full-coverage proof against the real export and the Compete OFF proof
-- [ ] 101-05-PLAN.md — the in-app Compete help clause (COMP-05), `docs/PLAY-GAMES-SETUP.md` (sign-in and achievements, the export rules) and `docs/ACHIEVEMENTS.md` (the IDs file's home, testers, the PGS-11 device check)
-- [ ] 101-06-PLAN.md — the darktierstudios.com privacy pages (website repo commit; deploy is the user's step) and `store-listing/LISTING.md`'s 2.5.0 Data safety answers and privacy record (the form is the user's step)
+- [x] 101-01-PLAN.md — the Play Console export as `res/values/games-ids.xml` (manifest on `@string/app_id`, `package_name` dropped from strings.xml, `@string/achievement_*` kept from the shrinker), PlayIdentityPlugin's syncAchievements, showAchievements and achievementsClosed, and the JS seam's two methods with PLAY_ACHIEVEMENT_REASONS; declared pin updates
+- [x] 101-02-PLAN.md — `src/browser/playAchievements.js`: resource names, the one legal op per entry, the record-minus-ledger diff (`ddr.pgsAch.v1`), and the Compete-first, single-flight, batch-acknowledged mirror, with the full-coverage proof against the real export and the Compete OFF proof
+- [x] 101-05-PLAN.md — the in-app Compete help clause (COMP-05), `docs/PLAY-GAMES-SETUP.md` (sign-in and achievements, the export rules) and `docs/ACHIEVEMENTS.md` (the IDs file's home, testers, the PGS-11 device check)
+- [x] 101-06-PLAN.md — the darktierstudios.com privacy pages (website repo commit; deploy is the user's step) and `store-listing/LISTING.md`'s 2.5.0 Data safety answers and privacy record (the form is the user's step)
 
 **Wave 2** *(blocked on 101-01 and 101-02)*
 
-- [ ] 101-03-PLAN.md — the mirror wired into `mazeworld.html`: subscribed beside the banner, woken on background, foreground, online, death, Compete ON, sign-in and boot, with a shell-level Compete OFF proof and the SHELL-MODULES.md section
+- [x] 101-03-PLAN.md — the mirror wired into `mazeworld.html`: subscribed beside the banner, woken on background, foreground, online, death, Compete ON, sign-in and boot, with a shell-level Compete OFF proof and the SHELL-MODULES.md section
 
 **Wave 3** *(blocked on 101-03; same `mazeworld.html`)*
 

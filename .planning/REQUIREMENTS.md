@@ -33,9 +33,9 @@ Sources: backlog 999.12 (Achievements track, with the user's rulings through 202
 
 ### Play Games mirror (999.12)
 
-- [ ] **PGS-07**: With Compete ON and signed in, each unlock, each incremental progress and each reveal reaches Play Games through the in-repo `PlayIdentity` plugin, so the player sees Play's unlock popup and earns XP
-- [ ] **PGS-08**: Unlocks, progress and reveals earned with Compete OFF, signed out or offline wait in a durable queue and sync the next time Compete is ON and the player is signed in; re-sending never double-counts
-- [ ] **PGS-09**: Compete OFF never starts the Play Games SDK and makes zero network calls (the Phase 92.1 privacy gate holds), and a Play Games failure never blocks or breaks the in-game achievements
+- [x] **PGS-07**: With Compete ON and signed in, each unlock, each incremental progress and each reveal reaches Play Games through the in-repo `PlayIdentity` plugin, so the player sees Play's unlock popup and earns XP
+- [x] **PGS-08**: Unlocks, progress and reveals earned with Compete OFF, signed out or offline wait in a durable queue and sync the next time Compete is ON and the player is signed in; re-sending never double-counts
+- [x] **PGS-09**: Compete OFF never starts the Play Games SDK and makes zero network calls (the Phase 92.1 privacy gate holds), and a Play Games failure never blocks or breaks the in-game achievements
 - [ ] **PGS-10**: The game reads Play's achievement IDs from the resource file Play Console generates after the import ("Get resources"), keyed by catalog id, never hard-coded in the JS; until that file is in the build, Play sync is a no-op and the in-game achievements still work
 - [ ] **PGS-11**: After the user imports the zip and hands back the IDs file, every catalog id resolves to a Play ID (a test proves full coverage), and a signed-in Pixel 7 check (the toast plus Play's unlock popup) joins the milestone-close device checklist
 
@@ -92,9 +92,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUI-02 | Phase 100 | Complete |
 | AUI-03 | Phase 100 | Complete |
 | AUI-04 | Phase 101 | Pending |
-| PGS-07 | Phase 101 | Pending |
-| PGS-08 | Phase 101 | Pending |
-| PGS-09 | Phase 101 | Pending |
+| PGS-07 | Phase 101 | Complete |
+| PGS-08 | Phase 101 | Complete |
+| PGS-09 | Phase 101 | Complete |
 | PGS-10 | Phase 101 | Pending |
 | PGS-11 | Phase 101 | Pending |
 | ZIP-01 | Phase 98 | Complete |
