@@ -316,7 +316,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- v2.5 Phases 98–102 COMPLETE (2026-10-06). Milestone audit/close deferred until after the 2.5.0 release (user). Release order: device round on the bbaecfba debug APK (docs/UAT-v2.5.md) → agree docs/patch-notes/2.5.0.md (draft in chat, one sentence per change) → user publishes the achievements in Play Console (≥2 h before rollout) → `npm run play:release` (vc15), user uploads AAB + 24 screenshots → user pushes/deploys darktier-studio (7d4ad75 privacy, 193c394 shots) → then /gsd-autonomous lifecycle: audit → complete → cleanup.
 
 ## Performance Metrics
 
