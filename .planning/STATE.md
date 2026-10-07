@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Achievements
-current_phase: 999.1
-current_phase_name: PROMOTED → Phases 56 / 58 / 59
-status: planning
+status: Awaiting next milestone
 stopped_at: Completed 102-03-PLAN.md
-last_updated: "2026-10-06T05:34:53.204Z"
+last_updated: "2026-10-07T01:31:22.045Z"
 last_activity: 2026-10-06
-last_activity_desc: Phase 102 complete, transitioned to Phase 999.1
+last_activity_desc: Milestone v2.5 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 20
   completed_plans: 20
   percent: 100
+current_phase: 999.1
+current_phase_name: PROMOTED → Phases 56 / 58 / 59
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-02 after the v2.3 milestone; v2.3 Tru
 
 ## Current Position
 
-Phase: 999.1 — Transitions & Sounds (PROMOTED → Phases 56 / 58 / 59)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-06 — Phase 102 complete, transitioned to Phase 999.1
+Phase: Milestone v2.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-06 — Milestone v2.5 completed and archived
 
 ## Ground Truth (durable facts every session needs)
 
@@ -177,6 +177,15 @@ detail; the backlog phases are the index.
 
 ## Deferred Items
 
+Items acknowledged and deferred at milestone close on 2026-10-06 (v2.5 Achievements; 5/5 phases passed, 26/26 requirements; audit `tech_debt` with zero blockers; the user chose "Continue with tech debt"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| uat | docs/UAT-v2.5.md Pixel 7 batch (incl. XP after publish, Play popup, offline and Compete OFF rounds) | open, walked by the user over play sessions |
+| audit | SHOTS-01 paperwork partial (no SUMMARY lists it); stale build-www.mjs comment on copyAchievementIcons; native pause does not await mirror work (by design) | accepted tech debt, see milestones/v2.5-MILESTONE-AUDIT.md |
+| user task | Re-check the Play Console Data safety form against store-listing/LISTING.md 2.5.0 answers | open |
+
+
 Items acknowledged and deferred at milestone close on 2026-10-02 (v2.3 Truth in Advertising; 12/12 phases `passed`, 42/42 requirements checked; audit `tech_debt` — 5 requirements partial on SUMMARY paperwork only, 3 integration warnings, 0 blockers; the user chose "Close now"):
 
 | Category | Item | Status |
@@ -316,7 +325,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- v2.5 Phases 98–102 COMPLETE; 2.5.0/vc15 RELEASED to Play review 2026-10-06 (tags v2.5.0, v2.5.0-play15; GitHub Release; achievements published; store screenshots + website deployed). NEXT, once Play approves the review (user): /gsd-autonomous lifecycle — audit → complete milestone v2.5 → cleanup. Open: the device round docs/UAT-v2.5.md; Data safety re-check (user). Next Play build is versionCode 16.
+- v2.5 Achievements CLOSED and archived 2026-10-06 (tag v2.5). The user is taking a break: do NOT start the next milestone until they ask (then /gsd-new-milestone). Open on their side: the Pixel 7 batch docs/UAT-v2.5.md and the Data safety re-check. Next Play build is versionCode 16.
 
 ## Performance Metrics
 

@@ -1,5 +1,28 @@
 # Milestones
 
+## v2.5 Achievements (Shipped: 2026-10-06)
+
+**Phases completed:** 5 phases, 20 plans, 2 tasks
+
+**Key accomplishments:**
+
+- A pure, headless banner core: a closure-bound listener fan-out (`achievementEvents`) so the adapter's one slot can feed the banner and Phase 101, one dismissible non-decision rail card per unlock, and a pending queue that holds in a fight, collapses past three, hands death to an Earned strip and loses nothing.
+- A pure, headless achievements list: seven blocks, 35 track rows (the depth ladder and Unicorn! merged), unit-bearing progress readings, dates, a frozen view model that treats any record as the all-zero record when hostile, secret rows that expose nothing, and a TalkBack-ordered DOM renderer with expandable tracks.
+- An always-enabled gold-star ACHIEVEMENTS row with its earned count in the hamburger menu, opening the 100-02 list in a legend-style sheet (z-index 55) that scrolls on its own, flows into 300px-minimum grid columns by window width alone, expands tracks on tap and closes by Close, the scrim and Android back.
+- Every unlock now reaches the screen as a lingering, tap-dismissed rail card with its in-game icon, name and sarcastic line: queued through the fan-out, held through fights, shown one at a time on a free rail, collapsed past three into a card that opens the list, and turned into an Earned strip above the death panel's buttons.
+- The 77 in-game icons now ship in the web bundle, the headless layout check measures the achievements sheet, the unlock card and the Earned strip in all 12 profiles and at all 7 size boundaries (all pass, no CSS defect found), reduced motion, text scale, dialog semantics and size-only layout are pinned by test, and SHELL-MODULES.md carries the Phase 100 sections with the contract Phase 101 subscribes under.
+- The app now ships the Play Console IDs file and PlayIdentityPlugin can mirror a batch of unlocks, reveals and absolute steps by resource name, one op at a time, and open Play's own achievements screen; the JS seam and its fake speak the same contract with a closed reason set.
+- 1. [Rule 3 - Blocking] `attachGuards` is async
+- 1. [Rule 1 - Bug] Frame guard passed frames hidden under the roller
+- 1. [Rule 4 resolved by the user's amendment] Website scope cut to four shots, featured.webp kept.
+- A 77-entry pure-data achievement catalog (14 fields, closed six-kind trigger vocabulary) with every locked ruling pinned by test, the icon set trimmed to 77, and the 231 copy slots registered with the voice tools.
+- All 231 copy fields written in the house voice: the user's names verbatim, 12 new pun names, Play descriptions held to Google's import rules and the counting rulings, and the 8 revealer lines carrying their hints. A 21-test copy contract holds all of it.
+- A dependency-free tool builds the Play Console import zip (2 headerless CSVs + 77 icons, 79 entries, byte-identical on rebuild), a 25-rule validator holds it to Google's and Play's limits with a failing fixture per rule, and the docs plus a generated copy table are ready for the user's import.
+- A deep-frozen, tolerant-loading lifetime record (ddr.achievements.v1) and a pure, headless tracker whose sweep test drives all 77 catalog achievements from one short of the threshold to exactly the threshold.
+- The tracker is wired into engineAdapter.js: boot loads the record, dispatch() folds every real action, startNewRun() counts the sub-class for Tourist, each changed record is one write under ddr.achievements.v1, and one listener hears each action's unlocks, reveals and progress. Persistence and bot isolation are proven by test.
+
+---
+
 ## v2.4 Fit & Finish (Shipped: 2026-10-05; Play 2.4.0 / vc14 built and signed, tags `v2.4.0` / `v2.4.0-play14`, user upload)
 
 **Release (2026-10-05):** the user agreed the patch notes (new headline: screens and flavour). The signed AAB was built from a8587781 and archived at `C:/Users/Dell/android_releases/2.4.0-vc14/` with `mapping.txt`. The merged manifest carries no orientation or resizability restriction. GitHub Release v2.4.0 is published and the darktierstudios.com patch notes are deployed.

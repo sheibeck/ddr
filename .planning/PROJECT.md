@@ -103,7 +103,7 @@
 - ✓ **Flavour only** — v2.4 Phase 97.1 (FLAVOR-07, user 2026-10-04 "remove rules entirely"): every RULES toggle and the Always show the rules setting retired; players see only flavour lines (Gear sheets keep numeric stat rows); exact rules text stays in code/models for the guards; flavour-only guard test
 - [ ] **Fantasy-flavour player text** (v2.4 todo) — players read narrative; the exact rules stay in code, docs and the audit pins
 - ✓ **Small v2.4 todos** — v2.4 Phase 93: harmful condition chips first; the Cloak of Regeneration heals a d6 on use (ruling B); plus Phase 93.1, the Gauntlet of the Giant at +6
-- [ ] **Achievements** (v2.5, backlog 999.12) — the user's achievements (81 icons built from 37 pictures; 77 ship after Disposable Help was dropped at the Phase 98 discuss), earned in the game, mirrored to Play Games with Compete ON, and created in Play Console from an import zip the milestone builds
+- [x] **Achievements** (v2.5, backlog 999.12, shipped 2026-10-06 as 2.5.0) — the user's achievements (81 icons built from 37 pictures; 77 ship after Disposable Help was dropped at the Phase 98 discuss), earned in the game, mirrored to Play Games with Compete ON, and created in Play Console from an import zip the milestone builds
 - [ ] **Fresh store and website screenshots** (v2.5, backlog 999.18) — the last phase of v2.5, after the achievements screen exists
 
 ### Out of Scope
@@ -115,7 +115,11 @@
 - **Player-authored / Game-Master layer from the tabletop rules** — not revived. (The *party* layer WAS revived in v1.0 as the Joiner system — reasoning changed once the engine seam made it a 5-phase job.)
 - **Original illustrated art / voiced audio as a hard requirement** — the prototype's procedural/typographic aesthetic is a viable shipping style; richer art/audio is a nice-to-have, not a gate.
 
-## Current Milestone: v2.5 Achievements (started 2026-10-05, aimed at Play 2.5.0 / vc15)
+## Last Shipped Milestone: v2.5 Achievements (2026-10-06, Play 2.5.0 / vc15)
+
+**Shipped:** 77 achievements (1,200 points, 9 hidden) earned in game with an unlock card, a death-screen strip and a ☰ list with large icons; mirrored to Google Play Games with Compete ON through a durable ledger; Play Console import zip; achievements published; fresh store screenshots and website. Archive: `.planning/milestones/v2.5-ROADMAP.md`. No milestone is in progress; the user is taking a break before the next one.
+
+### As planned at the start of v2.5
 
 **Goal:** Players earn 77 sarcastic achievements in the game, and with Compete ON they also unlock in Play Games for XP. The milestone also delivers a Play Console import zip that creates all 77 achievements.
 
@@ -543,4 +547,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-05 after starting milestone v2.5 Achievements*
+*Last updated: 2026-10-06 after closing milestone v2.5 Achievements*
